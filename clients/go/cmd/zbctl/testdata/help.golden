@@ -22,6 +22,7 @@ Available Commands:
   resolve     Resolve a resource
   set         Set a resource
   status      Checks the current status of the cluster
+  throwError  Throw an error
   update      Update a resource
   version     Print the version of zbctl
 
