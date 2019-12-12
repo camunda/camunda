@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class IoBoundActorsIntegrationTest {
+public final class IoBoundActorsIntegrationTest {
   @Rule public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
 
   @Test

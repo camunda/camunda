@@ -14,7 +14,7 @@ import java.util.Queue;
 import java.util.function.Consumer;
 
 /** Wraps a {@link Queue} as {@link ConsumableChannel}. */
-public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
+public final class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   private final ActorConditions actorConditions = new ActorConditions();
 
   private final Queue<E> wrapped;

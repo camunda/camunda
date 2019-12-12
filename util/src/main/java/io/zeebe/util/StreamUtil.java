@@ -26,7 +26,7 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class StreamUtil {
+public final class StreamUtil {
   protected static final int DEFAULT_BUFFER_SIZE = 4 * 1024;
 
   public static MessageDigest getDigest(final String algorithm) {

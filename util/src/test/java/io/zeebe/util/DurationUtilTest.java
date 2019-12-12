@@ -13,7 +13,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import org.junit.Test;
 
-public class DurationUtilTest {
+public final class DurationUtilTest {
   @Test
   public void shouldParseMilliseconds() {
     Duration duration = DurationUtil.parse("2ms");

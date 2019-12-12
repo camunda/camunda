@@ -10,7 +10,7 @@ package io.zeebe.util.sched.future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class AllCompletedFutureConsumer<T> implements BiConsumer<T, Throwable> {
+public final class AllCompletedFutureConsumer<T> implements BiConsumer<T, Throwable> {
   private final Consumer<Throwable> callback;
   private int pendingFutures;
 

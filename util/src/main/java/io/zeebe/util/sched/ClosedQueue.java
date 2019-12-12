@@ -12,7 +12,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.Queue;
 
-public class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
+public final class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
 
   @Override
   public int size() {

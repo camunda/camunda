@@ -31,7 +31,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 /** */
-public class StreamUtilTest {
+public final class StreamUtilTest {
   @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
 
   @Rule public final ExpectedException exception = ExpectedException.none();

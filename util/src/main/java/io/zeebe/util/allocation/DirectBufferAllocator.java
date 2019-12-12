@@ -10,7 +10,7 @@ package io.zeebe.util.allocation;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class DirectBufferAllocator implements BufferAllocator {
+public final class DirectBufferAllocator implements BufferAllocator {
   private static final AtomicLong ALLOCATED_MEMORY = new AtomicLong();
 
   @Override

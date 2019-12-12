@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CallableExecutionTest {
+public final class CallableExecutionTest {
   @Rule public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule(3);
 
   @Test

@@ -7,7 +7,7 @@
  */
 package io.zeebe.util.sched;
 
-public class BlockingPollSubscription implements ActorSubscription, Runnable {
+public final class BlockingPollSubscription implements ActorSubscription, Runnable {
   private final ActorJob subscriptionJob;
   private final Runnable blockingAction;
   private final ActorExecutor actorTaskExecutor;

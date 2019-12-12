@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CollectionUtil {
+public final class CollectionUtil {
 
   public static <K, V> void addToMapOfLists(final Map<K, List<V>> map, final K key, final V value) {
     List<V> list = map.get(key);

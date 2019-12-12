@@ -27,11 +27,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class CompactListTest {
+public final class CompactListTest {
   @Rule public final ExpectedException expectedExceptionRule = ExpectedException.none();
-  CompactList list;
-  final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
-  final UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
+  private CompactList list;
+  private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
 
   @Before
   public void setup() {

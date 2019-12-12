@@ -15,7 +15,7 @@ import io.zeebe.util.sched.ActorSubscription;
 import io.zeebe.util.sched.ActorTask;
 
 @SuppressWarnings("restriction")
-public class ChannelConsumerCondition
+public final class ChannelConsumerCondition
     implements ActorCondition, ActorSubscription, ChannelSubscription {
   private static final long TRIGGER_COUNT_OFFSET;
 

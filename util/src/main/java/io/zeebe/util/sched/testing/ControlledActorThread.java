@@ -16,7 +16,7 @@ import io.zeebe.util.sched.clock.ActorClock;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-public class ControlledActorThread extends ActorThread {
+public final class ControlledActorThread extends ActorThread {
   private final CyclicBarrier barrier = new CyclicBarrier(2);
 
   public ControlledActorThread(

@@ -16,7 +16,7 @@ import org.slf4j.Marker;
  * level. Allows the JVM to remove log statements which are not needed with the current log level.
  * Removes the possibility to dynamically change the log level.
  */
-public class ZbLogger implements Logger {
+public final class ZbLogger implements Logger {
 
   private final Logger logger;
   private final boolean isTraceEnabled;

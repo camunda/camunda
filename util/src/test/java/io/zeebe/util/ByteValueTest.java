@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.Test;
 
-public class ByteValueTest {
+public final class ByteValueTest {
   @Test
   public void shouldParseValidStringValues() {
     assertThat(new ByteValue("10").getUnit()).isEqualTo(BYTES);

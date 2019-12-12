@@ -14,7 +14,7 @@ import static io.zeebe.util.ByteUnit.MEGABYTES;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ByteValue {
+public final class ByteValue {
   private static final Pattern PATTERN =
       Pattern.compile("(\\d+)([K|M|G]?)", Pattern.CASE_INSENSITIVE);
 

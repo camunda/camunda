@@ -10,7 +10,7 @@ package io.zeebe.util.sched;
 import java.util.concurrent.atomic.AtomicLong;
 
 @SuppressWarnings("restriction")
-public class ActorConditionImpl implements ActorCondition, ActorSubscription {
+public final class ActorConditionImpl implements ActorCondition, ActorSubscription {
 
   private final ActorJob job;
   private final String conditionName;

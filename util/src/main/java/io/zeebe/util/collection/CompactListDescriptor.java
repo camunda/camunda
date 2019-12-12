@@ -48,7 +48,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class CompactListDescriptor {
+public final class CompactListDescriptor {
 
   public static final int HEADER_OFFSET;
 

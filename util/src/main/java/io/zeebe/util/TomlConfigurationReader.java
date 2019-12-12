@@ -12,7 +12,7 @@ import java.io.File;
 import java.io.InputStream;
 import org.slf4j.Logger;
 
-public class TomlConfigurationReader {
+public final class TomlConfigurationReader {
   public static final Logger LOG = Loggers.CONFIG_LOGGER;
 
   public static <T> T read(final String filePath, final Class<T> type) {

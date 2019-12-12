@@ -10,7 +10,7 @@ package io.zeebe.util.sched;
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class ActorFutureSubscription implements ActorSubscription {
+public final class ActorFutureSubscription implements ActorSubscription {
   private final ActorJob callbackJob;
   private final int phaseMask;
   private final ActorFuture<?> future;

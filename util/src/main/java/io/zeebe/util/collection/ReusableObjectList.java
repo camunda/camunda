@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 /** An expendable list of reusable objects. */
-public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
+public final class ReusableObjectList<T extends Reusable> implements Iterable<T> {
   private final ObjectIterator iterator = new ObjectIterator();
 
   private final List<ReusableElement> elements;

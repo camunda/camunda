@@ -10,7 +10,7 @@ package io.zeebe.util;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
 
-public class EnsureUtil {
+public final class EnsureUtil {
 
   public static void ensureNotNull(final String property, final Object o) {
     if (o == null) {

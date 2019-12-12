@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import io.zeebe.util.sched.ActorCondition;
 import org.junit.Test;
 
-public class ActorConditionsTest {
+public final class ActorConditionsTest {
 
   @Test
   public void shouldAddCondition() {

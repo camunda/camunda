@@ -10,7 +10,7 @@ package io.zeebe.util.sched.channel;
 import io.zeebe.util.sched.ActorCondition;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ActorConditions {
+public final class ActorConditions {
 
   /**
    * For reference see {@link java.nio.Bits#JNI_COPY_TO_ARRAY_THRESHOLD} and {@link

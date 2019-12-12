@@ -9,7 +9,7 @@ package io.zeebe.util.sched;
 
 import java.util.concurrent.TimeUnit;
 
-public class TimerSubscription implements ActorSubscription, ScheduledTimer, Runnable {
+public final class TimerSubscription implements ActorSubscription, ScheduledTimer, Runnable {
   private final ActorJob job;
   private final ActorTask task;
   private final TimeUnit timeUnit;

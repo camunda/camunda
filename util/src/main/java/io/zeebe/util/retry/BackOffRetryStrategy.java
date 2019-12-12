@@ -13,7 +13,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
 
-public class BackOffRetryStrategy implements RetryStrategy {
+public final class BackOffRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final Duration maxBackOff;

@@ -12,7 +12,7 @@ import static io.zeebe.util.sched.ActorTask.TaskSchedulingState.QUEUED;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Workstealing group maintains a queue per thread. */
-public class WorkStealingGroup {
+public final class WorkStealingGroup {
   private final int numOfThreads;
   private final ActorTaskQueue[] taskQueues;
 

@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class Environment {
+public final class Environment {
 
   private static final Logger LOG = Loggers.CONFIG_LOGGER;
 

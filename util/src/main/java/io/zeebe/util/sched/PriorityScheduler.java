@@ -17,7 +17,7 @@ import java.util.function.IntFunction;
  * Logic and state for the priority scheduling. Each {@link ActorThread} maintains a local instance
  * if this class.
  */
-public class PriorityScheduler implements TaskScheduler {
+public final class PriorityScheduler implements TaskScheduler {
   private static final int TIME_SLICES_PER_SECOND = 100;
   private static final long TIME_SLICE_LENTH_NS =
       TimeUnit.MILLISECONDS.toNanos(1000 / TIME_SLICES_PER_SECOND);

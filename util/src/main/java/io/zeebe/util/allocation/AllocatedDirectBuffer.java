@@ -10,7 +10,7 @@ package io.zeebe.util.allocation;
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
-public class AllocatedDirectBuffer extends AllocatedBuffer {
+public final class AllocatedDirectBuffer extends AllocatedBuffer {
   private final Consumer<AllocatedDirectBuffer> onCloseCallback;
 
   public AllocatedDirectBuffer(

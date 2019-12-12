@@ -10,7 +10,7 @@ package io.zeebe.util.buffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DirectBufferWriter implements BufferWriter {
+public final class DirectBufferWriter implements BufferWriter {
   protected DirectBuffer buffer;
   protected int offset;
   protected int length;

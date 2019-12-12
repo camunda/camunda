@@ -10,7 +10,7 @@ package io.zeebe.util;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-public class DurationUtil {
+public final class DurationUtil {
   /**
    * Input format expected to be [value][unit], where: - value is a number {@link
    * java.lang.Float#parseFloat} - unit is one of: 'ms', 's', 'm', 'h'
