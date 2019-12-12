@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
@@ -35,6 +36,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -57,8 +60,9 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 
-public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
+public class CollectionScopeAuthorizationIT extends AbstractIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
@@ -104,6 +108,39 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     assertThat(scopeEntries)
       .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
       .containsExactly("KEY_1");
+  }
+
+  @Test
+  public void getScopesForCollection_keySpecific_eventBased() {
+    // given
+    final String key1 = "eventBasedKey1";
+    final String key2 = "eventBasedKey2";
+
+    addEventProcessDefinitionDtoToElasticsearch(key1);
+    addEventProcessDefinitionDtoToElasticsearch(key2);
+
+    final String collectionId = collectionClient.createNewCollection();
+    createScopeForCollection(collectionId, key1, RESOURCE_TYPE_PROCESS_DEFINITION);
+    createScopeForCollection(collectionId, key2, RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationForKermit(key1, RESOURCE_TYPE_PROCESS_DEFINITION);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId);
+
+    // when
+    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetScopeForCollectionRequest(collectionId)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      });
+
+    // then
+    assertThat(scopeEntries)
+      .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
+      .containsExactlyInAnyOrder(key1, key2);
   }
 
   @ParameterizedTest(name = "get scope for collection where user is authorized for key of one type but not the other")
@@ -496,6 +533,61 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .isEqualTo(String.format(SCOPE_NOT_AUTHORIZED_MESSAGE, KERMIT_USER, scopeToAdd.getId()));
   }
 
+  @Test
+  public void addScope_existingEventBased() {
+    // given
+    final String key1 = "eventBasedKey1";
+    final String key2 = "eventBasedKey2";
+
+    addEventProcessDefinitionDtoToElasticsearch(key1);
+    addEventProcessDefinitionDtoToElasticsearch(key2);
+
+    final String collectionId = collectionClient.createNewCollection();
+    List<CollectionScopeEntryDto> entries = new ArrayList<>();
+    entries.add(collectionClient.createSimpleScopeEntry(key1, PROCESS));
+    entries.add(collectionClient.createSimpleScopeEntry(key2, PROCESS));
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildAddScopeEntriesToCollectionRequest(collectionId, entries)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    //then
+    assertThat(response.getStatus()).isEqualTo(204);
+  }
+
+  @Test
+  public void addScope_nonExistentEventBased() {
+    // given
+    final String key = "eventBasedKey";
+
+    final String collectionId = collectionClient.createNewCollection();
+    List<CollectionScopeEntryDto> entries = new ArrayList<>();
+    entries.add(collectionClient.createSimpleScopeEntry(key, PROCESS));
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildAddScopeEntriesToCollectionRequest(collectionId, entries)
+      .execute();
+
+    //then
+    assertThat(response.getStatus()).isEqualTo(403);
+  }
+
   private void deployAndImportDefinition(int definitionResourceType, final String definitionKey,
                                          final String tenantId) {
     switch (definitionResourceType) {
@@ -550,6 +642,26 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
+  }
+
+  private EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
+    final String version = "1";
+    final String name = "eventBasedName";
+    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
+      .id(key + "-" + version)
+      .key(key)
+      .name(name)
+      .version(version)
+      .bpmn20Xml(key + version)
+      .flowNodeNames(Collections.emptyMap())
+      .userTaskNames(Collections.emptyMap())
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      EVENT_PROCESS_DEFINITION_INDEX_NAME,
+      eventProcessDefinitionDto.getId(),
+      eventProcessDefinitionDto
+    );
+    return eventProcessDefinitionDto;
   }
 
   @Data

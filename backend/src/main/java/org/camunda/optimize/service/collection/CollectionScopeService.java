@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.collection;
 
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
@@ -55,8 +57,8 @@ public class CollectionScopeService {
   private static final String UNAUTHORIZED_TENANT_MASK_ID = "__unauthorizedTenantId__";
   public static final TenantDto UNAUTHORIZED_TENANT_MASK =
     new TenantDto(UNAUTHORIZED_TENANT_MASK_ID, UNAUTHORIZED_TENANT_MASK_NAME, "unknownEngine");
-  public static final String SCOPE_NOT_AUTHORIZED_MESSAGE = "User [%s] is not authorized to add scope [%s]. Either he" +
-    " isn't allowed to access the definition or the provided tenants.";
+  public static final String SCOPE_NOT_AUTHORIZED_MESSAGE = "User [%s] is not authorized to add scope [%s]. Either " +
+    "they aren't allowed to access the definition or the provided tenants.";
 
   private final TenantService tenantService;
   private final DefinitionService definitionService;
@@ -79,15 +81,18 @@ public class CollectionScopeService {
       .stream()
       .map(scope -> {
         final List<String> tenantsToMask = scope.getTenants();
-        final List<TenantDto> authorizedTenantDtos = definitionAuthorizationService
-          .filterAuthorizedTenantsForDefinition(
-            identityId, identityType, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
-          )
-          .stream()
-          .peek(tenantsToMask::remove)
-          .map(tenantsForUserById::get)
-          .filter(Objects::nonNull)
-          .collect(Collectors.toList());
+        final List<TenantDto> authorizedTenantDtos =
+          definitionService.isEventProcessDefinition(scope.getDefinitionKey())
+            ? Lists.newArrayList(TenantService.TENANT_NOT_DEFINED)
+            : definitionAuthorizationService
+            .filterAuthorizedTenantsForDefinition(
+              identityId, identityType, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
+            )
+            .stream()
+            .peek(tenantsToMask::remove)
+            .map(tenantsForUserById::get)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
         authorizedTenantDtos.addAll(tenantsToMask.stream()
                                       .map((t) -> UNAUTHORIZED_TENANT_MASK)
                                       .collect(Collectors.toList()));
@@ -131,6 +136,10 @@ public class CollectionScopeService {
         scopeEntry.getDefinitionType(),
         scopeEntry.getTenants()
       );
+      if (!isAuthorized && scopeEntry.getDefinitionType().equals(DefinitionType.PROCESS)) {
+        // if not authorized, check if provided key is for an event based process (to which all users have access)
+        isAuthorized = definitionService.isEventProcessDefinition(scopeEntry.getDefinitionKey());
+      }
       if (!isAuthorized) {
         String message = String.format(
           SCOPE_NOT_AUTHORIZED_MESSAGE, userId, scopeEntry.getId());
@@ -202,7 +211,8 @@ public class CollectionScopeService {
       .collect(Collectors.toList());
   }
 
-  private boolean reportInSameScopeAsGivenScope(final CollectionScopeEntryDto scopeEntry, final SingleReportDefinitionDto<?> report) {
+  private boolean reportInSameScopeAsGivenScope(final CollectionScopeEntryDto scopeEntry,
+                                                final SingleReportDefinitionDto<?> report) {
     final CollectionScopeEntryDto scopeOfReport =
       new CollectionScopeEntryDto(report.getDefinitionType(), report.getData().getDefinitionKey());
     return scopeOfReport.equals(scopeEntry);
@@ -278,8 +288,8 @@ public class CollectionScopeService {
   private void checkForConflictOnUpdate(final List<SingleReportDefinitionDto<?>> reportsAffectedByUpdate) {
     Set<ConflictedItemDto> conflictedItems =
       reportsAffectedByUpdate.stream()
-      .map(this::reportToConflictedItem)
-      .collect(Collectors.toSet());
+        .map(this::reportToConflictedItem)
+        .collect(Collectors.toSet());
     if (!conflictedItems.isEmpty()) {
       throw new OptimizeConflictException(conflictedItems);
     }

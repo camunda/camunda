@@ -172,7 +172,7 @@ public class CollectionClient {
       .execute();
   }
 
-  private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
+  public CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
     return new CollectionScopeEntryDto(definitionType, definitionKey, DEFAULT_TENANTS);
   }
 

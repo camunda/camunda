@@ -57,7 +57,7 @@ public class AuthorizedCollectionService {
     final AuthorizedCollectionDefinitionDto collectionDefinition =
       getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
     if (collectionDefinition.getCurrentUserRole().ordinal() < RoleType.MANAGER.ordinal()) {
-      throw new ForbiddenException(String.format(EDIT_NOT_AUTHORIZED_MESSAGE, collectionId, userId));
+      throw new ForbiddenException(String.format(EDIT_NOT_AUTHORIZED_MESSAGE, userId, collectionId));
     }
     return collectionDefinition;
   }
