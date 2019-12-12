@@ -27,9 +27,6 @@ import org.slf4j.Logger;
 /** Component for sending and receiving messages between different threads. */
 public class Dispatcher extends Actor implements AutoCloseable {
 
-  public static final int MODE_PUB_SUB = 1;
-  public static final int MODE_PIPELINE = 2;
-
   private static final Logger LOG = Loggers.DISPATCHER_LOGGER;
 
   private static final String ERROR_MESSAGE_CLAIM_FAILED =
@@ -44,7 +41,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
   private final String[] defaultSubscriptionNames;
   private final int maxFragmentLength;
   private final String name;
-  private final int mode;
   private final int logWindowLength;
   private Subscription[] subscriptions;
   private final Runnable onClaimComplete = this::signalSubsciptions;
@@ -60,13 +56,11 @@ public class Dispatcher extends Actor implements AutoCloseable {
       final int logWindowLength,
       final int maxFragmentLength,
       final String[] subscriptionNames,
-      final int mode,
       final String name) {
     this.logBuffer = logBuffer;
     this.logAppender = logAppender;
     this.publisherLimit = publisherLimit;
     this.publisherPosition = publisherPosition;
-    this.mode = mode;
     this.name = name;
 
     this.logWindowLength = logWindowLength;
@@ -279,7 +273,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
       if (subscriptions.length > 0) {
         lastSubscriberPosition = subscriptions[subscriptions.length - 1].getPosition();
 
-        if (MODE_PUB_SUB == mode && subscriptions.length > 1) {
+        if (subscriptions.length > 1) {
           for (int i = 0; i < subscriptions.length - 1; i++) {
             lastSubscriberPosition =
                 Math.min(lastSubscriberPosition, subscriptions[i].getPosition());
@@ -319,18 +313,11 @@ public class Dispatcher extends Actor implements AutoCloseable {
   }
 
   /**
-   * Creates a new subscription with the given name asynchronously. The operation fails if the
-   * dispatcher runs in pipeline-mode or a subscription with this name already exists.
+   * Creates a new subscription with the given name asynchronously. The operation fails if a
+   * subscription with this name already exists.
    */
   public ActorFuture<Subscription> openSubscriptionAsync(final String subscriptionName) {
-    return actor.call(
-        () -> {
-          if (mode == MODE_PIPELINE) {
-            throw new IllegalStateException("Cannot open subscriptions in pipelining mode");
-          }
-
-          return doOpenSubscription(subscriptionName, dataConsumed);
-        });
+    return actor.call(() -> doOpenSubscription(subscriptionName, dataConsumed));
   }
 
   public ActorFuture<Subscription> getSubscriptionAsync(final String subscriptionName) {
@@ -382,17 +369,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
   }
 
   protected AtomicPosition determineLimit(final int subscriptionId) {
-    if (mode == MODE_PUB_SUB) {
-      return publisherPosition;
-    } else {
-      if (subscriptionId == 0) {
-        return publisherPosition;
-      } else {
-        // in pipelining mode, a subscriber's limit is the position of the
-        // previous subscriber
-        return subscriptions[subscriptionId - 1].position;
-      }
-    }
+    return publisherPosition;
   }
 
   /**
@@ -404,19 +381,9 @@ public class Dispatcher extends Actor implements AutoCloseable {
     FutureUtil.join(closeSubscriptionAsync(subscriptionToClose));
   }
 
-  /**
-   * Close the given subscription asynchronously. The operation fails if the dispatcher runs in
-   * pipeline-mode.
-   */
+  /** Close the given subscription asynchronously. */
   public ActorFuture<Void> closeSubscriptionAsync(final Subscription subscriptionToClose) {
-    return actor.call(
-        () -> {
-          if (mode == MODE_PIPELINE) {
-            throw new IllegalStateException("Cannot close subscriptions in pipelining mode");
-          }
-
-          doCloseSubscription(subscriptionToClose);
-        });
+    return actor.call(() -> doCloseSubscription(subscriptionToClose));
   }
 
   private void doCloseSubscription(final Subscription subscriptionToClose) {
@@ -491,15 +458,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
 
   public boolean isClosed() {
     return isClosed;
-  }
-
-  @Override
-  public void close() {
-    FutureUtil.join(closeAsync());
-  }
-
-  public ActorFuture<Void> closeAsync() {
-    return actor.close();
   }
 
   public LogBuffer getLogBuffer() {

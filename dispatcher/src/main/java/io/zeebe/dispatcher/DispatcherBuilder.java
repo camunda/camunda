@@ -35,8 +35,6 @@ public final class DispatcherBuilder {
 
   private String[] subscriptionNames;
 
-  private int mode = Dispatcher.MODE_PUB_SUB;
-
   private int initialPartitionId = 0;
 
   public DispatcherBuilder(final String dispatcherName) {
@@ -82,29 +80,6 @@ public final class DispatcherBuilder {
     return this;
   }
 
-  /**
-   * Publish-Subscribe-Mode (default): multiple subscriptions can read the same fragment / block
-   * concurrently in any order.
-   *
-   * @see #modePipeline()
-   */
-  public DispatcherBuilder modePubSub() {
-    mode = Dispatcher.MODE_PUB_SUB;
-    return this;
-  }
-
-  /**
-   * Pipeline-Mode: a subscription can only read a fragment / block if the previous subscription
-   * completes reading. The subscriptions must be created on startup using the builder method {@link
-   * #subscriptions(String...)} that defines the order.
-   *
-   * @see #modePubSub()
-   */
-  public DispatcherBuilder modePipeline() {
-    mode = Dispatcher.MODE_PIPELINE;
-    return this;
-  }
-
   public Dispatcher build() {
     Objects.requireNonNull(actorScheduler, "Actor scheduler cannot be null.");
 
@@ -145,7 +120,6 @@ public final class DispatcherBuilder {
             logWindowLength,
             maxFragmentLength,
             subscriptionNames,
-            mode,
             dispatcherName);
 
     dispatcher.updatePublisherLimit(); // make subscription initially writable without waiting for

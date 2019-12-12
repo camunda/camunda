@@ -91,7 +91,6 @@ public final class DispatcherTest {
             A_LOG_WINDOW_LENGTH,
             A_LOG_WINDOW_LENGTH,
             new String[0],
-            Dispatcher.MODE_PUB_SUB,
             "test") {
           @Override
           protected Subscription newSubscription(
