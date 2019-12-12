@@ -72,7 +72,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class ClusteringRule extends ExternalResource {
+public final class ClusteringRule extends ExternalResource {
 
   public static final int TOPOLOGY_RETRIES = 250;
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);

@@ -12,7 +12,7 @@ import io.zeebe.client.api.command.ClientStatusException;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 
-public class StatusCodeMatcher extends TypeSafeMatcher<ClientStatusException> {
+public final class StatusCodeMatcher extends TypeSafeMatcher<ClientStatusException> {
 
   private final Code expectedCode;
 

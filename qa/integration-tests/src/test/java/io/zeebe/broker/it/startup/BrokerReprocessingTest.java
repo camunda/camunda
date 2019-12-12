@@ -61,7 +61,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class BrokerReprocessingTest {
+public final class BrokerReprocessingTest {
 
   private static final String PROCESS_ID = "process";
   private static final String NULL_VARIABLES = "{}";

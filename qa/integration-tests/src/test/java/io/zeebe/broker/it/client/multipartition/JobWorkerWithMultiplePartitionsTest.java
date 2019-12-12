@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class JobWorkerWithMultiplePartitionsTest {
+public final class JobWorkerWithMultiplePartitionsTest {
 
   private static final int PARTITION_COUNT = 3;
 

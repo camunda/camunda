@@ -27,7 +27,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 // FIXME: rewrite tests now that leader election is not controllable
-public class BrokerLeaderChangeTest {
+public final class BrokerLeaderChangeTest {
   public static final String NULL_VARIABLES = null;
   public static final String JOB_TYPE = "testTask";
   private static final BpmnModelInstance WORKFLOW =

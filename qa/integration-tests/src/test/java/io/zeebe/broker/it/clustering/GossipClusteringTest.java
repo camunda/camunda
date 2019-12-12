@@ -18,7 +18,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-public class GossipClusteringTest {
+public final class GossipClusteringTest {
 
   public final Timeout testTimeout = Timeout.seconds(120);
   public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);

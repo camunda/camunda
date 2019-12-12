@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class ClientExceptionHandlingTest {
+public final class ClientExceptionHandlingTest {
 
   public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 

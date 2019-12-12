@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class CancelWorkflowInstanceTest {
+public final class CancelWorkflowInstanceTest {
 
   private static final String PROCESS_ID = "process";
 

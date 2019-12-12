@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class MessageCorrelationMultiplePartitionsTest {
+public final class MessageCorrelationMultiplePartitionsTest {
 
   private static final String CORRELATION_KEY_PARTITION_0 = "item-2";
   private static final String CORRELATION_KEY_PARTITION_1 = "item-1";

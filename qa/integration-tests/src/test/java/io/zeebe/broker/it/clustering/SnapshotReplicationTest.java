@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class SnapshotReplicationTest {
+public final class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
   private static final int SNAPSHOT_PERIOD_SECONDS = 30;

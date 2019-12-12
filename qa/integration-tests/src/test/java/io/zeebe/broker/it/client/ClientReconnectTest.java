@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class ClientReconnectTest {
+public final class ClientReconnectTest {
 
   public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
