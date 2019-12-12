@@ -15,7 +15,7 @@ import org.mockito.stubbing.Answer;
  *
  * @author Lindhauer
  */
-public class ArgumentAnswer<T> implements Answer<T> {
+public final class ArgumentAnswer<T> implements Answer<T> {
 
   protected final int argIndex;
 

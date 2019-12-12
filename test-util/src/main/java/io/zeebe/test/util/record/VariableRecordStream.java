@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.stream.Stream;
 
-public class VariableRecordStream
+public final class VariableRecordStream
     extends ExporterRecordStream<VariableRecordValue, VariableRecordStream> {
 
   public VariableRecordStream(final Stream<Record<VariableRecordValue>> wrappedStream) {

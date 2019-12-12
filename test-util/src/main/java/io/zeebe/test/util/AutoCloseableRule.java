@@ -18,7 +18,7 @@ import org.junit.rules.ExternalResource;
  *
  * @author Lindhauer
  */
-public class AutoCloseableRule extends ExternalResource {
+public final class AutoCloseableRule extends ExternalResource {
 
   final List<AutoCloseable> thingsToClose = new ArrayList<>();
 

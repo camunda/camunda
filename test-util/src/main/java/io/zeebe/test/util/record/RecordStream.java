@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class RecordStream extends ExporterRecordStream<RecordValue, RecordStream> {
+public final class RecordStream extends ExporterRecordStream<RecordValue, RecordStream> {
   public RecordStream(final Stream<Record<RecordValue>> wrappedStream) {
     super(wrappedStream);
   }

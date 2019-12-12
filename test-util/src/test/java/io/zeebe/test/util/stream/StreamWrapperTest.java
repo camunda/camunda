@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Test;
 
-public class StreamWrapperTest {
+public final class StreamWrapperTest {
 
   @Test
   public void shouldSkipElementsBasedOnPredicate() {

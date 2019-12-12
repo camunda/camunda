@@ -21,7 +21,7 @@ import org.mockito.ArgumentMatcher;
  * @author Lindhauer
  * @param <T>
  */
-public class BufferReaderMatcher<T extends BufferReader> implements ArgumentMatcher<T> {
+public final class BufferReaderMatcher<T extends BufferReader> implements ArgumentMatcher<T> {
   protected final List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
 
   @Override

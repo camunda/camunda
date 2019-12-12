@@ -15,7 +15,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
-public class TestUtil {
+public final class TestUtil {
 
   public static final int MAX_RETRIES = 100;
   private static final Logger LOG = new ZbLogger(TestUtil.class);

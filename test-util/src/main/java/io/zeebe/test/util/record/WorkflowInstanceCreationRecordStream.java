@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class WorkflowInstanceCreationRecordStream
+public final class WorkflowInstanceCreationRecordStream
     extends ExporterRecordStream<
         WorkflowInstanceCreationRecordValue, WorkflowInstanceCreationRecordStream> {
 

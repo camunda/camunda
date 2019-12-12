@@ -14,7 +14,7 @@ import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class DeploymentRecordStream
+public final class DeploymentRecordStream
     extends ExporterRecordStream<DeploymentRecordValue, DeploymentRecordStream> {
 
   public DeploymentRecordStream(final Stream<Record<DeploymentRecordValue>> wrappedStream) {

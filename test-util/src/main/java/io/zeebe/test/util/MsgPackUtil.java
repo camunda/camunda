@@ -25,7 +25,7 @@ import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class MsgPackUtil {
+public final class MsgPackUtil {
 
   private static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
 
