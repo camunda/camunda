@@ -23,7 +23,7 @@ function getUrl({filter, hasFinishedInstances}) {
 }
 
 export function MetricPanel({dataStore}) {
-  const {running, active, withIncidents} = dataStore;
+  const {running, active, withIncidents, isLoaded} = dataStore;
 
   return (
     <Styled.Panel>
@@ -33,14 +33,20 @@ export function MetricPanel({dataStore}) {
           hasFinishedInstances: running === 0
         })}
       >
-        {running} Running Instances in total
+        {isLoaded && `${running} `}Running Instances in total
       </Styled.Title>
-      <Styled.InstancesBar
-        incidentsCount={withIncidents}
-        activeCount={active}
-        size="large"
-        barHeight={15}
-      />
+
+      {isLoaded ? (
+        <Styled.InstancesBar
+          incidentsCount={withIncidents}
+          activeCount={active}
+          size="large"
+          barHeight={15}
+        />
+      ) : (
+        <Styled.SkeletonBar />
+      )}
+
       <Styled.LabelContainer>
         <Styled.Label
           to={getUrl({

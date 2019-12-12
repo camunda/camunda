@@ -7,17 +7,27 @@
 export const dataStoreEmpty = {
   running: 0,
   active: 0,
-  withIncidents: 0
+  withIncidents: 0,
+  isLoaded: true
 };
 
 export const dataStoreComplete = {
   running: 23,
   active: 12,
-  withIncidents: 11
+  withIncidents: 11,
+  isLoaded: true
 };
 
 export const dataStoreWithoutIncidents = {
   running: 23,
   active: 12,
-  withIncidents: 0
+  withIncidents: 0,
+  isLoaded: true
+};
+
+export const dataStoreLoading = {
+  running: 0,
+  active: 0,
+  withIncidents: 0,
+  isLoaded: false
 };

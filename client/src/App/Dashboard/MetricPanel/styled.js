@@ -7,6 +7,7 @@
 import styled from 'styled-components';
 import BaseInstancesBar from 'modules/components/InstancesBar';
 import {Link} from 'react-router-dom';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Panel = styled.div`
   display: flex;
@@ -18,6 +19,21 @@ export const Panel = styled.div`
 export const InstancesBar = styled(BaseInstancesBar)`
   align-self: stretch;
 `;
+
+export const SkeletonBar = themed(styled.div`
+  width: 100%;
+  height: 15px;
+  margin-top: 51px;
+
+  background: ${themeStyle({
+    dark: 'rgba(136, 136, 141)',
+    light: Colors.uiLight06
+  })};
+  opacity: ${themeStyle({
+    dark: 0.2,
+    light: 0.09
+  })};
+`);
 
 export const Title = styled(Link)`
   font-size: 30px;

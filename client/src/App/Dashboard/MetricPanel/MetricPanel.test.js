@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {shallow, mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import {MetricPanel} from './MetricPanel';
 import * as Styled from './styled.js';
@@ -13,7 +13,8 @@ import * as Styled from './styled.js';
 import {
   dataStoreEmpty,
   dataStoreComplete,
-  dataStoreWithoutIncidents
+  dataStoreWithoutIncidents,
+  dataStoreLoading
 } from './MetricPanel.setup';
 
 jest.mock('modules/utils/bpmn');
@@ -30,6 +31,16 @@ describe('MetricPanel', () => {
       expect(titleNode.text()).toEqual(
         `${dataStoreComplete.running} Running Instances in total`
       );
+    });
+
+    it('should render title during loading without instances count', () => {
+      // when
+      const node = shallow(<MetricPanel dataStore={dataStoreLoading} />);
+      const titleNode = node.find(Styled.Title);
+
+      // then
+      expect(titleNode).toExist();
+      expect(titleNode.text()).toEqual(`Running Instances in total`);
     });
 
     it('should render correct link (if instances)', () => {
