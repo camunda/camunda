@@ -62,10 +62,15 @@ func (cmd *FailJobCommand) Send() (*pb.FailJobResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	return cmd.gateway.FailJob(ctx, &cmd.request)
+	response, err := cmd.gateway.FailJob(ctx, &cmd.request)
+	if cmd.retryPredicate(ctx, err) {
+		return cmd.Send()
+	}
+
+	return response, err
 }
 
-func NewFailJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) FailJobCommandStep1 {
+func NewFailJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) FailJobCommandStep1 {
 	return &FailJobCommand{
 		Command: Command{gateway: gateway,
 			requestTimeout: requestTimeout,

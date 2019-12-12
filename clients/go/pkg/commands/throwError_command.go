@@ -58,10 +58,15 @@ func (c *ThrowErrorCommand) Send() (*pb.ThrowErrorResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.requestTimeout)
 	defer cancel()
 
-	return c.gateway.ThrowError(ctx, &c.request)
+	response, err := c.gateway.ThrowError(ctx, &c.request)
+	if c.retryPredicate(ctx, err) {
+		return c.Send()
+	}
+
+	return response, err
 }
 
-func NewThrowErrorCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ThrowErrorCommandStep1 {
+func NewThrowErrorCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) ThrowErrorCommandStep1 {
 	return &ThrowErrorCommand{
 		Command: Command{
 			requestTimeout: requestTimeout,

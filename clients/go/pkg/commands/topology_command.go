@@ -28,15 +28,14 @@ func (cmd *TopologyCommand) Send() (*pb.TopologyResponse, error) {
 	defer cancel()
 
 	response, err := cmd.gateway.Topology(ctx, &pb.TopologyRequest{})
-
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewTopologyCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) *TopologyCommand {
+func NewTopologyCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) *TopologyCommand {
 	return &TopologyCommand{
 		gateway:        gateway,
 		requestTimeout: requestTimeout,

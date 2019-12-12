@@ -121,13 +121,13 @@ func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
 	defer cancel()
 
 	response, err := cmd.gateway.PublishMessage(ctx, &cmd.request)
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 	return response, err
 }
 
-func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) PublishMessageCommandStep1 {
+func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
 		Command: Command{
 			SerializerMixin: utils.NewJsonStringSerializer(),

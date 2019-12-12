@@ -59,14 +59,14 @@ func (cmd *UpdateJobRetriesCommand) Send() (*pb.UpdateJobRetriesResponse, error)
 	defer cancel()
 
 	response, err := cmd.gateway.UpdateJobRetries(ctx, &cmd.request)
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) UpdateJobRetriesCommandStep1 {
+func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) UpdateJobRetriesCommandStep1 {
 	return &UpdateJobRetriesCommand{
 		request: pb.UpdateJobRetriesRequest{
 			Retries: DefaultJobRetries,

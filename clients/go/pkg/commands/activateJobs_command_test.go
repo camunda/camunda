@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -112,7 +113,9 @@ func TestActivateJobsCommand(t *testing.T) {
 
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -147,7 +150,9 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).Timeout(1 * time.Minute).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).Timeout(1 * time.Minute).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -176,7 +181,9 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).WorkerName("bar").Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).WorkerName("bar").Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -208,7 +215,9 @@ func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).FetchVariables(fetchVariables...).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).FetchVariables(fetchVariables...).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")

@@ -16,8 +16,8 @@ package zbc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation/v3"
 	"github.com/go-ozzo/ozzo-validation/v3/is"
@@ -26,15 +26,21 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 const OAuthClientIdEnvVar = "ZEEBE_CLIENT_ID"
 const OAuthClientSecretEnvVar = "ZEEBE_CLIENT_SECRET"
 const OAuthTokenAudienceEnvVar = "ZEEBE_TOKEN_AUDIENCE"
 const OAuthAuthorizationUrlEnvVar = "ZEEBE_AUTHORIZATION_SERVER_URL"
+const OAuthRequestTimeoutEnvVar = "ZEEBE_AUTH_REQUEST_TIMEOUT"
 
 // OAuthDefaultAuthzURL points to the expected default URL for this credentials provider, the Camunda Cloud endpoint.
 const OAuthDefaultAuthzURL = "https://login.cloud.camunda.io/oauth/token/"
+
+// OAuthDefaultRequestTimeout is the default timeout for OAuth requests
+const OAuthDefaultRequestTimeout = 10 * time.Second
 
 // OAuthCredentialsProvider is a built-in CredentialsProvider that contains credentials obtained from an OAuth
 // authorization server, including a token prefix and an access token. Using these values it sets the 'Authorization'
@@ -45,6 +51,7 @@ type OAuthCredentialsProvider struct {
 	Cache          OAuthCredentialsCache
 
 	credentials *OAuthCredentials
+	timeout     time.Duration
 }
 
 // OAuthProviderConfig configures an OAuthCredentialsProvider, containing the required data to request an access token
@@ -60,8 +67,10 @@ type OAuthProviderConfig struct {
 	// the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'.
 	AuthorizationServerURL string
 	// Cache to read/write credentials from; if none given, defaults to an oauthYamlCredentialsCache instance with the
-	// path '$HOME/.camunda/credentials' as default (can be overriden by 'ZEEBE_CLIENT_CONFIG_PATH')
+	// path '$HOME/.camunda/credentials' as default (can be overridden by 'ZEEBE_CLIENT_CONFIG_PATH')
 	Cache OAuthCredentialsCache
+	// Timeout is the maximum duration of an OAuth request. The default value is 10 seconds
+	Timeout time.Duration
 }
 
 // OAuthCredentials contains the data returned by the OAuth authorization server. These credentials are used to modify
@@ -82,8 +91,8 @@ type oauthRequestPayload struct {
 
 // ApplyCredentials takes a map of headers as input and adds an access token prefixed by a token type to the 'Authorization'
 // header of a gRPC call.
-func (provider *OAuthCredentialsProvider) ApplyCredentials(headers map[string]string) {
-	credentials := provider.getCredentials()
+func (p *OAuthCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) {
+	credentials := p.getCredentials(ctx)
 	if credentials != nil {
 		headers["Authorization"] = fmt.Sprintf("%s %s", credentials.TokenType, credentials.AccessToken)
 	}
@@ -91,9 +100,9 @@ func (provider *OAuthCredentialsProvider) ApplyCredentials(headers map[string]st
 
 // ShouldRetryRequest checks if the error is UNAUTHENTICATED and, if so, attempts to refresh the access token. If the
 // new credentials are different from the stored ones, returns true. If the credentials are the same, returns false.
-func (provider *OAuthCredentialsProvider) ShouldRetryRequest(err error) bool {
+func (p *OAuthCredentialsProvider) ShouldRetryRequest(ctx context.Context, err error) bool {
 	if status.Code(err) == codes.Unauthenticated {
-		return provider.updateCredentials()
+		return p.updateCredentials(ctx)
 	}
 
 	return false
@@ -101,7 +110,9 @@ func (provider *OAuthCredentialsProvider) ShouldRetryRequest(err error) bool {
 
 // NewOAuthCredentialsProvider requests credentials from an authorization server and uses them to create an OAuthCredentialsProvider.
 func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentialsProvider, error) {
-	applyCredentialEnvOverrides(config)
+	if err := applyCredentialEnvOverrides(config); err != nil {
+		return nil, err
+	}
 	applyCredentialDefaults(config)
 
 	if err := validation.Validate(config.AuthorizationServerURL, is.URL); err != nil {
@@ -121,56 +132,61 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 		GrantType:    "client_credentials",
 	}
 
-	provider := OAuthCredentialsProvider{RequestPayload: payload, AuthzServerURL: config.AuthorizationServerURL, Cache: config.Cache}
+	provider := OAuthCredentialsProvider{
+		RequestPayload: payload,
+		AuthzServerURL: config.AuthorizationServerURL,
+		Cache:          config.Cache,
+		timeout:        config.Timeout,
+	}
+
 	return &provider, nil
 }
 
-func (provider *OAuthCredentialsProvider) getCredentials() *OAuthCredentials {
-	if provider.credentials == nil {
-		credentials := provider.getCachedCredentials()
+func (p *OAuthCredentialsProvider) getCredentials(ctx context.Context) *OAuthCredentials {
+	if p.credentials == nil {
+		credentials := p.getCachedCredentials()
 		if credentials != nil {
-			provider.credentials = credentials
+			p.credentials = credentials
 			return credentials
 		} else {
-			provider.updateCredentials()
+			p.updateCredentials(ctx)
 		}
 	}
-	return provider.credentials
+	return p.credentials
 }
 
-func (provider *OAuthCredentialsProvider) updateCredentials() (updated bool) {
-	credentials, err := fetchAccessToken(provider.AuthzServerURL, provider.RequestPayload)
-
+func (p *OAuthCredentialsProvider) updateCredentials(ctx context.Context) (updated bool) {
+	credentials, err := p.fetchAccessToken(ctx)
 	if err != nil {
 		log.Printf("Failed while attempting to refresh credentials: %s", err.Error())
-	} else if provider.credentials == nil || *(provider.credentials) != *credentials {
-		provider.credentials = credentials
-		provider.updateCache(credentials)
+	} else if p.credentials == nil || *(p.credentials) != *credentials {
+		p.credentials = credentials
+		p.updateCache(credentials)
 		return true
 	}
 
 	return false
 }
 
-func (provider *OAuthCredentialsProvider) updateCache(credentials *OAuthCredentials) {
-	audience := provider.RequestPayload.Audience
-	err := provider.Cache.Update(audience, credentials)
+func (p *OAuthCredentialsProvider) updateCache(credentials *OAuthCredentials) {
+	audience := p.RequestPayload.Audience
+	err := p.Cache.Update(audience, credentials)
 	if err != nil {
 		log.Printf("Failed to persist credentials for %s to cache: %s", audience, err)
 	}
 }
 
-func (provider *OAuthCredentialsProvider) getCachedCredentials() *OAuthCredentials {
-	audience := provider.RequestPayload.Audience
-	err := provider.Cache.Refresh()
+func (p *OAuthCredentialsProvider) getCachedCredentials() *OAuthCredentials {
+	audience := p.RequestPayload.Audience
+	err := p.Cache.Refresh()
 	if err != nil {
 		log.Printf("Failed to refresh the OAuth credentials cache, %s", err.Error())
 		return nil
 	}
-	return provider.Cache.Get(audience)
+	return p.Cache.Get(audience)
 }
 
-func applyCredentialEnvOverrides(config *OAuthProviderConfig) {
+func applyCredentialEnvOverrides(config *OAuthProviderConfig) error {
 	if envClientID := env.get(OAuthClientIdEnvVar); envClientID != "" {
 		config.ClientID = envClientID
 	}
@@ -183,6 +199,15 @@ func applyCredentialEnvOverrides(config *OAuthProviderConfig) {
 	if envAuthzServerURL := env.get(OAuthAuthorizationUrlEnvVar); envAuthzServerURL != "" {
 		config.AuthorizationServerURL = envAuthzServerURL
 	}
+	if envOAuthReqTimeout := env.get(OAuthRequestTimeoutEnvVar); envOAuthReqTimeout != "" {
+		timeout, err := strconv.ParseUint(envOAuthReqTimeout, 10, 64)
+		if err != nil {
+			return fmt.Errorf("could not parse value of %s, should be non-negative amount: %w", OAuthRequestTimeoutEnvVar, err)
+		}
+		config.Timeout = time.Duration(timeout) * time.Millisecond
+	}
+
+	return nil
 }
 
 func applyCredentialDefaults(config *OAuthProviderConfig) {
@@ -198,24 +223,32 @@ func applyCredentialDefaults(config *OAuthProviderConfig) {
 			config.Cache = cache
 		}
 	}
+
+	if config.Timeout <= time.Duration(0) {
+		config.Timeout = OAuthDefaultRequestTimeout
+	}
 }
 
-func fetchAccessToken(authorizationServerURL string, payload *oauthRequestPayload) (*OAuthCredentials, error) {
-	jsonPayload, err := json.Marshal(payload)
+func (p *OAuthCredentialsProvider) fetchAccessToken(ctx context.Context) (*OAuthCredentials, error) {
+	req, cancel, err := p.buildOAuthRequest(ctx)
 	if err != nil {
 		return nil, err
 	}
+	defer cancel()
 
-	reader := bytes.NewReader(jsonPayload)
-	response, err := http.Post(authorizationServerURL, "application/json", reader)
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed while requesting access token from URL '%s': %w", authorizationServerURL, err)
+		return nil, fmt.Errorf("failed while requesting access token: %w", err)
 	}
 
-	defer response.Body.Close()
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			log.Printf("couldn't close OAuth response body, connection may be hung: %s\n", err.Error())
+		}
+	}()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("access token request failed with status code %d and message %s", response.StatusCode, response.Status))
+		return nil, fmt.Errorf("access token request failed with status code %d and message %s", response.StatusCode, response.Status)
 	}
 
 	jsonResponse, err := ioutil.ReadAll(response.Body)
@@ -229,4 +262,22 @@ func fetchAccessToken(authorizationServerURL string, payload *oauthRequestPayloa
 	}
 
 	return responsePayload, nil
+}
+
+func (p *OAuthCredentialsProvider) buildOAuthRequest(ctx context.Context) (*http.Request, context.CancelFunc, error) {
+	jsonPayload, err := json.Marshal(p.RequestPayload)
+	if err != nil {
+		return nil, nil, err
+	}
+	reader := bytes.NewReader(jsonPayload)
+
+	ctx, cancel := context.WithTimeout(ctx, p.timeout)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", p.AuthzServerURL, reader)
+	if err != nil {
+		cancel()
+		return nil, nil, fmt.Errorf("failed while building request: %w", err)
+	}
+
+	return req, cancel, nil
 }

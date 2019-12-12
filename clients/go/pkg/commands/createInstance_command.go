@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
 )
@@ -160,7 +159,7 @@ func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, er
 	defer cancel()
 
 	response, err := cmd.gateway.CreateWorkflowInstance(ctx, &cmd.request)
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
@@ -173,14 +172,14 @@ func (cmd *CreateInstanceWithResultCommand) Send() (*pb.CreateWorkflowInstanceWi
 	defer cancel()
 
 	response, err := cmd.gateway.CreateWorkflowInstanceWithResult(ctx, &cmd.request)
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CreateInstanceCommandStep1 {
+func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
 		Command: Command{
 			SerializerMixin: utils.NewJsonStringSerializer(),

@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
@@ -25,5 +26,5 @@ type Command struct {
 
 	gateway        pb.GatewayClient
 	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	retryPredicate func(context.Context, error) bool
 }
