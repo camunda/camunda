@@ -7,6 +7,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import {withCountStore} from 'modules/contexts/CountContext';
+
 import * as Styled from './styled.js';
 
 function getUrl({filter, hasFinishedInstances}) {
@@ -20,24 +22,22 @@ function getUrl({filter, hasFinishedInstances}) {
   return `/instances?filter=${JSON.stringify(filter)}`;
 }
 
-export default function MetricPanel({
-  runningInstancesCount,
-  activeInstancesCount,
-  incidentsCount
-}) {
+export function MetricPanel({dataStore}) {
+  const {running, active, withIncidents} = dataStore;
+
   return (
     <Styled.Panel>
       <Styled.Title
         to={getUrl({
           filter: {active: true, incidents: true},
-          hasFinishedInstances: runningInstancesCount === 0
+          hasFinishedInstances: running === 0
         })}
       >
-        {runningInstancesCount} Running Instances in total
+        {running} Running Instances in total
       </Styled.Title>
       <Styled.InstancesBar
-        incidentsCount={incidentsCount}
-        activeCount={activeInstancesCount}
+        incidentsCount={withIncidents}
+        activeCount={active}
         size="large"
         barHeight={15}
       />
@@ -62,7 +62,12 @@ export default function MetricPanel({
 }
 
 MetricPanel.propTypes = {
-  runningInstancesCount: PropTypes.number,
-  activeInstancesCount: PropTypes.number,
-  incidentsCount: PropTypes.number
+  dataStore: PropTypes.shape({
+    running: PropTypes.number,
+    active: PropTypes.number,
+    withIncidents: PropTypes.number,
+    isLoaded: PropTypes.Boolean
+  })
 };
+
+export default withCountStore(MetricPanel);

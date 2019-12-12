@@ -16,8 +16,7 @@ import {
   incidentsByError,
   instancesByWorkflow,
   fetchError,
-  emptyData,
-  mockDataStore
+  emptyData
 } from './Dashboard.setup';
 
 import {Dashboard} from './Dashboard';
@@ -26,12 +25,16 @@ import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import EmptyPanel from 'modules/components/EmptyPanel';
 
+import InstancesBar from 'modules/components/InstancesBar';
+
+jest.mock('modules/components/InstancesBar');
+
 const mountDashboard = () => {
   const dataManager = createMockDataManager();
 
   const node = mount(
     <Router>
-      <Dashboard dataManager={dataManager} dataStore={mockDataStore} />
+      <Dashboard dataManager={dataManager} />
     </Router>
   );
   return node;
@@ -52,6 +55,10 @@ const publish = ({node, state, topic, response}) => {
 };
 
 describe('Dashboard', () => {
+  beforeEach(() => {
+    InstancesBar.mockImplementation(() => <div></div>);
+  });
+
   afterEach(() => {
     jest.resetAllMocks();
   });
@@ -75,13 +82,11 @@ describe('Dashboard', () => {
   it('should render MetricPanel component', () => {
     // when
     const node = mountDashboard();
+
     const MetricPanelNode = node.find(MetricPanel);
 
     // then
     expect(MetricPanelNode).toExist();
-    expect(MetricPanelNode.text()).toContain(
-      `${mockDataStore.running} Running Instances`
-    );
   });
 
   describe('Instances by Workflow', () => {

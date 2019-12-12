@@ -5,38 +5,36 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {shallow, mount} from 'enzyme';
 
-import MetricPanel from './MetricPanel';
+import {MetricPanel} from './MetricPanel';
 import * as Styled from './styled.js';
+
+import {
+  dataStoreEmpty,
+  dataStoreComplete,
+  dataStoreWithoutIncidents
+} from './MetricPanel.setup';
+
+jest.mock('modules/utils/bpmn');
 
 describe('MetricPanel', () => {
   describe('Title', () => {
     it('should render title containing instances count', () => {
-      // given
-      const props = {
-        activeInstancesCount: 12,
-        incidentsCount: 11,
-        runningInstancesCount: 23
-      };
-
       // when
-      const node = shallow(<MetricPanel {...props} />);
+      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
       const titleNode = node.find(Styled.Title);
 
       // then
       expect(titleNode).toExist();
       expect(titleNode.text()).toEqual(
-        `${props.runningInstancesCount} Running Instances in total`
+        `${dataStoreComplete.running} Running Instances in total`
       );
     });
 
-    it('should render correct link (if no instances)', () => {
-      // given
-      const props = {runningInstancesCount: 12, incidentsCount: 11};
-
+    it('should render correct link (if instances)', () => {
       // when
-      const node = shallow(<MetricPanel {...props} />);
+      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
       const titleNode = node.find(Styled.Title);
 
       // then
@@ -45,12 +43,9 @@ describe('MetricPanel', () => {
       );
     });
 
-    it('should render correct link (if instances)', () => {
-      // given
-      const props = {runningInstancesCount: 0, incidentsCount: 0};
-
+    it('should render correct link (if no instances)', () => {
       // when
-      const node = shallow(<MetricPanel {...props} />);
+      const node = shallow(<MetricPanel dataStore={dataStoreEmpty} />);
       const titleNode = node.find(Styled.Title);
 
       // then
@@ -62,11 +57,8 @@ describe('MetricPanel', () => {
 
   describe('Label', () => {
     it('should pass correct link to incident label (if incidents)', () => {
-      // given
-      const props = {runningInstancesCount: 5, incidentsCount: 5};
-
       // when
-      const node = shallow(<MetricPanel {...props} />);
+      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
       const IncidentsLabelNode = node.find(Styled.Label).at(0);
 
       // then
@@ -76,11 +68,10 @@ describe('MetricPanel', () => {
     });
 
     it('should pass correct link to incident label (if no incidents)', () => {
-      // given
-      const props = {runningInstancesCount: 5, incidentsCount: 0};
-
       // when
-      const node = shallow(<MetricPanel {...props} />);
+      const node = shallow(
+        <MetricPanel dataStore={dataStoreWithoutIncidents} />
+      );
       const IncidentsLabelNode = node.find(Styled.Label).at(0);
 
       // then
@@ -90,11 +81,8 @@ describe('MetricPanel', () => {
     });
 
     it('should pass correct link to active instances label (if instances)', () => {
-      // given
-      const props = {runningInstancesCount: 5, incidentsCount: 5};
-
       // when
-      const node = shallow(<MetricPanel {...props} />);
+      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
       const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
 
       // then
@@ -104,11 +92,8 @@ describe('MetricPanel', () => {
     });
 
     it('should pass correct link to active instances label (if no instances)', () => {
-      // given
-      const props = {runningInstancesCount: 0, incidentsCount: 5};
-
       // when
-      const node = shallow(<MetricPanel {...props} />);
+      const node = shallow(<MetricPanel dataStore={dataStoreEmpty} />);
       const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
 
       // then
@@ -119,13 +104,7 @@ describe('MetricPanel', () => {
   });
 
   it('should pass panel data to InstancesBar', () => {
-    const props = {
-      activeInstancesCount: 4,
-      incidentsCount: 2,
-      runningInstancesCount: 6
-    };
-
-    const node = shallow(<MetricPanel {...props} />);
+    const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
 
     const InstancesBarNode = node.find(Styled.InstancesBar);
 
@@ -133,7 +112,9 @@ describe('MetricPanel', () => {
 
     const InstancesBarProps = InstancesBarNode.props();
 
-    expect(InstancesBarProps.activeCount).toEqual(props.activeInstancesCount);
-    expect(InstancesBarProps.incidentsCount).toEqual(props.incidentsCount);
+    expect(InstancesBarProps.activeCount).toEqual(dataStoreComplete.active);
+    expect(InstancesBarProps.incidentsCount).toEqual(
+      dataStoreComplete.withIncidents
+    );
   });
 });

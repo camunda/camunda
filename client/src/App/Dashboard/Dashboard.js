@@ -20,16 +20,11 @@ import {PAGE_TITLE, LOADING_STATE} from 'modules/constants';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import Copyright from 'modules/components/Copyright';
 import * as Styled from './styled.js';
-import {withCountStore} from 'modules/contexts/CountContext';
+
 import {MESSAGES, INCIDENTS_BY_ERROR, INSTANCES_BY_WORKFLOW} from './constants';
 
 export class Dashboard extends Component {
   static propTypes = {
-    dataStore: PropTypes.shape({
-      running: PropTypes.number,
-      active: PropTypes.number,
-      withIncidents: PropTypes.number
-    }),
     dataManager: PropTypes.object
   };
 
@@ -94,7 +89,6 @@ export class Dashboard extends Component {
       incidentsByError,
       counts: {error: countsError}
     } = this.state;
-    const {running, active, withIncidents} = this.props.dataStore;
 
     return (
       <Fragment>
@@ -109,11 +103,7 @@ export class Dashboard extends Component {
                 />
               </Styled.EmptyMetricPanelWrapper>
             ) : (
-              <MetricPanel
-                runningInstancesCount={running}
-                activeInstancesCount={active}
-                incidentsCount={withIncidents}
-              />
+              <MetricPanel />
             )}
           </Styled.MetricPanelWrapper>
           <Styled.TitleWrapper>
@@ -140,4 +130,4 @@ export class Dashboard extends Component {
   }
 }
 
-export default withData(withCountStore(Dashboard));
+export default withData(Dashboard);
