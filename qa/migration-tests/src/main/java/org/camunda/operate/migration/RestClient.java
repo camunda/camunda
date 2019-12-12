@@ -56,15 +56,16 @@ public class RestClient {
 		body.add("password", password);
 		loggedInHeaders = prepareRequestWithCookies(testRestTemplate
 				.postForEntity( migrationProperties.getFromOperateBaseUrl() + LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class));
-		logger.info("Logged in as {}",loggedInHeaders);
+		logger.debug("Logged in as {}",loggedInHeaders);
 		return this;
 	}
 	
-	public boolean createOperation(Long workflowInstanceKey, OperationType operationType) {
+	@SuppressWarnings("rawtypes")
+  public boolean createOperation(Long workflowInstanceKey, OperationType operationType) {
 		Map<String,Object> operationRequest = CollectionUtil.asMap("operationType",operationType.name());
 		String apiEndpoint = migrationProperties.getFromOperateBaseUrl()+"/api/workflow-instances/" + workflowInstanceKey + "/operation";
 		ResponseEntity<Map> operationResponse = testRestTemplate.postForEntity(apiEndpoint,operationRequest,Map.class, loggedInHeaders);
-		logger.info("OperationResponse: {}",operationResponse.getBody());
+		logger.debug("OperationResponse: {}",operationResponse.getBody());
 		return operationResponse.getStatusCode().equals(HttpStatus.OK) && operationResponse.getBody().get("count").equals(1);
 	}
 	  

@@ -25,6 +25,10 @@ public class MigrationProperties {
 
   private int incidentCount = 27;
   
+  private int countOfResolveOperation = 2;
+  
+  private int countOfCancelOperation = 3;
+  
   private String fromOperateBaseUrl = "http://localhost:8080";
 
   private String zeebeBrokerContactPoint = "localhost:26500";
@@ -97,6 +101,22 @@ public class MigrationProperties {
 
   public void setElasticsearchPort(int elasticsearchPort) {
     this.elasticsearchPort = elasticsearchPort;
+  }
+
+  public int getCountOfResolveOperation() {
+    return countOfResolveOperation;
+  }
+
+  public void setCountOfResolveOperation(int countOfResolveOperation) {
+    this.countOfResolveOperation = countOfResolveOperation;
+  }
+
+  public int getCountOfCancelOperation() {
+    return countOfCancelOperation;
+  }
+
+  public void setCountOfCancelOperation(int countOfCancelOperation) {
+    this.countOfCancelOperation = countOfCancelOperation;
   }
 
 }

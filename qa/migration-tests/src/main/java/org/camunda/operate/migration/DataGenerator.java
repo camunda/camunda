@@ -60,37 +60,42 @@ public class DataGenerator {
 
     deployWorkflows(migrationProperties.getWorkflowCount());
     workflowInstanceKeys = startWorkflowInstances(migrationProperties.getWorkflowInstanceCount());
-    completeTasks("task1",migrationProperties.getWorkflowInstanceCount());
-    createIncidents("task2",migrationProperties.getIncidentCount());
-    
-    createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE);
+    completeTasks("task1", migrationProperties.getWorkflowInstanceCount());
+    createIncidents("task2", migrationProperties.getIncidentCount());
+
+    for(int i=0;i<migrationProperties.getCountOfCancelOperation();i++) {
+      createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE,workflowInstanceKeys.size() * 3);
+    }
+    for(int i=0;i<migrationProperties.getCountOfResolveOperation();i++) {
+      createOperation(OperationType.RESOLVE_INCIDENT,workflowInstanceKeys.size() * 21);
+    }
     
     try {
-		esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
-	} catch (IOException e) {
-		logger.error("Error in refreshing indices",e);
-	}
+      esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Error in refreshing indices", e);
+    }
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
   
-  private void createOperation(OperationType operationType) {
-	 boolean operationStarted = false;
-	 int attempts = 0;
-	 while(!operationStarted && attempts < workflowInstanceKeys.size() * 2) {
-	    Long workflowInstanceKey = chooseKey(workflowInstanceKeys);
-	    operationStarted = operateRestClient.createOperation(workflowInstanceKey,operationType);
-	    attempts++;
-	 }
-	 if(operationStarted) {
-		 logger.info("Operation {} started",operationType.name());
-	 }else {
-		 logger.info("Operation {} could not started",operationType.name());
-	 }
+  private void createOperation(OperationType operationType,int maxAttempts) {
+    boolean operationStarted = false;
+    int attempts = 0;
+    while (!operationStarted && attempts < maxAttempts) {
+      Long workflowInstanceKey = chooseKey(workflowInstanceKeys);
+      operationStarted = operateRestClient.createOperation(workflowInstanceKey, operationType);
+      attempts++;
+    }
+    if (operationStarted) {
+      logger.info("Operation {} started", operationType.name());
+    } else {
+      logger.info("Operation {} could not started", operationType.name());
+    }
   }
   
   private void createIncidents(String jobType, int numberOfIncidents) {
-	ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
-	logger.info("{} incidents in {} created", numberOfIncidents, jobType);
+    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
+    logger.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
   private void completeTasks(String jobType, int count) {
@@ -99,14 +104,14 @@ public class DataGenerator {
   }
 
   private List<Long> startWorkflowInstances(int numberOfWorkflowInstances) {
-	List<Long> workflowInstanceKeys = new ArrayList<>();
-	for(int i=0;i<numberOfWorkflowInstances;i++) {
-    	String bpmnProcessId = getRandomBpmnProcessId();
-    	long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient,bpmnProcessId, "{\"var1\": \"value1\"}");
-    	logger.info("Started workflowInstance {} for workflow {}",workflowInstanceKey,bpmnProcessId);
-    	workflowInstanceKeys.add(workflowInstanceKey);
+    List<Long> workflowInstanceKeys = new ArrayList<>();
+    for (int i = 0; i < numberOfWorkflowInstances; i++) {
+      String bpmnProcessId = getRandomBpmnProcessId();
+      long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+      logger.info("Started workflowInstance {} for workflow {}", workflowInstanceKey, bpmnProcessId);
+      workflowInstanceKeys.add(workflowInstanceKey);
     }
-    logger.info("{} workflowInstances started",workflowInstanceKeys.size());
+    logger.info("{} workflowInstances started", workflowInstanceKeys.size());
     return workflowInstanceKeys;
   }
   
@@ -147,7 +152,7 @@ public class DataGenerator {
   }
   
   private Long chooseKey(List<Long> keys) {
-	return keys.get(random.nextInt(keys.size()));
+    return keys.get(random.nextInt(keys.size()));
   }
   
 }

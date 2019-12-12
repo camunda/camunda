@@ -10,7 +10,6 @@ import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIE
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.CollectionUtil.filter;
 import static org.camunda.operate.util.CollectionUtil.map;
 import static org.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -23,7 +22,6 @@ import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
-import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
@@ -158,9 +156,7 @@ public class ValidationTest {
 	public void testIncidents() throws IOException {
 		assertAllIndexVersionsHasSameCounts("incident");
 		List<IncidentEntity> incidents = getEntitiesFor("incident", IncidentEntity.class);
-		List<OperationEntity> operations = getEntitiesFor("operation", OperationEntity.class);
-		int completedOperationsCount = filter(operations,o -> o.getState().equals(OperationState.COMPLETED)).size();
-		assertThat(incidents.size()).isEqualTo(migrationProperties.getIncidentCount() - completedOperationsCount);
+		assertThat(incidents.size()).isEqualTo(migrationProperties.getIncidentCount() - migrationProperties.getCountOfResolveOperation());
 		assertThat(incidents.stream().allMatch(i -> i.getState() != null)).describedAs("Each incident has a state").isTrue();
 		assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
 	}
@@ -178,11 +174,11 @@ public class ValidationTest {
      Aggregations aggregations = response.getAggregations();
      long runningCount = ((SingleBucketAggregation) aggregations.get("running")).getDocCount();
      long incidentCount = ((SingleBucketAggregation) aggregations.get("incidents")).getDocCount();
-     assertThat(runningCount).isEqualTo(migrationProperties.getWorkflowInstanceCount());
-     assertThat(incidentCount).isEqualTo(migrationProperties.getIncidentCount());
+     assertThat(runningCount).isEqualTo(migrationProperties.getWorkflowInstanceCount() - migrationProperties.getCountOfCancelOperation());
+     assertThat(incidentCount).isEqualTo(migrationProperties.getIncidentCount() - migrationProperties.getCountOfResolveOperation());
   }
 	
-	@Test
+  @Test
 	public void testIncidentsStatistics() throws IOException {
 	  List<Long> workflowsKeys = map(getEntitiesFor("workflow", WorkflowEntity.class),WorkflowEntity::getKey);
 	  long savedIncidents = getEntitiesFor("incident", IncidentEntity.class).size();
