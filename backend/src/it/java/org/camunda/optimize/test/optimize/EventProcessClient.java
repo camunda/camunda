@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.util.FileReaderUtil;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
@@ -105,11 +104,7 @@ public class EventProcessClient {
     final Map<String, EventMappingDto> flowNodeEventMappingsDto,
     final String name,
     final String xmlPath) {
-    return createEventProcessMappingDtoWithMappingsWithXml(
-      flowNodeEventMappingsDto,
-      name,
-      Optional.ofNullable(xmlPath).map(FileReaderUtil::readFile).orElse(null)
-    );
+    return createEventProcessMappingDtoWithMappingsWithXml(flowNodeEventMappingsDto, name, xmlPath);
   }
 
   @SneakyThrows

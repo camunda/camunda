@@ -7,6 +7,8 @@ package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
@@ -33,7 +35,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,8 +54,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class ReportRestServiceIT extends AbstractIT {
 
-  private static final String PROCESS_DEFINITION_XML_WITH_NAME = "bpmn/simple_withName.bpmn";
-  private static final String PROCESS_DEFINITION_XML_WO_NAME = "bpmn/simple_woName.bpmn";
   private static final String DECISION_DEFINITION_XML = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
   private static final String DECISION_DEFINITION_XML_WO_NAME = "dmn/invoiceBusinessDecision_woName.xml";
   private static final String PROCESS_DEFINITION_KEY = "simple";
@@ -247,7 +249,7 @@ public class ReportRestServiceIT extends AbstractIT {
     //given
     final String idProcessReport = addEmptyProcessReport();
     final SingleProcessReportDefinitionDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
-      PROCESS_DEFINITION_XML_WO_NAME
+      createProcessDefinitionXmlWithName(null)
     );
     embeddedOptimizeExtension
       .getRequestExecutor()
@@ -964,7 +966,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final Response response;
     if (ReportType.PROCESS.equals(reportType)) {
       SingleProcessReportDefinitionDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
-        PROCESS_DEFINITION_XML_WITH_NAME
+        createProcessDefinitionXmlWithName("Simple Process")
       );
       response = embeddedOptimizeExtension
         .getRequestExecutor()
@@ -987,10 +989,7 @@ public class ReportRestServiceIT extends AbstractIT {
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
     data.setProcessDefinitionVersion("1");
-    data.getConfiguration().setXml(IOUtils.toString(
-      getClass().getClassLoader().getResourceAsStream(xml),
-      "UTF-8"
-    ));
+    data.getConfiguration().setXml(xml);
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }
@@ -1029,4 +1028,20 @@ public class ReportRestServiceIT extends AbstractIT {
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }
+
+  @SneakyThrows
+  private String createProcessDefinitionXmlWithName(String name) {
+    final BpmnModelInstance bpmnModelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+      .camundaVersionTag("aVersionTag")
+      .name(name)
+      .startEvent("startEvent_ID")
+      .userTask("some_id")
+      .userTask("some_other_id")
+      .endEvent("endEvent_ID")
+      .done();
+    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(xmlOutput, bpmnModelInstance);
+    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
+  }
+
 }
