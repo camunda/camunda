@@ -22,8 +22,6 @@ import './ProcessEdit.scss';
 
 export default withErrorHandling(
   class ProcessEdit extends React.Component {
-    getXml = {};
-
     constructor(props) {
       super(props);
 
@@ -83,8 +81,7 @@ export default withErrorHandling(
     save = () => {
       return new Promise(async (resolve, reject) => {
         const {mightFail, id} = this.props;
-        const {name, mappings} = this.state;
-        const xml = await this.getXml.action();
+        const {name, mappings, xml} = this.state;
 
         if (this.isNew()) {
           mightFail(createProcess(name, xml, mappings), resolve, error => reject(showError(error)));
@@ -190,8 +187,7 @@ export default withErrorHandling(
             <ProcessRenderer
               name={name}
               mappings={mappings}
-              getXml={this.getXml}
-              onChange={viewer => {
+              onChange={(viewer, xml) => {
                 this.setDirty();
 
                 // remove all mappings where the diagram element does not exist anymore
@@ -199,7 +195,8 @@ export default withErrorHandling(
                 this.setState(({mappings}) => ({
                   mappings: update(mappings, {
                     $unset: Object.keys(mappings).filter(key => !elementRegistry.get(key))
-                  })
+                  }),
+                  xml
                 }));
               }}
               onSelectNode={({newSelection}) => {
@@ -211,7 +208,12 @@ export default withErrorHandling(
               }}
             />
           </BPMNDiagram>
-          <EventTable selection={selectedNode} mappings={mappings} onChange={this.setMapping} />
+          <EventTable
+            selection={selectedNode}
+            mappings={mappings}
+            xml={xml}
+            onChange={this.setMapping}
+          />
         </div>
       );
     }

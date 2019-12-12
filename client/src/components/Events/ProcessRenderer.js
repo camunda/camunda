@@ -12,12 +12,17 @@ export default function ProcessRenderer({
   viewer,
   name = '',
   mappings = {},
-  getXml = {},
   onChange = () => {},
   onSelectNode = () => {}
 }) {
   function onChangeWithViewer() {
-    onChange(viewer);
+    viewer.saveXML((err, xml) => {
+      if (err) {
+        throw err;
+      } else {
+        onChange(viewer, xml);
+      }
+    });
   }
 
   useEffect(() => {
@@ -64,17 +69,6 @@ export default function ProcessRenderer({
       businessObject.name = name;
     }
   });
-
-  getXml.action = () =>
-    new Promise((resolve, reject) => {
-      viewer.saveXML((err, xml) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(xml);
-        }
-      });
-    });
 
   return null;
 }

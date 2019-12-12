@@ -21,7 +21,6 @@ exports[`should match snapshot 1`] = `
     xml="Process XML"
   >
     <ProcessRenderer
-      getXml={Object {}}
       mappings={Object {}}
       name="Process Name"
       onChange={[Function]}
@@ -32,6 +31,7 @@ exports[`should match snapshot 1`] = `
     mappings={Object {}}
     onChange={[Function]}
     selection={null}
+    xml="Process XML"
   />
 </div>
 `;

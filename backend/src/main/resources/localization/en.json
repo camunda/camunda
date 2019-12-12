@@ -129,7 +129,8 @@
       "noResults": "No Results matching your search",
       "allMapped": "No Events available.",
       "seeDocs": "No Events available. To add events, see ",
-      "documentation": "Documentation"
+      "documentation": "Documentation",
+      "showSuggestions": "Show suggested Events"
     },
     "deleteWarning": "The '{name}' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections.",
     "publishModal": {

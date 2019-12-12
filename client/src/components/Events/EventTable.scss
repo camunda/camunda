@@ -7,6 +7,12 @@
     border-bottom: solid 1px #dfdfdf;
     background-color: #f8f8f8;
 
+    .Switch {
+      display: inline-block;
+      font-size: 14px;
+      color: #787878;
+    }
+
     b {
       font-size: 14px;
       color: #434343;
@@ -49,6 +55,7 @@
 
     .rt-tr {
       height: 38px;
+      border-left: 10px solid transparent;
 
       .rt-th:first-child {
         visibility: hidden;
@@ -90,6 +97,10 @@
       .rt-tr.mapped,
       .rt-tr.mapped:hover {
         background-color: #c5dbfe;
+      }
+
+      .rt-tr.suggested {
+        border-left: 10px solid #1a6ef4;
       }
     }
   }

@@ -39,12 +39,12 @@ export async function updateProcess(id, name, xml, mappings) {
   return await put('/api/eventBasedProcess/' + id, {name, xml, mappings});
 }
 
-export async function loadEvents(searchTerm) {
+export async function loadEvents(body, searchTerm) {
   const query = {};
   if (searchTerm) {
     query.searchTerm = searchTerm;
   }
 
-  const response = await get('/api/event/count', query);
+  const response = await post('/api/event/count', body, {query});
   return await response.json();
 }

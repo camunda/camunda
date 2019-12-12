@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Table} from 'components';
+import {Table, Switch} from 'components';
 
 import {loadEvents} from './service';
 import EventTableWithErrorHandling from './EventTable';
@@ -46,7 +46,8 @@ const props = {
     }
   },
   onChange: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  xml: 'some xml'
 };
 
 it('should match snapshot', () => {
@@ -70,11 +71,14 @@ it('should disable table if no node is selected', () => {
 
 it('should allow searching for events', () => {
   const node = shallow(<EventTable {...props} />);
+
+  node.setState({showSuggested: false});
+
   loadEvents.mockClear();
 
   node.find('.searchInput').prop('onChange')({target: {value: 'some String'}});
 
-  expect(loadEvents).toHaveBeenCalledWith('some String');
+  expect(loadEvents).toHaveBeenCalledWith(undefined, 'some String');
 });
 
 it('should call callback when changing mapping', () => {
@@ -90,4 +94,64 @@ it('should call callback when changing mapping', () => {
     {group: 'eventGroup', source: 'order-service', eventName: 'OrderProcessed'},
     false
   );
+});
+
+it('should pass payload to backend when loading events for suggestions', () => {
+  loadEvents.mockClear();
+  shallow(<EventTable {...props} />);
+
+  expect(loadEvents).toHaveBeenCalledWith(
+    {
+      targetFlowNodeId: 'a',
+      xml: 'some xml',
+      mappings: props.mappings
+    },
+    ''
+  );
+});
+
+it('should load updated suggestions when the selection changes', () => {
+  const node = shallow(<EventTable {...props} />);
+
+  loadEvents.mockClear();
+
+  node.setProps({selection: {id: 'b', $instanceOf: type => type === 'bpmn:Event'}});
+
+  expect(loadEvents).toHaveBeenCalled();
+});
+
+it('should not reload events if suggestions are not activated', () => {
+  const node = shallow(<EventTable {...props} />);
+  node.find(Switch).prop('onChange')({target: {checked: false}});
+
+  loadEvents.mockClear();
+
+  node.setProps({selection: {id: 'b', $instanceOf: type => type === 'bpmn:Event'}});
+
+  expect(loadEvents).not.toHaveBeenCalled();
+});
+
+it('should mark suggested events', () => {
+  loadEvents.mockReturnValueOnce([
+    {
+      group: 'eventGroup',
+      source: 'order-service',
+      eventName: 'OrderProcessed',
+      count: 10,
+      suggested: true
+    },
+    {
+      group: 'eventGroup',
+      source: 'order-service',
+      eventName: 'OrderAccepted',
+      count: 10,
+      suggested: false
+    }
+  ]);
+
+  const node = shallow(<EventTable {...props} />);
+
+  const events = node.find(Table).prop('body');
+  expect(events[0].props.className).toContain('suggested');
+  expect(events[1].props.className).not.toContain('suggested');
 });

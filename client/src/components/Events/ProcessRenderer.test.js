@@ -12,20 +12,16 @@ import Modeler from 'bpmn-js/lib/Modeler';
 
 jest.mock('react', () => ({...jest.requireActual('react'), useEffect: fn => fn()}));
 
-it('should provide a getXml action', () => {
+it('should call onChange with the xml', () => {
   const viewer = new Modeler();
-  const getXml = {};
+  const spy = jest.fn();
 
-  const props = {
-    viewer,
-    getXml,
-    name: 'some name',
-    onChange: jest.fn
-  };
+  shallow(<ProcessRenderer viewer={viewer} onChange={spy} />);
 
-  shallow(<ProcessRenderer {...props} />);
+  viewer.eventBus.on.mock.calls[0][1]();
 
-  expect(typeof getXml.action).toBe('function');
+  expect(viewer.saveXML).toHaveBeenCalled();
+  expect(spy).toHaveBeenCalledWith(viewer, 'some xml');
 });
 
 it('should create mapping overlays', () => {

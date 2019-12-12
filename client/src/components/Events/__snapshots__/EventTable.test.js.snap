@@ -10,6 +10,11 @@ exports[`should match snapshot 1`] = `
     <b>
       Events List
     </b>
+    <Switch
+      checked={true}
+      label="Show suggested Events"
+      onChange={[Function]}
+    />
     <div
       className="searchContainer"
     >

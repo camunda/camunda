@@ -53,7 +53,10 @@ export default themed(
       };
 
       componentDidUpdate(prevProps) {
-        if (prevProps.xml !== this.props.xml || prevProps.theme !== this.props.theme) {
+        if (
+          (prevProps.xml !== this.props.xml && !this.props.allowModeling) ||
+          prevProps.theme !== this.props.theme
+        ) {
           this.unattach(prevProps.xml, prevProps.theme);
           this.importXML(this.props.xml);
         }

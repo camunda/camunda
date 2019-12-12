@@ -47,6 +47,10 @@ class Modeler {
     callback();
   });
 
+  saveXML = jest.fn(callback => {
+    callback(undefined, 'some xml');
+  });
+
   attachTo = jest.fn();
   detach = jest.fn();
 

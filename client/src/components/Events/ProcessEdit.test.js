@@ -55,17 +55,13 @@ it('should initalize a new process', () => {
   expect(loadProcess).not.toHaveBeenCalled();
 });
 
-it('should get the xml from the Process Renderer for process update', async () => {
+it('should update the process', async () => {
   const saveSpy = jest.fn();
   const node = shallow(<ProcessEdit {...props} onSave={saveSpy} />);
 
-  const xmlSpy = jest.fn().mockReturnValue('some xml');
-
-  node.find(ProcessRenderer).prop('getXml').action = xmlSpy;
   await node.find(EntityNameForm).prop('onSave')();
 
-  expect(updateProcess).toHaveBeenCalledWith('1', 'Process Name', 'some xml', {});
-  expect(xmlSpy).toHaveBeenCalled();
+  expect(updateProcess).toHaveBeenCalledWith('1', 'Process Name', 'Process XML', {});
   expect(saveSpy).toHaveBeenCalledWith('1');
 });
 
@@ -115,9 +111,12 @@ it('should remove mappings when a node is removed', () => {
     <ProcessEdit {...props} initialMappings={{a: {end: {eventName: '1'}, start: null}}} />
   );
 
-  node.find(ProcessRenderer).prop('onChange')({
-    get: () => ({get: () => null})
-  });
+  node.find(ProcessRenderer).prop('onChange')(
+    {
+      get: () => ({get: () => null})
+    },
+    'new Xml'
+  );
 
   expect(node.find(EventTable).prop('mappings')).toEqual({});
 });

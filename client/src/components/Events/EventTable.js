@@ -9,7 +9,7 @@ import debounce from 'debounce';
 import classnames from 'classnames';
 import deepEqual from 'deep-equal';
 
-import {Table, LoadingIndicator, Input, Select, Icon} from 'components';
+import {Table, LoadingIndicator, Input, Select, Switch, Icon} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -28,7 +28,8 @@ export default withErrorHandling(
     state = {
       events: null,
       version: 'latest',
-      searchQuery: ''
+      searchQuery: '',
+      showSuggested: true
     };
 
     async componentDidMount() {
@@ -40,9 +41,27 @@ export default withErrorHandling(
       this.setState({version: version.join('.')});
     }
 
-    loadEvents = debounce(searchQuery => {
-      this.props.mightFail(loadEvents(searchQuery), events => this.setState({events}), showError);
-    }, 300);
+    loadEvents = searchQuery => {
+      const {selection, xml, mappings} = this.props;
+
+      this.setState({events: null});
+
+      let payload = undefined;
+      if (this.state.showSuggested && selection) {
+        payload = {
+          targetFlowNodeId: selection.id,
+          xml,
+          mappings
+        };
+      }
+
+      this.props.mightFail(
+        loadEvents(payload, searchQuery),
+        events => this.setState({events}),
+        showError
+      );
+    };
+    loadEventsDebounced = debounce(this.loadEvents, 300);
 
     getNumberOfPotentialMappings = node => {
       if (!node) {
@@ -77,25 +96,43 @@ export default withErrorHandling(
 
     searchFor = searchQuery => {
       this.setState({searchQuery, events: null});
-      this.loadEvents(searchQuery);
+      this.loadEventsDebounced(searchQuery);
     };
 
-    componentDidUpdate(prevProps) {
-      const {selection} = this.props;
-      if (
-        selection &&
-        selection.id &&
-        (!prevProps.selection || prevProps.selection.id !== selection.id)
-      ) {
-        const mappedElement = this.container.current.querySelector('.mapped');
-        if (mappedElement) {
-          mappedElement.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-        }
+    componentDidUpdate(prevProps, prevState) {
+      this.updateTableAfterSelectionChange(prevProps);
+      if (prevState.events === null && this.state.events !== null) {
+        this.scrollToSelectedElement();
       }
     }
 
+    updateTableAfterSelectionChange = prevProps => {
+      const {selection} = this.props;
+
+      if (
+        (selection &&
+          selection.id &&
+          (!prevProps.selection || prevProps.selection.id !== selection.id)) ||
+        (!selection && prevProps.selection)
+      ) {
+        if (this.state.showSuggested) {
+          this.loadEvents();
+        } else {
+          this.scrollToSelectedElement();
+        }
+      }
+    };
+
+    scrollToSelectedElement = () => {
+      const mappedElement =
+        this.container.current && this.container.current.querySelector('.mapped');
+      if (mappedElement) {
+        mappedElement.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+      }
+    };
+
     render() {
-      const {events, searchQuery, version} = this.state;
+      const {events, searchQuery, version, showSuggested} = this.state;
       const {selection, onChange, mappings} = this.props;
 
       const {start, end} = (selection && mappings[selection.id]) || {};
@@ -108,6 +145,13 @@ export default withErrorHandling(
         <div className="EventTable" ref={this.container}>
           <div className="header">
             <b>{t('events.list')}</b>
+            <Switch
+              checked={showSuggested}
+              onChange={({target: {checked}}) =>
+                this.setState({showSuggested: checked}, this.loadEvents)
+              }
+              label={t('events.table.showSuggestions')}
+            />
             <div className="searchContainer">
               <Icon className="searchIcon" type="search" />
               <Input
@@ -140,7 +184,7 @@ export default withErrorHandling(
                         deepEqual(end, asMapping(event))
                     )
                     .map(event => {
-                      const {group, source, eventName, count} = event;
+                      const {group, source, eventName, count, suggested} = event;
                       const mappedAs = this.mappedAs(event);
                       const eventAsMapping = asMapping(event);
                       const isDisabled = disabled && !mappedAs;
@@ -192,7 +236,13 @@ export default withErrorHandling(
                           eventName,
                           count
                         ],
-                        props: {className: classnames({disabled: isDisabled, mapped: mappedAs})}
+                        props: {
+                          className: classnames({
+                            disabled: isDisabled,
+                            mapped: mappedAs,
+                            suggested
+                          })
+                        }
                       };
                     })
                 : []

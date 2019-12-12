@@ -129,7 +129,8 @@
       "noResults": "Keine Ergebnisse gefunden",
       "allMapped": "Keine Events verfügbar.",
       "seeDocs": "Keine Events verfügbar. Informationen zum Hinzufügen von Events finden Sie in der ",
-      "documentation": "Dokumentation"
+      "documentation": "Dokumentation",
+      "showSuggestions": "Zeige empfohlene Events"
     },
     "deleteWarning": "Der '{name}' Prozess wird endgültig gelöscht. Dies wird alle assoziierten Berichte, innerhalb und außerhalb von Sammlungen löschen.",
     "publishModal": {
