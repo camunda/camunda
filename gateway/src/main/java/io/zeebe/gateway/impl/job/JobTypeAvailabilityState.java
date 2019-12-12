@@ -11,7 +11,7 @@ import io.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class JobTypeAvailabilityState {
+public final class JobTypeAvailabilityState {
 
   private final String jobType;
   private final LongPollingMetrics metrics;

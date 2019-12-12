@@ -11,7 +11,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
+public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
 
   protected final BrokerTopologyManagerImpl topologyManager;
   protected final AtomicInteger partitions = new AtomicInteger(0);

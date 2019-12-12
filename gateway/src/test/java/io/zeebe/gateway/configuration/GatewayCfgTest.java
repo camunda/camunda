@@ -36,7 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
 
-public class GatewayCfgTest {
+public final class GatewayCfgTest {
 
   private static final String DEFAULT_CFG_FILENAME = "/configuration/gateway.default.toml";
   private static final GatewayCfg DEFAULT_CFG = new GatewayCfg();

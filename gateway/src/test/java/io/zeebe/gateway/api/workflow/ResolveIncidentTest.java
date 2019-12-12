@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import org.junit.Test;
 
-public class ResolveIncidentTest extends GatewayTest {
+public final class ResolveIncidentTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

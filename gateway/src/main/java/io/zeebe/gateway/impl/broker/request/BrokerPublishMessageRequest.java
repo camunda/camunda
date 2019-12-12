@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
+public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
 
   private final MessageRecord requestDto = new MessageRecord();
 

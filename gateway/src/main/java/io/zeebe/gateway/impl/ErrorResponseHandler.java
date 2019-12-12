@@ -13,7 +13,7 @@ import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class ErrorResponseHandler {
+public final class ErrorResponseHandler {
   protected final ErrorResponseDecoder decoder = new ErrorResponseDecoder();
 
   protected DirectBuffer errorMessage;

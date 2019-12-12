@@ -35,7 +35,7 @@ import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RequestMapper {
+public final class RequestMapper {
 
   public static BrokerDeployWorkflowRequest toDeployWorkflowRequest(
       final DeployWorkflowRequest grpcRequest) {

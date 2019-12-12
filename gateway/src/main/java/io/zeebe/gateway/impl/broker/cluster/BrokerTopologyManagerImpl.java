@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 import org.agrona.collections.IntObjConsumer;
 import org.slf4j.Logger;
 
-public class BrokerTopologyManagerImpl extends Actor
+public final class BrokerTopologyManagerImpl extends Actor
     implements BrokerTopologyManager, ClusterMembershipEventListener {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;

@@ -10,7 +10,7 @@ package io.zeebe.gateway.cmd;
 /**
  * Represents exceptional errors that occur sending a client request and/or handling its response.
  */
-public class ClientResponseException extends ClientException {
+public final class ClientResponseException extends ClientException {
 
   private static final long serialVersionUID = -1143986732133851047L;
 

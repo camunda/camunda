@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.junit.Test;
 
-public class ActivateJobsTest extends GatewayTest {
+public final class ActivateJobsTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

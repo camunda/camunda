@@ -19,7 +19,7 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class StubbedGateway {
+public final class StubbedGateway {
 
   private static final String SERVER_NAME = "server";
 

@@ -39,7 +39,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public class BrokerClientImpl implements BrokerClient {
+public final class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   protected final ActorScheduler actorScheduler;

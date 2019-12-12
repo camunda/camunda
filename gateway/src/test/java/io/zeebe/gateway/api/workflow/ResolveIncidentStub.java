@@ -17,7 +17,7 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 
-public class ResolveIncidentStub
+public final class ResolveIncidentStub
     implements RequestStub<BrokerResolveIncidentRequest, BrokerResponse<IncidentRecord>> {
 
   public static final long WORKFLOW_INSTANCE_KEY = 123;

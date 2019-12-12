@@ -9,7 +9,7 @@ package io.zeebe.gateway.cmd;
 
 import io.grpc.Status;
 
-public class InvalidBrokerRequestArgumentException extends ClientException
+public final class InvalidBrokerRequestArgumentException extends ClientException
     implements GrpcStatusException {
 
   private static final String MESSAGE_FORMAT = "Expected argument '%s' to be %s, but was %s";

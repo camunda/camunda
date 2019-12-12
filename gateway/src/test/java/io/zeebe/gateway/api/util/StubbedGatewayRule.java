@@ -12,7 +12,7 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
 
-public class StubbedGatewayRule extends ExternalResource {
+public final class StubbedGatewayRule extends ExternalResource {
 
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;

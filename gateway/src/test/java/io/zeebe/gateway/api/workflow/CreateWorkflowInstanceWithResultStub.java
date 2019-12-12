@@ -13,7 +13,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceWithResu
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 
-public class CreateWorkflowInstanceWithResultStub
+public final class CreateWorkflowInstanceWithResultStub
     implements RequestStub<
         BrokerCreateWorkflowInstanceWithResultRequest,
         BrokerResponse<WorkflowInstanceResultRecord>> {

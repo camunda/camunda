@@ -13,7 +13,7 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.stream.IntStream;
 
-public class PartitionIdIterator implements Iterator<Integer> {
+public final class PartitionIdIterator implements Iterator<Integer> {
 
   private final OfInt iterator;
   private int currentPartitionId;

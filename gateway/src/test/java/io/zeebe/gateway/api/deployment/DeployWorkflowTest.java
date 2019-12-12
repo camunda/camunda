@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import org.junit.Test;
 
-public class DeployWorkflowTest extends GatewayTest {
+public final class DeployWorkflowTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

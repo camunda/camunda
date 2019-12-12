@@ -13,7 +13,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 
-public class CompleteJobStub extends JobRequestStub
+public final class CompleteJobStub extends JobRequestStub
     implements RequestStub<BrokerCompleteJobRequest, BrokerResponse<JobRecord>> {
 
   @Override

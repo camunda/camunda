@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerResolveIncidentRequest extends BrokerExecuteCommand<IncidentRecord> {
+public final class BrokerResolveIncidentRequest extends BrokerExecuteCommand<IncidentRecord> {
 
   private final IncidentRecord requestDto = new IncidentRecord();
 

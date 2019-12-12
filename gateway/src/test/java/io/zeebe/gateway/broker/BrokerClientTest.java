@@ -63,7 +63,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 
-public class BrokerClientTest {
+public final class BrokerClientTest {
 
   private static final int CLIENT_MAX_REQUESTS = 128;
   @Rule public final StubBrokerRule broker = new StubBrokerRule();

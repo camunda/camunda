@@ -7,7 +7,7 @@
  */
 package io.zeebe.gateway.cmd;
 
-public class UnsupportedBrokerResponseException extends BrokerResponseException {
+public final class UnsupportedBrokerResponseException extends BrokerResponseException {
 
   private static final String SBE_SCHEMA_TEMPLATE_FORMAT =
       "Expected to receive message with schema id '%d' and template id '%d', but received schema id '%d' and template id '%d'";

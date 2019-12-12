@@ -17,7 +17,7 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.Environment;
 import java.util.Objects;
 
-public class MonitoringCfg {
+public final class MonitoringCfg {
 
   private boolean enabled = DEFAULT_MONITORING_ENABLED;
 

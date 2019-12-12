@@ -24,7 +24,7 @@ import org.junit.rules.ExpectedException;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 
-public class MsgPackConverterTest {
+public final class MsgPackConverterTest {
 
   private static final String JSON = "{\"key1\":1,\"key2\":2}";
   private static final byte[] MSG_PACK = createMsgPack();

@@ -7,7 +7,7 @@
  */
 package io.zeebe.gateway.cmd;
 
-public class ClientOutOfMemoryException extends ClientException {
+public final class ClientOutOfMemoryException extends ClientException {
   private static final String MESSAGE =
       "Broker client is out of buffer memory and cannot make new "
           + "requests until memory is reclaimed.";

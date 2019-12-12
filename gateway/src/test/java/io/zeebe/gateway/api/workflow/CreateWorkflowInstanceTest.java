@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import org.junit.Test;
 
-public class CreateWorkflowInstanceTest extends GatewayTest {
+public final class CreateWorkflowInstanceTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

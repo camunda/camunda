@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<DeploymentRecord> {
+public final class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<DeploymentRecord> {
 
   private final DeploymentRecord requestDto = new DeploymentRecord();
 

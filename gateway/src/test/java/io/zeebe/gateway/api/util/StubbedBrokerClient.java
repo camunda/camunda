@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class StubbedBrokerClient implements BrokerClient {
+public final class StubbedBrokerClient implements BrokerClient {
 
   final BrokerTopologyManager topologyManager = new StubbedTopologyManager();
   private Consumer<String> jobsAvailableHandler;

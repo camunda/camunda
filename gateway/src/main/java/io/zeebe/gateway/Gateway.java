@@ -30,7 +30,7 @@ import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
-public class Gateway {
+public final class Gateway {
   public static final String VERSION;
   private static final String ILLEGAL_KEEP_ALIVE_FMT =
       "Keep alive must be expressed as a positive integer followed by either s (seconds), m (minutes) or h (hours) but got instead '%s' instead.";
