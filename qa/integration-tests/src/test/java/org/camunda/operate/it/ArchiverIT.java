@@ -13,7 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.camunda.operate.archiver.Archiver;
@@ -67,6 +66,8 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class ArchiverIT extends OperateZeebeIntegrationTest {
 
@@ -178,7 +179,12 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertAllInstancesInAlias(count1 + count2 + count3);
 
     //assert metrics for archived workflow instances
-    assertThatMetricsFrom(mockMvc, new MetricAssert.ValueMatcher("operate_archived_workflow_instances_total", d -> d.doubleValue() == count1 + count2));
+    assertThatMetricsFrom(mockMvc, allOf(
+            new MetricAssert.ValueMatcher("operate_archived_workflow_instances_total", d -> d.doubleValue() == count1 + count2),
+            containsString("operate_archiver_query"),
+            containsString("operate_archiver_reindex_query"),
+            containsString("operate_archiver_delete_query")
+        ));
   }
 
   protected void createOperations(List<Long> ids1) {

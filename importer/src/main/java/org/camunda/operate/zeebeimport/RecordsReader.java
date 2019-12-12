@@ -110,6 +110,9 @@ public class RecordsReader {
   @Autowired
   private BeanFactory beanFactory;
 
+  @Autowired
+  private Metrics metrics;
+
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
@@ -146,7 +149,8 @@ public class RecordsReader {
 
       final SearchRequest searchRequest = createSearchQuery(aliasName, positionFrom, positionTo);
 
-      final SearchResponse searchResponse = runSearch(searchRequest);
+      final SearchResponse searchResponse =
+          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
 
       return createImportBatch(searchResponse);
 
@@ -199,9 +203,8 @@ public class RecordsReader {
         .requestCache(false);
   }
 
-  @Timed(value = Metrics.TIMER_NAME_IMPORT_QUERY, description = "Importer: read batch query latency")
-  public SearchResponse runSearch(SearchRequest searchRequest) throws IOException {
-    return zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
+  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
+    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
   }
 
   public boolean isActive() {

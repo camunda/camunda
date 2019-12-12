@@ -63,7 +63,9 @@ public class MetricIT extends OperateZeebeIntegrationTest {
         containsString("operate_events_processed_total{status=\"succeeded\",type=\"DEPLOYMENT\",}"),
         containsString("operate_events_processed_total{status=\"succeeded\",type=\"WORKFLOW_INSTANCE\",}"),
         containsString("operate_events_processed_total{status=\"succeeded\",type=\"VARIABLE\",}"),
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"JOB\",}")
+        containsString("operate_events_processed_total{status=\"succeeded\",type=\"JOB\",}"),
+        containsString("operate_import_query"),
+        containsString("operate_import_index_query")
     ));
   }
   

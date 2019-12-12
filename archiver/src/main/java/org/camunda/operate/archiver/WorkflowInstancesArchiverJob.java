@@ -6,9 +6,9 @@
 package org.camunda.operate.archiver;
 
 import javax.annotation.PreDestroy;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import io.micrometer.core.annotation.Timed;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -89,7 +88,7 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
     final SearchRequest searchRequest = createFinishedInstancesSearchRequest(agg);
 
     try {
-      final SearchResponse searchResponse = runSearch(searchRequest);
+      final SearchResponse searchResponse = withTimer(() -> esClient.search(searchRequest, RequestOptions.DEFAULT));
 
       return createArchiveBatch(searchResponse, datesAgg, instancesAgg);
     } catch (Exception e) {
@@ -138,11 +137,10 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
         );
   }
 
-  @Timed(value = Metrics.TIMER_NAME_ARCHIVER_QUERY, description = "Archiver: search query latency")
-  private SearchResponse runSearch(SearchRequest searchRequest) throws IOException {
-    return esClient.search(searchRequest, RequestOptions.DEFAULT);
+  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY)
+        .recordCallable(callable);
   }
-
 
   public int archiveBatch(WorkflowInstancesArchiverJob.ArchiveBatch archiveBatch) throws ArchiverException {
     if (archiveBatch != null) {
