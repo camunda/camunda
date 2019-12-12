@@ -11,7 +11,7 @@ import io.zeebe.db.DbKey;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
+public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
     implements DbKey {
 
   private final FirstKeyType firstKeyTypePart;

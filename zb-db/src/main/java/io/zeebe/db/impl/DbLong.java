@@ -14,7 +14,7 @@ import io.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DbLong implements DbKey, DbValue {
+public final class DbLong implements DbKey, DbValue {
 
   private long longValue;
 

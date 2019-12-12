@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DbBufferView implements DbValue {
+public final class DbBufferView implements DbValue {
 
   private final MutableDirectBuffer value = new UnsafeBuffer(0, 0);
 

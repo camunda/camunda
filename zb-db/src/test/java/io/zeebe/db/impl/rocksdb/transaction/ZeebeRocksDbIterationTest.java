@@ -25,7 +25,7 @@ import org.mockito.Mockito;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
-public class ZeebeRocksDbIterationTest {
+public final class ZeebeRocksDbIterationTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =

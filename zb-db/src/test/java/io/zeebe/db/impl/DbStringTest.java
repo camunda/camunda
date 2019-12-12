@@ -17,7 +17,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class DbStringTest {
+public final class DbStringTest {
 
   private final DbString zbString = new DbString();
 

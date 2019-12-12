@@ -12,7 +12,7 @@ import io.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DbByte implements DbKey, DbValue {
+public final class DbByte implements DbKey, DbValue {
 
   private byte value;
 
