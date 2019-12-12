@@ -202,8 +202,7 @@ pipeline {
             sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
             // Generate Data
             sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-tests spring-boot:run')
-            // Give operations time to execute ... (1 min)
-            sh('sleep 60')
+            sh('sleep 5')
           }
         }
 	  }

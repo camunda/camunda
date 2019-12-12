@@ -60,7 +60,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class ValidationTest {
 
 	@Autowired
-	MigrationProperties migrationProperties;
+	MigrationProperties config;
 
 	@Autowired
 	OperateProperties operateProperties;
@@ -97,14 +97,14 @@ public class ValidationTest {
 	public void testSequenceFlows() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("sequence-flow");
 		List<SequenceFlowEntity> sequenceFlows = getEntitiesFor("sequence-flow", SequenceFlowEntity.class);
-		assertThat(sequenceFlows.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 2);
+		assertThat(sequenceFlows.size()).isEqualTo(config.getWorkflowInstanceCount() * 2);
 	}
 	
 	@Test
 	public void testActivityInstances() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("activity-instance");
 		List<ActivityInstanceEntity> activityInstances = getEntitiesFor("activity-instance", ActivityInstanceEntity.class);
-		assertThat(activityInstances.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 3);
+		assertThat(activityInstances.size()).isEqualTo(config.getWorkflowInstanceCount() * 3);
 		assertThat(activityInstances.stream().allMatch( a -> a.getType() != null)).as("All activity instances have a type").isTrue();
 		assertThat(activityInstances.stream().allMatch( a -> a.getState()!= null)).as("All activity instances have a state").isTrue();
 	}
@@ -113,7 +113,7 @@ public class ValidationTest {
 	public void testVariables() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("variable");
 		List<VariableEntity> variableEntities = getEntitiesFor("variable", VariableEntity.class);
-		assertThat(variableEntities.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 4);
+		assertThat(variableEntities.size()).isEqualTo(config.getWorkflowInstanceCount() * 4);
 	}
 	
 	@Test
@@ -127,7 +127,7 @@ public class ValidationTest {
 	public void testListViews() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("list-view");
 		SearchRequest searchRequest = new SearchRequest(getIndexNameFor("list-view"));
-		int workflowInstancesCount = migrationProperties.getWorkflowInstanceCount();
+		int workflowInstancesCount = config.getWorkflowInstanceCount();
 		
 		// Workflow instances list
 		searchRequest.source().query(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
@@ -149,14 +149,17 @@ public class ValidationTest {
 	public void testWorkflows() throws IOException {	
 		assertAllIndexVersionsHasSameCounts("workflow");
 		List<WorkflowEntity> workflows = getEntitiesFor("workflow", WorkflowEntity.class);
-		assertThat(workflows.size()).isEqualTo(migrationProperties.getWorkflowCount());
+		assertThat(workflows.size()).isEqualTo(config.getWorkflowCount());
 	}
 	
 	@Test
 	public void testIncidents() throws IOException {
 		assertAllIndexVersionsHasSameCounts("incident");
 		List<IncidentEntity> incidents = getEntitiesFor("incident", IncidentEntity.class);
-		assertThat(incidents.size()).isEqualTo(migrationProperties.getIncidentCount() - migrationProperties.getCountOfResolveOperation());
+		assertThat(incidents.size()).isBetween(
+		    config.getIncidentCount() - (config.getCountOfCancelOperation() + config.getCountOfResolveOperation()),
+		    config.getIncidentCount() 
+		);
 		assertThat(incidents.stream().allMatch(i -> i.getState() != null)).describedAs("Each incident has a state").isTrue();
 		assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
 	}
@@ -173,8 +176,14 @@ public class ValidationTest {
      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
      long runningCount = getAggregationCountFor(response,"running");
      long incidentCount = getAggregationCountFor(response, "incidents");
-     assertThat(runningCount).isEqualTo(migrationProperties.getWorkflowInstanceCount() - migrationProperties.getCountOfCancelOperation());
-     assertThat(incidentCount).isEqualTo(migrationProperties.getIncidentCount() - migrationProperties.getCountOfResolveOperation());
+     assertThat(runningCount).isBetween(
+       (long)config.getWorkflowInstanceCount() - config.getCountOfCancelOperation(),
+       (long) config.getWorkflowInstanceCount()
+     );
+     assertThat(incidentCount).isBetween(
+        (long)config.getIncidentCount() - (config.getCountOfCancelOperation() + config.getCountOfResolveOperation()),
+        (long) config.getIncidentCount()
+     );
   }
 
 	protected long getAggregationCountFor(SearchResponse response, String aggregationName) {
@@ -216,7 +225,7 @@ public class ValidationTest {
 	}
 	
 	protected void assertAllIndexVersionsHasSameCounts(String indexName) {
-		List<String> versions = migrationProperties.getVersions();
+		List<String> versions = config.getVersions();
 		List<Long> hitsForVersions = map(versions, version -> getTotalHitsFor(getIndexNameFor(indexName,version)));
 		assertThat(new HashSet<>(hitsForVersions).size()).as("Checks %s index for versions %s has the same counts", indexName, versions).isEqualTo(1);
 	}

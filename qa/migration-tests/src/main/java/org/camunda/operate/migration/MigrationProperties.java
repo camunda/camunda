@@ -25,9 +25,9 @@ public class MigrationProperties {
 
   private int incidentCount = 27;
   
-  private int countOfResolveOperation = 2;
+  private int countOfResolveOperation = 3;
   
-  private int countOfCancelOperation = 3;
+  private int countOfCancelOperation = 4;
   
   private String fromOperateBaseUrl = "http://localhost:8080";
 
