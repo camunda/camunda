@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamTest {
+public final class LogStreamTest {
   public static final int PARTITION_ID = 0;
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();

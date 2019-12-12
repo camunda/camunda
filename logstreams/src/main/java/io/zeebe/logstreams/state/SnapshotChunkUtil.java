@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.zip.CRC32;
 
-public class SnapshotChunkUtil {
+public final class SnapshotChunkUtil {
 
   public static long createChecksum(final byte[] content) {
     final CRC32 crc32 = new CRC32();

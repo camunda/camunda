@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 
-public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
+public final class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   public static final long INVALID_ADDRESS = -1L;
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;

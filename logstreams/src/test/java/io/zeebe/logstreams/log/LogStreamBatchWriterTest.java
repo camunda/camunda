@@ -34,7 +34,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamBatchWriterTest {
+public final class LogStreamBatchWriterTest {
   private static final DirectBuffer EVENT_VALUE_1 = wrapString("foo");
   private static final DirectBuffer EVENT_VALUE_2 = wrapString("bar");
   private static final DirectBuffer EVENT_METADATA_1 = wrapString("foobar");

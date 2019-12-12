@@ -17,7 +17,7 @@ import java.nio.file.StandardOpenOption;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
-public class FileSnapshotConsumer implements SnapshotConsumer {
+public final class FileSnapshotConsumer implements SnapshotConsumer {
 
   private final SnapshotStorage storage;
   private final Logger logger;

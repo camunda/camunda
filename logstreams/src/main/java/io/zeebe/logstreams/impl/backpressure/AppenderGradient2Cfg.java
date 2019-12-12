@@ -23,7 +23,7 @@ import io.zeebe.util.Environment;
  * currently we are not able to access the BrokerCfg, this is the reason why the configuration is
  * only based on environment variables.
  */
-public class AppenderGradient2Cfg implements AlgorithmCfg {
+public final class AppenderGradient2Cfg implements AlgorithmCfg {
 
   private int initialLimit = 1024;
   private int maxConcurrency = 1024 * 32;

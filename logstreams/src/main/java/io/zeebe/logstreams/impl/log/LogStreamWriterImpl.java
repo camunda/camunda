@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
-public class LogStreamWriterImpl implements LogStreamRecordWriter {
+public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
   private final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
   private final ClaimedFragment claimedFragment = new ClaimedFragment();

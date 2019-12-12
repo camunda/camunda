@@ -10,7 +10,7 @@ package io.zeebe.logstreams.impl.backpressure;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
-public class AppendBackpressureMetrics {
+public final class AppendBackpressureMetrics {
 
   private static final Counter TOTAL_DEFERRED_APPEND_COUNT =
       Counter.build()

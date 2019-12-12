@@ -17,7 +17,7 @@ import java.util.function.LongUnaryOperator;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class LogStreamReaderImpl implements LogStreamReader {
+public final class LogStreamReaderImpl implements LogStreamReader {
 
   static final String ERROR_CLOSED = "Iterator is closed";
   private static final long FIRST_POSITION = Long.MIN_VALUE;

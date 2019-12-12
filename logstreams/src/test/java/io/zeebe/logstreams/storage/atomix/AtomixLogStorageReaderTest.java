@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class AtomixLogStorageReaderTest {
+public final class AtomixLogStorageReaderTest {
   private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();

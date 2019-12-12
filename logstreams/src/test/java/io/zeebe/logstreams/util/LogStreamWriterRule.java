@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
-public class LogStreamWriterRule extends ExternalResource {
+public final class LogStreamWriterRule extends ExternalResource {
   private final LogStreamRule logStreamRule;
 
   private SynchronousLogStream logStream;

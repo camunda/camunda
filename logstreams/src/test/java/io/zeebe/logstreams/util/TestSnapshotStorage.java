@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import org.agrona.IoUtil;
 
-public class TestSnapshotStorage implements SnapshotStorage {
+public final class TestSnapshotStorage implements SnapshotStorage {
 
   private final Path pendingDirectory;
   private final Path snapshotsDirectory;

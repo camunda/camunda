@@ -39,7 +39,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public class AtomixLogStorageRule extends ExternalResource
+public final class AtomixLogStorageRule extends ExternalResource
     implements AtomixLogCompactor,
         AtomixReaderFactory,
         AtomixAppenderSupplier,

@@ -7,7 +7,7 @@
  */
 package io.zeebe.logstreams.impl.backpressure;
 
-public class NoopAppendLimiter implements AppendLimiter {
+public final class NoopAppendLimiter implements AppendLimiter {
 
   @Override
   public boolean tryAcquire(final Long position) {
