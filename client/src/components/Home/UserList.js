@@ -133,6 +133,7 @@ export default withErrorHandling(
             onDelete={this.updateList}
             onClose={() => this.setState({deleting: null})}
             deleteEntity={() => removeUser(collection, deleting.id)}
+            deleteText={t('common.remove')}
             descriptionText={t('home.roles.deleteWarning', {
               name:
                 (deleting &&

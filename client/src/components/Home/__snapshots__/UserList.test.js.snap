@@ -54,6 +54,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}
+    deleteText="Remove"
     descriptionText="The '' null will be removed from the Collection."
     entity={null}
     onClose={[Function]}
@@ -172,6 +173,7 @@ exports[`should match snapshot 1`] = `
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}
+    deleteText="Remove"
     descriptionText="The '' null will be removed from the Collection."
     entity={null}
     onClose={[Function]}

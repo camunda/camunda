@@ -92,6 +92,7 @@
       "process": "Process",
       "notCreated": "There are no sources added yet",
       "add": "Add Source",
+      "deleteWarning": "The '{name}' Data Source will be removed from the Collection.",
       "saveConflict": {
         "header": "These changes are incompatible with the Report(s):",
         "message": "Warning: Saving will remove Tenants from the Report(s)."
@@ -125,7 +126,8 @@
       "allMapped": "No Events available.",
       "seeDocs": "No Events available. To add events, see ",
       "documentation": "Documentation"
-    }
+    },
+    "deleteWarning": "The '{name}' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections."
   },
   "report": {
     "label": "Report",
@@ -443,6 +445,7 @@
     "edit": "Edit",
     "editName": "Edit {name}",
     "delete": "Delete",
+    "remove": "Remove",
     "save": "Save",
     "apply": "Apply",
     "cancel": "Cancel",
@@ -673,7 +676,8 @@
         "user": "User",
         "group": "Group",
         "source": "Data Source",
-        "collection": "Collection"
+        "collection": "Collection",
+        "process": "Process"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",

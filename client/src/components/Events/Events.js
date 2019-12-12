@@ -111,6 +111,9 @@ export default withErrorHandling(
           />
           <Deleter
             type="process"
+            descriptionText={t('events.deleteWarning', {
+              name: (deleting && deleting.name) || ''
+            })}
             entity={deleting}
             onDelete={this.loadList}
             onClose={() => this.setState({deleting: null})}

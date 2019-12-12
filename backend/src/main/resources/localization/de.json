@@ -92,6 +92,7 @@
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
       "add": "Quelle hinzufügen",
+      "deleteWarning": "Die '{name}' Datenquelle wird von der Sammlung entfernt.",
       "saveConflict": {
         "header": "Die Änderungen sind nicht kompatibel mit diesen Berichten:",
         "message": "Warnung: Beim Speichern werden Mandanten aus den Berichten entfernt."
@@ -125,7 +126,8 @@
       "allMapped": "Keine Events verfügbar.",
       "seeDocs": "Keine Events verfügbar. Informationen zum Hinzufügen von Events finden Sie in der ",
       "documentation": "Dokumentation"
-    }
+    },
+    "deleteWarning": "Der '{name}' Prozess wird endgültig gelöscht. Dies wird alle assoziierten Berichte, innerhalb und außerhalb von Sammlungen löschen."
   },
   "report": {
     "label": "Bericht",
@@ -227,7 +229,7 @@
       "decision": "Wählen Sie oben eine <b>Entscheidungsdefinition</b> aus."
     },
     "saveConflict": {
-      "header": "Gefährliche Änderungen",
+      "header": "Inkompatible Änderungen",
       "combined_report": {
         "header": "Diese Änderungen sind nicht kompatibel mit diesen kombinierten Berichten:",
         "message": "Warnung: Beim Speichern wird dieser Bericht aus den kombinierten Berichten entfernt."
@@ -443,6 +445,7 @@
     "edit": "Bearbeiten",
     "editName": "{name} bearbeiten",
     "delete": "Löschen",
+    "remove": "Entfernen",
     "save": "Speichern",
     "apply": "Anwenden",
     "cancel": "Abbrechen",
@@ -673,7 +676,8 @@
         "user": "Benutzer",
         "group": "Gruppe",
         "source": "Datenquelle",
-        "collection": "Sammlung"
+        "collection": "Sammlung",
+        "process": "Prozess"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",

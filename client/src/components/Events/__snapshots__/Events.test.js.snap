@@ -85,6 +85,7 @@ exports[`should match snapshot 1`] = `
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}
+    descriptionText="The '' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections."
     entity={null}
     onClose={[Function]}
     onDelete={[Function]}
