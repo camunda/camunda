@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.events.EventService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -44,6 +45,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONS
 @Data
 public class EventStateProcessingService {
 
+  private final ConfigurationService configurationService;
   private final EventService eventService;
   private final EventTraceStateService eventTraceStateService;
   private final EventSequenceCountWriter eventSequenceCountWriter;
@@ -59,7 +61,7 @@ public class EventStateProcessingService {
     List<EventDto> eventsToProcess = eventService.getEventsIngestedAt(lastProcessedEntityIngestionTimestamp);
     List<EventDto> eventsAfterLastProcessedTimestamp = eventService.getEventsIngestedAfter(
       lastProcessedEntityIngestionTimestamp,
-      MAX_RESPONSE_SIZE_LIMIT
+      getMaxPageSize()
     );
     eventsToProcess.addAll(eventsAfterLastProcessedTimestamp);
 
@@ -231,6 +233,10 @@ public class EventStateProcessingService {
       .build();
     eventSequenceCountDto.generateIdForEventSequenceCountDto();
     return eventSequenceCountDto;
+  }
+
+  private int getMaxPageSize() {
+    return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
 
 }

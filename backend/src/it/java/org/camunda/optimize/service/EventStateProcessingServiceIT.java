@@ -243,8 +243,8 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   }
 
   @Test
-  public void processMultipleBatchesOfEventsWithEventTimestampModificationRequiringAdjustmentsForTraceEvent() throws
-                                                                                                              IOException {
+  public void processMultipleBatchesOfEventsWithEventTimestampModificationRequiringAdjustmentsForTraceEvent()
+    throws IOException {
     // given
     String traceId = "traceId";
     EventDto eventDtoOne = createEventDtoWithProperties(traceId, "backend", "ketchup", "signup-event", 100L);
