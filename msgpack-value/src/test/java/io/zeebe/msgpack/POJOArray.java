@@ -10,7 +10,7 @@ package io.zeebe.msgpack;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.value.ValueArray;
 
-public class POJOArray extends UnpackedObject {
+public final class POJOArray extends UnpackedObject {
 
   protected final ArrayProperty<MinimalPOJO> simpleArrayProp;
 

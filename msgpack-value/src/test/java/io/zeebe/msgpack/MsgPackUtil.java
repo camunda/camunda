@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackUtil {
+public final class MsgPackUtil {
 
   public static MutableDirectBuffer encodeMsgPack(final Consumer<MsgPackWriter> arg) {
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 4]);

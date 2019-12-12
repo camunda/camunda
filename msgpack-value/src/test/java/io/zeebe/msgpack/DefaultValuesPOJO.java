@@ -9,7 +9,7 @@ package io.zeebe.msgpack;
 
 import io.zeebe.msgpack.property.LongProperty;
 
-public class DefaultValuesPOJO extends UnpackedObject {
+public final class DefaultValuesPOJO extends UnpackedObject {
 
   protected final LongProperty defaultValueProperty;
   protected final LongProperty noDefaultValueProperty = new LongProperty("noDefaultValueProp");

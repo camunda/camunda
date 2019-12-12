@@ -21,7 +21,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadingExceptionTest {
+public final class MsgPackReadingExceptionTest {
 
   protected static final DirectBuffer NEVER_USED_BUF = new UnsafeBuffer(new byte[] {(byte) 0xc1});
   protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative buffer size";

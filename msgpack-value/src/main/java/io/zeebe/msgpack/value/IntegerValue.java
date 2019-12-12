@@ -11,7 +11,7 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Objects;
 
-public class IntegerValue extends BaseValue {
+public final class IntegerValue extends BaseValue {
   protected int value;
 
   public IntegerValue() {

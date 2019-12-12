@@ -9,7 +9,7 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.EnumValue;
 
-public class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValue<E>> {
+public final class EnumProperty<E extends Enum<E>> extends BaseProperty<EnumValue<E>> {
   public EnumProperty(final String key, final Class<E> type) {
     super(key, new EnumValue<>(type));
   }

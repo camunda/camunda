@@ -7,7 +7,7 @@
  */
 package io.zeebe.msgpack.spec;
 
-public class MsgpackWriterException extends MsgpackException {
+public final class MsgpackWriterException extends MsgpackException {
   private static final long serialVersionUID = 6432471139267928246L;
 
   public MsgpackWriterException(final String message) {

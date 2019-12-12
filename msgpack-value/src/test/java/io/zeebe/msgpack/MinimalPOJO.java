@@ -9,7 +9,7 @@ package io.zeebe.msgpack;
 
 import io.zeebe.msgpack.property.LongProperty;
 
-public class MinimalPOJO extends UnpackedObject {
+public final class MinimalPOJO extends UnpackedObject {
 
   private final LongProperty longProp = new LongProperty("longProp");
 

@@ -10,7 +10,7 @@ package io.zeebe.msgpack.property;
 import io.zeebe.msgpack.value.BinaryValue;
 import org.agrona.DirectBuffer;
 
-public class BinaryProperty extends BaseProperty<BinaryValue> {
+public final class BinaryProperty extends BaseProperty<BinaryValue> {
   public BinaryProperty(final String keyString) {
     super(keyString, new BinaryValue());
   }

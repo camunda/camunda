@@ -13,7 +13,7 @@ import io.zeebe.msgpack.MsgpackPropertyException;
 import io.zeebe.msgpack.value.DocumentValue;
 import org.agrona.DirectBuffer;
 
-public class DocumentProperty extends BaseProperty<DocumentValue> {
+public final class DocumentProperty extends BaseProperty<DocumentValue> {
   public DocumentProperty(final String keyString) {
     super(
         keyString,

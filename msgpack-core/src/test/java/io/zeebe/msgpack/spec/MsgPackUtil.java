@@ -13,7 +13,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 
-public class MsgPackUtil {
+public final class MsgPackUtil {
 
   public static DirectBuffer encodeMsgPack(final CheckedConsumer<MessageBufferPacker> msgWriter) {
     final MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();

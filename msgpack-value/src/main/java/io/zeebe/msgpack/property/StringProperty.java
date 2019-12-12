@@ -12,7 +12,7 @@ import static io.zeebe.util.StringUtil.getBytes;
 import io.zeebe.msgpack.value.StringValue;
 import org.agrona.DirectBuffer;
 
-public class StringProperty extends BaseProperty<StringValue> {
+public final class StringProperty extends BaseProperty<StringValue> {
 
   public StringProperty(final String key) {
     super(key, new StringValue());

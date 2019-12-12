@@ -20,7 +20,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class ObjectMappingDefaultValuesTest {
+public final class ObjectMappingDefaultValuesTest {
 
   @Test
   public void shouldReturnDefaultValueForMissingProperty() {

@@ -10,7 +10,7 @@ package io.zeebe.msgpack.spec;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackToken {
+public final class MsgPackToken {
   public static final MsgPackToken NIL = new MsgPackToken();
 
   protected static final int MAX_MAP_ELEMENTS = 0x3fff_ffff;

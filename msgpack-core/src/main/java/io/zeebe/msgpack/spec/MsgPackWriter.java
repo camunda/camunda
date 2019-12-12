@@ -48,7 +48,7 @@ import org.agrona.MutableDirectBuffer;
  * This class uses signed value semantics. That means, an integer 0xffff_ffff is treated as -1
  * instead of 2^33 - 1, etc.
  */
-public class MsgPackWriter {
+public final class MsgPackWriter {
   private MutableDirectBuffer buffer;
   private int offset;
 

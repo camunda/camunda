@@ -30,7 +30,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadTokenTest {
+public final class MsgPackReadTokenTest {
 
   @Parameter(0)
   public String name;

@@ -40,7 +40,7 @@ import static org.agrona.BitUtil.SIZE_OF_SHORT;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackReader {
+public final class MsgPackReader {
   protected final MsgPackToken token = new MsgPackToken();
   private final DirectBuffer buffer = new UnsafeBuffer(0, 0);
   private int offset;

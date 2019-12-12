@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadingBoundaryCheckingExceptionTest {
+public final class MsgPackReadingBoundaryCheckingExceptionTest {
 
   private static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
       "Negative value should not be accepted by size value and unsigned 64bit integer";
