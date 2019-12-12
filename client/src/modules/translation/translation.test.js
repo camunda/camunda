@@ -10,6 +10,10 @@ import * as request from 'request';
 let languageGetter;
 languageGetter = jest.spyOn(window.navigator, 'languages', 'get');
 
+jest.mock('config', () => ({
+  getOptimizeVersion: () => '2.7.0'
+}));
+
 beforeAll(async () => {
   languageGetter.mockReturnValue(['de']);
   jest.spyOn(request, 'get').mockReturnValue({
@@ -42,5 +46,5 @@ it('return an error message if key does not exist', async () => {
 });
 
 it('should get the language file depending on the browser language', async () => {
-  expect(request.get.mock.calls[0][1]).toEqual({localeCode: 'de'});
+  expect(request.get.mock.calls[0][1]).toEqual({localeCode: 'de', version: '2.7.0'});
 });
