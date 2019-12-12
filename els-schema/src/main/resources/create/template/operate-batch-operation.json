@@ -3,20 +3,6 @@
 	"index_patterns": [
 		"operate-batch-operation-${schema.version}_*"
 	],
-	"settings": {
-		"index": {
-			"refresh_interval": "2s",
-			"analysis": {
-				"normalizer": {
-					"case_insensitive": {
-						"filter": "lowercase"
-					}
-				}
-			},
-			"number_of_shards": "5",
-			"number_of_replicas": "1"
-		}
-	},
 	"mappings": {
 			"dynamic": "strict",
 			"dynamic_templates": [
