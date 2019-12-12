@@ -1395,7 +1395,7 @@ public class CoordinatesGenerationTest {
     assertShapeCoordinates(compensation2Bounds, 416.5, 186);
   }
 
-  protected BpmnShape findBpmnShape(String id) {
+  protected BpmnShape findBpmnShape(final String id) {
     final Collection<BpmnShape> allShapes = instance.getModelElementsByType(BpmnShape.class);
 
     final Iterator<BpmnShape> iterator = allShapes.iterator();
@@ -1408,7 +1408,7 @@ public class CoordinatesGenerationTest {
     return null;
   }
 
-  protected BpmnEdge findBpmnEdge(String sequenceFlowId) {
+  protected BpmnEdge findBpmnEdge(final String sequenceFlowId) {
     final Collection<BpmnEdge> allEdges = instance.getModelElementsByType(BpmnEdge.class);
     final Iterator<BpmnEdge> iterator = allEdges.iterator();
 
@@ -1421,12 +1421,13 @@ public class CoordinatesGenerationTest {
     return null;
   }
 
-  protected void assertShapeCoordinates(Bounds bounds, double x, double y) {
+  protected void assertShapeCoordinates(final Bounds bounds, final double x, final double y) {
     assertThat(bounds.getX()).isEqualTo(x);
     assertThat(bounds.getY()).isEqualTo(y);
   }
 
-  protected void assertWaypointCoordinates(Waypoint waypoint, double x, double y) {
+  protected void assertWaypointCoordinates(
+      final Waypoint waypoint, final double x, final double y) {
     assertThat(x).isEqualTo(waypoint.getX());
     assertThat(y).isEqualTo(waypoint.getY());
   }

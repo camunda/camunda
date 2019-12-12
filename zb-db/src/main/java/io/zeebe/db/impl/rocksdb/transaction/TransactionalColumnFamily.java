@@ -31,11 +31,11 @@ class TransactionalColumnFamily<
   private final KeyType keyInstance;
 
   TransactionalColumnFamily(
-      ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
-      ColumnFamilyNames columnFamily,
-      DbContext context,
-      KeyType keyInstance,
-      ValueType valueInstance) {
+      final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
+      final ColumnFamilyNames columnFamily,
+      final DbContext context,
+      final KeyType keyInstance,
+      final ValueType valueInstance) {
     this.transactionDb = transactionDb;
     handle = this.transactionDb.getColumnFamilyHandle(columnFamily);
     this.context = context;
@@ -44,22 +44,22 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public void put(KeyType key, ValueType value) {
+  public void put(final KeyType key, final ValueType value) {
     put(context, key, value);
   }
 
   @Override
-  public void put(DbContext context, KeyType key, ValueType value) {
+  public void put(final DbContext context, final KeyType key, final ValueType value) {
     transactionDb.put(handle, context, key, value);
   }
 
   @Override
-  public ValueType get(KeyType key) {
+  public ValueType get(final KeyType key) {
     return get(context, key);
   }
 
   @Override
-  public ValueType get(DbContext context, KeyType key, ValueType value) {
+  public ValueType get(final DbContext context, final KeyType key, final ValueType value) {
     final DirectBuffer valueBuffer = transactionDb.get(handle, context, key);
     if (valueBuffer != null) {
 
@@ -70,51 +70,53 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public void forEach(Consumer<ValueType> consumer) {
+  public void forEach(final Consumer<ValueType> consumer) {
     forEach(context, consumer);
   }
 
   @Override
-  public void forEach(BiConsumer<KeyType, ValueType> consumer) {
+  public void forEach(final BiConsumer<KeyType, ValueType> consumer) {
     forEach(context, consumer);
   }
 
   @Override
-  public void whileTrue(KeyValuePairVisitor<KeyType, ValueType> visitor) {
+  public void whileTrue(final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     whileTrue(context, visitor);
   }
 
   @Override
   public void whileTrue(
-      DbContext context,
-      KeyValuePairVisitor<KeyType, ValueType> visitor,
-      KeyType key,
-      ValueType value) {
+      final DbContext context,
+      final KeyValuePairVisitor<KeyType, ValueType> visitor,
+      final KeyType key,
+      final ValueType value) {
     transactionDb.whileTrue(handle, context, key, value, visitor);
   }
 
   @Override
-  public void whileEqualPrefix(DbKey keyPrefix, BiConsumer<KeyType, ValueType> visitor) {
+  public void whileEqualPrefix(
+      final DbKey keyPrefix, final BiConsumer<KeyType, ValueType> visitor) {
     whileEqualPrefix(context, keyPrefix, visitor);
   }
 
   @Override
-  public void whileEqualPrefix(DbKey keyPrefix, KeyValuePairVisitor<KeyType, ValueType> visitor) {
+  public void whileEqualPrefix(
+      final DbKey keyPrefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     whileEqualPrefix(context, keyPrefix, visitor);
   }
 
   @Override
-  public void delete(KeyType key) {
+  public void delete(final KeyType key) {
     delete(context, key);
   }
 
   @Override
-  public void delete(DbContext context, KeyType key) {
+  public void delete(final DbContext context, final KeyType key) {
     transactionDb.delete(handle, context, key);
   }
 
   @Override
-  public boolean exists(KeyType key) {
+  public boolean exists(final KeyType key) {
     return exists(context, key);
   }
 
@@ -124,37 +126,42 @@ class TransactionalColumnFamily<
   }
 
   @Override
-  public boolean isEmpty(DbContext context) {
+  public boolean isEmpty(final DbContext context) {
     return transactionDb.isEmpty(handle, context);
   }
 
-  public ValueType get(DbContext context, KeyType key) {
+  public ValueType get(final DbContext context, final KeyType key) {
     return get(context, key, valueInstance);
   }
 
-  public void forEach(DbContext context, Consumer<ValueType> consumer) {
+  public void forEach(final DbContext context, final Consumer<ValueType> consumer) {
     transactionDb.foreach(handle, context, valueInstance, consumer);
   }
 
-  public void forEach(DbContext context, BiConsumer<KeyType, ValueType> consumer) {
+  public void forEach(final DbContext context, final BiConsumer<KeyType, ValueType> consumer) {
     transactionDb.foreach(handle, context, keyInstance, valueInstance, consumer);
   }
 
-  public void whileTrue(DbContext context, KeyValuePairVisitor<KeyType, ValueType> visitor) {
+  public void whileTrue(
+      final DbContext context, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     whileTrue(context, visitor, keyInstance, valueInstance);
   }
 
   public void whileEqualPrefix(
-      DbContext context, DbKey keyPrefix, BiConsumer<KeyType, ValueType> visitor) {
+      final DbContext context,
+      final DbKey keyPrefix,
+      final BiConsumer<KeyType, ValueType> visitor) {
     transactionDb.whileEqualPrefix(handle, context, keyPrefix, keyInstance, valueInstance, visitor);
   }
 
   public void whileEqualPrefix(
-      DbContext context, DbKey keyPrefix, KeyValuePairVisitor<KeyType, ValueType> visitor) {
+      final DbContext context,
+      final DbKey keyPrefix,
+      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     transactionDb.whileEqualPrefix(handle, context, keyPrefix, keyInstance, valueInstance, visitor);
   }
 
-  public boolean exists(DbContext context, KeyType key) {
+  public boolean exists(final DbContext context, final KeyType key) {
     return transactionDb.exists(handle, context, key);
   }
 }

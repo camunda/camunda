@@ -31,7 +31,7 @@ public class EndpointRegistryImpl implements EndpointRegistry {
 
   private final Map<Integer, RemoteAddress> endpoints = new ConcurrentHashMap<>();
 
-  public EndpointRegistryImpl(String name, RemoteAddressList remoteAddressList) {
+  public EndpointRegistryImpl(final String name, final RemoteAddressList remoteAddressList) {
     this.name = name;
     this.remoteAddressList = remoteAddressList;
   }
@@ -102,7 +102,7 @@ public class EndpointRegistryImpl implements EndpointRegistry {
    * @return the previous set socket address or null if non was set
    */
   @Override
-  public SocketAddress retire(int nodeId) {
+  public SocketAddress retire(final int nodeId) {
     final RemoteAddress remoteAddress = endpoints.remove(nodeId);
     if (remoteAddress != null) {
       return retireRemote(nodeId, remoteAddress);
@@ -111,7 +111,7 @@ public class EndpointRegistryImpl implements EndpointRegistry {
     }
   }
 
-  private SocketAddress deactivateRemote(int nodeId, RemoteAddress remoteAddress) {
+  private SocketAddress deactivateRemote(final int nodeId, final RemoteAddress remoteAddress) {
     LOG.info(
         "Deactivating endpoint for node '{}' with address '{}' on transport '{}'",
         nodeId,
@@ -121,7 +121,7 @@ public class EndpointRegistryImpl implements EndpointRegistry {
     return remoteAddress.getAddress();
   }
 
-  private SocketAddress retireRemote(int nodeId, RemoteAddress remoteAddress) {
+  private SocketAddress retireRemote(final int nodeId, final RemoteAddress remoteAddress) {
     LOG.info(
         "Retiring endpoint for node '{}' with address '{}' on transport '{}'",
         nodeId,

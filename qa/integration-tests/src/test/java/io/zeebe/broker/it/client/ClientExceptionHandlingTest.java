@@ -23,9 +23,9 @@ import org.junit.rules.RuleChain;
 
 public class ClientExceptionHandlingTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public GrpcClientRule clientRule =
+  public final GrpcClientRule clientRule =
       new GrpcClientRule(
           brokerRule,
           zeebeClientBuilder -> zeebeClientBuilder.brokerContactPoint("localhost:1234"));

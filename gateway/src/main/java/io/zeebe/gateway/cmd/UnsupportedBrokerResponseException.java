@@ -15,7 +15,10 @@ public class UnsupportedBrokerResponseException extends BrokerResponseException 
       "Expected command response with value type '%s', but received '%s'";
 
   public UnsupportedBrokerResponseException(
-      int expectedSchemaId, int expectedTemplateId, int actualSchemaId, int actualTemplateId) {
+      final int expectedSchemaId,
+      final int expectedTemplateId,
+      final int actualSchemaId,
+      final int actualTemplateId) {
     super(
         String.format(
             SBE_SCHEMA_TEMPLATE_FORMAT,
@@ -25,7 +28,8 @@ public class UnsupportedBrokerResponseException extends BrokerResponseException 
             actualTemplateId));
   }
 
-  public UnsupportedBrokerResponseException(String expectedValueType, String actualValueType) {
+  public UnsupportedBrokerResponseException(
+      final String expectedValueType, final String actualValueType) {
     super(String.format(VALUE_TYPE_FORMAT, expectedValueType, actualValueType));
   }
 }

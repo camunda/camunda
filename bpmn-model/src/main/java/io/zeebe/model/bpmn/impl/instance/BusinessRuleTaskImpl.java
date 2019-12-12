@@ -42,11 +42,11 @@ public class BusinessRuleTaskImpl extends TaskImpl implements BusinessRuleTask {
   protected static Attribute<String> implementationAttribute;
   protected static ChildElementCollection<Rendering> renderingCollection;
 
-  public BusinessRuleTaskImpl(ModelTypeInstanceContext context) {
+  public BusinessRuleTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BusinessRuleTask.class, BPMN_ELEMENT_BUSINESS_RULE_TASK)
@@ -55,7 +55,8 @@ public class BusinessRuleTaskImpl extends TaskImpl implements BusinessRuleTask {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BusinessRuleTask>() {
                   @Override
-                  public BusinessRuleTask newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BusinessRuleTask newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new BusinessRuleTaskImpl(instanceContext);
                   }
                 });
@@ -80,7 +81,7 @@ public class BusinessRuleTaskImpl extends TaskImpl implements BusinessRuleTask {
   }
 
   @Override
-  public void setImplementation(String implementation) {
+  public void setImplementation(final String implementation) {
     implementationAttribute.setValue(this, implementation);
   }
 }

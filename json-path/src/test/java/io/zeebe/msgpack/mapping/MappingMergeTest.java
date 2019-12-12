@@ -25,9 +25,9 @@ import org.junit.rules.ExpectedException;
 
 /** Represents a test class to test the merge documents functionality with help of mappings. */
 public class MappingMergeTest {
-  @Rule public ExpectedException expectedException = ExpectedException.none();
+  @Rule public final ExpectedException expectedException = ExpectedException.none();
 
-  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
+  private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Before
   public void setUp() {
@@ -176,10 +176,10 @@ public class MappingMergeTest {
         .hasValue("{'att1':'val1', 'att2':'val2', 'att3':'val3'}");
   }
 
-  private static DirectBuffer asMsgPack(String json) {
+  private static DirectBuffer asMsgPack(final String json) {
     try {
       return new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(json)));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }

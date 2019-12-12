@@ -23,9 +23,9 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 public class MessageEventProcessors {
 
   public static void addMessageProcessors(
-      TypedRecordProcessors typedRecordProcessors,
-      ZeebeState zeebeState,
-      SubscriptionCommandSender subscriptionCommandSender) {
+      final TypedRecordProcessors typedRecordProcessors,
+      final ZeebeState zeebeState,
+      final SubscriptionCommandSender subscriptionCommandSender) {
 
     final MessageState messageState = zeebeState.getMessageState();
     final MessageSubscriptionState subscriptionState = zeebeState.getMessageSubscriptionState();

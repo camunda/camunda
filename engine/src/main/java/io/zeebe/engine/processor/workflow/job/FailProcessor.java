@@ -20,13 +20,13 @@ public class FailProcessor implements CommandProcessor<JobRecord> {
       "Expected to fail activated job with key '%d', but it %s";
   private final JobState state;
 
-  public FailProcessor(JobState state) {
+  public FailProcessor(final JobState state) {
     this.state = state;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long key = command.getKey();
     final JobState.State jobState = state.getState(key);
 

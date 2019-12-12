@@ -41,11 +41,11 @@ public class SignalImpl extends BaseElementImpl implements Signal {
   protected static Attribute<String> nameAttribute;
   protected static AttributeReference<ItemDefinition> structureRefAttribute;
 
-  public SignalImpl(ModelTypeInstanceContext instanceContext) {
+  public SignalImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Signal.class, BPMN_ELEMENT_SIGNAL)
@@ -54,7 +54,7 @@ public class SignalImpl extends BaseElementImpl implements Signal {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Signal>() {
                   @Override
-                  public Signal newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Signal newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new SignalImpl(instanceContext);
                   }
                 });
@@ -76,7 +76,7 @@ public class SignalImpl extends BaseElementImpl implements Signal {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -86,7 +86,7 @@ public class SignalImpl extends BaseElementImpl implements Signal {
   }
 
   @Override
-  public void setStructure(ItemDefinition structure) {
+  public void setStructure(final ItemDefinition structure) {
     structureRefAttribute.setReferenceTargetElement(this, structure);
   }
 }

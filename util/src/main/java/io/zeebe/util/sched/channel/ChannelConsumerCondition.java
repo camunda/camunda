@@ -23,7 +23,7 @@ public class ChannelConsumerCondition
     try {
       TRIGGER_COUNT_OFFSET =
           UNSAFE.objectFieldOffset(ChannelConsumerCondition.class.getDeclaredField("triggerCount"));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -31,10 +31,10 @@ public class ChannelConsumerCondition
   private final ConsumableChannel channel;
   private final ActorJob job;
   private final ActorTask task;
-  private volatile long triggerCount = 0;
+  private final long triggerCount = 0;
   private long processedTiggersCount = 0;
 
-  public ChannelConsumerCondition(ActorJob job, ConsumableChannel channel) {
+  public ChannelConsumerCondition(final ActorJob job, final ConsumableChannel channel) {
     this.job = job;
     this.task = job.getTask();
     this.channel = channel;

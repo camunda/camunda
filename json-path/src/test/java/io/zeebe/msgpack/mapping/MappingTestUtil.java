@@ -70,7 +70,7 @@ public class MappingTestUtil {
     byte[] bytes = null;
     try {
       bytes = MSGPACK_MAPPER.writeValueAsBytes(JSON_PAYLOAD);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       e.printStackTrace();
     } finally {
       MSG_PACK_BYTES = bytes;
@@ -80,33 +80,37 @@ public class MappingTestUtil {
       jsonDocumentPath =
           Paths.get(
               MsgPackDocumentTreeWriterTest.class.getResource("largeJsonDocument.json").toURI());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       jsonDocumentPath = null;
     }
   }
 
   public static void assertThatIsArrayNode(
-      MsgPackTree msgPackTree, String nodeId, String... childs) {
+      final MsgPackTree msgPackTree, final String nodeId, final String... childs) {
     assertThat(msgPackTree.isArrayNode(nodeId)).isTrue();
     assertChildNodes(msgPackTree, nodeId, childs.length, childs);
   }
 
-  public static void assertThatIsMapNode(MsgPackTree msgPackTree, String nodeId, String... childs) {
+  public static void assertThatIsMapNode(
+      final MsgPackTree msgPackTree, final String nodeId, final String... childs) {
     assertThat(msgPackTree.isMapNode(nodeId)).isTrue();
     assertChildNodes(msgPackTree, nodeId, childs.length, childs);
   }
 
   private static void assertChildNodes(
-      MsgPackTree msgPackTree, String nodeId, int childCount, String[] childs) {
+      final MsgPackTree msgPackTree,
+      final String nodeId,
+      final int childCount,
+      final String[] childs) {
     final Set<String> arrayValues = msgPackTree.getChildren(nodeId);
     assertThat(arrayValues.size()).isEqualTo(childCount);
-    for (String child : childs) {
+    for (final String child : childs) {
       assertThat(arrayValues.contains(child)).isTrue();
     }
   }
 
   public static void assertThatIsLeafNode(
-      MsgPackTree msgPackTree, String leafId, byte[] expectedBytes) {
+      final MsgPackTree msgPackTree, final String leafId, final byte[] expectedBytes) {
     assertThat(msgPackTree.isValueNode(leafId)).isTrue();
 
     WRITER.wrap(WRITE_BUFFER, 0);
@@ -116,7 +120,7 @@ public class MappingTestUtil {
     assertThat(WRITE_BUFFER.byteArray()).startsWith(expectedBytes);
   }
 
-  public static String constructNodeId(String... nodeNames) {
+  public static String constructNodeId(final String... nodeNames) {
     final StringBuilder builder = new StringBuilder();
     if (nodeNames.length >= 1) {
       builder.append(nodeNames[0]);
@@ -128,17 +132,17 @@ public class MappingTestUtil {
     return builder.toString();
   }
 
-  public static MsgPackAssert assertThatMsgPack(DirectBuffer msgPack) {
+  public static MsgPackAssert assertThatMsgPack(final DirectBuffer msgPack) {
     return new MsgPackAssert(msgPack);
   }
 
   public static class MsgPackAssert extends AbstractObjectAssert<MsgPackAssert, DirectBuffer> {
 
-    public MsgPackAssert(DirectBuffer actual) {
+    public MsgPackAssert(final DirectBuffer actual) {
       super(actual, MsgPackAssert.class);
     }
 
-    public MsgPackAssert hasValue(String json) {
+    public MsgPackAssert hasValue(final String json) {
       final byte[] actualAsArray = new byte[actual.capacity()];
       actual.getBytes(0, actualAsArray, 0, actualAsArray.length);
 
@@ -147,14 +151,14 @@ public class MappingTestUtil {
 
       try {
         actualTree = MSGPACK_MAPPER.readTree(actualAsArray);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         failWithMessage("Actual document is not valid msgpack: %s", e.getMessage());
         return this;
       }
 
       try {
         expectedTree = JSON_MAPPER.readTree(json);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         failWithMessage("Expected document is not valid json: %s", e.getMessage());
         return this;
       }

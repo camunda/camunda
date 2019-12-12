@@ -122,7 +122,7 @@ public class ClusterCfg {
     return maxMessageCount;
   }
 
-  public ClusterCfg setMaxMessageCount(int maxMessageCount) {
+  public ClusterCfg setMaxMessageCount(final int maxMessageCount) {
     this.maxMessageCount = maxMessageCount;
     return this;
   }

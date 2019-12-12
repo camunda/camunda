@@ -36,7 +36,7 @@ public class PartitionBuilderTest {
 
     assertThat(partitions.length).isEqualTo(PARTITION_COUNT);
 
-    for (LogBufferPartition logBufferPartition : partitions) {
+    for (final LogBufferPartition logBufferPartition : partitions) {
       assertThat(logBufferPartition.getPartitionSize()).isEqualTo(partitionSize);
       assertThat(logBufferPartition.getDataBuffer().capacity()).isEqualTo(partitionSize);
     }

@@ -42,11 +42,11 @@ public class EventBasedGatewayImpl extends GatewayImpl implements EventBasedGate
   protected static Attribute<Boolean> instantiateAttribute;
   protected static Attribute<EventBasedGatewayType> eventGatewayTypeAttribute;
 
-  public EventBasedGatewayImpl(ModelTypeInstanceContext context) {
+  public EventBasedGatewayImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(EventBasedGateway.class, BPMN_ELEMENT_EVENT_BASED_GATEWAY)
@@ -55,7 +55,8 @@ public class EventBasedGatewayImpl extends GatewayImpl implements EventBasedGate
             .instanceProvider(
                 new ModelTypeInstanceProvider<EventBasedGateway>() {
                   @Override
-                  public EventBasedGateway newInstance(ModelTypeInstanceContext instanceContext) {
+                  public EventBasedGateway newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new EventBasedGatewayImpl(instanceContext);
                   }
                 });
@@ -83,7 +84,7 @@ public class EventBasedGatewayImpl extends GatewayImpl implements EventBasedGate
   }
 
   @Override
-  public void setInstantiate(boolean isInstantiate) {
+  public void setInstantiate(final boolean isInstantiate) {
     instantiateAttribute.setValue(this, isInstantiate);
   }
 
@@ -93,7 +94,7 @@ public class EventBasedGatewayImpl extends GatewayImpl implements EventBasedGate
   }
 
   @Override
-  public void setEventGatewayType(EventBasedGatewayType eventGatewayType) {
+  public void setEventGatewayType(final EventBasedGatewayType eventGatewayType) {
     eventGatewayTypeAttribute.setValue(this, eventGatewayType);
   }
 }

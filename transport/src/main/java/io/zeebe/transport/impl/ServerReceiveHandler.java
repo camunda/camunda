@@ -28,11 +28,11 @@ public class ServerReceiveHandler implements FragmentHandler {
   private final ServerControlMessageListener controlMessageListener;
 
   public ServerReceiveHandler(
-      ServerOutput output,
-      RemoteAddressList remoteAddressList,
-      ServerMessageHandler messageHandler,
-      ServerRequestHandler requestHandler,
-      ServerControlMessageListener controlMessageListener) {
+      final ServerOutput output,
+      final RemoteAddressList remoteAddressList,
+      final ServerMessageHandler messageHandler,
+      final ServerRequestHandler requestHandler,
+      final ServerControlMessageListener controlMessageListener) {
     this.output = output;
     this.remoteAddressList = remoteAddressList;
     this.messageHandler = messageHandler;
@@ -42,7 +42,11 @@ public class ServerReceiveHandler implements FragmentHandler {
 
   @Override
   public int onFragment(
-      DirectBuffer buffer, int readOffset, int length, int streamId, boolean isMarkedFailed) {
+      final DirectBuffer buffer,
+      int readOffset,
+      int length,
+      final int streamId,
+      final boolean isMarkedFailed) {
     int result = CONSUME_FRAGMENT_RESULT;
 
     final RemoteAddress remoteAddress = remoteAddressList.getByStreamId(streamId);

@@ -51,11 +51,11 @@ public class ParticipantImpl extends BaseElementImpl implements Participant {
   protected static ElementReferenceCollection<EndPoint, EndPointRef> endPointRefCollection;
   protected static ChildElement<ParticipantMultiplicity> participantMultiplicityChild;
 
-  public ParticipantImpl(ModelTypeInstanceContext instanceContext) {
+  public ParticipantImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Participant.class, BPMN_ELEMENT_PARTICIPANT)
@@ -64,7 +64,7 @@ public class ParticipantImpl extends BaseElementImpl implements Participant {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Participant>() {
                   @Override
-                  public Participant newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Participant newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ParticipantImpl(instanceContext);
                   }
                 });
@@ -102,7 +102,7 @@ public class ParticipantImpl extends BaseElementImpl implements Participant {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -112,7 +112,7 @@ public class ParticipantImpl extends BaseElementImpl implements Participant {
   }
 
   @Override
-  public void setProcess(Process process) {
+  public void setProcess(final Process process) {
     processRefAttribute.setReferenceTargetElement(this, process);
   }
 
@@ -132,7 +132,7 @@ public class ParticipantImpl extends BaseElementImpl implements Participant {
   }
 
   @Override
-  public void setParticipantMultiplicity(ParticipantMultiplicity participantMultiplicity) {
+  public void setParticipantMultiplicity(final ParticipantMultiplicity participantMultiplicity) {
     participantMultiplicityChild.setChild(this, participantMultiplicity);
   }
 }

@@ -16,7 +16,7 @@ public class SyncLogStream implements SynchronousLogStream {
 
   private final LogStream logStream;
 
-  public SyncLogStream(LogStream logStream) {
+  public SyncLogStream(final LogStream logStream) {
     this.logStream = logStream;
   }
 
@@ -56,7 +56,7 @@ public class SyncLogStream implements SynchronousLogStream {
   }
 
   @Override
-  public void setCommitPosition(long position) {
+  public void setCommitPosition(final long position) {
     logStream.setCommitPosition(position);
   }
 
@@ -66,7 +66,7 @@ public class SyncLogStream implements SynchronousLogStream {
   }
 
   @Override
-  public void delete(long position) {
+  public void delete(final long position) {
     logStream.delete(position);
   }
 }

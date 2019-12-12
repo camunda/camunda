@@ -25,7 +25,9 @@ public class AbstractEventBasedGatewayBuilder<B extends AbstractEventBasedGatewa
     extends AbstractGatewayBuilder<B, EventBasedGateway> {
 
   protected AbstractEventBasedGatewayBuilder(
-      BpmnModelInstance modelInstance, EventBasedGateway element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final EventBasedGateway element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -45,7 +47,7 @@ public class AbstractEventBasedGatewayBuilder<B extends AbstractEventBasedGatewa
    * @param eventGatewayType the event gateway type to set
    * @return the builder object
    */
-  public B eventGatewayType(EventBasedGatewayType eventGatewayType) {
+  public B eventGatewayType(final EventBasedGatewayType eventGatewayType) {
     element.setEventGatewayType(eventGatewayType);
     return myself;
   }

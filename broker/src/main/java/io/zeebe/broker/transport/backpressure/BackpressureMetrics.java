@@ -44,27 +44,27 @@ public class BackpressureMetrics {
           .labelNames("partition")
           .register();
 
-  public void dropped(int partitionId) {
+  public void dropped(final int partitionId) {
     DROPPED_REQUEST_COUNT.labels(String.valueOf(partitionId)).inc();
   }
 
-  public void receivedRequest(int partitionId) {
+  public void receivedRequest(final int partitionId) {
     TOTAL_REQUEST_COUNT.labels(String.valueOf(partitionId)).inc();
   }
 
-  public void incInflight(int partitionId) {
+  public void incInflight(final int partitionId) {
     CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).inc();
   }
 
-  public void decInflight(int partitionId) {
+  public void decInflight(final int partitionId) {
     CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).dec();
   }
 
-  public void setNewLimit(int partitionId, int newLimit) {
+  public void setNewLimit(final int partitionId, final int newLimit) {
     CURRENT_LIMIT.labels(String.valueOf(partitionId)).set(newLimit);
   }
 
-  public void setInflight(int partitionId, int count) {
+  public void setInflight(final int partitionId, final int count) {
     CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).set(0);
   }
 }

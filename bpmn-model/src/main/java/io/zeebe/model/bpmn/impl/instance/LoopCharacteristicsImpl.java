@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 public abstract class LoopCharacteristicsImpl extends BaseElementImpl
     implements LoopCharacteristics {
 
-  public LoopCharacteristicsImpl(ModelTypeInstanceContext instanceContext) {
+  public LoopCharacteristicsImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(LoopCharacteristics.class, BPMN_ELEMENT_LOOP_CHARACTERISTICS)

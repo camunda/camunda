@@ -20,7 +20,7 @@ public class DebugHttpExporter implements Exporter {
   private Logger log;
 
   @Override
-  public void configure(Context context) {
+  public void configure(final Context context) {
     log = context.getLogger();
     initHttpServer(context);
   }
@@ -31,15 +31,15 @@ public class DebugHttpExporter implements Exporter {
   }
 
   @Override
-  public void export(Record record) {
+  public void export(final Record record) {
     try {
       httpServer.add(record);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.warn("Failed to serialize record {} to json", record, e);
     }
   }
 
-  private synchronized void initHttpServer(Context context) {
+  private synchronized void initHttpServer(final Context context) {
     if (httpServer == null) {
       final DebugHttpExporterConfiguration configuration =
           context.getConfiguration().instantiate(DebugHttpExporterConfiguration.class);
@@ -67,7 +67,7 @@ public class DebugHttpExporter implements Exporter {
   }
 
   public static class DebugHttpExporterConfiguration {
-    public int port = 8000;
-    public int limit = 1024;
+    public final int port = 8000;
+    public final int limit = 1024;
   }
 }

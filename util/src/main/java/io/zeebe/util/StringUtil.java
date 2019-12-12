@@ -30,7 +30,7 @@ public final class StringUtil {
     return new String(bytes, charset);
   }
 
-  public static String limitString(final String message, int maxLength) {
+  public static String limitString(final String message, final int maxLength) {
     if (message.length() > maxLength) {
       return message.substring(0, maxLength).concat("...");
     } else {

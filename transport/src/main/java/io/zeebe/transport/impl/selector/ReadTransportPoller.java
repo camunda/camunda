@@ -27,7 +27,7 @@ public class ReadTransportPoller extends TransportPoller {
   protected final Runnable pollNow = this::pollNow;
   private final ActorControl actor;
 
-  public ReadTransportPoller(ActorControl actor) {
+  public ReadTransportPoller(final ActorControl actor) {
     this.actor = actor;
   }
 
@@ -35,14 +35,14 @@ public class ReadTransportPoller extends TransportPoller {
     if (selector.isOpen()) {
       try {
         selector.select();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         selectedKeySet.reset();
         throw new RuntimeException(e);
       }
     }
   }
 
-  public void pollBlockingEnded(Throwable t) {
+  public void pollBlockingEnded(final Throwable t) {
     maintainChannels();
     processKeys();
     actor.runUntilDone(pollNow);
@@ -60,7 +60,7 @@ public class ReadTransportPoller extends TransportPoller {
       try {
         selector.selectNow();
         workCount += processKeys();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         selectedKeySet.reset();
         LangUtil.rethrowUnchecked(e);
       }
@@ -80,7 +80,7 @@ public class ReadTransportPoller extends TransportPoller {
       try {
         channel.registerSelector(selector, SelectionKey.OP_READ);
         channels.add(channel);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.debug("Failed to add channel {}", channel, e);
       }
     }
@@ -91,7 +91,7 @@ public class ReadTransportPoller extends TransportPoller {
     return selectedKeySet.forEach(processKeyFn);
   }
 
-  protected int processKey(SelectionKey key) {
+  protected int processKey(final SelectionKey key) {
     int workCount = 0;
 
     if (key != null && key.isValid()) {
@@ -102,12 +102,12 @@ public class ReadTransportPoller extends TransportPoller {
     return workCount;
   }
 
-  public void addChannel(TransportChannel channel) {
+  public void addChannel(final TransportChannel channel) {
     channelsToAdd.add(channel);
     selector.wakeup();
   }
 
-  public void removeChannel(TransportChannel channel) {
+  public void removeChannel(final TransportChannel channel) {
     channels.remove(channel);
   }
 

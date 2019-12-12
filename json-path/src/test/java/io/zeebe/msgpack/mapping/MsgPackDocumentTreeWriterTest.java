@@ -19,8 +19,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
 public class MsgPackDocumentTreeWriterTest {
-  private MsgPackDocumentIndexer indexer = new MsgPackDocumentIndexer();
-  private MsgPackDocumentTreeWriter writer = new MsgPackDocumentTreeWriter(256);
+  private final MsgPackDocumentIndexer indexer = new MsgPackDocumentIndexer();
+  private final MsgPackDocumentTreeWriter writer = new MsgPackDocumentTreeWriter(256);
 
   @Test
   public void shouldWriteMsgPackTree() throws Exception {

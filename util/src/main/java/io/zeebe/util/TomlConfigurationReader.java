@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 public class TomlConfigurationReader {
   public static final Logger LOG = Loggers.CONFIG_LOGGER;
 
-  public static <T> T read(String filePath, Class<T> type) {
+  public static <T> T read(final String filePath, final Class<T> type) {
     final File file = new File(filePath);
 
     LOG.debug("Reading configuration for {} from file {} ", type, file.getAbsolutePath());
@@ -23,7 +23,7 @@ public class TomlConfigurationReader {
     return new Toml().read(file).to(type);
   }
 
-  public static <T> T read(InputStream configStream, Class<T> type) {
+  public static <T> T read(final InputStream configStream, final Class<T> type) {
     LOG.debug("Reading configuration for {} from input stream", type);
 
     return new Toml().read(configStream).to(type);

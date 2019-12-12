@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ConfigurationUtil {
-  public static String toAbsolutePath(String path, String base) {
+  public static String toAbsolutePath(final String path, final String base) {
     final Path asPath = Paths.get(path);
 
     if (asPath.isAbsolute()) {

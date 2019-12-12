@@ -24,7 +24,7 @@ public abstract class AbstractManualTaskBuilder<B extends AbstractManualTaskBuil
     extends AbstractTaskBuilder<B, ManualTask> {
 
   protected AbstractManualTaskBuilder(
-      BpmnModelInstance modelInstance, ManualTask element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final ManualTask element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 }

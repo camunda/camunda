@@ -37,11 +37,11 @@ public class CategoryImpl extends RootElementImpl implements Category {
   protected static Attribute<String> nameAttribute;
   protected static ChildElementCollection<CategoryValue> categoryValuesCollection;
 
-  public CategoryImpl(ModelTypeInstanceContext context) {
+  public CategoryImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Category.class, BPMN_ELEMENT_CATEGORY)
@@ -50,7 +50,7 @@ public class CategoryImpl extends RootElementImpl implements Category {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Category>() {
                   @Override
-                  public Category newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Category newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new CategoryImpl(instanceContext);
                   }
                 });
@@ -70,7 +70,7 @@ public class CategoryImpl extends RootElementImpl implements Category {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 

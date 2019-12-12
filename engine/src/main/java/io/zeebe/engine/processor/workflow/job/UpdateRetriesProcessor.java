@@ -24,13 +24,13 @@ public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState state;
 
-  public UpdateRetriesProcessor(JobState state) {
+  public UpdateRetriesProcessor(final JobState state) {
     this.state = state;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long key = command.getKey();
     final int retries = command.getValue().getRetries();
 

@@ -43,7 +43,7 @@ public class ActivateJobsStub
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(CUSTOM_HEADERS));
   public static final DirectBuffer VARIABLES_MSGPACK =
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES));
-  private Map<String, Integer> availableJobs = new ConcurrentHashMap<>();
+  private final Map<String, Integer> availableJobs = new ConcurrentHashMap<>();
 
   public long getJobBatchKey() {
     return JOB_BATCH_KEY;
@@ -90,7 +90,8 @@ public class ActivateJobsStub
   }
 
   @Override
-  public BrokerResponse<JobBatchRecord> handle(BrokerActivateJobsRequest request) throws Exception {
+  public BrokerResponse<JobBatchRecord> handle(final BrokerActivateJobsRequest request)
+      throws Exception {
     final int partitionId = request.getPartitionId();
 
     final JobBatchRecord requestDto = request.getRequestWriter();
@@ -111,16 +112,16 @@ public class ActivateJobsStub
         response, partitionId, Protocol.encodePartitionId(partitionId, JOB_BATCH_KEY));
   }
 
-  public void addAvailableJobs(String type, int amount) {
+  public void addAvailableJobs(final String type, final int amount) {
     availableJobs.put(type, amount);
   }
 
   private void addJobs(
-      JobBatchRecord response,
-      int partitionId,
-      int amount,
-      DirectBuffer type,
-      DirectBuffer worker) {
+      final JobBatchRecord response,
+      final int partitionId,
+      final int amount,
+      final DirectBuffer type,
+      final DirectBuffer worker) {
 
     final int availableAmount = availableJobs.computeIfAbsent(bufferAsString(type), k -> 0);
     final int jobsToActivate = Math.min(amount, availableAmount);
@@ -148,7 +149,7 @@ public class ActivateJobsStub
   }
 
   @Override
-  public void registerWith(StubbedBrokerClient gateway) {
+  public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerActivateJobsRequest.class, this);
   }
 }

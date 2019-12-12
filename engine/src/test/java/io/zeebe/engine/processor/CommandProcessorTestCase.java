@@ -37,7 +37,7 @@ import org.mockito.Mock;
  * runner, or instantiate the mocks themselves.
  */
 public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
-  @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
+  @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
 
   @Mock(name = "CommandControl")
   protected CommandControl<T> controller;
@@ -47,16 +47,16 @@ public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
 
   @Captor protected ArgumentCaptor<T> acceptedRecordCaptor;
 
-  protected T getAcceptedRecord(Intent intent) {
+  protected T getAcceptedRecord(final Intent intent) {
     assertAccepted(intent);
     return acceptedRecordCaptor.getValue();
   }
 
-  protected void assertAccepted(Intent intent, T record) {
+  protected void assertAccepted(final Intent intent, final T record) {
     assertThat(getAcceptedRecord(intent)).isEqualTo(record);
   }
 
-  protected void assertAccepted(Intent intent) {
+  protected void assertAccepted(final Intent intent) {
     verify(controller, times(1)).accept(eq(intent), acceptedRecordCaptor.capture());
   }
 
@@ -64,7 +64,7 @@ public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
     verify(controller, never()).accept(any(), any());
   }
 
-  protected void assertRejected(RejectionType type) {
+  protected void assertRejected(final RejectionType type) {
     verify(controller, times(1)).reject(eq(type), anyString());
   }
 
@@ -72,7 +72,7 @@ public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
     verify(controller, never()).reject(any(), anyString());
   }
 
-  protected TypedRecord<T> newCommand(Class<T> clazz) {
+  protected TypedRecord<T> newCommand(final Class<T> clazz) {
     final RecordMetadata metadata =
         new RecordMetadata()
             .intent(WorkflowInstanceCreationIntent.CREATE)
@@ -82,7 +82,7 @@ public abstract class CommandProcessorTestCase<T extends UnifiedRecordValue> {
 
     try {
       value = clazz.newInstance();
-    } catch (InstantiationException | IllegalAccessException e) {
+    } catch (final InstantiationException | IllegalAccessException e) {
       throw new AssertionError("Failed to create new record", e);
     }
 

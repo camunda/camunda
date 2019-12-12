@@ -39,11 +39,11 @@ public class BpmnPlaneImpl extends PlaneImpl implements BpmnPlane {
 
   protected static AttributeReference<BaseElement> bpmnElementAttribute;
 
-  public BpmnPlaneImpl(ModelTypeInstanceContext instanceContext) {
+  public BpmnPlaneImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BpmnPlane.class, BPMNDI_ELEMENT_BPMN_PLANE)
@@ -52,7 +52,7 @@ public class BpmnPlaneImpl extends PlaneImpl implements BpmnPlane {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BpmnPlane>() {
                   @Override
-                  public BpmnPlane newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BpmnPlane newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new BpmnPlaneImpl(instanceContext);
                   }
                 });
@@ -72,7 +72,7 @@ public class BpmnPlaneImpl extends PlaneImpl implements BpmnPlane {
   }
 
   @Override
-  public void setBpmnElement(BaseElement bpmnElement) {
+  public void setBpmnElement(final BaseElement bpmnElement) {
     bpmnElementAttribute.setReferenceTargetElement(this, bpmnElement);
   }
 }

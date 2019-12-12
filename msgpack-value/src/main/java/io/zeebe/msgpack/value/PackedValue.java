@@ -19,11 +19,11 @@ public class PackedValue extends BaseValue {
 
   public PackedValue() {}
 
-  public PackedValue(DirectBuffer defaultValue, int offset, int length) {
+  public PackedValue(final DirectBuffer defaultValue, final int offset, final int length) {
     wrap(defaultValue, offset, length);
   }
 
-  public void wrap(DirectBuffer buff, int offset, int length) {
+  public void wrap(final DirectBuffer buff, final int offset, final int length) {
     this.buffer.wrap(buff, offset, length);
     this.length = length;
   }
@@ -39,19 +39,19 @@ public class PackedValue extends BaseValue {
   }
 
   @Override
-  public void writeJSON(StringBuilder builder) {
+  public void writeJSON(final StringBuilder builder) {
     builder.append("[packed value (length=");
     builder.append(length);
     builder.append(")]");
   }
 
   @Override
-  public void write(MsgPackWriter writer) {
+  public void write(final MsgPackWriter writer) {
     writer.writeRaw(buffer);
   }
 
   @Override
-  public void read(MsgPackReader reader) {
+  public void read(final MsgPackReader reader) {
     final DirectBuffer buffer = reader.getBuffer();
     final int offset = reader.getOffset();
     reader.skipValue();
@@ -71,7 +71,7 @@ public class PackedValue extends BaseValue {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

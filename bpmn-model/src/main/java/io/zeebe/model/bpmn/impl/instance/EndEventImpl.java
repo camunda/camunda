@@ -35,11 +35,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class EndEventImpl extends ThrowEventImpl implements EndEvent {
 
-  public EndEventImpl(ModelTypeInstanceContext context) {
+  public EndEventImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(EndEvent.class, BPMN_ELEMENT_END_EVENT)
@@ -48,7 +48,7 @@ public class EndEventImpl extends ThrowEventImpl implements EndEvent {
             .instanceProvider(
                 new ModelTypeInstanceProvider<EndEvent>() {
                   @Override
-                  public EndEvent newInstance(ModelTypeInstanceContext instanceContext) {
+                  public EndEvent newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new EndEventImpl(instanceContext);
                   }
                 });

@@ -52,14 +52,14 @@ public class MsgPackWriter {
   private MutableDirectBuffer buffer;
   private int offset;
 
-  public MsgPackWriter wrap(MutableDirectBuffer buffer, int offset) {
+  public MsgPackWriter wrap(final MutableDirectBuffer buffer, final int offset) {
     this.buffer = buffer;
     this.offset = offset;
 
     return this;
   }
 
-  public MsgPackWriter writeArrayHeader(int size) {
+  public MsgPackWriter writeArrayHeader(final int size) {
     ensurePositive(size);
 
     if (size < (1 << 4)) {
@@ -82,7 +82,7 @@ public class MsgPackWriter {
     return this;
   }
 
-  public MsgPackWriter writeMapHeader(int size) {
+  public MsgPackWriter writeMapHeader(final int size) {
     ensurePositive(size);
 
     if (size < (1 << 4)) {
@@ -101,7 +101,7 @@ public class MsgPackWriter {
     return this;
   }
 
-  private int writeMap32Header(int offset, int size) {
+  private int writeMap32Header(int offset, final int size) {
     buffer.putByte(offset, MAP32);
     ++offset;
 
@@ -120,26 +120,26 @@ public class MsgPackWriter {
   }
 
   /** does not change the writer's offset */
-  public void writeReservedMapHeader(int offset, int size) {
+  public void writeReservedMapHeader(final int offset, final int size) {
     writeMap32Header(offset, size);
   }
 
-  public MsgPackWriter writeRaw(DirectBuffer buffer) {
+  public MsgPackWriter writeRaw(final DirectBuffer buffer) {
     return writeRaw(buffer, 0, buffer.capacity());
   }
 
-  public MsgPackWriter writeRaw(DirectBuffer buff, int offset, int length) {
+  public MsgPackWriter writeRaw(final DirectBuffer buff, final int offset, final int length) {
     this.buffer.putBytes(this.offset, buff, offset, length);
     this.offset += length;
 
     return this;
   }
 
-  public MsgPackWriter writeString(DirectBuffer bytes) {
+  public MsgPackWriter writeString(final DirectBuffer bytes) {
     return this.writeString(bytes, 0, bytes.capacity());
   }
 
-  public MsgPackWriter writeString(DirectBuffer buff, int offset, int length) {
+  public MsgPackWriter writeString(final DirectBuffer buff, final int offset, final int length) {
     writeStringHeader(length);
     writeRaw(buff, offset, length);
     return this;
@@ -151,7 +151,7 @@ public class MsgPackWriter {
    * @param v value to write
    * @return this object
    */
-  public MsgPackWriter writeInteger(long v) {
+  public MsgPackWriter writeInteger(final long v) {
     if (v < -(1L << 5)) {
       if (v < -(1L << 15)) {
         if (v < -(1L << 31)) {
@@ -211,7 +211,7 @@ public class MsgPackWriter {
     return this;
   }
 
-  public MsgPackWriter writeStringHeader(int len) {
+  public MsgPackWriter writeStringHeader(final int len) {
     ensurePositive(len);
     if (len < (1 << 5)) {
       buffer.putByte(offset, (byte) (FIXSTR_PREFIX | len));
@@ -239,17 +239,17 @@ public class MsgPackWriter {
     return this;
   }
 
-  public MsgPackWriter writeBinary(DirectBuffer data) {
+  public MsgPackWriter writeBinary(final DirectBuffer data) {
     return writeBinary(data, 0, data.capacity());
   }
 
-  public MsgPackWriter writeBinary(DirectBuffer data, int offset, int length) {
+  public MsgPackWriter writeBinary(final DirectBuffer data, final int offset, final int length) {
     writeBinaryHeader(length);
     writeRaw(data, offset, length);
     return this;
   }
 
-  public MsgPackWriter writeBinaryHeader(int len) {
+  public MsgPackWriter writeBinaryHeader(final int len) {
     ensurePositive(len);
     if (len < (1 << 8)) {
       buffer.putByte(offset, BIN8);
@@ -274,7 +274,7 @@ public class MsgPackWriter {
     return this;
   }
 
-  public MsgPackWriter writeBoolean(boolean val) {
+  public MsgPackWriter writeBoolean(final boolean val) {
     buffer.putByte(offset, val ? TRUE : FALSE);
     ++offset;
 
@@ -294,7 +294,7 @@ public class MsgPackWriter {
    * @param value to write
    * @return this object
    */
-  public MsgPackWriter writeFloat(double value) {
+  public MsgPackWriter writeFloat(final double value) {
 
     final float floatValue = (float) value;
 
@@ -319,7 +319,7 @@ public class MsgPackWriter {
     return offset;
   }
 
-  public static int getEncodedMapHeaderLenght(int size) {
+  public static int getEncodedMapHeaderLenght(final int size) {
     final int length;
 
     if (size < (1 << 4)) {
@@ -333,7 +333,7 @@ public class MsgPackWriter {
     return length;
   }
 
-  public static int getEncodedArrayHeaderLenght(int size) {
+  public static int getEncodedArrayHeaderLenght(final int size) {
     final int length;
 
     if (size < (1 << 4)) {
@@ -347,7 +347,7 @@ public class MsgPackWriter {
     return length;
   }
 
-  public static int getEncodedStringHeaderLength(int len) {
+  public static int getEncodedStringHeaderLength(final int len) {
     final int encodedLength;
 
     if (len < (1 << 5)) {
@@ -363,11 +363,11 @@ public class MsgPackWriter {
     return encodedLength;
   }
 
-  public static int getEncodedStringLength(int len) {
+  public static int getEncodedStringLength(final int len) {
     return getEncodedStringHeaderLength(len) + len;
   }
 
-  public static int getEncodedLongValueLength(long v) {
+  public static int getEncodedLongValueLength(final long v) {
     int length = 1;
 
     if (v < -(1L << 5)) {
@@ -407,7 +407,7 @@ public class MsgPackWriter {
     return 1;
   }
 
-  public static int getEncodedBinaryValueLength(int len) {
+  public static int getEncodedBinaryValueLength(final int len) {
     final int headerLength;
 
     if (len < (1 << 8)) {
@@ -421,10 +421,10 @@ public class MsgPackWriter {
     return headerLength + len;
   }
 
-  private void ensurePositive(long size) {
+  private void ensurePositive(final long size) {
     try {
       MsgPackHelper.ensurePositive(size);
-    } catch (MsgpackException e) {
+    } catch (final MsgpackException e) {
       throw new MsgpackWriterException(e);
     }
   }

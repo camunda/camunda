@@ -42,7 +42,7 @@ public class OAuthCredentialsCacheTest {
   @Before
   public void setUp() throws IOException {
     cacheFile = new File(temporaryFolder.getRoot(), ".credsCache.yml");
-    try (InputStream input = getClass().getResourceAsStream(GOLDEN_FILE)) {
+    try (final InputStream input = getClass().getResourceAsStream(GOLDEN_FILE)) {
       Files.copy(input, cacheFile.toPath());
     }
   }

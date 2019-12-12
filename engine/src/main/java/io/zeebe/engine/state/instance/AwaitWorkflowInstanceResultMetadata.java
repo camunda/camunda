@@ -33,7 +33,7 @@ public class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue impl
     return requestIdProperty.getValue();
   }
 
-  public AwaitWorkflowInstanceResultMetadata setRequestId(long requestId) {
+  public AwaitWorkflowInstanceResultMetadata setRequestId(final long requestId) {
     requestIdProperty.setValue(requestId);
     return this;
   }
@@ -42,7 +42,7 @@ public class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue impl
     return requestStreamIdProperty.getValue();
   }
 
-  public AwaitWorkflowInstanceResultMetadata setRequestStreamId(int requestStreamId) {
+  public AwaitWorkflowInstanceResultMetadata setRequestStreamId(final int requestStreamId) {
     requestStreamIdProperty.setValue(requestStreamId);
     return this;
   }
@@ -52,7 +52,7 @@ public class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue impl
   }
 
   public AwaitWorkflowInstanceResultMetadata setFetchVariables(
-      ArrayProperty<StringValue> variables) {
+      final ArrayProperty<StringValue> variables) {
     fetchVariablesProperty.reset();
     variables.forEach(variable -> fetchVariablesProperty.add().wrap(variable));
     return this;
@@ -65,7 +65,7 @@ public class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue impl
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

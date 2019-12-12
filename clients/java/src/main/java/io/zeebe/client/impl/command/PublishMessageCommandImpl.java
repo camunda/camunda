@@ -42,8 +42,8 @@ public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessa
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
-      ZeebeObjectMapper objectMapper,
-      Predicate<Throwable> retryPredicate) {
+      final ZeebeObjectMapper objectMapper,
+      final Predicate<Throwable> retryPredicate) {
     super(objectMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
@@ -53,7 +53,7 @@ public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessa
   }
 
   @Override
-  protected PublishMessageCommandImpl setVariablesInternal(String variables) {
+  protected PublishMessageCommandImpl setVariablesInternal(final String variables) {
     builder.setVariables(variables);
     return this;
   }
@@ -83,7 +83,7 @@ public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessa
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -100,7 +100,8 @@ public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessa
   }
 
   private void send(
-      PublishMessageRequest request, StreamObserver<PublishMessageResponse> streamObserver) {
+      final PublishMessageRequest request,
+      final StreamObserver<PublishMessageResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .publishMessage(request, streamObserver);

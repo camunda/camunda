@@ -58,13 +58,13 @@ public class JobWorkerBuilderImpl
   private List<String> fetchVariables;
 
   public JobWorkerBuilderImpl(
-      ZeebeClientConfiguration configuration,
-      GatewayStub gatewayStub,
-      JobClient jobClient,
-      ZeebeObjectMapper objectMapper,
-      ScheduledExecutorService executorService,
-      List<Closeable> closeables,
-      Predicate<Throwable> retryPredicate) {
+      final ZeebeClientConfiguration configuration,
+      final GatewayStub gatewayStub,
+      final JobClient jobClient,
+      final ZeebeObjectMapper objectMapper,
+      final ScheduledExecutorService executorService,
+      final List<Closeable> closeables,
+      final Predicate<Throwable> retryPredicate) {
     this.gatewayStub = gatewayStub;
     this.jobClient = jobClient;
     this.objectMapper = objectMapper;
@@ -80,59 +80,59 @@ public class JobWorkerBuilderImpl
   }
 
   @Override
-  public JobWorkerBuilderStep2 jobType(String type) {
+  public JobWorkerBuilderStep2 jobType(final String type) {
     this.jobType = type;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 handler(JobHandler handler) {
+  public JobWorkerBuilderStep3 handler(final JobHandler handler) {
     this.handler = handler;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 timeout(long timeout) {
+  public JobWorkerBuilderStep3 timeout(final long timeout) {
     this.timeout = timeout;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 timeout(Duration timeout) {
+  public JobWorkerBuilderStep3 timeout(final Duration timeout) {
     return timeout(timeout.toMillis());
   }
 
   @Override
-  public JobWorkerBuilderStep3 name(String workerName) {
+  public JobWorkerBuilderStep3 name(final String workerName) {
     this.workerName = workerName;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 maxJobsActive(int maxJobsActive) {
+  public JobWorkerBuilderStep3 maxJobsActive(final int maxJobsActive) {
     this.maxJobsActive = maxJobsActive;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 pollInterval(Duration pollInterval) {
+  public JobWorkerBuilderStep3 pollInterval(final Duration pollInterval) {
     this.pollInterval = pollInterval;
     return this;
   }
 
-  public JobWorkerBuilderStep3 requestTimeout(Duration requestTimeout) {
+  public JobWorkerBuilderStep3 requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 fetchVariables(List<String> fetchVariables) {
+  public JobWorkerBuilderStep3 fetchVariables(final List<String> fetchVariables) {
     this.fetchVariables = fetchVariables;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 fetchVariables(String... fetchVariables) {
+  public JobWorkerBuilderStep3 fetchVariables(final String... fetchVariables) {
     return fetchVariables(Arrays.asList(fetchVariables));
   }
 

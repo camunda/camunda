@@ -17,7 +17,7 @@ public class MockRecordValueWithVariables extends MockRecordValue
 
   public MockRecordValueWithVariables() {}
 
-  public MockRecordValueWithVariables(Map<String, Object> variables) {
+  public MockRecordValueWithVariables(final Map<String, Object> variables) {
     this.variables = variables;
   }
 
@@ -26,7 +26,7 @@ public class MockRecordValueWithVariables extends MockRecordValue
     return variables;
   }
 
-  public MockRecordValueWithVariables setVariables(Map<String, Object> variables) {
+  public MockRecordValueWithVariables setVariables(final Map<String, Object> variables) {
     this.variables = variables;
     return this;
   }

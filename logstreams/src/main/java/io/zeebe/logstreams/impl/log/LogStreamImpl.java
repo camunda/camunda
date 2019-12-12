@@ -131,7 +131,7 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
         });
   }
 
-  private void internalSetCommitPosition(long commitPosition) {
+  private void internalSetCommitPosition(final long commitPosition) {
     this.commitPosition = commitPosition;
 
     onCommitPositionUpdatedConditions.signalConsumers();
@@ -240,7 +240,7 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   }
 
   private int determineInitialPartitionId() {
-    try (LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
+    try (final LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
 
       // Get position of last entry
       final long lastPosition = logReader.seekToEnd();

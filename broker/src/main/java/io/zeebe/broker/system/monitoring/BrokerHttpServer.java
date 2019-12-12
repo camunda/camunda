@@ -21,10 +21,10 @@ public class BrokerHttpServer implements CloseableSilently {
   private final Channel channel;
 
   public BrokerHttpServer(
-      String host,
-      int port,
-      CollectorRegistry metricsRegistry,
-      BrokerHealthCheckService brokerHealthCheckService) {
+      final String host,
+      final int port,
+      final CollectorRegistry metricsRegistry,
+      final BrokerHealthCheckService brokerHealthCheckService) {
     bossGroup = new NioEventLoopGroup(1);
     workerGroup = new NioEventLoopGroup();
 

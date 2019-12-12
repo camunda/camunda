@@ -30,12 +30,12 @@ public class StreamWrapperTest {
 
   class IntegerStream extends StreamWrapper<Integer, IntegerStream> {
 
-    IntegerStream(Stream<Integer> wrappedStream) {
+    IntegerStream(final Stream<Integer> wrappedStream) {
       super(wrappedStream);
     }
 
     @Override
-    protected IntegerStream supply(Stream<Integer> wrappedStream) {
+    protected IntegerStream supply(final Stream<Integer> wrappedStream) {
       return new IntegerStream(wrappedStream);
     }
   }

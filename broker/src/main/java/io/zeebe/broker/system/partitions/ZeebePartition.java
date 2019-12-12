@@ -89,7 +89,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
   public ZeebePartition(
       final BrokerInfo localBroker,
       final RaftPartition atomixRaftPartition,
-      List<PartitionListener> partitionListeners,
+      final List<PartitionListener> partitionListeners,
       final ClusterEventService clusterEventService,
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
@@ -110,7 +110,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
     for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
       try {
         exporterRepository.load(exporterCfg);
-      } catch (ExporterLoadException | ExporterJarLoadException e) {
+      } catch (final ExporterLoadException | ExporterJarLoadException e) {
         throw new IllegalStateException(
             "Failed to load exporter with configuration: " + exporterCfg, e);
       }
@@ -123,11 +123,11 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
    * @param newRole the new role of the raft partition
    */
   @Override
-  public void accept(Role newRole) {
+  public void accept(final Role newRole) {
     actor.run(() -> onRoleChange(newRole));
   }
 
-  private void onRoleChange(Role newRole) {
+  private void onRoleChange(final Role newRole) {
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
@@ -179,7 +179,8 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
             });
   }
 
-  private ActorFuture<Void> onTransitionTo(Consumer<CompletableActorFuture<Void>> roleTransition) {
+  private ActorFuture<Void> onTransitionTo(
+      final Consumer<CompletableActorFuture<Void>> roleTransition) {
     final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
     if (transitionFuture != null && !transitionFuture.isDone()) {
       // wait until previous transition is complete
@@ -309,7 +310,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
     return brokerCfg.getCluster().getReplicationFactor() > 1;
   }
 
-  private void installProcessingPartition(CompletableActorFuture<Void> installFuture) {
+  private void installProcessingPartition(final CompletableActorFuture<Void> installFuture) {
     final StreamProcessor streamProcessor = createStreamProcessor(zeebeDb);
     closeables.add(streamProcessor);
     streamProcessor
@@ -339,7 +340,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
             });
   }
 
-  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb) {
+  private StreamProcessor createStreamProcessor(final ZeebeDb zeebeDb) {
     return StreamProcessor.builder()
         .logStream(logStream)
         .actorScheduler(scheduler)
@@ -357,7 +358,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
   }
 
   private ActorFuture<Void> installSnapshotDirector(
-      StreamProcessor streamProcessor, DataCfg dataCfg) {
+      final StreamProcessor streamProcessor, final DataCfg dataCfg) {
     final Duration snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(streamProcessor, snapshotController, logStream, snapshotPeriod);
@@ -365,7 +366,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
     return scheduler.submitActor(asyncSnapshotDirector);
   }
 
-  private ActorFuture<Void> installExporter(ZeebeDb zeebeDb) {
+  private ActorFuture<Void> installExporter(final ZeebeDb zeebeDb) {
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
@@ -463,7 +464,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
   }
 
   private void stepByStepClosing(
-      final CompletableActorFuture<Void> closingFuture, List<Actor> actorsToClose) {
+      final CompletableActorFuture<Void> closingFuture, final List<Actor> actorsToClose) {
     if (actorsToClose.isEmpty()) {
       closingFuture.complete(null);
       return;

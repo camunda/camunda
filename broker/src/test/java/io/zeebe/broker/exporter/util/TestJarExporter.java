@@ -15,5 +15,5 @@ public class TestJarExporter implements Exporter {
   public static final String FOO = "bar";
 
   @Override
-  public void export(Record record) {}
+  public void export(final Record record) {}
 }

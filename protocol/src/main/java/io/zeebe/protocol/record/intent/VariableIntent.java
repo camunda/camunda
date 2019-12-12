@@ -21,7 +21,7 @@ public enum VariableIntent implements Intent {
 
   private final short value;
 
-  VariableIntent(short value) {
+  VariableIntent(final short value) {
     this.value = value;
   }
 
@@ -30,7 +30,7 @@ public enum VariableIntent implements Intent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return CREATED;

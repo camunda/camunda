@@ -19,10 +19,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class MultipleClientTest {
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public GrpcClientRule client1 = new GrpcClientRule(brokerRule);
-  public GrpcClientRule client2 = new GrpcClientRule(brokerRule);
+  public final GrpcClientRule client1 = new GrpcClientRule(brokerRule);
+  public final GrpcClientRule client2 = new GrpcClientRule(brokerRule);
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(client1).around(client2);

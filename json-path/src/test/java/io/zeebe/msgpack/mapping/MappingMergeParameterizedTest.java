@@ -36,7 +36,7 @@ public class MappingMergeParameterizedTest {
   @Parameter(3)
   public String expectedPayload;
 
-  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
+  private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Parameters(name = "Test {index}: merge {0} and {1} to {3}")
   public static Iterable<Object[]> parameters() throws Exception {

@@ -30,7 +30,7 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
   private static Attribute<String> processIdAttribute;
   private static Attribute<String> processIdExpressionAttribute;
 
-  public ZeebeCalledElementImpl(ModelTypeInstanceContext instanceContext) {
+  public ZeebeCalledElementImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
@@ -40,7 +40,7 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public void setProcessId(String processId) {
+  public void setProcessId(final String processId) {
     processIdAttribute.setValue(this, processId);
   }
 
@@ -50,11 +50,11 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public void setProcessIdExpression(String processIdExpression) {
+  public void setProcessIdExpression(final String processIdExpression) {
     processIdExpressionAttribute.setValue(this, processIdExpression);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ZeebeCalledElement.class, ZeebeConstants.ELEMENT_CALLED_ELEMENT)

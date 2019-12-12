@@ -13,9 +13,9 @@ public class ExecutableMultiInstanceBody extends ExecutableActivity {
   private final ExecutableActivity innerActivity;
 
   public ExecutableMultiInstanceBody(
-      String id,
-      ExecutableLoopCharacteristics loopCharacteristics,
-      ExecutableActivity innerActivity) {
+      final String id,
+      final ExecutableLoopCharacteristics loopCharacteristics,
+      final ExecutableActivity innerActivity) {
     super(id);
     this.loopCharacteristics = loopCharacteristics;
     this.innerActivity = innerActivity;

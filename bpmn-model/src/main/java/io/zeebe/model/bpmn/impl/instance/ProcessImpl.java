@@ -69,11 +69,11 @@ public class ProcessImpl extends CallableElementImpl implements Process {
       correlationSubscriptionCollection;
   protected static ElementReferenceCollection<Process, Supports> supportsCollection;
 
-  public ProcessImpl(ModelTypeInstanceContext context) {
+  public ProcessImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Process.class, BPMN_ELEMENT_PROCESS)
@@ -82,7 +82,7 @@ public class ProcessImpl extends CallableElementImpl implements Process {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Process>() {
                   @Override
-                  public Process newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Process newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ProcessImpl(instanceContext);
                   }
                 });
@@ -139,7 +139,7 @@ public class ProcessImpl extends CallableElementImpl implements Process {
   }
 
   @Override
-  public void setProcessType(ProcessType processType) {
+  public void setProcessType(final ProcessType processType) {
     processTypeAttribute.setValue(this, processType);
   }
 
@@ -149,7 +149,7 @@ public class ProcessImpl extends CallableElementImpl implements Process {
   }
 
   @Override
-  public void setClosed(boolean closed) {
+  public void setClosed(final boolean closed) {
     isClosedAttribute.setValue(this, closed);
   }
 
@@ -159,7 +159,7 @@ public class ProcessImpl extends CallableElementImpl implements Process {
   }
 
   @Override
-  public void setExecutable(boolean executable) {
+  public void setExecutable(final boolean executable) {
     isExecutableAttribute.setValue(this, executable);
   }
 
@@ -169,7 +169,7 @@ public class ProcessImpl extends CallableElementImpl implements Process {
   }
 
   @Override
-  public void setAuditing(Auditing auditing) {
+  public void setAuditing(final Auditing auditing) {
     auditingChild.setChild(this, auditing);
   }
 
@@ -179,7 +179,7 @@ public class ProcessImpl extends CallableElementImpl implements Process {
   }
 
   @Override
-  public void setMonitoring(Monitoring monitoring) {
+  public void setMonitoring(final Monitoring monitoring) {
     monitoringChild.setChild(this, monitoring);
   }
 

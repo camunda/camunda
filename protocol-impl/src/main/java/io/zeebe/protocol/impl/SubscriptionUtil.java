@@ -19,7 +19,7 @@ public class SubscriptionUtil {
    * @param correlationKey the correlation key
    * @return the hash code of the subscription
    */
-  protected static int getSubscriptionHashCode(DirectBuffer correlationKey) {
+  protected static int getSubscriptionHashCode(final DirectBuffer correlationKey) {
     // is equal to java.lang.String#hashCode
     int hashCode = 0;
 
@@ -36,7 +36,8 @@ public class SubscriptionUtil {
    * @param partitionCount the number of partitions
    * @return the partition id for the subscription
    */
-  public static int getSubscriptionPartitionId(DirectBuffer correlationKey, int partitionCount) {
+  public static int getSubscriptionPartitionId(
+      final DirectBuffer correlationKey, final int partitionCount) {
     final int hashCode = getSubscriptionHashCode(correlationKey);
     // partition ids range from START_PARTITION_ID .. START_PARTITION_ID + partitionCount
     return Math.abs(hashCode % partitionCount) + START_PARTITION_ID;

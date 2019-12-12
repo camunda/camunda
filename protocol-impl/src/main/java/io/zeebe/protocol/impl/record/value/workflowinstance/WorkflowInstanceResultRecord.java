@@ -41,12 +41,12 @@ public class WorkflowInstanceResultRecord extends UnifiedRecordValue
     return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
   }
 
-  public WorkflowInstanceResultRecord setBpmnProcessId(String bpmnProcessId) {
+  public WorkflowInstanceResultRecord setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
-  public WorkflowInstanceResultRecord setBpmnProcessId(DirectBuffer bpmnProcessId) {
+  public WorkflowInstanceResultRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     this.bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
@@ -55,7 +55,7 @@ public class WorkflowInstanceResultRecord extends UnifiedRecordValue
     return versionProperty.getValue();
   }
 
-  public WorkflowInstanceResultRecord setVersion(int version) {
+  public WorkflowInstanceResultRecord setVersion(final int version) {
     this.versionProperty.setValue(version);
     return this;
   }
@@ -64,7 +64,7 @@ public class WorkflowInstanceResultRecord extends UnifiedRecordValue
     return workflowKeyProperty.getValue();
   }
 
-  public WorkflowInstanceResultRecord setWorkflowKey(long key) {
+  public WorkflowInstanceResultRecord setWorkflowKey(final long key) {
     this.workflowKeyProperty.setValue(key);
     return this;
   }
@@ -74,7 +74,7 @@ public class WorkflowInstanceResultRecord extends UnifiedRecordValue
     return workflowInstanceKeyProperty.getValue();
   }
 
-  public WorkflowInstanceResultRecord setWorkflowInstanceKey(long instanceKey) {
+  public WorkflowInstanceResultRecord setWorkflowInstanceKey(final long instanceKey) {
     this.workflowInstanceKeyProperty.setValue(instanceKey);
     return this;
   }
@@ -94,7 +94,7 @@ public class WorkflowInstanceResultRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
-  public WorkflowInstanceResultRecord setVariables(DirectBuffer variables) {
+  public WorkflowInstanceResultRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
     return this;
   }

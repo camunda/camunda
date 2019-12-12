@@ -17,14 +17,14 @@ public final class AppendEntryLimiter extends AbstractLimiter<Long> implements A
   private final Long2ObjectHashMap<Listener> appendedListeners = new Long2ObjectHashMap<>();
   private final AppendBackpressureMetrics metrics;
 
-  private AppendEntryLimiter(AppendEntryLimiterBuilder builder, int partitionId) {
+  private AppendEntryLimiter(final AppendEntryLimiterBuilder builder, final int partitionId) {
     super(builder);
     metrics = new AppendBackpressureMetrics(partitionId);
     metrics.setInflight(0);
     metrics.setNewLimit(getLimit());
   }
 
-  public Optional<Listener> acquire(Long position) {
+  public Optional<Listener> acquire(final Long position) {
     if (getInflight() >= getLimit()) {
       return createRejectedListener();
     }
@@ -32,11 +32,11 @@ public final class AppendEntryLimiter extends AbstractLimiter<Long> implements A
     return Optional.of(listener);
   }
 
-  private void registerListener(long position, Listener listener) {
+  private void registerListener(final long position, final Listener listener) {
     appendedListeners.put(position, listener);
   }
 
-  public boolean tryAcquire(Long position) {
+  public boolean tryAcquire(final Long position) {
     final Optional<Listener> acquired = acquire(position);
     return acquired
         .map(
@@ -48,7 +48,7 @@ public final class AppendEntryLimiter extends AbstractLimiter<Long> implements A
         .orElse(false);
   }
 
-  public void onCommit(long position) {
+  public void onCommit(final long position) {
     final Listener listener = appendedListeners.remove(position);
     if (listener != null) {
       listener.onSuccess();
@@ -62,7 +62,7 @@ public final class AppendEntryLimiter extends AbstractLimiter<Long> implements A
   }
 
   @Override
-  protected void onNewLimit(int newLimit) {
+  protected void onNewLimit(final int newLimit) {
     super.onNewLimit(newLimit);
     metrics.setNewLimit(newLimit);
   }
@@ -81,7 +81,7 @@ public final class AppendEntryLimiter extends AbstractLimiter<Long> implements A
       return this;
     }
 
-    public AppendEntryLimiterBuilder partitionId(int partition) {
+    public AppendEntryLimiterBuilder partitionId(final int partition) {
       partitionId = partition;
       return this;
     }

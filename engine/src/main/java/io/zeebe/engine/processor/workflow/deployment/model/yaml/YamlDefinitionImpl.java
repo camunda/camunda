@@ -19,7 +19,7 @@ public class YamlDefinitionImpl {
     return name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
@@ -27,7 +27,7 @@ public class YamlDefinitionImpl {
     return tasks;
   }
 
-  public void setTasks(List<YamlTask> tasks) {
+  public void setTasks(final List<YamlTask> tasks) {
     this.tasks = tasks;
   }
 }

@@ -27,10 +27,10 @@ import org.junit.Test;
 
 public class EnumDecodingTest {
 
-  protected MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  protected ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
-  protected MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  protected ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
+  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  protected final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
+  protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  protected final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
 
   /**
    * This case is important for forward compatibility. Assume client in version X, broker in version

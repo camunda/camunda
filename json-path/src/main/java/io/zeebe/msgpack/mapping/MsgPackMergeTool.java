@@ -36,7 +36,7 @@ public class MsgPackMergeTool {
   private final MsgPackTree currentTree = new MsgPackTree();
   private final UnsafeBuffer resultBuffer = new UnsafeBuffer(0, 0);
 
-  public MsgPackMergeTool(int initialDocumentSize) {
+  public MsgPackMergeTool(final int initialDocumentSize) {
     this.documentIndexer = new MsgPackDocumentIndexer();
     this.documentExtractor = new MsgPackDocumentExtractor();
     this.treeWriter = new MsgPackDocumentTreeWriter(initialDocumentSize);
@@ -51,7 +51,7 @@ public class MsgPackMergeTool {
   /**
    * Throws no mapping exceptions. Assumes default values in case a mapping has ambiguous results.
    */
-  public void mergeDocument(DirectBuffer document, Mapping... mappings) {
+  public void mergeDocument(final DirectBuffer document, final Mapping... mappings) {
     mergeDocument(document, false, mappings);
   }
 
@@ -60,11 +60,12 @@ public class MsgPackMergeTool {
    *
    * @throws MappingException in case a mapping has ambiguous results
    */
-  public void mergeDocumentStrictly(DirectBuffer document, Mapping... mappings) {
+  public void mergeDocumentStrictly(final DirectBuffer document, final Mapping... mappings) {
     mergeDocument(document, true, mappings);
   }
 
-  private void mergeDocument(DirectBuffer document, boolean strictMode, Mapping... mappings) {
+  private void mergeDocument(
+      final DirectBuffer document, final boolean strictMode, final Mapping... mappings) {
     EnsureUtil.ensureNotNull("document", document);
 
     if (mappings != null && mappings.length > 0) {
@@ -88,7 +89,7 @@ public class MsgPackMergeTool {
     return resultBuffer;
   }
 
-  private void ensureDocumentIsAMsgPackMap(DirectBuffer document, String exceptionMsg) {
+  private void ensureDocumentIsAMsgPackMap(final DirectBuffer document, final String exceptionMsg) {
     final byte b = document.getByte(0);
     final MsgPackFormat format = MsgPackFormat.valueOf(b);
     if (format.getType() != MsgPackType.MAP && format.getType() != MsgPackType.NIL) {

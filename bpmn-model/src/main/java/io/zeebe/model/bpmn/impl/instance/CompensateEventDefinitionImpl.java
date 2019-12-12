@@ -42,11 +42,11 @@ public class CompensateEventDefinitionImpl extends EventDefinitionImpl
   protected static Attribute<Boolean> waitForCompletionAttribute;
   protected static AttributeReference<Activity> activityRefAttribute;
 
-  public CompensateEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public CompensateEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CompensateEventDefinition.class, BPMN_ELEMENT_COMPENSATE_EVENT_DEFINITION)
@@ -56,7 +56,7 @@ public class CompensateEventDefinitionImpl extends EventDefinitionImpl
                 new ModelTypeInstanceProvider<CompensateEventDefinition>() {
                   @Override
                   public CompensateEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CompensateEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -79,7 +79,7 @@ public class CompensateEventDefinitionImpl extends EventDefinitionImpl
   }
 
   @Override
-  public void setWaitForCompletion(boolean isWaitForCompletion) {
+  public void setWaitForCompletion(final boolean isWaitForCompletion) {
     waitForCompletionAttribute.setValue(this, isWaitForCompletion);
   }
 
@@ -89,7 +89,7 @@ public class CompensateEventDefinitionImpl extends EventDefinitionImpl
   }
 
   @Override
-  public void setActivity(Activity activity) {
+  public void setActivity(final Activity activity) {
     activityRefAttribute.setReferenceTargetElement(this, activity);
   }
 }

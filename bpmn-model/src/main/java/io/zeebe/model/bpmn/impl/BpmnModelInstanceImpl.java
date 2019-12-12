@@ -31,7 +31,8 @@ import org.camunda.bpm.model.xml.instance.DomDocument;
  */
 public class BpmnModelInstanceImpl extends ModelInstanceImpl implements BpmnModelInstance {
 
-  public BpmnModelInstanceImpl(ModelImpl model, ModelBuilder modelBuilder, DomDocument document) {
+  public BpmnModelInstanceImpl(
+      final ModelImpl model, final ModelBuilder modelBuilder, final DomDocument document) {
     super(model, modelBuilder, document);
   }
 
@@ -41,7 +42,7 @@ public class BpmnModelInstanceImpl extends ModelInstanceImpl implements BpmnMode
   }
 
   @Override
-  public void setDefinitions(Definitions definitions) {
+  public void setDefinitions(final Definitions definitions) {
     setDocumentElement(definitions);
   }
 

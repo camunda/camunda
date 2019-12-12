@@ -17,7 +17,7 @@ public class YamlMapping {
     return source;
   }
 
-  public void setSource(String source) {
+  public void setSource(final String source) {
     this.source = source;
   }
 
@@ -25,7 +25,7 @@ public class YamlMapping {
     return target;
   }
 
-  public void setTarget(String target) {
+  public void setTarget(final String target) {
     this.target = target;
   }
 }

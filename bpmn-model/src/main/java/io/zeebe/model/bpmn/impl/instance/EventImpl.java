@@ -39,11 +39,11 @@ public abstract class EventImpl extends FlowNodeImpl implements Event {
 
   protected static ChildElementCollection<Property> propertyCollection;
 
-  public EventImpl(ModelTypeInstanceContext context) {
+  public EventImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Event.class, BPMN_ELEMENT_EVENT)

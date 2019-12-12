@@ -9,11 +9,11 @@ package io.zeebe.exporter;
 
 public class ElasticsearchExporterException extends RuntimeException {
 
-  public ElasticsearchExporterException(String message) {
+  public ElasticsearchExporterException(final String message) {
     super(message);
   }
 
-  public ElasticsearchExporterException(String message, Throwable cause) {
+  public ElasticsearchExporterException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

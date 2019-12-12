@@ -107,7 +107,7 @@ public class ClusteringRule extends ExternalResource {
     this(3);
   }
 
-  public ClusteringRule(int clusterSize) {
+  public ClusteringRule(final int clusterSize) {
     this(clusterSize, clusterSize, clusterSize);
   }
 
@@ -196,7 +196,7 @@ public class ClusteringRule extends ExternalResource {
       waitUntilBrokersInTopology();
       LOG.info("All brokers in topology {}", getTopologyFromClient());
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
       closeables.after();
       throw new UncheckedExecutionException("Cluster start failed", e);
@@ -227,7 +227,7 @@ public class ClusteringRule extends ExternalResource {
     leaderListener.awaitLeaders();
   }
 
-  private Broker createBroker(int nodeId) {
+  private Broker createBroker(final int nodeId) {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
@@ -236,11 +236,11 @@ public class ClusteringRule extends ExternalResource {
     return broker;
   }
 
-  private BrokerCfg getBrokerCfg(int nodeId) {
+  private BrokerCfg getBrokerCfg(final int nodeId) {
     return brokerCfgs.computeIfAbsent(nodeId, this::createBrokerCfg);
   }
 
-  private BrokerCfg createBrokerCfg(int nodeId) {
+  private BrokerCfg createBrokerCfg(final int nodeId) {
     final BrokerCfg brokerCfg = new BrokerCfg();
 
     // build-in exporters
@@ -272,11 +272,11 @@ public class ClusteringRule extends ExternalResource {
     return brokerCfg;
   }
 
-  private File getBrokerBase(int nodeId) {
+  private File getBrokerBase(final int nodeId) {
     return brokerBases.computeIfAbsent(nodeId, this::createBrokerBase);
   }
 
-  private File createBrokerBase(int nodeId) {
+  private File createBrokerBase(final int nodeId) {
     final File base = Files.newTemporaryFolder();
     closeables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
     return base;
@@ -546,7 +546,7 @@ public class ClusteringRule extends ExternalResource {
         getTopologyFromClient());
   }
 
-  public long createWorkflowInstanceOnPartition(int partitionId, String bpmnProcessId) {
+  public long createWorkflowInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
     final BrokerCreateWorkflowInstanceRequest request =
         new BrokerCreateWorkflowInstanceRequest().setBpmnProcessId(bpmnProcessId);
 
@@ -584,19 +584,19 @@ public class ClusteringRule extends ExternalResource {
     return partitionIds;
   }
 
-  public List<Broker> getOtherBrokerObjects(int leaderNodeId) {
+  public List<Broker> getOtherBrokerObjects(final int leaderNodeId) {
     return brokers.keySet().stream()
         .filter(id -> id != leaderNodeId)
         .map(brokers::get)
         .collect(Collectors.toList());
   }
 
-  public Path getSegmentsDirectory(Broker broker) {
+  public Path getSegmentsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
     return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
   }
 
-  public File getSnapshotsDirectory(Broker broker) {
+  public File getSnapshotsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
     return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
   }
@@ -610,15 +610,17 @@ public class ClusteringRule extends ExternalResource {
 
     final CountDownLatch latch;
 
-    LeaderListener(int partitionCount) {
+    LeaderListener(final int partitionCount) {
       this.latch = new CountDownLatch(partitionCount);
     }
 
     @Override
-    public void onBecomingFollower(int partitionId, long term, LogStream logStream) {}
+    public void onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {}
 
     @Override
-    public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+    public void onBecomingLeader(
+        final int partitionId, final long term, final LogStream logStream) {
       latch.countDown();
     }
 

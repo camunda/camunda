@@ -38,11 +38,11 @@ public class ConditionExpressionImpl extends FormalExpressionImpl implements Con
 
   protected static Attribute<String> typeAttribute;
 
-  public ConditionExpressionImpl(ModelTypeInstanceContext instanceContext) {
+  public ConditionExpressionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ConditionExpression.class, BPMN_ELEMENT_CONDITION_EXPRESSION)
@@ -51,7 +51,8 @@ public class ConditionExpressionImpl extends FormalExpressionImpl implements Con
             .instanceProvider(
                 new ModelTypeInstanceProvider<ConditionExpression>() {
                   @Override
-                  public ConditionExpression newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ConditionExpression newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ConditionExpressionImpl(instanceContext);
                   }
                 });
@@ -72,7 +73,7 @@ public class ConditionExpressionImpl extends FormalExpressionImpl implements Con
   }
 
   @Override
-  public void setType(String type) {
+  public void setType(final String type) {
     typeAttribute.setValue(this, type);
   }
 }

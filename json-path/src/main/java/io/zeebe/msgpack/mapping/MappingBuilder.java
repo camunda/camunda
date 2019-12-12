@@ -16,13 +16,14 @@ public class MappingBuilder {
 
   private final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
 
-  private List<Mapping> mappings = new ArrayList<>();
+  private final List<Mapping> mappings = new ArrayList<>();
 
-  public static Mapping[] createMapping(String source, String target) {
+  public static Mapping[] createMapping(final String source, final String target) {
     return createMappings().mapping(source, target).build();
   }
 
-  public static Mapping[] createMapping(String source, String target, Mapping.Type type) {
+  public static Mapping[] createMapping(
+      final String source, final String target, final Mapping.Type type) {
     return createMappings().mapping(source, target, type).build();
   }
 
@@ -30,11 +31,11 @@ public class MappingBuilder {
     return new MappingBuilder();
   }
 
-  public MappingBuilder mapping(String source, String target) {
+  public MappingBuilder mapping(final String source, final String target) {
     return mapping(source, target, Mapping.Type.PUT);
   }
 
-  public MappingBuilder mapping(String source, String target, Mapping.Type type) {
+  public MappingBuilder mapping(final String source, final String target, final Mapping.Type type) {
     final JsonPathQuery sourceQuery = queryCompiler.compile(source);
 
     // merging algorithm expect a root object $

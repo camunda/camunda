@@ -16,12 +16,15 @@ public class ArrayIndexFilter implements MsgPackFilter {
 
   @Override
   public boolean matches(
-      MsgPackTraversalContext ctx, DirectBuffer filterContext, MsgPackToken value) {
+      final MsgPackTraversalContext ctx,
+      final DirectBuffer filterContext,
+      final MsgPackToken value) {
     final int queryIndex = filterContext.getInt(0);
     return !ctx.isMap() && queryIndex == ctx.currentElement();
   }
 
-  public static void encodeDynamicContext(MutableDirectBuffer contextBuffer, int arrayIndex) {
+  public static void encodeDynamicContext(
+      final MutableDirectBuffer contextBuffer, final int arrayIndex) {
     contextBuffer.putInt(0, arrayIndex);
   }
 }

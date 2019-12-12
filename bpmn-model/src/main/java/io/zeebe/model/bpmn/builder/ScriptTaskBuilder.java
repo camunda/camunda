@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.ScriptTask;
 /** @author Sebastian Menski */
 public class ScriptTaskBuilder extends AbstractScriptTaskBuilder<ScriptTaskBuilder> {
 
-  public ScriptTaskBuilder(BpmnModelInstance modelInstance, ScriptTask element) {
+  public ScriptTaskBuilder(final BpmnModelInstance modelInstance, final ScriptTask element) {
     super(modelInstance, element, ScriptTaskBuilder.class);
   }
 }

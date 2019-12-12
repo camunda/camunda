@@ -15,20 +15,20 @@ public class DefaultChannelFactory implements TransportChannelFactory {
 
   @Override
   public TransportChannel buildClientChannel(
-      ChannelLifecycleListener listener,
-      RemoteAddressImpl remoteAddress,
-      int maxMessageSize,
-      FragmentHandler readHandler) {
+      final ChannelLifecycleListener listener,
+      final RemoteAddressImpl remoteAddress,
+      final int maxMessageSize,
+      final FragmentHandler readHandler) {
     return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler);
   }
 
   @Override
   public TransportChannel buildServerChannel(
-      ChannelLifecycleListener listener,
-      RemoteAddressImpl remoteAddress,
-      int maxMessageSize,
-      FragmentHandler readHandler,
-      SocketChannel media) {
+      final ChannelLifecycleListener listener,
+      final RemoteAddressImpl remoteAddress,
+      final int maxMessageSize,
+      final FragmentHandler readHandler,
+      final SocketChannel media) {
     return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler, media);
   }
 }

@@ -26,16 +26,18 @@ public abstract class AbstractCompensateEventDefinitionBuilder<
     extends AbstractRootElementBuilder<B, CompensateEventDefinition> {
 
   public AbstractCompensateEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, CompensateEventDefinition element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final CompensateEventDefinition element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
   @Override
-  public B id(String identifier) {
+  public B id(final String identifier) {
     return super.id(identifier);
   }
 
-  public B activityRef(String activityId) {
+  public B activityRef(final String activityId) {
     final Activity activity = modelInstance.getModelElementById(activityId);
 
     if (activity == null) {
@@ -55,7 +57,7 @@ public abstract class AbstractCompensateEventDefinitionBuilder<
     return myself;
   }
 
-  public B waitForCompletion(boolean waitForCompletion) {
+  public B waitForCompletion(final boolean waitForCompletion) {
     element.setWaitForCompletion(waitForCompletion);
     return myself;
   }

@@ -19,7 +19,7 @@ public class MockScheduledTask implements Runnable {
   private Runnable task;
   private boolean executed;
 
-  MockScheduledTask(Duration delay, Runnable task) {
+  MockScheduledTask(final Duration delay, final Runnable task) {
     this.delay = delay;
     this.task = task;
     this.executed = false;
@@ -29,7 +29,7 @@ public class MockScheduledTask implements Runnable {
     return delay;
   }
 
-  public void setDelay(Duration delay) {
+  public void setDelay(final Duration delay) {
     this.delay = delay;
   }
 
@@ -37,7 +37,7 @@ public class MockScheduledTask implements Runnable {
     return task;
   }
 
-  public void setTask(Runnable task) {
+  public void setTask(final Runnable task) {
     this.task = task;
   }
 

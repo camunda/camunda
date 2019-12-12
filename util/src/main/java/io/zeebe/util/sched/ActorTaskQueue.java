@@ -140,17 +140,17 @@ class ActorTaskQueueNode {
   long stateCount;
   ActorTask task;
 
-  void nextOrdered(ActorTaskQueueNode t) {
+  void nextOrdered(final ActorTaskQueueNode t) {
     assert t != this;
     UNSAFE.putOrderedObject(this, NEXT_OFFSET, t);
   }
 
-  void prevOrdered(ActorTaskQueueNode t) {
+  void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
     UNSAFE.putObjectVolatile(this, PREV_OFFSET, t);
   }
 
-  public void setTask(ActorTask task) {
+  public void setTask(final ActorTask task) {
     this.task = task;
   }
 }

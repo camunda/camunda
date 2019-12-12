@@ -20,7 +20,7 @@ public class ContextProcessTransformer implements ModelElementTransformer<Proces
   }
 
   @Override
-  public void transform(Process element, TransformContext context) {
+  public void transform(final Process element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getWorkflow(element.getId());
     context.setCurrentWorkflow(workflow);
   }

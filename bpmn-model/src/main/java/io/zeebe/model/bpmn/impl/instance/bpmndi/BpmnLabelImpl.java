@@ -39,11 +39,11 @@ public class BpmnLabelImpl extends LabelImpl implements BpmnLabel {
 
   protected static AttributeReference<BpmnLabelStyle> labelStyleAttribute;
 
-  public BpmnLabelImpl(ModelTypeInstanceContext instanceContext) {
+  public BpmnLabelImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BpmnLabel.class, BPMNDI_ELEMENT_BPMN_LABEL)
@@ -52,7 +52,7 @@ public class BpmnLabelImpl extends LabelImpl implements BpmnLabel {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BpmnLabel>() {
                   @Override
-                  public BpmnLabel newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BpmnLabel newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new BpmnLabelImpl(instanceContext);
                   }
                 });
@@ -72,7 +72,7 @@ public class BpmnLabelImpl extends LabelImpl implements BpmnLabel {
   }
 
   @Override
-  public void setLabelStyle(BpmnLabelStyle labelStyle) {
+  public void setLabelStyle(final BpmnLabelStyle labelStyle) {
     labelStyleAttribute.setReferenceTargetElement(this, labelStyle);
   }
 }

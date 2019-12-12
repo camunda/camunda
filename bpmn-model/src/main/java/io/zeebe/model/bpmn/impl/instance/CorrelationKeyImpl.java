@@ -43,11 +43,11 @@ public class CorrelationKeyImpl extends BaseElementImpl implements CorrelationKe
   protected static ElementReferenceCollection<CorrelationProperty, CorrelationPropertyRef>
       correlationPropertyRefCollection;
 
-  public CorrelationKeyImpl(ModelTypeInstanceContext instanceContext) {
+  public CorrelationKeyImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CorrelationKey.class, BPMN_ELEMENT_CORRELATION_KEY)
@@ -56,7 +56,8 @@ public class CorrelationKeyImpl extends BaseElementImpl implements CorrelationKe
             .instanceProvider(
                 new ModelTypeInstanceProvider<CorrelationKey>() {
                   @Override
-                  public CorrelationKey newInstance(ModelTypeInstanceContext instanceContext) {
+                  public CorrelationKey newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CorrelationKeyImpl(instanceContext);
                   }
                 });
@@ -80,7 +81,7 @@ public class CorrelationKeyImpl extends BaseElementImpl implements CorrelationKe
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 

@@ -14,28 +14,28 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MapFactoryBuilder<A, T> {
-  protected T returnValue;
-  protected Consumer<Function<A, Map<String, Object>>> factoryCallback;
+  protected final T returnValue;
+  protected final Consumer<Function<A, Map<String, Object>>> factoryCallback;
 
   protected BiConsumer<A, Map<String, Object>> manipulationChain = (a, m) -> {};
 
   public MapFactoryBuilder(
-      T returnValue, Consumer<Function<A, Map<String, Object>>> factoryCallback) {
+      final T returnValue, final Consumer<Function<A, Map<String, Object>>> factoryCallback) {
     this.returnValue = returnValue;
     this.factoryCallback = factoryCallback;
   }
 
-  public MapFactoryBuilder<A, T> allOf(Function<A, Map<String, Object>> otherMap) {
+  public MapFactoryBuilder<A, T> allOf(final Function<A, Map<String, Object>> otherMap) {
     manipulationChain = manipulationChain.andThen((a, m) -> m.putAll(otherMap.apply(a)));
     return this;
   }
 
-  public MapFactoryBuilder<A, T> put(String key, Object value) {
+  public MapFactoryBuilder<A, T> put(final String key, final Object value) {
     manipulationChain = manipulationChain.andThen((a, m) -> m.put(key, value));
     return this;
   }
 
-  public MapFactoryBuilder<A, T> put(String key, Function<A, Object> valueFunction) {
+  public MapFactoryBuilder<A, T> put(final String key, final Function<A, Object> valueFunction) {
     manipulationChain = manipulationChain.andThen((a, m) -> m.put(key, valueFunction.apply(a)));
     return this;
   }

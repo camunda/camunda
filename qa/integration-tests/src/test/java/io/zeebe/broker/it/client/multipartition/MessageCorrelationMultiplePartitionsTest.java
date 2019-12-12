@@ -42,7 +42,7 @@ public class MessageCorrelationMultiplePartitionsTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(CLUSTERING_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private long workflowKey;
   private String messageName;
@@ -104,7 +104,7 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(correlatedValues).contains("\"p0\"", "\"p1\"", "\"p2\"");
   }
 
-  private long createWorkflowInstance(Object variables) {
+  private long createWorkflowInstance(final Object variables) {
     return CLIENT_RULE
         .getClient()
         .newCreateInstanceCommand()
@@ -115,7 +115,7 @@ public class MessageCorrelationMultiplePartitionsTest {
         .getWorkflowInstanceKey();
   }
 
-  private void publishMessage(String correlationKey, Object variables) {
+  private void publishMessage(final String correlationKey, final Object variables) {
     CLIENT_RULE
         .getClient()
         .newPublishMessageCommand()

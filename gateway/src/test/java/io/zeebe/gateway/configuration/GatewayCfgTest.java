@@ -168,7 +168,7 @@ public class GatewayCfgTest {
   }
 
   private GatewayCfg readConfig(final String filename) {
-    try (InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
+    try (final InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         final GatewayCfg gatewayCfg = TomlConfigurationReader.read(inputStream, GatewayCfg.class);
         gatewayCfg.init(new Environment(environment));

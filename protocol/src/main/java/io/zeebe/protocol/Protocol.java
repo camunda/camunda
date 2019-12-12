@@ -62,11 +62,11 @@ public class Protocol {
    */
   public static final int KEY_BITS = 51;
 
-  public static final long encodePartitionId(int partitionId, long key) {
+  public static final long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }
 
-  public static final int decodePartitionId(long key) {
+  public static final int decodePartitionId(final long key) {
     return (int) (key >> KEY_BITS);
   }
 }

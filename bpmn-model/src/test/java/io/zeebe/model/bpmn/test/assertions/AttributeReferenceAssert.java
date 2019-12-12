@@ -23,11 +23,11 @@ import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 public class AttributeReferenceAssert
     extends AbstractReferenceAssert<AttributeReferenceAssert, AttributeReference<?>> {
 
-  protected AttributeReferenceAssert(AttributeReference<?> actual) {
+  protected AttributeReferenceAssert(final AttributeReference<?> actual) {
     super(actual, AttributeReferenceAssert.class);
   }
 
-  public AttributeReferenceAssert hasSourceAttribute(Attribute<?> sourceAttribute) {
+  public AttributeReferenceAssert hasSourceAttribute(final Attribute<?> sourceAttribute) {
     isNotNull();
 
     final Attribute<String> actualSourceAttribute = actual.getReferenceSourceAttribute();

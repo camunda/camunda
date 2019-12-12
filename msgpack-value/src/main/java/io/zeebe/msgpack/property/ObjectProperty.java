@@ -10,7 +10,7 @@ package io.zeebe.msgpack.property;
 import io.zeebe.msgpack.value.ObjectValue;
 
 public class ObjectProperty<T extends ObjectValue> extends BaseProperty<T> {
-  public ObjectProperty(String key, T objectValue) {
+  public ObjectProperty(final String key, final T objectValue) {
     super(key, objectValue, objectValue);
   }
 

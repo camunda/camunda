@@ -16,12 +16,12 @@ public class PublishMessageStub
     implements RequestStub<BrokerPublishMessageRequest, BrokerResponse<Void>> {
 
   @Override
-  public void registerWith(StubbedBrokerClient gateway) {
+  public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerPublishMessageRequest.class, this);
   }
 
   @Override
-  public BrokerResponse<Void> handle(BrokerPublishMessageRequest request) throws Exception {
+  public BrokerResponse<Void> handle(final BrokerPublishMessageRequest request) throws Exception {
     return new BrokerResponse<>(null);
   }
 }

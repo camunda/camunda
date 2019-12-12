@@ -30,7 +30,7 @@ public class ElasticsearchMetrics {
 
   private final String partitionIdLabel;
 
-  public ElasticsearchMetrics(int partitionId) {
+  public ElasticsearchMetrics(final int partitionId) {
     this.partitionIdLabel = String.valueOf(partitionId);
   }
 
@@ -38,7 +38,7 @@ public class ElasticsearchMetrics {
     return FLUSH_DURATION.labels(partitionIdLabel).startTimer();
   }
 
-  public void recordBulkSize(int bulkSize) {
+  public void recordBulkSize(final int bulkSize) {
     BULK_SIZE.labels(partitionIdLabel).observe(bulkSize);
   }
 }

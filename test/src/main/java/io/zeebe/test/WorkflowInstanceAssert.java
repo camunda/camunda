@@ -40,13 +40,13 @@ public class WorkflowInstanceAssert
 
   private final long workflowInstanceKey;
 
-  public WorkflowInstanceAssert(WorkflowInstanceEvent actual) {
+  public WorkflowInstanceAssert(final WorkflowInstanceEvent actual) {
     super(actual, WorkflowInstanceAssert.class);
 
     workflowInstanceKey = actual.getWorkflowInstanceKey();
   }
 
-  public static WorkflowInstanceAssert assertThat(WorkflowInstanceEvent actual) {
+  public static WorkflowInstanceAssert assertThat(final WorkflowInstanceEvent actual) {
     return new WorkflowInstanceAssert(actual);
   }
 
@@ -66,7 +66,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasPassed(String... elementIds) {
+  public WorkflowInstanceAssert hasPassed(final String... elementIds) {
 
     final List<String> ids = Arrays.asList(elementIds);
 
@@ -89,7 +89,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasEntered(String... elementIds) {
+  public WorkflowInstanceAssert hasEntered(final String... elementIds) {
 
     final List<String> ids = Arrays.asList(elementIds);
 
@@ -111,7 +111,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasCompleted(String... elementIds) {
+  public WorkflowInstanceAssert hasCompleted(final String... elementIds) {
 
     final List<String> ids = Arrays.asList(elementIds);
 
@@ -133,7 +133,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  public WorkflowInstanceAssert hasVariable(String key, Object expectedValue) {
+  public WorkflowInstanceAssert hasVariable(final String key, final Object expectedValue) {
     final Optional<Record<WorkflowInstanceRecordValue>> record =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -151,7 +151,9 @@ public class WorkflowInstanceAssert
   }
 
   private WorkflowInstanceAssert hasVariable(
-      final Record<WorkflowInstanceRecordValue> record, String key, Object expectedValue) {
+      final Record<WorkflowInstanceRecordValue> record,
+      final String key,
+      final Object expectedValue) {
     final Map<String, String> variables =
         WorkflowInstances.getCurrentVariables(workflowInstanceKey, record.getPosition());
 
@@ -164,7 +166,7 @@ public class WorkflowInstanceAssert
     final Object value;
     try {
       value = OBJECT_MAPPER.readValue(variables.get(key), Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       failWithMessage("Expected variable values to be JSON, but got <%s>", e.getMessage());
       return this;
     }
@@ -178,20 +180,21 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  private boolean exists(WorkflowInstanceRecordStream stream) {
+  private boolean exists(final WorkflowInstanceRecordStream stream) {
     try {
       return stream.exists();
-    } catch (StreamWrapperException e) {
+    } catch (final StreamWrapperException e) {
       return false;
     }
   }
 
   private static Predicate<Record<WorkflowInstanceRecordValue>> intent(
-      List<WorkflowInstanceIntent> intents) {
+      final List<WorkflowInstanceIntent> intents) {
     return record -> intents.contains(record.getIntent());
   }
 
-  private static Predicate<Record<WorkflowInstanceRecordValue>> elementId(List<String> elementIds) {
+  private static Predicate<Record<WorkflowInstanceRecordValue>> elementId(
+      final List<String> elementIds) {
     return record -> {
       final String elementId = record.getValue().getElementId();
 

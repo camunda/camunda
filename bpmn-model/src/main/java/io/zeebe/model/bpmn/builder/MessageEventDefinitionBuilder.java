@@ -22,7 +22,7 @@ public class MessageEventDefinitionBuilder
     extends AbstractMessageEventDefinitionBuilder<MessageEventDefinitionBuilder> {
 
   public MessageEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, MessageEventDefinition element) {
+      final BpmnModelInstance modelInstance, final MessageEventDefinition element) {
     super(modelInstance, element, MessageEventDefinitionBuilder.class);
   }
 }

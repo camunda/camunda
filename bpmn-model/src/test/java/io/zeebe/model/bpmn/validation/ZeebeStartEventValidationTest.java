@@ -85,7 +85,7 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
     return process.startEvent().endEvent().done();
   }
 
-  private static BpmnModelInstance cycleTimerStartEventSubprocess(boolean interrupting) {
+  private static BpmnModelInstance cycleTimerStartEventSubprocess(final boolean interrupting) {
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess();
     processBuilder.startEvent().serviceTask("task", b -> b.zeebeTaskType("type")).endEvent();
     return processBuilder

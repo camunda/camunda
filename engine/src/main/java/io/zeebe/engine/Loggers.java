@@ -17,7 +17,7 @@ public class Loggers {
 
   public static final Logger WORKFLOW_PROCESSOR_LOGGER = new ZbLogger("io.zeebe.broker.workflow");
 
-  public static final Logger getExporterLogger(String exporterId) {
+  public static final Logger getExporterLogger(final String exporterId) {
     final String loggerName = String.format("io.zeebe.broker.exporter.%s", exporterId);
     return new ZbLogger(loggerName);
   }

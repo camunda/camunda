@@ -30,7 +30,8 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
   private final MessageStartEventSubscriptionRecord subscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
-  public DeploymentCreatedProcessor(WorkflowState workflowState, boolean isDeploymentPartition) {
+  public DeploymentCreatedProcessor(
+      final WorkflowState workflowState, final boolean isDeploymentPartition) {
     this.workflowState = workflowState;
     this.isDeploymentPartition = isDeploymentPartition;
   }
@@ -55,7 +56,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
     }
   }
 
-  private boolean isLatestWorkflow(Workflow workflow) {
+  private boolean isLatestWorkflow(final Workflow workflow) {
     return workflowState
             .getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessIdBuffer())
             .getVersion()
@@ -63,7 +64,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
   }
 
   private void closeExistingMessageStartEventSubscriptions(
-      Workflow workflowRecord, TypedStreamWriter streamWriter) {
+      final Workflow workflowRecord, final TypedStreamWriter streamWriter) {
     final DeployedWorkflow lastMsgWorkflow = findLastMessageStartWorkflow(workflowRecord);
     if (lastMsgWorkflow == null) {
       return;
@@ -89,14 +90,14 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
   }
 
   private void openMessageStartEventSubscriptions(
-      Workflow workflowRecord, TypedStreamWriter streamWriter) {
+      final Workflow workflowRecord, final TypedStreamWriter streamWriter) {
     final long workflowKey = workflowRecord.getKey();
     final DeployedWorkflow workflowDefinition = workflowState.getWorkflowByKey(workflowKey);
     final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
     final List<ExecutableStartEvent> startEvents = workflow.getStartEvents();
 
     // if startEvents contain message events
-    for (ExecutableCatchEventElement startEvent : startEvents) {
+    for (final ExecutableCatchEventElement startEvent : startEvents) {
       if (startEvent.isMessage()) {
         subscriptionRecord.reset();
         subscriptionRecord

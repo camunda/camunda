@@ -254,7 +254,7 @@ public class ActivateJobsTest extends ClientTest {
       return a;
     }
 
-    public VariablesPojo setA(int a) {
+    public VariablesPojo setA(final int a) {
       this.a = a;
       return this;
     }

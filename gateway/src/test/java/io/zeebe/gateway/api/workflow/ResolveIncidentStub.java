@@ -25,7 +25,7 @@ public class ResolveIncidentStub
   public static final DirectBuffer PROCESS_ID = wrapString("process");
 
   @Override
-  public void registerWith(StubbedBrokerClient gateway) {
+  public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerResolveIncidentRequest.class, this);
   }
 
@@ -34,7 +34,7 @@ public class ResolveIncidentStub
   }
 
   @Override
-  public BrokerResponse<IncidentRecord> handle(BrokerResolveIncidentRequest request) {
+  public BrokerResponse<IncidentRecord> handle(final BrokerResolveIncidentRequest request) {
 
     final IncidentRecord response = new IncidentRecord();
     response.setElementInstanceKey(WORKFLOW_INSTANCE_KEY);

@@ -16,10 +16,10 @@ public class FutureUtil {
    * Invokes Future.get() returning the result of the invocation. Transforms checked exceptions into
    * RuntimeExceptions to accommodate programmer laziness.
    */
-  public static <T> T join(Future<T> f) {
+  public static <T> T join(final Future<T> f) {
     try {
       return f.get();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // NOTE: here we actually want to use rethrowUnchecked
       LangUtil.rethrowUnchecked(e);
     }
@@ -27,10 +27,10 @@ public class FutureUtil {
     return null;
   }
 
-  public static <T> T join(Future<T> f, long timeout, TimeUnit timeUnit) {
+  public static <T> T join(final Future<T> f, final long timeout, final TimeUnit timeUnit) {
     try {
       return f.get(timeout, timeUnit);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // NOTE: here we actually want to use rethrowUnchecked
       LangUtil.rethrowUnchecked(e);
     }
@@ -38,11 +38,11 @@ public class FutureUtil {
     return null;
   }
 
-  public static Runnable wrap(Future<?> future) {
+  public static Runnable wrap(final Future<?> future) {
     return () -> {
       try {
         future.get();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LangUtil.rethrowUnchecked(e);
       }
     };

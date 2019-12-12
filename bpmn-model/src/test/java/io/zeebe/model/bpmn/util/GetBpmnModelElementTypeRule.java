@@ -34,7 +34,7 @@ public class GetBpmnModelElementTypeRule extends TestWatcher implements GetModel
 
   @Override
   @SuppressWarnings("unchecked")
-  protected void starting(Description description) {
+  protected void starting(final Description description) {
     String className = description.getClassName();
     className = className.replaceAll("Test", "");
     Class<? extends ModelElementInstance> instanceClass = null;

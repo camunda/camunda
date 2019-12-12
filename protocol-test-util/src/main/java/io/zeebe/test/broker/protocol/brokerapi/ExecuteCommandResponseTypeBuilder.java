@@ -13,12 +13,12 @@ import java.util.function.Predicate;
 
 public class ExecuteCommandResponseTypeBuilder extends ResponseTypeBuilder<ExecuteCommandRequest> {
 
-  protected MsgPackHelper msgPackConverter;
+  protected final MsgPackHelper msgPackConverter;
 
   public ExecuteCommandResponseTypeBuilder(
-      Consumer<ResponseStub<ExecuteCommandRequest>> stubConsumer,
-      Predicate<ExecuteCommandRequest> activationFunction,
-      MsgPackHelper msgPackConverter) {
+      final Consumer<ResponseStub<ExecuteCommandRequest>> stubConsumer,
+      final Predicate<ExecuteCommandRequest> activationFunction,
+      final MsgPackHelper msgPackConverter) {
     super(stubConsumer, activationFunction);
     this.msgPackConverter = msgPackConverter;
   }

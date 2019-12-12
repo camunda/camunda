@@ -17,7 +17,7 @@ public class FailJobStub extends JobRequestStub
     implements RequestStub<BrokerFailJobRequest, BrokerResponse<JobRecord>> {
 
   @Override
-  public BrokerResponse<JobRecord> handle(BrokerFailJobRequest request) throws Exception {
+  public BrokerResponse<JobRecord> handle(final BrokerFailJobRequest request) throws Exception {
     final JobRecord responseValue = buildDefaultValue();
 
     responseValue.setRetries(request.getRequestWriter().getRetries());
@@ -25,7 +25,7 @@ public class FailJobStub extends JobRequestStub
   }
 
   @Override
-  public void registerWith(StubbedBrokerClient gateway) {
+  public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerFailJobRequest.class, this);
   }
 }

@@ -42,7 +42,8 @@ public class ExecuteCommandRequest implements BufferWriter {
   protected ActorFuture<ClientResponse> responseFuture;
   private Intent intent = null;
 
-  public ExecuteCommandRequest(ClientOutput output, int target, final MsgPackHelper msgPackHelper) {
+  public ExecuteCommandRequest(
+      final ClientOutput output, final int target, final MsgPackHelper msgPackHelper) {
     this.output = output;
     this.target = target;
     this.msgPackHelper = msgPackHelper;
@@ -63,7 +64,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return this;
   }
 
-  public ExecuteCommandRequest intent(Intent intent) {
+  public ExecuteCommandRequest intent(final Intent intent) {
     this.intent = intent;
     return this;
   }
@@ -73,7 +74,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return this;
   }
 
-  public ExecuteCommandRequest command(BufferWriter command) {
+  public ExecuteCommandRequest command(final BufferWriter command) {
     final int commandLength = command.getLength();
     this.encodedCmd = new byte[commandLength];
     command.write(new UnsafeBuffer(encodedCmd), 0);
@@ -85,7 +86,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return send(this::shouldRetryRequest);
   }
 
-  public ExecuteCommandRequest send(Predicate<DirectBuffer> retryFunction) {
+  public ExecuteCommandRequest send(final Predicate<DirectBuffer> retryFunction) {
     if (responseFuture != null) {
       throw new RuntimeException("Cannot send request more than once");
     }

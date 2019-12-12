@@ -22,19 +22,19 @@ public class ExporterMetrics {
 
   private final String partitionIdLabel;
 
-  public ExporterMetrics(int partitionId) {
+  public ExporterMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void event(String action, ValueType valueType) {
+  private void event(final String action, final ValueType valueType) {
     EXPORTER_EVENTS.labels(action, partitionIdLabel, valueType.name()).inc();
   }
 
-  public void eventExported(ValueType valueType) {
+  public void eventExported(final ValueType valueType) {
     event("exported", valueType);
   }
 
-  public void eventSkipped(ValueType valueType) {
+  public void eventSkipped(final ValueType valueType) {
     event("skipped", valueType);
   }
 }

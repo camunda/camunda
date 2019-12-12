@@ -43,11 +43,11 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
   protected static Attribute<String> implementationAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
 
-  public ServiceTaskImpl(ModelTypeInstanceContext context) {
+  public ServiceTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ServiceTask.class, BPMN_ELEMENT_SERVICE_TASK)
@@ -56,7 +56,7 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ServiceTask>() {
                   @Override
-                  public ServiceTask newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ServiceTask newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ServiceTaskImpl(instanceContext);
                   }
                 });
@@ -87,7 +87,7 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
   }
 
   @Override
-  public void setImplementation(String implementation) {
+  public void setImplementation(final String implementation) {
     implementationAttribute.setValue(this, implementation);
   }
 
@@ -97,7 +97,7 @@ public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
   }
 
   @Override
-  public void setOperation(Operation operation) {
+  public void setOperation(final Operation operation) {
     operationRefAttribute.setReferenceTargetElement(this, operation);
   }
 }

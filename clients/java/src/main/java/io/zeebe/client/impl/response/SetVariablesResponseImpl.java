@@ -22,7 +22,7 @@ public class SetVariablesResponseImpl implements SetVariablesResponse {
 
   private final long key;
 
-  public SetVariablesResponseImpl(GatewayOuterClass.SetVariablesResponse response) {
+  public SetVariablesResponseImpl(final GatewayOuterClass.SetVariablesResponse response) {
     key = response.getKey();
   }
 

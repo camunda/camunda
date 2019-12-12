@@ -38,11 +38,11 @@ public class LargeMessageSizeTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String jobType;
 
-  private static BpmnModelInstance workflow(String jobType) {
+  private static BpmnModelInstance workflow(final String jobType) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()
         .serviceTask("task", t -> t.zeebeTaskType(jobType))

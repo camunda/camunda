@@ -21,11 +21,11 @@ public class BrokerResponse<T> {
     this.key = -1;
   }
 
-  public BrokerResponse(T response) {
+  public BrokerResponse(final T response) {
     this(response, -1, -1);
   }
 
-  public BrokerResponse(T response, int partitionId, long key) {
+  public BrokerResponse(final T response, final int partitionId, final long key) {
     this.isResponse = true;
     this.response = response;
     this.partitionId = partitionId;

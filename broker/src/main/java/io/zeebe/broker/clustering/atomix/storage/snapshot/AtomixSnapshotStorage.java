@@ -85,7 +85,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   @Override
   public boolean commitSnapshot(final Path snapshotPath) {
     // in the case of DbSnapshot instances, we expect the path to always contain all the metadata
-    try (var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
+    try (final var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
       return created != null;
     }
   }

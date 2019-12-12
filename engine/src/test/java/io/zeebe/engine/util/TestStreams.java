@@ -294,9 +294,9 @@ public class TestStreams {
 
   public static class FluentLogWriter {
 
-    protected RecordMetadata metadata = new RecordMetadata();
+    protected final RecordMetadata metadata = new RecordMetadata();
     protected UnpackedObject value;
-    protected LogStreamRecordWriter writer;
+    protected final LogStreamRecordWriter writer;
     protected long key = -1;
     private long sourceRecordPosition = -1;
 

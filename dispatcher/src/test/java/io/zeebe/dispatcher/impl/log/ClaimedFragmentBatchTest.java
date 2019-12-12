@@ -39,7 +39,7 @@ public class ClaimedFragmentBatchTest {
 
   private static final byte[] MESSAGE = "message".getBytes();
   private static final int MESSAGE_LENGTH = MESSAGE.length;
-  @Rule public ExpectedException thrown = ExpectedException.none();
+  @Rule public final ExpectedException thrown = ExpectedException.none();
   private UnsafeBuffer underlyingBuffer;
   private ClaimedFragmentBatch claimedBatch;
 

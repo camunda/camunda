@@ -23,12 +23,12 @@ import io.zeebe.engine.state.instance.ElementInstance;
 public class ActivityElementTerminatedHandler<T extends ExecutableActivity>
     extends ElementTerminatedHandler<T> {
 
-  public ActivityElementTerminatedHandler(IncidentResolver incidentResolver) {
+  public ActivityElementTerminatedHandler(final IncidentResolver incidentResolver) {
     super(incidentResolver);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     publishDeferredRecords(context);
     return super.handleState(context);
   }

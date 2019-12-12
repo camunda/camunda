@@ -17,14 +17,14 @@ public class FirstSuccessfullyCompletedFutureConsumer<T> implements BiConsumer<T
   private int pendingFutures;
 
   public FirstSuccessfullyCompletedFutureConsumer(
-      int pendingFutures, BiConsumer<T, Throwable> callback, Consumer<T> closer) {
+      final int pendingFutures, final BiConsumer<T, Throwable> callback, final Consumer<T> closer) {
     this.pendingFutures = pendingFutures;
     this.callback = callback;
     this.closer = closer;
   }
 
   @Override
-  public void accept(T result, Throwable failure) {
+  public void accept(final T result, final Throwable failure) {
     pendingFutures -= 1;
 
     if (failure == null) {

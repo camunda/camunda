@@ -30,11 +30,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class LoopDataOutputRef extends BpmnModelElementInstanceImpl {
 
-  public LoopDataOutputRef(ModelTypeInstanceContext instanceContext) {
+  public LoopDataOutputRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(LoopDataOutputRef.class, BPMN_ELEMENT_LOOP_DATA_OUTPUT_REF)
@@ -42,7 +42,8 @@ public class LoopDataOutputRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<LoopDataOutputRef>() {
                   @Override
-                  public LoopDataOutputRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public LoopDataOutputRef newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new LoopDataOutputRef(instanceContext);
                   }
                 });

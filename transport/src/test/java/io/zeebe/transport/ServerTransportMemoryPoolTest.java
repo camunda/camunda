@@ -36,8 +36,8 @@ import org.junit.rules.RuleChain;
 public class ServerTransportMemoryPoolTest {
   public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
   protected static final SocketAddress ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
@@ -111,7 +111,7 @@ public class ServerTransportMemoryPoolTest {
     try {
       output.sendResponse(response);
       fail("expected exception");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // expected
     }
 
@@ -136,7 +136,7 @@ public class ServerTransportMemoryPoolTest {
     try {
       output.sendMessage(0, writer);
       fail("expected exception");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // expected
     }
 

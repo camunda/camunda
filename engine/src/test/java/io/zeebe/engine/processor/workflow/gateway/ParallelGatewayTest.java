@@ -51,7 +51,7 @@ public class ParallelGatewayTest {
           .connectTo("join")
           .done();
 
-  @Rule public EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Test
   public void shouldActivateTasksOnParallelBranches() {
@@ -347,7 +347,8 @@ public class ParallelGatewayTest {
     assertThat(taskEvents.get(0).getKey()).isNotEqualTo(taskEvents.get(1).getKey());
   }
 
-  private static boolean isServiceTaskInProcess(String activityId, BpmnModelInstance process) {
+  private static boolean isServiceTaskInProcess(
+      final String activityId, final BpmnModelInstance process) {
     return process.getModelElementsByType(ServiceTask.class).stream()
         .anyMatch(t -> t.getId().equals(activityId));
   }

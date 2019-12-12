@@ -26,9 +26,9 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
 
   @Override
   public void processRecord(
-      TypedRecord<JobRecord> event,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<JobRecord> event,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     final JobRecord value = event.getValue();
 
     if (value.getRetries() <= 0) {

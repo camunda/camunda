@@ -43,11 +43,11 @@ public class CallConversationImpl extends ConversationNodeImpl implements CallCo
   protected static AttributeReference<GlobalConversation> calledCollaborationRefAttribute;
   protected static ChildElementCollection<ParticipantAssociation> participantAssociationCollection;
 
-  public CallConversationImpl(ModelTypeInstanceContext instanceContext) {
+  public CallConversationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CallConversation.class, BPMN_ELEMENT_CALL_CONVERSATION)
@@ -56,7 +56,8 @@ public class CallConversationImpl extends ConversationNodeImpl implements CallCo
             .instanceProvider(
                 new ModelTypeInstanceProvider<CallConversation>() {
                   @Override
-                  public CallConversation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public CallConversation newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CallConversationImpl(instanceContext);
                   }
                 });
@@ -81,7 +82,7 @@ public class CallConversationImpl extends ConversationNodeImpl implements CallCo
   }
 
   @Override
-  public void setCalledCollaboration(GlobalConversation calledCollaboration) {
+  public void setCalledCollaboration(final GlobalConversation calledCollaboration) {
     calledCollaborationRefAttribute.setReferenceTargetElement(this, calledCollaboration);
   }
 

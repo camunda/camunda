@@ -39,7 +39,7 @@ public abstract class Actor implements CloseableSilently {
     // notification that timers, conditions, etc. will no longer trigger from now on
   }
 
-  public static Actor wrap(Consumer<ActorControl> r) {
+  public static Actor wrap(final Consumer<ActorControl> r) {
     return new Actor() {
       @Override
       public String getName() {

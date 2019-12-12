@@ -29,7 +29,8 @@ public class ClientTransport implements AutoCloseable {
   private final Dispatcher receiveBuffer;
   private final TransportContext transportContext;
 
-  public ClientTransport(ActorContext transportActorContext, TransportContext transportContext) {
+  public ClientTransport(
+      final ActorContext transportActorContext, final TransportContext transportContext) {
     this.transportActorContext = transportActorContext;
     this.transportContext = transportContext;
     this.output = transportContext.getClientOutput();
@@ -47,11 +48,11 @@ public class ClientTransport implements AutoCloseable {
    * Register an endpoint address for node id. Transport will make sure to keep an open channel to
    * this endpoint until it is deactivated or retired.
    */
-  public void registerEndpoint(int nodeId, SocketAddress socketAddress) {
+  public void registerEndpoint(final int nodeId, final SocketAddress socketAddress) {
     endpointRegistry.setEndpoint(nodeId, socketAddress);
   }
 
-  public RemoteAddress getEndpoint(int nodeId) {
+  public RemoteAddress getEndpoint(final int nodeId) {
     return endpointRegistry.getEndpoint(nodeId);
   }
 
@@ -60,7 +61,7 @@ public class ClientTransport implements AutoCloseable {
    * channel will no longer be managed. A endpoint is reactivated when the endpoint is registered
    * again.
    */
-  public void deactivateEndpoint(int nodeId) {
+  public void deactivateEndpoint(final int nodeId) {
     endpointRegistry.removeEndpoint(nodeId);
   }
 
@@ -69,7 +70,7 @@ public class ClientTransport implements AutoCloseable {
    * reactivation. That means, when the endpoint is registered again, it is assigned a different
    * stream id.
    */
-  public void retireEndpoint(int nodeId) {
+  public void retireEndpoint(final int nodeId) {
     endpointRegistry.retire(nodeId);
   }
 
@@ -82,7 +83,7 @@ public class ClientTransport implements AutoCloseable {
    * corresponding channel to be opened such that it is probable that subsequent requests/messages
    * can be sent. This saves test code the need to retry sending.
    */
-  public void registerEndpointAndAwaitChannel(final int nodeId, SocketAddress addr) {
+  public void registerEndpointAndAwaitChannel(final int nodeId, final SocketAddress addr) {
     final RemoteAddress remoteAddress = getRemoteAddress(addr);
 
     if (remoteAddress == null) {
@@ -94,7 +95,7 @@ public class ClientTransport implements AutoCloseable {
         final TransportListener listener =
             new TransportListener() {
               @Override
-              public void onConnectionEstablished(RemoteAddress remoteAddress) {
+              public void onConnectionEstablished(final RemoteAddress remoteAddress) {
                 lock.lock();
                 try {
                   if (remoteAddress.getAddress().equals(addr)) {
@@ -107,7 +108,7 @@ public class ClientTransport implements AutoCloseable {
               }
 
               @Override
-              public void onConnectionClosed(RemoteAddress remoteAddress) {}
+              public void onConnectionClosed(final RemoteAddress remoteAddress) {}
             };
 
         transportActorContext.registerListener(listener).join();
@@ -117,7 +118,7 @@ public class ClientTransport implements AutoCloseable {
           if (!connectionEstablished.await(10, TimeUnit.SECONDS)) {
             throw new RuntimeException(new TimeoutException());
           }
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           throw new RuntimeException(e);
         }
       } finally {
@@ -126,7 +127,7 @@ public class ClientTransport implements AutoCloseable {
     }
   }
 
-  private RemoteAddress getRemoteAddress(SocketAddress addr) {
+  private RemoteAddress getRemoteAddress(final SocketAddress addr) {
     return remoteAddressList.getByAddress(addr);
   }
 
@@ -137,7 +138,7 @@ public class ClientTransport implements AutoCloseable {
    *     single-messages
    */
   public ActorFuture<ClientInputMessageSubscription> openSubscription(
-      String subscriptionName, ClientMessageHandler messageHandler) {
+      final String subscriptionName, final ClientMessageHandler messageHandler) {
     if (receiveBuffer == null) {
       throw new RuntimeException("Cannot throw exception. No receive buffer in use");
     }
@@ -152,11 +153,11 @@ public class ClientTransport implements AutoCloseable {
    * Registers a listener with callbacks for whenever a connection to a remote gets established or
    * closed.
    */
-  public ActorFuture<Void> registerChannelListener(TransportListener channelListener) {
+  public ActorFuture<Void> registerChannelListener(final TransportListener channelListener) {
     return transportActorContext.registerListener(channelListener);
   }
 
-  public void removeChannelListener(TransportListener listener) {
+  public void removeChannelListener(final TransportListener listener) {
     transportActorContext.removeListener(listener);
   }
 

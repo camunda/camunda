@@ -66,9 +66,9 @@ public class ClientTransportTest {
       new SocketAddress(SocketUtil.getNextAddress());
   public static final int REQUEST_POOL_SIZE = 4;
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-  public ControlledActorClock clock = new ControlledActorClock();
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ControlledActorClock clock = new ControlledActorClock();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected Dispatcher clientReceiveBuffer;
   protected ClientTransport clientTransport;
@@ -857,7 +857,7 @@ public class ClientTransportTest {
   protected class SendMessagesHandler implements ServerMessageHandler {
     final int numMessagesToSend;
     int messagesSent;
-    BufferWriter writer;
+    final BufferWriter writer;
 
     public SendMessagesHandler(final int numMessagesToSend, final DirectBuffer messageToSend) {
       this.numMessagesToSend = numMessagesToSend;

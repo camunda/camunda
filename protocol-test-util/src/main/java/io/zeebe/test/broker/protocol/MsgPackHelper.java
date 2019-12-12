@@ -15,7 +15,7 @@ import java.util.Map;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MsgPackHelper {
-  protected ObjectMapper objectMapper;
+  protected final ObjectMapper objectMapper;
 
   public MsgPackHelper() {
     this.objectMapper = new ObjectMapper(new MessagePackFactory());
@@ -26,19 +26,19 @@ public class MsgPackHelper {
   }
 
   @SuppressWarnings("unchecked")
-  public Map<String, Object> readMsgPack(InputStream is) {
+  public Map<String, Object> readMsgPack(final InputStream is) {
     try {
       return objectMapper.readValue(is, Map.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public byte[] encodeAsMsgPack(Object command) {
+  public byte[] encodeAsMsgPack(final Object command) {
     final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     try {
       objectMapper.writer().writeValue(byteArrayOutputStream, command);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
 

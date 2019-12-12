@@ -39,7 +39,8 @@ public class MessageValidator implements ModelElementValidator<Message> {
   }
 
   @Override
-  public void validate(Message element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final Message element, final ValidationResultCollector validationResultCollector) {
     if (isReferedByCatchEvent(element) || isReferedByReceiveTask(element)) {
       if (element.getName() == null || element.getName().isEmpty()) {
         validationResultCollector.addError(0, "Name must be present and not empty");
@@ -58,7 +59,7 @@ public class MessageValidator implements ModelElementValidator<Message> {
   }
 
   private void validateIfReferredByStartEvent(
-      Message element, ValidationResultCollector validationResultCollector) {
+      final Message element, final ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> startEvents =
         element.getParentElement().getChildElementsByType(Process.class).stream()
             .flatMap(p -> p.getChildElementsByType(StartEvent.class).stream())
@@ -82,7 +83,7 @@ public class MessageValidator implements ModelElementValidator<Message> {
     }
   }
 
-  private boolean isReferedByCatchEvent(Message element) {
+  private boolean isReferedByCatchEvent(final Message element) {
     final Collection<IntermediateCatchEvent> intermediateCatchEvents =
         getAllElementsByType(element, IntermediateCatchEvent.class);
 
@@ -97,14 +98,14 @@ public class MessageValidator implements ModelElementValidator<Message> {
                     && ((MessageEventDefinition) e).getMessage() == element);
   }
 
-  private boolean isReferedByReceiveTask(Message element) {
+  private boolean isReferedByReceiveTask(final Message element) {
     final Collection<ReceiveTask> receiveTasks = getAllElementsByType(element, ReceiveTask.class);
 
     return receiveTasks.stream().anyMatch(r -> r.getMessage() == element);
   }
 
   private <T extends ModelElementInstance> Collection<T> getAllElementsByType(
-      Message element, Class<T> type) {
+      final Message element, final Class<T> type) {
     return element.getParentElement().getChildElementsByType(Process.class).stream()
         .flatMap(p -> p.getChildElementsByType(type).stream())
         .collect(Collectors.toList());

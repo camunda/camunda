@@ -54,7 +54,7 @@ public class StreamProcessorTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
-  @Rule public StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
+  @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
   private ActorControl processingContextActor;
 
   @Test
@@ -69,7 +69,7 @@ public class StreamProcessorTest {
                 .withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyProcessingContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -99,7 +99,7 @@ public class StreamProcessorTest {
                 .withListener(
                     new StreamProcessorLifecycleAware() {
                       @Override
-                      public void onRecovered(ReadonlyProcessingContext context) {
+                      public void onRecovered(final ReadonlyProcessingContext context) {
                         recoveredLatch.countDown();
                       }
                     }));
@@ -225,11 +225,11 @@ public class StreamProcessorTest {
                     new TypedRecordProcessor<UnifiedRecordValue>() {
                       @Override
                       public void processRecord(
-                          long position,
-                          TypedRecord<UnifiedRecordValue> record,
-                          TypedResponseWriter responseWriter,
-                          TypedStreamWriter streamWriter,
-                          Consumer<SideEffectProducer> sideEffect) {
+                          final long position,
+                          final TypedRecord<UnifiedRecordValue> record,
+                          final TypedResponseWriter responseWriter,
+                          final TypedStreamWriter streamWriter,
+                          final Consumer<SideEffectProducer> sideEffect) {
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
                             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
@@ -272,11 +272,11 @@ public class StreamProcessorTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
                           processLatch.countDown();
@@ -304,11 +304,11 @@ public class StreamProcessorTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
                           processLatch.countDown();
@@ -336,11 +336,11 @@ public class StreamProcessorTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     sideEffect.accept(
                         () -> {
                           throw new RuntimeException("expected");
@@ -373,11 +373,11 @@ public class StreamProcessorTest {
                   new TypedRecordProcessor<UnifiedRecordValue>() {
                     @Override
                     public void processRecord(
-                        long position,
-                        TypedRecord<UnifiedRecordValue> record,
-                        TypedResponseWriter responseWriter,
-                        TypedStreamWriter streamWriter,
-                        Consumer<SideEffectProducer> sideEffect) {
+                        final long position,
+                        final TypedRecord<UnifiedRecordValue> record,
+                        final TypedResponseWriter responseWriter,
+                        final TypedStreamWriter streamWriter,
+                        final Consumer<SideEffectProducer> sideEffect) {
                       generatedKey.set(state.getKeyGenerator().nextKey());
                       processLatch.countDown();
                       throw new RuntimeException("expected");
@@ -389,10 +389,10 @@ public class StreamProcessorTest {
                   new TypedRecordProcessor<UnifiedRecordValue>() {
                     @Override
                     public void processRecord(
-                        TypedRecord<UnifiedRecordValue> record,
-                        TypedResponseWriter responseWriter,
-                        TypedStreamWriter streamWriter,
-                        Consumer<SideEffectProducer> sideEffect) {
+                        final TypedRecord<UnifiedRecordValue> record,
+                        final TypedResponseWriter responseWriter,
+                        final TypedStreamWriter streamWriter,
+                        final Consumer<SideEffectProducer> sideEffect) {
                       processLatch.countDown();
                     }
                   });
@@ -432,11 +432,11 @@ public class StreamProcessorTest {
                   new TypedRecordProcessor<UnifiedRecordValue>() {
                     @Override
                     public void processRecord(
-                        long position,
-                        TypedRecord<UnifiedRecordValue> record,
-                        TypedResponseWriter responseWriter,
-                        TypedStreamWriter streamWriter,
-                        Consumer<SideEffectProducer> sideEffect) {
+                        final long position,
+                        final TypedRecord<UnifiedRecordValue> record,
+                        final TypedResponseWriter responseWriter,
+                        final TypedStreamWriter streamWriter,
+                        final Consumer<SideEffectProducer> sideEffect) {
                       generatedKey.set(state.getKeyGenerator().nextKey());
                     }
                   })
@@ -446,10 +446,10 @@ public class StreamProcessorTest {
                   new TypedRecordProcessor<UnifiedRecordValue>() {
                     @Override
                     public void processRecord(
-                        TypedRecord<UnifiedRecordValue> record,
-                        TypedResponseWriter responseWriter,
-                        TypedStreamWriter streamWriter,
-                        Consumer<SideEffectProducer> sideEffect) {
+                        final TypedRecord<UnifiedRecordValue> record,
+                        final TypedResponseWriter responseWriter,
+                        final TypedStreamWriter streamWriter,
+                        final Consumer<SideEffectProducer> sideEffect) {
                       processingLatch.countDown();
                     }
                   });
@@ -486,10 +486,10 @@ public class StreamProcessorTest {
                     new TypedRecordProcessor<UnifiedRecordValue>() {
                       @Override
                       public void processRecord(
-                          TypedRecord<UnifiedRecordValue> record,
-                          TypedResponseWriter responseWriter,
-                          TypedStreamWriter streamWriter,
-                          Consumer<SideEffectProducer> sideEffect) {
+                          final TypedRecord<UnifiedRecordValue> record,
+                          final TypedResponseWriter responseWriter,
+                          final TypedStreamWriter streamWriter,
+                          final Consumer<SideEffectProducer> sideEffect) {
                         processingLatch.countDown();
                       }
                     }));
@@ -525,10 +525,10 @@ public class StreamProcessorTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     processingLatch.countDown();
                   }
                 }));
@@ -561,7 +561,7 @@ public class StreamProcessorTest {
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
-                  public void onRecovered(ReadonlyProcessingContext context) {
+                  public void onRecovered(final ReadonlyProcessingContext context) {
                     recoveredLatch.countDown();
                   }
                 }));
@@ -641,11 +641,11 @@ public class StreamProcessorTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     responseWriter.writeEventOnCommand(
                         3, WorkflowInstanceIntent.ELEMENT_COMPLETING, record.getValue(), record);
                     processLatch.countDown();
@@ -683,11 +683,11 @@ public class StreamProcessorTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     responseWriter.writeEventOnCommand(
                         3, WorkflowInstanceIntent.ELEMENT_COMPLETING, record.getValue(), record);
                     processLatch.countDown();
@@ -726,11 +726,11 @@ public class StreamProcessorTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     processLatch.countDown();
                   }
                 }));

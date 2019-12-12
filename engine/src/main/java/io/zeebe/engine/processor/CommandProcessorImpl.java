@@ -33,7 +33,7 @@ public class CommandProcessorImpl<T extends UnifiedRecordValue>
   }
 
   @Override
-  public void onOpen(ReadonlyProcessingContext context) {
+  public void onOpen(final ReadonlyProcessingContext context) {
     this.keyGenerator = context.getZeebeState().getKeyGenerator();
   }
 

@@ -32,9 +32,9 @@ public class CorrelateMessageSubscriptionProcessor
   private final MessageCorrelator messageCorrelator;
 
   public CorrelateMessageSubscriptionProcessor(
-      MessageState messageState,
-      MessageSubscriptionState subscriptionState,
-      SubscriptionCommandSender commandSender) {
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender commandSender) {
     this.subscriptionState = subscriptionState;
     this.messageCorrelator = new MessageCorrelator(messageState, subscriptionState, commandSender);
   }

@@ -19,7 +19,7 @@ public class DocumentValue extends BinaryValue {
 
   public DocumentValue() {}
 
-  public DocumentValue(DirectBuffer initialValue, int offset, int length) {
+  public DocumentValue(final DirectBuffer initialValue, final int offset, final int length) {
     super(initialValue, offset, length);
   }
 

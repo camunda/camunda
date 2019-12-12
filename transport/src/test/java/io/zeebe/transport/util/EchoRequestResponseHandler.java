@@ -15,16 +15,16 @@ import org.agrona.DirectBuffer;
 
 public class EchoRequestResponseHandler implements ServerRequestHandler {
 
-  protected ServerResponse response = new ServerResponse();
+  protected final ServerResponse response = new ServerResponse();
 
   @Override
   public boolean onRequest(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length,
-      long requestId) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final long requestId) {
     response
         .reset()
         .buffer(buffer, offset, length)

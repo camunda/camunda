@@ -23,13 +23,13 @@ public class CompleteProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState state;
 
-  public CompleteProcessor(JobState state) {
+  public CompleteProcessor(final JobState state) {
     this.state = state;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
     final JobState.State jobState = state.getState(jobKey);
 

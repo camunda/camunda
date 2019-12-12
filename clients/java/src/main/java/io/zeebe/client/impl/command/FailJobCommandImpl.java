@@ -37,10 +37,10 @@ public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandSt
   private Duration requestTimeout;
 
   public FailJobCommandImpl(
-      GatewayStub asyncStub,
-      long key,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final long key,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
@@ -49,19 +49,19 @@ public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandSt
   }
 
   @Override
-  public FailJobCommandStep2 retries(int retries) {
+  public FailJobCommandStep2 retries(final int retries) {
     builder.setRetries(retries);
     return this;
   }
 
   @Override
-  public FailJobCommandStep2 errorMessage(String errorMsg) {
+  public FailJobCommandStep2 errorMessage(final String errorMsg) {
     builder.setErrorMessage(errorMsg);
     return this;
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -78,7 +78,8 @@ public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandSt
     return future;
   }
 
-  private void send(FailJobRequest request, StreamObserver<FailJobResponse> streamObserver) {
+  private void send(
+      final FailJobRequest request, final StreamObserver<FailJobResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .failJob(request, streamObserver);

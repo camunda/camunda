@@ -110,7 +110,7 @@ public class Broker implements AutoCloseable {
     this(new SystemContext(cfg, basePath, clock));
   }
 
-  public void addPartitionListener(PartitionListener listener) {
+  public void addPartitionListener(final PartitionListener listener) {
     partitionListeners.add(listener);
   }
 
@@ -129,7 +129,7 @@ public class Broker implements AutoCloseable {
     try {
       closeProcess = startProcess.start();
       startFuture.complete(this);
-    } catch (Exception bootStrapException) {
+    } catch (final Exception bootStrapException) {
       LOG.error(
           "Failed to start broker {}!", brokerCfg.getCluster().getNodeId(), bootStrapException);
 
@@ -188,13 +188,13 @@ public class Broker implements AutoCloseable {
         scheduler.stop().get(brokerContext.getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
-  private AutoCloseable atomixCreateStep(BrokerCfg brokerCfg) {
+  private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
     return () -> atomix.stop().join();
   }
 
   private AutoCloseable commandAPIStep(
-      BrokerCfg brokerCfg, NetworkCfg networkCfg, BrokerInfo localBroker) {
+      final BrokerCfg brokerCfg, final NetworkCfg networkCfg, final BrokerInfo localBroker) {
     final CommandApiMessageHandler commandApiMessageHandler = new CommandApiMessageHandler();
 
     final BackpressureCfg backpressure = brokerCfg.getBackpressure();
@@ -227,11 +227,11 @@ public class Broker implements AutoCloseable {
     return serverTransport;
   }
 
-  public static String actorNamePattern(BrokerInfo local, String name) {
+  public static String actorNamePattern(final BrokerInfo local, final String name) {
     return String.format("Broker-%d-%s", local.getNodeId(), name);
   }
 
-  private AutoCloseable subscriptionAPIStep(BrokerInfo localBroker) {
+  private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {
     final SubscriptionApiCommandMessageHandlerService messageHandlerService =
         new SubscriptionApiCommandMessageHandlerService(localBroker, atomix);
     partitionListeners.add(messageHandlerService);
@@ -239,18 +239,20 @@ public class Broker implements AutoCloseable {
     return messageHandlerService;
   }
 
-  private void scheduleActor(Actor actor) {
+  private void scheduleActor(final Actor actor) {
     brokerContext.getScheduler().submitActor(actor).join(30, TimeUnit.SECONDS);
   }
 
-  private AutoCloseable topologyManagerStep(ClusterCfg clusterCfg, BrokerInfo localBroker) {
+  private AutoCloseable topologyManagerStep(
+      final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
     topologyManager = new TopologyManagerImpl(atomix, localBroker, clusterCfg);
     partitionListeners.add(topologyManager);
     scheduleActor(topologyManager);
     return topologyManager;
   }
 
-  private AutoCloseable metricsServerStep(NetworkCfg networkCfg, BrokerInfo localBroker) {
+  private AutoCloseable metricsServerStep(
+      final NetworkCfg networkCfg, final BrokerInfo localBroker) {
     final BrokerHealthCheckService healthCheckService =
         new BrokerHealthCheckService(localBroker, atomix);
     partitionListeners.add(healthCheckService);
@@ -266,7 +268,7 @@ public class Broker implements AutoCloseable {
     };
   }
 
-  private AutoCloseable managementRequestStep(BrokerInfo localBroker) {
+  private AutoCloseable managementRequestStep(final BrokerInfo localBroker) {
     managementRequestHandler = new LeaderManagementRequestHandler(localBroker, atomix);
     scheduleActor(managementRequestHandler);
     partitionListeners.add(managementRequestHandler);
@@ -274,7 +276,8 @@ public class Broker implements AutoCloseable {
   }
 
   private AutoCloseable partitionsStep(
-      BrokerCfg brokerCfg, ClusterCfg clusterCfg, BrokerInfo localBroker) throws Exception {
+      final BrokerCfg brokerCfg, final ClusterCfg clusterCfg, final BrokerInfo localBroker)
+      throws Exception {
     final RaftPartitionGroup partitionGroup =
         (RaftPartitionGroup)
             atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);

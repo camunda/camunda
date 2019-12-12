@@ -40,27 +40,27 @@ public class ExporterDirectorContext {
     return zeebeDb;
   }
 
-  public ExporterDirectorContext id(int id) {
+  public ExporterDirectorContext id(final int id) {
     this.id = id;
     return this;
   }
 
-  public ExporterDirectorContext name(String name) {
+  public ExporterDirectorContext name(final String name) {
     this.name = name;
     return this;
   }
 
-  public ExporterDirectorContext logStream(LogStream logStream) {
+  public ExporterDirectorContext logStream(final LogStream logStream) {
     this.logStream = logStream;
     return this;
   }
 
-  public ExporterDirectorContext descriptors(Collection<ExporterDescriptor> descriptors) {
+  public ExporterDirectorContext descriptors(final Collection<ExporterDescriptor> descriptors) {
     this.descriptors = descriptors;
     return this;
   }
 
-  public ExporterDirectorContext zeebeDb(ZeebeDb zeebeDb) {
+  public ExporterDirectorContext zeebeDb(final ZeebeDb zeebeDb) {
     this.zeebeDb = zeebeDb;
     return this;
   }

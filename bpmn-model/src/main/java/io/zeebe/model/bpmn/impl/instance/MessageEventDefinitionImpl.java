@@ -38,11 +38,11 @@ public class MessageEventDefinitionImpl extends EventDefinitionImpl
   protected static AttributeReference<Message> messageRefAttribute;
   protected static ElementReference<Operation, OperationRef> operationRefChild;
 
-  public MessageEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public MessageEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(MessageEventDefinition.class, BPMN_ELEMENT_MESSAGE_EVENT_DEFINITION)
@@ -52,7 +52,7 @@ public class MessageEventDefinitionImpl extends EventDefinitionImpl
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<MessageEventDefinition>() {
                   @Override
                   public MessageEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new MessageEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -77,7 +77,7 @@ public class MessageEventDefinitionImpl extends EventDefinitionImpl
   }
 
   @Override
-  public void setMessage(Message message) {
+  public void setMessage(final Message message) {
     messageRefAttribute.setReferenceTargetElement(this, message);
   }
 
@@ -87,7 +87,7 @@ public class MessageEventDefinitionImpl extends EventDefinitionImpl
   }
 
   @Override
-  public void setOperation(Operation operation) {
+  public void setOperation(final Operation operation) {
     operationRefChild.setReferenceTargetElement(this, operation);
   }
 }

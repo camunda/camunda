@@ -53,10 +53,10 @@ public class CreateWorkflowInstanceProcessor
   private final KeyGenerator keyGenerator;
 
   public CreateWorkflowInstanceProcessor(
-      WorkflowState workflowState,
-      ElementInstanceState elementInstanceState,
-      VariablesState variablesState,
-      KeyGenerator keyGenerator) {
+      final WorkflowState workflowState,
+      final ElementInstanceState elementInstanceState,
+      final VariablesState variablesState,
+      final KeyGenerator keyGenerator) {
     this.workflowState = workflowState;
     this.elementInstanceState = elementInstanceState;
     this.variablesState = variablesState;
@@ -65,9 +65,9 @@ public class CreateWorkflowInstanceProcessor
 
   @Override
   public boolean onCommand(
-      TypedRecord<WorkflowInstanceCreationRecord> command,
-      CommandControl<WorkflowInstanceCreationRecord> controller,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceCreationRecord> command,
+      final CommandControl<WorkflowInstanceCreationRecord> controller,
+      final TypedStreamWriter streamWriter) {
     final WorkflowInstanceCreationRecord record = command.getValue();
     final DeployedWorkflow workflow = getWorkflow(record, controller);
     if (workflow == null || !isValidWorkflow(controller, workflow)) {
@@ -95,7 +95,8 @@ public class CreateWorkflowInstanceProcessor
   }
 
   private boolean isValidWorkflow(
-      CommandControl<WorkflowInstanceCreationRecord> controller, DeployedWorkflow workflow) {
+      final CommandControl<WorkflowInstanceCreationRecord> controller,
+      final DeployedWorkflow workflow) {
     if (workflow.getWorkflow().getNoneStartEvent() == null) {
       controller.reject(RejectionType.INVALID_STATE, ERROR_MESSAGE_NO_NONE_START_EVENT);
       return false;
@@ -105,14 +106,14 @@ public class CreateWorkflowInstanceProcessor
   }
 
   private boolean setVariablesFromDocument(
-      CommandControl<WorkflowInstanceCreationRecord> controller,
-      WorkflowInstanceCreationRecord record,
-      long workflowKey,
-      long workflowInstanceKey) {
+      final CommandControl<WorkflowInstanceCreationRecord> controller,
+      final WorkflowInstanceCreationRecord record,
+      final long workflowKey,
+      final long workflowInstanceKey) {
     try {
       variablesState.setVariablesLocalFromDocument(
           workflowInstanceKey, workflowKey, record.getVariablesBuffer());
-    } catch (MsgpackReaderException e) {
+    } catch (final MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(ERROR_INVALID_VARIABLES_LOGGED_MESSAGE, e);
       controller.reject(
           RejectionType.INVALID_ARGUMENT,
@@ -125,7 +126,7 @@ public class CreateWorkflowInstanceProcessor
   }
 
   private ElementInstance createElementInstance(
-      DeployedWorkflow workflow, long workflowInstanceKey) {
+      final DeployedWorkflow workflow, final long workflowInstanceKey) {
     newWorkflowInstance.reset();
     newWorkflowInstance.setBpmnProcessId(workflow.getBpmnProcessId());
     newWorkflowInstance.setVersion(workflow.getVersion());
@@ -143,7 +144,7 @@ public class CreateWorkflowInstanceProcessor
   }
 
   private DeployedWorkflow getWorkflow(
-      WorkflowInstanceCreationRecord record, CommandControl controller) {
+      final WorkflowInstanceCreationRecord record, final CommandControl controller) {
     final DeployedWorkflow workflow;
 
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
@@ -164,7 +165,8 @@ public class CreateWorkflowInstanceProcessor
     return workflow;
   }
 
-  private DeployedWorkflow getWorkflow(DirectBuffer bpmnProcessId, CommandControl controller) {
+  private DeployedWorkflow getWorkflow(
+      final DirectBuffer bpmnProcessId, final CommandControl controller) {
     final DeployedWorkflow workflow =
         workflowState.getLatestWorkflowVersionByProcessId(bpmnProcessId);
     if (workflow == null) {
@@ -177,7 +179,7 @@ public class CreateWorkflowInstanceProcessor
   }
 
   private DeployedWorkflow getWorkflow(
-      DirectBuffer bpmnProcessId, int version, CommandControl controller) {
+      final DirectBuffer bpmnProcessId, final int version, final CommandControl controller) {
     final DeployedWorkflow workflow =
         workflowState.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
     if (workflow == null) {
@@ -192,7 +194,7 @@ public class CreateWorkflowInstanceProcessor
     return workflow;
   }
 
-  private DeployedWorkflow getWorkflow(long key, CommandControl controller) {
+  private DeployedWorkflow getWorkflow(final long key, final CommandControl controller) {
     final DeployedWorkflow workflow = workflowState.getWorkflowByKey(key);
     if (workflow == null) {
       controller.reject(

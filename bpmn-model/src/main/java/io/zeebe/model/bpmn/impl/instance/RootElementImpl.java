@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public abstract class RootElementImpl extends BaseElementImpl implements RootElement {
 
-  public RootElementImpl(ModelTypeInstanceContext context) {
+  public RootElementImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(RootElement.class, BPMN_ELEMENT_ROOT_ELEMENT)

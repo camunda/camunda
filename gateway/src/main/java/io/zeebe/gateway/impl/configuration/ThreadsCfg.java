@@ -17,7 +17,7 @@ public class ThreadsCfg {
 
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
 
-  public void init(Environment environment) {
+  public void init(final Environment environment) {
     environment.getInt(ENV_GATEWAY_MANAGEMENT_THREADS).ifPresent(this::setManagementThreads);
   }
 
@@ -25,7 +25,7 @@ public class ThreadsCfg {
     return managementThreads;
   }
 
-  public ThreadsCfg setManagementThreads(int managementThreads) {
+  public ThreadsCfg setManagementThreads(final int managementThreads) {
     this.managementThreads = managementThreads;
     return this;
   }
@@ -36,7 +36,7 @@ public class ThreadsCfg {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

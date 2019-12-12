@@ -32,16 +32,17 @@ public class CreateWorkflowInstanceWithResultProcessor
   private boolean shouldRespond;
 
   public CreateWorkflowInstanceWithResultProcessor(
-      CreateWorkflowInstanceProcessor createProcessor, ElementInstanceState elementInstanceState) {
+      final CreateWorkflowInstanceProcessor createProcessor,
+      final ElementInstanceState elementInstanceState) {
     this.createProcessor = createProcessor;
     this.elementInstanceState = elementInstanceState;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<WorkflowInstanceCreationRecord> command,
-      CommandControl<WorkflowInstanceCreationRecord> controller,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceCreationRecord> command,
+      final CommandControl<WorkflowInstanceCreationRecord> controller,
+      final TypedStreamWriter streamWriter) {
     wrappedController.setCommand(command).setController(controller);
     createProcessor.onCommand(command, wrappedController, streamWriter);
     return shouldRespond;
@@ -53,19 +54,19 @@ public class CreateWorkflowInstanceWithResultProcessor
     CommandControl<WorkflowInstanceCreationRecord> controller;
 
     public CommandControlWithAwaitResult setCommand(
-        TypedRecord<WorkflowInstanceCreationRecord> command) {
+        final TypedRecord<WorkflowInstanceCreationRecord> command) {
       this.command = command;
       return this;
     }
 
     public CommandControlWithAwaitResult setController(
-        CommandControl<WorkflowInstanceCreationRecord> controller) {
+        final CommandControl<WorkflowInstanceCreationRecord> controller) {
       this.controller = controller;
       return this;
     }
 
     @Override
-    public long accept(Intent newState, WorkflowInstanceCreationRecord updatedValue) {
+    public long accept(final Intent newState, final WorkflowInstanceCreationRecord updatedValue) {
       shouldRespond = false;
       final ArrayProperty<StringValue> fetchVariables = command.getValue().fetchVariables();
       awaitResultMetadata
@@ -79,7 +80,7 @@ public class CreateWorkflowInstanceWithResultProcessor
     }
 
     @Override
-    public void reject(RejectionType type, String reason) {
+    public void reject(final RejectionType type, final String reason) {
       shouldRespond = true;
       controller.reject(type, reason);
     }

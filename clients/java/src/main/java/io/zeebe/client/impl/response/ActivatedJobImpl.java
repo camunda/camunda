@@ -39,7 +39,8 @@ public class ActivatedJobImpl implements ActivatedJob {
   private final long deadline;
   private final String variables;
 
-  public ActivatedJobImpl(ZeebeObjectMapper objectMapper, GatewayOuterClass.ActivatedJob job) {
+  public ActivatedJobImpl(
+      final ZeebeObjectMapper objectMapper, final GatewayOuterClass.ActivatedJob job) {
     this.objectMapper = objectMapper;
 
     key = job.getKey();
@@ -128,7 +129,7 @@ public class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
-  public <T> T getVariablesAsType(Class<T> variableType) {
+  public <T> T getVariablesAsType(final Class<T> variableType) {
     return objectMapper.fromJson(variables, variableType);
   }
 

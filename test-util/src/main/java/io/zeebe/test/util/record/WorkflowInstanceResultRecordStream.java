@@ -16,13 +16,13 @@ public class WorkflowInstanceResultRecordStream
         WorkflowInstanceResultRecordValue, WorkflowInstanceResultRecordStream> {
 
   public WorkflowInstanceResultRecordStream(
-      Stream<Record<WorkflowInstanceResultRecordValue>> wrappedStream) {
+      final Stream<Record<WorkflowInstanceResultRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
   protected WorkflowInstanceResultRecordStream supply(
-      Stream<Record<WorkflowInstanceResultRecordValue>> wrappedStream) {
+      final Stream<Record<WorkflowInstanceResultRecordValue>> wrappedStream) {
     return new WorkflowInstanceResultRecordStream(wrappedStream);
   }
 

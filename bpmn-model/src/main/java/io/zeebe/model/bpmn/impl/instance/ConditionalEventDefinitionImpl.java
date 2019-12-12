@@ -39,11 +39,11 @@ public class ConditionalEventDefinitionImpl extends EventDefinitionImpl
 
   protected static ChildElement<Condition> conditionChild;
 
-  public ConditionalEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public ConditionalEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ConditionalEventDefinition.class, BPMN_ELEMENT_CONDITIONAL_EVENT_DEFINITION)
@@ -54,7 +54,7 @@ public class ConditionalEventDefinitionImpl extends EventDefinitionImpl
 
                   @Override
                   public ConditionalEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ConditionalEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -72,7 +72,7 @@ public class ConditionalEventDefinitionImpl extends EventDefinitionImpl
   }
 
   @Override
-  public void setCondition(Condition condition) {
+  public void setCondition(final Condition condition) {
     conditionChild.setChild(this, condition);
   }
 }

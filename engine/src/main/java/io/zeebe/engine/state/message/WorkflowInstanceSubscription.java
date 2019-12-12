@@ -39,21 +39,23 @@ public class WorkflowInstanceSubscription implements DbValue {
   public WorkflowInstanceSubscription() {}
 
   public WorkflowInstanceSubscription(
-      long workflowInstanceKey, long elementInstanceKey, DirectBuffer bpmnProcessId) {
+      final long workflowInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer bpmnProcessId) {
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
     this.bpmnProcessId.wrap(bpmnProcessId);
   }
 
   public WorkflowInstanceSubscription(
-      long workflowInstanceKey,
-      long elementInstanceKey,
-      DirectBuffer targetElementId,
-      DirectBuffer bpmnProcessId,
-      DirectBuffer messageName,
-      DirectBuffer correlationKey,
-      long commandSentTime,
-      boolean closeOnCorrelate) {
+      final long workflowInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer targetElementId,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final long commandSentTime,
+      final boolean closeOnCorrelate) {
     this(workflowInstanceKey, elementInstanceKey, bpmnProcessId);
 
     this.targetElementId.wrap(targetElementId);
@@ -67,7 +69,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return messageName;
   }
 
-  public void setMessageName(DirectBuffer messageName) {
+  public void setMessageName(final DirectBuffer messageName) {
     this.messageName.wrap(messageName);
   }
 
@@ -75,7 +77,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return correlationKey;
   }
 
-  public void setCorrelationKey(DirectBuffer correlationKey) {
+  public void setCorrelationKey(final DirectBuffer correlationKey) {
     this.correlationKey.wrap(correlationKey);
   }
 
@@ -83,7 +85,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return targetElementId;
   }
 
-  public void setTargetElementId(DirectBuffer targetElementId) {
+  public void setTargetElementId(final DirectBuffer targetElementId) {
     this.targetElementId.wrap(targetElementId);
   }
 
@@ -91,7 +93,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
@@ -99,7 +101,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return elementInstanceKey;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
@@ -107,7 +109,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(DirectBuffer bpmnProcessId) {
+  public void setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     this.bpmnProcessId.wrap(bpmnProcessId);
   }
 
@@ -115,7 +117,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return commandSentTime;
   }
 
-  public void setCommandSentTime(long commandSentTime) {
+  public void setCommandSentTime(final long commandSentTime) {
     this.commandSentTime = commandSentTime;
   }
 
@@ -123,7 +125,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return subscriptionPartitionId;
   }
 
-  public void setSubscriptionPartitionId(int subscriptionPartitionId) {
+  public void setSubscriptionPartitionId(final int subscriptionPartitionId) {
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
@@ -131,7 +133,7 @@ public class WorkflowInstanceSubscription implements DbValue {
     return closeOnCorrelate;
   }
 
-  public void setCloseOnCorrelate(boolean closeOnCorrelate) {
+  public void setCloseOnCorrelate(final boolean closeOnCorrelate) {
     this.closeOnCorrelate = closeOnCorrelate;
   }
 

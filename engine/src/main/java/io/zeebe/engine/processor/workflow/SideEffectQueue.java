@@ -49,7 +49,7 @@ public class SideEffectQueue implements SideEffectProducer {
     return flushed;
   }
 
-  public void add(SideEffectProducer sideEffectProducer) {
+  public void add(final SideEffectProducer sideEffectProducer) {
     sideEffects.add(sideEffectProducer);
   }
 }

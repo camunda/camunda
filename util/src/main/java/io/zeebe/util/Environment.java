@@ -24,45 +24,45 @@ public class Environment {
     this(System.getenv());
   }
 
-  public Environment(Map<String, String> environment) {
+  public Environment(final Map<String, String> environment) {
     this.environment = environment;
   }
 
-  public Optional<String> get(String name) {
+  public Optional<String> get(final String name) {
     return Optional.ofNullable(environment.get(name));
   }
 
-  public Optional<Integer> getInt(String name) {
+  public Optional<Integer> getInt(final String name) {
     try {
       return get(name).map(Integer::valueOf);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.warn("Failed to parse environment variable {}", name, e);
       return Optional.empty();
     }
   }
 
-  public Optional<Double> getDouble(String name) {
+  public Optional<Double> getDouble(final String name) {
     try {
       return get(name).map(Double::valueOf);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.warn("Failed to parse environment variable {}", name, e);
       return Optional.empty();
     }
   }
 
-  public Optional<Long> getLong(String name) {
+  public Optional<Long> getLong(final String name) {
     try {
       return get(name).map(Long::valueOf);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.warn("Failed to parse environment variable {}", name, e);
       return Optional.empty();
     }
   }
 
-  public Optional<Boolean> getBool(String name) {
+  public Optional<Boolean> getBool(final String name) {
     try {
       return get(name).map(Boolean::valueOf);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.warn("Failed to parse environment variable {}", name, e);
       return Optional.empty();
     }

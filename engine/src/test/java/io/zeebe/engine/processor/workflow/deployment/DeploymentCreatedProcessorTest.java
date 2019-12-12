@@ -34,7 +34,8 @@ public class DeploymentCreatedProcessorTest {
   public static final String MESSAGE_NAME = "msg";
 
   @Rule
-  public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
+  public final StreamProcessorRule rule =
+      new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
   private WorkflowState workflowState;
 

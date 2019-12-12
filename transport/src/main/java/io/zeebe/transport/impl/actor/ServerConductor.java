@@ -27,9 +27,9 @@ import java.nio.channels.SocketChannel;
 
 public class ServerConductor extends Conductor {
   private final AcceptTransportPoller acceptTransportPoller;
-  private ServerSocketBinding serverSocketBinding;
+  private final ServerSocketBinding serverSocketBinding;
 
-  public ServerConductor(ServerActorContext actorContext, TransportContext context) {
+  public ServerConductor(final ServerActorContext actorContext, final TransportContext context) {
     super(actorContext, context);
     this.serverSocketBinding = context.getServerSocketBinding();
     this.acceptTransportPoller = new AcceptTransportPoller(this);
@@ -54,15 +54,15 @@ public class ServerConductor extends Conductor {
     serverSocketBinding.close();
   }
 
-  public void onServerChannelOpened(SocketChannel serverChannel) {
+  public void onServerChannelOpened(final SocketChannel serverChannel) {
     SocketAddress socketAddress = null;
 
     try {
       socketAddress = new SocketAddress((InetSocketAddress) serverChannel.getRemoteAddress());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       try {
         serverChannel.close();
-      } catch (IOException e1) {
+      } catch (final IOException e1) {
         return;
       }
     }
@@ -88,11 +88,11 @@ public class ServerConductor extends Conductor {
   }
 
   public ActorFuture<ServerInputSubscription> openInputSubscription(
-      String subscriptionName,
-      ServerOutput output,
-      RemoteAddressListImpl remoteAddressList,
-      ServerMessageHandler messageHandler,
-      ServerRequestHandler requestHandler) {
+      final String subscriptionName,
+      final ServerOutput output,
+      final RemoteAddressListImpl remoteAddressList,
+      final ServerMessageHandler messageHandler,
+      final ServerRequestHandler requestHandler) {
     final CompletableActorFuture<ServerInputSubscription> future = new CompletableActorFuture<>();
 
     actor.call(

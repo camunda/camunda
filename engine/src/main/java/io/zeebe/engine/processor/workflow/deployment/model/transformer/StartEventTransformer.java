@@ -26,7 +26,7 @@ public class StartEventTransformer implements ModelElementTransformer<StartEvent
   }
 
   @Override
-  public void transform(StartEvent element, TransformContext context) {
+  public void transform(final StartEvent element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableStartEvent startEvent =
         workflow.getElementById(element.getId(), ExecutableStartEvent.class);

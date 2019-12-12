@@ -29,7 +29,7 @@ public class ZeebeSubscriptionImpl extends BpmnModelElementInstanceImpl
 
   private static Attribute<String> correlationKeyAttribute;
 
-  public ZeebeSubscriptionImpl(ModelTypeInstanceContext instanceContext) {
+  public ZeebeSubscriptionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
@@ -39,11 +39,11 @@ public class ZeebeSubscriptionImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public void setCorrelationKey(String correlationKey) {
+  public void setCorrelationKey(final String correlationKey) {
     correlationKeyAttribute.setValue(this, correlationKey);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ZeebeSubscription.class, ZeebeConstants.ELEMENT_SUBSCRIPTION)

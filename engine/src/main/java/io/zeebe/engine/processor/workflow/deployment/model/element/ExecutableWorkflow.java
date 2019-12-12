@@ -17,21 +17,22 @@ public class ExecutableWorkflow extends ExecutableFlowElementContainer {
 
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
 
-  public ExecutableWorkflow(String id) {
+  public ExecutableWorkflow(final String id) {
     super(id);
     addFlowElement(this);
   }
 
-  public void addFlowElement(AbstractFlowElement element) {
+  public void addFlowElement(final AbstractFlowElement element) {
     flowElements.put(element.getId(), element);
   }
 
-  public AbstractFlowElement getElementById(DirectBuffer id) {
+  public AbstractFlowElement getElementById(final DirectBuffer id) {
     return flowElements.get(id);
   }
 
   /** convenience function for transformation */
-  public <T extends ExecutableFlowElement> T getElementById(String id, Class<T> expectedType) {
+  public <T extends ExecutableFlowElement> T getElementById(
+      final String id, final Class<T> expectedType) {
     final DirectBuffer buffer = BufferUtil.wrapString(id);
     final ExecutableFlowElement element = flowElements.get(buffer);
     if (element == null) {

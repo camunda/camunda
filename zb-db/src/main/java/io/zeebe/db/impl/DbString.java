@@ -20,16 +20,16 @@ public class DbString implements DbKey, DbValue {
 
   private final DirectBuffer bytes = new UnsafeBuffer(0, 0);
 
-  public void wrapString(String string) {
+  public void wrapString(final String string) {
     this.bytes.wrap(string.getBytes());
   }
 
-  public void wrapBuffer(DirectBuffer buffer) {
+  public void wrapBuffer(final DirectBuffer buffer) {
     bytes.wrap(buffer);
   }
 
   @Override
-  public void wrap(DirectBuffer directBuffer, int offset, int length) {
+  public void wrap(final DirectBuffer directBuffer, int offset, final int length) {
     final int stringLen = directBuffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
@@ -45,7 +45,7 @@ public class DbString implements DbKey, DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer mutableDirectBuffer, int offset) {
+  public void write(final MutableDirectBuffer mutableDirectBuffer, int offset) {
     final int length = bytes.capacity();
     mutableDirectBuffer.putInt(offset, length, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;

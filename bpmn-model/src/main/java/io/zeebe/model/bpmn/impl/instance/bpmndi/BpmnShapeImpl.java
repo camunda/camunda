@@ -57,11 +57,11 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   protected static AttributeReference<BpmnShape> choreographyActivityShapeAttribute;
   protected static ChildElement<BpmnLabel> bpmnLabelChild;
 
-  public BpmnShapeImpl(ModelTypeInstanceContext instanceContext) {
+  public BpmnShapeImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BpmnShape.class, BPMNDI_ELEMENT_BPMN_SHAPE)
@@ -70,7 +70,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BpmnShape>() {
                   @Override
-                  public BpmnShape newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BpmnShape newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new BpmnShapeImpl(instanceContext);
                   }
                 });
@@ -115,7 +115,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setBpmnElement(BaseElement bpmnElement) {
+  public void setBpmnElement(final BaseElement bpmnElement) {
     bpmnElementAttribute.setReferenceTargetElement(this, bpmnElement);
   }
 
@@ -125,7 +125,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setHorizontal(boolean isHorizontal) {
+  public void setHorizontal(final boolean isHorizontal) {
     isHorizontalAttribute.setValue(this, isHorizontal);
   }
 
@@ -135,7 +135,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setExpanded(boolean isExpanded) {
+  public void setExpanded(final boolean isExpanded) {
     isExpandedAttribute.setValue(this, isExpanded);
   }
 
@@ -145,7 +145,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setMarkerVisible(boolean isMarkerVisible) {
+  public void setMarkerVisible(final boolean isMarkerVisible) {
     isMarkerVisibleAttribute.setValue(this, isMarkerVisible);
   }
 
@@ -155,7 +155,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setMessageVisible(boolean isMessageVisible) {
+  public void setMessageVisible(final boolean isMessageVisible) {
     isMessageVisibleAttribute.setValue(this, isMessageVisible);
   }
 
@@ -165,7 +165,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setParticipantBandKind(ParticipantBandKind participantBandKind) {
+  public void setParticipantBandKind(final ParticipantBandKind participantBandKind) {
     participantBandKindAttribute.setValue(this, participantBandKind);
   }
 
@@ -175,7 +175,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setChoreographyActivityShape(BpmnShape choreographyActivityShape) {
+  public void setChoreographyActivityShape(final BpmnShape choreographyActivityShape) {
     choreographyActivityShapeAttribute.setReferenceTargetElement(this, choreographyActivityShape);
   }
 
@@ -185,7 +185,7 @@ public class BpmnShapeImpl extends LabeledShapeImpl implements BpmnShape {
   }
 
   @Override
-  public void setBpmnLabel(BpmnLabel bpmnLabel) {
+  public void setBpmnLabel(final BpmnLabel bpmnLabel) {
     bpmnLabelChild.setChild(this, bpmnLabel);
   }
 }

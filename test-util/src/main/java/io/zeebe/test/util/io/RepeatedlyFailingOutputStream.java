@@ -36,7 +36,7 @@ public class RepeatedlyFailingOutputStream extends OutputStream {
   }
 
   @Override
-  public void write(int b) throws IOException {
+  public void write(final int b) throws IOException {
     writeCount++;
 
     if (writeCount % failureFrequency == 0) {

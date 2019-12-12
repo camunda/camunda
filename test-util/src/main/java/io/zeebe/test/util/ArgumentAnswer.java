@@ -17,14 +17,14 @@ import org.mockito.stubbing.Answer;
  */
 public class ArgumentAnswer<T> implements Answer<T> {
 
-  protected int argIndex;
+  protected final int argIndex;
 
-  public ArgumentAnswer(int argIndex) {
+  public ArgumentAnswer(final int argIndex) {
     this.argIndex = argIndex;
   }
 
   @Override
-  public T answer(InvocationOnMock invocation) throws Throwable {
+  public T answer(final InvocationOnMock invocation) throws Throwable {
     return (T) invocation.getArguments()[argIndex];
   }
 }

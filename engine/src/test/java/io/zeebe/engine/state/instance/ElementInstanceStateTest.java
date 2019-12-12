@@ -29,7 +29,7 @@ public class ElementInstanceStateTest {
 
   private static final long WORKFLOW_KEY = 123;
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private ElementInstanceState elementInstanceState;
 
@@ -445,7 +445,7 @@ public class ElementInstanceStateTest {
     assertThat(metadata.getRequestStreamId()).isEqualTo(streamId);
   }
 
-  private void assertElementInstance(ElementInstance elementInstance, int childCount) {
+  private void assertElementInstance(final ElementInstance elementInstance, final int childCount) {
     Assertions.assertThat(elementInstance.getKey()).isEqualTo(100);
     Assertions.assertThat(elementInstance.getState())
         .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
@@ -462,7 +462,8 @@ public class ElementInstanceStateTest {
     assertWorkflowInstanceRecord(record);
   }
 
-  private void assertChildInstance(ElementInstance childInstance, long key, String elementId) {
+  private void assertChildInstance(
+      final ElementInstance childInstance, final long key, final String elementId) {
     Assertions.assertThat(childInstance.getKey()).isEqualTo(key);
     Assertions.assertThat(childInstance.getState())
         .isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
@@ -489,11 +490,12 @@ public class ElementInstanceStateTest {
     return workflowInstanceRecord;
   }
 
-  private void assertWorkflowInstanceRecord(WorkflowInstanceRecord record) {
+  private void assertWorkflowInstanceRecord(final WorkflowInstanceRecord record) {
     assertWorkflowInstanceRecord(record, wrapString("startEvent"));
   }
 
-  private void assertWorkflowInstanceRecord(WorkflowInstanceRecord record, DirectBuffer elementId) {
+  private void assertWorkflowInstanceRecord(
+      final WorkflowInstanceRecord record, final DirectBuffer elementId) {
     assertThat(record.getElementIdBuffer()).isEqualTo(elementId);
     assertThat(record.getBpmnProcessIdBuffer()).isEqualTo(wrapString("process1"));
     assertThat(record.getWorkflowInstanceKey()).isEqualTo(1000L);
@@ -503,7 +505,8 @@ public class ElementInstanceStateTest {
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
   }
 
-  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
+  public void setVariableLocal(
+      final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
     elementInstanceState
         .getVariablesState()
         .setVariableLocal(

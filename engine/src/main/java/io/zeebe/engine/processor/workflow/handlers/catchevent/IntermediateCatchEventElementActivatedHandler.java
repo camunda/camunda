@@ -18,12 +18,12 @@ public class IntermediateCatchEventElementActivatedHandler<T extends ExecutableC
     this(null);
   }
 
-  public IntermediateCatchEventElementActivatedHandler(WorkflowInstanceIntent nextState) {
+  public IntermediateCatchEventElementActivatedHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       if (context.getElement().isNone()) {
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);

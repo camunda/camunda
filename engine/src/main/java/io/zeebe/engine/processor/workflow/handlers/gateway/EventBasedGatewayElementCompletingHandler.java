@@ -18,27 +18,28 @@ public class EventBasedGatewayElementCompletingHandler<T extends ExecutableEvent
     extends ElementCompletingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 
-  public EventBasedGatewayElementCompletingHandler(CatchEventSubscriber catchEventSubscriber) {
+  public EventBasedGatewayElementCompletingHandler(
+      final CatchEventSubscriber catchEventSubscriber) {
     super();
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public EventBasedGatewayElementCompletingHandler(
-      IOMappingHelper ioMappingHelper, CatchEventSubscriber catchEventSubscriber) {
+      final IOMappingHelper ioMappingHelper, final CatchEventSubscriber catchEventSubscriber) {
     super(ioMappingHelper);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public EventBasedGatewayElementCompletingHandler(
-      WorkflowInstanceIntent nextState,
-      IOMappingHelper ioMappingHelper,
-      CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState,
+      final IOMappingHelper ioMappingHelper,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       catchEventSubscriber.unsubscribeFromEvents(context);
       return true;

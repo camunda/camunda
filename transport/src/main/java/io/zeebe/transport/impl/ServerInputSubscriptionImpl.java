@@ -21,11 +21,11 @@ public class ServerInputSubscriptionImpl implements ServerInputSubscription {
   protected final FragmentHandler fragmentHandler;
 
   public ServerInputSubscriptionImpl(
-      ServerOutput output,
-      Subscription subscription,
-      RemoteAddressList addressList,
-      ServerMessageHandler messageHandler,
-      ServerRequestHandler requestHandler) {
+      final ServerOutput output,
+      final Subscription subscription,
+      final RemoteAddressList addressList,
+      final ServerMessageHandler messageHandler,
+      final ServerRequestHandler requestHandler) {
     this.subscription = subscription;
     this.fragmentHandler =
         new ServerReceiveHandler(output, addressList, messageHandler, requestHandler, null);
@@ -37,7 +37,7 @@ public class ServerInputSubscriptionImpl implements ServerInputSubscription {
   }
 
   @Override
-  public int poll(int maxCount) {
+  public int poll(final int maxCount) {
     return subscription.poll(fragmentHandler, maxCount);
   }
 
@@ -47,12 +47,12 @@ public class ServerInputSubscriptionImpl implements ServerInputSubscription {
   }
 
   @Override
-  public void registerConsumer(ActorCondition onDataAvailable) {
+  public void registerConsumer(final ActorCondition onDataAvailable) {
     subscription.registerConsumer(onDataAvailable);
   }
 
   @Override
-  public void removeConsumer(ActorCondition onDataAvailable) {
+  public void removeConsumer(final ActorCondition onDataAvailable) {
     subscription.removeConsumer(onDataAvailable);
   }
 }

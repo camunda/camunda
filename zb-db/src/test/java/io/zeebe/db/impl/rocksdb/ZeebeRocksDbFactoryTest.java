@@ -19,7 +19,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class ZeebeRocksDbFactoryTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Test
   public void shouldCreateNewDb() throws Exception {

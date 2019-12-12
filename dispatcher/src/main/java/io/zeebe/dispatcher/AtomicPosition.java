@@ -28,7 +28,7 @@ public class AtomicPosition {
     position.set(value);
   }
 
-  public boolean proposeMaxOrdered(long newValue) {
+  public boolean proposeMaxOrdered(final long newValue) {
     boolean updated = false;
 
     while (!updated) {

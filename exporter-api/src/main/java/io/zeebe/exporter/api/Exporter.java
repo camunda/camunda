@@ -40,7 +40,7 @@ public interface Exporter {
    *
    * @param context the exporter context
    */
-  default void configure(Context context) throws Exception {}
+  default void configure(final Context context) throws Exception {}
 
   /**
    * Hook to perform any setup for a given exporter. This method is the first method called during
@@ -49,7 +49,7 @@ public interface Exporter {
    *
    * @param controller specific controller for this exporter
    */
-  default void open(Controller controller) {}
+  default void open(final Controller controller) {}
 
   /**
    * Hook to perform any tear down. This is method is called exactly once at the end of the

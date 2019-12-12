@@ -206,15 +206,15 @@ public class MessageOutputMappingTest {
   }
 
   private static Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mapping(
-      Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mappingBuilder) {
+      final Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 
-  private static List<Tuple> activityVariables(Tuple... variables) {
+  private static List<Tuple> activityVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 
-  private static List<Tuple> scopeVariables(Tuple... variables) {
+  private static List<Tuple> scopeVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 }

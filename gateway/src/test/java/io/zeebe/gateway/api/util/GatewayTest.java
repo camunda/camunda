@@ -16,9 +16,9 @@ import org.junit.rules.RuleChain;
 
 public class GatewayTest {
 
-  protected ControlledActorClock actorClock = new ControlledActorClock();
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
-  public StubbedGatewayRule gatewayRule = new StubbedGatewayRule(actorSchedulerRule);
+  protected final ControlledActorClock actorClock = new ControlledActorClock();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
+  public final StubbedGatewayRule gatewayRule = new StubbedGatewayRule(actorSchedulerRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(gatewayRule);
 
   protected StubbedGateway gateway;

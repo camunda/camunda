@@ -35,10 +35,10 @@ public class JobClientImpl implements JobClient {
   private final Predicate<Throwable> retryPredicate;
 
   public JobClientImpl(
-      GatewayStub asyncStub,
-      ZeebeClientConfiguration config,
-      ZeebeObjectMapper objectMapper,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final ZeebeClientConfiguration config,
+      final ZeebeObjectMapper objectMapper,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.config = config;
     this.objectMapper = objectMapper;
@@ -46,13 +46,13 @@ public class JobClientImpl implements JobClient {
   }
 
   @Override
-  public CompleteJobCommandStep1 newCompleteCommand(long jobKey) {
+  public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return new CompleteJobCommandImpl(
         asyncStub, objectMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }
 
   @Override
-  public FailJobCommandStep1 newFailCommand(long jobKey) {
+  public FailJobCommandStep1 newFailCommand(final long jobKey) {
     return new FailJobCommandImpl(
         asyncStub, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }

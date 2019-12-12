@@ -26,12 +26,12 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
     super();
   }
 
-  public EventBasedGatewayEventOccurredHandler(WorkflowInstanceIntent nextState) {
+  public EventBasedGatewayEventOccurredHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       final EventTrigger event = getTriggeredEvent(context, context.getKey());
       final ExecutableSequenceFlow flow = getSequenceFlow(context, event);
@@ -53,7 +53,8 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
     return false;
   }
 
-  private ExecutableSequenceFlow getSequenceFlow(BpmnStepContext<T> context, EventTrigger event) {
+  private ExecutableSequenceFlow getSequenceFlow(
+      final BpmnStepContext<T> context, final EventTrigger event) {
     final List<ExecutableSequenceFlow> outgoing = context.getElement().getOutgoing();
 
     for (final ExecutableSequenceFlow flow : outgoing) {

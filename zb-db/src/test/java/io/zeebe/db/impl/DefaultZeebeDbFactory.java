@@ -14,7 +14,7 @@ public class DefaultZeebeDbFactory {
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
-          Class<ColumnFamilyType> columnFamilyTypeClass) {
+          final Class<ColumnFamilyType> columnFamilyTypeClass) {
     return ZeebeRocksDbFactory.newFactory(columnFamilyTypeClass);
   }
 }

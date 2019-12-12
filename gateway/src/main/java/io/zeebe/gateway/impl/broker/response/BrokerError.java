@@ -16,11 +16,11 @@ public class BrokerError {
   private final ErrorCode code;
   private final String message;
 
-  public BrokerError(ErrorResponse errorResponse) {
+  public BrokerError(final ErrorResponse errorResponse) {
     this(errorResponse.getErrorCode(), BufferUtil.bufferAsString(errorResponse.getErrorData()));
   }
 
-  public BrokerError(ErrorCode code, String message) {
+  public BrokerError(final ErrorCode code, final String message) {
     this.code = code;
     this.message = message;
   }

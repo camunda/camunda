@@ -43,11 +43,11 @@ public class IoBindingImpl extends BaseElementImpl implements IoBinding {
   protected static AttributeReference<DataInput> inputDataRefAttribute;
   protected static AttributeReference<DataOutput> outputDataRefAttribute;
 
-  public IoBindingImpl(ModelTypeInstanceContext instanceContext) {
+  public IoBindingImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(IoBinding.class, BPMN_ELEMENT_IO_BINDING)
@@ -56,7 +56,7 @@ public class IoBindingImpl extends BaseElementImpl implements IoBinding {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<IoBinding>() {
                   @Override
-                  public IoBinding newInstance(ModelTypeInstanceContext instanceContext) {
+                  public IoBinding newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new IoBindingImpl(instanceContext);
                   }
                 });
@@ -91,7 +91,7 @@ public class IoBindingImpl extends BaseElementImpl implements IoBinding {
   }
 
   @Override
-  public void setOperation(Operation operation) {
+  public void setOperation(final Operation operation) {
     operationRefAttribute.setReferenceTargetElement(this, operation);
   }
 
@@ -101,7 +101,7 @@ public class IoBindingImpl extends BaseElementImpl implements IoBinding {
   }
 
   @Override
-  public void setInputData(DataInput inputData) {
+  public void setInputData(final DataInput inputData) {
     inputDataRefAttribute.setReferenceTargetElement(this, inputData);
   }
 
@@ -111,7 +111,7 @@ public class IoBindingImpl extends BaseElementImpl implements IoBinding {
   }
 
   @Override
-  public void setOutputData(DataOutput dataOutput) {
+  public void setOutputData(final DataOutput dataOutput) {
     outputDataRefAttribute.setReferenceTargetElement(this, dataOutput);
   }
 }

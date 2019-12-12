@@ -27,7 +27,7 @@ public class BpmnTypeHierarchy {
 
   private final Map<ModelElementType, List<ModelElementType>> hierarchyCache = new HashMap<>();
 
-  public void registerType(ModelElementType type) {
+  public void registerType(final ModelElementType type) {
     final List<ModelElementType> hierarchy = new ArrayList<>();
     hierarchy.add(type);
     ((ModelElementTypeImpl) type).resolveBaseTypes(hierarchy);
@@ -39,7 +39,7 @@ public class BpmnTypeHierarchy {
    * @return the argument type and all its the types it extends. Ordering is top-down, i.e. most
    *     high-level type is first element in list.
    */
-  public List<ModelElementType> getHierarchy(ModelElementType type) {
+  public List<ModelElementType> getHierarchy(final ModelElementType type) {
     return hierarchyCache.get(type);
   }
 }

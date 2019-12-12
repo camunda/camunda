@@ -26,12 +26,12 @@ public class VariableInstance extends UnpackedObject implements DbValue {
     return keyProp.getValue();
   }
 
-  public VariableInstance setKey(long key) {
+  public VariableInstance setKey(final long key) {
     keyProp.setValue(key);
     return this;
   }
 
-  public VariableInstance setValue(DirectBuffer value, int offset, int length) {
+  public VariableInstance setValue(final DirectBuffer value, final int offset, final int length) {
     valueProp.setValue(value, offset, length);
     return this;
   }

@@ -20,12 +20,12 @@ public class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatc
     this(null);
   }
 
-  public IntermediateCatchEventEventOccurredHandler(WorkflowInstanceIntent nextState) {
+  public IntermediateCatchEventEventOccurredHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       final EventTrigger event = getTriggeredEvent(context, context.getKey());
       if (event == null) {

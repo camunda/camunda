@@ -30,11 +30,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class LoopDataInputRef extends BpmnModelElementInstanceImpl {
 
-  public LoopDataInputRef(ModelTypeInstanceContext instanceContext) {
+  public LoopDataInputRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(LoopDataInputRef.class, BPMN_ELEMENT_LOOP_DATA_INPUT_REF)
@@ -42,7 +42,8 @@ public class LoopDataInputRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<LoopDataInputRef>() {
                   @Override
-                  public LoopDataInputRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public LoopDataInputRef newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new LoopDataInputRef(instanceContext);
                   }
                 });

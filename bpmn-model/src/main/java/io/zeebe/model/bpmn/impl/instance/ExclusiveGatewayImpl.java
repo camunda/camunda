@@ -40,11 +40,11 @@ public class ExclusiveGatewayImpl extends GatewayImpl implements ExclusiveGatewa
 
   protected static AttributeReference<SequenceFlow> defaultAttribute;
 
-  public ExclusiveGatewayImpl(ModelTypeInstanceContext context) {
+  public ExclusiveGatewayImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ExclusiveGateway.class, BPMN_ELEMENT_EXCLUSIVE_GATEWAY)
@@ -53,7 +53,8 @@ public class ExclusiveGatewayImpl extends GatewayImpl implements ExclusiveGatewa
             .instanceProvider(
                 new ModelTypeInstanceProvider<ExclusiveGateway>() {
                   @Override
-                  public ExclusiveGateway newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ExclusiveGateway newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ExclusiveGatewayImpl(instanceContext);
                   }
                 });
@@ -78,7 +79,7 @@ public class ExclusiveGatewayImpl extends GatewayImpl implements ExclusiveGatewa
   }
 
   @Override
-  public void setDefault(SequenceFlow defaultFlow) {
+  public void setDefault(final SequenceFlow defaultFlow) {
     defaultAttribute.setReferenceTargetElement(this, defaultFlow);
   }
 }

@@ -17,7 +17,7 @@ public class ExecutableServiceTask extends ExecutableActivity {
   private int retries;
   private DirectBuffer encodedHeaders = JobRecord.NO_HEADERS;
 
-  public ExecutableServiceTask(String id) {
+  public ExecutableServiceTask(final String id) {
     super(id);
   }
 
@@ -25,7 +25,7 @@ public class ExecutableServiceTask extends ExecutableActivity {
     return type;
   }
 
-  public void setType(String type) {
+  public void setType(final String type) {
     this.type = BufferUtil.wrapString(type);
   }
 
@@ -33,7 +33,7 @@ public class ExecutableServiceTask extends ExecutableActivity {
     return retries;
   }
 
-  public void setRetries(int retries) {
+  public void setRetries(final int retries) {
     this.retries = retries;
   }
 
@@ -41,7 +41,7 @@ public class ExecutableServiceTask extends ExecutableActivity {
     return encodedHeaders;
   }
 
-  public void setEncodedHeaders(DirectBuffer encodedHeaders) {
+  public void setEncodedHeaders(final DirectBuffer encodedHeaders) {
     this.encodedHeaders = encodedHeaders;
   }
 }

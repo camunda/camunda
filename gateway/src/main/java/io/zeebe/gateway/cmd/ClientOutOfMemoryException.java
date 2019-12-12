@@ -17,7 +17,7 @@ public class ClientOutOfMemoryException extends ClientException {
     super(MESSAGE);
   }
 
-  public ClientOutOfMemoryException(Throwable cause) {
+  public ClientOutOfMemoryException(final Throwable cause) {
     super(MESSAGE, cause);
   }
 }

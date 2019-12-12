@@ -21,10 +21,10 @@ public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSub
   protected final FragmentHandler messageHandler;
 
   public ClientInputMessageSubscriptionImpl(
-      Subscription subscription,
-      ClientMessageHandler messageHandler,
-      ClientOutput output,
-      RemoteAddressList remoteAddresses) {
+      final Subscription subscription,
+      final ClientMessageHandler messageHandler,
+      final ClientOutput output,
+      final RemoteAddressList remoteAddresses) {
     this.subscription = subscription;
     this.messageHandler =
         (buffer, offset, length, streamId, isMarkedFailed) -> {
@@ -49,12 +49,12 @@ public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSub
   }
 
   @Override
-  public void registerConsumer(ActorCondition listener) {
+  public void registerConsumer(final ActorCondition listener) {
     subscription.registerConsumer(listener);
   }
 
   @Override
-  public void removeConsumer(ActorCondition listener) {
+  public void removeConsumer(final ActorCondition listener) {
     subscription.removeConsumer(listener);
   }
 }

@@ -43,7 +43,7 @@ public class MessageCorrelationTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private long workflowKey;
   private String correlationValue;

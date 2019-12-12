@@ -31,11 +31,11 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
   protected final TransportContext transportContext;
   protected final AtomicBoolean closing = new AtomicBoolean(false);
   protected final TransportChannelFactory channelFactory;
-  protected Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
+  protected final Int2ObjectHashMap<TransportChannel> channels = new Int2ObjectHashMap<>();
   private final List<TransportListener> transportListeners = new ArrayList<>();
   private final ActorContext actorContext;
 
-  public Conductor(ActorContext actorContext, TransportContext context) {
+  public Conductor(final ActorContext actorContext, final TransportContext context) {
     this.actorContext = actorContext;
     this.transportContext = context;
     this.remoteAddressList = context.getRemoteAddressList();
@@ -44,14 +44,14 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
     actorContext.setConductor(this);
   }
 
-  public ActorFuture<Void> registerListener(TransportListener channelListener) {
+  public ActorFuture<Void> registerListener(final TransportListener channelListener) {
     return actor.call(
         () -> {
           transportListeners.add(channelListener);
         });
   }
 
-  public void removeListener(TransportListener channelListener) {
+  public void removeListener(final TransportListener channelListener) {
     // TODO make better
     if (ActorThread.current() != null) {
       actor.submit(
@@ -69,7 +69,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
   // channel lifecycle
 
   @Override
-  public void onChannelConnected(TransportChannel ch) {
+  public void onChannelConnected(final TransportChannel ch) {
     channels.put(ch.getRemoteAddress().getStreamId(), ch);
 
     final ActorFuture<Void> f1 = actorContext.getReceiver().registerChannel(ch);
@@ -82,7 +82,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
               l -> {
                 try {
                   l.onConnectionEstablished(ch.getRemoteAddress());
-                } catch (Exception e) {
+                } catch (final Exception e) {
                   LOG.debug("Failed to call transport listener {} on channel connect", l, e);
                 }
               });
@@ -90,7 +90,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
   }
 
   @Override
-  public void onChannelClosed(TransportChannel ch, boolean wasConnected) {
+  public void onChannelClosed(final TransportChannel ch, final boolean wasConnected) {
     actor.run(
         () -> {
           if (channels.remove(ch.getRemoteAddress().getStreamId()) != null) {
@@ -107,7 +107,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
                         l -> {
                           try {
                             l.onConnectionClosed(ch.getRemoteAddress());
-                          } catch (Exception e) {
+                          } catch (final Exception e) {
                             LOG.debug("Failed to call transport listener {} on disconnect", l, e);
                           }
                         });
@@ -124,7 +124,7 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
         });
   }
 
-  protected void failRequestsOnChannel(TransportChannel ch, String reason) {
+  protected void failRequestsOnChannel(final TransportChannel ch, final String reason) {
     actorContext.getSender().failPendingRequestsToRemote(ch.getRemoteAddress(), reason);
   }
 

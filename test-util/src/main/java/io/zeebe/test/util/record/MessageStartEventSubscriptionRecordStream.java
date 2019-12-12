@@ -16,25 +16,25 @@ public class MessageStartEventSubscriptionRecordStream
         MessageStartEventSubscriptionRecordValue, MessageStartEventSubscriptionRecordStream> {
 
   public MessageStartEventSubscriptionRecordStream(
-      Stream<Record<MessageStartEventSubscriptionRecordValue>> wrappedStream) {
+      final Stream<Record<MessageStartEventSubscriptionRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
   protected MessageStartEventSubscriptionRecordStream supply(
-      Stream<Record<MessageStartEventSubscriptionRecordValue>> wrappedStream) {
+      final Stream<Record<MessageStartEventSubscriptionRecordValue>> wrappedStream) {
     return new MessageStartEventSubscriptionRecordStream((wrappedStream));
   }
 
-  public MessageStartEventSubscriptionRecordStream withWorkfloKey(long workflowKey) {
+  public MessageStartEventSubscriptionRecordStream withWorkfloKey(final long workflowKey) {
     return valueFilter(v -> v.getWorkflowKey() == workflowKey);
   }
 
-  public MessageStartEventSubscriptionRecordStream withStartEventId(String startEventId) {
+  public MessageStartEventSubscriptionRecordStream withStartEventId(final String startEventId) {
     return valueFilter(v -> startEventId.equals(v.getStartEventId()));
   }
 
-  public MessageStartEventSubscriptionRecordStream withMessageName(String messageName) {
+  public MessageStartEventSubscriptionRecordStream withMessageName(final String messageName) {
     return valueFilter(v -> messageName.equals(v.getMessageName()));
   }
 }

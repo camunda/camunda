@@ -47,10 +47,10 @@ public class CreateWorkflowInstanceCommandImpl
   private Duration requestTimeout;
 
   public CreateWorkflowInstanceCommandImpl(
-      GatewayStub asyncStub,
-      ZeebeObjectMapper objectMapper,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final ZeebeObjectMapper objectMapper,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
     this.requestTimeout = requestTimeout;
@@ -60,24 +60,24 @@ public class CreateWorkflowInstanceCommandImpl
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep3 variables(InputStream variables) {
+  public CreateWorkflowInstanceCommandStep3 variables(final InputStream variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(objectMapper.validateJson("variables", variables));
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep3 variables(String variables) {
+  public CreateWorkflowInstanceCommandStep3 variables(final String variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(objectMapper.validateJson("variables", variables));
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep3 variables(Map<String, Object> variables) {
+  public CreateWorkflowInstanceCommandStep3 variables(final Map<String, Object> variables) {
     return variables((Object) variables);
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep3 variables(Object variables) {
+  public CreateWorkflowInstanceCommandStep3 variables(final Object variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(objectMapper.toJson(variables));
   }
@@ -112,7 +112,7 @@ public class CreateWorkflowInstanceCommandImpl
   }
 
   @Override
-  public FinalCommandStep<WorkflowInstanceEvent> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<WorkflowInstanceEvent> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -132,14 +132,14 @@ public class CreateWorkflowInstanceCommandImpl
   }
 
   private void send(
-      CreateWorkflowInstanceRequest request,
-      StreamObserver<CreateWorkflowInstanceResponse> future) {
+      final CreateWorkflowInstanceRequest request,
+      final StreamObserver<CreateWorkflowInstanceResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .createWorkflowInstance(request, future);
   }
 
-  private CreateWorkflowInstanceCommandStep3 setVariables(String jsonDocument) {
+  private CreateWorkflowInstanceCommandStep3 setVariables(final String jsonDocument) {
     builder.setVariables(jsonDocument);
     return this;
   }

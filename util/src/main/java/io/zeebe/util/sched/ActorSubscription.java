@@ -12,7 +12,7 @@ import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 /** Subscription to some external source of work / jobs. */
 public interface ActorSubscription {
   /** returns true if the subscription should be able to trigger in the provided phase */
-  default boolean triggersInPhase(ActorLifecyclePhase phase) {
+  default boolean triggersInPhase(final ActorLifecyclePhase phase) {
     return phase == ActorLifecyclePhase.STARTED;
   }
 

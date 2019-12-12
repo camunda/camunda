@@ -17,11 +17,11 @@ public class ExecutableActivity extends ExecutableFlowNode implements Executable
   private final List<ExecutableCatchEvent> catchEvents = new ArrayList<>();
   private final List<DirectBuffer> interruptingIds = new ArrayList<>();
 
-  public ExecutableActivity(String id) {
+  public ExecutableActivity(final String id) {
     super(id);
   }
 
-  public void attach(ExecutableBoundaryEvent boundaryEvent) {
+  public void attach(final ExecutableBoundaryEvent boundaryEvent) {
     boundaryEvents.add(boundaryEvent);
     catchEvents.add(boundaryEvent);
 

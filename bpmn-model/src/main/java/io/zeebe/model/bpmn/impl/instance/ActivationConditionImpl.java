@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ActivationConditionImpl extends ExpressionImpl implements ActivationCondition {
 
-  public ActivationConditionImpl(ModelTypeInstanceContext instanceContext) {
+  public ActivationConditionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ActivationCondition.class, BPMN_ELEMENT_ACTIVATION_CONDITION)
@@ -46,7 +46,8 @@ public class ActivationConditionImpl extends ExpressionImpl implements Activatio
             .instanceProvider(
                 new ModelTypeInstanceProvider<ActivationCondition>() {
                   @Override
-                  public ActivationCondition newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ActivationCondition newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ActivationConditionImpl(instanceContext);
                   }
                 });

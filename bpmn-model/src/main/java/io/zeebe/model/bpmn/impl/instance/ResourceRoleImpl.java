@@ -49,11 +49,11 @@ public class ResourceRoleImpl extends BaseElementImpl implements ResourceRole {
       resourceParameterBindingCollection;
   protected static ChildElement<ResourceAssignmentExpression> resourceAssignmentExpressionChild;
 
-  public ResourceRoleImpl(ModelTypeInstanceContext instanceContext) {
+  public ResourceRoleImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ResourceRole.class, BPMN_ELEMENT_RESOURCE_ROLE)
@@ -62,7 +62,7 @@ public class ResourceRoleImpl extends BaseElementImpl implements ResourceRole {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ResourceRole>() {
                   @Override
-                  public ResourceRole newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ResourceRole newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ResourceRoleImpl(instanceContext);
                   }
                 });
@@ -89,7 +89,7 @@ public class ResourceRoleImpl extends BaseElementImpl implements ResourceRole {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -99,7 +99,7 @@ public class ResourceRoleImpl extends BaseElementImpl implements ResourceRole {
   }
 
   @Override
-  public void setResource(Resource resource) {
+  public void setResource(final Resource resource) {
     resourceRefChild.setReferenceTargetElement(this, resource);
   }
 

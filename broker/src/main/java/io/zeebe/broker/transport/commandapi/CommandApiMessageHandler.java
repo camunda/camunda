@@ -120,7 +120,7 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     try {
       // verify that the event / command is valid
       event.wrap(buffer, eventOffset, eventLength);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       LOG.error("Failed to deserialize message of type {} in client API", eventType.name(), e);
 
       return errorResponseWriter
@@ -152,7 +152,7 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     boolean written = false;
     try {
       written = writeCommand(eventMetadata, buffer, key, logStreamWriter, eventOffset, eventLength);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOG.error("Unexpected error on writing {} command", eventIntent, ex);
     } finally {
       if (!written) {
@@ -163,12 +163,12 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
   }
 
   private boolean writeCommand(
-      RecordMetadata eventMetadata,
-      DirectBuffer buffer,
-      long key,
-      LogStreamRecordWriter logStreamWriter,
-      int eventOffset,
-      int eventLength) {
+      final RecordMetadata eventMetadata,
+      final DirectBuffer buffer,
+      final long key,
+      final LogStreamRecordWriter logStreamWriter,
+      final int eventOffset,
+      final int eventLength) {
     logStreamWriter.reset();
 
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
@@ -187,7 +187,9 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
   }
 
   public void addPartition(
-      int partitionId, LogStreamRecordWriter logStreamWriter, RequestLimiter<Intent> limiter) {
+      final int partitionId,
+      final LogStreamRecordWriter logStreamWriter,
+      final RequestLimiter<Intent> limiter) {
     cmdQueue.add(
         () -> {
           leadingStreams.put(partitionId, logStreamWriter);
@@ -195,7 +197,7 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
         });
   }
 
-  public void removePartition(LogStream logStream) {
+  public void removePartition(final LogStream logStream) {
     cmdQueue.add(
         () -> {
           leadingStreams.remove(logStream.getPartitionId());

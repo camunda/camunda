@@ -47,7 +47,7 @@ public abstract class AbstractZeebeValidationTest {
   @Parameter(1)
   public List<ExpectedValidationResult> expectedResults;
 
-  private static ValidationResults validate(BpmnModelInstance model) {
+  private static ValidationResults validate(final BpmnModelInstance model) {
     final ModelWalker walker = new ModelWalker(model);
     final ValidationVisitor visitor = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
     walker.walk(visitor);
@@ -121,7 +121,8 @@ public abstract class AbstractZeebeValidationTest {
     fail(sb.toString());
   }
 
-  private static void describeUnmatchedResults(StringBuilder sb, List<ValidationResult> results) {
+  private static void describeUnmatchedResults(
+      final StringBuilder sb, final List<ValidationResult> results) {
     sb.append("Unmatched results:\n");
     results.forEach(
         e -> {
@@ -131,7 +132,7 @@ public abstract class AbstractZeebeValidationTest {
   }
 
   private static void describeUnmatchedExpectations(
-      StringBuilder sb, List<ExpectedValidationResult> expectations) {
+      final StringBuilder sb, final List<ExpectedValidationResult> expectations) {
     sb.append("Unmatched expectations:\n");
     expectations.forEach(
         e -> {

@@ -41,7 +41,7 @@ public class MessageStartEventTest {
   private static final BpmnModelInstance SINGLE_START_EVENT = singleStartEvent(startEvent -> {});
   private static final BpmnModelInstance MULTIPLE_START_EVENTS = multipleStartEvents();
 
-  @Rule public EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   private static BpmnModelInstance singleStartEvent(final Consumer<StartEventBuilder> customizer) {
     final var startEventBuilder =

@@ -40,7 +40,7 @@ import org.mockito.MockitoAnnotations;
 
 public class MessageStreamProcessorTest {
 
-  @Rule public StreamProcessorRule rule = new StreamProcessorRule();
+  @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 
   @Mock private SubscriptionCommandSender mockSubscriptionCommandSender;
 

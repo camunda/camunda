@@ -17,7 +17,7 @@ public class Receiver extends Actor {
   protected final ReadTransportPoller transportPoller;
   private final String name;
 
-  public Receiver(ActorContext actorContext, TransportContext context) {
+  public Receiver(final ActorContext actorContext, final TransportContext context) {
     this.transportPoller = new ReadTransportPoller(actor);
     this.name = String.format("%s-receiver", context.getName());
     actorContext.setReceiver(this);
@@ -39,14 +39,14 @@ public class Receiver extends Actor {
     transportPoller.clearChannels();
   }
 
-  public ActorFuture<Void> removeChannel(TransportChannel c) {
+  public ActorFuture<Void> removeChannel(final TransportChannel c) {
     return actor.call(
         () -> {
           transportPoller.removeChannel(c);
         });
   }
 
-  public ActorFuture<Void> registerChannel(TransportChannel c) {
+  public ActorFuture<Void> registerChannel(final TransportChannel c) {
     return actor.call(
         () -> {
           transportPoller.addChannel(c);

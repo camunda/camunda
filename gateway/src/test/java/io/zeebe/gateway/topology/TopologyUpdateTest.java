@@ -29,7 +29,7 @@ import org.junit.Test;
 public class TopologyUpdateTest {
 
   private final ControlledActorClock actorClock = new ControlledActorClock();
-  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
 
   private BrokerTopologyManagerImpl topologyManager;
   private Set<Member> members;
@@ -154,7 +154,7 @@ public class TopologyUpdateTest {
     assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
   }
 
-  private BrokerInfo createBroker(int brokerId) {
+  private BrokerInfo createBroker(final int brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()
             .setNodeId(brokerId)
@@ -165,17 +165,17 @@ public class TopologyUpdateTest {
     return broker;
   }
 
-  private ClusterMembershipEvent createMemberAddedEvent(BrokerInfo broker) {
+  private ClusterMembershipEvent createMemberAddedEvent(final BrokerInfo broker) {
     final Member member = createMemberFromBrokerInfo(broker);
     return new ClusterMembershipEvent(Type.MEMBER_ADDED, member);
   }
 
-  private ClusterMembershipEvent createMemberUpdateEvent(BrokerInfo broker) {
+  private ClusterMembershipEvent createMemberUpdateEvent(final BrokerInfo broker) {
     final Member member = createMemberFromBrokerInfo(broker);
     return new ClusterMembershipEvent(Type.METADATA_CHANGED, member);
   }
 
-  private Member createMemberFromBrokerInfo(BrokerInfo broker) {
+  private Member createMemberFromBrokerInfo(final BrokerInfo broker) {
     final Member member =
         new Member(new MemberConfig().setId(Integer.toString(broker.getNodeId())));
     broker.writeIntoProperties(member.properties());
@@ -183,7 +183,7 @@ public class TopologyUpdateTest {
     return member;
   }
 
-  private ClusterMembershipEvent createMemberRemoveEvent(BrokerInfo broker) {
+  private ClusterMembershipEvent createMemberRemoveEvent(final BrokerInfo broker) {
     final Member member = new Member(new MemberConfig());
     broker.writeIntoProperties(member.properties());
     return new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);

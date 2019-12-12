@@ -27,7 +27,7 @@ public class SubProcessTransformer implements ModelElementTransformer<SubProcess
   }
 
   @Override
-  public void transform(SubProcess element, TransformContext context) {
+  public void transform(final SubProcess element, final TransformContext context) {
     final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
     final ExecutableFlowElementContainer subprocess =
         currentWorkflow.getElementById(element.getId(), ExecutableFlowElementContainer.class);
@@ -45,9 +45,9 @@ public class SubProcessTransformer implements ModelElementTransformer<SubProcess
   }
 
   private void transformEventSubprocess(
-      SubProcess element,
-      ExecutableWorkflow currentWorkflow,
-      ExecutableFlowElementContainer subprocess) {
+      final SubProcess element,
+      final ExecutableWorkflow currentWorkflow,
+      final ExecutableFlowElementContainer subprocess) {
     final List<ExecutableCatchEvent> parentEvents;
 
     if (element.getScope() instanceof FlowNode) {

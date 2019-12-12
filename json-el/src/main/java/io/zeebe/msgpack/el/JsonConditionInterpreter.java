@@ -31,7 +31,7 @@ public class JsonConditionInterpreter {
     cache.wrap(json);
     try {
       return evalCondition(condition.getCondition(), json);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new JsonConditionException(condition, e);
     }
   }
@@ -56,7 +56,7 @@ public class JsonConditionInterpreter {
     return isFulFilled;
   }
 
-  private boolean evalComparison(Comparison comparison, DirectBuffer json) {
+  private boolean evalComparison(final Comparison comparison, final DirectBuffer json) {
     final MsgPackToken x = getToken(comparison.x(), json, msgPackReader1);
     final MsgPackToken y = getToken(comparison.y(), json, msgPackReader2);
 
@@ -77,7 +77,8 @@ public class JsonConditionInterpreter {
     }
   }
 
-  private MsgPackToken getToken(JsonObject value, DirectBuffer json, MsgPackReader msgPackReader) {
+  private MsgPackToken getToken(
+      final JsonObject value, final DirectBuffer json, final MsgPackReader msgPackReader) {
     if (value instanceof JsonConstant) {
       final JsonConstant constant = (JsonConstant) value;
 
@@ -92,7 +93,7 @@ public class JsonConditionInterpreter {
   }
 
   private MsgPackToken getPathResult(
-      final JsonPath path, DirectBuffer json, MsgPackReader msgPackReader) {
+      final JsonPath path, final DirectBuffer json, final MsgPackReader msgPackReader) {
     final int pathId = path.id();
     // id > 0 if the path is used more than once in the condition
     final boolean cachable = pathId > 0;
@@ -125,7 +126,7 @@ public class JsonConditionInterpreter {
     return msgPackReader.readToken();
   }
 
-  private boolean readQueryResult(JsonPathQuery query, DirectBuffer json) {
+  private boolean readQueryResult(final JsonPathQuery query, final DirectBuffer json) {
     visitor.init(query.getFilters(), query.getFilterInstances());
     traverser.wrap(json, 0, json.capacity());
 
@@ -144,7 +145,7 @@ public class JsonConditionInterpreter {
     return true;
   }
 
-  private boolean equals(MsgPackToken x, MsgPackToken y) {
+  private boolean equals(final MsgPackToken x, final MsgPackToken y) {
     if (x.getType() == MsgPackType.NIL || y.getType() == MsgPackType.NIL) {
       return x.getType() == y.getType();
     } else {
@@ -170,11 +171,11 @@ public class JsonConditionInterpreter {
     }
   }
 
-  private boolean notEquals(MsgPackToken x, MsgPackToken y) {
+  private boolean notEquals(final MsgPackToken x, final MsgPackToken y) {
     return !equals(x, y);
   }
 
-  private boolean lessThan(MsgPackToken x, MsgPackToken y) {
+  private boolean lessThan(final MsgPackToken x, final MsgPackToken y) {
     ensureSameType(x, y);
     ensureNumber(x);
 
@@ -185,7 +186,7 @@ public class JsonConditionInterpreter {
     }
   }
 
-  private boolean lessThanOrEqual(MsgPackToken x, MsgPackToken y) {
+  private boolean lessThanOrEqual(final MsgPackToken x, final MsgPackToken y) {
     ensureSameType(x, y);
     ensureNumber(x);
 
@@ -196,7 +197,7 @@ public class JsonConditionInterpreter {
     }
   }
 
-  private boolean greaterThan(MsgPackToken x, MsgPackToken y) {
+  private boolean greaterThan(final MsgPackToken x, final MsgPackToken y) {
     ensureSameType(x, y);
     ensureNumber(x);
 
@@ -207,7 +208,7 @@ public class JsonConditionInterpreter {
     }
   }
 
-  private boolean greaterThanOrEqual(MsgPackToken x, MsgPackToken y) {
+  private boolean greaterThanOrEqual(final MsgPackToken x, final MsgPackToken y) {
     ensureSameType(x, y);
     ensureNumber(x);
 
@@ -218,7 +219,7 @@ public class JsonConditionInterpreter {
     }
   }
 
-  private void ensureSameType(MsgPackToken x, MsgPackToken y) {
+  private void ensureSameType(final MsgPackToken x, final MsgPackToken y) {
     // transform number types for comparison
     if (x.getType() == MsgPackType.INTEGER && y.getType() == MsgPackType.FLOAT) {
       x.setType(MsgPackType.FLOAT);
@@ -233,7 +234,7 @@ public class JsonConditionInterpreter {
     }
   }
 
-  private void ensureNumber(MsgPackToken x) {
+  private void ensureNumber(final MsgPackToken x) {
     if (x.getType() != MsgPackType.INTEGER && x.getType() != MsgPackType.FLOAT) {
       throw new JsonConditionException(
           String.format("Cannot compare values. Expected number but found: %s", x.getType()));

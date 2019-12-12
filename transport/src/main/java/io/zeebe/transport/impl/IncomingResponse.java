@@ -13,7 +13,7 @@ public class IncomingResponse {
   private final long requestId;
   private final DirectBuffer responseBuffer;
 
-  public IncomingResponse(long requestId, DirectBuffer responseBuffer) {
+  public IncomingResponse(final long requestId, final DirectBuffer responseBuffer) {
     this.requestId = requestId;
     this.responseBuffer = responseBuffer;
   }

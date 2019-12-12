@@ -32,7 +32,9 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private final BpmnStepContext context;
 
   public BpmnStepProcessor(
-      WorkflowEngineState state, ZeebeState zeebeState, CatchEventBehavior catchEventBehavior) {
+      final WorkflowEngineState state,
+      final ZeebeState zeebeState,
+      final CatchEventBehavior catchEventBehavior) {
     this.state = state;
     this.workflowState = state.getWorkflowState();
     this.stepHandlers = new BpmnStepHandlers(zeebeState, catchEventBehavior);
@@ -48,10 +50,10 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     processRecordValue(
         record.getKey(),
         record.getValue(),
@@ -62,23 +64,23 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   }
 
   public void processRecordValue(
-      long key,
-      WorkflowInstanceRecord recordValue,
-      WorkflowInstanceIntent intent,
-      TypedStreamWriter streamWriter,
-      TypedResponseWriter responseWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final long key,
+      final WorkflowInstanceRecord recordValue,
+      final WorkflowInstanceIntent intent,
+      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter responseWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     populateEventContext(key, recordValue, intent, streamWriter, responseWriter, sideEffect);
     stepHandlers.handle(context);
   }
 
   private void populateEventContext(
-      long key,
-      WorkflowInstanceRecord recordValue,
-      WorkflowInstanceIntent intent,
-      TypedStreamWriter streamWriter,
-      TypedResponseWriter responseWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final long key,
+      final WorkflowInstanceRecord recordValue,
+      final WorkflowInstanceIntent intent,
+      final TypedStreamWriter streamWriter,
+      final TypedResponseWriter responseWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
 
     context.init(key, recordValue, intent);
     context.setStreamWriter(streamWriter);

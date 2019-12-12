@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class PotentialOwnerImpl extends HumanPerformerImpl implements PotentialOwner {
 
-  public PotentialOwnerImpl(ModelTypeInstanceContext instanceContext) {
+  public PotentialOwnerImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(PotentialOwner.class, BPMN_ELEMENT_POTENTIAL_OWNER)
@@ -45,7 +45,8 @@ public class PotentialOwnerImpl extends HumanPerformerImpl implements PotentialO
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<PotentialOwner>() {
                   @Override
-                  public PotentialOwner newInstance(ModelTypeInstanceContext instanceContext) {
+                  public PotentialOwner newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new PotentialOwnerImpl(instanceContext);
                   }
                 });

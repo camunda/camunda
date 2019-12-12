@@ -40,8 +40,8 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
     // given
     final ElementInstance instance =
         createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    instance.getValue().setWorkflowInstanceKey(zeebeStateRule.getKeyGenerator().nextKey());
-    zeebeStateRule
+    instance.getValue().setWorkflowInstanceKey(ZEEBE_STATE_RULE.getKeyGenerator().nextKey());
+    ZEEBE_STATE_RULE
         .getZeebeState()
         .getWorkflowState()
         .getElementInstanceState()
@@ -60,7 +60,7 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
     // when - then
     for (final WorkflowInstanceIntent inactiveState : inactiveStates) {
       final ElementInstance instance = createAndSetContextElementInstance(inactiveState);
-      instance.getValue().setWorkflowInstanceKey(zeebeStateRule.getKeyGenerator().nextKey());
+      instance.getValue().setWorkflowInstanceKey(ZEEBE_STATE_RULE.getKeyGenerator().nextKey());
 
       Assertions.assertThat(handler.shouldHandleState(context)).isFalse();
     }

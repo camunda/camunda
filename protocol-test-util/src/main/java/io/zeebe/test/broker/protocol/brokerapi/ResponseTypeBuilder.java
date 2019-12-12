@@ -16,12 +16,12 @@ public abstract class ResponseTypeBuilder<R> {
   protected final Predicate<R> activationFunction;
 
   public ResponseTypeBuilder(
-      Consumer<ResponseStub<R>> stubConsumer, Predicate<R> activationFunction) {
+      final Consumer<ResponseStub<R>> stubConsumer, final Predicate<R> activationFunction) {
     this.activationFunction = activationFunction;
     this.stubConsumer = stubConsumer;
   }
 
-  protected void respondWith(MessageBuilder<R> responseBuilder) {
+  protected void respondWith(final MessageBuilder<R> responseBuilder) {
     final ResponseStub<R> responseStub = new ResponseStub<>(activationFunction, responseBuilder);
     stubConsumer.accept(responseStub);
   }

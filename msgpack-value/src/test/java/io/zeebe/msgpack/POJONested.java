@@ -20,7 +20,7 @@ public class POJONested extends UnpackedObject {
     return this.longProp.getValue();
   }
 
-  public POJONested setLong(long value) {
+  public POJONested setLong(final long value) {
     this.longProp.setValue(value);
     return this;
   }

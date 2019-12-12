@@ -18,7 +18,7 @@ public class MsgPackTraversalContext extends AbstractDynamicContext {
 
   protected static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT * 4;
 
-  public MsgPackTraversalContext(int maxTraversalDepth, int dynamicContextSize) {
+  public MsgPackTraversalContext(final int maxTraversalDepth, final int dynamicContextSize) {
     super(maxTraversalDepth, STATIC_ELEMENT_SIZE, dynamicContextSize);
   }
 
@@ -26,7 +26,7 @@ public class MsgPackTraversalContext extends AbstractDynamicContext {
     return cursorView.getInt(CURRENT_ELEMENT_OFFSET);
   }
 
-  public void currentElement(int newValue) {
+  public void currentElement(final int newValue) {
     cursorView.putInt(CURRENT_ELEMENT_OFFSET, newValue);
   }
 
@@ -34,7 +34,7 @@ public class MsgPackTraversalContext extends AbstractDynamicContext {
     return cursorView.getInt(NUM_ELEMENTS_OFFSET);
   }
 
-  public void numElements(int newValue) {
+  public void numElements(final int newValue) {
     cursorView.putInt(NUM_ELEMENTS_OFFSET, newValue);
   }
 
@@ -42,7 +42,7 @@ public class MsgPackTraversalContext extends AbstractDynamicContext {
     return cursorView.getInt(APPLYING_FILTER_OFFSET);
   }
 
-  public void applyingFilter(int newValue) {
+  public void applyingFilter(final int newValue) {
     cursorView.putInt(APPLYING_FILTER_OFFSET, newValue);
   }
 
@@ -50,7 +50,7 @@ public class MsgPackTraversalContext extends AbstractDynamicContext {
     return cursorView.getInt(CONTAINER_TYPE_OFFSET) == 0;
   }
 
-  public void setIsMap(boolean isMap) {
+  public void setIsMap(final boolean isMap) {
     cursorView.putInt(CONTAINER_TYPE_OFFSET, isMap ? 0 : 1);
   }
 }

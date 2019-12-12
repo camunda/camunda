@@ -52,7 +52,9 @@ public class Gateway {
   private BrokerClient brokerClient;
 
   public Gateway(
-      GatewayCfg gatewayCfg, AtomixCluster atomixCluster, ActorScheduler actorScheduler) {
+      final GatewayCfg gatewayCfg,
+      final AtomixCluster atomixCluster,
+      final ActorScheduler actorScheduler) {
     this(
         gatewayCfg,
         cfg -> new BrokerClientImpl(cfg, atomixCluster),
@@ -61,17 +63,17 @@ public class Gateway {
   }
 
   public Gateway(
-      GatewayCfg gatewayCfg,
-      Function<GatewayCfg, BrokerClient> brokerClientFactory,
-      ActorScheduler actorScheduler) {
+      final GatewayCfg gatewayCfg,
+      final Function<GatewayCfg, BrokerClient> brokerClientFactory,
+      final ActorScheduler actorScheduler) {
     this(gatewayCfg, brokerClientFactory, DEFAULT_SERVER_BUILDER_FACTORY, actorScheduler);
   }
 
   public Gateway(
-      GatewayCfg gatewayCfg,
-      Function<GatewayCfg, BrokerClient> brokerClientFactory,
-      Function<GatewayCfg, ServerBuilder> serverBuilderFactory,
-      ActorScheduler actorScheduler) {
+      final GatewayCfg gatewayCfg,
+      final Function<GatewayCfg, BrokerClient> brokerClientFactory,
+      final Function<GatewayCfg, ServerBuilder> serverBuilderFactory,
+      final ActorScheduler actorScheduler) {
     this.gatewayCfg = gatewayCfg;
     this.brokerClientFactory = brokerClientFactory;
     this.serverBuilderFactory = serverBuilderFactory;
@@ -167,7 +169,8 @@ public class Gateway {
     return brokerClientFactory.apply(gatewayCfg);
   }
 
-  protected LongPollingActivateJobsHandler buildLongPollingHandler(BrokerClient brokerClient) {
+  protected LongPollingActivateJobsHandler buildLongPollingHandler(
+      final BrokerClient brokerClient) {
     return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 
@@ -181,7 +184,7 @@ public class Gateway {
       server.shutdownNow();
       try {
         server.awaitTermination();
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         LOG.error("Failed to await termination of gateway", e);
       } finally {
         server = null;

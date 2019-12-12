@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class TextImpl extends BpmnModelElementInstanceImpl implements Text {
 
-  public TextImpl(ModelTypeInstanceContext instanceContext) {
+  public TextImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Text.class, BPMN_ELEMENT_TEXT)
@@ -44,7 +44,7 @@ public class TextImpl extends BpmnModelElementInstanceImpl implements Text {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Text>() {
                   @Override
-                  public Text newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Text newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new TextImpl(instanceContext);
                   }
                 });

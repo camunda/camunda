@@ -21,7 +21,7 @@ public enum JobBatchIntent implements Intent {
 
   private final short value;
 
-  JobBatchIntent(short value) {
+  JobBatchIntent(final short value) {
     this.value = value;
   }
 
@@ -29,7 +29,7 @@ public enum JobBatchIntent implements Intent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return ACTIVATE;

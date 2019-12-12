@@ -34,11 +34,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 public class CancelEventDefinitionImpl extends EventDefinitionImpl
     implements CancelEventDefinition {
 
-  public CancelEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public CancelEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CancelEventDefinition.class, BPMN_ELEMENT_CANCEL_EVENT_DEFINITION)
@@ -48,7 +48,7 @@ public class CancelEventDefinitionImpl extends EventDefinitionImpl
                 new ModelTypeInstanceProvider<CancelEventDefinition>() {
                   @Override
                   public CancelEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CancelEventDefinitionImpl(instanceContext);
                   }
                 });

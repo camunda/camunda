@@ -25,7 +25,8 @@ public abstract class AbstractGatewayBuilder<
         B extends AbstractGatewayBuilder<B, E>, E extends Gateway>
     extends AbstractFlowNodeBuilder<B, E> {
 
-  protected AbstractGatewayBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+  protected AbstractGatewayBuilder(
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -35,7 +36,7 @@ public abstract class AbstractGatewayBuilder<
    * @param gatewayDirection the direction to set
    * @return the builder object
    */
-  public B gatewayDirection(GatewayDirection gatewayDirection) {
+  public B gatewayDirection(final GatewayDirection gatewayDirection) {
     element.setGatewayDirection(gatewayDirection);
     return myself;
   }

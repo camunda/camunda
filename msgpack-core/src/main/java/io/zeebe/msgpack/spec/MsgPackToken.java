@@ -19,7 +19,7 @@ public class MsgPackToken {
   protected int totalLength;
 
   // string
-  protected UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
+  protected final UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
 
   // boolean
   protected boolean booleanValue;
@@ -37,7 +37,7 @@ public class MsgPackToken {
     return totalLength;
   }
 
-  public void setTotalLength(int totalLength) {
+  public void setTotalLength(final int totalLength) {
     this.totalLength = totalLength;
   }
 
@@ -49,7 +49,7 @@ public class MsgPackToken {
     return type;
   }
 
-  public void setType(MsgPackType type) {
+  public void setType(final MsgPackType type) {
     this.type = type;
   }
 
@@ -57,7 +57,7 @@ public class MsgPackToken {
     return valueBuffer;
   }
 
-  public void setValue(DirectBuffer buffer, int offset, int length) {
+  public void setValue(final DirectBuffer buffer, final int offset, final int length) {
     if (length == 0) {
       valueBuffer.wrap(0, 0);
     } else if (offset + length <= buffer.capacity()) {
@@ -71,23 +71,23 @@ public class MsgPackToken {
     }
   }
 
-  public void setValue(double value) {
+  public void setValue(final double value) {
     this.floatValue = value;
   }
 
-  public void setValue(long value) {
+  public void setValue(final long value) {
     this.integerValue = value;
   }
 
-  public void setValue(boolean value) {
+  public void setValue(final boolean value) {
     this.booleanValue = value;
   }
 
-  public void setMapHeader(int size) {
+  public void setMapHeader(final int size) {
     this.size = size;
   }
 
-  public void setArrayHeader(int size) {
+  public void setArrayHeader(final int size) {
     this.size = size;
   }
 

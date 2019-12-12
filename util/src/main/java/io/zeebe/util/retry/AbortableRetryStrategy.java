@@ -18,18 +18,19 @@ public class AbortableRetryStrategy implements RetryStrategy {
   private final ActorRetryMechanism retryMechanism;
   private CompletableActorFuture<Boolean> currentFuture;
 
-  public AbortableRetryStrategy(ActorControl actor) {
+  public AbortableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
     this.retryMechanism = new ActorRetryMechanism(actor);
   }
 
   @Override
-  public ActorFuture<Boolean> runWithRetry(OperationToRetry callable) {
+  public ActorFuture<Boolean> runWithRetry(final OperationToRetry callable) {
     return runWithRetry(callable, () -> false);
   }
 
   @Override
-  public ActorFuture<Boolean> runWithRetry(OperationToRetry callable, BooleanSupplier condition) {
+  public ActorFuture<Boolean> runWithRetry(
+      final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     retryMechanism.wrap(callable, condition, currentFuture);
 
@@ -41,7 +42,7 @@ public class AbortableRetryStrategy implements RetryStrategy {
   private void run() {
     try {
       retryMechanism.run();
-    } catch (Exception exception) {
+    } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);
       actor.done();
     }

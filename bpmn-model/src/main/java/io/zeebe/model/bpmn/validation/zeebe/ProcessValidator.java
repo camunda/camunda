@@ -29,7 +29,8 @@ public class ProcessValidator implements ModelElementValidator<Process> {
   }
 
   @Override
-  public void validate(Process element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final Process element, final ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> topLevelStartEvents =
         element.getChildElementsByType(StartEvent.class);
     if (topLevelStartEvents.isEmpty()) {
@@ -39,7 +40,7 @@ public class ProcessValidator implements ModelElementValidator<Process> {
     }
   }
 
-  private boolean isNoneEvent(StartEvent startEvent) {
+  private boolean isNoneEvent(final StartEvent startEvent) {
     return startEvent.getEventDefinitions().isEmpty();
   }
 }

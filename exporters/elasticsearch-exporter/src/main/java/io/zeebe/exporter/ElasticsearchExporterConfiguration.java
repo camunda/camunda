@@ -16,9 +16,9 @@ public class ElasticsearchExporterConfiguration {
   // elasticsearch http url
   public String url = "http://localhost:9200";
 
-  public IndexConfiguration index = new IndexConfiguration();
-  public BulkConfiguration bulk = new BulkConfiguration();
-  public AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  public final IndexConfiguration index = new IndexConfiguration();
+  public final BulkConfiguration bulk = new BulkConfiguration();
+  public final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   @Override
   public String toString() {
@@ -35,12 +35,12 @@ public class ElasticsearchExporterConfiguration {
         + '}';
   }
 
-  public boolean shouldIndexRecord(Record<?> record) {
+  public boolean shouldIndexRecord(final Record<?> record) {
     return shouldIndexRecordType(record.getRecordType())
         && shouldIndexValueType(record.getValueType());
   }
 
-  public boolean shouldIndexValueType(ValueType valueType) {
+  public boolean shouldIndexValueType(final ValueType valueType) {
     switch (valueType) {
       case DEPLOYMENT:
         return index.deployment;
@@ -71,7 +71,7 @@ public class ElasticsearchExporterConfiguration {
     }
   }
 
-  public boolean shouldIndexRecordType(RecordType recordType) {
+  public boolean shouldIndexRecordType(final RecordType recordType) {
     switch (recordType) {
       case EVENT:
         return index.event;

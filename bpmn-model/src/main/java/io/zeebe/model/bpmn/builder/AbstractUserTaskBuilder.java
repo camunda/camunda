@@ -24,7 +24,7 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     extends AbstractTaskBuilder<B, UserTask> {
 
   protected AbstractUserTaskBuilder(
-      BpmnModelInstance modelInstance, UserTask element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final UserTask element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -34,7 +34,7 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
    * @param implementation the implementation to set
    * @return the builder object
    */
-  public B implementation(String implementation) {
+  public B implementation(final String implementation) {
     element.setImplementation(implementation);
     return myself;
   }

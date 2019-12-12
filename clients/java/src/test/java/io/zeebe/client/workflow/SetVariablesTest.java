@@ -120,9 +120,9 @@ public class SetVariablesTest extends ClientTest {
   }
 
   static class Document {
-    public String key;
+    public final String key;
 
-    Document(String key) {
+    Document(final String key) {
       this.key = key;
     }
   }

@@ -26,7 +26,7 @@ public class EventBasedGatewayTransformer implements ModelElementTransformer<Eve
   }
 
   @Override
-  public void transform(EventBasedGateway element, TransformContext context) {
+  public void transform(final EventBasedGateway element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableEventBasedGateway gateway =
         workflow.getElementById(element.getId(), ExecutableEventBasedGateway.class);

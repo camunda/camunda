@@ -41,11 +41,11 @@ public class ConversationAssociationImpl extends BaseElementImpl
   protected static AttributeReference<ConversationNode> innerConversationNodeRefAttribute;
   protected static AttributeReference<ConversationNode> outerConversationNodeRefAttribute;
 
-  public ConversationAssociationImpl(ModelTypeInstanceContext instanceContext) {
+  public ConversationAssociationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ConversationAssociation.class, BPMN_ELEMENT_CONVERSATION_ASSOCIATION)
@@ -55,7 +55,7 @@ public class ConversationAssociationImpl extends BaseElementImpl
                 new ModelTypeInstanceProvider<ConversationAssociation>() {
                   @Override
                   public ConversationAssociation newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ConversationAssociationImpl(instanceContext);
                   }
                 });
@@ -83,7 +83,7 @@ public class ConversationAssociationImpl extends BaseElementImpl
   }
 
   @Override
-  public void setInnerConversationNode(ConversationNode innerConversationNode) {
+  public void setInnerConversationNode(final ConversationNode innerConversationNode) {
     innerConversationNodeRefAttribute.setReferenceTargetElement(this, innerConversationNode);
   }
 
@@ -93,7 +93,7 @@ public class ConversationAssociationImpl extends BaseElementImpl
   }
 
   @Override
-  public void setOuterConversationNode(ConversationNode outerConversationNode) {
+  public void setOuterConversationNode(final ConversationNode outerConversationNode) {
     outerConversationNodeRefAttribute.setReferenceTargetElement(this, outerConversationNode);
   }
 }

@@ -66,10 +66,10 @@ import org.junit.rules.TestName;
 public class BrokerClientTest {
 
   private static final int CLIENT_MAX_REQUESTS = 128;
-  @Rule public StubBrokerRule broker = new StubBrokerRule();
+  @Rule public final StubBrokerRule broker = new StubBrokerRule();
   @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
-  @Rule public ExpectedException exception = ExpectedException.none();
-  @Rule public TestName testContext = new TestName();
+  @Rule public final ExpectedException exception = ExpectedException.none();
+  @Rule public final TestName testContext = new TestName();
   private BrokerClient client;
   private ControlledActorClock clock;
 
@@ -188,12 +188,12 @@ public class BrokerClientTest {
         .registerChannelListener(
             new TransportListener() {
               @Override
-              public void onConnectionEstablished(RemoteAddress remoteAddress) {
+              public void onConnectionEstablished(final RemoteAddress remoteAddress) {
                 latchRef.get().countDown();
               }
 
               @Override
-              public void onConnectionClosed(RemoteAddress remoteAddress) {}
+              public void onConnectionClosed(final RemoteAddress remoteAddress) {}
             })
         .join();
     latchRef.get().await(10, TimeUnit.SECONDS);

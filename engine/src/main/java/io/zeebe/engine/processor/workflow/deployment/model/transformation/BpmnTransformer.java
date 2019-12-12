@@ -88,7 +88,7 @@ public class BpmnTransformer {
     step4Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 
-  public List<ExecutableWorkflow> transformDefinitions(BpmnModelInstance modelInstance) {
+  public List<ExecutableWorkflow> transformDefinitions(final BpmnModelInstance modelInstance) {
     final TransformContext context = new TransformContext();
     context.setJsonPathQueryCompiler(jsonPathQueryCompiler);
 

@@ -53,7 +53,9 @@ public class ElementInstanceState {
   private final VariablesState variablesState;
 
   public ElementInstanceState(
-      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final DbContext dbContext,
+      final KeyGenerator keyGenerator) {
 
     elementInstanceKey = new DbLong();
     parentKey = new DbLong();
@@ -98,15 +100,15 @@ public class ElementInstanceState {
   }
 
   public ElementInstance newInstance(
-      long key, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
+      final long key, final WorkflowInstanceRecord value, final WorkflowInstanceIntent state) {
     return newInstance(null, key, value, state);
   }
 
   public ElementInstance newInstance(
-      ElementInstance parent,
-      long key,
-      WorkflowInstanceRecord value,
-      WorkflowInstanceIntent state) {
+      final ElementInstance parent,
+      final long key,
+      final WorkflowInstanceRecord value,
+      final WorkflowInstanceIntent state) {
 
     final ElementInstance instance;
     if (parent == null) {
@@ -120,7 +122,7 @@ public class ElementInstanceState {
     return instance;
   }
 
-  private void writeElementInstance(ElementInstance instance) {
+  private void writeElementInstance(final ElementInstance instance) {
     elementInstanceKey.wrapLong(instance.getKey());
     parentKey.wrapLong(instance.getParentKey());
 
@@ -129,13 +131,13 @@ public class ElementInstanceState {
     variablesState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
   }
 
-  public ElementInstance getInstance(long key) {
+  public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
     return copyElementInstance(elementInstance);
   }
 
-  public void removeInstance(long key) {
+  public void removeInstance(final long key) {
     final ElementInstance instance = getInstance(key);
 
     if (instance != null) {
@@ -165,16 +167,16 @@ public class ElementInstanceState {
     }
   }
 
-  public StoredRecord getStoredRecord(long recordKey) {
+  public StoredRecord getStoredRecord(final long recordKey) {
     this.recordKey.wrapLong(recordKey);
     return recordColumnFamily.get(this.recordKey);
   }
 
-  public void updateInstance(ElementInstance scopeInstance) {
+  public void updateInstance(final ElementInstance scopeInstance) {
     writeElementInstance(scopeInstance);
   }
 
-  public List<ElementInstance> getChildren(long parentKey) {
+  public List<ElementInstance> getChildren(final long parentKey) {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
     if (parentInstance != null) {
@@ -193,7 +195,7 @@ public class ElementInstanceState {
     return children;
   }
 
-  public void consumeToken(long scopeKey) {
+  public void consumeToken(final long scopeKey) {
     final ElementInstance elementInstance = getInstance(scopeKey);
     if (elementInstance != null) {
       elementInstance.consumeToken();
@@ -201,7 +203,7 @@ public class ElementInstanceState {
     }
   }
 
-  public void spawnToken(long scopeKey) {
+  public void spawnToken(final long scopeKey) {
     final ElementInstance elementInstance = getInstance(scopeKey);
     if (elementInstance != null) {
       elementInstance.spawnToken();
@@ -210,11 +212,11 @@ public class ElementInstanceState {
   }
 
   public void storeRecord(
-      long key,
-      long scopeKey,
-      WorkflowInstanceRecord value,
-      WorkflowInstanceIntent intent,
-      Purpose purpose) {
+      final long key,
+      final long scopeKey,
+      final WorkflowInstanceRecord value,
+      final WorkflowInstanceIntent intent,
+      final Purpose purpose) {
     final IndexedRecord indexedRecord = new IndexedRecord(key, intent, value);
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
 
@@ -224,24 +226,24 @@ public class ElementInstanceState {
     recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
   }
 
-  public void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose) {
+  public void removeStoredRecord(final long scopeKey, final long recordKey, final Purpose purpose) {
     setRecordKeys(scopeKey, recordKey, purpose);
 
     recordColumnFamily.delete(this.recordKey);
     recordParentChildColumnFamily.delete(recordParentStateRecordKey);
   }
 
-  private void setRecordKeys(long scopeKey, long recordKey, Purpose purpose) {
+  private void setRecordKeys(final long scopeKey, final long recordKey, final Purpose purpose) {
     recordParentKey.wrapLong(scopeKey);
     stateKey.wrapByte((byte) purpose.ordinal());
     this.recordKey.wrapLong(recordKey);
   }
 
-  public List<IndexedRecord> getDeferredRecords(long scopeKey) {
+  public List<IndexedRecord> getDeferredRecords(final long scopeKey) {
     return collectRecords(scopeKey, Purpose.DEFERRED);
   }
 
-  public IndexedRecord getFailedRecord(long key) {
+  public IndexedRecord getFailedRecord(final long key) {
     final StoredRecord storedRecord = getStoredRecord(key);
     if (storedRecord != null && storedRecord.getPurpose() == Purpose.FAILED) {
       return storedRecord.getRecord();
@@ -250,7 +252,7 @@ public class ElementInstanceState {
     }
   }
 
-  private List<IndexedRecord> collectRecords(long scopeKey, Purpose purpose) {
+  private List<IndexedRecord> collectRecords(final long scopeKey, final Purpose purpose) {
     final List<IndexedRecord> records = new ArrayList<>();
     visitRecords(
         scopeKey,
@@ -281,7 +283,8 @@ public class ElementInstanceState {
         && awaitWorkflowInstanceResultMetadataColumnFamily.isEmpty();
   }
 
-  private void visitRecords(long scopeKey, Purpose purpose, RecordVisitor visitor) {
+  private void visitRecords(
+      final long scopeKey, final Purpose purpose, final RecordVisitor visitor) {
     recordParentKey.wrapLong(scopeKey);
     stateKey.wrapByte((byte) purpose.ordinal());
 
@@ -300,7 +303,7 @@ public class ElementInstanceState {
     return variablesState;
   }
 
-  private ElementInstance copyElementInstance(ElementInstance elementInstance) {
+  private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
     if (elementInstance != null) {
       elementInstance.write(copyBuffer, 0);
 
@@ -312,13 +315,13 @@ public class ElementInstanceState {
   }
 
   public void setAwaitResultRequestMetadata(
-      long workflowInstanceKey, AwaitWorkflowInstanceResultMetadata metadata) {
+      final long workflowInstanceKey, final AwaitWorkflowInstanceResultMetadata metadata) {
     elementInstanceKey.wrapLong(workflowInstanceKey);
     awaitWorkflowInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
   }
 
   public AwaitWorkflowInstanceResultMetadata getAwaitResultRequestMetadata(
-      long workflowInstanceKey) {
+      final long workflowInstanceKey) {
     elementInstanceKey.wrapLong(workflowInstanceKey);
     return awaitWorkflowInstanceResultMetadataColumnFamily.get(elementInstanceKey);
   }

@@ -24,16 +24,17 @@ public class OpenMessageStartEventSubscriptionProcessor
   private final WorkflowState workflowState;
 
   public OpenMessageStartEventSubscriptionProcessor(
-      MessageStartEventSubscriptionState subscriptionState, WorkflowState workflowState) {
+      final MessageStartEventSubscriptionState subscriptionState,
+      final WorkflowState workflowState) {
     this.subscriptionState = subscriptionState;
     this.workflowState = workflowState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageStartEventSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<MessageStartEventSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final MessageStartEventSubscriptionRecord subscription = record.getValue();
     subscriptionState.put(subscription);

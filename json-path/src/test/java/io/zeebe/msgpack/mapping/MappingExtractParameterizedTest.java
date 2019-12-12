@@ -37,7 +37,7 @@ public class MappingExtractParameterizedTest {
   @Parameter(2)
   public String expectedVariables;
 
-  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
+  private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Parameters(name = "Test {index}: {0} to {2}")
   public static Iterable<Object[]> parameters() throws Exception {

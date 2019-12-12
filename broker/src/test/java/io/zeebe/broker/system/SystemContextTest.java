@@ -15,7 +15,7 @@ import org.junit.rules.ExpectedException;
 
 public class SystemContextTest {
 
-  @Rule public ExpectedException expectedException = ExpectedException.none();
+  @Rule public final ExpectedException expectedException = ExpectedException.none();
 
   @Test
   public void shouldThrowExceptionIfNodeIdIsNegative() {
@@ -86,7 +86,7 @@ public class SystemContextTest {
     initSystemContext(brokerCfg);
   }
 
-  private SystemContext initSystemContext(BrokerCfg brokerCfg) {
+  private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return new SystemContext(brokerCfg, "test", new ControlledActorClock());
   }
 }

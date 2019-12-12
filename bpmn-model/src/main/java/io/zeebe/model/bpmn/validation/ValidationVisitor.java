@@ -31,14 +31,15 @@ public class ValidationVisitor extends TypeHierarchyVisitor {
 
   private ValidationResultsCollectorImpl resultCollector;
 
-  public ValidationVisitor(Collection<ModelElementValidator<?>> validators) {
+  public ValidationVisitor(final Collection<ModelElementValidator<?>> validators) {
     this.validators = new HashMap<>();
     validators.forEach(v -> this.validators.put(v.getElementType(), v));
     resultCollector = new ValidationResultsCollectorImpl();
   }
 
   @Override
-  protected void visit(ModelElementType implementedType, BpmnModelElementInstance instance) {
+  protected void visit(
+      final ModelElementType implementedType, final BpmnModelElementInstance instance) {
 
     resultCollector.setCurrentElement(instance);
 

@@ -25,8 +25,9 @@ import org.junit.rules.RuleChain;
 
 public class IncidentStreamProcessorTest {
 
-  public StreamProcessorRule envRule = new StreamProcessorRule();
-  public IncidentStreamProcessorRule streamProcessorRule = new IncidentStreamProcessorRule(envRule);
+  public final StreamProcessorRule envRule = new StreamProcessorRule();
+  public final IncidentStreamProcessorRule streamProcessorRule =
+      new IncidentStreamProcessorRule(envRule);
 
   @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
 

@@ -166,7 +166,7 @@ public class DbSnapshot implements Snapshot {
 
   private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
     final var set = new TreeSet<>(CharSequence::compare);
-    try (var stream = Files.list(directory)) {
+    try (final var stream = Files.list(directory)) {
       stream.map(directory::relativize).map(Path::toString).forEach(set::add);
     }
     return set;

@@ -46,7 +46,7 @@ public class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldHaveDefaultValues() {
     // given
-    try (ZeebeClient client = ZeebeClient.newClient()) {
+    try (final ZeebeClient client = ZeebeClient.newClient()) {
       // when
       final ZeebeClientConfiguration configuration = client.getConfiguration();
 

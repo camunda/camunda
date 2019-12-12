@@ -32,9 +32,9 @@ public class ClientChannelKeepAliveTest {
   protected static final SocketAddress ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
   protected static final int NODE_ID2 = 2;
   protected static final SocketAddress ADDRESS2 = new SocketAddress(SocketUtil.getNextAddress());
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-  public ControlledActorClock clock = new ControlledActorClock();
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ControlledActorClock clock = new ControlledActorClock();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected ControlMessageRecorder serverRecorder;
 
@@ -45,7 +45,7 @@ public class ClientChannelKeepAliveTest {
   }
 
   protected ServerTransport buildServerTransport(
-      SocketAddress bindAddress, ControlMessageRecorder recorder) {
+      final SocketAddress bindAddress, final ControlMessageRecorder recorder) {
     final ServerTransport serverTransport =
         Transports.newServerTransport()
             .bindAddress(bindAddress.toInetSocketAddress())
@@ -57,7 +57,7 @@ public class ClientChannelKeepAliveTest {
     return serverTransport;
   }
 
-  protected ClientTransport buildClientTransport(Duration keepAlivePeriod) {
+  protected ClientTransport buildClientTransport(final Duration keepAlivePeriod) {
     final ClientTransportBuilder transportBuilder =
         Transports.newClientTransport("test").scheduler(actorSchedulerRule.get());
 
@@ -71,7 +71,8 @@ public class ClientChannelKeepAliveTest {
     return clientTransport;
   }
 
-  protected void openChannel(ClientTransport transport, int nodeId, SocketAddress target) {
+  protected void openChannel(
+      final ClientTransport transport, final int nodeId, final SocketAddress target) {
     transport.registerEndpointAndAwaitChannel(nodeId, target);
   }
 
@@ -209,11 +210,13 @@ public class ClientChannelKeepAliveTest {
   }
 
   protected static class ControlMessageRecorder implements ServerControlMessageListener {
-    protected List<ControlFrame> receivedFrames = new CopyOnWriteArrayList<>();
+    protected final List<ControlFrame> receivedFrames = new CopyOnWriteArrayList<>();
 
     @Override
     public void onMessage(
-        ServerOutput output, RemoteAddress remoteAddress, int controlMessageType) {
+        final ServerOutput output,
+        final RemoteAddress remoteAddress,
+        final int controlMessageType) {
       final ControlFrame frame = new ControlFrame();
       frame.type = controlMessageType;
       frame.timestamp = ActorClock.currentTimeMillis();

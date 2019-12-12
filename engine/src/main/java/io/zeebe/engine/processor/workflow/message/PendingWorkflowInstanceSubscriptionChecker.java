@@ -20,9 +20,9 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
   private final long subscriptionTimeout;
 
   public PendingWorkflowInstanceSubscriptionChecker(
-      SubscriptionCommandSender commandSender,
-      WorkflowInstanceSubscriptionState subscriptionState,
-      long subscriptionTimeout) {
+      final SubscriptionCommandSender commandSender,
+      final WorkflowInstanceSubscriptionState subscriptionState,
+      final long subscriptionTimeout) {
     this.commandSender = commandSender;
     this.subscriptionState = subscriptionState;
     this.subscriptionTimeout = subscriptionTimeout;
@@ -35,7 +35,7 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
         ActorClock.currentTimeMillis() - subscriptionTimeout, this::sendCommand);
   }
 
-  private boolean sendCommand(WorkflowInstanceSubscription subscription) {
+  private boolean sendCommand(final WorkflowInstanceSubscription subscription) {
     final boolean success;
 
     // can only be opening/closing as an opened subscription is not indexed in the sent time column
@@ -52,7 +52,7 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
     return success;
   }
 
-  private boolean sendOpenCommand(WorkflowInstanceSubscription subscription) {
+  private boolean sendOpenCommand(final WorkflowInstanceSubscription subscription) {
     return commandSender.openMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getWorkflowInstanceKey(),
@@ -63,7 +63,7 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
         subscription.shouldCloseOnCorrelate());
   }
 
-  private boolean sendCloseCommand(WorkflowInstanceSubscription subscription) {
+  private boolean sendCloseCommand(final WorkflowInstanceSubscription subscription) {
     return commandSender.closeMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getWorkflowInstanceKey(),

@@ -15,7 +15,7 @@ public class ByteArrayBuilder {
    * to byte (i.e. lowest 8 bits are kept). This method exists solely for convenience to avoid
    * explicit casts to byte where this builder is used.
    */
-  protected ByteArrayBuilder add(int... toAdd) {
+  protected ByteArrayBuilder add(final int... toAdd) {
     final byte[] arr = new byte[toAdd.length];
     for (int i = 0; i < toAdd.length; i++) {
       arr[i] = (byte) toAdd[i];
@@ -23,7 +23,7 @@ public class ByteArrayBuilder {
     return add(arr);
   }
 
-  protected ByteArrayBuilder add(byte... toAdd) {
+  protected ByteArrayBuilder add(final byte... toAdd) {
     final byte[] newValue = new byte[value.length + toAdd.length];
     System.arraycopy(value, 0, newValue, 0, value.length);
     System.arraycopy(toAdd, 0, newValue, value.length, toAdd.length);

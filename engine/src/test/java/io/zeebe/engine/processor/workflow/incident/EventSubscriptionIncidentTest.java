@@ -220,7 +220,7 @@ public class EventSubscriptionIncidentTest {
 
   @BeforeClass
   public static void deployWorkflows() {
-    for (BpmnModelInstance modelInstance :
+    for (final BpmnModelInstance modelInstance :
         Arrays.asList(
             WF_RECEIVE_TASK,
             WF_RECEIVE_TASK_2,

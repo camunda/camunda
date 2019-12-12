@@ -24,8 +24,8 @@ import org.junit.rules.RuleChain;
 
 public class ClientReconnectTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
   private long workflowKey;
@@ -72,7 +72,7 @@ public class ClientReconnectTest {
         .isEqualTo(2);
   }
 
-  private long createWorkflowInstance(long workflowKey) {
+  private long createWorkflowInstance(final long workflowKey) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()

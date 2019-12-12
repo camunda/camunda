@@ -18,18 +18,22 @@ public final class CompiledJsonCondition {
   private final String errorMessage;
 
   private CompiledJsonCondition(
-      String expression, JsonCondition condition, boolean isValid, String errorMessage) {
+      final String expression,
+      final JsonCondition condition,
+      final boolean isValid,
+      final String errorMessage) {
     this.expression = expression;
     this.condition = condition;
     this.isValid = isValid;
     this.errorMessage = errorMessage;
   }
 
-  public static CompiledJsonCondition success(String expression, JsonCondition condition) {
+  public static CompiledJsonCondition success(
+      final String expression, final JsonCondition condition) {
     return new CompiledJsonCondition(expression, condition, true, null);
   }
 
-  public static CompiledJsonCondition fail(String expression, String errorMessage) {
+  public static CompiledJsonCondition fail(final String expression, final String errorMessage) {
     return new CompiledJsonCondition(expression, null, false, errorMessage);
   }
 

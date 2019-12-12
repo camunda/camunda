@@ -37,7 +37,7 @@ public class YamlTask {
     return id;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
@@ -45,7 +45,7 @@ public class YamlTask {
     return type;
   }
 
-  public void setType(String type) {
+  public void setType(final String type) {
     this.type = type;
   }
 
@@ -53,7 +53,7 @@ public class YamlTask {
     return retries;
   }
 
-  public void setRetries(int retries) {
+  public void setRetries(final int retries) {
     this.retries = retries;
   }
 
@@ -61,7 +61,7 @@ public class YamlTask {
     return headers;
   }
 
-  public void setHeaders(Map<String, String> headers) {
+  public void setHeaders(final Map<String, String> headers) {
     this.headers = headers;
   }
 
@@ -69,7 +69,7 @@ public class YamlTask {
     return inputs;
   }
 
-  public void setInputs(List<YamlMapping> inputs) {
+  public void setInputs(final List<YamlMapping> inputs) {
     this.inputs = inputs;
   }
 
@@ -77,7 +77,7 @@ public class YamlTask {
     return outputs;
   }
 
-  public void setOutputs(List<YamlMapping> outputs) {
+  public void setOutputs(final List<YamlMapping> outputs) {
     this.outputs = outputs;
   }
 
@@ -85,7 +85,7 @@ public class YamlTask {
     return cases;
   }
 
-  public void setCases(List<YamlCase> cases) {
+  public void setCases(final List<YamlCase> cases) {
     this.cases = cases;
   }
 
@@ -93,7 +93,7 @@ public class YamlTask {
     return next;
   }
 
-  public void setNext(String next) {
+  public void setNext(final String next) {
     this.next = next;
   }
 
@@ -101,7 +101,7 @@ public class YamlTask {
     return end;
   }
 
-  public void setEnd(boolean end) {
+  public void setEnd(final boolean end) {
     this.end = end;
   }
 }

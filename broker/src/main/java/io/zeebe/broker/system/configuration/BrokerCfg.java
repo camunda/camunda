@@ -90,7 +90,7 @@ public class BrokerCfg {
     return gateway;
   }
 
-  public BrokerCfg setGateway(EmbeddedGatewayCfg gateway) {
+  public BrokerCfg setGateway(final EmbeddedGatewayCfg gateway) {
     this.gateway = gateway;
     return this;
   }
@@ -99,7 +99,7 @@ public class BrokerCfg {
     return backpressure;
   }
 
-  public BrokerCfg setBackpressure(BackpressureCfg backpressure) {
+  public BrokerCfg setBackpressure(final BackpressureCfg backpressure) {
     this.backpressure = backpressure;
     return this;
   }

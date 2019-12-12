@@ -20,7 +20,7 @@ public class ErrorResponse implements BufferReader {
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ErrorResponseDecoder bodyDecoder = new ErrorResponseDecoder();
 
-  public ErrorResponse(MsgPackHelper msgPackHelper) {
+  public ErrorResponse(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
   }
 
@@ -33,7 +33,7 @@ public class ErrorResponse implements BufferReader {
   }
 
   @Override
-  public void wrap(DirectBuffer responseBuffer, int offset, int length) {
+  public void wrap(final DirectBuffer responseBuffer, final int offset, final int length) {
     messageHeaderDecoder.wrap(responseBuffer, 0);
 
     if (messageHeaderDecoder.templateId() != bodyDecoder.sbeTemplateId()) {

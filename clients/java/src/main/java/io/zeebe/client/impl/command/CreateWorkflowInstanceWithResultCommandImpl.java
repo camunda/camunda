@@ -46,11 +46,11 @@ public class CreateWorkflowInstanceWithResultCommandImpl
   private Duration requestTimeout;
 
   public CreateWorkflowInstanceWithResultCommandImpl(
-      ZeebeObjectMapper objectMapper,
-      GatewayStub asyncStub,
-      CreateWorkflowInstanceRequest.Builder builder,
-      Predicate<Throwable> retryPredicate,
-      Duration requestTimeout) {
+      final ZeebeObjectMapper objectMapper,
+      final GatewayStub asyncStub,
+      final CreateWorkflowInstanceRequest.Builder builder,
+      final Predicate<Throwable> retryPredicate,
+      final Duration requestTimeout) {
     this.objectMapper = objectMapper;
     this.asyncStub = asyncStub;
     this.createWorkflowInstanceRequestBuilder = builder;
@@ -60,7 +60,7 @@ public class CreateWorkflowInstanceWithResultCommandImpl
   }
 
   @Override
-  public FinalCommandStep<WorkflowInstanceResult> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<WorkflowInstanceResult> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     this.builder.setRequestTimeout(requestTimeout.toMillis());
     return this;
@@ -88,21 +88,23 @@ public class CreateWorkflowInstanceWithResultCommandImpl
   }
 
   private void send(
-      CreateWorkflowInstanceWithResultRequest request,
-      StreamObserver<CreateWorkflowInstanceWithResultResponse> future) {
+      final CreateWorkflowInstanceWithResultRequest request,
+      final StreamObserver<CreateWorkflowInstanceWithResultResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .createWorkflowInstanceWithResult(request, future);
   }
 
   @Override
-  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(List<String> fetchVariables) {
+  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(
+      final List<String> fetchVariables) {
     builder.addAllFetchVariables(fetchVariables);
     return this;
   }
 
   @Override
-  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(String... fetchVariables) {
+  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(
+      final String... fetchVariables) {
     builder.addAllFetchVariables(Arrays.asList(fetchVariables));
     return this;
   }

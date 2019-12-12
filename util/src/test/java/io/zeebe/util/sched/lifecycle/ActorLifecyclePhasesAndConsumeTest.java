@@ -180,7 +180,7 @@ public class ActorLifecyclePhasesAndConsumeTest {
     verify(runnable, times(0)).run();
   }
 
-  private Runnable consumerRunnable(Queue<Object> queue, Runnable wrappedRunnable) {
+  private Runnable consumerRunnable(final Queue<Object> queue, final Runnable wrappedRunnable) {
     return () -> {
       queue.poll();
       wrappedRunnable.run();

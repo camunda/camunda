@@ -25,11 +25,12 @@ public class TypedEventImpl implements TypedRecord {
   private RecordMetadata metadata;
   private UnifiedRecordValue value;
 
-  public TypedEventImpl(int partitionId) {
+  public TypedEventImpl(final int partitionId) {
     this.partitionId = partitionId;
   }
 
-  public void wrap(LoggedEvent rawEvent, RecordMetadata metadata, UnifiedRecordValue value) {
+  public void wrap(
+      final LoggedEvent rawEvent, final RecordMetadata metadata, final UnifiedRecordValue value) {
     this.rawEvent = rawEvent;
     this.metadata = metadata;
     this.value = value;

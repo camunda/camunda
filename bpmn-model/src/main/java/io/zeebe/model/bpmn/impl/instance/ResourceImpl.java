@@ -42,11 +42,11 @@ public class ResourceImpl extends RootElementImpl implements Resource {
   protected static Attribute<String> nameAttribute;
   protected static ChildElementCollection<ResourceParameter> resourceParameterCollection;
 
-  public ResourceImpl(ModelTypeInstanceContext context) {
+  public ResourceImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Resource.class, BPMN_ELEMENT_RESOURCE)
@@ -55,7 +55,7 @@ public class ResourceImpl extends RootElementImpl implements Resource {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Resource>() {
                   @Override
-                  public Resource newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Resource newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ResourceImpl(instanceContext);
                   }
                 });
@@ -76,7 +76,7 @@ public class ResourceImpl extends RootElementImpl implements Resource {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 

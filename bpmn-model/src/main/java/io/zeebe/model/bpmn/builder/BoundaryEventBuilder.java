@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.BoundaryEvent;
 /** @author Sebastian Menski */
 public class BoundaryEventBuilder extends AbstractBoundaryEventBuilder<BoundaryEventBuilder> {
 
-  public BoundaryEventBuilder(BpmnModelInstance modelInstance, BoundaryEvent element) {
+  public BoundaryEventBuilder(final BpmnModelInstance modelInstance, final BoundaryEvent element) {
     super(modelInstance, element, BoundaryEventBuilder.class);
   }
 }

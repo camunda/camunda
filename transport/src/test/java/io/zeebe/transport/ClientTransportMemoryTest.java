@@ -47,9 +47,9 @@ public class ClientTransportMemoryTest {
   public static final int NODE_ID1 = 1;
   public static final SocketAddress SERVER_ADDRESS1 =
       new SocketAddress(SocketUtil.getNextAddress());
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-  public ControlledActorClock clock = new ControlledActorClock();
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ControlledActorClock clock = new ControlledActorClock();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected ClientTransport clientTransport;
   private NonBlockingMemoryPool requestMemoryPoolSpy;

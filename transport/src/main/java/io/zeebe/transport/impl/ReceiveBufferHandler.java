@@ -16,13 +16,17 @@ public class ReceiveBufferHandler implements FragmentHandler {
   private final TransportHeaderDescriptor transportHeaderDescriptor =
       new TransportHeaderDescriptor();
 
-  public ReceiveBufferHandler(Dispatcher receiveBuffer) {
+  public ReceiveBufferHandler(final Dispatcher receiveBuffer) {
     this.receiveBuffer = receiveBuffer;
   }
 
   @Override
   public int onFragment(
-      DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final int streamId,
+      final boolean isMarkedFailed) {
     if (receiveBuffer == null) {
       return CONSUME_FRAGMENT_RESULT;
     }

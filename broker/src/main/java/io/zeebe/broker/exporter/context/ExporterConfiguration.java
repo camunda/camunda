@@ -38,13 +38,13 @@ public class ExporterConfiguration implements Configuration {
   }
 
   @Override
-  public <T> T instantiate(Class<T> configClass) {
+  public <T> T instantiate(final Class<T> configClass) {
     if (arguments != null) {
       return CONFIG_INSTANTIATOR.fromJson(getIntermediateConfiguration(), configClass);
     } else {
       try {
         return configClass.newInstance();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new ExporterException(
             "Unable to instantiate config class "
                 + configClass.getName()

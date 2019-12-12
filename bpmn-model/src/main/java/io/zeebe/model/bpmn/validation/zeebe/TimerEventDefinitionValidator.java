@@ -34,7 +34,8 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
 
   @Override
   public void validate(
-      TimerEventDefinition element, ValidationResultCollector validationResultCollector) {
+      final TimerEventDefinition element,
+      final ValidationResultCollector validationResultCollector) {
     final TimeDuration timeDuration = element.getTimeDuration();
     final TimeCycle timeCycle = element.getTimeCycle();
     final TimeDate timeDate = element.getTimeDate();
@@ -63,28 +64,28 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
   }
 
   private void validateTimeDate(
-      TimeDate timeDate, ValidationResultCollector validationResultCollector) {
+      final TimeDate timeDate, final ValidationResultCollector validationResultCollector) {
     try {
       TimeDateTimer.parse(timeDate.getTextContent());
-    } catch (DateTimeParseException e) {
+    } catch (final DateTimeParseException e) {
       validationResultCollector.addError(0, "Time date is invalid");
     }
   }
 
   private void validateTimeCycle(
-      ValidationResultCollector validationResultCollector, TimeCycle timeCycle) {
+      final ValidationResultCollector validationResultCollector, final TimeCycle timeCycle) {
     try {
       RepeatingInterval.parse(timeCycle.getTextContent());
-    } catch (DateTimeParseException e) {
+    } catch (final DateTimeParseException e) {
       validationResultCollector.addError(0, "Time cycle is invalid");
     }
   }
 
   private void validateTimeDuration(
-      ValidationResultCollector validationResultCollector, TimeDuration timeDuration) {
+      final ValidationResultCollector validationResultCollector, final TimeDuration timeDuration) {
     try {
       Interval.parse(timeDuration.getTextContent());
-    } catch (DateTimeParseException e) {
+    } catch (final DateTimeParseException e) {
       validationResultCollector.addError(0, "Time duration is invalid");
     }
   }

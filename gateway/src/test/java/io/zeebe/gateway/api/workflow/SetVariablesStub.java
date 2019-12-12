@@ -19,7 +19,7 @@ public class SetVariablesStub
   private static final long KEY = 12345L;
 
   @Override
-  public void registerWith(StubbedBrokerClient gateway) {
+  public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerSetVariablesRequest.class, this);
   }
 
@@ -28,7 +28,7 @@ public class SetVariablesStub
   }
 
   @Override
-  public BrokerResponse<VariableDocumentRecord> handle(BrokerSetVariablesRequest request)
+  public BrokerResponse<VariableDocumentRecord> handle(final BrokerSetVariablesRequest request)
       throws Exception {
     return new BrokerResponse<>(new VariableDocumentRecord(), request.getPartitionId(), KEY);
   }

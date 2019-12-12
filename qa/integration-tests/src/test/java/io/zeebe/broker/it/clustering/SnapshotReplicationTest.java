@@ -50,9 +50,9 @@ public class SnapshotReplicationTest {
 
   // NOTE: the configuration removes the RecordingExporter from the broker's configuration to enable
   // data deletion so it can't be used in tests
-  public ClusteringRule clusteringRule =
+  public final ClusteringRule clusteringRule =
       new ClusteringRule(PARTITION_COUNT, 3, 3, SnapshotReplicationTest::configureCustomExporter);
-  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
@@ -84,7 +84,7 @@ public class SnapshotReplicationTest {
     // then - replicated
     final Collection<Broker> brokers = clusteringRule.getBrokers();
     final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = new HashMap<>();
-    for (Broker broker : brokers) {
+    for (final Broker broker : brokers) {
       final Map<String, Long> checksums = createSnapshotDirectoryChecksums(broker);
       brokerSnapshotChecksums.put(broker.getConfig().getCluster().getNodeId(), checksums);
     }
@@ -94,7 +94,7 @@ public class SnapshotReplicationTest {
     assertThat(checksumFirstNode).isEqualTo(brokerSnapshotChecksums.get(2));
   }
 
-  private Map<String, Long> createSnapshotDirectoryChecksums(Broker broker) {
+  private Map<String, Long> createSnapshotDirectoryChecksums(final Broker broker) {
     final File snapshotsDir = clusteringRule.getSnapshotsDirectory(broker);
 
     final Map<String, Long> checksums = createChecksumsForSnapshotDirectory(snapshotsDir);
@@ -103,7 +103,7 @@ public class SnapshotReplicationTest {
     return checksums;
   }
 
-  private Map<String, Long> createChecksumsForSnapshotDirectory(File snapshotDirectory) {
+  private Map<String, Long> createChecksumsForSnapshotDirectory(final File snapshotDirectory) {
     final Map<String, Long> checksums = new HashMap<>();
     final File[] snapshotDirs = snapshotDirectory.listFiles();
     if (snapshotDirs != null) {
@@ -124,8 +124,8 @@ public class SnapshotReplicationTest {
     return checksums;
   }
 
-  private long createCheckSumForFile(File snapshotFile) {
-    try (CheckedInputStream checkedInputStream =
+  private long createCheckSumForFile(final File snapshotFile) {
+    try (final CheckedInputStream checkedInputStream =
         new CheckedInputStream(Files.newInputStream(snapshotFile.toPath()), new CRC32())) {
       while (checkedInputStream.skip(512) > 0) {}
 

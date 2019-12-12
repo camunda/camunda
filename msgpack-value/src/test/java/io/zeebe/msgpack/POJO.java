@@ -41,7 +41,7 @@ public class POJO extends UnpackedObject {
     return this.enumProp.getValue();
   }
 
-  public void setEnum(POJOEnum val) {
+  public void setEnum(final POJOEnum val) {
     this.enumProp.setValue(val);
   }
 
@@ -49,7 +49,7 @@ public class POJO extends UnpackedObject {
     return longProp.getValue();
   }
 
-  public void setLong(long val) {
+  public void setLong(final long val) {
     this.longProp.setValue(val);
   }
 
@@ -57,7 +57,7 @@ public class POJO extends UnpackedObject {
     return intProp.getValue();
   }
 
-  public void setInt(int val) {
+  public void setInt(final int val) {
     this.intProp.setValue(val);
   }
 
@@ -65,7 +65,7 @@ public class POJO extends UnpackedObject {
     return stringProp.getValue();
   }
 
-  public void setString(DirectBuffer buffer) {
+  public void setString(final DirectBuffer buffer) {
     this.stringProp.setValue(buffer);
   }
 
@@ -73,7 +73,7 @@ public class POJO extends UnpackedObject {
     return packedProp.getValue();
   }
 
-  public void setPacked(DirectBuffer buffer) {
+  public void setPacked(final DirectBuffer buffer) {
     this.packedProp.setValue(buffer, 0, buffer.capacity());
   }
 
@@ -81,7 +81,7 @@ public class POJO extends UnpackedObject {
     return binaryProp.getValue();
   }
 
-  public void setBinary(DirectBuffer buffer) {
+  public void setBinary(final DirectBuffer buffer) {
     this.binaryProp.setValue(buffer, 0, buffer.capacity());
   }
 

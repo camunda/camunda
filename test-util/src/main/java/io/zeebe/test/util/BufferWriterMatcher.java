@@ -24,16 +24,16 @@ import org.mockito.ArgumentMatcher;
  * @author Lindhauer
  */
 public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatcher<BufferWriter> {
-  protected T reader;
+  protected final T reader;
 
-  protected List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
+  protected final List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
 
-  public BufferWriterMatcher(T reader) {
+  public BufferWriterMatcher(final T reader) {
     this.reader = reader;
   }
 
   @Override
-  public boolean matches(BufferWriter argument) {
+  public boolean matches(final BufferWriter argument) {
     if (argument == null) {
       return false;
     }
@@ -43,7 +43,7 @@ public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatc
 
     reader.wrap(buffer, 0, buffer.capacity());
 
-    for (BufferReaderMatch<T> matcher : propertyMatchers) {
+    for (final BufferReaderMatch<T> matcher : propertyMatchers) {
       if (!matcher.matches(reader)) {
         return false;
       }
@@ -52,7 +52,8 @@ public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatc
     return true;
   }
 
-  public BufferWriterMatcher<T> matching(Function<T, Object> actualProperty, Object expectedValue) {
+  public BufferWriterMatcher<T> matching(
+      final Function<T, Object> actualProperty, final Object expectedValue) {
     final BufferReaderMatch<T> match = new BufferReaderMatch<>();
     match.propertyExtractor = actualProperty;
 
@@ -68,12 +69,12 @@ public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatc
   }
 
   public static <T extends BufferReader> BufferWriterMatcher<T> writesProperties(
-      Class<T> readerClass) {
+      final Class<T> readerClass) {
     try {
       final BufferWriterMatcher<T> matcher = new BufferWriterMatcher<>(readerClass.newInstance());
 
       return matcher;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Could not construct matcher", e);
     }
   }

@@ -14,7 +14,7 @@ import io.zeebe.msgpack.value.DocumentValue;
 import org.agrona.DirectBuffer;
 
 public class DocumentProperty extends BaseProperty<DocumentValue> {
-  public DocumentProperty(String keyString) {
+  public DocumentProperty(final String keyString) {
     super(
         keyString,
         new DocumentValue(),
@@ -25,15 +25,15 @@ public class DocumentProperty extends BaseProperty<DocumentValue> {
     return resolveValue().getValue();
   }
 
-  public void setValue(DirectBuffer data) {
+  public void setValue(final DirectBuffer data) {
     setValue(data, 0, data.capacity());
   }
 
-  public void setValue(DirectBuffer data, int offset, int length) {
+  public void setValue(final DirectBuffer data, final int offset, final int length) {
     try {
       this.value.wrap(data, offset, length);
       this.isSet = true;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new MsgpackPropertyException(key, e);
     }
   }

@@ -64,11 +64,11 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   protected static ChildElementCollection<ResourceRole> resourceRoleCollection;
   protected static ChildElement<LoopCharacteristics> loopCharacteristicsChild;
 
-  public ActivityImpl(ModelTypeInstanceContext context) {
+  public ActivityImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Activity.class, BPMN_ELEMENT_ACTIVITY)
@@ -119,7 +119,7 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   }
 
   @Override
-  public void setForCompensation(boolean isForCompensation) {
+  public void setForCompensation(final boolean isForCompensation) {
     isForCompensationAttribute.setValue(this, isForCompensation);
   }
 
@@ -129,7 +129,7 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   }
 
   @Override
-  public void setStartQuantity(int startQuantity) {
+  public void setStartQuantity(final int startQuantity) {
     startQuantityAttribute.setValue(this, startQuantity);
   }
 
@@ -139,7 +139,7 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   }
 
   @Override
-  public void setCompletionQuantity(int completionQuantity) {
+  public void setCompletionQuantity(final int completionQuantity) {
     completionQuantityAttribute.setValue(this, completionQuantity);
   }
 
@@ -149,7 +149,7 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   }
 
   @Override
-  public void setDefault(SequenceFlow defaultFlow) {
+  public void setDefault(final SequenceFlow defaultFlow) {
     defaultAttribute.setReferenceTargetElement(this, defaultFlow);
   }
 
@@ -159,7 +159,7 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   }
 
   @Override
-  public void setIoSpecification(IoSpecification ioSpecification) {
+  public void setIoSpecification(final IoSpecification ioSpecification) {
     ioSpecificationChild.setChild(this, ioSpecification);
   }
 
@@ -189,7 +189,7 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   }
 
   @Override
-  public void setLoopCharacteristics(LoopCharacteristics loopCharacteristics) {
+  public void setLoopCharacteristics(final LoopCharacteristics loopCharacteristics) {
     loopCharacteristicsChild.setChild(this, loopCharacteristics);
   }
 

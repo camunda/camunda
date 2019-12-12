@@ -10,12 +10,12 @@ package io.zeebe.logstreams.impl.backpressure;
 public class NoopAppendLimiter implements AppendLimiter {
 
   @Override
-  public boolean tryAcquire(Long position) {
+  public boolean tryAcquire(final Long position) {
     return true;
   }
 
   @Override
-  public void onCommit(long position) {}
+  public void onCommit(final long position) {}
 
   @Override
   public int getInflight() {

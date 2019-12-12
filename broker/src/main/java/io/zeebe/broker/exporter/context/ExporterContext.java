@@ -43,7 +43,7 @@ public class ExporterContext implements Context {
   }
 
   @Override
-  public void setFilter(RecordFilter filter) {
+  public void setFilter(final RecordFilter filter) {
     EnsureUtil.ensureNotNull("filter", filter);
     this.filter = filter;
   }
@@ -51,12 +51,12 @@ public class ExporterContext implements Context {
   private static class AcceptAllRecordsFilter implements RecordFilter {
 
     @Override
-    public boolean acceptType(RecordType recordType) {
+    public boolean acceptType(final RecordType recordType) {
       return true;
     }
 
     @Override
-    public boolean acceptValue(ValueType valueType) {
+    public boolean acceptValue(final ValueType valueType) {
       return true;
     }
   }

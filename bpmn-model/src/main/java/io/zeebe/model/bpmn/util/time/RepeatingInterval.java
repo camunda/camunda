@@ -25,7 +25,7 @@ public class RepeatingInterval implements Timer {
   private final int repetitions;
   private final Interval interval;
 
-  public RepeatingInterval(int repetitions, Interval interval) {
+  public RepeatingInterval(final int repetitions, final Interval interval) {
     this.repetitions = repetitions;
     this.interval = interval;
   }
@@ -41,7 +41,7 @@ public class RepeatingInterval implements Timer {
   }
 
   @Override
-  public long getDueDate(long fromEpochMillis) {
+  public long getDueDate(final long fromEpochMillis) {
     return getInterval().toEpochMilli(fromEpochMillis);
   }
 
@@ -51,7 +51,7 @@ public class RepeatingInterval implements Timer {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -66,7 +66,7 @@ public class RepeatingInterval implements Timer {
         && Objects.equals(getInterval(), repeatingInterval.getInterval());
   }
 
-  public static RepeatingInterval parse(String text) {
+  public static RepeatingInterval parse(final String text) {
     return parse(text, INTERVAL_DESGINATOR);
   }
 
@@ -85,7 +85,7 @@ public class RepeatingInterval implements Timer {
    * @param intervalDesignator the separator between the repeating and interval texts
    * @return a RepeatingInterval based on the given text
    */
-  public static RepeatingInterval parse(String text, String intervalDesignator) {
+  public static RepeatingInterval parse(final String text, final String intervalDesignator) {
     if (!text.startsWith("R")) {
       throw new DateTimeParseException("Repetition spec must start with R", text, 0);
     }
@@ -103,7 +103,7 @@ public class RepeatingInterval implements Timer {
       return new RepeatingInterval(
           Integer.parseInt(text.substring(1, intervalDesignatorOffset)),
           Interval.parse(text.substring(intervalDesignatorOffset + 1)));
-    } catch (NumberFormatException e) {
+    } catch (final NumberFormatException e) {
       throw new DateTimeParseException("Cannot parse repetitions count", text, 1, e);
     }
   }

@@ -27,7 +27,7 @@ public class BpmnValidator {
     runtimeAspectValidator = new ValidationVisitor(ZeebeRuntimeValidators.VALIDATORS);
   }
 
-  public String validate(BpmnModelInstance modelInstance) {
+  public String validate(final BpmnModelInstance modelInstance) {
     designTimeAspectValidator.reset();
     runtimeAspectValidator.reset();
 

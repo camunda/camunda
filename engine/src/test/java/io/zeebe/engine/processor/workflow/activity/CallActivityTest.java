@@ -42,7 +42,7 @@ public class CallActivityTest {
 
   private String jobType;
 
-  private static BpmnModelInstance parentWorkflow(Consumer<CallActivityBuilder> consumer) {
+  private static BpmnModelInstance parentWorkflow(final Consumer<CallActivityBuilder> consumer) {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
             .startEvent()
@@ -525,7 +525,7 @@ public class CallActivityTest {
         .containsOnly("none-start");
   }
 
-  private void completeJobWith(Map<String, Object> variables) {
+  private void completeJobWith(final Map<String, Object> variables) {
 
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst().getValue();
 
@@ -538,7 +538,7 @@ public class CallActivityTest {
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).withVariables(variables).complete());
   }
 
-  private WorkflowInstanceRecordValue getChildInstanceOf(long workflowInstanceKey) {
+  private WorkflowInstanceRecordValue getChildInstanceOf(final long workflowInstanceKey) {
 
     return RecordingExporter.workflowInstanceRecords()
         .withParentWorkflowInstanceKey(workflowInstanceKey)
@@ -546,7 +546,7 @@ public class CallActivityTest {
         .getValue();
   }
 
-  private long getCallActivityInstanceKey(long workflowInstanceKey) {
+  private long getCallActivityInstanceKey(final long workflowInstanceKey) {
 
     return RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .withWorkflowInstanceKey(workflowInstanceKey)

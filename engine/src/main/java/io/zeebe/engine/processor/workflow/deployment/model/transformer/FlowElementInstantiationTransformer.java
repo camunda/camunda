@@ -70,7 +70,7 @@ public class FlowElementInstantiationTransformer implements ModelElementTransfor
   }
 
   @Override
-  public void transform(FlowElement element, TransformContext context) {
+  public void transform(final FlowElement element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final Class<?> elementType = element.getElementType().getInstanceType();
 

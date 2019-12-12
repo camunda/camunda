@@ -92,11 +92,12 @@ public class RecordingGatewayService extends GatewayImplBase {
         ResolveIncidentRequest.class, r -> ResolveIncidentResponse.getDefaultInstance());
   }
 
-  public static Partition partition(int partitionId, PartitionBrokerRole role) {
+  public static Partition partition(final int partitionId, final PartitionBrokerRole role) {
     return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
   }
 
-  public static BrokerInfo broker(int nodeId, String host, int port, Partition... partitions) {
+  public static BrokerInfo broker(
+      final int nodeId, final String host, final int port, final Partition... partitions) {
     return BrokerInfo.newBuilder()
         .setNodeId(nodeId)
         .setHost(host)
@@ -106,7 +107,10 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   public static WorkflowMetadata deployedWorkflow(
-      String bpmnProcessId, int version, long workflowKey, String resourceName) {
+      final String bpmnProcessId,
+      final int version,
+      final long workflowKey,
+      final String resourceName) {
     return WorkflowMetadata.newBuilder()
         .setBpmnProcessId(bpmnProcessId)
         .setVersion(version)
@@ -129,45 +133,49 @@ public class RecordingGatewayService extends GatewayImplBase {
 
   @Override
   public void activateJobs(
-      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ActivateJobsRequest request,
+      final StreamObserver<ActivateJobsResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void cancelWorkflowInstance(
-      CancelWorkflowInstanceRequest request,
-      StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
+      final CancelWorkflowInstanceRequest request,
+      final StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void completeJob(
-      CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
+      final CompleteJobRequest request,
+      final StreamObserver<CompleteJobResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void createWorkflowInstance(
-      CreateWorkflowInstanceRequest request,
-      StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+      final CreateWorkflowInstanceRequest request,
+      final StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void createWorkflowInstanceWithResult(
-      CreateWorkflowInstanceWithResultRequest request,
-      StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
+      final CreateWorkflowInstanceWithResultRequest request,
+      final StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void deployWorkflow(
-      DeployWorkflowRequest request, StreamObserver<DeployWorkflowResponse> responseObserver) {
+      final DeployWorkflowRequest request,
+      final StreamObserver<DeployWorkflowResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
-  public void failJob(FailJobRequest request, StreamObserver<FailJobResponse> responseObserver) {
+  public void failJob(
+      final FailJobRequest request, final StreamObserver<FailJobResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -179,35 +187,43 @@ public class RecordingGatewayService extends GatewayImplBase {
 
   @Override
   public void publishMessage(
-      PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
+      final PublishMessageRequest request,
+      final StreamObserver<PublishMessageResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void resolveIncident(
-      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
+      final ResolveIncidentRequest request,
+      final StreamObserver<ResolveIncidentResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void setVariables(
-      SetVariablesRequest request, StreamObserver<SetVariablesResponse> responseObserver) {
+      final SetVariablesRequest request,
+      final StreamObserver<SetVariablesResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
-  public void topology(TopologyRequest request, StreamObserver<TopologyResponse> responseObserver) {
+  public void topology(
+      final TopologyRequest request, final StreamObserver<TopologyResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   @Override
   public void updateJobRetries(
-      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
+      final UpdateJobRetriesRequest request,
+      final StreamObserver<UpdateJobRetriesResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
   public void onTopologyRequest(
-      int clusterSize, int partitionsCount, int replicationFactor, BrokerInfo... brokers) {
+      final int clusterSize,
+      final int partitionsCount,
+      final int replicationFactor,
+      final BrokerInfo... brokers) {
     addRequestHandler(
         TopologyRequest.class,
         request ->
@@ -219,7 +235,7 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
-  public void onDeployWorkflowRequest(long key, WorkflowMetadata... deployedWorkflows) {
+  public void onDeployWorkflowRequest(final long key, final WorkflowMetadata... deployedWorkflows) {
     addRequestHandler(
         DeployWorkflowRequest.class,
         request ->
@@ -230,7 +246,10 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   public void onCreateWorkflowInstanceRequest(
-      long workflowKey, String bpmnProcessId, int version, long workflowInstanceKey) {
+      final long workflowKey,
+      final String bpmnProcessId,
+      final int version,
+      final long workflowInstanceKey) {
     addRequestHandler(
         CreateWorkflowInstanceRequest.class,
         request ->
@@ -243,11 +262,11 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   public void onCreateWorkflowInstanceWithResultRequest(
-      long workflowKey,
-      String bpmnProcessId,
-      int version,
-      long workflowInstanceKey,
-      String variables) {
+      final long workflowKey,
+      final String bpmnProcessId,
+      final int version,
+      final long workflowInstanceKey,
+      final String variables) {
     addRequestHandler(
         CreateWorkflowInstanceWithResultRequest.class,
         request ->
@@ -260,7 +279,7 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
-  public void onActivateJobsRequest(ActivatedJob... activatedJobs) {
+  public void onActivateJobsRequest(final ActivatedJob... activatedJobs) {
     addRequestHandler(
         ActivateJobsRequest.class,
         request ->
@@ -274,7 +293,8 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   public void errorOnRequest(
-      Class<? extends GeneratedMessageV3> requestClass, Supplier<Exception> errorSupplier) {
+      final Class<? extends GeneratedMessageV3> requestClass,
+      final Supplier<Exception> errorSupplier) {
     addRequestHandler(
         requestClass,
         request -> {
@@ -287,7 +307,7 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends GeneratedMessageV3> T getRequest(int index) {
+  public <T extends GeneratedMessageV3> T getRequest(final int index) {
     return (T) requests.get(index);
   }
 
@@ -296,24 +316,24 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   public void addRequestHandler(
-      Class<? extends GeneratedMessageV3> requestClass, RequestHandler requestHandler) {
+      final Class<? extends GeneratedMessageV3> requestClass, final RequestHandler requestHandler) {
     requestHandlers.put(requestClass, requestHandler);
   }
 
   @SuppressWarnings("unchecked")
   private <RequestT extends GeneratedMessageV3, ResponseT extends GeneratedMessageV3> void handle(
-      RequestT request, StreamObserver<ResponseT> responseObserver) {
+      final RequestT request, final StreamObserver<ResponseT> responseObserver) {
     requests.add(request);
     try {
       final ResponseT response = (ResponseT) getRequestHandler(request).handle(request);
       responseObserver.onNext(response);
       responseObserver.onCompleted();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       responseObserver.onError(convertThrowable(e));
     }
   }
 
-  private RequestHandler getRequestHandler(GeneratedMessageV3 request) {
+  private RequestHandler getRequestHandler(final GeneratedMessageV3 request) {
     final RequestHandler requestHandler = requestHandlers.get(request.getClass());
     if (requestHandler == null) {
       throw new IllegalStateException(

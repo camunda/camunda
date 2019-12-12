@@ -24,8 +24,8 @@ import org.junit.rules.TemporaryFolder;
 
 public class ExporterJarRepositoryTest {
   private final ExporterJarRepository jarRepository = new ExporterJarRepository();
-  private TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
   @Rule public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(jarCreator);
 
   @Test

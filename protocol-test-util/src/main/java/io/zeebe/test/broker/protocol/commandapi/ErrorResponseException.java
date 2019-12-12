@@ -13,7 +13,7 @@ public class ErrorResponseException extends RuntimeException {
 
   private final ErrorResponse errorResponse;
 
-  public ErrorResponseException(ErrorResponse errorResponse) {
+  public ErrorResponseException(final ErrorResponse errorResponse) {
     super(
         String.format(
             "Unexpected error from broker (code: '%s'): %s",

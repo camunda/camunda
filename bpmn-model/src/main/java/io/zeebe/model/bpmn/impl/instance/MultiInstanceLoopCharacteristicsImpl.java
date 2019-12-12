@@ -69,11 +69,11 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
       complexBehaviorDefinitionCollection;
   protected static ChildElement<CompletionCondition> completionConditionChild;
 
-  public MultiInstanceLoopCharacteristicsImpl(ModelTypeInstanceContext instanceContext) {
+  public MultiInstanceLoopCharacteristicsImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(
@@ -86,7 +86,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
 
                   @Override
                   public MultiInstanceLoopCharacteristics newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new MultiInstanceLoopCharacteristicsImpl(instanceContext);
                   }
                 });
@@ -151,7 +151,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setLoopCardinality(LoopCardinality loopCardinality) {
+  public void setLoopCardinality(final LoopCardinality loopCardinality) {
     loopCardinalityChild.setChild(this, loopCardinality);
   }
 
@@ -161,7 +161,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setLoopDataInputRef(DataInput loopDataInputRef) {
+  public void setLoopDataInputRef(final DataInput loopDataInputRef) {
     loopDataInputRefChild.setReferenceTargetElement(this, loopDataInputRef);
   }
 
@@ -171,7 +171,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setLoopDataOutputRef(DataOutput loopDataOutputRef) {
+  public void setLoopDataOutputRef(final DataOutput loopDataOutputRef) {
     loopDataOutputRefChild.setReferenceTargetElement(this, loopDataOutputRef);
   }
 
@@ -181,7 +181,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setInputDataItem(InputDataItem inputDataItem) {
+  public void setInputDataItem(final InputDataItem inputDataItem) {
     inputDataItemChild.setChild(this, inputDataItem);
   }
 
@@ -191,7 +191,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setOutputDataItem(OutputDataItem outputDataItem) {
+  public void setOutputDataItem(final OutputDataItem outputDataItem) {
     outputDataItemChild.setChild(this, outputDataItem);
   }
 
@@ -206,7 +206,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setCompletionCondition(CompletionCondition completionCondition) {
+  public void setCompletionCondition(final CompletionCondition completionCondition) {
     completionConditionChild.setChild(this, completionCondition);
   }
 
@@ -216,7 +216,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setSequential(boolean sequential) {
+  public void setSequential(final boolean sequential) {
     isSequentialAttribute.setValue(this, sequential);
   }
 
@@ -226,7 +226,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setBehavior(MultiInstanceFlowCondition behavior) {
+  public void setBehavior(final MultiInstanceFlowCondition behavior) {
     behaviorAttribute.setValue(this, behavior);
   }
 
@@ -236,7 +236,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setOneBehaviorEventRef(EventDefinition oneBehaviorEventRef) {
+  public void setOneBehaviorEventRef(final EventDefinition oneBehaviorEventRef) {
     oneBehaviorEventRefAttribute.setReferenceTargetElement(this, oneBehaviorEventRef);
   }
 
@@ -246,7 +246,7 @@ public class MultiInstanceLoopCharacteristicsImpl extends LoopCharacteristicsImp
   }
 
   @Override
-  public void setNoneBehaviorEventRef(EventDefinition noneBehaviorEventRef) {
+  public void setNoneBehaviorEventRef(final EventDefinition noneBehaviorEventRef) {
     noneBehaviorEventRefAttribute.setReferenceTargetElement(this, noneBehaviorEventRef);
   }
 }

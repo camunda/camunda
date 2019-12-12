@@ -23,7 +23,7 @@ public class YamlCase {
     return condition;
   }
 
-  public void setCondition(String condition) {
+  public void setCondition(final String condition) {
     this.condition = condition;
   }
 
@@ -31,7 +31,7 @@ public class YamlCase {
     return next;
   }
 
-  public void setNext(String next) {
+  public void setNext(final String next) {
     this.next = next;
   }
 
@@ -39,7 +39,7 @@ public class YamlCase {
     return defaultCase;
   }
 
-  public void setDefaultCase(String defaultCase) {
+  public void setDefaultCase(final String defaultCase) {
     this.defaultCase = defaultCase;
   }
 }

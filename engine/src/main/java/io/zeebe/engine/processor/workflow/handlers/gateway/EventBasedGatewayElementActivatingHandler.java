@@ -18,26 +18,27 @@ public class EventBasedGatewayElementActivatingHandler<T extends ExecutableEvent
     extends ElementActivatingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 
-  public EventBasedGatewayElementActivatingHandler(CatchEventSubscriber catchEventSubscriber) {
+  public EventBasedGatewayElementActivatingHandler(
+      final CatchEventSubscriber catchEventSubscriber) {
     this(WorkflowInstanceIntent.ELEMENT_ACTIVATED, catchEventSubscriber);
   }
 
   public EventBasedGatewayElementActivatingHandler(
-      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
     super(nextState);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public EventBasedGatewayElementActivatingHandler(
-      WorkflowInstanceIntent nextState,
-      IOMappingHelper ioMappingHelper,
-      CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState,
+      final IOMappingHelper ioMappingHelper,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     return super.handleState(context) && catchEventSubscriber.subscribeToEvents(context);
   }
 }

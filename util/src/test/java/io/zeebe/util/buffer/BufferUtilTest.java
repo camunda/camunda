@@ -111,7 +111,7 @@ public class BufferUtilTest {
     assertThat(bytes).isNotSameAs(BYTES1);
   }
 
-  public DirectBuffer asBuffer(byte[] bytes) {
+  public DirectBuffer asBuffer(final byte[] bytes) {
     return new UnsafeBuffer(bytes);
   }
 }

@@ -21,13 +21,13 @@ public class JsonPathCache {
   private int[] offsets = new int[INITIAL_CAPACITY];
   private int[] lengths = new int[INITIAL_CAPACITY];
 
-  public void wrap(DirectBuffer buffer) {
+  public void wrap(final DirectBuffer buffer) {
     valueBuffer.wrap(buffer);
 
     size = 0;
   }
 
-  public DirectBuffer get(int key) {
+  public DirectBuffer get(final int key) {
     for (int k = 0; k < size; k++) {
       if (key == keys[k]) {
         final int offset = offsets[k];
@@ -41,7 +41,7 @@ public class JsonPathCache {
     return null;
   }
 
-  public void put(int key, int offset, int length) {
+  public void put(final int key, final int offset, final int length) {
     if (size > capacity) {
       capacity = capacity * 2;
 

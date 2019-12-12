@@ -21,12 +21,12 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
 
   private final List<ExecutableStartEvent> startEvents = new ArrayList<>();
 
-  public ExecutableFlowElementContainer(String id) {
+  public ExecutableFlowElementContainer(final String id) {
     super(id);
   }
 
   public ExecutableStartEvent getNoneStartEvent() {
-    for (ExecutableStartEvent startEvent : startEvents) {
+    for (final ExecutableStartEvent startEvent : startEvents) {
       if (startEvent.isNone()) {
         return startEvent;
       }
@@ -38,7 +38,7 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
     return startEvents;
   }
 
-  public void addStartEvent(ExecutableStartEvent startEvent) {
+  public void addStartEvent(final ExecutableStartEvent startEvent) {
     this.startEvents.add(startEvent);
   }
 }

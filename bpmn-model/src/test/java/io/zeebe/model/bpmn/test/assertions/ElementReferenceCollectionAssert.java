@@ -23,7 +23,7 @@ public class ElementReferenceCollectionAssert
     extends AbstractReferenceAssert<
         ElementReferenceCollectionAssert, ElementReferenceCollection<?, ?>> {
 
-  protected ElementReferenceCollectionAssert(ElementReferenceCollection<?, ?> actual) {
+  protected ElementReferenceCollectionAssert(final ElementReferenceCollection<?, ?> actual) {
     super(actual, ElementReferenceCollectionAssert.class);
   }
 }

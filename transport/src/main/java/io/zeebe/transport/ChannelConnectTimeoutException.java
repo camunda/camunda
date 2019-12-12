@@ -11,7 +11,7 @@ public class ChannelConnectTimeoutException extends TransportException {
 
   private static final long serialVersionUID = 1L;
 
-  public ChannelConnectTimeoutException(String message) {
+  public ChannelConnectTimeoutException(final String message) {
     super(message);
   }
 }

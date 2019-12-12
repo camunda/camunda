@@ -25,7 +25,7 @@ public class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
   }
 
   @Override
-  public boolean contains(Object o) {
+  public boolean contains(final Object o) {
     throw new UnsupportedOperationException();
   }
 
@@ -40,32 +40,32 @@ public class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
   }
 
   @Override
-  public <T> T[] toArray(T[] a) {
+  public <T> T[] toArray(final T[] a) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean remove(Object o) {
+  public boolean remove(final Object o) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean containsAll(Collection<?> c) {
+  public boolean containsAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean addAll(Collection<? extends ActorJob> c) {
+  public boolean addAll(final Collection<? extends ActorJob> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean removeAll(Collection<?> c) {
+  public boolean removeAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean retainAll(Collection<?> c) {
+  public boolean retainAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
@@ -75,12 +75,12 @@ public class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
   }
 
   @Override
-  public boolean add(ActorJob e) {
+  public boolean add(final ActorJob e) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean offer(ActorJob e) {
+  public boolean offer(final ActorJob e) {
     e.failFuture("Actor is closed");
 
     return true;
@@ -107,22 +107,22 @@ public class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
   }
 
   @Override
-  public void addFirst(ActorJob actorJob) {
+  public void addFirst(final ActorJob actorJob) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void addLast(ActorJob actorJob) {
+  public void addLast(final ActorJob actorJob) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean offerFirst(ActorJob actorJob) {
+  public boolean offerFirst(final ActorJob actorJob) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean offerLast(ActorJob actorJob) {
+  public boolean offerLast(final ActorJob actorJob) {
     throw new UnsupportedOperationException();
   }
 
@@ -167,17 +167,17 @@ public class ClosedQueue implements Queue<ActorJob>, Deque<ActorJob> {
   }
 
   @Override
-  public boolean removeFirstOccurrence(Object o) {
+  public boolean removeFirstOccurrence(final Object o) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean removeLastOccurrence(Object o) {
+  public boolean removeLastOccurrence(final Object o) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void push(ActorJob actorJob) {
+  public void push(final ActorJob actorJob) {
     throw new UnsupportedOperationException();
   }
 

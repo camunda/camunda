@@ -23,7 +23,8 @@ import io.zeebe.model.bpmn.instance.Task;
 public abstract class AbstractTaskBuilder<B extends AbstractTaskBuilder<B, E>, E extends Task>
     extends AbstractActivityBuilder<B, E> {
 
-  protected AbstractTaskBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+  protected AbstractTaskBuilder(
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 

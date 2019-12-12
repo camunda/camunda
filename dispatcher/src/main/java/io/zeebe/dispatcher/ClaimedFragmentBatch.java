@@ -55,11 +55,11 @@ public class ClaimedFragmentBatch {
   }
 
   public void wrap(
-      UnsafeBuffer underlyingbuffer,
-      int partitionId,
-      int fragmentOffset,
-      int fragmentLength,
-      Runnable onCompleteHandler) {
+      final UnsafeBuffer underlyingbuffer,
+      final int partitionId,
+      final int fragmentOffset,
+      final int fragmentLength,
+      final Runnable onCompleteHandler) {
     buffer.wrap(underlyingbuffer, fragmentOffset, fragmentLength);
 
     this.partitionId = partitionId;
@@ -91,7 +91,7 @@ public class ClaimedFragmentBatch {
    *     this case, you should try with smaller length, or abort the whole batch.
    */
   @SuppressWarnings("restriction")
-  public long nextFragment(int length, int streamId) {
+  public long nextFragment(final int length, final int streamId) {
     currentOffset = nextOffset;
 
     final int framedLength = framedLength(length);

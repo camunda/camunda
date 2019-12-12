@@ -43,11 +43,11 @@ public class BoundaryEventImpl extends CatchEventImpl implements BoundaryEvent {
   protected static Attribute<Boolean> cancelActivityAttribute;
   protected static AttributeReference<Activity> attachedToRefAttribute;
 
-  public BoundaryEventImpl(ModelTypeInstanceContext context) {
+  public BoundaryEventImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BoundaryEvent.class, BPMN_ELEMENT_BOUNDARY_EVENT)
@@ -56,7 +56,7 @@ public class BoundaryEventImpl extends CatchEventImpl implements BoundaryEvent {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BoundaryEvent>() {
                   @Override
-                  public BoundaryEvent newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BoundaryEvent newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new BoundaryEventImpl(instanceContext);
                   }
                 });
@@ -85,7 +85,7 @@ public class BoundaryEventImpl extends CatchEventImpl implements BoundaryEvent {
   }
 
   @Override
-  public void setCancelActivity(boolean cancelActivity) {
+  public void setCancelActivity(final boolean cancelActivity) {
     cancelActivityAttribute.setValue(this, cancelActivity);
   }
 
@@ -95,7 +95,7 @@ public class BoundaryEventImpl extends CatchEventImpl implements BoundaryEvent {
   }
 
   @Override
-  public void setAttachedTo(Activity attachedTo) {
+  public void setAttachedTo(final Activity attachedTo) {
     attachedToRefAttribute.setReferenceTargetElement(this, attachedTo);
   }
 }

@@ -29,23 +29,23 @@ public class MsgPackUtil {
 
   private static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
 
-  public static DirectBuffer encodeMsgPack(CheckedConsumer<MessageBufferPacker> msgWriter) {
+  public static DirectBuffer encodeMsgPack(final CheckedConsumer<MessageBufferPacker> msgWriter) {
     final MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
     try {
       msgWriter.accept(packer);
       packer.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
     final byte[] bytes = packer.toByteArray();
     return new UnsafeBuffer(bytes);
   }
 
-  public static DirectBuffer asMsgPack(String key, Object value) {
+  public static DirectBuffer asMsgPack(final String key, final Object value) {
     return asMsgPack(Collections.singletonMap(key, value));
   }
 
-  public static DirectBuffer asMsgPack(Consumer<MapBuilder<DirectBuffer>> consumer) {
+  public static DirectBuffer asMsgPack(final Consumer<MapBuilder<DirectBuffer>> consumer) {
     final DirectBuffer buffer = new UnsafeBuffer(0, 0);
     final MapBuilder<DirectBuffer> builder =
         new MapBuilder<>(buffer, map -> buffer.wrap(asMsgPack(map)));
@@ -60,22 +60,22 @@ public class MsgPackUtil {
       final byte[] msgPackBytes = objectMapper.writeValueAsBytes(map);
 
       return new UnsafeBuffer(msgPackBytes);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static void assertEquality(byte[] actualMsgPack, String expectedJson) {
+  public static void assertEquality(final byte[] actualMsgPack, final String expectedJson) {
     assertNotNull("actual msg pack is null", actualMsgPack);
     try {
       assertThat(MSGPACK_MAPPER.readTree(actualMsgPack))
           .isEqualTo(JsonUtil.JSON_MAPPER.readTree(expectedJson));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static void assertEquality(DirectBuffer actualMsgPack, String expectedJson) {
+  public static void assertEquality(final DirectBuffer actualMsgPack, final String expectedJson) {
     assertNotNull("actual msg pack is null", actualMsgPack);
     final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
     actualMsgPack.getBytes(0, msgPackArray);
@@ -83,7 +83,9 @@ public class MsgPackUtil {
   }
 
   public static void assertEqualityExcluding(
-      DirectBuffer actualMsgPack, String expectedJson, String... excludedProperties) {
+      final DirectBuffer actualMsgPack,
+      final String expectedJson,
+      final String... excludedProperties) {
     assertNotNull("actual msg pack is null", actualMsgPack);
     final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
     actualMsgPack.getBytes(0, msgPackArray);
@@ -91,7 +93,7 @@ public class MsgPackUtil {
   }
 
   public static void assertEqualityExcluding(
-      byte[] actualMsgPack, String expectedJson, String... excludedProperties) {
+      final byte[] actualMsgPack, final String expectedJson, final String... excludedProperties) {
 
     assertNotNull("actual msg pack is null", actualMsgPack);
 
@@ -100,7 +102,7 @@ public class MsgPackUtil {
     try {
       msgPackNode = MSGPACK_MAPPER.readTree(actualMsgPack);
       jsonNode = JsonUtil.JSON_MAPPER.readTree(expectedJson);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
 
@@ -114,15 +116,15 @@ public class MsgPackUtil {
     assertThat(msgPackNode).isEqualTo(jsonNode);
   }
 
-  public static byte[] asMsgPackReturnArray(String json) {
+  public static byte[] asMsgPackReturnArray(final String json) {
     try {
       return MSGPACK_MAPPER.writeValueAsBytes(JsonUtil.JSON_MAPPER.readTree(json));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static DirectBuffer asMsgPack(String json) {
+  public static DirectBuffer asMsgPack(final String json) {
     return new UnsafeBuffer(asMsgPackReturnArray(json));
   }
 

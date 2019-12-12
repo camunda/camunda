@@ -70,7 +70,7 @@ public class JsonPathQueryCompilerTest {
   }
 
   protected static void assertFilterAtPosition(
-      MsgPackFilterContext filterInstances, int position, int expectedFilterId) {
+      final MsgPackFilterContext filterInstances, final int position, final int expectedFilterId) {
     filterInstances.moveTo(position);
     assertThat(filterInstances.filterId()).isEqualTo(expectedFilterId);
   }

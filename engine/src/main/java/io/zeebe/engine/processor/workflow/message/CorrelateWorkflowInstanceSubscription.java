@@ -156,10 +156,10 @@ public final class CorrelateWorkflowInstanceSubscription
   }
 
   private void writeEventOccurred(
-      TypedRecord<WorkflowInstanceSubscriptionRecord> record,
-      TypedStreamWriter streamWriter,
-      WorkflowInstanceSubscription subscription,
-      ElementInstance elementInstance) {
+      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedStreamWriter streamWriter,
+      final WorkflowInstanceSubscription subscription,
+      final ElementInstance elementInstance) {
     final long workflowKey = elementInstance.getValue().getWorkflowKey();
     final DeployedWorkflow workflow = workflowState.getWorkflowByKey(workflowKey);
 
@@ -184,7 +184,8 @@ public final class CorrelateWorkflowInstanceSubscription
     }
   }
 
-  private boolean isEventSubprocessStart(DeployedWorkflow workflow, DirectBuffer catchEventId) {
+  private boolean isEventSubprocessStart(
+      final DeployedWorkflow workflow, final DirectBuffer catchEventId) {
     final AbstractFlowElement catchEvent = workflow.getWorkflow().getElementById(catchEventId);
 
     return ExecutableStartEvent.class.isAssignableFrom(catchEvent.getClass())

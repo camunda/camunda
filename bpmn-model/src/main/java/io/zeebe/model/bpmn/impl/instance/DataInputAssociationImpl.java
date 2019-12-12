@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class DataInputAssociationImpl extends DataAssociationImpl implements DataInputAssociation {
 
-  public DataInputAssociationImpl(ModelTypeInstanceContext instanceContext) {
+  public DataInputAssociationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataInputAssociation.class, BPMN_ELEMENT_DATA_INPUT_ASSOCIATION)
@@ -47,7 +47,7 @@ public class DataInputAssociationImpl extends DataAssociationImpl implements Dat
                 new ModelTypeInstanceProvider<DataInputAssociation>() {
                   @Override
                   public DataInputAssociation newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new DataInputAssociationImpl(instanceContext);
                   }
                 });

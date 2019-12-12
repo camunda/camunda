@@ -40,11 +40,11 @@ public class InclusiveGatewayImpl extends GatewayImpl implements InclusiveGatewa
 
   protected static AttributeReference<SequenceFlow> defaultAttribute;
 
-  public InclusiveGatewayImpl(ModelTypeInstanceContext context) {
+  public InclusiveGatewayImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InclusiveGateway.class, BPMN_ELEMENT_INCLUSIVE_GATEWAY)
@@ -53,7 +53,8 @@ public class InclusiveGatewayImpl extends GatewayImpl implements InclusiveGatewa
             .instanceProvider(
                 new ModelTypeInstanceProvider<InclusiveGateway>() {
                   @Override
-                  public InclusiveGateway newInstance(ModelTypeInstanceContext instanceContext) {
+                  public InclusiveGateway newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new InclusiveGatewayImpl(instanceContext);
                   }
                 });
@@ -78,7 +79,7 @@ public class InclusiveGatewayImpl extends GatewayImpl implements InclusiveGatewa
   }
 
   @Override
-  public void setDefault(SequenceFlow defaultFlow) {
+  public void setDefault(final SequenceFlow defaultFlow) {
     defaultAttribute.setReferenceTargetElement(this, defaultFlow);
   }
 }

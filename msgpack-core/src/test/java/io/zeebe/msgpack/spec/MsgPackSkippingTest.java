@@ -226,7 +226,7 @@ public class MsgPackSkippingTest {
         });
   }
 
-  protected static Consumer<ByteArrayBuilder> given(Consumer<ByteArrayBuilder> arg) {
+  protected static Consumer<ByteArrayBuilder> given(final Consumer<ByteArrayBuilder> arg) {
     return arg;
   }
 
@@ -248,7 +248,7 @@ public class MsgPackSkippingTest {
     assertThat(reader.getOffset()).isEqualTo(buffer.capacity());
   }
 
-  protected static byte[] utf8(String value) {
+  protected static byte[] utf8(final String value) {
     return value.getBytes(StandardCharsets.UTF_8);
   }
 }

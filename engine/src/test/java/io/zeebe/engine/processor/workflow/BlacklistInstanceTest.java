@@ -46,7 +46,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class BlacklistInstanceTest {
 
-  @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
+  @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
   private static final AtomicLong KEY_GENERATOR = new AtomicLong(0);
 
   @Parameter(0)
@@ -222,7 +222,7 @@ public class BlacklistInstanceTest {
     typedEvent.wrap(loggedEvent, metadata, new Value());
 
     // when
-    final ZeebeState zeebeState = zeebeStateRule.getZeebeState();
+    final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
     zeebeState.tryToBlacklist(typedEvent, (workflowInstanceKey) -> {});
 
     // then

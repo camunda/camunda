@@ -56,7 +56,7 @@ public class LogStreamReaderRule extends ExternalResource {
     return logStreamReader.next();
   }
 
-  public LoggedEvent readEventAtPosition(long position) {
+  public LoggedEvent readEventAtPosition(final long position) {
     while (logStreamReader.hasNext()) {
       final LoggedEvent event = logStreamReader.next();
       if (event.getPosition() == position) {

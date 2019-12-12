@@ -61,10 +61,10 @@ import org.mockito.MockitoAnnotations;
 public class SkipFailingEventsTest {
   public static final String STREAM_NAME = "foo";
 
-  public TemporaryFolder tempFolder = new TemporaryFolder();
-  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public final TemporaryFolder tempFolder = new TemporaryFolder();
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
 
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   @Rule
   public RuleChain ruleChain =
@@ -145,9 +145,9 @@ public class SkipFailingEventsTest {
                   new TypedRecordProcessor<UnifiedRecordValue>() {
                     @Override
                     public void processRecord(
-                        TypedRecord<UnifiedRecordValue> record,
-                        TypedResponseWriter responseWriter,
-                        TypedStreamWriter streamWriter) {
+                        final TypedRecord<UnifiedRecordValue> record,
+                        final TypedResponseWriter responseWriter,
+                        final TypedStreamWriter streamWriter) {
                       throw new NullPointerException();
                     }
                   });
@@ -270,7 +270,7 @@ public class SkipFailingEventsTest {
               .withListener(
                   new StreamProcessorLifecycleAware() {
                     @Override
-                    public void onRecovered(ReadonlyProcessingContext ctx) {
+                    public void onRecovered(final ReadonlyProcessingContext ctx) {
                       latch.countDown();
                     }
                   })
@@ -298,9 +298,9 @@ public class SkipFailingEventsTest {
             new TypedRecordProcessor<JobRecord>() {
               @Override
               public void processRecord(
-                  TypedRecord<JobRecord> record,
-                  TypedResponseWriter responseWriter,
-                  TypedStreamWriter streamWriter) {
+                  final TypedRecord<JobRecord> record,
+                  final TypedResponseWriter responseWriter,
+                  final TypedStreamWriter streamWriter) {
                 processedInstances.add(record.getValue().getWorkflowInstanceKey());
                 streamWriter.appendFollowUpEvent(
                     record.getKey(),
@@ -312,9 +312,9 @@ public class SkipFailingEventsTest {
         new TypedRecordProcessor<JobRecord>() {
           @Override
           public void processRecord(
-              TypedRecord<JobRecord> record,
-              TypedResponseWriter responseWriter,
-              TypedStreamWriter streamWriter) {
+              final TypedRecord<JobRecord> record,
+              final TypedResponseWriter responseWriter,
+              final TypedStreamWriter streamWriter) {
             throw new RuntimeException("expected");
           }
         };
@@ -379,9 +379,9 @@ public class SkipFailingEventsTest {
         new TypedRecordProcessor<TimerRecord>() {
           @Override
           public void processRecord(
-              TypedRecord<TimerRecord> record,
-              TypedResponseWriter responseWriter,
-              TypedStreamWriter streamWriter) {
+              final TypedRecord<TimerRecord> record,
+              final TypedResponseWriter responseWriter,
+              final TypedStreamWriter streamWriter) {
             if (record.getKey() == 0) {
               throw new RuntimeException("expected");
             }
@@ -429,7 +429,7 @@ public class SkipFailingEventsTest {
     assertThat(processedInstances).containsExactly((long) TimerInstance.NO_ELEMENT_INSTANCE);
   }
 
-  private void waitForRecordWhichSatisfies(Predicate<LoggedEvent> filter) {
+  private void waitForRecordWhichSatisfies(final Predicate<LoggedEvent> filter) {
     TestUtil.doRepeatedly(() -> streams.events(STREAM_NAME).filter(filter).findFirst())
         .until(o -> o.isPresent())
         .get();
@@ -459,9 +459,9 @@ public class SkipFailingEventsTest {
 
     @Override
     public void processRecord(
-        TypedRecord<WorkflowInstanceRecord> record,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<WorkflowInstanceRecord> record,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
       processedInstances.add(record.getValue().getWorkflowInstanceKey());
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceIntent.ELEMENT_COMPLETED, record.getValue());

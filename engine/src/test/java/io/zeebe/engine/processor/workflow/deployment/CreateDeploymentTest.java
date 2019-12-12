@@ -561,7 +561,8 @@ public class CreateDeploymentTest {
                 + "Duplicated process id in resources 'p2.bpmn' and 'p3.bpmn'");
   }
 
-  private DeployedWorkflow findWorkflow(List<DeployedWorkflow> workflows, String processId) {
+  private DeployedWorkflow findWorkflow(
+      final List<DeployedWorkflow> workflows, final String processId) {
     return workflows.stream()
         .filter(w -> w.getBpmnProcessId().equals(processId))
         .findFirst()

@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class OptionalOutputRefs extends BpmnModelElementInstanceImpl {
 
-  public OptionalOutputRefs(ModelTypeInstanceContext instanceContext) {
+  public OptionalOutputRefs(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OptionalOutputRefs.class, BPMN_ELEMENT_OPTIONAL_OUTPUT_REFS)
@@ -43,7 +43,8 @@ public class OptionalOutputRefs extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<OptionalOutputRefs>() {
                   @Override
-                  public OptionalOutputRefs newInstance(ModelTypeInstanceContext instanceContext) {
+                  public OptionalOutputRefs newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new OptionalOutputRefs(instanceContext);
                   }
                 });

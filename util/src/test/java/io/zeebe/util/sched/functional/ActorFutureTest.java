@@ -31,7 +31,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ActorFutureTest {
-  @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
   @Test
   public void shouldInvokeCallbackOnFutureCompletion() {
@@ -691,7 +692,7 @@ public class ActorFutureTest {
 
     private final ActorB actorB;
 
-    ActorA(ActorB actorB) {
+    ActorA(final ActorB actorB) {
       this.actorB = actorB;
     }
 
@@ -735,7 +736,7 @@ public class ActorFutureTest {
           });
     }
 
-    public ActorFuture<Integer> call(int returnValue) {
+    public ActorFuture<Integer> call(final int returnValue) {
       return actor.call(() -> returnValue);
     }
   }
@@ -752,14 +753,15 @@ public class ActorFutureTest {
           });
     }
 
-    public ActorFuture<Integer> call(int returnValue) {
+    public ActorFuture<Integer> call(final int returnValue) {
       return actor.call(() -> returnValue);
     }
   }
 
   class TestActor extends Actor {
 
-    public <T> void awaitFuture(ActorFuture<T> f, BiConsumer<T, Throwable> onCompletion) {
+    public <T> void awaitFuture(
+        final ActorFuture<T> f, final BiConsumer<T, Throwable> onCompletion) {
       actor.call(() -> actor.runOnCompletionBlockingCurrentPhase(f, onCompletion));
     }
 

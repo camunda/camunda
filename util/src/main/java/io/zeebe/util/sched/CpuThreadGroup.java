@@ -12,7 +12,7 @@ import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 /** Thread group for the non-blocking, CPU bound, tasks. */
 public class CpuThreadGroup extends ActorThreadGroup {
 
-  public CpuThreadGroup(ActorSchedulerBuilder builder) {
+  public CpuThreadGroup(final ActorSchedulerBuilder builder) {
     super(
         String.format("%s-%s", builder.getSchedulerName(), "zb-actors"),
         builder.getCpuBoundActorThreadCount(),
@@ -22,12 +22,12 @@ public class CpuThreadGroup extends ActorThreadGroup {
 
   @Override
   protected TaskScheduler createTaskScheduler(
-      MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder) {
+      final MultiLevelWorkstealingGroup tasks, final ActorSchedulerBuilder builder) {
     return new PriorityScheduler(tasks::getNextTask, builder.getPriorityQuotas());
   }
 
   @Override
-  protected int getLevel(ActorTask actorTask) {
+  protected int getLevel(final ActorTask actorTask) {
     return actorTask.getPriority();
   }
 }

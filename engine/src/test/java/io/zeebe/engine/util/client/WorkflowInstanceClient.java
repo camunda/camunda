@@ -28,15 +28,15 @@ public class WorkflowInstanceClient {
 
   private final StreamProcessorRule environmentRule;
 
-  public WorkflowInstanceClient(StreamProcessorRule environmentRule) {
+  public WorkflowInstanceClient(final StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
   }
 
-  public WorkflowInstanceCreationClient ofBpmnProcessId(String bpmnProcessId) {
+  public WorkflowInstanceCreationClient ofBpmnProcessId(final String bpmnProcessId) {
     return new WorkflowInstanceCreationClient(environmentRule, bpmnProcessId);
   }
 
-  public ExistingInstanceClient withInstanceKey(long workflowInstanceKey) {
+  public ExistingInstanceClient withInstanceKey(final long workflowInstanceKey) {
     return new ExistingInstanceClient(environmentRule, workflowInstanceKey);
   }
 
@@ -46,23 +46,23 @@ public class WorkflowInstanceClient {
     private final WorkflowInstanceCreationRecord workflowInstanceCreationRecord;
 
     public WorkflowInstanceCreationClient(
-        StreamProcessorRule environmentRule, String bpmnProcessId) {
+        final StreamProcessorRule environmentRule, final String bpmnProcessId) {
       this.environmentRule = environmentRule;
       this.workflowInstanceCreationRecord = new WorkflowInstanceCreationRecord();
       workflowInstanceCreationRecord.setBpmnProcessId(bpmnProcessId);
     }
 
-    public WorkflowInstanceCreationClient withVariables(Map<String, Object> variables) {
+    public WorkflowInstanceCreationClient withVariables(final Map<String, Object> variables) {
       workflowInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
       return this;
     }
 
-    public WorkflowInstanceCreationClient withVariables(String variables) {
+    public WorkflowInstanceCreationClient withVariables(final String variables) {
       workflowInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
       return this;
     }
 
-    public WorkflowInstanceCreationClient withVariable(String key, Object value) {
+    public WorkflowInstanceCreationClient withVariable(final String key, final Object value) {
       workflowInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(key, value));
       return this;
     }
@@ -87,29 +87,30 @@ public class WorkflowInstanceClient {
   }
 
   public static class WorkflowInstanceCreationWithResultClient {
-    private StreamProcessorRule environmentRule;
+    private final StreamProcessorRule environmentRule;
     private final WorkflowInstanceCreationRecord record;
     private long requestId = 1L;
     private int requestStreamId = 1;
 
     public WorkflowInstanceCreationWithResultClient(
-        StreamProcessorRule environmentRule, WorkflowInstanceCreationRecord record) {
+        final StreamProcessorRule environmentRule, final WorkflowInstanceCreationRecord record) {
       this.environmentRule = environmentRule;
       this.record = record;
     }
 
-    public WorkflowInstanceCreationWithResultClient withFetchVariables(Set<String> fetchVariables) {
+    public WorkflowInstanceCreationWithResultClient withFetchVariables(
+        final Set<String> fetchVariables) {
       final ArrayProperty<StringValue> variablesToCollect = record.fetchVariables();
       fetchVariables.forEach(variable -> variablesToCollect.add().wrap(wrapString(variable)));
       return this;
     }
 
-    public WorkflowInstanceCreationWithResultClient withRequestId(long requestId) {
+    public WorkflowInstanceCreationWithResultClient withRequestId(final long requestId) {
       this.requestId = requestId;
       return this;
     }
 
-    public WorkflowInstanceCreationWithResultClient withRequestStreamId(int requestStreamId) {
+    public WorkflowInstanceCreationWithResultClient withRequestStreamId(final int requestStreamId) {
       this.requestStreamId = requestStreamId;
       return this;
     }
@@ -165,12 +166,13 @@ public class WorkflowInstanceClient {
     private int partition = DEFAULT_PARTITION;
     private Function<Long, Record<WorkflowInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
 
-    public ExistingInstanceClient(StreamProcessorRule environmentRule, long workflowInstanceKey) {
+    public ExistingInstanceClient(
+        final StreamProcessorRule environmentRule, final long workflowInstanceKey) {
       this.environmentRule = environmentRule;
       this.workflowInstanceKey = workflowInstanceKey;
     }
 
-    public ExistingInstanceClient onPartition(int partition) {
+    public ExistingInstanceClient onPartition(final int partition) {
       this.partition = partition;
       return this;
     }

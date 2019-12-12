@@ -12,13 +12,13 @@ public class MsgPackTreeNodeIdConstructor {
   public static final String JSON_PATH_SEPARATOR = "[";
   public static final String JSON_PATH_SEPARATOR_END = "]";
 
-  public static String construct(String parentId, String nodeName) {
+  public static String construct(final String parentId, final String nodeName) {
     return parentId.isEmpty()
         ? nodeName
         : parentId + JSON_PATH_SEPARATOR + nodeName + JSON_PATH_SEPARATOR_END;
   }
 
-  public static String getLastParentId(String nodeId) {
+  public static String getLastParentId(final String nodeId) {
     final int indexOfLastSeparator = nodeId.lastIndexOf(JSON_PATH_SEPARATOR);
     final String parentId = nodeId.substring(0, indexOfLastSeparator);
     return parentId;

@@ -30,37 +30,38 @@ public class WorkflowInstanceCreationRecordStream
     return new WorkflowInstanceCreationRecordStream(wrappedStream);
   }
 
-  public WorkflowInstanceCreationRecordStream withBpmnProcessId(String bpmnProcessId) {
+  public WorkflowInstanceCreationRecordStream withBpmnProcessId(final String bpmnProcessId) {
     return valueFilter(v -> v.getBpmnProcessId().equals(bpmnProcessId));
   }
 
-  public WorkflowInstanceCreationRecordStream withVersion(int version) {
+  public WorkflowInstanceCreationRecordStream withVersion(final int version) {
     return valueFilter(v -> v.getVersion() == version);
   }
 
-  public WorkflowInstanceCreationRecordStream withKey(long key) {
+  public WorkflowInstanceCreationRecordStream withKey(final long key) {
     return valueFilter(v -> v.getWorkflowKey() == key);
   }
 
-  public WorkflowInstanceCreationRecordStream withInstanceKey(long instanceKey) {
+  public WorkflowInstanceCreationRecordStream withInstanceKey(final long instanceKey) {
     return valueFilter(v -> v.getWorkflowInstanceKey() == instanceKey);
   }
 
-  public WorkflowInstanceCreationRecordStream withVariables(Map<String, Object> variables) {
+  public WorkflowInstanceCreationRecordStream withVariables(final Map<String, Object> variables) {
     return valueFilter(v -> v.getVariables().equals(variables));
   }
 
-  public WorkflowInstanceCreationRecordStream withVariables(Map.Entry<String, Object>... entries) {
+  public WorkflowInstanceCreationRecordStream withVariables(
+      final Map.Entry<String, Object>... entries) {
     return withVariables(Maps.of(entries));
   }
 
   public WorkflowInstanceCreationRecordStream withVariables(
-      Predicate<Map<String, Object>> matcher) {
+      final Predicate<Map<String, Object>> matcher) {
     return valueFilter(v -> matcher.test(v.getVariables()));
   }
 
   public WorkflowInstanceCreationRecordStream limitToWorkflowInstanceCreated(
-      long workflowInstanceKey) {
+      final long workflowInstanceKey) {
     return limit(
         r ->
             r.getIntent() == WorkflowInstanceCreationIntent.CREATED

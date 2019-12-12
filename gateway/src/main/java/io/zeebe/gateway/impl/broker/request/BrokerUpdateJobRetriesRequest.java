@@ -16,7 +16,7 @@ public class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<JobRecor
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerUpdateJobRetriesRequest(long jobKey, int retries) {
+  public BrokerUpdateJobRetriesRequest(final long jobKey, final int retries) {
     super(ValueType.JOB, JobIntent.UPDATE_RETRIES);
     request.setKey(jobKey);
     requestDto.setRetries(retries);
@@ -28,7 +28,7 @@ public class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<JobRecor
   }
 
   @Override
-  protected JobRecord toResponseDto(DirectBuffer buffer) {
+  protected JobRecord toResponseDto(final DirectBuffer buffer) {
     final JobRecord responseDto = new JobRecord();
     responseDto.wrap(buffer);
     return responseDto;

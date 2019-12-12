@@ -266,7 +266,7 @@ public class EventSubprocessTest {
     assertThat(jobVariables).containsOnly(Map.entry("key", 123));
   }
 
-  private static void assertEventSubprocessLifecycle(long workflowInstanceKey) {
+  private static void assertEventSubprocessLifecycle(final long workflowInstanceKey) {
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -298,7 +298,7 @@ public class EventSubprocessTest {
     return wfInstanceKey;
   }
 
-  private long createInstanceAndWaitForTask(BpmnModelInstance model) {
+  private long createInstanceAndWaitForTask(final BpmnModelInstance model) {
     currentWorkflow =
         ENGINE
             .deployment()
@@ -364,7 +364,7 @@ public class EventSubprocessTest {
   }
 
   private BpmnModelInstance eventSubProcTaskModel(
-      boolean interrupting, String procTaskType, String subprocTaskType) {
+      final boolean interrupting, final String procTaskType, final String subprocTaskType) {
     final ProcessBuilder modelBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
     builder
         .apply(

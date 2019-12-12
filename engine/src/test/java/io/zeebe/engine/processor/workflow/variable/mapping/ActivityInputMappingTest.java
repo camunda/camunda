@@ -121,11 +121,11 @@ public class ActivityInputMappingTest {
   }
 
   private static Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mapping(
-      Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mappingBuilder) {
+      final Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 
-  private static List<Tuple> activityVariables(Tuple... variables) {
+  private static List<Tuple> activityVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 }

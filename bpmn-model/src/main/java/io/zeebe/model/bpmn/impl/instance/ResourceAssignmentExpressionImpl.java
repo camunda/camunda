@@ -39,11 +39,11 @@ public class ResourceAssignmentExpressionImpl extends BaseElementImpl
 
   protected static ChildElement<Expression> expressionChild;
 
-  public ResourceAssignmentExpressionImpl(ModelTypeInstanceContext instanceContext) {
+  public ResourceAssignmentExpressionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(
@@ -54,7 +54,7 @@ public class ResourceAssignmentExpressionImpl extends BaseElementImpl
                 new ModelTypeInstanceProvider<ResourceAssignmentExpression>() {
                   @Override
                   public ResourceAssignmentExpression newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ResourceAssignmentExpressionImpl(instanceContext);
                   }
                 });
@@ -72,7 +72,7 @@ public class ResourceAssignmentExpressionImpl extends BaseElementImpl
   }
 
   @Override
-  public void setExpression(Expression expression) {
+  public void setExpression(final Expression expression) {
     expressionChild.setChild(this, expression);
   }
 }

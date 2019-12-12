@@ -13,7 +13,7 @@ package io.zeebe.util.exception;
  */
 public class UncheckedExecutionException extends RuntimeException {
 
-  public UncheckedExecutionException(String message, Throwable cause) {
+  public UncheckedExecutionException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

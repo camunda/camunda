@@ -27,22 +27,22 @@ public class ElementActivatingHandler<T extends ExecutableFlowNode> extends Abst
     this(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
   }
 
-  public ElementActivatingHandler(WorkflowInstanceIntent nextState) {
+  public ElementActivatingHandler(final WorkflowInstanceIntent nextState) {
     this(nextState, new IOMappingHelper());
   }
 
   public ElementActivatingHandler(
-      WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
+      final WorkflowInstanceIntent nextState, final IOMappingHelper ioMappingHelper) {
     super(nextState);
     this.ioMappingHelper = ioMappingHelper;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     try {
       ioMappingHelper.applyInputMappings(context);
       return true;
-    } catch (MappingException e) {
+    } catch (final MappingException e) {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, e.getMessage());
     }
 
@@ -50,7 +50,7 @@ public class ElementActivatingHandler<T extends ExecutableFlowNode> extends Abst
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return super.shouldHandleState(context)
         && isStateSameAsElementState(context)
         && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()))

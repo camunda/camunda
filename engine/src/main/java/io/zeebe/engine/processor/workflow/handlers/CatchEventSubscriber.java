@@ -16,16 +16,16 @@ import io.zeebe.protocol.record.value.ErrorType;
 public class CatchEventSubscriber {
   private final CatchEventBehavior catchEventBehavior;
 
-  public CatchEventSubscriber(CatchEventBehavior catchEventBehavior) {
+  public CatchEventSubscriber(final CatchEventBehavior catchEventBehavior) {
     this.catchEventBehavior = catchEventBehavior;
   }
 
   public <T extends ExecutableCatchEventSupplier> boolean subscribeToEvents(
-      BpmnStepContext<T> context) {
+      final BpmnStepContext<T> context) {
     try {
       catchEventBehavior.subscribeToEvents(context, context.getElement());
       return true;
-    } catch (MessageCorrelationKeyException e) {
+    } catch (final MessageCorrelationKeyException e) {
       context.raiseIncident(
           ErrorType.EXTRACT_VALUE_ERROR, e.getContext().getVariablesScopeKey(), e.getMessage());
     }
@@ -34,7 +34,7 @@ public class CatchEventSubscriber {
   }
 
   public <T extends ExecutableCatchEventSupplier> void unsubscribeFromEvents(
-      BpmnStepContext<T> context) {
+      final BpmnStepContext<T> context) {
     catchEventBehavior.unsubscribeFromEvents(context.getKey(), context);
   }
 }

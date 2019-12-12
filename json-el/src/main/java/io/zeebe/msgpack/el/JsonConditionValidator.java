@@ -13,7 +13,7 @@ import java.util.List;
 
 public class JsonConditionValidator {
 
-  public static String validate(JsonCondition condition) {
+  public static String validate(final JsonCondition condition) {
     final List<String> errors = new ArrayList<>();
 
     validateCondition(condition, errors);
@@ -25,7 +25,7 @@ public class JsonConditionValidator {
     }
   }
 
-  private static void validateCondition(JsonCondition condition, final List<String> errors) {
+  private static void validateCondition(final JsonCondition condition, final List<String> errors) {
     JsonConditionWalker.walk(
         condition,
         object -> {

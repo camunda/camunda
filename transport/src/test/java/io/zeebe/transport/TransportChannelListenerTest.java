@@ -41,8 +41,8 @@ public class TransportChannelListenerTest {
   protected static final BufferWriter WRITER = writerFor(EMPTY_BUFFER);
   private static final int NODE_ID = 1;
   private static final SocketAddress ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected ServerTransport serverTransport;
 
@@ -60,7 +60,8 @@ public class TransportChannelListenerTest {
     return buildClientTransport(b -> {});
   }
 
-  private ClientTransport buildClientTransport(Consumer<ClientTransportBuilder> builderConsumer) {
+  private ClientTransport buildClientTransport(
+      final Consumer<ClientTransportBuilder> builderConsumer) {
     final ClientTransportBuilder transportBuilder =
         Transports.newClientTransport("test").scheduler(actorSchedulerRule.get());
     builderConsumer.accept(transportBuilder);
@@ -205,10 +206,10 @@ public class TransportChannelListenerTest {
   protected static class ImmediatelyClosingChannelFactory implements TransportChannelFactory {
     @Override
     public TransportChannel buildClientChannel(
-        ChannelLifecycleListener listener,
-        RemoteAddressImpl remoteAddress,
-        int maxMessageSize,
-        FragmentHandler readHandler) {
+        final ChannelLifecycleListener listener,
+        final RemoteAddressImpl remoteAddress,
+        final int maxMessageSize,
+        final FragmentHandler readHandler) {
       return new TransportChannel(listener, remoteAddress, maxMessageSize, readHandler) {
         @Override
         public void finishConnect() {
@@ -220,36 +221,36 @@ public class TransportChannelListenerTest {
 
     @Override
     public TransportChannel buildServerChannel(
-        ChannelLifecycleListener listener,
-        RemoteAddressImpl remoteAddress,
-        int maxMessageSize,
-        FragmentHandler readHandler,
-        SocketChannel media) {
+        final ChannelLifecycleListener listener,
+        final RemoteAddressImpl remoteAddress,
+        final int maxMessageSize,
+        final FragmentHandler readHandler,
+        final SocketChannel media) {
       throw new UnsupportedOperationException();
     }
   }
 
   protected static class CountingChannelFactory implements TransportChannelFactory {
-    protected AtomicInteger createdChannels = new AtomicInteger();
-    protected TransportChannelFactory actualFactory = new DefaultChannelFactory();
+    protected final AtomicInteger createdChannels = new AtomicInteger();
+    protected final TransportChannelFactory actualFactory = new DefaultChannelFactory();
 
     @Override
     public TransportChannel buildClientChannel(
-        ChannelLifecycleListener listener,
-        RemoteAddressImpl remoteAddress,
-        int maxMessageSize,
-        FragmentHandler readHandler) {
+        final ChannelLifecycleListener listener,
+        final RemoteAddressImpl remoteAddress,
+        final int maxMessageSize,
+        final FragmentHandler readHandler) {
       createdChannels.incrementAndGet();
       return actualFactory.buildClientChannel(listener, remoteAddress, maxMessageSize, readHandler);
     }
 
     @Override
     public TransportChannel buildServerChannel(
-        ChannelLifecycleListener listener,
-        RemoteAddressImpl remoteAddress,
-        int maxMessageSize,
-        FragmentHandler readHandler,
-        SocketChannel media) {
+        final ChannelLifecycleListener listener,
+        final RemoteAddressImpl remoteAddress,
+        final int maxMessageSize,
+        final FragmentHandler readHandler,
+        final SocketChannel media) {
       throw new UnsupportedOperationException();
     }
 

@@ -23,7 +23,8 @@ import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 public class ExclusiveGatewayBuilder
     extends AbstractExclusiveGatewayBuilder<ExclusiveGatewayBuilder> {
 
-  public ExclusiveGatewayBuilder(BpmnModelInstance modelInstance, ExclusiveGateway element) {
+  public ExclusiveGatewayBuilder(
+      final BpmnModelInstance modelInstance, final ExclusiveGateway element) {
     super(modelInstance, element, ExclusiveGatewayBuilder.class);
   }
 }

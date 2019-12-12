@@ -20,7 +20,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 /** Represents a block of fragments to read from. */
 public class BlockPeek implements Iterable<DirectBuffer> {
   protected ByteBuffer byteBuffer;
-  protected UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
+  protected final UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
   protected AtomicPosition subscriberPosition;
 
   protected int streamId;
@@ -31,7 +31,7 @@ public class BlockPeek implements Iterable<DirectBuffer> {
   protected int newPartitionId;
   protected int newPartitionOffset;
 
-  protected DataFrameIterator iterator = new DataFrameIterator();
+  protected final DataFrameIterator iterator = new DataFrameIterator();
   private ActorCondition dataConsumed;
   private int fragmentCount;
 
@@ -44,7 +44,7 @@ public class BlockPeek implements Iterable<DirectBuffer> {
       final int blockLength,
       final int newPartitionId,
       final int newPartitionOffset,
-      int fragmentCount) {
+      final int fragmentCount) {
     this.byteBuffer = byteBuffer;
     this.subscriberPosition = position;
     this.dataConsumed = dataConsumed;
@@ -141,7 +141,7 @@ public class BlockPeek implements Iterable<DirectBuffer> {
   protected class DataFrameIterator implements Iterator<DirectBuffer> {
 
     protected int iterationOffset;
-    protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+    protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
     public void reset() {
       iterationOffset = 0;

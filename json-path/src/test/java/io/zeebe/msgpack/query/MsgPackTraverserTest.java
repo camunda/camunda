@@ -26,8 +26,8 @@ import org.junit.Test;
 
 public class MsgPackTraverserTest {
 
-  protected MsgPackQueryExecutor valueVisitor = new MsgPackQueryExecutor();
-  protected MsgPackTraverser traverser = new MsgPackTraverser();
+  protected final MsgPackQueryExecutor valueVisitor = new MsgPackQueryExecutor();
+  protected final MsgPackTraverser traverser = new MsgPackTraverser();
 
   @Test
   public void testQuerySingleResult() {
@@ -248,15 +248,17 @@ public class MsgPackTraverserTest {
   }
 
   protected static class MapKeyFilter implements MsgPackFilter {
-    protected byte[] keyword;
+    protected final byte[] keyword;
 
-    public MapKeyFilter(String key) {
+    public MapKeyFilter(final String key) {
       keyword = key.getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
     public boolean matches(
-        MsgPackTraversalContext ctx, DirectBuffer filterContext, MsgPackToken value) {
+        final MsgPackTraversalContext ctx,
+        final DirectBuffer filterContext,
+        final MsgPackToken value) {
       if (ctx.isMap() && ctx.currentElement() % 2 == 0) // => map key has odd index
       {
         if (value.getType() == MsgPackType.STRING) {

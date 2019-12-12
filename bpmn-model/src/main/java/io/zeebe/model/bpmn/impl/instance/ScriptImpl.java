@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ScriptImpl extends BpmnModelElementInstanceImpl implements Script {
 
-  public ScriptImpl(ModelTypeInstanceContext instanceContext) {
+  public ScriptImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Script.class, BPMN_ELEMENT_SCRIPT)
@@ -44,7 +44,7 @@ public class ScriptImpl extends BpmnModelElementInstanceImpl implements Script {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Script>() {
                   @Override
-                  public Script newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Script newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ScriptImpl(instanceContext);
                   }
                 });

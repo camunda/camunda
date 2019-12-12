@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class MessagePath extends FormalExpressionImpl {
 
-  public MessagePath(ModelTypeInstanceContext instanceContext) {
+  public MessagePath(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(MessagePath.class, BPMN_ELEMENT_MESSAGE_PATH)
@@ -45,7 +45,7 @@ public class MessagePath extends FormalExpressionImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<MessagePath>() {
                   @Override
-                  public MessagePath newInstance(ModelTypeInstanceContext instanceContext) {
+                  public MessagePath newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new MessagePath(instanceContext);
                   }
                 });

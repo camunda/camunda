@@ -37,7 +37,7 @@ public class MessageStartEventSubscriptionState {
       subscriptionsOfWorkflowKeyColumnfamily;
 
   public MessageStartEventSubscriptionState(
-      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     messageName = new DbString();
     workflowKey = new DbLong();
     messageNameAndWorkflowKey = new DbCompositeKey<>(messageName, workflowKey);
@@ -72,7 +72,7 @@ public class MessageStartEventSubscriptionState {
     subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
   }
 
-  public void removeSubscriptionsOfWorkflow(long workflowKey) {
+  public void removeSubscriptionsOfWorkflow(final long workflowKey) {
     this.workflowKey.wrapLong(workflowKey);
 
     subscriptionsOfWorkflowKeyColumnfamily.whileEqualPrefix(
@@ -91,7 +91,7 @@ public class MessageStartEventSubscriptionState {
   }
 
   public void visitSubscriptionsByMessageName(
-      DirectBuffer messageName, MessageStartEventSubscriptionVisitor visitor) {
+      final DirectBuffer messageName, final MessageStartEventSubscriptionVisitor visitor) {
 
     this.messageName.wrapBuffer(messageName);
     subscriptionsColumnFamily.whileEqualPrefix(

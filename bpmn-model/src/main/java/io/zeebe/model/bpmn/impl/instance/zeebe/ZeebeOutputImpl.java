@@ -29,7 +29,7 @@ public class ZeebeOutputImpl extends BpmnModelElementInstanceImpl implements Zee
   private static Attribute<String> sourceAttribute;
   private static Attribute<String> targetAttribute;
 
-  public ZeebeOutputImpl(ModelTypeInstanceContext instanceContext) {
+  public ZeebeOutputImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
@@ -39,7 +39,7 @@ public class ZeebeOutputImpl extends BpmnModelElementInstanceImpl implements Zee
   }
 
   @Override
-  public void setSource(String source) {
+  public void setSource(final String source) {
     sourceAttribute.setValue(this, source);
   }
 
@@ -49,11 +49,11 @@ public class ZeebeOutputImpl extends BpmnModelElementInstanceImpl implements Zee
   }
 
   @Override
-  public void setTarget(String target) {
+  public void setTarget(final String target) {
     targetAttribute.setValue(this, target);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ZeebeOutput.class, ZeebeConstants.ELEMENT_OUTPUT)

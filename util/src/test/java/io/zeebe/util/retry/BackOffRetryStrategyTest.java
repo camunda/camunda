@@ -25,7 +25,8 @@ import org.junit.Test;
 
 public class BackOffRetryStrategyTest {
 
-  @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
   private BackOffRetryStrategy retryStrategy;
   private ActorControl actorControl;

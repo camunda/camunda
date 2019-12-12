@@ -19,7 +19,7 @@ public class ActorTimerQueue extends DeadlineTimerWheel {
   private final TimerHandler timerHandler =
       new TimerHandler() {
         @Override
-        public boolean onTimerExpiry(TimeUnit timeUnit, long now, long timerId) {
+        public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId) {
           final TimerSubscription timer = timerJobMap.remove(timerId);
 
           if (timer != null) {
@@ -30,15 +30,15 @@ public class ActorTimerQueue extends DeadlineTimerWheel {
         }
       };
 
-  public ActorTimerQueue(ActorClock clock) {
+  public ActorTimerQueue(final ActorClock clock) {
     this(clock, DEFAULT_TICKS_PER_WHEEL);
   }
 
-  public ActorTimerQueue(ActorClock clock, int ticksPerWheel) {
+  public ActorTimerQueue(final ActorClock clock, final int ticksPerWheel) {
     super(TimeUnit.MILLISECONDS, clock.getTimeMillis(), 1, ticksPerWheel);
   }
 
-  public void processExpiredTimers(ActorClock clock) {
+  public void processExpiredTimers(final ActorClock clock) {
     int timersProcessed = 0;
 
     do {
@@ -46,7 +46,7 @@ public class ActorTimerQueue extends DeadlineTimerWheel {
     } while (timersProcessed > 0);
   }
 
-  public void schedule(TimerSubscription timer, ActorClock now) {
+  public void schedule(final TimerSubscription timer, final ActorClock now) {
     final long deadline =
         now.getTimeMillis() + timeUnit().convert(timer.getDeadline(), timer.getTimeUnit());
 
@@ -56,7 +56,7 @@ public class ActorTimerQueue extends DeadlineTimerWheel {
     timerJobMap.put(timerId, timer);
   }
 
-  public void remove(TimerSubscription timer) {
+  public void remove(final TimerSubscription timer) {
     final long timerId = timer.getTimerId();
 
     timerJobMap.remove(timerId);

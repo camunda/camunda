@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.Transaction;
 /** @author Thorben Lindhauer */
 public class TransactionBuilder extends AbstractTransactionBuilder<TransactionBuilder> {
 
-  protected TransactionBuilder(BpmnModelInstance modelInstance, Transaction element) {
+  protected TransactionBuilder(final BpmnModelInstance modelInstance, final Transaction element) {
     super(modelInstance, element, TransactionBuilder.class);
   }
 }

@@ -12,7 +12,8 @@ public class MessageCorrelationKeyException extends RuntimeException {
 
   private final MessageCorrelationKeyContext context;
 
-  public MessageCorrelationKeyException(MessageCorrelationKeyContext context, String message) {
+  public MessageCorrelationKeyException(
+      final MessageCorrelationKeyContext context, final String message) {
     super(message);
     this.context = context;
   }

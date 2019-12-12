@@ -28,7 +28,7 @@ public class IntermediateCatchEventTransformer
   }
 
   @Override
-  public void transform(IntermediateCatchEvent element, TransformContext context) {
+  public void transform(final IntermediateCatchEvent element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableCatchEventElement executableElement =
         workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
@@ -40,7 +40,7 @@ public class IntermediateCatchEventTransformer
     }
   }
 
-  private boolean isAttachedToEventBasedGateway(ExecutableCatchEventElement element) {
+  private boolean isAttachedToEventBasedGateway(final ExecutableCatchEventElement element) {
     final List<ExecutableSequenceFlow> incoming = element.getIncoming();
     if (!incoming.isEmpty()) {
       final ExecutableFlowNode source = incoming.get(0).getSource();
@@ -50,7 +50,7 @@ public class IntermediateCatchEventTransformer
     return false;
   }
 
-  private void bindLifecycle(ExecutableCatchEventElement executableElement) {
+  private void bindLifecycle(final ExecutableCatchEventElement executableElement) {
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATING);

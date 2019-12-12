@@ -29,16 +29,16 @@ public class ServerTransportTest {
 
   public static final ByteValue SEND_BUFFER_SIZE = ByteValue.ofKilobytes(16);
 
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
   protected ClientTransport clientTransport;
   protected ServerTransport serverTransport;
 
-  protected RecordingMessageHandler serverHandler = new RecordingMessageHandler();
-  protected RecordingMessageHandler clientHandler = new RecordingMessageHandler();
+  protected final RecordingMessageHandler serverHandler = new RecordingMessageHandler();
+  protected final RecordingMessageHandler clientHandler = new RecordingMessageHandler();
 
   protected ClientInputMessageSubscription clientSubscription;
 

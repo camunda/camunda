@@ -26,7 +26,9 @@ public class AbstractComplexGatewayBuilder<B extends AbstractComplexGatewayBuild
     extends AbstractGatewayBuilder<B, ComplexGateway> {
 
   protected AbstractComplexGatewayBuilder(
-      BpmnModelInstance modelInstance, ComplexGateway element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final ComplexGateway element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -36,7 +38,7 @@ public class AbstractComplexGatewayBuilder<B extends AbstractComplexGatewayBuild
    * @param sequenceFlow the default sequence flow to set
    * @return the builder object
    */
-  public B defaultFlow(SequenceFlow sequenceFlow) {
+  public B defaultFlow(final SequenceFlow sequenceFlow) {
     element.setDefault(sequenceFlow);
     return myself;
   }
@@ -47,7 +49,7 @@ public class AbstractComplexGatewayBuilder<B extends AbstractComplexGatewayBuild
    * @param conditionExpression the activation condition expression to set
    * @return the builder object
    */
-  public B activationCondition(String conditionExpression) {
+  public B activationCondition(final String conditionExpression) {
     final ActivationCondition activationCondition = createInstance(ActivationCondition.class);
     activationCondition.setTextContent(conditionExpression);
     element.setActivationCondition(activationCondition);

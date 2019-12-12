@@ -21,7 +21,7 @@ public interface EventFilter {
    */
   boolean applies(LoggedEvent event);
 
-  default EventFilter and(EventFilter other) {
+  default EventFilter and(final EventFilter other) {
     Objects.requireNonNull(other);
     return (e) -> applies(e) && other.applies(e);
   }

@@ -56,7 +56,7 @@ public class ObjectMappingTest {
             });
   }
 
-  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldSerializePOJO() {

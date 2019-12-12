@@ -16,7 +16,7 @@ public class BufferReaderMatch<T extends BufferReader> {
   protected Object expectedValue;
   protected Matcher<?> expectedValueMatcher;
 
-  boolean matches(T reader) {
+  boolean matches(final T reader) {
     final Object actualValue = propertyExtractor.apply(reader);
     if (expectedValue != null) {
       return expectedValue.equals(actualValue);

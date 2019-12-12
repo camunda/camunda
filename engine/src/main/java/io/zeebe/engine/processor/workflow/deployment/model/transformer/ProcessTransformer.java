@@ -23,7 +23,7 @@ public class ProcessTransformer implements ModelElementTransformer<Process> {
   }
 
   @Override
-  public void transform(Process element, TransformContext context) {
+  public void transform(final Process element, final TransformContext context) {
 
     final String id = element.getId();
     final ExecutableWorkflow workflow = new ExecutableWorkflow(id);

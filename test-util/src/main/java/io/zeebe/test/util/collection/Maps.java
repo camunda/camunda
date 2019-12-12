@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class Maps {
   @SuppressWarnings("unchecked")
-  public static <K, V> Map<K, V> of(Map.Entry... entries) {
+  public static <K, V> Map<K, V> of(final Map.Entry... entries) {
     final Map<K, V> map = new HashMap<>();
 
     for (final Map.Entry entry : entries) {

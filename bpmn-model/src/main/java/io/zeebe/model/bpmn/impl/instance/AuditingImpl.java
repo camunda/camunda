@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class AuditingImpl extends BaseElementImpl implements Auditing {
 
-  public AuditingImpl(ModelTypeInstanceContext instanceContext) {
+  public AuditingImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Auditing.class, BPMN_ELEMENT_AUDITING)
@@ -46,7 +46,7 @@ public class AuditingImpl extends BaseElementImpl implements Auditing {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Auditing>() {
                   @Override
-                  public Auditing newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Auditing newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new AuditingImpl(instanceContext);
                   }
                 });

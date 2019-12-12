@@ -16,17 +16,18 @@ public class ErrorResponseBuilder<R> {
   protected final ErrorResponseWriter<R> commandResponseWriter;
 
   public ErrorResponseBuilder(
-      Consumer<MessageBuilder<R>> registrationFunction, MsgPackHelper msgPackConverter) {
+      final Consumer<MessageBuilder<R>> registrationFunction,
+      final MsgPackHelper msgPackConverter) {
     this.registrationFunction = registrationFunction;
     this.commandResponseWriter = new ErrorResponseWriter<>(msgPackConverter);
   }
 
-  public ErrorResponseBuilder<R> errorCode(ErrorCode errorCode) {
+  public ErrorResponseBuilder<R> errorCode(final ErrorCode errorCode) {
     this.commandResponseWriter.setErrorCode(errorCode);
     return this;
   }
 
-  public ErrorResponseBuilder<R> errorData(String errorData) {
+  public ErrorResponseBuilder<R> errorData(final String errorData) {
     this.commandResponseWriter.setErrorData(errorData);
     return this;
   }

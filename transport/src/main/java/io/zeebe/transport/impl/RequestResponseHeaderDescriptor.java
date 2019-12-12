@@ -25,9 +25,9 @@ public class RequestResponseHeaderDescriptor {
     HEADER_LENGTH = offset;
   }
 
-  protected UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+  protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
-  public static int framedLength(int messageLength) {
+  public static int framedLength(final int messageLength) {
     return HEADER_LENGTH + messageLength;
   }
 
@@ -35,16 +35,16 @@ public class RequestResponseHeaderDescriptor {
     return HEADER_LENGTH;
   }
 
-  public static int requestIdOffset(int offset) {
+  public static int requestIdOffset(final int offset) {
     return offset + REQUEST_ID_OFFSET;
   }
 
-  public RequestResponseHeaderDescriptor wrap(DirectBuffer buffer, int offset) {
+  public RequestResponseHeaderDescriptor wrap(final DirectBuffer buffer, final int offset) {
     this.buffer.wrap(buffer, offset, HEADER_LENGTH);
     return this;
   }
 
-  public RequestResponseHeaderDescriptor requestId(long requestId) {
+  public RequestResponseHeaderDescriptor requestId(final long requestId) {
     buffer.putLong(REQUEST_ID_OFFSET, requestId);
     return this;
   }

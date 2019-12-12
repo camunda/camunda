@@ -21,7 +21,7 @@ public class HandleVariablesAsPojo {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
-    try (ZeebeClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
       final Order order = new Order();
       order.setOrderId(31243);
 
@@ -41,7 +41,7 @@ public class HandleVariablesAsPojo {
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (Scanner scanner = new Scanner(System.in)) {
+    try (final Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

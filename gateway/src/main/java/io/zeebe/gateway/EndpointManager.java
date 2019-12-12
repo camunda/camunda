@@ -66,13 +66,14 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   private final LongPollingActivateJobsHandler activateJobsHandler;
 
   public EndpointManager(
-      final BrokerClient brokerClient, LongPollingActivateJobsHandler longPollingHandler) {
+      final BrokerClient brokerClient, final LongPollingActivateJobsHandler longPollingHandler) {
     this.brokerClient = brokerClient;
     this.topologyManager = brokerClient.getTopologyManager();
     this.activateJobsHandler = longPollingHandler;
   }
 
-  private void addBrokerInfo(Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
+  private void addBrokerInfo(
+      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
     final String[] addressParts = topology.getBrokerAddress(brokerId).split(":");
 
     brokerInfo
@@ -82,7 +83,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   private void addPartitionInfoToBrokerInfo(
-      Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
+      final Builder brokerInfo, final Integer brokerId, final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -108,14 +109,15 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void activateJobs(
-      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ActivateJobsRequest request,
+      final StreamObserver<ActivateJobsResponse> responseObserver) {
     activateJobsHandler.activateJobs(request, responseObserver);
   }
 
   @Override
   public void cancelWorkflowInstance(
-      CancelWorkflowInstanceRequest request,
-      StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
+      final CancelWorkflowInstanceRequest request,
+      final StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toCancelWorkflowInstanceRequest,
@@ -125,7 +127,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void completeJob(
-      CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
+      final CompleteJobRequest request,
+      final StreamObserver<CompleteJobResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toCompleteJobRequest,
@@ -135,8 +138,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void createWorkflowInstance(
-      CreateWorkflowInstanceRequest request,
-      StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+      final CreateWorkflowInstanceRequest request,
+      final StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toCreateWorkflowInstanceRequest,
@@ -146,8 +149,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void createWorkflowInstanceWithResult(
-      CreateWorkflowInstanceWithResultRequest request,
-      StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
+      final CreateWorkflowInstanceWithResultRequest request,
+      final StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
     if (request.getRequestTimeout() > 0) {
       sendRequest(
           request,
@@ -177,7 +180,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   @Override
-  public void failJob(FailJobRequest request, StreamObserver<FailJobResponse> responseObserver) {
+  public void failJob(
+      final FailJobRequest request, final StreamObserver<FailJobResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toFailJobRequest,
@@ -187,7 +191,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void publishMessage(
-      PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
+      final PublishMessageRequest request,
+      final StreamObserver<PublishMessageResponse> responseObserver) {
 
     sendRequest(
         request,
@@ -198,7 +203,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void resolveIncident(
-      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
+      final ResolveIncidentRequest request,
+      final StreamObserver<ResolveIncidentResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toResolveIncidentRequest,
@@ -208,7 +214,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void setVariables(
-      SetVariablesRequest request, StreamObserver<SetVariablesResponse> responseObserver) {
+      final SetVariablesRequest request,
+      final StreamObserver<SetVariablesResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toSetVariablesRequest,
@@ -255,7 +262,8 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void updateJobRetries(
-      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
+      final UpdateJobRetriesRequest request,
+      final StreamObserver<UpdateJobRetriesResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toUpdateJobRetriesRequest,
@@ -286,7 +294,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
       final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
       final StreamObserver<GrpcResponseT> streamObserver,
-      Duration timeout) {
+      final Duration timeout) {
 
     final BrokerRequest<BrokerResponseT> brokerRequest =
         mapRequest(grpcRequest, requestMapper, streamObserver);
@@ -302,10 +310,10 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(
-      BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
-      StreamObserver<GrpcResponseT> streamObserver,
-      long key,
-      BrokerResponseT response) {
+      final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
+      final StreamObserver<GrpcResponseT> streamObserver,
+      final long key,
+      final BrokerResponseT response) {
     final GrpcResponseT grpcResponse = responseMapper.apply(key, response);
     streamObserver.onNext(grpcResponse);
     streamObserver.onCompleted();
@@ -318,19 +326,19 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final BrokerRequest<BrokerResponseT> brokerRequest;
     try {
       brokerRequest = requestMapper.apply(grpcRequest);
-    } catch (MsgpackPropertyException e) {
+    } catch (final MsgpackPropertyException e) {
       streamObserver.onError(
           convertThrowable(
               new GrpcStatusExceptionImpl(e.getMessage(), Status.INVALID_ARGUMENT, e)));
       return null;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       streamObserver.onError(convertThrowable(e));
       return null;
     }
     return brokerRequest;
   }
 
-  public static StatusRuntimeException convertThrowable(Throwable cause) {
+  public static StatusRuntimeException convertThrowable(final Throwable cause) {
     Status status = Status.INTERNAL;
 
     if (cause instanceof ExecutionException) {
@@ -361,7 +369,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     return convertedThrowable;
   }
 
-  public static Status mapBrokerErrorToStatus(BrokerError error) {
+  public static Status mapBrokerErrorToStatus(final BrokerError error) {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
@@ -375,7 +383,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
   }
 
-  public static Status mapRejectionToStatus(BrokerRejection rejection) {
+  public static Status mapRejectionToStatus(final BrokerRejection rejection) {
     final String description =
         String.format(
             "Command rejected with code '%s': %s", rejection.getIntent(), rejection.getReason());

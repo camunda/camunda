@@ -29,7 +29,7 @@ public class ExclusiveGatewayValidator implements ModelElementValidator<Exclusiv
 
   @Override
   public void validate(
-      ExclusiveGateway element, ValidationResultCollector validationResultCollector) {
+      final ExclusiveGateway element, final ValidationResultCollector validationResultCollector) {
 
     final SequenceFlow defaultFlow = element.getDefault();
 

@@ -19,37 +19,37 @@ public class StatusDescriptionMatcher extends TypeSafeMatcher<ClientStatusExcept
 
   private final Matcher<String> expectedDescriptionMatcher;
 
-  public StatusDescriptionMatcher(Matcher<String> expectedDescriptionMatcher) {
+  public StatusDescriptionMatcher(final Matcher<String> expectedDescriptionMatcher) {
     this.expectedDescriptionMatcher = expectedDescriptionMatcher;
   }
 
-  public static StatusDescriptionMatcher descriptionIs(String description) {
+  public static StatusDescriptionMatcher descriptionIs(final String description) {
     return new StatusDescriptionMatcher(equalTo(description));
   }
 
-  public static StatusDescriptionMatcher descriptionContains(String substring) {
+  public static StatusDescriptionMatcher descriptionContains(final String substring) {
     return new StatusDescriptionMatcher(containsString(substring));
   }
 
   public static StatusDescriptionMatcher descriptionMatches(
-      Matcher<String> expectedDescriptionMatcher) {
+      final Matcher<String> expectedDescriptionMatcher) {
     return new StatusDescriptionMatcher(expectedDescriptionMatcher);
   }
 
   @Override
-  protected boolean matchesSafely(ClientStatusException item) {
+  protected boolean matchesSafely(final ClientStatusException item) {
     return expectedDescriptionMatcher.matches(item.getStatus().getDescription());
   }
 
   @Override
   protected void describeMismatchSafely(
-      ClientStatusException item, Description mismatchDescription) {
+      final ClientStatusException item, final Description mismatchDescription) {
     expectedDescriptionMatcher.describeMismatch(
         item.getStatus().getDescription(), mismatchDescription);
   }
 
   @Override
-  public void describeTo(Description description) {
+  public void describeTo(final Description description) {
     description.appendText("status description to be ");
     expectedDescriptionMatcher.describeTo(description);
   }

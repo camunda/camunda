@@ -13,7 +13,7 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
 
   private ExecutableMessage message;
 
-  public ExecutableReceiveTask(String id) {
+  public ExecutableReceiveTask(final String id) {
     super(id);
 
     getEvents().add(this);
@@ -40,7 +40,7 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
     return null;
   }
 
-  public void setMessage(ExecutableMessage message) {
+  public void setMessage(final ExecutableMessage message) {
     this.message = message;
   }
 }

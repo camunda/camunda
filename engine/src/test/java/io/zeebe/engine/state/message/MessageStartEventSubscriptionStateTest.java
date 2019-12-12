@@ -23,7 +23,7 @@ import org.junit.Test;
 
 public class MessageStartEventSubscriptionStateTest {
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MessageStartEventSubscriptionState state;
 
@@ -150,7 +150,7 @@ public class MessageStartEventSubscriptionStateTest {
   }
 
   private MessageStartEventSubscriptionRecord createSubscription(
-      String messageName, String startEventId, long key) {
+      final String messageName, final String startEventId, final long key) {
     return new MessageStartEventSubscriptionRecord()
         .setStartEventId(wrapString(startEventId))
         .setMessageName(wrapString(messageName))

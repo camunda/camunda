@@ -43,7 +43,8 @@ public class MsgPackWriterTest {
   @Parameter(2)
   public CheckedConsumer<ByteArrayBuilder> expectedValueWriter;
 
-  protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+  protected final MutableDirectBuffer actualValueBuffer =
+      new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
   @Parameters(name = "{0}")
   public static Iterable<Object[]> data() {
@@ -190,23 +191,24 @@ public class MsgPackWriterTest {
   }
 
   // helping the compiler with recognizing lamdas
-  protected static CheckedConsumer<ByteArrayBuilder> expect(CheckedConsumer<ByteArrayBuilder> arg) {
+  protected static CheckedConsumer<ByteArrayBuilder> expect(
+      final CheckedConsumer<ByteArrayBuilder> arg) {
     return arg;
   }
 
-  protected static CheckedConsumer<MsgPackWriter> actual(CheckedConsumer<MsgPackWriter> arg) {
+  protected static CheckedConsumer<MsgPackWriter> actual(final CheckedConsumer<MsgPackWriter> arg) {
     return arg;
   }
 
-  protected static long longOfLength(int bits) {
+  protected static long longOfLength(final int bits) {
     return 1L << (bits - 1);
   }
 
-  protected static DirectBuffer toBuffer(String value) {
+  protected static DirectBuffer toBuffer(final String value) {
     return new UnsafeBuffer(value.getBytes(StandardCharsets.UTF_8));
   }
 
-  protected static byte[] utf8(String value) {
+  protected static byte[] utf8(final String value) {
     return value.getBytes(StandardCharsets.UTF_8);
   }
 }

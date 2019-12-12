@@ -39,22 +39,22 @@ public class ServerSocketBinding {
       media = ServerSocketChannel.open();
       media.bind(bindAddress);
       media.configureBlocking(false);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException("Failed to bind to address: " + bindAddress, e);
     }
   }
 
-  public void registerSelector(Selector selector, int op) {
+  public void registerSelector(final Selector selector, final int op) {
     try {
       final SelectionKey key = media.register(selector, op);
       key.attach(this);
       registeredSelectors.add(selector);
-    } catch (ClosedChannelException e) {
+    } catch (final ClosedChannelException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public void removeSelector(Selector selector) {
+  public void removeSelector(final Selector selector) {
     final SelectionKey key = media.keyFor(selector);
     if (key != null) {
       key.cancel();
@@ -62,7 +62,7 @@ public class ServerSocketBinding {
       try {
         // required to reuse socket on windows, see https://github.com/kaazing/nuklei/issues/20
         selector.select(1);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         LOG.debug("Failed to remove selector {}", selector, e);
       }
     }
@@ -74,7 +74,7 @@ public class ServerSocketBinding {
       socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, true);
       socketChannel.configureBlocking(false);
       return socketChannel;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -84,7 +84,7 @@ public class ServerSocketBinding {
       synchronized (registeredSelectors) {
         registeredSelectors.forEach(s -> removeSelector(s));
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.debug("Failed to close selectors", e);
     }
     releaseMedia();
@@ -93,7 +93,7 @@ public class ServerSocketBinding {
   public void releaseMedia() {
     try {
       media.close();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOG.debug("Failed to close media", e);
     }
   }

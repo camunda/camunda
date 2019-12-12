@@ -34,11 +34,11 @@ public abstract class EdgeImpl extends DiagramElementImpl implements Edge {
 
   protected static ChildElementCollection<Waypoint> waypointCollection;
 
-  public EdgeImpl(ModelTypeInstanceContext instanceContext) {
+  public EdgeImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Edge.class, DI_ELEMENT_EDGE)

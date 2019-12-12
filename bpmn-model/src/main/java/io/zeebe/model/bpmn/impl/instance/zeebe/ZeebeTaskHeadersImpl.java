@@ -30,7 +30,7 @@ public class ZeebeTaskHeadersImpl extends BpmnModelElementInstanceImpl implement
 
   protected static ChildElementCollection<ZeebeHeader> headersCollection;
 
-  public ZeebeTaskHeadersImpl(ModelTypeInstanceContext instanceContext) {
+  public ZeebeTaskHeadersImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
@@ -39,7 +39,7 @@ public class ZeebeTaskHeadersImpl extends BpmnModelElementInstanceImpl implement
     return headersCollection.get(this);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ZeebeTaskHeaders.class, ZeebeConstants.ELEMENT_TASK_HEADERS)

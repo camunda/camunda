@@ -28,7 +28,7 @@ public class KeyState implements KeyGenerator {
    * @param partitionId the partition to determine the key start value
    * @param dbContext
    */
-  public KeyState(int partitionId, ZeebeDb zeebeDb, DbContext dbContext) {
+  public KeyState(final int partitionId, final ZeebeDb zeebeDb, final DbContext dbContext) {
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
     nextValueManager =
         new NextValueManager(keyStartValue, zeebeDb, dbContext, ZbColumnFamilies.KEY);

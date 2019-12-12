@@ -33,7 +33,7 @@ public class ModelElementTypeAssert
 
   private final String typeName;
 
-  protected ModelElementTypeAssert(ModelElementType actual) {
+  protected ModelElementTypeAssert(final ModelElementType actual) {
     super(actual, ModelElementTypeAssert.class);
     typeName = actual.getTypeName();
   }
@@ -46,7 +46,7 @@ public class ModelElementTypeAssert
     return actualAttributeNames;
   }
 
-  private Collection<String> getTypeNames(Collection<ModelElementType> elementTypes) {
+  private Collection<String> getTypeNames(final Collection<ModelElementType> elementTypes) {
     final List<String> typeNames = new ArrayList<>();
     QName qName;
     for (final ModelElementType elementType : elementTypes) {
@@ -76,7 +76,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert extendsType(ModelElementType baseType) {
+  public ModelElementTypeAssert extendsType(final ModelElementType baseType) {
     isNotNull();
 
     final ModelElementType actualBaseType = actual.getBaseType();
@@ -116,7 +116,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert hasAttributes(String... attributeNames) {
+  public ModelElementTypeAssert hasAttributes(final String... attributeNames) {
     isNotNull();
 
     final List<String> actualAttributeNames = getActualAttributeNames();
@@ -156,7 +156,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert hasChildElements(ModelElementType... types) {
+  public ModelElementTypeAssert hasChildElements(final ModelElementType... types) {
     isNotNull();
 
     final List<ModelElementType> childElementTypes = Arrays.asList(types);
@@ -188,7 +188,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert hasTypeName(String typeName) {
+  public ModelElementTypeAssert hasTypeName(final String typeName) {
     isNotNull();
 
     if (!typeName.equals(this.typeName)) {
@@ -199,7 +199,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert hasTypeNamespace(String typeNamespace) {
+  public ModelElementTypeAssert hasTypeNamespace(final String typeNamespace) {
     isNotNull();
 
     final String actualTypeNamespace = actual.getTypeNamespace();
@@ -214,7 +214,7 @@ public class ModelElementTypeAssert
   }
 
   public ModelElementTypeAssert hasInstanceType(
-      Class<? extends ModelElementInstance> instanceType) {
+      final Class<? extends ModelElementInstance> instanceType) {
     isNotNull();
 
     final Class<? extends ModelElementInstance> actualInstanceType = actual.getInstanceType();
@@ -240,7 +240,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert isExtendedBy(ModelElementType... types) {
+  public ModelElementTypeAssert isExtendedBy(final ModelElementType... types) {
     isNotNull();
 
     final List<ModelElementType> extendingTypes = Arrays.asList(types);
@@ -271,7 +271,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert isNotExtendedBy(ModelElementType... types) {
+  public ModelElementTypeAssert isNotExtendedBy(final ModelElementType... types) {
     isNotNull();
 
     final List<ModelElementType> notExtendingTypes = Arrays.asList(types);
@@ -296,7 +296,7 @@ public class ModelElementTypeAssert
     return this;
   }
 
-  public ModelElementTypeAssert isPartOfModel(Model model) {
+  public ModelElementTypeAssert isPartOfModel(final Model model) {
     isNotNull();
 
     final Model actualModel = actual.getModel();

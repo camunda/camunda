@@ -27,16 +27,16 @@ public class BufferingServerOutput implements ServerOutput {
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   protected final ErrorResponseDecoder errorDecoder = new ErrorResponseDecoder();
 
-  protected List<DirectBuffer> sentResponses = new CopyOnWriteArrayList<>();
+  protected final List<DirectBuffer> sentResponses = new CopyOnWriteArrayList<>();
 
   @Override
-  public boolean sendMessage(int remoteStreamId, BufferWriter writer) {
+  public boolean sendMessage(final int remoteStreamId, final BufferWriter writer) {
     // ignore; not yet implemented
     return true;
   }
 
   @Override
-  public boolean sendResponse(ServerResponse response) {
+  public boolean sendResponse(final ServerResponse response) {
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[response.getLength()]);
     response.write(buf, 0);
     sentResponses.add(buf);
@@ -47,7 +47,7 @@ public class BufferingServerOutput implements ServerOutput {
     return sentResponses;
   }
 
-  public ErrorResponseDecoder getAsErrorResponse(int index) {
+  public ErrorResponseDecoder getAsErrorResponse(final int index) {
     return getAs(index, errorDecoder);
   }
 
@@ -63,7 +63,7 @@ public class BufferingServerOutput implements ServerOutput {
     return headerDecoder.templateId();
   }
 
-  protected <T extends MessageDecoderFlyweight> T getAs(int index, T decoder) {
+  protected <T extends MessageDecoderFlyweight> T getAs(final int index, final T decoder) {
     final DirectBuffer sentResponse = sentResponses.get(index);
     headerDecoder.wrap(sentResponse, MESSAGE_START_OFFSET);
     decoder.wrap(

@@ -30,11 +30,11 @@ public class IncidentMetrics {
 
   private final String partitionIdLabel;
 
-  public IncidentMetrics(int partitionId) {
+  public IncidentMetrics(final int partitionId) {
     this.partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void incidentEvent(String action) {
+  private void incidentEvent(final String action) {
     INCIDENT_EVENTS.labels(action, partitionIdLabel).inc();
   }
 

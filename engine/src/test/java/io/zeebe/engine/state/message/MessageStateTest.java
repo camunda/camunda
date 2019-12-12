@@ -22,7 +22,7 @@ import org.junit.Test;
 
 public class MessageStateTest {
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MessageState messageState;
   private ZeebeState zeebeState;

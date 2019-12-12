@@ -21,7 +21,8 @@ public class BrokerCancelWorkflowInstanceRequest
     super(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL);
   }
 
-  public BrokerCancelWorkflowInstanceRequest setWorkflowInstanceKey(long workflowInstanceKey) {
+  public BrokerCancelWorkflowInstanceRequest setWorkflowInstanceKey(
+      final long workflowInstanceKey) {
     request.setKey(workflowInstanceKey);
     return this;
   }
@@ -32,7 +33,7 @@ public class BrokerCancelWorkflowInstanceRequest
   }
 
   @Override
-  protected WorkflowInstanceRecord toResponseDto(DirectBuffer buffer) {
+  protected WorkflowInstanceRecord toResponseDto(final DirectBuffer buffer) {
     final WorkflowInstanceRecord responseDto = new WorkflowInstanceRecord();
     responseDto.wrap(buffer);
     return responseDto;

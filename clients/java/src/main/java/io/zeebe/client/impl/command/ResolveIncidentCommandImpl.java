@@ -36,10 +36,10 @@ public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
   private Duration requestTimeout;
 
   public ResolveIncidentCommandImpl(
-      GatewayStub asyncStub,
-      long incidentKey,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final long incidentKey,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
     this.requestTimeout = requestTimeout;
@@ -47,7 +47,7 @@ public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -65,7 +65,8 @@ public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
   }
 
   private void send(
-      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> streamObserver) {
+      final ResolveIncidentRequest request,
+      final StreamObserver<ResolveIncidentResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .resolveIncident(request, streamObserver);

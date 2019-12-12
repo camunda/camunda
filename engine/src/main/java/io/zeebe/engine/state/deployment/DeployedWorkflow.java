@@ -14,7 +14,8 @@ public class DeployedWorkflow {
   private final ExecutableWorkflow workflow;
   private final PersistedWorkflow persistedWorkflow;
 
-  public DeployedWorkflow(final ExecutableWorkflow workflow, PersistedWorkflow persistedWorkflow) {
+  public DeployedWorkflow(
+      final ExecutableWorkflow workflow, final PersistedWorkflow persistedWorkflow) {
     this.workflow = workflow;
     this.persistedWorkflow = persistedWorkflow;
   }

@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ChildLaneSet extends LaneSetImpl {
 
-  public ChildLaneSet(ModelTypeInstanceContext instanceContext) {
+  public ChildLaneSet(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ChildLaneSet.class, BPMN_ELEMENT_CHILD_LANE_SET)
@@ -45,7 +45,7 @@ public class ChildLaneSet extends LaneSetImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ChildLaneSet>() {
                   @Override
-                  public ChildLaneSet newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ChildLaneSet newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ChildLaneSet(instanceContext);
                   }
                 });

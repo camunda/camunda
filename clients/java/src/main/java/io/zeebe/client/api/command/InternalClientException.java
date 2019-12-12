@@ -18,11 +18,11 @@ package io.zeebe.client.api.command;
 /** Exception which is thrown on internal errors inside the client itself. */
 public class InternalClientException extends ClientException {
 
-  public InternalClientException(String message) {
+  public InternalClientException(final String message) {
     super(message);
   }
 
-  public InternalClientException(String message, Throwable cause) {
+  public InternalClientException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

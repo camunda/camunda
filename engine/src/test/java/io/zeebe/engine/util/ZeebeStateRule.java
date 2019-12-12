@@ -27,7 +27,7 @@ public class ZeebeStateRule extends ExternalResource {
     this(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public ZeebeStateRule(int partition) {
+  public ZeebeStateRule(final int partition) {
     this.partition = partition;
   }
 
@@ -43,7 +43,7 @@ public class ZeebeStateRule extends ExternalResource {
   protected void after() {
     try {
       db.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
     tempFolder.delete();
@@ -63,7 +63,7 @@ public class ZeebeStateRule extends ExternalResource {
           DefaultZeebeDbFactory.DEFAULT_DB_FACTORY.createDb(tempFolder.newFolder());
 
       return db;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }

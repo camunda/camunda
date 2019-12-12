@@ -26,12 +26,12 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
     this(null);
   }
 
-  public ServiceTaskElementActivatedHandler(WorkflowInstanceIntent nextState) {
+  public ServiceTaskElementActivatedHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       final WorkflowInstanceRecord value = context.getValue();
       final ExecutableServiceTask serviceTask = context.getElement();
@@ -46,7 +46,9 @@ public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
   }
 
   private void populateJobFromTask(
-      BpmnStepContext<T> context, WorkflowInstanceRecord value, ExecutableServiceTask serviceTask) {
+      final BpmnStepContext<T> context,
+      final WorkflowInstanceRecord value,
+      final ExecutableServiceTask serviceTask) {
     final DirectBuffer headers = serviceTask.getEncodedHeaders();
 
     jobCommand.reset();

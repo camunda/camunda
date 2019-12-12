@@ -72,7 +72,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   private WorkflowState workflowState;
   private ActorControl actor;
 
-  public WorkflowInstanceStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
+  public WorkflowInstanceStreamProcessorRule(final StreamProcessorRule streamProcessorRule) {
     environmentRule = streamProcessorRule;
   }
 
@@ -114,7 +114,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
         });
   }
 
-  public void deploy(final BpmnModelInstance modelInstance, int deploymentKey, int version) {
+  public void deploy(
+      final BpmnModelInstance modelInstance, final int deploymentKey, final int version) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);
     final DirectBuffer xmlBuffer = new UnsafeBuffer(outStream.toByteArray());
@@ -147,7 +148,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   public Record<WorkflowInstanceRecord> createAndReceiveWorkflowInstance(
-      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
+      final Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
     final Record<WorkflowInstanceCreationRecord> createdRecord =
         createWorkflowInstance(transformer);
 
@@ -158,7 +159,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   public Record<WorkflowInstanceCreationRecord> createWorkflowInstance(
-      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
+      final Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
     final long position =
         environmentRule.writeCommand(
             WorkflowInstanceCreationIntent.CREATE,
@@ -180,13 +181,13 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   public Record<WorkflowInstanceRecord> awaitAndGetFirstWorkflowInstanceRecord(
-      Predicate<Record<WorkflowInstanceRecord>> matcher) {
+      final Predicate<Record<WorkflowInstanceRecord>> matcher) {
     return awaitAndGetFirstRecord(
         ValueType.WORKFLOW_INSTANCE, matcher, WorkflowInstanceRecord.class);
   }
 
   public <T extends UnifiedRecordValue> Record<T> awaitAndGetFirstRecord(
-      ValueType valueType, Predicate<Record<T>> matcher, Class<T> valueClass) {
+      final ValueType valueType, final Predicate<Record<T>> matcher, final Class<T> valueClass) {
     return TestUtil.doRepeatedly(
             () ->
                 environmentRule
@@ -203,7 +204,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   public <T extends UnifiedRecordValue> Record<T> awaitAndGetFirstRecord(
-      ValueType valueType, Function<Record<T>, Boolean> matcher, T value) {
+      final ValueType valueType, final Function<Record<T>, Boolean> matcher, final T value) {
     return TestUtil.doRepeatedly(
             () ->
                 environmentRule
@@ -290,12 +291,12 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   @Override
-  public void onOpen(ReadonlyProcessingContext processingContext) {
+  public void onOpen(final ReadonlyProcessingContext processingContext) {
     actor = processingContext.getActor();
   }
 
   @Override
-  public void onRecovered(ReadonlyProcessingContext processingContext) {
+  public void onRecovered(final ReadonlyProcessingContext processingContext) {
     // recovered
   }
 

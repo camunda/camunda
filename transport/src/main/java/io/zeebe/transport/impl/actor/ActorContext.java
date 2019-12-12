@@ -16,11 +16,11 @@ public abstract class ActorContext {
   private Sender sender;
   private Receiver receiver;
 
-  public void removeListener(TransportListener listener) {
+  public void removeListener(final TransportListener listener) {
     conductor.removeListener(listener);
   }
 
-  public ActorFuture<Void> registerListener(TransportListener channelListener) {
+  public ActorFuture<Void> registerListener(final TransportListener channelListener) {
     return conductor.registerListener(channelListener);
   }
 
@@ -44,7 +44,7 @@ public abstract class ActorContext {
     return conductor;
   }
 
-  public void setConductor(Conductor clientConductor) {
+  public void setConductor(final Conductor clientConductor) {
     this.conductor = clientConductor;
   }
 
@@ -60,7 +60,7 @@ public abstract class ActorContext {
     return receiver;
   }
 
-  public void setReceiver(Receiver receiver) {
+  public void setReceiver(final Receiver receiver) {
     this.receiver = receiver;
   }
 
@@ -68,7 +68,7 @@ public abstract class ActorContext {
     return sender;
   }
 
-  public void setSender(Sender sender) {
+  public void setSender(final Sender sender) {
     this.sender = sender;
   }
 

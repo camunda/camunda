@@ -16,7 +16,7 @@ public class BufferMatcher implements ArgumentMatcher<DirectBuffer> {
   protected int position = 0;
 
   @Override
-  public boolean matches(DirectBuffer argument) {
+  public boolean matches(final DirectBuffer argument) {
     if (argument == null) {
       return false;
     }
@@ -29,7 +29,7 @@ public class BufferMatcher implements ArgumentMatcher<DirectBuffer> {
     return Arrays.equals(expectedBytes, actualBytes);
   }
 
-  public static BufferMatcher hasBytes(byte[] bytes) {
+  public static BufferMatcher hasBytes(final byte[] bytes) {
     final BufferMatcher matcher = new BufferMatcher();
 
     matcher.expectedBytes = bytes;
@@ -37,7 +37,7 @@ public class BufferMatcher implements ArgumentMatcher<DirectBuffer> {
     return matcher;
   }
 
-  public BufferMatcher atPosition(int position) {
+  public BufferMatcher atPosition(final int position) {
     this.position = position;
     return this;
   }

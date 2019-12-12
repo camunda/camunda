@@ -31,7 +31,7 @@ public class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   // Copies over the previous event
-  public EventTrigger(EventTrigger other) {
+  public EventTrigger(final EventTrigger other) {
     this();
 
     final int length = other.getLength();
@@ -44,7 +44,7 @@ public class EventTrigger extends UnpackedObject implements DbValue {
     return elementIdProp.getValue();
   }
 
-  public EventTrigger setElementId(DirectBuffer elementId) {
+  public EventTrigger setElementId(final DirectBuffer elementId) {
     this.elementIdProp.setValue(elementId);
     return this;
   }
@@ -53,7 +53,7 @@ public class EventTrigger extends UnpackedObject implements DbValue {
     return variablesProp.getValue();
   }
 
-  public EventTrigger setVariables(DirectBuffer variables) {
+  public EventTrigger setVariables(final DirectBuffer variables) {
     this.variablesProp.setValue(variables);
     return this;
   }
@@ -62,7 +62,7 @@ public class EventTrigger extends UnpackedObject implements DbValue {
     return eventKeyProp.getValue();
   }
 
-  public EventTrigger setEventKey(long eventKey) {
+  public EventTrigger setEventKey(final long eventKey) {
     this.eventKeyProp.setValue(eventKey);
     return this;
   }
@@ -73,7 +73,7 @@ public class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

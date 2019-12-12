@@ -31,7 +31,7 @@ public class CatchEventTransformer implements ModelElementTransformer<CatchEvent
   }
 
   @Override
-  public void transform(CatchEvent element, TransformContext context) {
+  public void transform(final CatchEvent element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableCatchEventElement executableElement =
         workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
@@ -45,7 +45,9 @@ public class CatchEventTransformer implements ModelElementTransformer<CatchEvent
   }
 
   private void transformEventDefinition(
-      CatchEvent element, TransformContext context, ExecutableCatchEventElement executableElement) {
+      final CatchEvent element,
+      final TransformContext context,
+      final ExecutableCatchEventElement executableElement) {
     final EventDefinition eventDefinition = element.getEventDefinitions().iterator().next();
     if (eventDefinition instanceof MessageEventDefinition) {
       transformMessageEventDefinition(
@@ -56,7 +58,7 @@ public class CatchEventTransformer implements ModelElementTransformer<CatchEvent
   }
 
   private void transformMessageEventDefinition(
-      TransformContext context,
+      final TransformContext context,
       final ExecutableCatchEventElement executableElement,
       final MessageEventDefinition messageEventDefinition) {
 

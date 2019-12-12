@@ -38,11 +38,11 @@ public class AssignmentImpl extends BaseElementImpl implements Assignment {
   protected static ChildElement<From> fromChild;
   protected static ChildElement<To> toChild;
 
-  public AssignmentImpl(ModelTypeInstanceContext instanceContext) {
+  public AssignmentImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Assignment.class, BPMN_ELEMENT_ASSIGNMENT)
@@ -51,7 +51,7 @@ public class AssignmentImpl extends BaseElementImpl implements Assignment {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Assignment>() {
                   @Override
-                  public Assignment newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Assignment newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new AssignmentImpl(instanceContext);
                   }
                 });
@@ -71,7 +71,7 @@ public class AssignmentImpl extends BaseElementImpl implements Assignment {
   }
 
   @Override
-  public void setFrom(From from) {
+  public void setFrom(final From from) {
     fromChild.setChild(this, from);
   }
 
@@ -81,7 +81,7 @@ public class AssignmentImpl extends BaseElementImpl implements Assignment {
   }
 
   @Override
-  public void setTo(To to) {
+  public void setTo(final To to) {
     toChild.setChild(this, to);
   }
 }

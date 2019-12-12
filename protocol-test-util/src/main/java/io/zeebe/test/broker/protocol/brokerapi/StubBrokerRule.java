@@ -33,7 +33,7 @@ public class StubBrokerRule extends ExternalResource {
   protected ServerTransport transport;
   protected StubResponseChannelHandler channelHandler;
   protected MsgPackHelper msgPackHelper;
-  protected AtomicReference<Topology> currentTopology = new AtomicReference<>();
+  protected final AtomicReference<Topology> currentTopology = new AtomicReference<>();
   private final ControlledActorClock clock = new ControlledActorClock();
   private final int partitionCount;
 

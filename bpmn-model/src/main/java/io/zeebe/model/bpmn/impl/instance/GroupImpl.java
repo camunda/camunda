@@ -34,11 +34,11 @@ public class GroupImpl extends ArtifactImpl implements Group {
 
   protected static AttributeReference<CategoryValue> categoryValueRefAttribute;
 
-  public GroupImpl(ModelTypeInstanceContext instanceContext) {
+  public GroupImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Group.class, BPMN_ELEMENT_GROUP)
@@ -47,7 +47,7 @@ public class GroupImpl extends ArtifactImpl implements Group {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Group>() {
                   @Override
-                  public Group newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Group newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new GroupImpl(instanceContext);
                   }
                 });
@@ -67,7 +67,7 @@ public class GroupImpl extends ArtifactImpl implements Group {
   }
 
   @Override
-  public void setCategory(CategoryValue categoryValue) {
+  public void setCategory(final CategoryValue categoryValue) {
     categoryValueRefAttribute.setReferenceTargetElement(this, categoryValue);
   }
 

@@ -11,11 +11,11 @@ public class TransportException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
-  public TransportException(String message) {
+  public TransportException(final String message) {
     super(message);
   }
 
-  public TransportException(String message, Exception cause) {
+  public TransportException(final String message, final Exception cause) {
     super(message, cause);
   }
 }

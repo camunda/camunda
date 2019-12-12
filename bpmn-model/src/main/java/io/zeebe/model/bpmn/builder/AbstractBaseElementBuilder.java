@@ -58,15 +58,16 @@ public abstract class AbstractBaseElementBuilder<
   public static final double SPACE = 50;
 
   protected AbstractBaseElementBuilder(
-      BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
-  protected <T extends BpmnModelElementInstance> T createInstance(Class<T> typeClass) {
+  protected <T extends BpmnModelElementInstance> T createInstance(final Class<T> typeClass) {
     return modelInstance.newInstance(typeClass);
   }
 
-  protected <T extends BaseElement> T createInstance(Class<T> typeClass, String identifier) {
+  protected <T extends BaseElement> T createInstance(
+      final Class<T> typeClass, final String identifier) {
     final T instance = createInstance(typeClass);
     if (identifier != null) {
       instance.setId(identifier);
@@ -77,46 +78,48 @@ public abstract class AbstractBaseElementBuilder<
     return instance;
   }
 
-  protected <T extends BpmnModelElementInstance> T createChild(Class<T> typeClass) {
+  protected <T extends BpmnModelElementInstance> T createChild(final Class<T> typeClass) {
     return createChild(element, typeClass);
   }
 
-  protected <T extends BaseElement> T createChild(Class<T> typeClass, String identifier) {
+  protected <T extends BaseElement> T createChild(
+      final Class<T> typeClass, final String identifier) {
     return createChild(element, typeClass, identifier);
   }
 
   protected <T extends BpmnModelElementInstance> T createChild(
-      BpmnModelElementInstance parent, Class<T> typeClass) {
+      final BpmnModelElementInstance parent, final Class<T> typeClass) {
     final T instance = createInstance(typeClass);
     parent.addChildElement(instance);
     return instance;
   }
 
   protected <T extends BaseElement> T createChild(
-      BpmnModelElementInstance parent, Class<T> typeClass, String identifier) {
+      final BpmnModelElementInstance parent, final Class<T> typeClass, final String identifier) {
     final T instance = createInstance(typeClass, identifier);
     parent.addChildElement(instance);
     return instance;
   }
 
-  protected <T extends BpmnModelElementInstance> T createSibling(Class<T> typeClass) {
+  protected <T extends BpmnModelElementInstance> T createSibling(final Class<T> typeClass) {
     final T instance = createInstance(typeClass);
     element.getParentElement().addChildElement(instance);
     return instance;
   }
 
-  protected <T extends BaseElement> T createSibling(Class<T> typeClass, String identifier) {
+  protected <T extends BaseElement> T createSibling(
+      final Class<T> typeClass, final String identifier) {
     final T instance = createInstance(typeClass, identifier);
     element.getParentElement().addChildElement(instance);
     return instance;
   }
 
-  protected <T extends BpmnModelElementInstance> T getCreateSingleChild(Class<T> typeClass) {
+  protected <T extends BpmnModelElementInstance> T getCreateSingleChild(final Class<T> typeClass) {
     return getCreateSingleChild(element, typeClass);
   }
 
   protected <T extends BpmnModelElementInstance> T getCreateSingleChild(
-      BpmnModelElementInstance parent, Class<T> typeClass) {
+      final BpmnModelElementInstance parent, final Class<T> typeClass) {
     final Collection<T> childrenOfType = parent.getChildElementsByType(typeClass);
     if (childrenOfType.isEmpty()) {
       return createChild(parent, typeClass);
@@ -136,12 +139,12 @@ public abstract class AbstractBaseElementBuilder<
   }
 
   protected <T extends BpmnModelElementInstance> T getCreateSingleExtensionElement(
-      Class<T> typeClass) {
+      final Class<T> typeClass) {
     final ExtensionElements extensionElements = getCreateSingleChild(ExtensionElements.class);
     return getCreateSingleChild(extensionElements, typeClass);
   }
 
-  protected Message findMessageForName(String messageName) {
+  protected Message findMessageForName(final String messageName) {
     final Collection<Message> messages = modelInstance.getModelElementsByType(Message.class);
     for (final Message message : messages) {
       if (messageName.equals(message.getName())) {
@@ -163,7 +166,7 @@ public abstract class AbstractBaseElementBuilder<
     return message;
   }
 
-  protected MessageEventDefinition createMessageEventDefinition(String messageName) {
+  protected MessageEventDefinition createMessageEventDefinition(final String messageName) {
     final Message message = findMessageForName(messageName);
     final MessageEventDefinition messageEventDefinition =
         createInstance(MessageEventDefinition.class);
@@ -175,7 +178,7 @@ public abstract class AbstractBaseElementBuilder<
     return createInstance(MessageEventDefinition.class);
   }
 
-  protected Signal findSignalForName(String signalName) {
+  protected Signal findSignalForName(final String signalName) {
     final Collection<Signal> signals = modelInstance.getModelElementsByType(Signal.class);
     for (final Signal signal : signals) {
       if (signalName.equals(signal.getName())) {
@@ -192,14 +195,14 @@ public abstract class AbstractBaseElementBuilder<
     return signal;
   }
 
-  protected SignalEventDefinition createSignalEventDefinition(String signalName) {
+  protected SignalEventDefinition createSignalEventDefinition(final String signalName) {
     final Signal signal = findSignalForName(signalName);
     final SignalEventDefinition signalEventDefinition = createInstance(SignalEventDefinition.class);
     signalEventDefinition.setSignal(signal);
     return signalEventDefinition;
   }
 
-  protected ErrorEventDefinition findErrorDefinitionForCode(String errorCode) {
+  protected ErrorEventDefinition findErrorDefinitionForCode(final String errorCode) {
     final Collection<ErrorEventDefinition> definitions =
         modelInstance.getModelElementsByType(ErrorEventDefinition.class);
     for (final ErrorEventDefinition definition : definitions) {
@@ -211,7 +214,7 @@ public abstract class AbstractBaseElementBuilder<
     return null;
   }
 
-  protected Error findErrorForNameAndCode(String errorCode) {
+  protected Error findErrorForNameAndCode(final String errorCode) {
     final Collection<Error> errors = modelInstance.getModelElementsByType(Error.class);
     for (final Error error : errors) {
       if (errorCode.equals(error.getErrorCode())) {
@@ -233,14 +236,14 @@ public abstract class AbstractBaseElementBuilder<
     return errorEventDefinition;
   }
 
-  protected ErrorEventDefinition createErrorEventDefinition(String errorCode) {
+  protected ErrorEventDefinition createErrorEventDefinition(final String errorCode) {
     final Error error = findErrorForNameAndCode(errorCode);
     final ErrorEventDefinition errorEventDefinition = createInstance(ErrorEventDefinition.class);
     errorEventDefinition.setError(error);
     return errorEventDefinition;
   }
 
-  protected Escalation findEscalationForCode(String escalationCode) {
+  protected Escalation findEscalationForCode(final String escalationCode) {
     final Collection<Escalation> escalations =
         modelInstance.getModelElementsByType(Escalation.class);
     for (final Escalation escalation : escalations) {
@@ -256,7 +259,7 @@ public abstract class AbstractBaseElementBuilder<
     return escalation;
   }
 
-  protected EscalationEventDefinition createEscalationEventDefinition(String escalationCode) {
+  protected EscalationEventDefinition createEscalationEventDefinition(final String escalationCode) {
     final Escalation escalation = findEscalationForCode(escalationCode);
     final EscalationEventDefinition escalationEventDefinition =
         createInstance(EscalationEventDefinition.class);
@@ -276,7 +279,7 @@ public abstract class AbstractBaseElementBuilder<
    * @param identifier the identifier to set
    * @return the builder object
    */
-  public B id(String identifier) {
+  public B id(final String identifier) {
     element.setId(identifier);
     return myself;
   }
@@ -287,20 +290,20 @@ public abstract class AbstractBaseElementBuilder<
    * @param extensionElement the extension element to add
    * @return the builder object
    */
-  public B addExtensionElement(BpmnModelElementInstance extensionElement) {
+  public B addExtensionElement(final BpmnModelElementInstance extensionElement) {
     final ExtensionElements extensionElements = getCreateSingleChild(ExtensionElements.class);
     extensionElements.addChildElement(extensionElement);
     return myself;
   }
 
   public <T extends BpmnModelElementInstance> B addExtensionElement(
-      Class<T> extensionClass, Consumer<T> builder) {
+      final Class<T> extensionClass, final Consumer<T> builder) {
     final T element = createInstance(extensionClass);
     builder.accept(element);
     return addExtensionElement(element);
   }
 
-  public BpmnShape createBpmnShape(FlowNode node) {
+  public BpmnShape createBpmnShape(final FlowNode node) {
     final BpmnPlane bpmnPlane = findBpmnPlane();
     if (bpmnPlane != null) {
       final BpmnShape bpmnShape = createInstance(BpmnShape.class);
@@ -336,7 +339,7 @@ public abstract class AbstractBaseElementBuilder<
     return null;
   }
 
-  protected void setCoordinates(BpmnShape shape) {
+  protected void setCoordinates(final BpmnShape shape) {
     final BpmnShape source = findBpmnShape(element);
     final Bounds shapeBounds = shape.getBounds();
 
@@ -362,11 +365,11 @@ public abstract class AbstractBaseElementBuilder<
 
   /** @deprecated use {@link #createEdge(BaseElement)} instead */
   @Deprecated
-  public BpmnEdge createBpmnEdge(SequenceFlow sequenceFlow) {
+  public BpmnEdge createBpmnEdge(final SequenceFlow sequenceFlow) {
     return createEdge(sequenceFlow);
   }
 
-  public BpmnEdge createEdge(BaseElement baseElement) {
+  public BpmnEdge createEdge(final BaseElement baseElement) {
     final BpmnPlane bpmnPlane = findBpmnPlane();
     if (bpmnPlane != null) {
 
@@ -380,7 +383,7 @@ public abstract class AbstractBaseElementBuilder<
     return null;
   }
 
-  protected void setWaypoints(BpmnEdge edge) {
+  protected void setWaypoints(final BpmnEdge edge) {
     final BaseElement bpmnElement = edge.getBpmnElement();
 
     final FlowNode edgeSource;
@@ -405,7 +408,7 @@ public abstract class AbstractBaseElementBuilder<
   }
 
   protected void setWaypointsWithSourceAndTarget(
-      BpmnEdge edge, FlowNode edgeSource, FlowNode edgeTarget) {
+      final BpmnEdge edge, final FlowNode edgeSource, final FlowNode edgeTarget) {
     final BpmnShape source = findBpmnShape(edgeSource);
     final BpmnShape target = findBpmnShape(edgeTarget);
 
@@ -456,7 +459,7 @@ public abstract class AbstractBaseElementBuilder<
     return planes.iterator().next();
   }
 
-  protected BpmnShape findBpmnShape(BaseElement node) {
+  protected BpmnShape findBpmnShape(final BaseElement node) {
     final Collection<BpmnShape> allShapes = modelInstance.getModelElementsByType(BpmnShape.class);
 
     final Iterator<BpmnShape> iterator = allShapes.iterator();
@@ -469,7 +472,7 @@ public abstract class AbstractBaseElementBuilder<
     return null;
   }
 
-  protected BpmnEdge findBpmnEdge(BaseElement sequenceFlow) {
+  protected BpmnEdge findBpmnEdge(final BaseElement sequenceFlow) {
     final Collection<BpmnEdge> allEdges = modelInstance.getModelElementsByType(BpmnEdge.class);
     final Iterator<BpmnEdge> iterator = allEdges.iterator();
 
@@ -482,7 +485,7 @@ public abstract class AbstractBaseElementBuilder<
     return null;
   }
 
-  protected void resizeSubProcess(BpmnShape innerShape) {
+  protected void resizeSubProcess(final BpmnShape innerShape) {
 
     BaseElement innerElement = innerShape.getBpmnElement();
     Bounds innerShapeBounds = innerShape.getBounds();
@@ -534,7 +537,7 @@ public abstract class AbstractBaseElementBuilder<
   }
 
   private double getFlowNodeYCoordinate(
-      FlowNode flowNode, Bounds shapeBounds, Bounds sourceBounds) {
+      final FlowNode flowNode, final Bounds shapeBounds, final Bounds sourceBounds) {
     final Collection<SequenceFlow> outgoing = flowNode.getOutgoing();
     double y = 0;
 

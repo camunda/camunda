@@ -21,22 +21,22 @@ public class BrokerCreateWorkflowInstanceRequest
     super(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE);
   }
 
-  public BrokerCreateWorkflowInstanceRequest setBpmnProcessId(String bpmnProcessId) {
+  public BrokerCreateWorkflowInstanceRequest setBpmnProcessId(final String bpmnProcessId) {
     requestDto.setBpmnProcessId(bpmnProcessId);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setKey(long key) {
+  public BrokerCreateWorkflowInstanceRequest setKey(final long key) {
     requestDto.setWorkflowKey(key);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setVersion(int version) {
+  public BrokerCreateWorkflowInstanceRequest setVersion(final int version) {
     requestDto.setVersion(version);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setVariables(DirectBuffer variables) {
+  public BrokerCreateWorkflowInstanceRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;
   }
@@ -47,7 +47,7 @@ public class BrokerCreateWorkflowInstanceRequest
   }
 
   @Override
-  protected WorkflowInstanceCreationRecord toResponseDto(DirectBuffer buffer) {
+  protected WorkflowInstanceCreationRecord toResponseDto(final DirectBuffer buffer) {
     final WorkflowInstanceCreationRecord responseDto = new WorkflowInstanceCreationRecord();
     responseDto.wrap(buffer);
     return responseDto;

@@ -58,7 +58,7 @@ public class ControlledActorSchedulerRule extends ExternalResource {
     actorScheduler.stop();
   }
 
-  public ActorFuture<Void> submitActor(Actor actor) {
+  public ActorFuture<Void> submitActor(final Actor actor) {
     return actorScheduler.submitActor(actor);
   }
 
@@ -66,7 +66,7 @@ public class ControlledActorSchedulerRule extends ExternalResource {
     return actorScheduler;
   }
 
-  public void awaitBlockingTasksCompleted(int i) {
+  public void awaitBlockingTasksCompleted(final int i) {
     final long currentTimeMillis = System.currentTimeMillis();
 
     while (System.currentTimeMillis() - currentTimeMillis < 5000) {
@@ -83,7 +83,7 @@ public class ControlledActorSchedulerRule extends ExternalResource {
     controlledActorTaskRunner.workUntilDone();
   }
 
-  public <T> ActorFuture<T> call(Callable<T> callable) {
+  public <T> ActorFuture<T> call(final Callable<T> callable) {
     final ActorFuture<T> future = new CompletableActorFuture<>();
     submitActor(new CallingActor(future, callable));
     return future;
@@ -97,7 +97,7 @@ public class ControlledActorSchedulerRule extends ExternalResource {
     private final ActorFuture<T> future;
     private final Callable<T> callable;
 
-    CallingActor(ActorFuture<T> future, Callable<T> callable) {
+    CallingActor(final ActorFuture<T> future, final Callable<T> callable) {
       this.future = future;
       this.callable = callable;
     }
@@ -108,7 +108,7 @@ public class ControlledActorSchedulerRule extends ExternalResource {
           () -> {
             try {
               future.complete(callable.call());
-            } catch (Exception e) {
+            } catch (final Exception e) {
               future.completeExceptionally(e);
             }
           });
@@ -120,12 +120,12 @@ public class ControlledActorSchedulerRule extends ExternalResource {
 
     @Override
     public ActorThread newThread(
-        String name,
-        int id,
-        ActorThreadGroup threadGroup,
-        TaskScheduler taskScheduler,
-        ActorClock clock,
-        ActorTimerQueue timerQueue) {
+        final String name,
+        final int id,
+        final ActorThreadGroup threadGroup,
+        final TaskScheduler taskScheduler,
+        final ActorClock clock,
+        final ActorTimerQueue timerQueue) {
       controlledThread =
           new ControlledActorThread(name, id, threadGroup, taskScheduler, clock, timerQueue);
       return controlledThread;

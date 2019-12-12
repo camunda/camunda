@@ -22,7 +22,7 @@ public class NetworkCfg {
   private int port = DEFAULT_PORT;
   private String minKeepAliveInterval = "30s";
 
-  public void init(Environment environment, String defaultHost) {
+  public void init(final Environment environment, final String defaultHost) {
     environment.get(ENV_GATEWAY_HOST).ifPresent(this::setHost);
     environment.getInt(ENV_GATEWAY_PORT).ifPresent(this::setPort);
     environment.get(ENV_GATEWAY_KEEP_ALIVE_INTERVAL).ifPresent(this::setMinKeepAliveInterval);
@@ -36,7 +36,7 @@ public class NetworkCfg {
     return host;
   }
 
-  public NetworkCfg setHost(String host) {
+  public NetworkCfg setHost(final String host) {
     this.host = host;
     return this;
   }
@@ -45,7 +45,7 @@ public class NetworkCfg {
     return port;
   }
 
-  public NetworkCfg setPort(int port) {
+  public NetworkCfg setPort(final int port) {
     this.port = port;
     return this;
   }
@@ -54,7 +54,7 @@ public class NetworkCfg {
     return minKeepAliveInterval;
   }
 
-  public NetworkCfg setMinKeepAliveInterval(String keepAlive) {
+  public NetworkCfg setMinKeepAliveInterval(final String keepAlive) {
     this.minKeepAliveInterval = keepAlive;
     return this;
   }
@@ -69,7 +69,7 @@ public class NetworkCfg {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

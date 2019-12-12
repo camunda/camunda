@@ -18,12 +18,12 @@ public class JsonPathQuery {
   protected static final int MAX_FILTER_CONTEXT_LENGTH = 50;
   protected static final int NO_INVALID_POSITION = -1;
 
-  protected MsgPackFilter[] filters;
-  protected MsgPackFilterContext filterInstances =
+  protected final MsgPackFilter[] filters;
+  protected final MsgPackFilterContext filterInstances =
       new MsgPackFilterContext(MAX_DEPTH, MAX_FILTER_CONTEXT_LENGTH);
 
-  protected UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
-  protected DirectBuffer variableName = new UnsafeBuffer(0, 0);
+  protected final UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
+  protected final DirectBuffer variableName = new UnsafeBuffer(0, 0);
 
   protected int invalidPosition;
   protected String errorMessage;

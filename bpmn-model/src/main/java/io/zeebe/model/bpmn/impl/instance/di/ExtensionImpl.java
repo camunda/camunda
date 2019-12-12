@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Extension {
 
-  public ExtensionImpl(ModelTypeInstanceContext instanceContext) {
+  public ExtensionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Extension.class, DI_ELEMENT_EXTENSION)
@@ -45,7 +45,7 @@ public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Exten
             .instanceProvider(
                 new ModelTypeInstanceProvider<Extension>() {
                   @Override
-                  public Extension newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Extension newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ExtensionImpl(instanceContext);
                   }
                 });
