@@ -171,11 +171,15 @@ public class ValidationTest {
         );
 
      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-     Aggregations aggregations = response.getAggregations();
-     long runningCount = ((SingleBucketAggregation) aggregations.get("running")).getDocCount();
-     long incidentCount = ((SingleBucketAggregation) aggregations.get("incidents")).getDocCount();
+     long runningCount = getAggregationCountFor(response,"running");
+     long incidentCount = getAggregationCountFor(response, "incidents");
      assertThat(runningCount).isEqualTo(migrationProperties.getWorkflowInstanceCount() - migrationProperties.getCountOfCancelOperation());
      assertThat(incidentCount).isEqualTo(migrationProperties.getIncidentCount() - migrationProperties.getCountOfResolveOperation());
+  }
+
+	protected long getAggregationCountFor(SearchResponse response, String aggregationName) {
+	  Aggregations aggregations = response.getAggregations();
+    return ((SingleBucketAggregation) aggregations.get(aggregationName)).getDocCount();
   }
 	
   @Test
