@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackQueryProcessor {
+public final class MsgPackQueryProcessor {
 
   private final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
   private final MsgPackTraverser traverser = new MsgPackTraverser();
@@ -35,7 +35,7 @@ public class MsgPackQueryProcessor {
     return results;
   }
 
-  public class QueryResults {
+  public final class QueryResults {
 
     private DirectBuffer data;
 
@@ -68,7 +68,7 @@ public class MsgPackQueryProcessor {
     }
   }
 
-  public class QueryResult {
+  public final class QueryResult {
 
     private final UnsafeBuffer resultBuffer = new UnsafeBuffer();
     private final ArrayResult arrayResult = new ArrayResult();
@@ -130,7 +130,7 @@ public class MsgPackQueryProcessor {
     }
   }
 
-  public class ArrayResult {
+  public final class ArrayResult {
 
     private final UnsafeBuffer resultBuffer = new UnsafeBuffer();
 

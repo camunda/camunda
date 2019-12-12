@@ -11,7 +11,7 @@ import io.zeebe.msgpack.query.MsgPackTraversalContext;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import org.agrona.DirectBuffer;
 
-public class WildcardFilter implements MsgPackFilter {
+public final class WildcardFilter implements MsgPackFilter {
 
   @Override
   public boolean matches(

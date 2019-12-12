@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 /** Represents a test class to test the extract document functionality with help of mappings. */
-public class MappingExtractTest {
+public final class MappingExtractTest {
   @Rule public final ExpectedException expectedException = ExpectedException.none();
 
   private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);

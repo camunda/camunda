@@ -39,7 +39,7 @@ import org.agrona.collections.Object2IntHashMap;
  * extract document. For this distinction the {@link MsgPackNodeType#EXISTING_LEAF_NODE} and {@link
  * MsgPackNodeType#EXTRACTED_LEAF_NODE} are used.
  */
-public class MsgPackTree implements MsgPackDiff {
+public final class MsgPackTree implements MsgPackDiff {
   protected final Map<String, MsgPackNodeType> nodeTypeMap; // Bytes2LongHashIndex nodeTypeMap;
   protected final Map<String, Set<String>> nodeChildsMap;
   protected final Map<String, Long> leafMap; // Bytes2LongHashIndex leafMap;

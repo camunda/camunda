@@ -23,7 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * message pack document into a result buffer and return the size of the written document. The
  * result buffer is available via the {@link #getResult()} method.
  */
-public class MsgPackDocumentTreeWriter {
+public final class MsgPackDocumentTreeWriter {
   protected final MsgPackWriter msgPackWriter;
   protected final MutableDirectBuffer resultingBuffer;
   protected final DirectBuffer nodeName;

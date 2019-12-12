@@ -18,7 +18,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Only works for maps that have scalar values as keys */
-public class MapValueWithKeyFilter implements MsgPackFilter {
+public final class MapValueWithKeyFilter implements MsgPackFilter {
   public static final int NO_MATCHING_VALUE = -1;
 
   @Override

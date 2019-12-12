@@ -11,7 +11,7 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import org.agrona.DirectBuffer;
 
-public class MsgPackTraverser {
+public final class MsgPackTraverser {
 
   protected static final int NO_INVALID_POSITION = -1;
 

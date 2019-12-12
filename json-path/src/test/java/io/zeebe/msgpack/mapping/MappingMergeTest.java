@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 /** Represents a test class to test the merge documents functionality with help of mappings. */
-public class MappingMergeTest {
+public final class MappingMergeTest {
   @Rule public final ExpectedException expectedException = ExpectedException.none();
 
   private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);

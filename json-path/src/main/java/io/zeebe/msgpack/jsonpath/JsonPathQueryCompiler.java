@@ -18,7 +18,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Can be reused, but is not thread-safe */
-public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
+public final class JsonPathQueryCompiler implements JsonPathTokenVisitor {
   protected static final int ROOT_COLLECTION_FILTER_ID = 0;
   protected static final int MAP_VALUE_FILTER_ID = 1;
   protected static final int ARRAY_INDEX_FILTER_ID = 2;

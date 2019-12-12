@@ -13,7 +13,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JsonPathQuery {
+public final class JsonPathQuery {
   protected static final int MAX_DEPTH = 30;
   protected static final int MAX_FILTER_CONTEXT_LENGTH = 50;
   protected static final int NO_INVALID_POSITION = -1;

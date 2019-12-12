@@ -9,7 +9,7 @@ package io.zeebe.msgpack.query;
 
 import org.agrona.BitUtil;
 
-public class MsgPackTraversalContext extends AbstractDynamicContext {
+public final class MsgPackTraversalContext extends AbstractDynamicContext {
 
   protected static final int CURRENT_ELEMENT_OFFSET = 0;
   protected static final int NUM_ELEMENTS_OFFSET = BitUtil.SIZE_OF_INT;

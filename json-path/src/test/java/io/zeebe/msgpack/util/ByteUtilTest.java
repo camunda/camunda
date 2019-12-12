@@ -14,7 +14,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class ByteUtilTest {
+public final class ByteUtilTest {
 
   @Test
   public void testIsNumeric() {

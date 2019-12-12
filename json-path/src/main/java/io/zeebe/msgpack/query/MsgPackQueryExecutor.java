@@ -17,7 +17,7 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
+public final class MsgPackQueryExecutor implements MsgPackTokenVisitor {
 
   protected static final int MAX_TRAVERSAL_DEPTH = 30;
   protected static final int MAX_RESULTS = 1000;

@@ -9,7 +9,7 @@ package io.zeebe.msgpack.query;
 
 import org.agrona.BitUtil;
 
-public class MsgPackFilterContext extends AbstractDynamicContext {
+public final class MsgPackFilterContext extends AbstractDynamicContext {
 
   protected static final int FILTER_ID_OFFSET = 0;
 

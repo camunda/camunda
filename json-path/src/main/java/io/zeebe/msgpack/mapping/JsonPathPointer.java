@@ -9,7 +9,7 @@ package io.zeebe.msgpack.mapping;
 
 import java.util.Arrays;
 
-public class JsonPathPointer {
+public final class JsonPathPointer {
 
   private final String[] pathElements;
 

@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 /** Represents a test class to test the extract document functionality with help of mappings. */
 @RunWith(Parameterized.class)
-public class MappingExtractParameterizedTest {
+public final class MappingExtractParameterizedTest {
 
   @Parameter public String sourceVariables;
 

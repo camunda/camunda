@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
 
-public class MsgPackQueryProcessorTest {
+public final class MsgPackQueryProcessorTest {
 
   private static final DirectBuffer EMPTY_DOCUMENT = encodeMsgPack(p -> p.packMapHeader(0));
 

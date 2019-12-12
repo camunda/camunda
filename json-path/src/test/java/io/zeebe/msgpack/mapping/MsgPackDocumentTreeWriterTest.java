@@ -18,7 +18,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class MsgPackDocumentTreeWriterTest {
+public final class MsgPackDocumentTreeWriterTest {
   private final MsgPackDocumentIndexer indexer = new MsgPackDocumentIndexer();
   private final MsgPackDocumentTreeWriter writer = new MsgPackDocumentTreeWriter(256);
 
