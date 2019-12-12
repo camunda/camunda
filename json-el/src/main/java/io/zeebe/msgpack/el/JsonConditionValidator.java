@@ -11,7 +11,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JsonConditionValidator {
+public final class JsonConditionValidator {
 
   public static String validate(final JsonCondition condition) {
     final List<String> errors = new ArrayList<>();

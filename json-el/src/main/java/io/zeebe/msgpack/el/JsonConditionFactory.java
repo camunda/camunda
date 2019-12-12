@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import scala.util.parsing.combinator.Parsers.ParseResult;
 
-public class JsonConditionFactory {
+public final class JsonConditionFactory {
 
   public static CompiledJsonCondition createCondition(final String expression) {
     if (expression == null || expression.isEmpty()) {

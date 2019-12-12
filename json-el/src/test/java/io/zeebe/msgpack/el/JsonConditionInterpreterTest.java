@@ -19,7 +19,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JsonConditionInterpreterTest {
+public final class JsonConditionInterpreterTest {
 
   @Parameter(0)
   public String expression;

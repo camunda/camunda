@@ -11,7 +11,7 @@ import java.util.Arrays;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JsonPathCache {
+public final class JsonPathCache {
   private static final int INITIAL_CAPACITY = 12;
   private final DirectBuffer valueBuffer = new UnsafeBuffer(0, 0);
   private final DirectBuffer bufferView = new UnsafeBuffer(0, 0);

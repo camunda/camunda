@@ -21,7 +21,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JsonConditionVariableNamesTest {
+public final class JsonConditionVariableNamesTest {
 
   @Parameter public String expression;
 
