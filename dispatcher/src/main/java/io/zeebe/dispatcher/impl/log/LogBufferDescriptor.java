@@ -31,7 +31,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *  +----------------------------+
  * </pre>
  */
-public class LogBufferDescriptor {
+public final class LogBufferDescriptor {
 
   /** The number of Partitions the log is divided into */
   public static final int PARTITION_COUNT = 3;

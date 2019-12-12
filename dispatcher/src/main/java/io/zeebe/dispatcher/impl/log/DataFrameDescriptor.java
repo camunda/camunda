@@ -40,7 +40,7 @@ import static org.agrona.BitUtil.align;
  *   <li>E: End Batch
  *   <li>F: Failed (e.g. set by a prior subscriber)
  */
-public class DataFrameDescriptor {
+public final class DataFrameDescriptor {
 
   public static final int FRAME_ALIGNMENT = 8;
 

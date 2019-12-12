@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class DispatcherPipelineModeTest {
+public final class DispatcherPipelineModeTest {
   public static final FragmentHandler NOOP_FRAGMENT_HANDLER =
       (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 

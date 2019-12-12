@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class FragmentBatchIntegrationTest {
+public final class FragmentBatchIntegrationTest {
   private static final byte[] MSG1 = "msg1".getBytes();
   private static final byte[] MSG2 = "msg2".getBytes();
   private static final byte[] MSG3 = "msg3".getBytes();

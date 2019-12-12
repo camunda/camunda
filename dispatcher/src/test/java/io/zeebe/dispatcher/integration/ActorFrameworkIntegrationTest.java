@@ -25,7 +25,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorFrameworkIntegrationTest {
+public final class ActorFrameworkIntegrationTest {
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
 
   @Test

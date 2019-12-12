@@ -7,7 +7,7 @@
  */
 package io.zeebe.dispatcher;
 
-public class Dispatchers {
+public final class Dispatchers {
   public static DispatcherBuilder create(final String name) {
     return new DispatcherBuilder(name);
   }

@@ -17,7 +17,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ClaimedFragmentTest {
+public final class ClaimedFragmentTest {
   private static final Runnable DO_NOTHING = () -> {};
 
   private static final int A_FRAGMENT_LENGTH = 1024;

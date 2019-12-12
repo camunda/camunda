@@ -16,7 +16,7 @@ import io.zeebe.util.allocation.AllocatedBuffer;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PartitionBuilder {
+public final class PartitionBuilder {
 
   public LogBufferPartition[] slicePartitions(
       final int partitionSize, final AllocatedBuffer allocatedBuffer) {
