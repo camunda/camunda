@@ -9,7 +9,7 @@ package io.zeebe.transport.impl;
 
 import org.agrona.DirectBuffer;
 
-public class IncomingResponse {
+public final class IncomingResponse {
   private final long requestId;
   private final DirectBuffer responseBuffer;
 

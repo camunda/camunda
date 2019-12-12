@@ -16,7 +16,7 @@ import io.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ServerResponse implements BufferWriter {
+public final class ServerResponse implements BufferWriter {
   protected final TransportHeaderDescriptor transportHeaderDescriptor =
       new TransportHeaderDescriptor();
   protected final ClaimedFragment claimedFragment = new ClaimedFragment();

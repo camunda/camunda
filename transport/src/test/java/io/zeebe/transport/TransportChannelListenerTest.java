@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
-public class TransportChannelListenerTest {
+public final class TransportChannelListenerTest {
   protected static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
   protected static final BufferWriter WRITER = writerFor(EMPTY_BUFFER);
   private static final int NODE_ID = 1;

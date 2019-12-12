@@ -15,7 +15,7 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ClientReceiveHandler implements FragmentHandler {
+public final class ClientReceiveHandler implements FragmentHandler {
   protected final Sender requestPool;
   protected final Dispatcher receiveBuffer;
   protected final List<ClientInputListener> listeners;

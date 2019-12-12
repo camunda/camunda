@@ -10,7 +10,7 @@ package io.zeebe.transport.impl.sender;
 import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class OutgoingMessage {
+public final class OutgoingMessage {
   private final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
 
   private final int remoteStreamId;

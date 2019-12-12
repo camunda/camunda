@@ -22,7 +22,7 @@ import org.slf4j.Logger;
  * <p>The implementation takes care of registering and deactivating remote addresses using the
  * provided {@link RemoteAddressList}.
  */
-public class EndpointRegistryImpl implements EndpointRegistry {
+public final class EndpointRegistryImpl implements EndpointRegistry {
 
   public static final Logger LOG = Loggers.TRANSPORT_ENDPOINT_LOGGER;
 

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.function.ToIntFunction;
 import org.agrona.nio.TransportPoller;
 
-public class ConnectTransportPoller extends TransportPoller {
+public final class ConnectTransportPoller extends TransportPoller {
   protected final List<TransportChannel> channelsToAdd = new ArrayList<>();
   protected final List<TransportChannel> channelsToRemove = new ArrayList<>();
   protected final ToIntFunction<SelectionKey> processKeyFn = this::processKey;

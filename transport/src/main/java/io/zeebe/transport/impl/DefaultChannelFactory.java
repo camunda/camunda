@@ -11,7 +11,7 @@ import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import java.nio.channels.SocketChannel;
 
-public class DefaultChannelFactory implements TransportChannelFactory {
+public final class DefaultChannelFactory implements TransportChannelFactory {
 
   @Override
   public TransportChannel buildClientChannel(

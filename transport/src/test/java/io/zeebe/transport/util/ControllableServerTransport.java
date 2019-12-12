@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ControllableServerTransport implements AutoCloseable {
+public final class ControllableServerTransport implements AutoCloseable {
   protected final Map<SocketAddress, ServerSocketChannel> serverChannels = new HashMap<>();
   protected final Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
   protected final RemoteAddressListImpl remoteList = new RemoteAddressListImpl();

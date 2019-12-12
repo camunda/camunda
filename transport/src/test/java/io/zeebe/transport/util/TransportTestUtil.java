@@ -12,7 +12,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 
-public class TransportTestUtil {
+public final class TransportTestUtil {
 
   public static void waitUntilExhausted(final Dispatcher dispatcher) {
     final ClaimedFragment fragment = new ClaimedFragment();

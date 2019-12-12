@@ -11,7 +11,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
 import org.agrona.DirectBuffer;
 
-public class ReceiveBufferHandler implements FragmentHandler {
+public final class ReceiveBufferHandler implements FragmentHandler {
   protected final Dispatcher receiveBuffer;
   private final TransportHeaderDescriptor transportHeaderDescriptor =
       new TransportHeaderDescriptor();

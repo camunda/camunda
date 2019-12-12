@@ -16,7 +16,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
-public class MixedProtocolsTest {
+public final class MixedProtocolsTest {
   public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
   public final AutoCloseableRule closeables = new AutoCloseableRule();
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);

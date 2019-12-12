@@ -11,7 +11,7 @@ import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.RemoteAddress;
 import org.agrona.DirectBuffer;
 
-public class ClientResponseImpl implements ClientResponse {
+public final class ClientResponseImpl implements ClientResponse {
   private final RemoteAddress remoteAddres;
   private final long requestId;
   private final DirectBuffer responseBuffer;

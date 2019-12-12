@@ -14,7 +14,7 @@ import io.zeebe.transport.EndpointRegistry;
 import io.zeebe.transport.ServerOutput;
 import java.time.Duration;
 
-public class TransportContext {
+public final class TransportContext {
   private String name;
   private int messageMaxLength;
   private Duration channelKeepAlivePeriod;

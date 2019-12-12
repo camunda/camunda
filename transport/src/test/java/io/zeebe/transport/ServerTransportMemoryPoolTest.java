@@ -33,7 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class ServerTransportMemoryPoolTest {
+public final class ServerTransportMemoryPoolTest {
   public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
   protected static final SocketAddress ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
   public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();

@@ -16,7 +16,7 @@ import io.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ServerOutputImpl implements ServerOutput {
+public final class ServerOutputImpl implements ServerOutput {
   private static final long NO_RETRIES = 0;
 
   private final Sender sender;

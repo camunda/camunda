@@ -20,7 +20,7 @@ import io.zeebe.transport.impl.RemoteAddressListImpl;
 import org.junit.Before;
 import org.junit.Test;
 
-public class EndpointRegistryTest {
+public final class EndpointRegistryTest {
 
   private RemoteAddressList remoteAddressList;
   private EndpointRegistry registry;

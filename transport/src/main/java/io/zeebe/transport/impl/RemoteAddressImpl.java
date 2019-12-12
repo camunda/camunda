@@ -10,7 +10,7 @@ package io.zeebe.transport.impl;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 
-public class RemoteAddressImpl implements RemoteAddress {
+public final class RemoteAddressImpl implements RemoteAddress {
   public static final int STATE_ACTIVE = 1 << 0;
   public static final int STATE_INACTIVE = 1 << 1;
   public static final int STATE_RETIRED = 1 << 2;

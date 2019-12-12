@@ -12,7 +12,7 @@ import io.zeebe.transport.TransportListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class RecordingChannelListener implements TransportListener {
+public final class RecordingChannelListener implements TransportListener {
 
   protected final List<RemoteAddress> closedConnections = new CopyOnWriteArrayList<>();
   protected final List<RemoteAddress> openedConnections = new CopyOnWriteArrayList<>();

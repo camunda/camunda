@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 
-public class ServerSocketBinding {
+public final class ServerSocketBinding {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   protected final List<Selector> registeredSelectors =
