@@ -21,7 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CommandResponseWriterImplTest {
+public final class CommandResponseWriterImplTest {
   private static final int PARTITION_ID = 1;
   private static final long KEY = 2L;
   private static final byte[] EVENT = getBytes("state");

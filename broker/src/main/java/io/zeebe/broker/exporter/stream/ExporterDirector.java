@@ -43,7 +43,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ExporterDirector extends Actor {
+public final class ExporterDirector extends Actor {
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";

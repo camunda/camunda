@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PushDeploymentRequest
+public final class PushDeploymentRequest
     extends SbeBufferWriterReader<PushDeploymentRequestEncoder, PushDeploymentRequestDecoder> {
 
   private final PushDeploymentRequestEncoder bodyEncoder = new PushDeploymentRequestEncoder();

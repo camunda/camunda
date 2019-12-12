@@ -18,7 +18,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PartitionCommandSenderImpl implements PartitionCommandSender {
+public final class PartitionCommandSenderImpl implements PartitionCommandSender {
 
   private final Atomix atomix;
 

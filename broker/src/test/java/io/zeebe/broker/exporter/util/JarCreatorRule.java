@@ -20,7 +20,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
 /** obviously not thread safe, strictly for testing */
-public class JarCreatorRule extends ExternalResource {
+public final class JarCreatorRule extends ExternalResource {
   private static final Manifest DEFAULT_MANIFEST;
 
   static {

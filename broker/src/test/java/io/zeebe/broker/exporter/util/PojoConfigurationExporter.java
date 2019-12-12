@@ -11,7 +11,7 @@ import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.protocol.record.Record;
 
-public class PojoConfigurationExporter implements Exporter {
+public final class PojoConfigurationExporter implements Exporter {
 
   public static PojoExporterConfiguration configuration;
 
@@ -27,7 +27,7 @@ public class PojoConfigurationExporter implements Exporter {
     return configuration;
   }
 
-  public class PojoExporterConfiguration {
+  public final class PojoExporterConfiguration {
 
     private String foo = "";
     private int x;
@@ -58,7 +58,7 @@ public class PojoConfigurationExporter implements Exporter {
     }
   }
 
-  public class PojoExporterConfigurationPart {
+  public final class PojoExporterConfigurationPart {
     private String bar;
     private double y;
 

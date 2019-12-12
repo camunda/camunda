@@ -18,7 +18,7 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.Environment;
 import java.util.Optional;
 
-public class NetworkCfg implements ConfigurationEntry {
+public final class NetworkCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_COMMAND_API_PORT = 26501;

@@ -10,6 +10,6 @@ package io.zeebe.broker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestLoggers {
+public final class TestLoggers {
   public static final Logger TEST_LOGGER = LoggerFactory.getLogger("io.zeebe.broker.test");
 }

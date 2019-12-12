@@ -47,7 +47,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class ExporterDirectorTest {
+public final class ExporterDirectorTest {
 
   private static final int PARTITION_ID = 1;
 

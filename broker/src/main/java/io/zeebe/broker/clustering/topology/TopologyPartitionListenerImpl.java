@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.PartitionRole;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.collections.Int2IntHashMap;
 
-public class TopologyPartitionListenerImpl implements TopologyPartitionListener {
+public final class TopologyPartitionListenerImpl implements TopologyPartitionListener {
 
   private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(-1);
   private final ActorControl actor;

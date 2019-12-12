@@ -41,7 +41,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
-public class CommandApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
+public final class CommandApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();

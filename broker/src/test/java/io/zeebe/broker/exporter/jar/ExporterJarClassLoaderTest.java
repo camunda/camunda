@@ -20,7 +20,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 
-public class ExporterJarClassLoaderTest {
+public final class ExporterJarClassLoaderTest {
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
 

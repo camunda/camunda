@@ -10,7 +10,7 @@ package io.zeebe.broker.transport.backpressure;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
-public class BackpressureMetrics {
+public final class BackpressureMetrics {
 
   private static final Counter DROPPED_REQUEST_COUNT =
       Counter.build()

@@ -27,7 +27,7 @@ import java.util.Properties;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
-public class TopologyManagerImpl extends Actor
+public final class TopologyManagerImpl extends Actor
     implements TopologyManager, ClusterMembershipEventListener, PartitionListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 

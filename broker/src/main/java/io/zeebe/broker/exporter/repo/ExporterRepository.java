@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 
-public class ExporterRepository {
+public final class ExporterRepository {
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final ExporterJarRepository jarRepository;
   private final Map<String, ExporterDescriptor> exporters;

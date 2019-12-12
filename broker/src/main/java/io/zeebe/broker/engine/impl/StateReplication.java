@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class StateReplication implements SnapshotReplication {
+public final class StateReplication implements SnapshotReplication {
 
   public static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
   private static final Logger LOG = Loggers.STREAM_PROCESSING;

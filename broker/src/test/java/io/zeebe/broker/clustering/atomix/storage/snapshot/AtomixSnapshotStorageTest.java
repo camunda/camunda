@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class AtomixSnapshotStorageTest {
+public final class AtomixSnapshotStorageTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private Path snapshotsDirectory;

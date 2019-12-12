@@ -23,7 +23,7 @@ import java.util.Arrays;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-public class ErrorResponseWriter implements BufferWriter {
+public final class ErrorResponseWriter implements BufferWriter {
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private static final String UNSUPPORTED_MESSAGE_FORMAT =

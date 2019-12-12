@@ -13,7 +13,7 @@ import io.zeebe.util.Environment;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BrokerCfg {
+public final class BrokerCfg {
 
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();

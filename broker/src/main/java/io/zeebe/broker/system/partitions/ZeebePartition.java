@@ -59,7 +59,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public class ZeebePartition extends Actor implements RaftCommitListener, Consumer<Role> {
+public final class ZeebePartition extends Actor implements RaftCommitListener, Consumer<Role> {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;

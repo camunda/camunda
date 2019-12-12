@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.slf4j.Logger;
 
-public class SystemContext {
+public final class SystemContext {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(20);

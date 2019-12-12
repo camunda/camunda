@@ -14,7 +14,7 @@ import io.zeebe.logstreams.state.SnapshotDeletionListener;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.util.sched.Actor;
 
-public class LogStreamDeletionService extends Actor implements SnapshotDeletionListener {
+public final class LogStreamDeletionService extends Actor implements SnapshotDeletionListener {
   private final LogStream logStream;
   private final StatePositionSupplier positionSupplier;
   private final SnapshotStorage snapshotStorage;

@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import org.agrona.collections.IntArrayList;
 
-public class ClusterCfg implements ConfigurationEntry {
+public final class ClusterCfg implements ConfigurationEntry {
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
   public static final int DEFAULT_NODE_ID = 0;
   public static final int DEFAULT_PARTITIONS_COUNT = 1;

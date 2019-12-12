@@ -12,7 +12,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.prometheus.client.CollectorRegistry;
 
-public class BrokerHttpServerInitializer extends ChannelInitializer<SocketChannel> {
+public final class BrokerHttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
   private final CollectorRegistry metricsRegistry;
   private final BrokerHealthCheckService brokerHealthCheckService;

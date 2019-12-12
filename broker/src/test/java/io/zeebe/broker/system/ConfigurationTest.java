@@ -57,7 +57,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class ConfigurationTest {
+public final class ConfigurationTest {
 
   public static final String BROKER_BASE = "test";
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();

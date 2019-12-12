@@ -12,7 +12,7 @@ import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.db.ZeebeDb;
 import org.slf4j.Logger;
 
-public class ExporterClearStateService {
+public final class ExporterClearStateService {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 

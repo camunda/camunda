@@ -48,7 +48,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
-public class EmbeddedBrokerRule extends ExternalResource {
+public final class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
   public static final int INSTALL_TIMEOUT = 15;

@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.TreeSet;
 import org.slf4j.Logger;
 
-public class DbSnapshot implements Snapshot {
+public final class DbSnapshot implements Snapshot {
   // version currently hardcoded, could be used for backwards compatibility
   private static final int VERSION = 1;
   private static final Logger LOGGER = new ZbLogger(DbSnapshot.class);

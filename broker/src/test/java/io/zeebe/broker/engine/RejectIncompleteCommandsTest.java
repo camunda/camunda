@@ -18,7 +18,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class RejectIncompleteCommandsTest {
+public final class RejectIncompleteCommandsTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
 

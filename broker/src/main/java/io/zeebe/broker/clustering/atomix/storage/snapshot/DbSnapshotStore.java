@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 
-public class DbSnapshotStore implements SnapshotStore {
+public final class DbSnapshotStore implements SnapshotStore {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStore.class);
 
   // if thread-safe is a must, then switch to ConcurrentNavigableMap

@@ -14,7 +14,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.util.EnsureUtil;
 import org.slf4j.Logger;
 
-public class ExporterContext implements Context {
+public final class ExporterContext implements Context {
 
   private static final RecordFilter DEFAULT_FILTER = new AcceptAllRecordsFilter();
 

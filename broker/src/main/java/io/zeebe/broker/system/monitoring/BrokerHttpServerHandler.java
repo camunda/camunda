@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter {
+public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter {
 
   private static final String BROKER_READY_STATUS_URI = "/ready";
   private static final String METRICS_URI = "/metrics";

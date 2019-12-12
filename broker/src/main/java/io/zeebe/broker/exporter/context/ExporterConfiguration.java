@@ -14,7 +14,7 @@ import io.zeebe.broker.exporter.ExporterException;
 import io.zeebe.exporter.api.context.Configuration;
 import java.util.Map;
 
-public class ExporterConfiguration implements Configuration {
+public final class ExporterConfiguration implements Configuration {
   private static final Gson CONFIG_INSTANTIATOR = new GsonBuilder().create();
 
   private final String id;

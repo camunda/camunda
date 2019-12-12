@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 
-public class StartProcess {
+public final class StartProcess {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final List<StartStep> startSteps;

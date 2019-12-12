@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.function.Function;
 
-public class EmbeddedGatewayService implements AutoCloseable {
+public final class EmbeddedGatewayService implements AutoCloseable {
   private final Gateway gateway;
 
   public EmbeddedGatewayService(
