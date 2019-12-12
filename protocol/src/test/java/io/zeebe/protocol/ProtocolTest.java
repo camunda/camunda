@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.ByteOrder;
 import org.junit.Test;
 
-public class ProtocolTest {
+public final class ProtocolTest {
 
   @Test
   public void testEndiannessConstant() {

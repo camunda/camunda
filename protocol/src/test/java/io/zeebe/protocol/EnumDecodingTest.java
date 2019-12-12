@@ -25,7 +25,7 @@ import io.zeebe.protocol.record.MessageHeaderEncoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class EnumDecodingTest {
+public final class EnumDecodingTest {
 
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
