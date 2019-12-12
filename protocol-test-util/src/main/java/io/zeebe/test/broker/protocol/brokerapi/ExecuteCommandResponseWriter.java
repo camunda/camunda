@@ -21,7 +21,8 @@ import java.util.function.Function;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest> {
+public final class ExecuteCommandResponseWriter
+    extends AbstractMessageBuilder<ExecuteCommandRequest> {
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();
   protected final MsgPackHelper msgPackHelper;

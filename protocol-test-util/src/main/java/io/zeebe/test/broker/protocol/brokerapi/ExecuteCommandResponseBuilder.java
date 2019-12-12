@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ExecuteCommandResponseBuilder {
+public final class ExecuteCommandResponseBuilder {
 
   protected final Consumer<MessageBuilder<ExecuteCommandRequest>> registrationFunction;
   protected final ExecuteCommandResponseWriter commandResponseWriter;

@@ -11,7 +11,8 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class ExecuteCommandResponseTypeBuilder extends ResponseTypeBuilder<ExecuteCommandRequest> {
+public final class ExecuteCommandResponseTypeBuilder
+    extends ResponseTypeBuilder<ExecuteCommandRequest> {
 
   protected final MsgPackHelper msgPackConverter;
 

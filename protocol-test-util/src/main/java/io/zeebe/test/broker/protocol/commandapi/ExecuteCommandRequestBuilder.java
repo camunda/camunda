@@ -15,7 +15,7 @@ import io.zeebe.transport.ClientOutput;
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.Map;
 
-public class ExecuteCommandRequestBuilder {
+public final class ExecuteCommandRequestBuilder {
   protected final ExecuteCommandRequest request;
 
   public ExecuteCommandRequestBuilder(

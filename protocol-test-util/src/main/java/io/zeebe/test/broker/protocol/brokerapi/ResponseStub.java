@@ -9,7 +9,7 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import java.util.function.Predicate;
 
-public class ResponseStub<R> {
+public final class ResponseStub<R> {
 
   protected final Predicate<R> activationFunction;
   protected final MessageBuilder<R> responseWriter;

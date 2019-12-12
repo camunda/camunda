@@ -73,7 +73,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
-public class PartitionTestClient {
+public final class PartitionTestClient {
   // workflow related properties
 
   public static final String PROP_WORKFLOW_RESOURCES = "resources";

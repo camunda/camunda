@@ -14,7 +14,7 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.nio.charset.StandardCharsets;
 import org.agrona.MutableDirectBuffer;
 
-public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
+public final class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
   protected final MsgPackHelper msgPackHelper;

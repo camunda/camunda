@@ -18,7 +18,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
-public class ExecuteCommandRequest implements BufferReader {
+public final class ExecuteCommandRequest implements BufferReader {
 
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   protected final ExecuteCommandRequestDecoder bodyDecoder = new ExecuteCommandRequestDecoder();

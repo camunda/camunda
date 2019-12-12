@@ -12,7 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class TopologyBroker {
+public final class TopologyBroker {
   protected final int nodeId;
   protected final String host;
   protected final int port;

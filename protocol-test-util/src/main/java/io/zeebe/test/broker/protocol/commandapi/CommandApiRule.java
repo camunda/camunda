@@ -56,7 +56,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
 
-public class CommandApiRule extends ExternalResource {
+public final class CommandApiRule extends ExternalResource {
 
   public static final long DEFAULT_LOCK_DURATION = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";
