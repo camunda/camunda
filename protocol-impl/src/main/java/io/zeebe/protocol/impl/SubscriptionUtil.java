@@ -11,7 +11,7 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import org.agrona.DirectBuffer;
 
-public class SubscriptionUtil {
+public final class SubscriptionUtil {
 
   /**
    * Get the hash code of the subscription based on the given correlation key.

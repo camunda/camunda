@@ -10,7 +10,7 @@ package io.zeebe.protocol.impl.data.repository;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public class WorkflowMetadataAndResource extends WorkflowMetadata {
+public final class WorkflowMetadataAndResource extends WorkflowMetadata {
   private final StringProperty bpmnXmlProp = new StringProperty("bpmnXml");
 
   public WorkflowMetadataAndResource() {

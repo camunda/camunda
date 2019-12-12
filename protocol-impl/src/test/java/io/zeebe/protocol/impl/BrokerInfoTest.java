@@ -19,7 +19,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class BrokerInfoTest {
+public final class BrokerInfoTest {
 
   @Test
   public void shouldEncodeDecodeBrokerInfo() {

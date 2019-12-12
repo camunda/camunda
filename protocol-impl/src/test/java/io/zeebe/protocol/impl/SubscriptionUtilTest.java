@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class SubscriptionUtilTest {
+public final class SubscriptionUtilTest {
 
   @Test
   public void shouldGetSubscriptionHashCode() {

@@ -18,7 +18,7 @@ import java.io.StringWriter;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue {
+public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue {
 
   private static final String NULL_MESSAGE = "Without exception message.";
 

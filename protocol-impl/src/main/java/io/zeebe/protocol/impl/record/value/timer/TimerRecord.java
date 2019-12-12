@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class TimerRecord extends UnifiedRecordValue
+public final class TimerRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, TimerRecordValue {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");

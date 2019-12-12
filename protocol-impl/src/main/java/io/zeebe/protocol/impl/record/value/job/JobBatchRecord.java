@@ -26,7 +26,7 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
+public final class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
 
   private final StringProperty typeProp = new StringProperty("type");
   private final StringProperty workerProp = new StringProperty("worker", "");
