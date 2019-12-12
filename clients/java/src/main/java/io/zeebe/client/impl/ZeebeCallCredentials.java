@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ZeebeCallCredentials extends io.grpc.CallCredentials {
+public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeCallCredentials.class);
 
   private final CredentialsProvider credentialsProvider;

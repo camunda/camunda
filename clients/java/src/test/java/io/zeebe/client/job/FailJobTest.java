@@ -22,7 +22,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public class FailJobTest extends ClientTest {
+public final class FailJobTest extends ClientTest {
 
   @Test
   public void shouldFailJob() {

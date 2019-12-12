@@ -18,7 +18,7 @@ package io.zeebe.client.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Loggers {
+public final class Loggers {
 
   public static final Logger JOB_POLLER_LOGGER =
       LoggerFactory.getLogger("io.zeebe.client.job.poller");

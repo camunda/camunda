@@ -31,7 +31,7 @@ import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 
-public class JobPoller implements StreamObserver<ActivateJobsResponse> {
+public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
 
   private static final Logger LOG = Loggers.JOB_POLLER_LOGGER;
 

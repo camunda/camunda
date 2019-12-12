@@ -59,7 +59,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
-public class RecordingGatewayService extends GatewayImplBase {
+public final class RecordingGatewayService extends GatewayImplBase {
 
   private final List<GeneratedMessageV3> requests = new ArrayList<>();
 

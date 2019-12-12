@@ -22,7 +22,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-public class OAuthCredentialsProviderBuilder {
+public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
   public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
   public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";

@@ -22,7 +22,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public class JobUpdateRetriesTest extends ClientTest {
+public final class JobUpdateRetriesTest extends ClientTest {
 
   @Test
   public void shouldUpdateRetries() {

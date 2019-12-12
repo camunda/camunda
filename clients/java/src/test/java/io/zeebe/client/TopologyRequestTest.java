@@ -34,7 +34,7 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
 
-public class TopologyRequestTest extends ClientTest {
+public final class TopologyRequestTest extends ClientTest {
 
   @Test
   public void shouldRequestTopology() {

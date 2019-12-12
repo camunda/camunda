@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
+public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
     implements CompleteJobCommandStep1 {
 
   private final GatewayStub asyncStub;

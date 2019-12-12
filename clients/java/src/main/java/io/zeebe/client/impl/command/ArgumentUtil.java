@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.impl.command;
 
-public class ArgumentUtil {
+public final class ArgumentUtil {
 
   public static void ensureNotNull(final String property, final Object value) {
     if (value == null) {

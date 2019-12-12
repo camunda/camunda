@@ -20,7 +20,7 @@ import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.Map;
 
-public class CreateWorkflowInstanceWithResultResponseImpl implements WorkflowInstanceResult {
+public final class CreateWorkflowInstanceWithResultResponseImpl implements WorkflowInstanceResult {
 
   private final ZeebeObjectMapper objectMapper;
   private final long workflowKey;

@@ -31,7 +31,7 @@ import io.zeebe.client.util.Environment;
 import java.time.Duration;
 import java.util.Properties;
 
-public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
+public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";

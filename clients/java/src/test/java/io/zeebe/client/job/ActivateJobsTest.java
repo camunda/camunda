@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 
-public class ActivateJobsTest extends ClientTest {
+public final class ActivateJobsTest extends ClientTest {
 
   @Test
   public void shouldActivateJobs() {

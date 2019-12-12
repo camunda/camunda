@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 
-public class JobWorkerImpl implements JobWorker, Closeable {
+public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
 

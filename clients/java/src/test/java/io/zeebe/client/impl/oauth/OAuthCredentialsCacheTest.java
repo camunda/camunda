@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class OAuthCredentialsCacheTest {
+public final class OAuthCredentialsCacheTest {
   private static final String WOMBAT_ENDPOINT = "wombat.cloud.camunda.io";
   private static final String AARDVARK_ENDPOINT = "aardvark.cloud.camunda.io";
   private static final String GOLDEN_FILE = "/oauth/credentialsCache.yml";

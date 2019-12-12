@@ -25,7 +25,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 
-public class ExceptionHandlingTest extends ClientTest {
+public final class ExceptionHandlingTest extends ClientTest {
 
   @Test
   public void shouldContainCorrectRootCauses() {

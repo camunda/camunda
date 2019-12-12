@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandStep2 {
+public final class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;

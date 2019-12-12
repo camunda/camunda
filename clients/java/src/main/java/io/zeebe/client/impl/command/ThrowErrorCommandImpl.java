@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class ThrowErrorCommandImpl implements ThrowErrorCommandStep1, ThrowErrorCommandStep2 {
+public final class ThrowErrorCommandImpl implements ThrowErrorCommandStep1, ThrowErrorCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;

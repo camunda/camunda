@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
 
-public class PublishMessageTest extends ClientTest {
+public final class PublishMessageTest extends ClientTest {
 
   @Test
   public void shouldPublishMessage() {

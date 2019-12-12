@@ -63,7 +63,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class ZeebeClientImpl implements ZeebeClient {
+public final class ZeebeClientImpl implements ZeebeClient {
   private final ZeebeClientConfiguration config;
   private final ZeebeObjectMapper objectMapper;
   private final GatewayStub asyncStub;

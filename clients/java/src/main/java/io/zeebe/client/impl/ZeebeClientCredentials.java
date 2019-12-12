@@ -18,7 +18,7 @@ package io.zeebe.client.impl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 
-public class ZeebeClientCredentials {
+public final class ZeebeClientCredentials {
 
   @JsonProperty("access_token")
   private String accessToken;

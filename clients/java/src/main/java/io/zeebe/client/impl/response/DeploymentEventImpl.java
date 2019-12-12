@@ -21,7 +21,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DeploymentEventImpl implements DeploymentEvent {
+public final class DeploymentEventImpl implements DeploymentEvent {
 
   private final long key;
   private final List<Workflow> workflows;

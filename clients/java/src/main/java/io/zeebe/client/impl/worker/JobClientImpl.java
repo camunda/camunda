@@ -27,7 +27,7 @@ import io.zeebe.client.impl.command.ThrowErrorCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.util.function.Predicate;
 
-public class JobClientImpl implements JobClient {
+public final class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
   private final ZeebeClientConfiguration config;

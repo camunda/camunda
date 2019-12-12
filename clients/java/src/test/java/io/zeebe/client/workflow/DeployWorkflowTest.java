@@ -38,7 +38,7 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
 
-public class DeployWorkflowTest extends ClientTest {
+public final class DeployWorkflowTest extends ClientTest {
 
   public static final String BPMN_1_FILENAME = "/workflows/demo-process.bpmn";
   public static final String BPMN_2_FILENAME = "/workflows/another-demo-process.bpmn";

@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-public class ZeebeObjectMapper extends ObjectMapper {
+public final class ZeebeObjectMapper extends ObjectMapper {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};
