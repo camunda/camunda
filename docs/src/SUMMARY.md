@@ -6,6 +6,7 @@
     * [Quickstart](introduction/quickstart.md)
     * [Community Contributions](introduction/community-contributions.md)
     * [Get Help & Get Involved](introduction/get-help-get-involved.md)
+    * [Release Cycle](introduction/release-cycle.md)
 * [Basics](basics/index.md)
     * [Architecture](basics/architecture.md)
     * [Workflows](basics/workflows.md)
