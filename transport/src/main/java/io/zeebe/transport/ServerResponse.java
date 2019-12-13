@@ -40,14 +40,13 @@ public final class ServerResponse implements BufferWriter {
     return writer(writerAdapter.wrap(buffer, offset, length));
   }
 
-  public ServerResponse remoteAddress(final RemoteAddress remoteAddress) {
-    this.remoteStreamId = remoteAddress.getStreamId();
-    return this;
-  }
-
   public ServerResponse remoteStreamId(final int remoteStreamId) {
     this.remoteStreamId = remoteStreamId;
     return this;
+  }
+
+  public int getStreamId() {
+    return remoteStreamId;
   }
 
   public ServerResponse reset() {
@@ -92,19 +91,18 @@ public final class ServerResponse implements BufferWriter {
 
   @Override
   public int getLength() {
-    return RequestResponseHeaderDescriptor.framedLength(
-        TransportHeaderDescriptor.framedLength(writer.getLength()));
+    return writer.getLength();
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    transportHeaderDescriptor.wrap(buffer, offset).putProtocolRequestReponse();
-
-    offset += TransportHeaderDescriptor.headerLength();
-
-    requestResponseHeaderDescriptor.wrap(buffer, offset).requestId(requestId);
-
-    offset += RequestResponseHeaderDescriptor.headerLength();
+  public void write(final MutableDirectBuffer buffer, final int offset) {
+    //    transportHeaderDescriptor.wrap(buffer, offset).putProtocolRequestReponse();
+    //
+    //    offset += TransportHeaderDescriptor.headerLength();
+    //
+    //    requestResponseHeaderDescriptor.wrap(buffer, offset).requestId(requestId);
+    //
+    //    offset += RequestResponseHeaderDescriptor.headerLength();
 
     writer.write(buffer, offset);
   }

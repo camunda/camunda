@@ -31,10 +31,6 @@ public final class ExecuteCommandRequestBuilder {
     return request.send();
   }
 
-  public ExecuteCommandRequest sendWithoutRetries() {
-    return request.send(r -> false);
-  }
-
   public ExecuteCommandRequestBuilder partitionId(final int partitionId) {
     request.partitionId(partitionId);
     return this;

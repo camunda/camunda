@@ -10,9 +10,7 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerResponse;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,38 +19,32 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class StubResponseChannelHandler implements ServerRequestHandler {
+public final class StubResponseChannelHandler {
 
-  protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  protected final List<ResponseStub<ExecuteCommandRequest>> cmdRequestStubs = new ArrayList<>();
-  protected final MsgPackHelper msgPackHelper;
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  private final List<ResponseStub<ExecuteCommandRequest>> cmdRequestStubs = new ArrayList<>();
+  private final MsgPackHelper msgPackHelper;
 
   // can also be used for verification
-  protected final List<Object> allRequests = new CopyOnWriteArrayList<>();
-  protected final List<ExecuteCommandRequest> commandRequests = new CopyOnWriteArrayList<>();
+  private final List<Object> allRequests = new CopyOnWriteArrayList<>();
+  private final List<ExecuteCommandRequest> commandRequests = new CopyOnWriteArrayList<>();
 
-  protected final ServerResponse response = new ServerResponse();
+  private final ServerResponse response = new ServerResponse();
 
-  public StubResponseChannelHandler(final MsgPackHelper msgPackHelper) {
+  StubResponseChannelHandler(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
   }
 
-  public void addExecuteCommandRequestStub(final ResponseStub<ExecuteCommandRequest> stub) {
+  void addExecuteCommandRequestStub(final ResponseStub<ExecuteCommandRequest> stub) {
     cmdRequestStubs.add(0, stub); // add to front such that more recent stubs override older ones
   }
 
-  public List<ExecuteCommandRequest> getReceivedCommandRequests() {
+  List<ExecuteCommandRequest> getReceivedCommandRequests() {
     return commandRequests;
   }
 
-  public List<Object> getAllReceivedRequests() {
-    return allRequests;
-  }
-
-  @Override
-  public boolean onRequest(
+  boolean onRequest(
       final ServerOutput output,
-      final RemoteAddress remoteAddress,
       final DirectBuffer buffer,
       final int offset,
       final int length,
@@ -64,13 +56,13 @@ public final class StubResponseChannelHandler implements ServerRequestHandler {
 
     boolean requestHandled = false;
     if (ExecuteCommandRequestDecoder.TEMPLATE_ID == headerDecoder.templateId()) {
-      final ExecuteCommandRequest request = new ExecuteCommandRequest(remoteAddress, msgPackHelper);
+      final ExecuteCommandRequest request = new ExecuteCommandRequest(msgPackHelper);
 
       request.wrap(copy, 0, length);
       commandRequests.add(request);
       allRequests.add(request);
 
-      requestHandled = handleRequest(output, request, cmdRequestStubs, remoteAddress, requestId);
+      requestHandled = handleRequest(output, request, cmdRequestStubs, requestId);
     }
 
     if (!requestHandled) {
@@ -83,11 +75,10 @@ public final class StubResponseChannelHandler implements ServerRequestHandler {
     }
   }
 
-  protected <T> boolean handleRequest(
+  private <T> boolean handleRequest(
       final ServerOutput output,
       final T request,
       final List<? extends ResponseStub<T>> responseStubs,
-      final RemoteAddress requestSource,
       final long requestId) {
     for (final ResponseStub<T> stub : responseStubs) {
       if (stub.applies(request)) {
@@ -95,7 +86,7 @@ public final class StubResponseChannelHandler implements ServerRequestHandler {
           final MessageBuilder<T> responseWriter = stub.getResponseWriter();
           responseWriter.initializeFrom(request);
 
-          response.reset().remoteAddress(requestSource).requestId(requestId).writer(responseWriter);
+          response.reset().requestId(requestId).writer(responseWriter);
 
           responseWriter.beforeResponse();
 

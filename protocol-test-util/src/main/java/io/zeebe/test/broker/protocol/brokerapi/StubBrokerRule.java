@@ -9,20 +9,25 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
+import io.atomix.cluster.AtomixCluster;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.AtomixClientOutputAdapter;
+import io.zeebe.transport.impl.AtomixRequestSubscription;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 
 public final class StubBrokerRule extends ExternalResource {
@@ -30,25 +35,20 @@ public final class StubBrokerRule extends ExternalResource {
   protected final int nodeId;
   protected final SocketAddress socketAddress;
   protected ActorScheduler scheduler;
-  protected ServerTransport transport;
-  protected StubResponseChannelHandler channelHandler;
   protected MsgPackHelper msgPackHelper;
   protected final AtomicReference<Topology> currentTopology = new AtomicReference<>();
   private final ControlledActorClock clock = new ControlledActorClock();
   private final int partitionCount;
+  private StubResponseChannelHandler channelHandler;
+  private final AtomicInteger requestCount = new AtomicInteger(0);
+  private AtomixCluster cluster;
+  private int currentStubPort;
+  private String currentStubHost;
 
   public StubBrokerRule() {
-    this(0);
-  }
-
-  public StubBrokerRule(final int nodeId) {
-    this(nodeId, 1);
-  }
-
-  private StubBrokerRule(final int nodeId, final int partitionCount) {
-    this.nodeId = nodeId;
+    this.nodeId = 0;
     this.socketAddress = new SocketAddress(SocketUtil.getNextAddress());
-    this.partitionCount = partitionCount;
+    this.partitionCount = 1;
   }
 
   @Override
@@ -64,8 +64,6 @@ public final class StubBrokerRule extends ExternalResource {
 
     scheduler.start();
 
-    channelHandler = new StubResponseChannelHandler(msgPackHelper);
-
     final Topology topology = new Topology();
     topology.addLeader(nodeId, socketAddress, Protocol.DEPLOYMENT_PARTITION);
 
@@ -73,54 +71,65 @@ public final class StubBrokerRule extends ExternalResource {
       topology.addLeader(nodeId, socketAddress, i);
     }
 
+    final InetSocketAddress nextAddress = SocketUtil.getNextAddress();
+    currentStubHost = nextAddress.getHostName();
+    currentStubPort = nextAddress.getPort();
+    cluster =
+        AtomixCluster.builder()
+            .withPort(currentStubPort)
+            .withMemberId("0")
+            .withClusterId("cluster")
+            .build();
+    cluster.start().join();
+    final var communicationService = cluster.getCommunicationService();
+    final var atomixClientOuputAdapter = new AtomixClientOutputAdapter(communicationService);
+    final var atomixRequestSubscription = new AtomixRequestSubscription(communicationService);
+    scheduler.submitActor(atomixClientOuputAdapter);
+
+    channelHandler = new StubResponseChannelHandler(msgPackHelper);
+    atomixRequestSubscription.subscribe(
+        1,
+        (bytes) -> {
+          final var completableFuture = new CompletableFuture<byte[]>();
+          final var requestId = requestCount.getAndIncrement();
+
+          channelHandler.onRequest(
+              response -> {
+                final var length = response.getLength();
+                final var bytes1 = new byte[length];
+                final var unsafeBuffer = new UnsafeBuffer(bytes1);
+                response.write(unsafeBuffer, 0);
+                completableFuture.complete(bytes1);
+                return true;
+              },
+              new UnsafeBuffer(bytes),
+              0,
+              bytes.length,
+              requestId);
+
+          return completableFuture;
+        });
+
     currentTopology.set(topology);
-    bindTransport();
+  }
+
+  public int getCurrentStubPort() {
+    return currentStubPort;
+  }
+
+  public String getCurrentStubHost() {
+    return currentStubHost;
   }
 
   @Override
   protected void after() {
-    if (transport != null) {
-      closeTransport();
-    }
     if (scheduler != null) {
       scheduler.stop();
     }
+    cluster.stop().join();
   }
 
-  public void interruptAllServerChannels() {
-    transport.interruptAllChannels();
-  }
-
-  public void closeTransport() {
-    if (transport != null) {
-      transport.close();
-      transport = null;
-    } else {
-      throw new RuntimeException("transport not open");
-    }
-  }
-
-  public void bindTransport() {
-    if (transport == null) {
-      transport =
-          Transports.newServerTransport()
-              .bindAddress(socketAddress.toInetSocketAddress())
-              .scheduler(scheduler)
-              .build(null, channelHandler);
-    } else {
-      throw new RuntimeException("transport already open");
-    }
-  }
-
-  public ServerTransport getTransport() {
-    return transport;
-  }
-
-  public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest() {
-    return onExecuteCommandRequest((r) -> true);
-  }
-
-  public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
+  private ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
       final Predicate<ExecuteCommandRequest> activationFunction) {
     return new ExecuteCommandResponseTypeBuilder(
         channelHandler::addExecuteCommandRequestStub, activationFunction, msgPackHelper);
@@ -131,32 +140,8 @@ public final class StubBrokerRule extends ExternalResource {
     return onExecuteCommandRequest(ecr -> ecr.valueType() == eventType && ecr.intent() == intent);
   }
 
-  public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
-      final int partitionId, final ValueType valueType, final Intent intent) {
-    return onExecuteCommandRequest(
-        ecr ->
-            ecr.partitionId() == partitionId
-                && ecr.valueType() == valueType
-                && ecr.intent() == intent);
-  }
-
   public List<ExecuteCommandRequest> getReceivedCommandRequests() {
     return channelHandler.getReceivedCommandRequests();
-  }
-
-  public List<Object> getAllReceivedRequests() {
-    return channelHandler.getAllReceivedRequests();
-  }
-
-  public void addPartition(final int partition) {
-    final Topology newTopology = new Topology(currentTopology.get());
-
-    newTopology.addLeader(nodeId, socketAddress, partition);
-    currentTopology.set(newTopology);
-  }
-
-  public void clearTopology() {
-    currentTopology.set(new Topology());
   }
 
   public JobStubs jobs() {

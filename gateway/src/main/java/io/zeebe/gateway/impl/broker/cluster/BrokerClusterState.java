@@ -7,13 +7,11 @@
  */
 package io.zeebe.gateway.impl.broker.cluster;
 
-import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
-
-import io.zeebe.transport.ClientTransport;
 import java.util.List;
 
 public interface BrokerClusterState {
 
+  int UNKNOWN_NODE_ID = -1;
   int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
   int PARTITION_ID_NULL = NODE_ID_NULL - 1;
 
@@ -27,10 +25,7 @@ public interface BrokerClusterState {
 
   List<Integer> getFollowersForPartition(int partition);
 
-  /**
-   * @return the node id of a random broker or {@link ClientTransport#UNKNOWN_NODE_ID} if no brokers
-   *     are known
-   */
+  /** @return the node id of a random broker or {@link UNKNOWN_NODE_ID} if no brokers are known */
   int getRandomBroker();
 
   List<Integer> getPartitions();

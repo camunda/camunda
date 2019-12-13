@@ -28,10 +28,7 @@ import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerRequestHandler;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Queue;
@@ -41,7 +38,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
-public final class CommandApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
+public final class CommandApiMessageHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -78,7 +75,7 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
 
   private boolean handleExecuteCommandRequest(
       final ServerOutput output,
-      final RemoteAddress requestAddress,
+      final int partitionId,
       final long requestId,
       final RecordMetadata eventMetadata,
       final DirectBuffer buffer,
@@ -90,7 +87,6 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
         messageHeaderDecoder.blockLength(),
         messageHeaderDecoder.version());
 
-    final int partitionId = executeCommandRequestDecoder.partitionId();
     final long key = executeCommandRequestDecoder.key();
 
     final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
@@ -98,7 +94,7 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
     if (logStreamWriter == null) {
       return errorResponseWriter
           .partitionLeaderMismatch(partitionId)
-          .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
+          .tryWriteResponseOrLogFailure(output, partitionId, requestId);
     }
 
     final ValueType eventType = executeCommandRequestDecoder.valueType();
@@ -108,7 +104,7 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
     if (event == null) {
       return errorResponseWriter
           .unsupportedMessage(eventType.name(), recordsByType.keySet().toArray())
-          .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
+          .tryWriteResponseOrLogFailure(output, partitionId, requestId);
     }
 
     final int eventOffset =
@@ -125,7 +121,7 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
 
       return errorResponseWriter
           .malformedRequest(e)
-          .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
+          .tryWriteResponseOrLogFailure(output, partitionId, requestId);
     }
 
     eventMetadata.recordType(RecordType.COMMAND);
@@ -135,18 +131,17 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
 
     metrics.receivedRequest(partitionId);
     final RequestLimiter<Intent> limiter = partitionLimiters.get(partitionId);
-    if (!limiter.tryAcquire(requestAddress.getStreamId(), requestId, eventIntent)) {
+    if (!limiter.tryAcquire(partitionId, requestId, eventIntent)) {
       metrics.dropped(partitionId);
       LOG.trace(
-          "Partition-{} receiving too many requests. Current limit {} inflight {}, dropping request {} from gateway {}",
+          "Partition-{} receiving too many requests. Current limit {} inflight {}, dropping request {} from gateway",
           partitionId,
           limiter.getLimit(),
           limiter.getInflightCount(),
-          requestId,
-          requestAddress.getAddress());
+          requestId);
       return errorResponseWriter
           .resourceExhausted()
-          .tryWriteResponse(output, requestAddress.getStreamId(), requestId);
+          .tryWriteResponse(output, partitionId, requestId);
     }
 
     boolean written = false;
@@ -156,7 +151,7 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
       LOG.error("Unexpected error on writing {} command", eventIntent, ex);
     } finally {
       if (!written) {
-        limiter.onIgnore(requestAddress.getStreamId(), requestId);
+        limiter.onIgnore(partitionId, requestId);
       }
     }
     return written;
@@ -205,10 +200,9 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
         });
   }
 
-  @Override
   public boolean onRequest(
       final ServerOutput output,
-      final RemoteAddress remoteAddress,
+      final int partitionId,
       final DirectBuffer buffer,
       final int offset,
       final int length,
@@ -223,33 +217,22 @@ public final class CommandApiMessageHandler implements ServerMessageHandler, Ser
     if (clientVersion > Protocol.PROTOCOL_VERSION) {
       return errorResponseWriter
           .invalidClientVersion(Protocol.PROTOCOL_VERSION, clientVersion)
-          .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
+          .tryWriteResponse(output, partitionId, requestId);
     }
 
     eventMetadata.reset();
     eventMetadata.protocolVersion(clientVersion);
     eventMetadata.requestId(requestId);
-    eventMetadata.requestStreamId(remoteAddress.getStreamId());
+    eventMetadata.requestStreamId(partitionId);
 
     if (templateId == ExecuteCommandRequestDecoder.TEMPLATE_ID) {
       return handleExecuteCommandRequest(
-          output, remoteAddress, requestId, eventMetadata, buffer, offset, length);
+          output, partitionId, requestId, eventMetadata, buffer, offset, length);
     }
 
     return errorResponseWriter
         .invalidMessageTemplate(templateId, ExecuteCommandRequestDecoder.TEMPLATE_ID)
-        .tryWriteResponse(output, remoteAddress.getStreamId(), requestId);
-  }
-
-  @Override
-  public boolean onMessage(
-      final ServerOutput output,
-      final RemoteAddress remoteAddress,
-      final DirectBuffer buffer,
-      final int offset,
-      final int length) {
-    // ignore; currently no incoming single-message client interactions
-    return true;
+        .tryWriteResponse(output, partitionId, requestId);
   }
 
   private void drainCommandQueue() {

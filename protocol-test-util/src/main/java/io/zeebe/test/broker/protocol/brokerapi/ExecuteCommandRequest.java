@@ -12,7 +12,6 @@ import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferReader;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -26,10 +25,8 @@ public final class ExecuteCommandRequest implements BufferReader {
   protected final MsgPackHelper msgPackHelper;
 
   protected Map<String, Object> command;
-  protected final RemoteAddress source;
 
-  public ExecuteCommandRequest(final RemoteAddress source, final MsgPackHelper msgPackHelper) {
-    this.source = source;
+  public ExecuteCommandRequest(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
   }
 
@@ -51,10 +48,6 @@ public final class ExecuteCommandRequest implements BufferReader {
 
   public Map<String, Object> getCommand() {
     return command;
-  }
-
-  public RemoteAddress getSource() {
-    return source;
   }
 
   @Override

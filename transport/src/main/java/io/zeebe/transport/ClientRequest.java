@@ -7,9 +7,10 @@
  */
 package io.zeebe.transport;
 
-public interface RemoteAddress {
+import io.zeebe.util.buffer.BufferWriter;
 
-  int getStreamId();
+public interface ClientRequest extends BufferWriter {
 
-  SocketAddress getAddress();
+  /** @return the partition id to which the request should be send to */
+  int getPartitionId();
 }
