@@ -7,24 +7,15 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
-import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public final class ServerResponse implements BufferWriter {
-  protected final TransportHeaderDescriptor transportHeaderDescriptor =
-      new TransportHeaderDescriptor();
-  protected final ClaimedFragment claimedFragment = new ClaimedFragment();
-  protected final DirectBufferWriter writerAdapter = new DirectBufferWriter();
-  protected BufferWriter writer;
-  protected int remoteStreamId;
-  private final RequestResponseHeaderDescriptor requestResponseHeaderDescriptor =
-      new RequestResponseHeaderDescriptor();
+  private final DirectBufferWriter writerAdapter = new DirectBufferWriter();
+  private BufferWriter writer;
+  private int remoteStreamId;
   private long requestId;
 
   public ServerResponse writer(final BufferWriter writer) {
@@ -62,33 +53,6 @@ public final class ServerResponse implements BufferWriter {
     return this;
   }
 
-  public boolean trySend(final Dispatcher sendBuffer) {
-    final int requiredLength = getLength();
-
-    long claimedOffset;
-
-    do {
-      claimedOffset = sendBuffer.claim(claimedFragment, requiredLength, remoteStreamId);
-    } while (claimedOffset == -2);
-
-    if (claimedOffset >= 0) {
-      try {
-        final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-        final int writeOffset = claimedFragment.getOffset();
-
-        write(buffer, writeOffset);
-
-        claimedFragment.commit();
-
-        return true;
-      } catch (final Throwable e) {
-        claimedFragment.abort();
-      }
-    }
-
-    return false;
-  }
-
   @Override
   public int getLength() {
     return writer.getLength();
@@ -96,14 +60,6 @@ public final class ServerResponse implements BufferWriter {
 
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
-    //    transportHeaderDescriptor.wrap(buffer, offset).putProtocolRequestReponse();
-    //
-    //    offset += TransportHeaderDescriptor.headerLength();
-    //
-    //    requestResponseHeaderDescriptor.wrap(buffer, offset).requestId(requestId);
-    //
-    //    offset += RequestResponseHeaderDescriptor.headerLength();
-
     writer.write(buffer, offset);
   }
 
@@ -113,9 +69,5 @@ public final class ServerResponse implements BufferWriter {
 
   public long getRequestId() {
     return requestId;
-  }
-
-  public int getRemoteStreamId() {
-    return remoteStreamId;
   }
 }

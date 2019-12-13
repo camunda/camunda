@@ -7,7 +7,6 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.function.Predicate;
@@ -43,24 +42,6 @@ public interface ClientOutput {
       Supplier<Integer> nodeIdSupplier, ClientRequest clientRequest, Duration timeout) {
     return sendRequestWithRetry(nodeIdSupplier, (response) -> true, clientRequest, timeout);
   }
-
-  /**
-   * Like {@link #sendRequest(Integer, BufferWriter, Duration)} where the timeout is set to the
-   * configured default timeout.
-   *
-   * @return the response future or null in case no memory is currently available to allocate the
-   *     request
-   */
-  ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer);
-
-  /**
-   * Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)} with a static
-   * remote and no response inspection (i.e. first response is accepted).
-   *
-   * @return the response future or null in case no memory is currently available to allocate the
-   *     request
-   */
-  ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer, Duration timeout);
 
   /**
    * Send a request to a node with retries if there is no current connection or the node is not
