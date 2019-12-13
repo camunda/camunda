@@ -33,6 +33,7 @@ public class IndexableEventProcessPublishStateDto {
   private OffsetDateTime lastImportedEventIngestDateTime;
   private EventProcessState state;
   private Double publishProgress;
+  @Builder.Default
   private Boolean deleted = false;
   private String xml;
   private List<IndexableEventMappingDto> mappings;

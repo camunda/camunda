@@ -22,6 +22,7 @@ public class EventCountDto {
   private String source;
   private String eventName;
   private Long count;
+  @Builder.Default
   private boolean suggested = false;
 
 }

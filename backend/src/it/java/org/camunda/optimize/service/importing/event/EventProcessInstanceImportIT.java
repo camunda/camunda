@@ -286,7 +286,6 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final String ingestedStartEventId = ingestTestEvent(ingestedStartEventName, startDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(30));
-    final OffsetDateTime firstEndDateTime = LocalDateUtil.getCurrentDateTime();
     final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, startDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(10));
@@ -371,7 +370,6 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                 .engine(null)
                 .tenantId(null)
                 .businessKey(null)
-                .userTasks(null)
                 .startDate(startDateTime)
                 .endDate(null)
                 .state("ACTIVE")
@@ -534,7 +532,6 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
       .engine(null)
       .tenantId(null)
       .businessKey(null)
-      .userTasks(null)
       .startDate(startDateTime)
       .endDate(endDateTime)
       .state("COMPLETED")

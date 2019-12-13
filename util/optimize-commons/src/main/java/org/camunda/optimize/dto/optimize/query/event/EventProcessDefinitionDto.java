@@ -11,14 +11,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 
 import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-@FieldNameConstants
 @EqualsAndHashCode(callSuper = true)
 public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
 
