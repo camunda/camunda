@@ -197,7 +197,7 @@ public class ESIndexAdjuster {
 
     final CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName);
     createIndexRequest.mapping(DEFAULT_INDEX_TYPE, indexMapping.getSource());
-    createIndexRequest.settings(createIndexSettings());
+    createIndexRequest.settings(createIndexSettings(indexMapping));
 
     try {
       restClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
@@ -207,9 +207,9 @@ public class ESIndexAdjuster {
     }
   }
 
-  private Settings createIndexSettings() {
+  private Settings createIndexSettings(IndexMappingCreator indexMappingCreator) {
     try {
-      return IndexSettingsBuilder.buildAllSettings(configurationService);
+      return IndexSettingsBuilder.buildAllSettings(configurationService, indexMappingCreator);
     } catch (IOException e) {
       logger.error("Could not create settings!", e);
       throw new UpgradeRuntimeException("Could not create index settings");

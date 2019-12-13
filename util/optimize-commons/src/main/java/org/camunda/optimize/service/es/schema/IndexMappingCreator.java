@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.schema;
 
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
+import java.io.IOException;
+
 public interface IndexMappingCreator {
 
   String getIndexName();
@@ -14,5 +16,7 @@ public interface IndexMappingCreator {
   int getVersion();
 
   XContentBuilder getSource();
+
+  XContentBuilder getCustomSettings(XContentBuilder xContentBuilder) throws IOException;
 
 }

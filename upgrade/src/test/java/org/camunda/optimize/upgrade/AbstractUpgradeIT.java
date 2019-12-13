@@ -161,7 +161,7 @@ public abstract class AbstractUpgradeIT {
                                                        int version) throws IOException {
     final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
     final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
-    final Settings indexSettings = createIndexSettings();
+    final Settings indexSettings = createIndexSettings(indexMapping);
 
     CreateIndexRequest request = new CreateIndexRequest(indexName);
     request.alias(new Alias(aliasName));
@@ -178,9 +178,9 @@ public abstract class AbstractUpgradeIT {
     );
   }
 
-  private Settings createIndexSettings() {
+  private Settings createIndexSettings(IndexMappingCreator indexMappingCreator) {
     try {
-      return IndexSettingsBuilder.buildAllSettings(configurationService);
+      return IndexSettingsBuilder.buildAllSettings(configurationService, indexMappingCreator);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not create index settings");
     }

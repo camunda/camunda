@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -18,6 +19,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -29,13 +31,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_LENGTH_REQUIRED;
 import static javax.servlet.http.HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.duration;
 import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.eventName;
 import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.id;
@@ -47,16 +48,10 @@ import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.OPTIMIZE_API_SECRET_HEADER;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.everyItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class IngestionRestIT extends AbstractIT {
 
-  public static final Random RANDOM = new Random();
+  private static final Random RANDOM = new Random();
 
   @Test
   public void ingestSingleEvent() {
@@ -69,7 +64,7 @@ public class IngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus(), is(204));
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
     assertEventDtosArePersisted(Collections.singletonList(eventDto));
   }
@@ -89,24 +84,19 @@ public class IngestionRestIT extends AbstractIT {
       .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
 
     // then
-    assertThat(ingestErrorResponse.getErrorMessage(), is(THE_REQUEST_BODY_WAS_INVALID));
-    assertThat(ingestErrorResponse.getValidationErrors().size(), is(4));
+    assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
+    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(4);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
-        .collect(toList()),
-      containsInAnyOrder(
-        id, eventName, timestamp, traceId
-      )
-    );
+        .collect(toList()))
+      .contains(id, eventName, timestamp, traceId);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getErrorMessage)
-        .collect(toList()),
-      everyItem(is(notNullValue()))
-    );
+        .collect(toList())).doesNotContainNull();
 
     assertEventDtosArePersisted(Collections.emptyList());
   }
@@ -127,24 +117,19 @@ public class IngestionRestIT extends AbstractIT {
       .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
 
     // then
-    assertThat(ingestErrorResponse.getErrorMessage(), is(THE_REQUEST_BODY_WAS_INVALID));
-    assertThat(ingestErrorResponse.getValidationErrors().size(), is(5));
+    assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
+    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(5);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
-        .collect(toList()),
-      containsInAnyOrder(
-        id, eventName, timestamp, traceId, duration
-      )
-    );
+        .collect(toList()))
+      .contains(id, eventName, timestamp, traceId, duration);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getErrorMessage)
-        .collect(toList()),
-      everyItem(is(notNullValue()))
-    );
+        .collect(toList())).doesNotContainNull();
 
     assertEventDtosArePersisted(Collections.emptyList());
   }
@@ -160,7 +145,7 @@ public class IngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus(), is(401));
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
 
     assertEventDtosArePersisted(Collections.emptyList());
   }
@@ -179,7 +164,7 @@ public class IngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus(), is(204));
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
     assertEventDtosArePersisted(Collections.singletonList(eventDto));
   }
@@ -197,7 +182,7 @@ public class IngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus(), is(204));
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
     assertEventDtosArePersisted(eventDtos);
   }
@@ -215,7 +200,7 @@ public class IngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus(), is(401));
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
 
     assertEventDtosArePersisted(Collections.emptyList());
   }
@@ -235,16 +220,13 @@ public class IngestionRestIT extends AbstractIT {
       .execute(ErrorResponseDto.class, SC_REQUEST_ENTITY_TOO_LARGE);
 
     // then
-    assertThat(ingestResponse.getErrorMessage(), containsString("Request too large"));
+    assertThat(ingestResponse.getErrorMessage()).contains("Request too large");
 
     assertEventDtosArePersisted(Collections.emptyList());
   }
 
   @Test
   public void ingestEventBatch_contentLengthHeaderMissing() throws IOException {
-    // given
-
-    // when
     // this is a custom apache client that does not send the content-length header
     try (final CloseableHttpClient httpClient = HttpClients.custom()
       .setHttpProcessor(HttpProcessorBuilder.create().addAll(new RequestTargetHost()).build())
@@ -256,11 +238,11 @@ public class IngestionRestIT extends AbstractIT {
       final CloseableHttpResponse response = httpClient.execute(httpPut);
 
       // then
-      assertThat(response.getStatusLine().getStatusCode(), is(SC_LENGTH_REQUIRED));
+      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(HttpStatus.SC_LENGTH_REQUIRED);
       final ErrorResponseDto errorResponseDto = embeddedOptimizeExtension.getObjectMapper()
         .readValue(response.getEntity().getContent(), ErrorResponseDto.class);
 
-      assertThat(errorResponseDto.getErrorMessage(), is(MESSAGE_NO_CONTENT_LENGTH));
+      assertThat(errorResponseDto.getErrorMessage()).isEqualTo(MESSAGE_NO_CONTENT_LENGTH);
 
       assertEventDtosArePersisted(Collections.emptyList());
     }
@@ -287,22 +269,19 @@ public class IngestionRestIT extends AbstractIT {
       .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
 
     // then
-    assertThat(ingestErrorResponse.getErrorMessage(), is(THE_REQUEST_BODY_WAS_INVALID));
-    assertThat(ingestErrorResponse.getValidationErrors().size(), is(2));
+    assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
+    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(2);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
-        .collect(toList()),
-      containsInAnyOrder("element[2]." + id, "element[3]." + duration)
-    );
+        .collect(toList()))
+      .contains("element[2]." + id, "element[3]." + duration);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getErrorMessage)
-        .collect(toList()),
-      everyItem(is(notNullValue()))
-    );
+        .collect(toList())).doesNotContainNull();
 
     assertEventDtosArePersisted(Collections.emptyList());
   }
@@ -311,11 +290,11 @@ public class IngestionRestIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     final SearchResponse eventSearchResponse = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(EVENT_INDEX_NAME);
-    assertThat(eventSearchResponse.getHits().getTotalHits(), is((long) eventDtos.size()));
-    final List<EventDto> indexedEventDtos = Arrays.stream(eventSearchResponse.getHits().getHits())
+    List<EventDto> indexedEventDtos = Arrays.stream(eventSearchResponse.getHits().getHits())
       .map(this::readAsEventDto)
       .collect(toList());
-    assertThat(indexedEventDtos, containsInAnyOrder(eventDtos.toArray()));
+    assertThat(indexedEventDtos).usingElementComparatorIgnoringFields(EventDto.Fields.ingestionTimestamp)
+      .containsExactlyInAnyOrderElementsOf(eventDtos);
   }
 
   @SneakyThrows
@@ -328,21 +307,20 @@ public class IngestionRestIT extends AbstractIT {
   }
 
   private EventDto createEventDto() {
-    return new EventDto(
-      UUID.randomUUID().toString(),
-      RandomStringUtils.randomAlphabetic(10),
-      System.currentTimeMillis(),
-      System.currentTimeMillis(),
-      RandomStringUtils.randomAlphabetic(10),
-      Math.abs(RANDOM.nextLong()),
-      RandomStringUtils.randomAlphabetic(10),
-      RandomStringUtils.randomAlphabetic(10),
-      ImmutableMap.of(
+    return EventDto.builder()
+      .id(IdGenerator.getNextId())
+      .eventName(RandomStringUtils.randomAlphabetic(10))
+      .timestamp(System.currentTimeMillis())
+      .traceId(RandomStringUtils.randomAlphabetic(10))
+      .duration(Math.abs(RANDOM.nextLong()))
+      .group(RandomStringUtils.randomAlphabetic(10))
+      .source(RandomStringUtils.randomAlphabetic(10))
+      .data(ImmutableMap.of(
         RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
         RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),
         RandomStringUtils.randomAlphabetic(5), RandomStringUtils.randomAlphabetic(5)
-      )
-    );
+      ))
+      .build();
   }
 
 }

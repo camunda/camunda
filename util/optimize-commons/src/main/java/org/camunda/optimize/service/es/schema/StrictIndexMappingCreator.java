@@ -36,4 +36,9 @@ public abstract class StrictIndexMappingCreator implements IndexMappingCreator, 
     return source;
   }
 
+  @Override
+  public XContentBuilder getCustomSettings(XContentBuilder xContentBuilder) throws IOException {
+    return xContentBuilder;
+  }
+
 }

@@ -13,6 +13,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
+
 @Component
 public class EventIndex extends StrictIndexMappingCreator {
 
@@ -103,6 +107,17 @@ public class EventIndex extends StrictIndexMappingCreator {
         .field("enabled", false)
       .endObject()
       ;
+    // @formatter:on
+  }
+
+  @Override
+  public XContentBuilder getCustomSettings(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
+    return xContentBuilder
+      .startObject(SORT_SETTING)
+        .field(SORT_FIELD_SETTING, INGESTION_TIMESTAMP)
+        .field(SORT_ORDER_SETTING, "desc")
+      .endObject();
     // @formatter:on
   }
 

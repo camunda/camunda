@@ -132,7 +132,7 @@ public class ElasticSearchSchemaManager {
                                   final Set<String> additionalReadOnlyAliases) {
     final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
     final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
-    final Settings indexSettings = createIndexSettings();
+    final Settings indexSettings = createIndexSettings(mapping);
     try {
       try {
         final CreateIndexRequest request = new CreateIndexRequest(indexName);
@@ -252,9 +252,9 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  private Settings createIndexSettings() {
+  private Settings createIndexSettings(IndexMappingCreator indexMappingCreator) {
     try {
-      return IndexSettingsBuilder.buildAllSettings(configurationService);
+      return IndexSettingsBuilder.buildAllSettings(configurationService, indexMappingCreator);
     } catch (IOException e) {
       log.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");

@@ -54,4 +54,10 @@ public class MyUpdatedEventIndex implements IndexMappingCreator {
     }
     return source;
   }
+
+  @Override
+  public XContentBuilder getCustomSettings(XContentBuilder xContentBuilder) {
+    return xContentBuilder;
+  }
+
 }

@@ -18,6 +18,14 @@ public class ElasticsearchConstants {
 
   public static final String OPTIMIZE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
+  public static final String NUMBER_OF_REPLICAS_SETTING = "number_of_replicas";
+  public static final String NUMBER_OF_SHARDS_SETTING = "number_of_shards";
+  public static final String REFRESH_INTERVAL_SETTING = "refresh_interval";
+  public static final String ANALYSIS_SETTING = "analysis";
+  public static final String SORT_SETTING = "sort";
+  public static final String SORT_FIELD_SETTING = "field";
+  public static final String SORT_ORDER_SETTING = "order";
+
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
   public static final String DECISION_INSTANCE_INDEX_NAME = "decision-instance";
 

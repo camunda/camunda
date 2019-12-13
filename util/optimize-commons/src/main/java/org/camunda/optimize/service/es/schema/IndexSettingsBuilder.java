@@ -13,6 +13,10 @@ import org.elasticsearch.common.xcontent.XContentType;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ANALYSIS_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class IndexSettingsBuilder {
@@ -31,37 +35,55 @@ public class IndexSettingsBuilder {
     return toSettings(builder);
   }
 
-  public static Settings buildAllSettings(ConfigurationService configurationService) throws IOException {
+  public static Settings buildCustomSettings(IndexMappingCreator indexMappingCreator) throws IOException {
+    XContentBuilder builder = jsonBuilder();
+    // @formatter:off
+    builder
+      .startObject();
+        addCustomIndexSettings(indexMappingCreator, builder)
+      .endObject();
+    // @formatter:on
+    return toSettings(builder);
+  }
+
+  public static Settings buildAllSettings(ConfigurationService configurationService,
+                                          IndexMappingCreator indexMappingCreator) throws IOException {
     XContentBuilder builder = jsonBuilder();
     // @formatter:off
     builder
       .startObject();
         addDynamicSettings(configurationService, builder);
         addStaticSettings(configurationService, builder);
+        addCustomIndexSettings(indexMappingCreator, builder);
         addAnalysis(builder)
       .endObject();
     // @formatter:on
     return toSettings(builder);
   }
 
+  private static XContentBuilder addCustomIndexSettings(final IndexMappingCreator indexMappingCreator,
+                                                        final XContentBuilder builder) throws IOException {
+    return indexMappingCreator.getCustomSettings(builder);
+  }
+
   private static XContentBuilder addStaticSettings(final ConfigurationService configurationService,
                                                    final XContentBuilder builder) throws IOException {
     return builder
-      .field("number_of_shards", configurationService.getEsNumberOfShards());
+      .field(NUMBER_OF_SHARDS_SETTING, configurationService.getEsNumberOfShards());
   }
 
   private static XContentBuilder addDynamicSettings(final ConfigurationService configurationService,
                                                     final XContentBuilder builder) throws IOException {
     return builder
       .field(DYNAMIC_SETTING_MAX_NGRAM_DIFF, MAX_GRAM - 1)
-      .field("refresh_interval", configurationService.getEsRefreshInterval())
-      .field("number_of_replicas", configurationService.getEsNumberOfReplicas());
+      .field(REFRESH_INTERVAL_SETTING, configurationService.getEsRefreshInterval())
+      .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getEsNumberOfReplicas());
   }
 
   private static XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
-    .startObject("analysis")
+    .startObject(ANALYSIS_SETTING)
       .startObject("analyzer")
         .startObject("lowercase_ngram")
           .field("type", "custom")

@@ -40,12 +40,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SchemaInitializerIT extends AbstractIT {
 
@@ -77,14 +76,12 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient),
-      is(true)
-    );
+    assertThat(embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient))
+      .isTrue();
   }
 
   @Test
-  public void dontFailIfSomeIndexesAlreadyExist() throws IOException {
+  public void doNotFailIfSomeIndexesAlreadyExist() throws IOException {
     // given
     initializeSchema();
     embeddedOptimizeExtension.getOptimizeElasticClient().getHighLevelClient().indices().delete(
@@ -96,10 +93,8 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // then
-    assertThat(
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient),
-      is(true)
-    );
+    assertThat(embeddedOptimizeExtension.getElasticSearchSchemaManager()
+                 .schemaExists(prefixAwareRestHighLevelClient)).isTrue();
   }
 
   @Test
@@ -109,10 +104,12 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size(), is(25));
+    assertThat(mappings.size()).isEqualTo(25);
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }
+    final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
+    assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
   }
 
   @Test
@@ -148,7 +145,7 @@ public class SchemaInitializerIT extends AbstractIT {
     // then the settings contain the updated value
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
 
-    assertDynamicSettingsComplyWithDefault(mappings, getSettingsResponse);
+    assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
   }
 
   @Test
@@ -172,7 +169,7 @@ public class SchemaInitializerIT extends AbstractIT {
     // then the settings contain the updated value
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
 
-    assertDynamicSettingsComplyWithDefault(mappings, getSettingsResponse);
+    assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
   }
 
   @Test
@@ -181,10 +178,9 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // then an exception is thrown when I add a document to an unknown type
-    assertThrows(
-      ElasticsearchStatusException.class,
-      () -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch("myAwesomeNewIndex", "12312412", new ProcessInstanceDto())
-    );
+    assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      "myAwesomeNewIndex", "12312412", new ProcessInstanceDto()))
+      .isInstanceOf(ElasticsearchStatusException.class);
   }
 
   @Test
@@ -194,29 +190,35 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    assertThrows(
-      ElasticsearchStatusException.class,
-      () -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-        ElasticsearchConstants.METADATA_INDEX_NAME,
-        "12312412",
-        extendedEventDto
-      )
-    );
+    assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      ElasticsearchConstants.METADATA_INDEX_NAME,
+      "12312412",
+      extendedEventDto
+    )).isInstanceOf(ElasticsearchStatusException.class);
   }
 
-  private void assertDynamicSettingsComplyWithDefault(final List<IndexMappingCreator> mappings,
-                                                      final GetSettingsResponse getSettingsResponse) throws
-                                                                                                     IOException {
-    final Settings settings = IndexSettingsBuilder.buildDynamicSettings(embeddedOptimizeExtension.getConfigurationService());
-
+  private void assertDynamicSettingsComplyWithDefaultAndCustomSettings(final List<IndexMappingCreator> mappings,
+                                                                       final GetSettingsResponse getSettingsResponse) throws IOException {
     for (IndexMappingCreator mapping : mappings) {
-      settings.names().forEach(settingName -> {
-        final String ngramMaxValue = getSettingsResponse.getSetting(
-          indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping),
-          "index." + settingName
-        );
-        assertThat(ngramMaxValue, is(settings.get(settingName)));
-      });
+      Settings dynamicSettings = IndexSettingsBuilder.buildDynamicSettings(
+        embeddedOptimizeExtension.getConfigurationService());
+      dynamicSettings.names().forEach(
+        settingName -> {
+          final String setting = getSettingsResponse.getSetting(
+            indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping),
+            "index." + settingName
+          );
+          assertThat(setting).isEqualTo(dynamicSettings.get(settingName));
+        });
+      Settings customSettings = IndexSettingsBuilder.buildCustomSettings(mapping);
+      customSettings.keySet().forEach(
+        settingName -> {
+          final String setting = getSettingsResponse.getSetting(
+            indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping),
+            "index." + settingName
+          );
+          assertThat(setting).isEqualTo(customSettings.get(settingName));
+        });
     }
   }
 
@@ -255,7 +257,7 @@ public class SchemaInitializerIT extends AbstractIT {
     String responseBody = EntityUtils.toString(response.getEntity());
     Map<String, Map<String, Map<String, Object>>> mappings = JsonPath.read(responseBody, "$");
 
-    assertThat(mappings.size(), is(1));
+    assertThat(mappings.size()).isEqualTo(1);
 
     boolean containsType = mappings
       .values()
@@ -263,7 +265,7 @@ public class SchemaInitializerIT extends AbstractIT {
       .next()
       .get("mappings")
       .containsKey(DEFAULT_INDEX_TYPE);
-    assertThat(containsType, is(true));
+    assertThat(containsType).isTrue();
   }
 
   private void assertThatNewFieldExists() throws IOException {
@@ -284,7 +286,7 @@ public class SchemaInitializerIT extends AbstractIT {
         MyUpdatedEventIndex.MY_NEW_FIELD
       );
 
-    assertThat(fieldEntry.isNull(), is(false));
+    assertThat(fieldEntry.isNull()).isFalse();
   }
 
   private void initializeSchema() {
