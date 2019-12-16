@@ -9,25 +9,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
-import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
+import org.camunda.operate.util.ThreadUtil;
+
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.Topology;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-import org.camunda.operate.util.ThreadUtil;
 
 @Component
 public class PartitionHolder {
@@ -59,6 +55,9 @@ public class PartitionHolder {
     return getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
   }
   
+  //TODO: Use spring retry ?
+  // - Throw a exception if partition ids can't be fetched.
+  // - Use this exception for retrying (in spring retry annotation)
   public List<Integer> getPartitionIdsWithWaitingTimeAndRetries(long waitingTimeInMilliseconds, int maxRetries) {
     int retries = 0;
     while (partitionIds.isEmpty() && retries <= maxRetries) {
@@ -71,18 +70,10 @@ public class PartitionHolder {
         partitionIds = extractCurrentNodePartitions(zeebePartitionIds.get());
       } else {
         if (retries <= maxRetries) {
-          logger.debug("Partition ids can't be fetched from Zeebe. Try next round ({}).", retries);
+          logger.info("Partition ids can't be fetched from Zeebe. Try next round ({}).", retries);
         } else {
-          logger.debug("Partition ids can't be fetched from Zeebe.");
+          logger.info("Partition ids can't be fetched from Zeebe. Return empty partition ids list.");
         }
-      }
-    }
-    if (partitionIds.isEmpty()) {
-      Optional<List<Integer>> zeebeElasticSearchPartitionIds = getPartitionsFromElasticsearch();
-      if (zeebeElasticSearchPartitionIds.isEmpty()) {
-        logger.warn("Partition ids can not be fetched. Importer won't be able to start.");
-      } else {
-        return extractCurrentNodePartitions(zeebeElasticSearchPartitionIds.get());
       }
     }
     return partitionIds;
@@ -121,31 +112,9 @@ public class PartitionHolder {
     }
     return Optional.empty();
   }
-
-  protected Optional<List<Integer>> getPartitionsFromElasticsearch() {
-    logger.debug("Requesting partition ids from elasticsearch");
-    final String aggName = "partitions";
-    SearchRequest searchRequest = new SearchRequest(ImportValueType.DEPLOYMENT.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix()))
-        .source(new SearchSourceBuilder()
-            .aggregation(terms(aggName)
-                .field(PARTITION_ID_FIELD_NAME)
-                .size(ElasticsearchUtil.TERMS_AGG_SIZE)));
-    try {
-      final SearchResponse searchResponse = zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
-      final List<Integer> partitionIds = ((Terms) searchResponse.getAggregations().get(aggName)).getBuckets().stream()
-          .collect(ArrayList::new, (list, bucket) -> list.add(bucket.getKeyAsNumber().intValue()), (list1, list2) -> list1.addAll(list2));
-      logger.debug("Following partition ids were found: {}", partitionIds);
-      if(!partitionIds.isEmpty()) {
-        return Optional.of(partitionIds);
-      }
-    } catch (Exception ex) {
-      logger.warn("Error occurred when requesting partition ids from Elasticsearch: " + ex.getMessage(), ex);
-    }
-    return Optional.empty();
-  }
-
   
   protected void sleepFor(long milliseconds) {
     ThreadUtil.sleepFor(milliseconds);
   }
+ 
 }

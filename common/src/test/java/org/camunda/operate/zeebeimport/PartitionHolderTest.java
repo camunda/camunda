@@ -28,11 +28,6 @@ public class PartitionHolderTest {
     }
     
     @Override
-    protected Optional<List<Integer>> getPartitionsFromElasticsearch() {
-      return elasticSearchPartitionIds;
-    }
-    
-    @Override
     protected void sleepFor(long milliseconds) {
       slept++;
     }
@@ -65,20 +60,6 @@ public class PartitionHolderTest {
     elasticSearchPartitionIds = Optional.empty();
     
     Assertions.assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(5,6,7,8,9,10);
-    Assertions.assertThat(slept).isEqualTo(0);
-  }
-  
-  @Test
-  public void testGetElasticsearchPartitionIds() {
-    zeebePartitionIds = Optional.empty();
-    elasticSearchPartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
-    
-    Assertions.assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(1,2,3,4,5);
-    Assertions.assertThat(slept).isEqualTo(60);
-    // But then zeebePartitions are there
-    zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(2, 4)));
-    slept = 0;
-    Assertions.assertThat(partitionHolder.getPartitionIds()).containsAll(zeebePartitionIds.get());
     Assertions.assertThat(slept).isEqualTo(0);
   }
   

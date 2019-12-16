@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.slf4j.Logger;
@@ -40,18 +41,18 @@ public class RecordsReaderHolder {
   private OperateProperties operateProperties;
 
   public Set<RecordsReader> getAllRecordsReaders() {
-    if (recordsReaders == null) {
-      recordsReaders = new HashSet<>();
-      int queueSize = operateProperties.getImporter().getQueueSize();
-      //create readers
-      List<Integer> partitionIds = partitionHolder.getPartitionIds();
-      logger.info("Starting import for partitions: {}", partitionIds);
-      for (Integer partitionId : partitionIds) {
-        //TODO what if it's not the final list of partitions
-        for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
-          recordsReaders.add(beanFactory.getBean(RecordsReader.class, partitionId, importValueType,
-              queueSize));
-        }
+    if(CollectionUtil.isNotEmpty(recordsReaders)) {
+      return recordsReaders;
+    }
+    recordsReaders = new HashSet<>();
+    int queueSize = operateProperties.getImporter().getQueueSize();
+    // create readers
+    List<Integer> partitionIds = partitionHolder.getPartitionIds();
+    logger.info("Starting import for partitions: {}", partitionIds);
+    for (Integer partitionId : partitionIds) {
+      // TODO what if it's not the final list of partitions
+      for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
+        recordsReaders.add(beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
       }
     }
     return recordsReaders;
