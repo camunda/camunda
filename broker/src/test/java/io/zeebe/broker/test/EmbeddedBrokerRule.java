@@ -173,9 +173,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     return controlledActorClock;
   }
 
-  public void restartBroker() {
+  public void restartBroker(final PartitionListener... listeners) {
     stopBroker();
-    startBroker();
+    startBroker(listeners);
   }
 
   public void stopBroker() {
@@ -186,7 +186,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
-  public void startBroker() {
+  public void startBroker(final PartitionListener... listeners) {
     if (brokerCfg == null) {
       try (final InputStream configStream = configSupplier.get()) {
         if (configStream == null) {
@@ -204,6 +204,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
     broker.addPartitionListener(new LeaderPartitionListener(latch));
+    for (final PartitionListener listener : listeners) {
+      broker.addPartitionListener(listener);
+    }
+
     broker.start().join();
 
     try {
