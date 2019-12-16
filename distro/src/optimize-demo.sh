@@ -27,32 +27,34 @@ function checkStartup {
         echo "Error: $NAME did not start!"
         exit 1;
       else
-        echo "Polling $NAME ... $RETRIES left"
+        echo "Polling $NAME ... $RETRIES retries left"
       fi
     done
 	echo "$NAME has successfully been started.";
 }
 
 # make sure to kill background/ child processes as well
-trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
 
 BASEDIR=$(dirname "$0")
 mkdir -p $BASEDIR/log
 
 echo
-echo "Starting Elasticsearch...";
+echo "Starting Elasticsearch ${elasticsearch.version}...";
+echo "(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)"
 echo
-exec /bin/bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
+ELASTICSEARCH_LOG_FILE=$BASEDIR/log/elasticsearch.log
+bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.version}/bin/elasticsearch" </dev/null > $ELASTICSEARCH_LOG_FILE 2>&1 &
 
 URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
 checkStartup $URL "Elasticsearch"
 
 echo
-echo "Starting Camunda Optimize...";
+echo "Starting Camunda Optimize ${project.version}...";
+echo "(Hint: you can find the log output in the 'optimize*.log' files in the 'log' folder of your distribution.)"
 echo
 SCRIPT_PATH="./optimize-startup.sh"
-LOG_FILE=$BASEDIR/log/optimize.log
-nohup bash "$SCRIPT_PATH" $@ </dev/null > $LOG_FILE 2>&1 &
+bash "$SCRIPT_PATH" $@ >/dev/null 2>&1 &
 
 # Check if Optimize has been started
 URL="http://localhost:8090"
@@ -63,7 +65,7 @@ BROWSERS="gnome-www-browser x-www-browser firefox chromium chromium-browser goog
 
 if [ -z "$BROWSER" ]; then
   for executable in $BROWSERS; do
-    BROWSER=`which $executable 2> /dev/null`
+    BROWSER=$(command -v "$executable" 2> /dev/null)
     if [ -n "$BROWSER" ]; then
       break;
     fi
@@ -82,6 +84,5 @@ echo "You can now view Camunda Optimize in your browser."
 echo
 echo -e "\t http://localhost:8090/login"
 echo
-
 
 wait

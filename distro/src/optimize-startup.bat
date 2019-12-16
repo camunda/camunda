@@ -50,7 +50,7 @@ for %%a in (%*) do (
 )
 
 echo.
-echo Starting Camunda Optimize ${project.version}
+echo Starting Camunda Optimize ${project.version}...
 echo.
 
 :: start optimize

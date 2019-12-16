@@ -29,7 +29,10 @@ set COMMAND=curl.exe -f -XGET http://localhost:9200/_cluster/health?wait_for_sta
 echo Environment is set up.
 
 echo Starting Elasticsearch ${elasticsearch.version}...
-start "Elasticsearch" call "%BASEDIR%elasticsearch\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat"
+echo (Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)
+echo.
+set ELASTICSEARCH_LOG_FILE=%BASEDIR%/log/elasticsearch.log
+start /b "Elasticsearch" cmd /c "%BASEDIR%elasticsearch\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat" >%ELASTICSEARCH_LOG_FILE% 2>&1
 
 :: query elasticsearch if it's up
 :while1
@@ -48,11 +51,11 @@ if %ERRORLEVEL% neq 0 (
 echo Elasticsearch has successfully been started.
 
 :: start optimize
-echo Starting Optimize ...
 echo.
-set LOG_FILE=%BASEDIR%log\optimize.log
-set OPTIMIZE_OUTPUT=echo Optimize has been started. Use CTRL + C to stop Optimize!
-start "Camunda Optimize" cmd /c ^( %OPTIMIZE_OUTPUT% ^&^& "optimize-startup.bat" %* ^> %LOG_FILE% ^2^>^&^1 ^)
+echo Starting Optimize ${project.version}...
+echo (Hint: you can find the log output in the 'optimize*.log' files in the 'log' folder of your distribution.)
+echo.
+start /b "Camunda Optimize" cmd /c "%BASEDIR%\optimize-startup.bat" >NUL 2>&1
 
 
 :: command to query optimize

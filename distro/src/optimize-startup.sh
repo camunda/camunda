@@ -16,7 +16,7 @@
 BASEDIR=$(dirname "$0")
 
 echo
-echo "Starting Camunda Optimize...";
+echo "Starting Camunda Optimize ${project.version}...";
 echo
 
 # now set the path to java
@@ -24,7 +24,7 @@ if [ -x "$JAVA_HOME/bin/java" ]; then
   JAVA="$JAVA_HOME/bin/java"
 else
   set +e
-  JAVA=`which java`
+  JAVA=$(command -v java)
   set -e
 fi
 
