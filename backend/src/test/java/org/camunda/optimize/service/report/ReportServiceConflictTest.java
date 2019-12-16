@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
@@ -54,9 +55,6 @@ public class ReportServiceConflictTest {
 
   @Mock
   AuthorizedCollectionService collectionService;
-
-  @Mock
-  AlertService alertService;
 
   ReportService underTest;
 

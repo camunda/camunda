@@ -7,11 +7,14 @@ package org.camunda.optimize.service.security;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.http.HttpStatus;
+import org.assertj.core.util.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -45,6 +48,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 
 public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
@@ -409,6 +413,105 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
+  @Test
+  public void createEventProcessReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    SingleProcessReportDefinitionDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
+      null,
+      PROCESS_KEY,
+      Lists.emptyList()
+    );
+
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildCreateSingleProcessReportRequest(reportDefinitionDto)
+      .execute();
+
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void getEventProcessReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetReportRequest(reportId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void evaluateEventProcessReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+  }
+
+  @Test
+  public void updateEventProcessReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildUpdateSingleReportRequest(reportId, updatedReport)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+  }
+
+  @Test
+  public void deleteEventBasedReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildDeleteReportRequest(reportId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+  }
+
   private String getDefinitionKey(final int definitionResourceType) {
     return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
   }
@@ -531,17 +634,22 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   }
 
   private ReportDefinitionDto constructReportWithDefinition(int resourceType) {
-    return constructReportWithDefinition(resourceType, Collections.emptyList());
+    return constructReportWithDefinition(resourceType, getDefinitionKey(resourceType), Collections.emptyList());
   }
 
-  private ReportDefinitionDto constructReportWithDefinition(int resourceType, List<String> tenantIds) {
+  private ReportDefinitionDto constructReportWithDefinition(final int resourceType, final List<String> tenantIds) {
+    return constructReportWithDefinition(resourceType, getDefinitionKey(resourceType), tenantIds);
+  }
+
+  private ReportDefinitionDto constructReportWithDefinition(final int resourceType, final String definitionKey,
+                                                            final List<String> tenantIds) {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         SingleProcessReportDefinitionDto processReportDefinitionDto = new SingleProcessReportDefinitionDto();
         ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
           .createReportData()
-          .setProcessDefinitionKey(getDefinitionKey(resourceType))
+          .setProcessDefinitionKey(definitionKey)
           .setProcessDefinitionVersion("1")
           .setReportDataType(ProcessReportDataType.RAW_DATA)
           .build();
@@ -582,4 +690,24 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     }
   }
 
+
+  private EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
+    final String version = "1";
+    final String name = "eventBasedName";
+    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
+      .id(key + "-" + version)
+      .key(key)
+      .name(name)
+      .version(version)
+      .bpmn20Xml(key + version)
+      .flowNodeNames(Collections.emptyMap())
+      .userTaskNames(Collections.emptyMap())
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      EVENT_PROCESS_DEFINITION_INDEX_NAME,
+      eventProcessDefinitionDto.getId(),
+      eventProcessDefinitionDto
+    );
+    return eventProcessDefinitionDto;
+  }
 }

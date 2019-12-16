@@ -66,8 +66,7 @@ public class ReportClient {
   }
 
   public String createSingleReport(final String collectionId, final DefinitionType definitionType,
-                                   final String definitionKey,
-                                   final List<String> tenants) {
+                                   final String definitionKey, final List<String> tenants) {
     switch (definitionType) {
       case PROCESS:
         return createAndStoreProcessReport(collectionId, definitionKey, tenants);
@@ -79,6 +78,17 @@ public class ReportClient {
   }
 
   private String createAndStoreProcessReport(String collectionId, String definitionKey, List<String> tenants) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
+      collectionId,
+      definitionKey,
+      tenants
+    );
+    return createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
+  public SingleProcessReportDefinitionDto createSingleProcessReportDefinitionDto(String collectionId,
+                                                                                 String definitionKey,
+                                                                                 List<String> tenants) {
     ProcessReportDataDto numberReport = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
@@ -96,7 +106,7 @@ public class ReportClient {
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return createSingleProcessReport(singleProcessReportDefinitionDto);
+    return singleProcessReportDefinitionDto;
   }
 
   public String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {

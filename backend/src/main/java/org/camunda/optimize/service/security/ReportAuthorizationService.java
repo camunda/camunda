@@ -35,7 +35,8 @@ public class ReportAuthorizationService {
 
   public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
     final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
-    final Optional<RoleType> authorizedRole = isSuperUser
+    final boolean isEventBased = isEventProcessReport(report);
+    final Optional<RoleType> authorizedRole = isSuperUser || isEventBased
       ? Optional.of(RoleType.EDITOR)
       : getAuthorizedReportRole(userId, report);
     return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, IdentityType.USER, report));
@@ -55,11 +56,18 @@ public class ReportAuthorizationService {
   public boolean isAuthorizedToAccessReportDefinition(final String identityId,
                                                       final IdentityType identityType,
                                                       final ReportDefinitionDto report) {
+    return isAuthorizedToAccessReportDefinition(identityId, identityType, report, isEventProcessReport(report));
+  }
+
+  public boolean isAuthorizedToAccessReportDefinition(final String identityId,
+                                                      final IdentityType identityType,
+                                                      final ReportDefinitionDto report,
+                                                      final Boolean isEventProcessReport) {
     boolean authorizedToAccessDefinition = false;
     if (report instanceof SingleProcessReportDefinitionDto) {
       final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionDto) report).getData();
       authorizedToAccessDefinition =
-        isAuthorizedToAccessProcessReportDefinition(identityId, identityType, reportData);
+        isAuthorizedToAccessProcessReportDefinition(identityId, identityType, reportData, isEventProcessReport);
     } else if (report instanceof SingleDecisionReportDefinitionDto) {
       final DecisionReportDataDto reportData = ((SingleDecisionReportDefinitionDto) report).getData();
       if (reportData != null) {
@@ -71,7 +79,12 @@ public class ReportAuthorizationService {
       final CombinedReportDataDto reportData = ((CombinedReportDefinitionDto) report).getData();
       authorizedToAccessDefinition = reportReader.getAllSingleProcessReportsForIdsOmitXml(reportData.getReportIds())
         .stream()
-        .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(identityId, identityType, r.getData()));
+        .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(
+          identityId,
+          identityType,
+          r.getData(),
+          isEventProcessReport
+        ));
     } else {
       throw new OptimizeRuntimeException("Unsupported report type: " + report.getClass().getSimpleName());
     }
@@ -80,15 +93,19 @@ public class ReportAuthorizationService {
 
   private boolean isAuthorizedToAccessProcessReportDefinition(final String identityId,
                                                               final IdentityType identityType,
-                                                              final ProcessReportDataDto reportData) {
+                                                              final ProcessReportDataDto reportData,
+                                                              final Boolean isEventProcessReport) {
     if (reportData != null) {
-      final Boolean isEventProcessReport =
-        definitionService.isEventProcessDefinition(reportData.getProcessDefinitionKey());
       return isEventProcessReport || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-          identityId, identityType, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
-        );
+        identityId, identityType, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
+      );
     }
     return false;
+  }
+
+  private Boolean isEventProcessReport(final ReportDefinitionDto report) {
+    return report instanceof SingleProcessReportDefinitionDto
+      && definitionService.isEventProcessDefinition(((ProcessReportDataDto) report.getData()).getProcessDefinitionKey());
   }
 
 }

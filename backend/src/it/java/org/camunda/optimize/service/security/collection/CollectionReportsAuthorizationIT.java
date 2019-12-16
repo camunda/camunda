@@ -139,14 +139,6 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     assertThat(response.getStatus(), is(403));
   }
 
-  private String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   private String createReportForCollection(final String collectionId, final int resourceType) {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
