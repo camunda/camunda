@@ -24,6 +24,7 @@ pipelineJob('camunda-optimize-release-test') {
     stringParam('DEVELOPMENT_VERSION', '3.1.0-SNAPSHOT', 'Next development version.')
     stringParam('BRANCH', 'master', 'The branch used for the release checkout.')
     booleanParam('PUSH_CHANGES', false, 'DO NOT SET THIS TO TRUE! If you do, you will perform an actual release.')
+    booleanParam('RELEASE_EXAMPLE', false, 'Should an example repository be released.')
   }
   
   triggers {

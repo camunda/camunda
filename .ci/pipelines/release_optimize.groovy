@@ -264,7 +264,7 @@ pipeline {
     }
     stage('Trigger release example repo job') {
       when {
-        expression { params.PUSH_CHANGES == true }
+        expression { params.RELEASE_EXAMPLE == true }
       }
       steps {
         build job: '/camunda-optimize-example-repo-release',
