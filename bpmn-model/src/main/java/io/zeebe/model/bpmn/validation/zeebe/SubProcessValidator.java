@@ -15,11 +15,13 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.zeebe.model.bpmn.util.ModelUtil;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -27,8 +29,10 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class SubProcessValidator implements ModelElementValidator<SubProcess> {
-  private static final List<Class> SUPPORTED_START_TYPES =
-      Arrays.asList(TimerEventDefinition.class, MessageEventDefinition.class);
+
+  private static final List<Class<? extends EventDefinition>> SUPPORTED_START_TYPES =
+      Arrays.asList(
+          TimerEventDefinition.class, MessageEventDefinition.class, ErrorEventDefinition.class);
 
   @Override
   public Class<SubProcess> getElementType() {
@@ -53,6 +57,9 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
         validateEmbeddedSubprocess(validationResultCollector, startEvent);
       }
     }
+
+    ModelUtil.verifyNoDuplicatedEventSubprocesses(
+        element, error -> validationResultCollector.addError(0, error));
   }
 
   private void validateEmbeddedSubprocess(
@@ -67,29 +74,17 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
     final Collection<EventDefinition> eventDefinitions = start.getEventDefinitions();
     if (eventDefinitions.isEmpty()) {
       validationResultCollector.addError(
-          0, "Start events in event subprocesses must be of type message or timer");
+          0, "Start events in event subprocesses must be one of: message, timer, error");
     }
 
     eventDefinitions.forEach(
         def -> {
-          if (SUPPORTED_START_TYPES.stream()
-              .noneMatch(type -> type.isAssignableFrom(def.getClass()))) {
+          if (SUPPORTED_START_TYPES.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
-                0, "Start events in event subprocesses must of type message or timer");
+                0, "Start events in event subprocesses must be one of: message, timer, error");
           }
         });
 
-    if (start.isInterrupting() && hasTimeCycle(start)) {
-      validationResultCollector.addError(
-          0, "Interrupting timer start events in event subprocesses can't have time cycles");
-    }
-  }
-
-  private boolean hasTimeCycle(final StartEvent start) {
-    return start.getEventDefinitions().stream()
-        .anyMatch(
-            def ->
-                TimerEventDefinition.class.isAssignableFrom(def.getClass())
-                    && ((TimerEventDefinition) def).getTimeCycle() != null);
+    ModelUtil.verifyEventDefinition(start, error -> validationResultCollector.addError(0, error));
   }
 }

@@ -7,9 +7,12 @@
  */
 package io.zeebe.engine.state.deployment;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.KeyGenerator;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.state.NextValueManager;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.ElementInstanceState;
@@ -85,5 +88,27 @@ public final class WorkflowState {
 
   public EventScopeInstanceState getEventScopeInstanceState() {
     return eventScopeInstanceState;
+  }
+
+  public <T extends ExecutableFlowElement> T getFlowElement(
+      final long workflowKey, final DirectBuffer elementId, final Class<T> elementType) {
+
+    final var deployedWorkflow = getWorkflowByKey(workflowKey);
+    if (deployedWorkflow == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find a workflow deployed with key '%d' but not found.", workflowKey));
+    }
+
+    final var workflow = deployedWorkflow.getWorkflow();
+    final var element = workflow.getElementById(elementId, elementType);
+    if (element == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find a flow element with id '%s' in workflow with key '%d' but not found.",
+              bufferAsString(elementId), workflowKey));
+    }
+
+    return element;
   }
 }

@@ -25,7 +25,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ErrorBoundaryEventTest {
+public class ErrorEventTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -53,7 +53,7 @@ public class ErrorBoundaryEventTest {
   }
 
   @Test
-  public void shouldTriggerBoundaryEventOnServiceTask() {
+  public void shouldTriggerEvent() {
     // given
     ENGINE.deployment().withXmlResource(SINGLE_BOUNDARY_EVENT).deploy();
 
@@ -80,81 +80,18 @@ public class ErrorBoundaryEventTest {
             tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
-  public void shouldTriggerBoundaryEventOnSubprocess() {
-    // given
-    final var workflow =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess(
-                "sub",
-                s ->
-                    s.embeddedSubProcess()
-                        .startEvent()
-                        .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
-                        .endEvent())
-            .boundaryEvent("error", b -> b.error(ERROR_CODE))
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(workflow).deploy();
-
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(workflowInstanceKey)
-        .withType(JOB_TYPE)
-        .withErrorCode(ERROR_CODE)
-        .throwError();
-
-    // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .limitToWorkflowInstanceCompleted())
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsSequence(
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED));
-  }
-
-  @Test
-  public void shouldNotCancelJob() {
-    // given
-    ENGINE.deployment().withXmlResource(SINGLE_BOUNDARY_EVENT).deploy();
-
-    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(workflowInstanceKey)
-        .withType(JOB_TYPE)
-        .withErrorCode(ERROR_CODE)
-        .throwError();
-
-    // then
-    assertThat(
-            RecordingExporter.records().limitToWorkflowInstance(workflowInstanceKey).jobRecords())
-        .extracting(Record::getIntent)
-        .containsExactly(
-            JobIntent.CREATE, JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
-  }
-
-  @Test
-  public void shouldCatchErrorByErrorCode() {
+  public void shouldCatchErrorEventsByErrorCode() {
     // given
     ENGINE
         .deployment()
@@ -200,5 +137,28 @@ public class ErrorBoundaryEventTest {
                 .withElementType(BpmnElementType.BOUNDARY_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("error-2");
+  }
+
+  @Test
+  public void shouldNotCancelJob() {
+    // given
+    ENGINE.deployment().withXmlResource(SINGLE_BOUNDARY_EVENT).deploy();
+
+    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.records().limitToWorkflowInstance(workflowInstanceKey).jobRecords())
+        .extracting(Record::getIntent)
+        .containsExactly(
+            JobIntent.CREATE, JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
   }
 }

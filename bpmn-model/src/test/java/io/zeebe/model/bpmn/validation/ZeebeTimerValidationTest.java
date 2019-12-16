@@ -65,7 +65,7 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(
-            expect(BoundaryEvent.class, "Interrupting events of this type are not supported"))
+            expect(BoundaryEvent.class, "Interrupting timer event with time cycle is not allowed."))
       },
       {
         Bpmn.createExecutableProcess("process")

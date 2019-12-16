@@ -15,6 +15,7 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
+import io.zeebe.engine.processor.workflow.EventHandle;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.message.Message;
@@ -22,12 +23,8 @@ import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
 
@@ -41,11 +38,9 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
-  private final EventScopeInstanceState scopeEventInstanceState;
+  private final EventHandle eventHandle;
 
   private final Subscriptions correlatingSubscriptions = new Subscriptions();
-  private final WorkflowInstanceRecord startEventRecord =
-      new WorkflowInstanceRecord().setBpmnElementType(BpmnElementType.START_EVENT);
 
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
@@ -61,9 +56,10 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
-    this.scopeEventInstanceState = scopeEventInstanceState;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
+
+    eventHandle = new EventHandle(keyGenerator, scopeEventInstanceState);
   }
 
   @Override
@@ -163,56 +159,27 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
                   || !messageState.existActiveWorkflowInstance(
                       bpmnProcessIdBuffer, correlationKeyBuffer))) {
 
-            correlatingSubscriptions.add(subscription);
+            final var workflowInstanceKey =
+                eventHandle.triggerStartEvent(
+                    streamWriter,
+                    subscription.getWorkflowKey(),
+                    subscription.getStartEventIdBuffer(),
+                    messageRecord.getVariablesBuffer());
 
-            createEventTrigger(subscription);
-            final long workflowInstanceKey = createNewWorkflowInstance(streamWriter, subscription);
+            if (workflowInstanceKey > 0) {
+              correlatingSubscriptions.add(subscription);
 
-            if (correlationKeyBuffer.capacity() > 0) {
-              // lock the workflow for this correlation key
-              // - other messages with same correlation key are not correlated to this workflow
-              // until the created instance is ended
-              messageState.putActiveWorkflowInstance(bpmnProcessIdBuffer, correlationKeyBuffer);
-              messageState.putWorkflowInstanceCorrelationKey(
-                  workflowInstanceKey, correlationKeyBuffer);
+              if (correlationKeyBuffer.capacity() > 0) {
+                // lock the workflow for this correlation key
+                // - other messages with same correlation key are not correlated to this workflow
+                // until the created instance is ended
+                messageState.putActiveWorkflowInstance(bpmnProcessIdBuffer, correlationKeyBuffer);
+                messageState.putWorkflowInstanceCorrelationKey(
+                    workflowInstanceKey, correlationKeyBuffer);
+              }
             }
           }
         });
-  }
-
-  private void createEventTrigger(final MessageStartEventSubscriptionRecord subscription) {
-
-    final boolean success =
-        scopeEventInstanceState.triggerEvent(
-            subscription.getWorkflowKey(),
-            messageKey,
-            subscription.getStartEventIdBuffer(),
-            messageRecord.getVariablesBuffer());
-
-    if (!success) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected the event trigger for be created of the workflow with key '%d' but failed.",
-              subscription.getWorkflowKey()));
-    }
-  }
-
-  private long createNewWorkflowInstance(
-      final TypedStreamWriter streamWriter,
-      final MessageStartEventSubscriptionRecord subscription) {
-
-    final var workflowInstanceKey = keyGenerator.nextKey();
-    final var eventKey = keyGenerator.nextKey();
-
-    streamWriter.appendNewEvent(
-        eventKey,
-        WorkflowInstanceIntent.EVENT_OCCURRED,
-        startEventRecord
-            .setWorkflowKey(subscription.getWorkflowKey())
-            .setWorkflowInstanceKey(workflowInstanceKey)
-            .setElementId(subscription.getStartEventId()));
-
-    return workflowInstanceKey;
   }
 
   private boolean sendCorrelateCommand() {

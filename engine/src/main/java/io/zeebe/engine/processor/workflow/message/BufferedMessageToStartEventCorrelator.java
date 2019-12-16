@@ -9,32 +9,31 @@ package io.zeebe.engine.processor.workflow.message;
 
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.EventHandle;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.handlers.container.WorkflowPostProcessor;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
+import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.message.Message;
 import io.zeebe.engine.state.message.MessageState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 
 public final class BufferedMessageToStartEventCorrelator implements WorkflowPostProcessor {
 
   private final MessageState messageState;
-  private final KeyGenerator keyGenerator;
-
-  private final WorkflowInstanceRecord startEventRecord =
-      new WorkflowInstanceRecord().setBpmnElementType(BpmnElementType.START_EVENT);
+  private final EventHandle eventHandle;
 
   private final Correlation messageCorrelation = new Correlation();
 
   public BufferedMessageToStartEventCorrelator(
-      final KeyGenerator keyGenerator, final MessageState messageState) {
-    this.keyGenerator = keyGenerator;
+      final KeyGenerator keyGenerator,
+      final MessageState messageState,
+      final EventScopeInstanceState eventScopeInstanceState) {
     this.messageState = messageState;
+
+    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
   }
 
   @Override
@@ -119,54 +118,19 @@ public final class BufferedMessageToStartEventCorrelator implements WorkflowPost
       final Message message,
       final BpmnStepContext<ExecutableFlowElementContainer> context) {
 
-    createEventTrigger(workflow, elementId, message, context);
-    final long workflowInstanceKey = createNewWorkflowInstance(workflow, elementId, context);
+    final var workflowInstanceKey =
+        eventHandle.triggerStartEvent(
+            context.getOutput().getStreamWriter(),
+            workflow.getKey(),
+            elementId,
+            message.getVariables());
 
-    // mark the message as correlated
-    messageState.putMessageCorrelation(message.getKey(), workflow.getBpmnProcessId());
-    messageState.putWorkflowInstanceCorrelationKey(
-        workflowInstanceKey, message.getCorrelationKey());
-  }
-
-  private void createEventTrigger(
-      final DeployedWorkflow workflow,
-      final DirectBuffer elementId,
-      final Message message,
-      final BpmnStepContext<ExecutableFlowElementContainer> context) {
-
-    final boolean success =
-        context
-            .getStateDb()
-            .getEventScopeInstanceState()
-            .triggerEvent(workflow.getKey(), message.getKey(), elementId, message.getVariables());
-
-    if (!success) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected the event trigger for be created of the workflow with key '%d' but failed.",
-              workflow.getKey()));
+    if (workflowInstanceKey > 0) {
+      // mark the message as correlated
+      messageState.putMessageCorrelation(message.getKey(), workflow.getBpmnProcessId());
+      messageState.putWorkflowInstanceCorrelationKey(
+          workflowInstanceKey, message.getCorrelationKey());
     }
-  }
-
-  private long createNewWorkflowInstance(
-      final DeployedWorkflow workflow,
-      final DirectBuffer startEventElementId,
-      final BpmnStepContext<ExecutableFlowElementContainer> context) {
-
-    final var workflowInstanceKey = keyGenerator.nextKey();
-    final var eventKey = keyGenerator.nextKey();
-
-    context
-        .getOutput()
-        .appendFollowUpEvent(
-            eventKey,
-            WorkflowInstanceIntent.EVENT_OCCURRED,
-            startEventRecord
-                .setWorkflowKey(workflow.getKey())
-                .setWorkflowInstanceKey(workflowInstanceKey)
-                .setElementId(startEventElementId));
-
-    return workflowInstanceKey;
   }
 
   private static class Correlation {
