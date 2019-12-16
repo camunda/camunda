@@ -124,6 +124,7 @@ public class OperateProperties {
   public void setZeebe(ZeebeProperties zeebe) {
     this.zeebe = zeebe;
   }
+
   public String getUsername() {
     return username;
   }

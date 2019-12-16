@@ -26,6 +26,7 @@ public class OperationEntity extends OperateEntity {
   private String errorMessage;
   private String batchOperationId;
   private Long zeebeCommandKey;
+  private String username;
 
   public Long getWorkflowInstanceKey() {
     return workflowInstanceKey;
@@ -141,6 +142,14 @@ public class OperationEntity extends OperateEntity {
     this.batchOperationId = batchOperationId;
   }
 
+  public String getUsername() {
+    return username;
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
+  }
+
   public void generateId() {
     setId(UUID.randomUUID().toString());
   }
@@ -182,7 +191,9 @@ public class OperationEntity extends OperateEntity {
       return false;
     if (batchOperationId != null ? !batchOperationId.equals(that.batchOperationId) : that.batchOperationId != null)
       return false;
-    return zeebeCommandKey != null ? zeebeCommandKey.equals(that.zeebeCommandKey) : that.zeebeCommandKey == null;
+    if (zeebeCommandKey != null ? !zeebeCommandKey.equals(that.zeebeCommandKey) : that.zeebeCommandKey != null)
+      return false;
+    return username != null ? username.equals(that.username) : that.username == null;
 
   }
 
@@ -203,6 +214,7 @@ public class OperationEntity extends OperateEntity {
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
     result = 31 * result + (zeebeCommandKey != null ? zeebeCommandKey.hashCode() : 0);
+    result = 31 * result + (username != null ? username.hashCode() : 0);
     return result;
   }
 

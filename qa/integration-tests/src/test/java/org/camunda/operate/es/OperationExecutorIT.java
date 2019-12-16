@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.zeebe.operation;
+package org.camunda.operate.es;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -35,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.util.TestUtil.createOperationEntity;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -56,6 +57,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
 
   @Autowired
   private OperationReader operationReader;
+
   private OffsetDateTime approxLockExpirationTime;
 
   @Before
@@ -123,33 +125,10 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     workflowInstance.setState(WorkflowInstanceState.ACTIVE);
     entities.add(workflowInstance);
-    entities.add(createOperation(workflowInstance.getWorkflowInstanceKey(), OperationState.SCHEDULED));
-    entities.add(createOperation(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, true));
-    entities.add(createOperation(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, false));
+    entities.add(createOperationEntity(workflowInstance.getWorkflowInstanceKey(), OperationState.SCHEDULED));
+    entities.add(createOperationEntity(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, true));
+    entities.add(createOperationEntity(workflowInstance.getWorkflowInstanceKey(), OperationState.LOCKED, false));
     return entities;
-  }
-
-  private OperationEntity createOperation(Long workflowInstanceKey, OperationState state, boolean lockExpired) {
-    final OperationEntity operation = createOperation(workflowInstanceKey, state);
-    if (lockExpired) {
-      operation.setLockExpirationTime(OffsetDateTime.now().minus(1, ChronoUnit.MILLIS));
-      operation.setLockOwner("otherWorkerId");
-    }
-    return operation;
-  }
-
-  private OperationEntity createOperation(Long workflowInstanceKey, OperationState state) {
-    OperationEntity operation = new OperationEntity();
-    operation.setWorkflowInstanceKey(workflowInstanceKey);
-    operation.generateId();
-    operation.setState(state);
-    operation.setStartDate(OffsetDateTime.now());
-    operation.setType(OperationType.RESOLVE_INCIDENT);
-    if (state.equals(OperationState.LOCKED)) {
-      operation.setLockOwner("otherWorkerId");
-      operation.setLockExpirationTime(OffsetDateTime.now().plus(operateProperties.getOperationExecutor().getLockTimeout(), ChronoUnit.MILLIS));
-    }
-    return operation;
   }
 
 }

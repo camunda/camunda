@@ -31,6 +31,7 @@ import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.webapp.security.UserService;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -81,6 +82,9 @@ public class OldBatchOperationWriter {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private UserService userService;
 
   /**
    * Schedule operations based of workflow instance queries.
@@ -200,6 +204,7 @@ public class OldBatchOperationWriter {
     operationEntity.setType(operationType);
     operationEntity.setStartDate(OffsetDateTime.now());
     operationEntity.setState(OperationState.SCHEDULED);
+    operationEntity.setUsername(userService.getCurrentUsername());
     return operationEntity;
   }
 

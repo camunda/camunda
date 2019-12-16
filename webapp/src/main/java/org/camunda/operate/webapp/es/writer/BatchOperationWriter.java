@@ -356,6 +356,7 @@ public class BatchOperationWriter {
     operationEntity.setType(operationType);
     operationEntity.setState(OperationState.SCHEDULED);
     operationEntity.setBatchOperationId(batchOperationId);
+    operationEntity.setUsername(userService.getCurrentUsername());
     return operationEntity;
   }
 

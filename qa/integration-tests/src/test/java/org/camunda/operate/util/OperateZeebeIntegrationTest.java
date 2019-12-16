@@ -50,7 +50,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   
   protected static final String POST_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/%s/operation";
   private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/batch-operation";
-  protected static final String USERNAME = "testuser";
 
   @MockBean
   protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
@@ -151,9 +150,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   private MeterRegistry meterRegistry;
 
-  @MockBean
-  private UserService userService;
-
   protected OperateTester tester;
 
   @Before
@@ -177,8 +173,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
       fail("Failed to inject ZeebeClient into some of the beans");
     }
 
-    //TODO is it OK for all tests?
-    when(userService.getCurrentUsername()).thenReturn(USERNAME);
   }
 
   @After

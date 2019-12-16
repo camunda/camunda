@@ -138,7 +138,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(10);
     assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(10);
     assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
-    assertThat(batchOperationEntity.getUsername()).isEqualTo(USERNAME);
+    assertThat(batchOperationEntity.getUsername()).isEqualTo(DEFAULT_USER);
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
@@ -174,7 +174,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
-    assertThat(batchOperationEntity.getUsername()).isEqualTo(USERNAME);
+    assertThat(batchOperationEntity.getUsername()).isEqualTo(DEFAULT_USER);
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
@@ -211,7 +211,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(2);
     assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
-    assertThat(batchOperationEntity.getUsername()).isEqualTo(USERNAME);
+    assertThat(batchOperationEntity.getUsername()).isEqualTo(DEFAULT_USER);
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 

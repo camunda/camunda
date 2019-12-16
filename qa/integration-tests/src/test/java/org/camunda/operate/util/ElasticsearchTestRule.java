@@ -20,6 +20,7 @@ import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
+import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
@@ -31,6 +32,7 @@ import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
@@ -71,6 +73,9 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private VariableTemplate variableTemplate;
 
   @Autowired
   private WorkflowIndex workflowIndex;
@@ -291,6 +296,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getMainIndexName());
       entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getMainIndexName());
       entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getMainIndexName());
+      entityToESAliasMap.put(VariableEntity.class, variableTemplate.getMainIndexName());
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getMainIndexName());
       entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getMainIndexName());
     }

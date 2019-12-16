@@ -26,6 +26,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Wor
   public static final String LOCK_OWNER = "lockOwner";
   public static final String BATCH_OPERATION_ID = "batchOperationId";
   public static final String ZEEBE_COMMAND_KEY = "zeebeCommandKey";
+  public static final String USERNAME = "username";
 
   @Override
   protected String getIndexNameFormat() {

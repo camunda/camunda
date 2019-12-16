@@ -19,12 +19,14 @@ import org.camunda.operate.TestApplication;
 import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.webapp.security.UserService;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -43,7 +45,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @ActiveProfiles("test")
 public abstract class OperateIntegrationTest {
-  
+
+  public static final String DEFAULT_USER = "testuser";
+
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
@@ -51,10 +55,14 @@ public abstract class OperateIntegrationTest {
 
   protected OffsetDateTime testStartTime;
 
+  @MockBean
+  protected UserService userService;
+
   @Before
   public void before() {
     testStartTime = OffsetDateTime.now();
     mockMvc = mockMvcTestRule.getMockMvc();
+    when(userService.getCurrentUsername()).thenReturn(DEFAULT_USER);
   }
   
   protected MvcResult getRequest(String requestUrl) throws Exception {

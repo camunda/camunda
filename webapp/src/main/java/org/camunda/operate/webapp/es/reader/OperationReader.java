@@ -100,7 +100,8 @@ public class OperationReader extends AbstractReader {
   public Map<Long, List<OperationEntity>> getOperationsPerWorkflowInstanceKey(List<Long> workflowInstanceKeys) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(termsQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKeys));
+    TermsQueryBuilder workflowInstanceKeysQ = termsQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKeys);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeysQ, createUsernameQuery()));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ElasticsearchUtil.QueryType.ALL)
       .source(new SearchSourceBuilder()
@@ -125,10 +126,15 @@ public class OperationReader extends AbstractReader {
     }
   }
 
+  private QueryBuilder createUsernameQuery() {
+    return termQuery(OperationTemplate.USERNAME, userService.getCurrentUsername());
+  }
+
   public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(Long workflowInstanceKey) {
     Map<Long, List<OperationEntity>> result = new HashMap<>();
 
-    final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey));
+    TermQueryBuilder workflowInstanceKeysQ = termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeysQ, createUsernameQuery()));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
       .source(new SearchSourceBuilder()
@@ -158,7 +164,7 @@ public class OperationReader extends AbstractReader {
     final TermQueryBuilder workflowInstanceKeyQuery = termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
     final TermQueryBuilder scopeKeyQuery = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
     final TermQueryBuilder operationTypeQ = termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name());
-    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, scopeKeyQuery, operationTypeQ));
+    final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceKeyQuery, scopeKeyQuery, operationTypeQ, createUsernameQuery()));
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
@@ -183,12 +189,8 @@ public class OperationReader extends AbstractReader {
 
   public List<OperationEntity> getOperationsByWorkflowInstanceKey(Long workflowInstanceKey) {
 
-    final ConstantScoreQueryBuilder query;
-    if (workflowInstanceKey == null) {
-      query = constantScoreQuery(matchAllQuery());
-    } else {
-      query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey));
-    }
+    TermQueryBuilder workflowInstanceQ = workflowInstanceKey == null ? null : termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    QueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceQ, createUsernameQuery()));
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
         .query(query)
@@ -206,7 +208,7 @@ public class OperationReader extends AbstractReader {
   //this query will be extended
   public List<BatchOperationEntity> getBatchOperations(int pageSize){
     String username = userService.getCurrentUsername();
-    TermsQueryBuilder isOfCurrentUser = termsQuery(BatchOperationTemplate.USERNAME, username);
+    TermQueryBuilder isOfCurrentUser = termQuery(BatchOperationTemplate.USERNAME, username);
     SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(batchOperationTemplate, ALL)
         .source(new SearchSourceBuilder()
             .query(constantScoreQuery(isOfCurrentUser))

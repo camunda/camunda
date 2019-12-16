@@ -6,9 +6,12 @@
 package org.camunda.operate.util;
 
 import static io.zeebe.protocol.record.value.ErrorType.JOB_NO_RETRIES;
+import static org.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
+import static org.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -18,7 +21,11 @@ import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.OperationEntity;
+import org.camunda.operate.entities.OperationState;
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
+import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
@@ -159,7 +166,7 @@ public abstract class TestUtil {
   
   public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntityWithIds() {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
-    Long workflowInstanceKey = random.nextLong();
+    Long workflowInstanceKey = Math.abs(random.nextLong());
     workflowInstance.setId(workflowInstanceKey.toString());
     workflowInstance.setWorkflowInstanceKey(workflowInstanceKey);
     workflowInstance.setKey(workflowInstanceKey);
@@ -187,6 +194,10 @@ public abstract class TestUtil {
     return createIncident(state, "start", random.nextLong(), null);
   }
 
+  public static IncidentEntity createIncident(IncidentState state, Long incidentKey, Long workflowInstanceKey) {
+    return createIncident(state, "start", random.nextLong(), null, incidentKey, workflowInstanceKey);
+  }
+
   public static IncidentEntity createIncident(IncidentState state, String errorMsg) {
     return createIncident(state, "start", random.nextLong(), errorMsg);
   }
@@ -196,9 +207,22 @@ public abstract class TestUtil {
   }
 
   public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg) {
+    return createIncident(state, activityId, activityInstanceId, errorMsg, null);
+  }
+
+  public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg, Long incidentKey) {
+    return createIncident(state, activityId, activityInstanceId, errorMsg, incidentKey, null);
+  }
+
+  public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg, Long incidentKey, Long workflowInstanceKey) {
     IncidentEntity incidentEntity = new IncidentEntity();
-    incidentEntity.setKey(random.nextLong());
-    incidentEntity.setId(String.valueOf(incidentEntity.getKey()));
+    if (incidentKey == null) {
+      incidentEntity.setKey(random.nextLong());
+      incidentEntity.setId(String.valueOf(incidentEntity.getKey()));
+    } else {
+      incidentEntity.setKey(incidentKey);
+      incidentEntity.setId(String.valueOf(incidentKey));
+    }
     incidentEntity.setFlowNodeId(activityId);
     incidentEntity.setFlowNodeInstanceKey(activityInstanceId);
     incidentEntity.setErrorType(JOB_NO_RETRIES);
@@ -209,6 +233,7 @@ public abstract class TestUtil {
     }
     incidentEntity.setState(state);
     incidentEntity.setPartitionId(1);
+    incidentEntity.setWorkflowInstanceKey(workflowInstanceKey);
     return incidentEntity;
   }
 
@@ -275,7 +300,7 @@ public abstract class TestUtil {
       });
   }
 
-  public static VariableForListViewEntity createVariable(Long workflowInstanceKey, Long scopeKey, String name, String value) {
+  public static VariableForListViewEntity createVariableForListView(Long workflowInstanceKey, Long scopeKey, String name, String value) {
     VariableForListViewEntity variable = new VariableForListViewEntity();
     variable.setId(scopeKey + "_" + name);
     variable.setWorkflowInstanceKey(workflowInstanceKey);
@@ -283,6 +308,16 @@ public abstract class TestUtil {
     variable.setVarName(name);
     variable.setVarValue(value);
     variable.getJoinRelation().setParent(workflowInstanceKey);
+    return variable;
+  }
+
+  public static VariableEntity createVariable(Long workflowInstanceKey, Long scopeKey, String name, String value) {
+    VariableEntity variable = new VariableEntity();
+    variable.setId(scopeKey + "_" + name);
+    variable.setWorkflowInstanceKey(workflowInstanceKey);
+    variable.setScopeKey(scopeKey);
+    variable.setName(name);
+    variable.setName(value);
     return variable;
   }
 
@@ -296,4 +331,42 @@ public abstract class TestUtil {
       //do nothing
     }
   }
+
+  public static OperationEntity createOperationEntity(Long workflowInstanceKey, Long incidentKey, String varName, String username) {
+    return createOperationEntity(workflowInstanceKey, incidentKey, varName, OperationState.SCHEDULED, username, false);
+  }
+
+  public static OperationEntity createOperationEntity(Long workflowInstanceKey, Long incidentKey, String varName, OperationState state, String username, boolean lockExpired) {
+    OperationEntity oe = new OperationEntity();
+    oe.generateId();
+    oe.setWorkflowInstanceKey(workflowInstanceKey);
+    oe.setIncidentKey(incidentKey);
+    oe.setVariableName(varName);
+    oe.setType(OperationType.RESOLVE_INCIDENT);
+    oe.setStartDate(OffsetDateTime.now());
+    if (username != null) {
+      oe.setUsername(username);
+    } else {
+      oe.setUsername(DEFAULT_USER);
+    }
+    oe.setState(state);
+    if (state.equals(OperationState.LOCKED)) {
+      if (lockExpired) {
+        oe.setLockExpirationTime(OffsetDateTime.now().minus(1, ChronoUnit.MILLIS));
+      } else {
+        oe.setLockExpirationTime(OffsetDateTime.now().plus(LOCK_TIMEOUT_DEFAULT, ChronoUnit.MILLIS));
+      }
+      oe.setLockOwner("otherWorkerId");
+    }
+    return oe;
+  }
+
+  public static OperationEntity createOperationEntity(Long workflowInstanceKey, OperationState state, boolean lockExpired) {
+    return createOperationEntity(workflowInstanceKey, null, null, state, null, lockExpired);
+  }
+
+  public static OperationEntity createOperationEntity(Long workflowInstanceKey, OperationState state) {
+    return createOperationEntity(workflowInstanceKey, null, null, state, null, false);
+  }
+
 }

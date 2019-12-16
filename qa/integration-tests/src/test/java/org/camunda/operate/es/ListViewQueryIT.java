@@ -39,7 +39,7 @@ import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFL
 import static org.camunda.operate.util.TestUtil.createActivityInstance;
 import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
 import static org.camunda.operate.util.TestUtil.createIncident;
-import static org.camunda.operate.util.TestUtil.createVariable;
+import static org.camunda.operate.util.TestUtil.createVariableForListView;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 
 /**
@@ -1076,28 +1076,28 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
     runningInstance.setBatchOperationId(Arrays.asList("a", batchOperationId));
     final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
-    vars.add(createVariable(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var1", "X"));
-    vars.add(createVariable(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var2", "Y"));
+    vars.add(createVariableForListView(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var1", "X"));
+    vars.add(createVariableForListView(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var2", "Y"));
 
     //completed instance with one activity and without incidents
     completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowKey);
     completedInstance.setBatchOperationId(Arrays.asList("b", batchOperationId));
     final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstance(completedInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
-    vars.add(createVariable(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var1", "X"));
-    vars.add(createVariable(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var2", "Z"));
+    vars.add(createVariableForListView(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var1", "X"));
+    vars.add(createVariableForListView(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var2", "Z"));
 
     //canceled instance with two activities and without incidents
     canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
     canceledInstance.setBatchOperationId(Arrays.asList("c", "d"));
     final ActivityInstanceForListViewEntity activityInstance3 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
     final ActivityInstanceForListViewEntity activityInstance4 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.TERMINATED);
-    vars.add(createVariable(canceledInstance.getWorkflowInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));
-    vars.add(createVariable(canceledInstance.getWorkflowInstanceKey(), canceledInstance.getWorkflowInstanceKey(), "var2", "W"));
+    vars.add(createVariableForListView(canceledInstance.getWorkflowInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));
+    vars.add(createVariableForListView(canceledInstance.getWorkflowInstanceKey(), canceledInstance.getWorkflowInstanceKey(), "var2", "W"));
 
     //instance with incidents (one resolved and one active) and one active activity
     final WorkflowInstanceForListViewEntity instanceWithIncident = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     final ActivityInstanceForListViewEntity activityInstance5 = createActivityInstance(instanceWithIncident.getWorkflowInstanceKey(), ActivityState.ACTIVE);
-    vars.add(createVariable(instanceWithIncident.getWorkflowInstanceKey(), instanceWithIncident.getWorkflowInstanceKey(), "var1", "Y"));
+    vars.add(createVariableForListView(instanceWithIncident.getWorkflowInstanceKey(), instanceWithIncident.getWorkflowInstanceKey(), "var1", "Y"));
     createIncident(activityInstance5, null, null);
 
     //instance with one resolved incident and one completed activity

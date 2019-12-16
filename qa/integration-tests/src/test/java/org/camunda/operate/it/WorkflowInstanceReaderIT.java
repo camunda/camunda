@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.es.reader;
+package org.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
