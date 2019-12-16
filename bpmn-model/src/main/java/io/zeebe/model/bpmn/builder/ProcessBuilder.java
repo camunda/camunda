@@ -23,6 +23,7 @@ import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
@@ -60,6 +61,13 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     resizeSubProcess(targetBpmnShape);
 
     return new EventSubProcessBuilder(modelInstance, subProcess);
+  }
+
+  public ProcessBuilder eventSubProcess(
+      final String id, final Consumer<EventSubProcessBuilder> consumer) {
+    final EventSubProcessBuilder builder = eventSubProcess(id);
+    consumer.accept(builder);
+    return this;
   }
 
   @Override
