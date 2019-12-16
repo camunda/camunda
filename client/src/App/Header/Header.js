@@ -65,6 +65,11 @@ class Header extends React.Component {
 
     this.subscriptions = {
       LOAD_INSTANCE: ({state, response}) => {
+        if (state === LOADING_STATE.LOADING) {
+          this.setState({
+            instance: null
+          });
+        }
         if (state === LOADING_STATE.LOADED) {
           this.setState({
             instance: response
@@ -115,11 +120,11 @@ class Header extends React.Component {
   }
 
   currentView() {
-    const {DASHBOAD, INSTANCES, INSTANCE} = PATHNAME;
+    const {DASHBOARD, INSTANCES, INSTANCE} = PATHNAME;
     const {pathname} = this.props.location;
 
     return {
-      isDashboard: () => pathname === DASHBOAD,
+      isDashboard: () => pathname === DASHBOARD,
       isInstances: () => pathname === INSTANCES,
       isInstance: () => pathname.includes(INSTANCE)
     };
@@ -133,8 +138,7 @@ class Header extends React.Component {
       ...includedCounts
     } = this.props.dataStore;
 
-    const isLoaded = counts => Object.values(counts).every(count => count > 0);
-    return isLoaded(includedCounts);
+    return Object.values(includedCounts).every(count => count > 0);
   }
 
   handleRedirect = () => {
@@ -173,20 +177,6 @@ class Header extends React.Component {
       onClick: this.props.expandFilters
     };
   };
-
-  selectTitle(type) {
-    const {running, withIncidents, selectionCount} = this.props.dataStore;
-
-    const titles = {
-      brand: 'View Dashboard',
-      dashboard: 'View Dashboard',
-      instances: `View ${running} Running Instances`,
-      filters: `View ${this.selectFilterCount()} Instances in Filters`,
-      incidents: `View ${withIncidents} Incidents`,
-      selections: `View ${selectionCount} Selections`
-    };
-    return titles[type];
-  }
 
   selectActiveCondition(type) {
     const currentView = this.currentView();
@@ -266,7 +256,7 @@ class Header extends React.Component {
 
     const brand = this.getLinkProperties('brand');
     const dashboard = this.getLinkProperties('dashboard');
-    const instance = this.getLinkProperties('instances');
+    const instances = this.getLinkProperties('instances');
     const incidents = this.getLinkProperties('incidents');
     const filters = this.getLinkProperties('filters');
     const selections = this.getLinkProperties('selections');
@@ -288,12 +278,12 @@ class Header extends React.Component {
             label={Header.labels['dashboard']}
           />
           <NavElement
-            dataTest={instance.dataTest}
-            isActive={instance.isActive}
-            title={instance.title}
+            dataTest={instances.dataTest}
+            isActive={instances.isActive}
+            title={instances.title}
             label={Header.labels['instances']}
-            count={instance.count}
-            linkProps={instance.linkProps}
+            count={instances.count}
+            linkProps={instances.linkProps}
             type={BADGE_TYPE.RUNNING_INSTANCES}
           />
           <NavElement

@@ -36,5 +36,5 @@ export const createTitle = (type, count) => {
 export const PATHNAME = {
   INSTANCES: '/instances',
   INSTANCE: '/instances/',
-  DASHBOAD: '/'
+  DASHBOARD: '/'
 };

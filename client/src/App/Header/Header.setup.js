@@ -27,7 +27,7 @@ export const dataStoreWithCount = {
 
 export const location = {
   dashboard: {
-    pathname: PATHNAME.DASHBOAD
+    pathname: PATHNAME.DASHBOARD
   },
   instances: {
     pathname: PATHNAME.INSTANCES
