@@ -43,10 +43,12 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   private final List<LogStreamReader> readers;
   private final LogStreamReaderImpl reader;
   private final LogStorage logStorage;
+  private final CompletableActorFuture<Void> closeFuture;
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
   private long commitPosition;
+  private Throwable closeError; // set if any error occurred during closeAsync
 
   public LogStreamImpl(
       final ActorScheduler actorScheduler,
@@ -61,6 +63,7 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
     this.partitionId = partitionId;
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
+    this.closeFuture = new CompletableActorFuture<>();
 
     try {
       logStorage.open();
@@ -68,10 +71,11 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
       throw new UncheckedIOException(e);
     }
 
-    commitPosition = INVALID_ADDRESS;
-    readers = new ArrayList<>();
+    this.commitPosition = INVALID_ADDRESS;
+    this.readers = new ArrayList<>();
     this.reader = new LogStreamReaderImpl(logStorage);
-    readers.add(reader);
+    this.readers.add(reader);
+
     internalSetCommitPosition(reader.seekToEnd());
   }
 
@@ -91,30 +95,36 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   }
 
   @Override
+  protected void onActorClosing() {
+    LOG.info("On closing logstream {} close {} readers", logName, readers.size());
+    readers.forEach(LogStreamReader::close);
+    LOG.info("Close log storage with name {}", logName);
+    logStorage.close();
+  }
+
+  @Override
+  protected void onActorClosed() {
+    if (closeError != null) {
+      closeFuture.completeExceptionally(closeError);
+    } else {
+      closeFuture.complete(null);
+    }
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     if (actor.isClosed()) {
-      return CompletableActorFuture.completed(null);
+      return closeFuture;
     }
 
-    final var closeFuture = new CompletableActorFuture<Void>();
     actor.call(
-        () -> {
-          closeAppender()
-              .onComplete(
-                  (v, t) -> {
-                    if (t == null) {
-                      LOG.info("On closing logstream {} close {} readers", logName, readers.size());
-                      readers.forEach(LogStreamReader::close);
-
-                      LOG.info("Close log storage with name {}", logName);
-                      logStorage.close();
-                      closeFuture.complete(null);
+        () ->
+            closeAppender()
+                .onComplete(
+                    (nothing, appenderError) -> {
+                      closeError = appenderError;
                       actor.close();
-                    } else {
-                      closeFuture.completeExceptionally(t);
-                    }
-                  });
-        });
+                    }));
     return closeFuture;
   }
 
@@ -125,10 +135,7 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
 
   @Override
   public void setCommitPosition(final long commitPosition) {
-    actor.call(
-        () -> {
-          internalSetCommitPosition(commitPosition);
-        });
+    actor.call(() -> internalSetCommitPosition(commitPosition));
   }
 
   private void internalSetCommitPosition(final long commitPosition) {
