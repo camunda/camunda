@@ -31,6 +31,7 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
+    "@testing-library/react-hooks": "^3.2.1",
     "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.15.1",
     "eslint-config-react-app": "^3.0.5",
@@ -42,13 +43,23 @@
     "jest-junit": "^9.0.0",
     "lint-staged": "^9.4.3",
     "prettier": "^1.18.2",
-    "react-scripts": "2.1.2"
+    "react-scripts": "2.1.2",
+    "react-test-renderer": "^16.12.0"
   },
   "lint-staged": {
-    "src/**/*.js": ["eslint --fix", "prettier --write", "git add"]
+    "src/**/*.js": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
   },
   "proxy": "http://localhost:8080",
-  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"],
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"
