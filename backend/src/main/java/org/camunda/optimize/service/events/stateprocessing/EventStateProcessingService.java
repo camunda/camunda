@@ -194,7 +194,8 @@ public class EventStateProcessingService {
   private TracedEventDto getExistingTracedEventToBeReplaced(final List<TracedEventDto> eventTrace,
                                                             final EventDto newEventDto) {
     return eventTrace.stream()
-      .filter(tracedEvent -> tracedEvent.getGroup().equals(newEventDto.getGroup())
+      .filter(tracedEvent -> tracedEvent.getEventId().equals(newEventDto.getId())
+        && tracedEvent.getGroup().equals(newEventDto.getGroup())
         && tracedEvent.getSource().equals(newEventDto.getSource())
         && tracedEvent.getEventName().equals(newEventDto.getEventName()))
       .findAny()

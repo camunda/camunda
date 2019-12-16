@@ -22,6 +22,7 @@ public class EventTraceStateIndex extends StrictIndexMappingCreator {
   public static final String TRACE_ID = EventTraceStateDto.Fields.traceId;
   public static final String EVENT_TRACE = EventTraceStateDto.Fields.eventTrace;
 
+  public static final String EVENT_ID = TracedEventDto.Fields.eventId;
   public static final String GROUP = TracedEventDto.Fields.group;
   public static final String SOURCE = TracedEventDto.Fields.source;
   public static final String EVENT_NAME = TracedEventDto.Fields.eventName;
@@ -47,6 +48,9 @@ public class EventTraceStateIndex extends StrictIndexMappingCreator {
       .startObject(EVENT_TRACE)
         .field("type", "object")
         .startObject("properties")
+          .startObject(EVENT_ID)
+            .field("type", "keyword")
+          .endObject()
           .startObject(GROUP)
             .field("type", "keyword")
           .endObject()

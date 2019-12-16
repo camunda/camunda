@@ -18,14 +18,16 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 @AllArgsConstructor
 @FieldNameConstants
 public class TracedEventDto implements OptimizeDto {
-  
-  private Long timestamp;
+
+  private String eventId;
   private String group;
   private String source;
   private String eventName;
+  private Long timestamp;
 
   public static TracedEventDto fromEventDto(EventDto eventDto) {
     return TracedEventDto.builder()
+      .eventId(eventDto.getId())
       .timestamp(eventDto.getTimestamp())
       .group(eventDto.getGroup())
       .source(eventDto.getSource())

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
@@ -36,7 +35,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
 
   private EventStateProcessingService eventStateProcessingService;
 
-  public static final Random RANDOM = new Random();
+  private static final Random RANDOM = new Random();
 
   @BeforeEach
   public void setup() {
@@ -56,10 +55,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   @Test
   public void processSingleBatchOfEventsNewUniqueTraceIds() throws IOException {
     // given
-    EventDto eventDtoTraceOne = createEventDtoWithProperties("traceOne", "backend", "ketchup", "signup-event", 100L);
-    EventDto eventDtoTraceTwo = createEventDtoWithProperties("traceTwo", "backend", "ketchup", "register-event", 200L);
+    EventDto eventDtoTraceOne = createEventDtoWithProperties(
+      "traceOne", "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+    EventDto eventDtoTraceTwo = createEventDtoWithProperties(
+      "traceTwo", "eventIdTwo", "backend", "ketchup", "register-event", 200L);
     EventDto eventDtoTraceThree = createEventDtoWithProperties(
-      "traceThree", "backend", "mayonnaise", "onboard-event", 300L
+      "traceThree", "eventIdThree", "backend", "mayonnaise", "onboard-event", 300L
     );
     ingestEventBatch(Arrays.asList(eventDtoTraceOne, eventDtoTraceTwo, eventDtoTraceThree));
 
@@ -94,9 +95,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   public void processSingleBatchOfEventsIncludingSharedTraceIds() throws IOException {
     // given
     String traceId = "someTraceId";
-    EventDto eventDtoOne = createEventDtoWithProperties(traceId, "backend", "ketchup", "signup-event", 100L);
-    EventDto eventDtoTwo = createEventDtoWithProperties(traceId, "backend", "ketchup", "register-event", 200L);
-    EventDto eventDtoThree = createEventDtoWithProperties(traceId, "backend", "mayonnaise", "onboard-event", 300L);
+    EventDto eventDtoOne = createEventDtoWithProperties(
+      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+    EventDto eventDtoTwo = createEventDtoWithProperties(
+      traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
+    EventDto eventDtoThree = createEventDtoWithProperties(
+      traceId, "eventIdThree", "backend", "mayonnaise", "onboard-event", 300L);
     ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
     // when
@@ -127,22 +131,22 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     String traceIdTwo = "traceIdTwo";
     String traceIdThree = "traceIdThree";
     EventDto eventDtoTraceOneEventOne = createEventDtoWithProperties(
-      traceIdOne, "backend", "ketchup", "signup-event", 100L
+      traceIdOne, "eventIdOne", "backend", "ketchup", "signup-event", 100L
     );
     EventDto eventDtoTraceTwoEventOne = createEventDtoWithProperties(
-      traceIdTwo, "backend", "ketchup", "signup-event", 200L
+      traceIdTwo, "eventIdTwo", "backend", "ketchup", "signup-event", 200L
     );
     EventDto eventDtoTraceThreeEventOne = createEventDtoWithProperties(
-      traceIdThree, "backend", "ketchup", "signup-event", 300L
+      traceIdThree, "eventIdThree", "backend", "ketchup", "signup-event", 300L
     );
     EventDto eventDtoTraceOneEventTwo = createEventDtoWithProperties(
-      traceIdOne, "backend", "ketchup", "register-event", 400L
+      traceIdOne, "eventIdFour", "backend", "ketchup", "register-event", 400L
     );
     EventDto eventDtoTraceTwoEventTwo = createEventDtoWithProperties(
-      traceIdTwo, "backend", "ketchup", "register-event", 500L
+      traceIdTwo, "eventIdFive", "backend", "ketchup", "register-event", 500L
     );
     EventDto eventDtoTraceThreeEventTwo = createEventDtoWithProperties(
-      traceIdThree, "backend", "ketchup", "onboarded-event", 600L
+      traceIdThree, "eventIdSix", "backend", "ketchup", "onboarded-event", 600L
     );
     ingestEventBatch(Arrays.asList(eventDtoTraceOneEventOne, eventDtoTraceTwoEventOne, eventDtoTraceThreeEventOne,
                                    eventDtoTraceOneEventTwo, eventDtoTraceTwoEventTwo, eventDtoTraceThreeEventTwo
@@ -182,15 +186,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
     String traceIdThree = "traceIdThree";
-    EventDto eventOneTraceOne = createEventDtoWithProperties(traceIdOne, "backend", "ketchup", "signup-event", 100L);
-    EventDto eventOneTraceTwo = createEventDtoWithProperties(traceIdTwo, "backend", "ketchup", "signup-event", 200L);
+    EventDto eventOneTraceOne = createEventDtoWithProperties(
+      traceIdOne, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+    EventDto eventOneTraceTwo = createEventDtoWithProperties(
+      traceIdTwo, "eventIdTwo", "backend", "ketchup", "signup-event", 200L);
     EventDto eventOneTraceThree = createEventDtoWithProperties(
-      traceIdThree,
-      "backend",
-      "ketchup",
-      "signup-event",
-      300L
-    );
+      traceIdThree, "eventIdThree", "backend", "ketchup", "signup-event", 300L);
     ingestEventBatch(Arrays.asList(eventOneTraceOne, eventOneTraceTwo, eventOneTraceThree));
 
     // when
@@ -209,9 +210,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds further trace events
-    EventDto eventTwoTraceOne = createEventDtoWithProperties(traceIdOne, "backend", "ketchup", "register-event", 400L);
-    EventDto eventTwoTraceTwo = createEventDtoWithProperties(traceIdTwo, "backend", "ketchup", "register-event", 500L);
-    EventDto eventThreeTraceOne = createEventDtoWithProperties(traceIdOne, "backend", "ketchup", "onboard-event", 600L);
+    EventDto eventTwoTraceOne = createEventDtoWithProperties(
+      traceIdOne, "eventIdFour", "backend", "ketchup", "register-event", 400L);
+    EventDto eventTwoTraceTwo = createEventDtoWithProperties(
+      traceIdTwo, "eventIdFive", "backend", "ketchup", "register-event", 500L);
+    EventDto eventThreeTraceOne = createEventDtoWithProperties(
+      traceIdOne, "eventIdSix", "backend", "ketchup", "onboard-event", 600L);
     ingestEventBatch(Arrays.asList(eventTwoTraceOne, eventTwoTraceTwo, eventThreeTraceOne));
     eventStateProcessingService.processUncountedEvents();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -247,9 +251,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     throws IOException {
     // given
     String traceId = "traceId";
-    EventDto eventDtoOne = createEventDtoWithProperties(traceId, "backend", "ketchup", "signup-event", 100L);
-    EventDto eventDtoTwo = createEventDtoWithProperties(traceId, "backend", "ketchup", "register-event", 200L);
-    EventDto eventDtoThree = createEventDtoWithProperties(traceId, "backend", "ketchup", "onboarded-event", 300L);
+    EventDto eventDtoOne = createEventDtoWithProperties(
+      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+    EventDto eventDtoTwo = createEventDtoWithProperties(
+      traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
+    EventDto eventDtoThree = createEventDtoWithProperties(
+      traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
     // when
@@ -271,10 +278,16 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     );
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
-    // when second batch includes timestamp modification
+    // when second batch includes already ingested event with a new timestamp (a modification)
     EventDto eventDtoThreeModified = createEventDtoWithProperties(
-      traceId, "backend", "ketchup", "onboarded-event", 150L
+      traceId,
+      eventDtoThree.getId(),
+      eventDtoThree.getGroup(),
+      eventDtoThree.getSource(),
+      eventDtoThree.getEventName(),
+      150L
     );
+
     ingestEventBatch(Collections.singletonList(eventDtoThreeModified));
     eventStateProcessingService.processUncountedEvents();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -302,9 +315,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   public void processMultipleBatchesOfEventsWithSingleTraceDuplicateEventsAcrossBatches() throws IOException {
     // given
     String traceId = "traceIdOne";
-    EventDto eventOne = createEventDtoWithProperties(traceId, "backend", "ketchup", "signup-event", 100L);
-    EventDto eventTwo = createEventDtoWithProperties(traceId, "backend", "ketchup", "register-event", 200L);
-    EventDto eventThree = createEventDtoWithProperties(traceId, "backend", "ketchup", "onboarded-event", 300L);
+    EventDto eventOne = createEventDtoWithProperties(
+      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+    EventDto eventTwo = createEventDtoWithProperties(
+      traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
+    EventDto eventThree = createEventDtoWithProperties
+      (traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     ingestEventBatch(Arrays.asList(eventOne, eventTwo, eventThree));
 
     // when
@@ -327,7 +343,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds repeated event trace already processes
-    EventDto eventTwoRepeated = createEventDtoWithProperties(traceId, "backend", "ketchup", "register-event", 200L);
+    EventDto eventTwoRepeated = createEventDtoWithProperties(
+      traceId, eventTwo.getId(), eventTwo.getGroup(), eventTwo.getSource(), eventTwo.getEventName(), 200L);
+
     ingestEventBatch(Collections.singletonList(eventTwoRepeated));
     eventStateProcessingService.processUncountedEvents();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -344,6 +362,111 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventOne, eventTwo, 1),
       createSequenceFromSourceAndTargetEvents(eventTwo, eventThree, 1),
       createSequenceFromSourceAndTargetEvents(eventThree, null, 1)
+    );
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
+  }
+
+  @Test
+  public void processMultipleBatchesOfEventsWithSingleTraceAndMultipleOccurringEventsWithDifferentIds() throws IOException {
+    // given
+    String traceId = "traceIdOne";
+    EventDto eventTaskA = createEventDtoWithProperties(
+      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+    EventDto eventTaskB = createEventDtoWithProperties(
+      traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
+    EventDto eventTaskC = createEventDtoWithProperties(
+      traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
+    ingestEventBatch(Arrays.asList(eventTaskA, eventTaskB, eventTaskC));
+
+    // when
+    eventStateProcessingService.processUncountedEvents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then trace state and sequence counts are correct after initial batch
+    assertThat(getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+      new EventTraceStateDto(traceId, Arrays.asList(
+        TracedEventDto.fromEventDto(eventTaskA),
+        TracedEventDto.fromEventDto(eventTaskB),
+        TracedEventDto.fromEventDto(eventTaskC)
+      ))
+    );
+    assertThat(getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+      createSequenceFromSourceAndTargetEvents(eventTaskA, eventTaskB, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskB, eventTaskC, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskC, null, 1)
+    );
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
+
+    // when second batch adds the second occurrence of an event with a new event ID, reflecting a loop in the
+    // BPMN model
+    EventDto eventTaskD = createEventDtoWithProperties(
+      traceId, "eventIdFour", "backend", "ketchup", "complained-event", 400L);
+    EventDto eventTaskBSecondOccurrence = createEventDtoWithProperties(
+      traceId, "eventIdFive", eventTaskB.getGroup(), eventTaskB.getSource(), eventTaskB.getEventName(), 500L
+    );
+
+    ingestEventBatch(Arrays.asList(eventTaskD, eventTaskBSecondOccurrence));
+    eventStateProcessingService.processUncountedEvents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then trace state and sequence counts remain correct after processing and loop is correctly traced
+    assertThat(getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+      new EventTraceStateDto(traceId, Arrays.asList(
+        TracedEventDto.fromEventDto(eventTaskA),
+        TracedEventDto.fromEventDto(eventTaskB),
+        TracedEventDto.fromEventDto(eventTaskC),
+        TracedEventDto.fromEventDto(eventTaskD),
+        TracedEventDto.fromEventDto(eventTaskBSecondOccurrence)
+      ))
+    );
+    assertThat(getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+      createSequenceFromSourceAndTargetEvents(eventTaskA, eventTaskB, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskB, eventTaskC, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskC, eventTaskD, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskD, eventTaskB, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskB, null, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskC, null, 0)
+    );
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
+
+    // when third batch adds further occurrences of events with new IDs, reflecting further loops and events beyond
+    // the loop in the BPMN model
+    EventDto eventTaskCSecondOccurrence = createEventDtoWithProperties(
+      traceId, "eventIdSix", eventTaskC.getGroup(), eventTaskC.getSource(), eventTaskC.getEventName(), 600L);
+    EventDto eventTaskDSecondOccurrence = createEventDtoWithProperties(
+      traceId, "eventIdSeven", eventTaskD.getGroup(), eventTaskD.getSource(), eventTaskD.getEventName(), 700L);
+    EventDto eventTaskBThirdOccurrence = createEventDtoWithProperties(
+      traceId, "eventIdEight", eventTaskB.getGroup(), eventTaskB.getSource(), eventTaskB.getEventName(), 800L);
+    EventDto eventTaskE = createEventDtoWithProperties
+      (traceId, "eventIdNine", "backend", "ketchup", "helped-event", 900L);
+
+    ingestEventBatch(Arrays.asList(eventTaskCSecondOccurrence, eventTaskDSecondOccurrence, eventTaskBThirdOccurrence, eventTaskE));
+    eventStateProcessingService.processUncountedEvents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then trace state and sequence counts remain correct after processing and loop is correct traced
+    assertThat(getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+      new EventTraceStateDto(traceId, Arrays.asList(
+        TracedEventDto.fromEventDto(eventTaskA),
+        TracedEventDto.fromEventDto(eventTaskB),
+        TracedEventDto.fromEventDto(eventTaskC),
+        TracedEventDto.fromEventDto(eventTaskD),
+        TracedEventDto.fromEventDto(eventTaskBSecondOccurrence),
+        TracedEventDto.fromEventDto(eventTaskCSecondOccurrence),
+        TracedEventDto.fromEventDto(eventTaskDSecondOccurrence),
+        TracedEventDto.fromEventDto(eventTaskBThirdOccurrence),
+        TracedEventDto.fromEventDto(eventTaskE)
+      ))
+    );
+    assertThat(getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+      createSequenceFromSourceAndTargetEvents(eventTaskA, eventTaskB, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskB, eventTaskC, 2),
+      createSequenceFromSourceAndTargetEvents(eventTaskC, eventTaskD, 2),
+      createSequenceFromSourceAndTargetEvents(eventTaskD, eventTaskB, 2),
+      createSequenceFromSourceAndTargetEvents(eventTaskB, eventTaskE, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskE, null, 1),
+      createSequenceFromSourceAndTargetEvents(eventTaskB, null, 0),
+      createSequenceFromSourceAndTargetEvents(eventTaskC, null, 0)
     );
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
@@ -386,9 +509,10 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private EventDto createEventDtoWithProperties(String traceId, String group, String source, String eventName,
-                                                Long timestamp) {
+  private EventDto createEventDtoWithProperties(String traceId, String eventId, String group,
+                                                String source, String eventName, Long timestamp) {
     return createRandomEventDtoPropertiesBuilder()
+      .id(eventId)
       .traceId(traceId)
       .group(group)
       .source(source)
@@ -399,7 +523,6 @@ public class EventStateProcessingServiceIT extends AbstractIT {
 
   private EventDto.EventDtoBuilder createRandomEventDtoPropertiesBuilder() {
     return EventDto.builder()
-      .id(UUID.randomUUID().toString())
       .duration(Math.abs(RANDOM.nextLong()))
       .data(ImmutableMap.of(
         RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
@@ -408,12 +531,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       ));
   }
 
-  private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(EventDto source, EventDto target, long count) {
-    EventTypeDto sourceEvent = Optional.ofNullable(source)
-      .map(sou -> new EventTypeDto(sou.getGroup(), sou.getSource(), sou.getEventName()))
+  private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(EventDto sourceEventDto, EventDto targetEventDto, long count) {
+    EventTypeDto sourceEvent = Optional.ofNullable(sourceEventDto)
+      .map(source -> new EventTypeDto(source.getGroup(), source.getSource(), source.getEventName()))
       .orElse(null);
-    EventTypeDto targetEvent = Optional.ofNullable(target)
-      .map(tar -> new EventTypeDto(tar.getGroup(), tar.getSource(), tar.getEventName()))
+    EventTypeDto targetEvent = Optional.ofNullable(targetEventDto)
+      .map(target -> new EventTypeDto(target.getGroup(), target.getSource(), target.getEventName()))
       .orElse(null);
     EventSequenceCountDto eventSequenceCountDto = EventSequenceCountDto.builder()
       .sourceEvent(sourceEvent)
