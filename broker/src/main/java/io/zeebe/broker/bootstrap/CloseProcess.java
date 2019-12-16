@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 
-public class CloseProcess implements AutoCloseable {
+public final class CloseProcess implements AutoCloseable {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final List<CloseStep> closeableSteps;

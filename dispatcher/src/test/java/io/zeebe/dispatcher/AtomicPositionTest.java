@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
-public class AtomicPositionTest {
+public final class AtomicPositionTest {
   private final AtomicPosition atomicPosition = new AtomicPosition();
 
   @Test

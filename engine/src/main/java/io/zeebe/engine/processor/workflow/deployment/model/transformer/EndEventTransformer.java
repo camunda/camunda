@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.EndEvent;
 
-public class EndEventTransformer implements ModelElementTransformer<EndEvent> {
+public final class EndEventTransformer implements ModelElementTransformer<EndEvent> {
 
   @Override
   public Class<EndEvent> getType() {

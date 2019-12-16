@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobRecord> {
+public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 

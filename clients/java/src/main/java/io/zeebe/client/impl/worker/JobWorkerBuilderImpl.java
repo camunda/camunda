@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Predicate;
 
-public class JobWorkerBuilderImpl
+public final class JobWorkerBuilderImpl
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
 
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);

@@ -19,7 +19,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
 
-public class IntermediateCatchEventTransformer
+public final class IntermediateCatchEventTransformer
     implements ModelElementTransformer<IntermediateCatchEvent> {
 
   @Override

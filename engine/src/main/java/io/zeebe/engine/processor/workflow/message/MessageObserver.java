@@ -15,7 +15,7 @@ import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
-public class MessageObserver implements StreamProcessorLifecycleAware {
+public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
 

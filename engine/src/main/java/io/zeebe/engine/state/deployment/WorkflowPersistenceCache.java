@@ -34,7 +34,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.LongHashSet;
 import org.agrona.io.DirectBufferInputStream;
 
-public class WorkflowPersistenceCache {
+public final class WorkflowPersistenceCache {
   private final BpmnTransformer transformer = new BpmnTransformer();
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedWorkflow>>
@@ -89,8 +89,7 @@ public class WorkflowPersistenceCache {
     workflowsByKey = new Long2ObjectHashMap<>();
   }
 
-  protected boolean putDeployment(
-      final long deploymentKey, final DeploymentRecord deploymentRecord) {
+  boolean putDeployment(final long deploymentKey, final DeploymentRecord deploymentRecord) {
     final boolean isNewDeployment = !deployments.contains(deploymentKey);
     if (isNewDeployment) {
       for (final Workflow workflow : deploymentRecord.workflows()) {

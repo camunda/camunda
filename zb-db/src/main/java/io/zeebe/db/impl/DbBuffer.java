@@ -13,7 +13,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DbBuffer implements DbValue {
+public final class DbBuffer implements DbValue {
 
   private final ExpandableArrayBuffer value = new ExpandableArrayBuffer();
   private final DirectBuffer view = new UnsafeBuffer(0, 0);

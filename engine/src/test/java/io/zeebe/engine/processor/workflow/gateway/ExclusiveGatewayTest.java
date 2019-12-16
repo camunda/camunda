@@ -27,7 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ExclusiveGatewayTest {
+public final class ExclusiveGatewayTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

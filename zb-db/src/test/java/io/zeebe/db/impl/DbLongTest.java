@@ -14,7 +14,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.junit.Test;
 
 /** */
-public class DbLongTest {
+public final class DbLongTest {
 
   private final DbLong zbLong = new DbLong();
 

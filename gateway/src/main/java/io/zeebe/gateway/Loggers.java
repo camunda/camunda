@@ -10,7 +10,7 @@ package io.zeebe.gateway;
 import io.zeebe.util.ZbLogger;
 import org.slf4j.Logger;
 
-public class Loggers {
+public final class Loggers {
 
   public static final Logger GATEWAY_LOGGER = new ZbLogger("io.zeebe.gateway");
 }

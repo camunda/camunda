@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class SnapshotChunkImpl
+public final class SnapshotChunkImpl
     extends SbeBufferWriterReader<SnapshotChunkEncoder, SnapshotChunkDecoder>
     implements SnapshotChunk {
 

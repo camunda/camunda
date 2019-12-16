@@ -21,7 +21,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.sbe.MessageDecoderFlyweight;
 
-public class BufferingServerOutput implements ServerOutput {
+public final class BufferingServerOutput implements ServerOutput {
   public static final int MESSAGE_START_OFFSET =
       TransportHeaderDescriptor.HEADER_LENGTH + RequestResponseHeaderDescriptor.HEADER_LENGTH;
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();

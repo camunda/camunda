@@ -18,7 +18,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ErrorResponse implements BufferWriter, BufferReader {
+public final class ErrorResponse implements BufferWriter, BufferReader {
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();

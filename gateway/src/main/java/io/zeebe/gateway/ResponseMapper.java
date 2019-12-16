@@ -35,7 +35,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResu
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
-public class ResponseMapper {
+public final class ResponseMapper {
 
   public static DeployWorkflowResponse toDeployWorkflowResponse(
       final long key, final DeploymentRecord brokerResponse) {

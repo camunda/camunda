@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceRecord> {
+public final class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceRecord> {
 
   private final WorkflowEngineState state;
   private final BpmnStepHandlers stepHandlers;

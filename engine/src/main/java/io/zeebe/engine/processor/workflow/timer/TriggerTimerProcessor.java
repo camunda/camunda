@@ -36,7 +36,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
   private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
   private static final String NO_ACTIVE_TIMER_MESSAGE =

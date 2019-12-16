@@ -18,7 +18,8 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class EventBasedGatewayTransformer implements ModelElementTransformer<EventBasedGateway> {
+public final class EventBasedGatewayTransformer
+    implements ModelElementTransformer<EventBasedGateway> {
 
   @Override
   public Class<EventBasedGateway> getType() {

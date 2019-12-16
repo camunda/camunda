@@ -33,7 +33,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class MsgPackDocumentIndexerTest {
+public final class MsgPackDocumentIndexerTest {
   private final MsgPackDocumentIndexer indexer = new MsgPackDocumentIndexer();
 
   @Test

@@ -22,7 +22,7 @@ import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class Records {
+public final class Records {
 
   public static DeploymentRecord asDeploymentRecord(final LoggedEvent event) {
     return readValueAs(event, DeploymentRecord.class);

@@ -26,7 +26,7 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
 import java.util.function.Consumer;
 
-public class ZeebeAssertHelper {
+public final class ZeebeAssertHelper {
 
   public static void assertWorkflowInstanceCreated() {
     assertWorkflowInstanceCreated((e) -> {});

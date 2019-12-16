@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
-public class MessageSubscriptionRecord extends UnifiedRecordValue
+public final class MessageSubscriptionRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, MessageSubscriptionRecordValue {
 
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");

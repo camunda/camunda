@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class ClaimedFragmentBatchTest {
+public final class ClaimedFragmentBatchTest {
   private static final Runnable DO_NOTHING = () -> {};
 
   private static final int PARTITION_ID = 1;

@@ -13,7 +13,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 
-public class DeployWorkflowStub
+public final class DeployWorkflowStub
     implements RequestStub<BrokerDeployWorkflowRequest, BrokerResponse<DeploymentRecord>> {
 
   private static final long KEY = 123;

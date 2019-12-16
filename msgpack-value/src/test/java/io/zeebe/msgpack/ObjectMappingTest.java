@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class ObjectMappingTest {
+public final class ObjectMappingTest {
   public static final DirectBuffer BUF1 = wrapString("foo");
   public static final DirectBuffer BUF2 = wrapString("bar");
   public static final MutableDirectBuffer MSGPACK_BUF1;

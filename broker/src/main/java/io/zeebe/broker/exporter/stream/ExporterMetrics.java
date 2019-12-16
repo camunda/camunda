@@ -10,7 +10,7 @@ package io.zeebe.broker.exporter.stream;
 import io.prometheus.client.Counter;
 import io.zeebe.protocol.record.ValueType;
 
-public class ExporterMetrics {
+public final class ExporterMetrics {
 
   private static final Counter EXPORTER_EVENTS =
       Counter.build()

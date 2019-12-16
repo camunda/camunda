@@ -21,7 +21,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class TopologyImpl implements Topology {
+public final class TopologyImpl implements Topology {
 
   private final List<BrokerInfo> brokers;
   private final int clusterSize;

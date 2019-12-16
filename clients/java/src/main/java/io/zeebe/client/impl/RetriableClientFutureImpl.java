@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl<R, T> {
+public final class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl<R, T> {
 
   private final Predicate<Throwable> retryPredicate;
   private final Consumer<StreamObserver<T>> retryAction;

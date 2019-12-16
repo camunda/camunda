@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RejectCorrelateMessageSubscriptionCommand
+public final class RejectCorrelateMessageSubscriptionCommand
     extends SbeBufferWriterReader<
         RejectCorrelateMessageSubscriptionEncoder, RejectCorrelateMessageSubscriptionDecoder> {
 

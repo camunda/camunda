@@ -7,7 +7,7 @@
  */
 package io.zeebe.transport.impl.actor;
 
-public class ServerActorContext extends ActorContext {
+public final class ServerActorContext extends ActorContext {
   private ServerConductor serverConductor;
 
   @Override

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
+public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
   public static final String WORKFLOWS = "deployedWorkflows";

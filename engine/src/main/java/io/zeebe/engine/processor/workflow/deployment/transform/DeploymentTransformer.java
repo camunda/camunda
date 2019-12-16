@@ -35,7 +35,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.slf4j.Logger;
 
-public class DeploymentTransformer {
+public final class DeploymentTransformer {
   private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
   private final BpmnValidator validator = new BpmnValidator();

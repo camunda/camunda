@@ -11,7 +11,7 @@ import io.zeebe.util.LangUtil;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class FutureUtil {
+public final class FutureUtil {
   /**
    * Invokes Future.get() returning the result of the invocation. Transforms checked exceptions into
    * RuntimeExceptions to accommodate programmer laziness.

@@ -27,7 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CallActivityIncidentTest {
+public final class CallActivityIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

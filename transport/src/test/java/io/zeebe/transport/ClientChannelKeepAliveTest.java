@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class ClientChannelKeepAliveTest {
+public final class ClientChannelKeepAliveTest {
   protected static final Duration KEEP_ALIVE_PERIOD = Duration.ofSeconds(1);
   protected static final int NODE_ID = 1;
   protected static final SocketAddress ADDRESS = new SocketAddress(SocketUtil.getNextAddress());

@@ -19,7 +19,7 @@ import org.agrona.LangUtil;
 import org.agrona.nio.TransportPoller;
 import org.slf4j.Logger;
 
-public class ReadTransportPoller extends TransportPoller {
+public final class ReadTransportPoller extends TransportPoller {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   protected final List<TransportChannel> channels = new ArrayList<>();
   protected final List<TransportChannel> channelsToAdd = new ArrayList<>();

@@ -19,7 +19,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.StringUtil;
 
-public class TypedEventImpl implements TypedRecord {
+public final class TypedEventImpl implements TypedRecord {
   private final int partitionId;
   private LoggedEvent rawEvent;
   private RecordMetadata metadata;

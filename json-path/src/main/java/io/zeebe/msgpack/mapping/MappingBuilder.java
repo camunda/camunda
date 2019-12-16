@@ -12,7 +12,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MappingBuilder {
+public final class MappingBuilder {
 
   private final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
 

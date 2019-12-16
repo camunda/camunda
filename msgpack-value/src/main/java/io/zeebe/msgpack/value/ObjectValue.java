@@ -134,7 +134,7 @@ public class ObjectValue extends BaseValue {
     return length;
   }
 
-  protected <T extends BaseProperty<?>> void writeJson(
+  private <T extends BaseProperty<?>> void writeJson(
       final StringBuilder builder, final List<T> properties) {
     for (int i = 0; i < properties.size(); i++) {
       if (i > 0) {
@@ -149,7 +149,7 @@ public class ObjectValue extends BaseValue {
     }
   }
 
-  protected <T extends BaseProperty<?>> void write(
+  private <T extends BaseProperty<?>> void write(
       final MsgPackWriter writer, final List<T> properties) {
     for (int i = 0; i < properties.size(); ++i) {
       final BaseProperty<? extends BaseValue> prop = properties.get(i);
@@ -178,7 +178,7 @@ public class ObjectValue extends BaseValue {
         && Objects.equals(recycledProperties, that.recycledProperties);
   }
 
-  protected <T extends BaseProperty<?>> int getEncodedLength(final List<T> properties) {
+  private <T extends BaseProperty<?>> int getEncodedLength(final List<T> properties) {
     int length = 0;
     for (int i = 0; i < properties.size(); ++i) {
       final T prop = properties.get(i);

@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class BrokerHealthCheckService extends Actor implements PartitionListener {
+public final class BrokerHealthCheckService extends Actor implements PartitionListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final Atomix atomix;

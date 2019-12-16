@@ -19,7 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class StreamUtil {
+public final class StreamUtil {
 
   public static byte[] readInputStream(final InputStream input) throws IOException {
     final byte[] byteBuffer = new byte[4 * 1024];

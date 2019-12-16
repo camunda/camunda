@@ -12,7 +12,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.log.LogStream;
 import java.util.Collection;
 
-public class ExporterDirectorContext {
+public final class ExporterDirectorContext {
 
   private int id;
   private String name;

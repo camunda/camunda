@@ -31,7 +31,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class ExporterRule implements TestRule {
+public final class ExporterRule implements TestRule {
 
   private static final int EXPORTER_PROCESSOR_ID = 101;
   private static final String PROCESSOR_NAME = "exporter";

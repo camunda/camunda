@@ -16,7 +16,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-public class TestFileUtil {
+public final class TestFileUtil {
 
   /** Ant-style property substitution */
   public static InputStream readAsTextFileAndReplace(

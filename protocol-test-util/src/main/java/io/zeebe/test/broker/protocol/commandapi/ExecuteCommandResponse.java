@@ -24,7 +24,7 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
-public class ExecuteCommandResponse implements BufferReader {
+public final class ExecuteCommandResponse implements BufferReader {
   protected final ErrorResponse errorResponse;
   protected final MsgPackHelper msgPackHelper;
   protected Map<String, Object> value;

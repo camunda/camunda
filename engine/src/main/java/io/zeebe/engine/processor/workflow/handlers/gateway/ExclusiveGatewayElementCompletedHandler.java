@@ -11,7 +11,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
 
-public class ExclusiveGatewayElementCompletedHandler<T extends ExecutableExclusiveGateway>
+public final class ExclusiveGatewayElementCompletedHandler<T extends ExecutableExclusiveGateway>
     extends ElementCompletedHandler<T> {
 
   public ExclusiveGatewayElementCompletedHandler() {

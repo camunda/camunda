@@ -8,7 +8,7 @@
 package io.zeebe.msgpack.mapping;
 
 /** Represents a static constructor to constructing the node ids for the {@link MsgPackTree}. */
-public class MsgPackTreeNodeIdConstructor {
+public final class MsgPackTreeNodeIdConstructor {
   public static final String JSON_PATH_SEPARATOR = "[";
   public static final String JSON_PATH_SEPARATOR_END = "]";
 

@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.WorkflowInstanceResultRecordValue;
 import java.util.stream.Stream;
 
-public class WorkflowInstanceResultRecordStream
+public final class WorkflowInstanceResultRecordStream
     extends ExporterRecordStream<
         WorkflowInstanceResultRecordValue, WorkflowInstanceResultRecordStream> {
 

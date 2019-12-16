@@ -16,7 +16,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ErrorResponseWriterTest {
+public final class ErrorResponseWriterTest {
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ErrorResponseDecoder responseDecoder = new ErrorResponseDecoder();
 

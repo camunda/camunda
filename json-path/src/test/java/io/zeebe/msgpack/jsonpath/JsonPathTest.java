@@ -26,7 +26,7 @@ import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class JsonPathTest {
+public final class JsonPathTest {
 
   @Test
   public void testJsonPath() throws IOException {

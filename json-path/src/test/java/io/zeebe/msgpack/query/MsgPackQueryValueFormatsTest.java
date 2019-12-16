@@ -26,7 +26,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.msgpack.core.MessagePacker;
 
 @RunWith(Parameterized.class)
-public class MsgPackQueryValueFormatsTest {
+public final class MsgPackQueryValueFormatsTest {
 
   @Parameter public CheckedConsumer<MessagePacker> valueWriter;
 

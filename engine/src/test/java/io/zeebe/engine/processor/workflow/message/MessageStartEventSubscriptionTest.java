@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MessageStartEventSubscriptionTest {
+public final class MessageStartEventSubscriptionTest {
   private static final String MESSAGE_NAME1 = "startMessage1";
   private static final String EVENT_ID1 = "startEventId1";
 

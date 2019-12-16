@@ -9,7 +9,7 @@ package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 
-public class IoThreadGroup extends ActorThreadGroup {
+public final class IoThreadGroup extends ActorThreadGroup {
 
   public IoThreadGroup(final ActorSchedulerBuilder builder) {
     super(

@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class DeploymentResource extends UnpackedObject
+public final class DeploymentResource extends UnpackedObject
     implements io.zeebe.protocol.record.value.deployment.DeploymentResource {
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final EnumProperty<ResourceType> resourceTypeProp =

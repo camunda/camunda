@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class MapBuilder<T> {
+public final class MapBuilder<T> {
   protected final T returnValue;
   protected final Consumer<Map<String, Object>> mapCallback;
 

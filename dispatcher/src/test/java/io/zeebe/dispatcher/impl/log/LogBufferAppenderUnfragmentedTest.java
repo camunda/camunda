@@ -33,7 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-public class LogBufferAppenderUnfragmentedTest {
+public final class LogBufferAppenderUnfragmentedTest {
   static final int A_PARTITION_LENGTH = 1024;
   static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
   static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;

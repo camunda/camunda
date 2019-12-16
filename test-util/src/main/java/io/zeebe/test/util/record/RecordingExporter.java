@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-public class RecordingExporter implements Exporter {
+public final class RecordingExporter implements Exporter {
 
   private static final long MAX_WAIT = Duration.ofSeconds(5).toMillis();
   private static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();

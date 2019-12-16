@@ -16,7 +16,7 @@ import io.zeebe.protocol.Protocol;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public class ZeebeStateRule extends ExternalResource {
+public final class ZeebeStateRule extends ExternalResource {
 
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final int partition;

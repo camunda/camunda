@@ -28,7 +28,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
 
-public class CreateWorkflowInstanceProcessor
+public final class CreateWorkflowInstanceProcessor
     implements CommandProcessor<WorkflowInstanceCreationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
@@ -46,7 +46,7 @@ public class CreateWorkflowInstanceProcessor
   private static final String ERROR_INVALID_VARIABLES_LOGGED_MESSAGE =
       "Expected to set variables from document, but the document is invalid";
 
-  protected final WorkflowInstanceRecord newWorkflowInstance = new WorkflowInstanceRecord();
+  private final WorkflowInstanceRecord newWorkflowInstance = new WorkflowInstanceRecord();
   private final WorkflowState workflowState;
   private final ElementInstanceState elementInstanceState;
   private final VariablesState variablesState;

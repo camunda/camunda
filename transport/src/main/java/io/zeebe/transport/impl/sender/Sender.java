@@ -38,7 +38,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class Sender extends Actor implements TimerHandler {
+public final class Sender extends Actor implements TimerHandler {
   private static final int MAX_REQUEST_CONSUME_BATCH_SIZE = 100;
 
   private static final int DEFAULT_BATCH_SIZE = (int) ByteValue.ofKilobytes(128).toBytes();
@@ -310,7 +310,7 @@ public class Sender extends Actor implements TimerHandler {
   public void failPendingRequestsToRemote(
       final RemoteAddressImpl remoteAddress, final String reason) {}
 
-  public class ChannelWriteQueue {
+  public final class ChannelWriteQueue {
     private final Deque<Batch> pendingWrites = new LinkedList<>();
 
     private final TransportChannel channel;

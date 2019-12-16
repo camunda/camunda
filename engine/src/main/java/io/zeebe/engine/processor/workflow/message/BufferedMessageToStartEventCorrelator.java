@@ -21,7 +21,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 
-public class BufferedMessageToStartEventCorrelator implements WorkflowPostProcessor {
+public final class BufferedMessageToStartEventCorrelator implements WorkflowPostProcessor {
 
   private final MessageState messageState;
   private final KeyGenerator keyGenerator;

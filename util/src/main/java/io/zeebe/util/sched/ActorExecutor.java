@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to the scheduler's internal
  * runners and queues.
  */
-public class ActorExecutor {
+public final class ActorExecutor {
   private final ActorThreadGroup cpuBoundThreads;
   private final ActorThreadGroup ioBoundThreads;
   private final ThreadPoolExecutor blockingTasksRunner;

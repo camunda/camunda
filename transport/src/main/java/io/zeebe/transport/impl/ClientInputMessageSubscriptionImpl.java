@@ -16,7 +16,7 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.RemoteAddressList;
 import io.zeebe.util.sched.ActorCondition;
 
-public class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription {
+public final class ClientInputMessageSubscriptionImpl implements ClientInputMessageSubscription {
   protected final Subscription subscription;
   protected final FragmentHandler messageHandler;
 

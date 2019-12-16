@@ -9,11 +9,11 @@ package io.zeebe.msgpack.query;
 
 import org.agrona.BitUtil;
 
-public class MsgPackFilterContext extends AbstractDynamicContext {
+public final class MsgPackFilterContext extends AbstractDynamicContext {
 
-  protected static final int FILTER_ID_OFFSET = 0;
+  private static final int FILTER_ID_OFFSET = 0;
 
-  protected static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT;
+  private static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT;
 
   public MsgPackFilterContext(final int capacity, final int dynamicContextSize) {
     super(capacity, STATIC_ELEMENT_SIZE, dynamicContextSize);

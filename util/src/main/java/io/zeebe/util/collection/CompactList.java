@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
 /** Compact, off-heap list datastructure */
-public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSilently {
+public final class CompactList implements Iterable<MutableDirectBuffer>, CloseableSilently {
   protected final AllocatedBuffer allocatedBuffer;
   protected final UnsafeBuffer listBuffer;
   protected final UnsafeBuffer elementBuffer = new UnsafeBuffer(0, 0);

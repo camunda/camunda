@@ -22,7 +22,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
+public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, WorkflowInstanceSubscriptionRecordValue {
 
   private final IntegerProperty subscriptionPartitionIdProp =

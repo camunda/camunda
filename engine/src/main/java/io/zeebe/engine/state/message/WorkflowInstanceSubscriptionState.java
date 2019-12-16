@@ -17,7 +17,7 @@ import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceSubscriptionState {
+public final class WorkflowInstanceSubscriptionState {
 
   private final DbContext dbContext;
 

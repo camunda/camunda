@@ -15,7 +15,7 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import io.zeebe.util.Environment;
 import java.util.Objects;
 
-public class SecurityCfg {
+public final class SecurityCfg {
 
   private boolean enabled = DEFAULT_TLS_ENABLED;
   private String certificateChainPath;

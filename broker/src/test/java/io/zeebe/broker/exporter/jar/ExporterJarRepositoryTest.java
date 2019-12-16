@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class ExporterJarRepositoryTest {
+public final class ExporterJarRepositoryTest {
   private final ExporterJarRepository jarRepository = new ExporterJarRepository();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);

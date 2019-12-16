@@ -21,7 +21,7 @@ import io.zeebe.client.impl.ZeebeObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActivateJobsResponseImpl implements ActivateJobsResponse {
+public final class ActivateJobsResponseImpl implements ActivateJobsResponse {
 
   private final ZeebeObjectMapper objectMapper;
   private final List<ActivatedJob> jobs = new ArrayList<>();

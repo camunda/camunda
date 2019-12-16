@@ -22,7 +22,7 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobClient {
+public final class JobClient {
   private static final long DEFAULT_KEY = -1L;
 
   private static final Function<Long, Record<JobRecordValue>> SUCCESS_SUPPLIER =

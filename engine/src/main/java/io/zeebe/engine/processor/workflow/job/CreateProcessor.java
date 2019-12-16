@@ -13,7 +13,7 @@ import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 
-public class CreateProcessor implements CommandProcessor<JobRecord> {
+public final class CreateProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState state;
 

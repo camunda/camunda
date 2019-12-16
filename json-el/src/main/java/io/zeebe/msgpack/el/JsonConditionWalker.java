@@ -7,7 +7,7 @@
  */
 package io.zeebe.msgpack.el;
 
-public class JsonConditionWalker {
+public final class JsonConditionWalker {
 
   public static void walk(final JsonCondition condition, final JsonConditionVisitor visitor) {
     if (condition instanceof Comparison) {

@@ -18,7 +18,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CommandRateLimiter extends AbstractLimiter<Intent> implements RequestLimiter<Intent> {
+public final class CommandRateLimiter extends AbstractLimiter<Intent>
+    implements RequestLimiter<Intent> {
 
   private static final Set<? extends Intent> WHITE_LISTED_COMMANDS =
       EnumSet.of(JobIntent.COMPLETE, JobIntent.FAIL);

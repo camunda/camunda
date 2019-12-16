@@ -16,7 +16,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchRecord> {
+public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchRecord> {
 
   private final JobBatchRecord requestDto = new JobBatchRecord();
 

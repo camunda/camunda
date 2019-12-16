@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
-public class GrpcClientRule extends ExternalResource {
+public final class GrpcClientRule extends ExternalResource {
 
   private static final Logger LOG = TestLoggers.TEST_LOGGER;
 

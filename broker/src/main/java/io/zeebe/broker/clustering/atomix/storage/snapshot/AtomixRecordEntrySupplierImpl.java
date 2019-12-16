@@ -13,7 +13,7 @@ import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import java.util.Optional;
 
-public class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier {
+public final class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier {
   private final AtomixLogStorageReader reader;
 
   public AtomixRecordEntrySupplierImpl(final AtomixLogStorageReader reader) {

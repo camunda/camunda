@@ -37,7 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
-public class TransformingDeploymentCreateProcessorTest {
+public final class TransformingDeploymentCreateProcessorTest {
 
   @Rule
   public final StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION);

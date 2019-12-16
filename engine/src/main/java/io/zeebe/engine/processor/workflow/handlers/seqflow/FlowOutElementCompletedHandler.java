@@ -20,7 +20,7 @@ import java.util.List;
  *
  * @param <T>
  */
-public class FlowOutElementCompletedHandler<T extends ExecutableFlowNode>
+public final class FlowOutElementCompletedHandler<T extends ExecutableFlowNode>
     extends ElementCompletedHandler<T> {
   public FlowOutElementCompletedHandler() {
     super();

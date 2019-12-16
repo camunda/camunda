@@ -12,7 +12,7 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TransportHeaderDescriptor {
+public final class TransportHeaderDescriptor {
   public static final short REQUEST_RESPONSE = 0;
   public static final short FULL_DUPLEX_SINGLE_MESSAGE = 1;
   public static final short CONTROL_MESSAGE = 2;

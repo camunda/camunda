@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DbString implements DbKey, DbValue {
+public final class DbString implements DbKey, DbValue {
 
   private final DirectBuffer bytes = new UnsafeBuffer(0, 0);
 

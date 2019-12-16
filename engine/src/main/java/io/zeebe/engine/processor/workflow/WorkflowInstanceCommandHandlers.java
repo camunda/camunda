@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WorkflowInstanceCommandHandlers {
+public final class WorkflowInstanceCommandHandlers {
 
   private final Map<WorkflowInstanceIntent, WorkflowInstanceCommandHandler> handlers =
       new HashMap<>();

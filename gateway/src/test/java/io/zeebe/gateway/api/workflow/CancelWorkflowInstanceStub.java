@@ -13,7 +13,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 
-public class CancelWorkflowInstanceStub
+public final class CancelWorkflowInstanceStub
     implements RequestStub<
         BrokerCancelWorkflowInstanceRequest, BrokerResponse<WorkflowInstanceRecord>> {
 

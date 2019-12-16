@@ -23,7 +23,7 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-public class DeploymentClient {
+public final class DeploymentClient {
 
   private static final BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>>
       SUCCESS_EXPECTATION =

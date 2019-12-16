@@ -28,7 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstanceCommandStep1 {
+public final class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstanceCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;

@@ -48,7 +48,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.MockitoAnnotations;
 
-public class CommandApiMessageHandlerTest {
+public final class CommandApiMessageHandlerTest {
   protected static final RemoteAddress DEFAULT_ADDRESS =
       new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
   protected static final int LOG_STREAM_PARTITION_ID = 1;

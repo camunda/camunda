@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
-public class TransformationVisitor extends TypeHierarchyVisitor {
+public final class TransformationVisitor extends TypeHierarchyVisitor {
 
   private final Map<Class<?>, ModelElementTransformer<?>> transformHandlers = new HashMap<>();
 

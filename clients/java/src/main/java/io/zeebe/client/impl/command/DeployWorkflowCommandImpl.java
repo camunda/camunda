@@ -45,7 +45,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class DeployWorkflowCommandImpl
+public final class DeployWorkflowCommandImpl
     implements DeployWorkflowCommandStep1, DeployWorkflowCommandBuilderStep2 {
 
   private final DeployWorkflowRequest.Builder requestBuilder = DeployWorkflowRequest.newBuilder();

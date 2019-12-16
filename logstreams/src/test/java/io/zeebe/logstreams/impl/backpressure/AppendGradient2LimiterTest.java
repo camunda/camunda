@@ -14,7 +14,7 @@ import io.zeebe.util.Environment;
 import java.util.Map;
 import org.junit.Test;
 
-public class AppendGradient2LimiterTest {
+public final class AppendGradient2LimiterTest {
 
   @Test
   public void shouldUseDefaultValues() {

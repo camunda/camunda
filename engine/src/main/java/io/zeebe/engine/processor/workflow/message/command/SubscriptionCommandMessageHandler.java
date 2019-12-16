@@ -25,7 +25,7 @@ import java.util.function.IntFunction;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class SubscriptionCommandMessageHandler
+public final class SubscriptionCommandMessageHandler
     implements Function<byte[], CompletableFuture<Void>> {
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();

@@ -16,7 +16,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.protocol.record.ValueType;
 
-public class DeploymentEventProcessors {
+public final class DeploymentEventProcessors {
 
   public static void addDeploymentCreateProcessor(
       final TypedRecordProcessors typedRecordProcessors,

@@ -16,7 +16,7 @@ import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.WorkflowEngineState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 
-public class WorkflowInstanceCommandProcessor
+public final class WorkflowInstanceCommandProcessor
     implements TypedRecordProcessor<WorkflowInstanceRecord> {
 
   private final WorkflowInstanceCommandHandlers commandHandlers;

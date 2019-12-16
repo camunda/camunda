@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * ordered lexicographically, and the files are assumed to be immutable, i.e. no more are added to
  * the directory once this is created.
  */
-public class DbSnapshotChunkReader implements SnapshotChunkReader {
+public final class DbSnapshotChunkReader implements SnapshotChunkReader {
   static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
   private final Path directory;
   private final NavigableSet<CharSequence> chunks;

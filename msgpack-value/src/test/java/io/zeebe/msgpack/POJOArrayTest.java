@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class POJOArrayTest {
+public final class POJOArrayTest {
   @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Test

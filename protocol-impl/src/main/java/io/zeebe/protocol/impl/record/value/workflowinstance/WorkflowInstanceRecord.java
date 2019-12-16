@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceRecord extends UnifiedRecordValue
+public final class WorkflowInstanceRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, WorkflowInstanceRecordValue {
 
   public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";

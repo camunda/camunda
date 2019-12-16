@@ -17,8 +17,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class BinaryValue extends BaseValue {
-  protected final MutableDirectBuffer data = new UnsafeBuffer(0, 0);
-  protected int length = 0;
+  private final MutableDirectBuffer data = new UnsafeBuffer(0, 0);
+  private int length = 0;
 
   public BinaryValue() {}
 

@@ -55,7 +55,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JsonSerializableToJsonTest {
+public final class JsonSerializableToJsonTest {
 
   private static final String VARIABLES_JSON = "{'foo':'bar'}";
   private static final DirectBuffer VARIABLES_MSGPACK =

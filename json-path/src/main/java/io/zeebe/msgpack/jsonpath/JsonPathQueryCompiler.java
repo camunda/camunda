@@ -18,12 +18,12 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Can be reused, but is not thread-safe */
-public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
-  protected static final int ROOT_COLLECTION_FILTER_ID = 0;
-  protected static final int MAP_VALUE_FILTER_ID = 1;
-  protected static final int ARRAY_INDEX_FILTER_ID = 2;
-  protected static final int WILDCARD_FILTER_ID = 3;
-  protected static final MsgPackFilter[] JSON_PATH_FILTERS = new MsgPackFilter[4];
+public final class JsonPathQueryCompiler implements JsonPathTokenVisitor {
+  private static final int ROOT_COLLECTION_FILTER_ID = 0;
+  private static final int MAP_VALUE_FILTER_ID = 1;
+  private static final int ARRAY_INDEX_FILTER_ID = 2;
+  private static final int WILDCARD_FILTER_ID = 3;
+  private static final MsgPackFilter[] JSON_PATH_FILTERS = new MsgPackFilter[4];
 
   static {
     JSON_PATH_FILTERS[ROOT_COLLECTION_FILTER_ID] = new RootCollectionFilter();
@@ -32,9 +32,9 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
     JSON_PATH_FILTERS[WILDCARD_FILTER_ID] = new WildcardFilter();
   }
 
-  protected final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
-  protected final UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
-  protected ParsingMode mode;
+  private final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
+  private final UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
+  private ParsingMode mode;
   private JsonPathQuery currentQuery;
 
   public JsonPathQuery compile(final String jsonPathExpression) {
@@ -111,7 +111,7 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
     }
   }
 
-  protected enum ParsingMode {
+  private enum ParsingMode {
     OPERATOR,
     LITERAL,
   }

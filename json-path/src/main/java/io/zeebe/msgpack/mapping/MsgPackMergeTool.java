@@ -13,7 +13,7 @@ import io.zeebe.util.EnsureUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackMergeTool {
+public final class MsgPackMergeTool {
 
   /** The maximum JSON key length. */
   public static final int MAX_JSON_KEY_LEN = 256;

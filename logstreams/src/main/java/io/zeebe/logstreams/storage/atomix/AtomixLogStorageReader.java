@@ -15,7 +15,7 @@ import io.zeebe.logstreams.spi.LogStorageReader;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public class AtomixLogStorageReader implements LogStorageReader {
+public final class AtomixLogStorageReader implements LogStorageReader {
   private final RaftLogReader reader;
 
   public AtomixLogStorageReader(final RaftLogReader reader) {

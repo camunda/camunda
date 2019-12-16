@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
+public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     implements WorkflowInstanceCreationRecordValue {
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");

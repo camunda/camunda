@@ -7,7 +7,7 @@
  */
 package io.zeebe.util;
 
-public class ReflectUtil {
+public final class ReflectUtil {
 
   public static <T> T newInstance(final Class<T> clazz) {
     try {

@@ -24,7 +24,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class MsgPackTraverserTest {
+public final class MsgPackTraverserTest {
 
   protected final MsgPackQueryExecutor valueVisitor = new MsgPackQueryExecutor();
   protected final MsgPackTraverser traverser = new MsgPackTraverser();

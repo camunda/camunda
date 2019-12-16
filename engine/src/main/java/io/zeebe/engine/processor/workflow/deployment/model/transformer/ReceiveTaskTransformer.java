@@ -17,7 +17,7 @@ import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTask> {
+public final class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTask> {
 
   @Override
   public Class<ReceiveTask> getType() {

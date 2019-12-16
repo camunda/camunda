@@ -11,7 +11,7 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.BooleanSupplier;
 
-public class ActorRetryMechanism {
+public final class ActorRetryMechanism {
 
   private final ActorControl actor;
 

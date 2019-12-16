@@ -10,7 +10,7 @@ package io.zeebe.util.sched;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 
 /** Thread group for the non-blocking, CPU bound, tasks. */
-public class CpuThreadGroup extends ActorThreadGroup {
+public final class CpuThreadGroup extends ActorThreadGroup {
 
   public CpuThreadGroup(final ActorSchedulerBuilder builder) {
     super(

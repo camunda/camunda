@@ -46,7 +46,7 @@ import org.agrona.MutableDirectBuffer;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class LogEntryDescriptor {
+public final class LogEntryDescriptor {
 
   public static final long KEY_NULL_VALUE = -1;
 

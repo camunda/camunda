@@ -13,7 +13,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 
-public class StubbedTopologyManager implements BrokerTopologyManager {
+public final class StubbedTopologyManager implements BrokerTopologyManager {
 
   private final BrokerClusterStateImpl clusterState;
 

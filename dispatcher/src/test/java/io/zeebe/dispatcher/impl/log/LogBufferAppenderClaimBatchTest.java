@@ -30,7 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-public class LogBufferAppenderClaimBatchTest {
+public final class LogBufferAppenderClaimBatchTest {
   private static final Runnable DO_NOTHING = () -> {};
 
   private static final int PARTITION_ID = 10;

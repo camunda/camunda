@@ -5,7 +5,7 @@ import org.junit.runner.notification.RunListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ZeebeTestListener extends RunListener {
+public final class ZeebeTestListener extends RunListener {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
 

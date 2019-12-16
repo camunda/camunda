@@ -13,7 +13,7 @@ import io.zeebe.exporter.api.context.Context;
 import io.zeebe.protocol.record.Record;
 import org.slf4j.Logger;
 
-public class DebugHttpExporter implements Exporter {
+public final class DebugHttpExporter implements Exporter {
 
   private static DebugHttpServer httpServer;
 

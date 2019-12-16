@@ -23,7 +23,7 @@ import java.util.Arrays;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-public class ErrorResponseWriter implements BufferWriter {
+public final class ErrorResponseWriter implements BufferWriter {
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private static final String UNSUPPORTED_MESSAGE_FORMAT =
@@ -42,12 +42,12 @@ public class ErrorResponseWriter implements BufferWriter {
       "Expected to get workflow with %s, but no such workflow found";
   private static final String RESOURCE_EXHAUSTED = "Reached maximum capacity of requests handled";
 
-  protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-  protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
-  protected final ServerOutput output;
-  protected final ServerResponse response = new ServerResponse();
-  protected ErrorCode errorCode;
-  protected byte[] errorMessage;
+  private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+  private final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
+  private final ServerOutput output;
+  private final ServerResponse response = new ServerResponse();
+  private ErrorCode errorCode;
+  private byte[] errorMessage;
 
   public ErrorResponseWriter() {
     this(null);

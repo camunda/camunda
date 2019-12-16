@@ -11,7 +11,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
 import io.zeebe.protocol.record.RecordType;
 
-public class StreamProcessorMetrics {
+public final class StreamProcessorMetrics {
 
   private static final Counter STREAM_PROCESSOR_EVENTS =
       Counter.build()

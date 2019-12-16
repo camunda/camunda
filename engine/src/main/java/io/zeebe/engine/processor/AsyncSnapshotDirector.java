@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
-public class AsyncSnapshotDirector extends Actor {
+public final class AsyncSnapshotDirector extends Actor {
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
   private static final String LOG_MSG_WAIT_UNTIL_COMMITTED =
@@ -192,7 +192,7 @@ public class AsyncSnapshotDirector extends Actor {
             });
   }
 
-  protected void enforceSnapshotCreation(
+  void enforceSnapshotCreation(
       final long commitPosition, final long lastWrittenPosition, final long lastProcessedPosition) {
     if (commitPosition >= lastWrittenPosition
         && lastProcessedPosition > lastValidSnapshotPosition) {

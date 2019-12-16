@@ -17,7 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class ZeebeRocksDbFactoryTest {
+public final class ZeebeRocksDbFactoryTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 

@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
-public class CloseMessageSubscriptionProcessor
+public final class CloseMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
   public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =

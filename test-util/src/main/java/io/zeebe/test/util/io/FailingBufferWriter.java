@@ -10,7 +10,7 @@ package io.zeebe.test.util.io;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.MutableDirectBuffer;
 
-public class FailingBufferWriter implements BufferWriter {
+public final class FailingBufferWriter implements BufferWriter {
   @Override
   public int getLength() {
     return 10;

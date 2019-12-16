@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
-public class BufferingServerTransportTest {
+public final class BufferingServerTransportTest {
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
   public static final SocketAddress SERVER_ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
 

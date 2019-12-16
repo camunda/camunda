@@ -9,7 +9,7 @@ package io.zeebe.util.allocation;
 
 import java.nio.ByteBuffer;
 
-public class HeapBufferAllocator implements BufferAllocator {
+public final class HeapBufferAllocator implements BufferAllocator {
 
   @Override
   public AllocatedBuffer allocate(final int capacity) {

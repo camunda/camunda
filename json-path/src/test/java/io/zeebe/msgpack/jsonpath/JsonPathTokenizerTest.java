@@ -15,7 +15,7 @@ import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class JsonPathTokenizerTest {
+public final class JsonPathTokenizerTest {
 
   @Test
   public void testTokenization() {

@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
 
-public class SetVariablesTest extends ClientTest {
+public final class SetVariablesTest extends ClientTest {
 
   @Test
   public void shouldCommandWithVariablesAsString() {

@@ -19,7 +19,7 @@ import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
-public class SubProcessTransformer implements ModelElementTransformer<SubProcess> {
+public final class SubProcessTransformer implements ModelElementTransformer<SubProcess> {
 
   @Override
   public Class<SubProcess> getType() {

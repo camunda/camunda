@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class TopologyRequestImpl implements TopologyRequestStep1 {
+public final class TopologyRequestImpl implements TopologyRequestStep1 {
 
   private final GatewayStub asyncStub;
   private final Predicate<Throwable> retryPredicate;

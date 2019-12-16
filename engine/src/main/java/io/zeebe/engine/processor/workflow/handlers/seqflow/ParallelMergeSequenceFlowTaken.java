@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
+public final class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
     extends AbstractHandler<T> {
   public ParallelMergeSequenceFlowTaken() {
     super(null);

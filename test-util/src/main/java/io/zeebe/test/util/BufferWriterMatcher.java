@@ -23,7 +23,8 @@ import org.mockito.ArgumentMatcher;
  *
  * @author Lindhauer
  */
-public class BufferWriterMatcher<T extends BufferReader> implements ArgumentMatcher<BufferWriter> {
+public final class BufferWriterMatcher<T extends BufferReader>
+    implements ArgumentMatcher<BufferWriter> {
   protected final T reader;
 
   protected final List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();

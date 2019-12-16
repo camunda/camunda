@@ -11,8 +11,8 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Objects;
 
-public class LongValue extends BaseValue {
-  protected long value;
+public final class LongValue extends BaseValue {
+  private long value;
 
   public LongValue() {
     this(0L);

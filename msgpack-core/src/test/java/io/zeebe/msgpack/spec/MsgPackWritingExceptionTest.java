@@ -21,7 +21,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackWritingExceptionTest {
+public final class MsgPackWritingExceptionTest {
 
   protected static final int BUFFER_CAPACITY = 1024;
   protected static final int WRITE_OFFSET = 123;

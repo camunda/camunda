@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class ExporterManagerPartitionTest {
+public final class ExporterManagerPartitionTest {
 
   private static final int PARTITIONS = 3;
 

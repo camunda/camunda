@@ -21,7 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class ObjectMappingUndeclaredPropertiesTest {
+public final class ObjectMappingUndeclaredPropertiesTest {
   protected static final DirectBuffer MSG_PACK =
       encodeMsgPack(
           (w) -> {

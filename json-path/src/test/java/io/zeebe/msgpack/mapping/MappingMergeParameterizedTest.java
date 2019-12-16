@@ -24,7 +24,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 /** Represents a test class to test the merge documents functionality with help of mappings. */
 @RunWith(Parameterized.class)
-public class MappingMergeParameterizedTest {
+public final class MappingMergeParameterizedTest {
   @Parameter public String sourcePayload;
 
   @Parameter(1)

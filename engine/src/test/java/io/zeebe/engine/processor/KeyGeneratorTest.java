@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class KeyGeneratorTest {
+public final class KeyGeneratorTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 

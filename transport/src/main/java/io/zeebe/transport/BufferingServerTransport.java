@@ -12,7 +12,7 @@ import io.zeebe.transport.impl.TransportContext;
 import io.zeebe.transport.impl.actor.ActorContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class BufferingServerTransport extends ServerTransport {
+public final class BufferingServerTransport extends ServerTransport {
   protected final Dispatcher receiveBuffer;
 
   public BufferingServerTransport(

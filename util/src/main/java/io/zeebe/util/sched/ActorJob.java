@@ -13,7 +13,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class ActorJob {
+public final class ActorJob {
   TaskSchedulingState schedulingState;
 
   Actor actor;

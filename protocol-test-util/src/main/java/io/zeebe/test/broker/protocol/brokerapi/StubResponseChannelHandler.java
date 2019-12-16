@@ -21,7 +21,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class StubResponseChannelHandler implements ServerRequestHandler {
+public final class StubResponseChannelHandler implements ServerRequestHandler {
 
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   protected final List<ResponseStub<ExecuteCommandRequest>> cmdRequestStubs = new ArrayList<>();

@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class DataCfg implements ConfigurationEntry {
+public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
 
   // Hint: do not use Collections.singletonList as this does not support replaceAll

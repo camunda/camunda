@@ -39,7 +39,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OAuthCredentialsProvider implements CredentialsProvider {
+public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final ObjectReader CREDENTIALS_READER =
       JSON_MAPPER.readerFor(ZeebeClientCredentials.class);

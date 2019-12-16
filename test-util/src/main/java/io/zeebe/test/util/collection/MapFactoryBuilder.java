@@ -13,7 +13,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class MapFactoryBuilder<A, T> {
+public final class MapFactoryBuilder<A, T> {
   protected final T returnValue;
   protected final Consumer<Function<A, Map<String, Object>>> factoryCallback;
 

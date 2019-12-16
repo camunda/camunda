@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 
-public class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
+public final class ServiceTaskElementActivatedHandler<T extends ExecutableServiceTask>
     extends ElementActivatedHandler<T> {
 
   private final JobRecord jobCommand = new JobRecord();

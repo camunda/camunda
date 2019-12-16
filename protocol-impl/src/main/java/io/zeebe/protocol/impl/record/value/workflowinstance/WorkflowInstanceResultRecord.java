@@ -19,7 +19,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceResultRecord extends UnifiedRecordValue
+public final class WorkflowInstanceResultRecord extends UnifiedRecordValue
     implements WorkflowInstanceResultRecordValue {
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");

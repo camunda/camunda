@@ -17,7 +17,7 @@ import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndTimersTest {
+public final class ActorLifecyclePhasesAndTimersTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 

@@ -13,7 +13,7 @@ import java.util.Iterator;
 import org.junit.Test;
 
 /** */
-public class ReusableObjectListTest {
+public final class ReusableObjectListTest {
   @Test
   public void shouldAddNewValue() {
     // given

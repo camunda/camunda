@@ -9,7 +9,7 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.BooleanValue;
 
-public class BooleanProperty extends BaseProperty<BooleanValue> {
+public final class BooleanProperty extends BaseProperty<BooleanValue> {
 
   public BooleanProperty(final String key) {
     super(key, new BooleanValue());

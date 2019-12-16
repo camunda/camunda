@@ -16,7 +16,7 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.Environment;
 import java.util.Objects;
 
-public class NetworkCfg {
+public final class NetworkCfg {
 
   private String host;
   private int port = DEFAULT_PORT;

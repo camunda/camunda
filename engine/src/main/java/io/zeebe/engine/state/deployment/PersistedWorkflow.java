@@ -19,7 +19,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedWorkflow implements DbValue {
+public final class PersistedWorkflow implements DbValue {
   final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resourceName = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resource = new UnsafeBuffer(0, 0);

@@ -14,7 +14,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 
-public class MessageTimeToLiveChecker implements Runnable {
+public final class MessageTimeToLiveChecker implements Runnable {
 
   private final TypedCommandWriter writer;
   private final MessageState messageState;

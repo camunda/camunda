@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class StringValue extends BaseValue {
+public final class StringValue extends BaseValue {
   public static final String EMPTY_STRING = "";
 
   private final MutableDirectBuffer bytes = new UnsafeBuffer(0, 0);

@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ParallelGatewayTest {
+public final class ParallelGatewayTest {
 
   private static final String PROCESS_ID = "process";
 

@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.MessageRecordValue;
 import java.util.stream.Stream;
 
-public class MessageRecordStream
+public final class MessageRecordStream
     extends ExporterRecordWithVariablesStream<MessageRecordValue, MessageRecordStream> {
 
   public MessageRecordStream(final Stream<Record<MessageRecordValue>> wrappedStream) {

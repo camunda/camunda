@@ -17,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RecordingMessageHandler implements ServerMessageHandler, ClientMessageHandler {
+public final class RecordingMessageHandler implements ServerMessageHandler, ClientMessageHandler {
   protected final List<ReceivedMessage> receivedMessages = new CopyOnWriteArrayList<>();
 
   @Override

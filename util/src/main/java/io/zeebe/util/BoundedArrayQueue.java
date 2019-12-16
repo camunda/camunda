@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 
 /** Non concurrent, garbage-free array queue with fixed capacity. */
-public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
+public final class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
   protected final Object[] array;
 
   protected final int capacity;

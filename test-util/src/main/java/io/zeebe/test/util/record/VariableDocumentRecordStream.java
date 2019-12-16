@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class VariableDocumentRecordStream
+public final class VariableDocumentRecordStream
     extends ExporterRecordStream<VariableDocumentRecordValue, VariableDocumentRecordStream> {
 
   public VariableDocumentRecordStream(

@@ -17,7 +17,7 @@ import java.net.InetSocketAddress;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class BrokerTest {
+public final class BrokerTest {
 
   @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 

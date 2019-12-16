@@ -28,7 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
+public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;

@@ -24,7 +24,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class JobUpdateRetriesTest {
+public final class JobUpdateRetriesTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final int NEW_RETRIES = 20;
   private static final String PROCESS_ID = "process";

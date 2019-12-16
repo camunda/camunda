@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class MappingTestUtil {
+public final class MappingTestUtil {
   public static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   public static Path jsonDocumentPath;
   protected static final String NODE_JSON_OBJECT_KEY = "jsonObject";

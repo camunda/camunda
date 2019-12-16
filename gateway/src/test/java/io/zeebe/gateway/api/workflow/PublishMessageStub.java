@@ -12,7 +12,7 @@ import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 
-public class PublishMessageStub
+public final class PublishMessageStub
     implements RequestStub<BrokerPublishMessageRequest, BrokerResponse<Void>> {
 
   @Override

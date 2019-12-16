@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CloseMessageSubscriptionCommand
+public final class CloseMessageSubscriptionCommand
     extends SbeBufferWriterReader<
         CloseMessageSubscriptionEncoder, CloseMessageSubscriptionDecoder> {
 

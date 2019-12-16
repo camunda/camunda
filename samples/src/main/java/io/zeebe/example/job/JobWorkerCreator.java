@@ -16,7 +16,7 @@ import io.zeebe.client.api.worker.JobWorker;
 import java.time.Duration;
 import java.util.Scanner;
 
-public class JobWorkerCreator {
+public final class JobWorkerCreator {
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";
 

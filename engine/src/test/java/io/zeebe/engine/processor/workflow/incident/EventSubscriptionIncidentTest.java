@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class EventSubscriptionIncidentTest {
+public final class EventSubscriptionIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String MESSAGE_NAME_1 = "msg-1";

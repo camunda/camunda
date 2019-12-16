@@ -13,7 +13,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 
-public class BlackList {
+public final class BlackList {
 
   private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
   private final DbLong workflowInstanceKey;

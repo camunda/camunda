@@ -16,9 +16,9 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.StringUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
+public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
-  protected ValueType valueType;
+  private final ValueType valueType;
   private final T recordValue;
   private final long key;
   private final long position;

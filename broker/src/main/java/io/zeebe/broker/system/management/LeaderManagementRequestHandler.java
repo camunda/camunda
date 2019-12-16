@@ -19,7 +19,7 @@ import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class LeaderManagementRequestHandler extends Actor implements PartitionListener {
+public final class LeaderManagementRequestHandler extends Actor implements PartitionListener {
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderForPartitions =
       new Int2ObjectHashMap<>();

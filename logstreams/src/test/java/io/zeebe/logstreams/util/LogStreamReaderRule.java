@@ -15,7 +15,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 
-public class LogStreamReaderRule extends ExternalResource {
+public final class LogStreamReaderRule extends ExternalResource {
 
   private final LogStreamRule logStreamRule;
   private LogStreamReader logStreamReader;

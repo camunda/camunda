@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import java.util.stream.Stream;
 
-public class JobRecordStream
+public final class JobRecordStream
     extends ExporterRecordWithVariablesStream<JobRecordValue, JobRecordStream> {
 
   public JobRecordStream(final Stream<Record<JobRecordValue>> wrappedStream) {

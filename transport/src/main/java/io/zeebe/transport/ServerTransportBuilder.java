@@ -27,7 +27,7 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
-public class ServerTransportBuilder {
+public final class ServerTransportBuilder {
 
   protected FragmentHandler receiveHandler;
   protected RemoteAddressListImpl remoteAddressList;

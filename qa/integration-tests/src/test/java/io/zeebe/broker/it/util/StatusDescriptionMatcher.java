@@ -15,7 +15,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-public class StatusDescriptionMatcher extends TypeSafeMatcher<ClientStatusException> {
+public final class StatusDescriptionMatcher extends TypeSafeMatcher<ClientStatusException> {
 
   private final Matcher<String> expectedDescriptionMatcher;
 

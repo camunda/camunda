@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-public class RunnableActionsTest {
+public final class RunnableActionsTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
 
   @Test

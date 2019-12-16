@@ -48,7 +48,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class StreamProcessorTest {
+public final class StreamProcessorTest {
 
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
   private static final long TIMEOUT_MILLIS = 2_000L;

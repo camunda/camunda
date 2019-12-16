@@ -10,7 +10,7 @@ package io.zeebe.util.sched.future;
 import io.zeebe.util.Loggers;
 import java.util.function.BiConsumer;
 
-public class FutureContinuationRunnable<T> implements Runnable {
+public final class FutureContinuationRunnable<T> implements Runnable {
   private final ActorFuture<T> future;
   private final BiConsumer<T, Throwable> consumer;
 

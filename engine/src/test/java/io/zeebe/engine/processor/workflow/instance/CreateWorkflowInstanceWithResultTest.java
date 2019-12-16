@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
-public class CreateWorkflowInstanceWithResultTest {
+public final class CreateWorkflowInstanceWithResultTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance WORKFLOW =

@@ -27,7 +27,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
-public class FileUtil {
+public final class FileUtil {
 
   public static final Logger LOG = Loggers.FILE_LOGGER;
 

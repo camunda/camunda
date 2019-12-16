@@ -11,7 +11,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.Topology;
 
-public class TopologyViewer {
+public final class TopologyViewer {
 
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";

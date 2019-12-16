@@ -18,7 +18,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class BufferUtilTest {
+public final class BufferUtilTest {
   protected static final byte[] BYTES1 = getBytes("foo");
   protected static final byte[] BYTES2 = getBytes("bar");
   protected static final byte[] BYTES3 = new byte[BYTES1.length + BYTES2.length];

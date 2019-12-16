@@ -10,7 +10,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.yaml;
 import java.util.ArrayList;
 import java.util.List;
 
-public class YamlDefinitionImpl {
+public final class YamlDefinitionImpl {
   private String name = "";
 
   private List<YamlTask> tasks = new ArrayList<>();

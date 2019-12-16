@@ -9,7 +9,7 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.LongValue;
 
-public class LongProperty extends BaseProperty<LongValue> {
+public final class LongProperty extends BaseProperty<LongValue> {
   public LongProperty(final String key) {
     super(key, new LongValue());
   }

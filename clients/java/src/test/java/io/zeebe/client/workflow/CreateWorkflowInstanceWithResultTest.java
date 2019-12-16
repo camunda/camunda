@@ -25,7 +25,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithRes
 import java.time.Duration;
 import org.junit.Test;
 
-public class CreateWorkflowInstanceWithResultTest extends ClientTest {
+public final class CreateWorkflowInstanceWithResultTest extends ClientTest {
 
   @Test
   public void shouldCreateWorkflowInstanceByWorkflowInstanceKey() {

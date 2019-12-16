@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-public class DispatcherTest {
+public final class DispatcherTest {
 
   static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
   static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;

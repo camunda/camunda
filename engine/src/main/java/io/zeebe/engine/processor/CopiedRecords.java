@@ -17,7 +17,7 @@ import io.zeebe.util.ReflectUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CopiedRecords {
+public final class CopiedRecords {
 
   public static CopiedRecord createCopiedRecord(final int partitionId, final LoggedEvent rawEvent) {
     // we have to access the underlying buffer and copy the metadata and value bytes

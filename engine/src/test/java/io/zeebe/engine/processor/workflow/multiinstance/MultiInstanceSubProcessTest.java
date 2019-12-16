@@ -31,7 +31,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MultiInstanceSubProcessTest {
+public final class MultiInstanceSubProcessTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   public static final String TASK_ELEMENT_ID = "task";

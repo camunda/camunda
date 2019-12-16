@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 
-public class VariableDocumentRecord extends UnifiedRecordValue
+public final class VariableDocumentRecord extends UnifiedRecordValue
     implements VariableDocumentRecordValue {
   private final LongProperty scopeKeyProperty = new LongProperty("scopeKey");
   private final EnumProperty<VariableDocumentUpdateSemantic> updateSemanticsProperty =

@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class DebugHttpServer {
+public final class DebugHttpServer {
 
   private static final Charset CHARSET = Charsets.UTF_8;
   private static final String[] RESOURCE_NAMES =

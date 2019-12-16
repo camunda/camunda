@@ -22,7 +22,7 @@ import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
 
-public class LifecycleAssert
+public final class LifecycleAssert
     extends AbstractListAssert<
         LifecycleAssert,
         List<WorkflowInstanceIntent>,

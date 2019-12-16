@@ -14,7 +14,7 @@ import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class BufferWriterUtil {
+public final class BufferWriterUtil {
 
   public static <T extends BufferWriter & BufferReader> void assertEqualFieldsAfterWriteAndRead(
       final T writer, final String... fieldNames) {

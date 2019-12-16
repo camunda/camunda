@@ -14,7 +14,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.agrona.ExpandableArrayBuffer;
 
-public class ArrayValue<T extends BaseValue> extends BaseValue implements Iterator<T>, Iterable<T> {
+public final class ArrayValue<T extends BaseValue> extends BaseValue
+    implements Iterator<T>, Iterable<T> {
   private final MsgPackWriter writer = new MsgPackWriter();
   private final MsgPackReader reader = new MsgPackReader();
 

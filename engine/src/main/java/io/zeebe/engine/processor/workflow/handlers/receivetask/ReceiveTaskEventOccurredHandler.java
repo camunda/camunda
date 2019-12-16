@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.handlers.activity.ActivityEventOccurre
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
+public final class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
     extends ActivityEventOccurredHandler<T> {
 
   @Override

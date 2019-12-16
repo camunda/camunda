@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class RunnableAdapter<T> implements Runnable {
+public final class RunnableAdapter<T> implements Runnable {
   private final Callable<T> callable;
 
   private T value;

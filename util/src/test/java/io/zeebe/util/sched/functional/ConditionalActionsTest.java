@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ConditionalActionsTest {
+public final class ConditionalActionsTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
 
   @Test

@@ -7,7 +7,7 @@
  */
 package io.zeebe.gateway.cmd;
 
-public class NoTopologyAvailableException extends ClientException {
+public final class NoTopologyAvailableException extends ClientException {
   private static final long serialVersionUID = 7035483927294101779L;
 
   public NoTopologyAvailableException(final String message) {

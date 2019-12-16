@@ -18,7 +18,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
-public class ContainerElementActivatedHandler<T extends ExecutableFlowElementContainer>
+public final class ContainerElementActivatedHandler<T extends ExecutableFlowElementContainer>
     extends ElementActivatedHandler<T> {
   private final WorkflowState workflowState;
 

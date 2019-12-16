@@ -12,7 +12,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RequestResponseHeaderDescriptor {
+public final class RequestResponseHeaderDescriptor {
   public static final int REQUEST_ID_OFFSET;
   public static final int HEADER_LENGTH;
 

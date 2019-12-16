@@ -13,7 +13,7 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.db.impl.DefaultColumnFamily;
 
-public class RocksDBWrapper {
+public final class RocksDBWrapper {
 
   private DbString key;
   private DbLong value;

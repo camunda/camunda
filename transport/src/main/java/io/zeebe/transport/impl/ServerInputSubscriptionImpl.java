@@ -16,7 +16,7 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.util.sched.ActorCondition;
 
-public class ServerInputSubscriptionImpl implements ServerInputSubscription {
+public final class ServerInputSubscriptionImpl implements ServerInputSubscription {
   protected final Subscription subscription;
   protected final FragmentHandler fragmentHandler;
 

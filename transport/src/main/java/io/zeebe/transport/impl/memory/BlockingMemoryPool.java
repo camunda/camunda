@@ -28,7 +28,7 @@ import org.slf4j.Logger;
  * <p>The main usecase for this pool is the zeebe client where it is desired behavior to block
  * client threads on memory backpressure
  */
-public class BlockingMemoryPool implements TransportMemoryPool {
+public final class BlockingMemoryPool implements TransportMemoryPool {
   private static final Logger LOG = Loggers.TRANSPORT_MEMORY_LOGGER;
 
   private final ReentrantLock lock = new ReentrantLock(true);

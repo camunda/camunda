@@ -12,7 +12,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BooleanSupplier;
 
-public class AbortableRetryStrategy implements RetryStrategy {
+public final class AbortableRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;

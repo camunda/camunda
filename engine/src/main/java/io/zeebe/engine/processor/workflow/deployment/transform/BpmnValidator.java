@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
 import java.io.StringWriter;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
-public class BpmnValidator {
+public final class BpmnValidator {
 
   private final ValidationVisitor designTimeAspectValidator;
   private final ValidationVisitor runtimeAspectValidator;

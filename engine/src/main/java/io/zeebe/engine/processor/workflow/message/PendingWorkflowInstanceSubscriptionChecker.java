@@ -12,7 +12,7 @@ import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
 
-public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
+public final class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
   private final WorkflowInstanceSubscriptionState subscriptionState;

@@ -13,7 +13,7 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import io.zeebe.util.Environment;
 import java.util.Objects;
 
-public class ThreadsCfg {
+public final class ThreadsCfg {
 
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
 

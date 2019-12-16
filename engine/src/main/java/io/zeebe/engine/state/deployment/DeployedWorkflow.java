@@ -10,7 +10,7 @@ package io.zeebe.engine.state.deployment;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import org.agrona.DirectBuffer;
 
-public class DeployedWorkflow {
+public final class DeployedWorkflow {
   private final ExecutableWorkflow workflow;
   private final PersistedWorkflow persistedWorkflow;
 

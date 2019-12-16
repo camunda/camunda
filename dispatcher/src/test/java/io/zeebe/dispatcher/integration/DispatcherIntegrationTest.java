@@ -35,7 +35,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DispatcherIntegrationTest {
+public final class DispatcherIntegrationTest {
   public static final FragmentHandler CONSUME =
       new FragmentHandler() {
         @Override

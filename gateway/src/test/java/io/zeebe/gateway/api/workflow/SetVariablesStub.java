@@ -13,7 +13,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 
-public class SetVariablesStub
+public final class SetVariablesStub
     implements RequestStub<BrokerSetVariablesRequest, BrokerResponse<VariableDocumentRecord>> {
 
   private static final long KEY = 12345L;

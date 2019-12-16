@@ -37,7 +37,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class DeploymentDistributorImpl implements DeploymentDistributor {
+public final class DeploymentDistributorImpl implements DeploymentDistributor {
 
   public static final Duration PUSH_REQUEST_TIMEOUT = Duration.ofSeconds(15);
   public static final Duration RETRY_DELAY = Duration.ofMillis(100);

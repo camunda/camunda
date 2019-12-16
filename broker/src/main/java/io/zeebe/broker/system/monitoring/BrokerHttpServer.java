@@ -14,7 +14,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.prometheus.client.CollectorRegistry;
 import io.zeebe.util.CloseableSilently;
 
-public class BrokerHttpServer implements CloseableSilently {
+public final class BrokerHttpServer implements CloseableSilently {
 
   private final NioEventLoopGroup bossGroup;
   private final NioEventLoopGroup workerGroup;

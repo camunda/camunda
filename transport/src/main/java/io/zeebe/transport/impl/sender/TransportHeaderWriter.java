@@ -14,7 +14,7 @@ import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TransportHeaderWriter {
+public final class TransportHeaderWriter {
   private static final int REQUEST_HEADER_LENGTH;
   private static final int MESSAGE_HEADER_LENGTH;
   private static final int STREAM_ID_OFFSET;

@@ -13,7 +13,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 
-public class BrokerClassRuleHelper extends TestWatcher {
+public final class BrokerClassRuleHelper extends TestWatcher {
 
   public static final Logger LOG = new ZbLogger("io.zeebe.test");
 

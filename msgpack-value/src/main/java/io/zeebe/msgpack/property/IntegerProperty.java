@@ -9,7 +9,7 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.IntegerValue;
 
-public class IntegerProperty extends BaseProperty<IntegerValue> {
+public final class IntegerProperty extends BaseProperty<IntegerValue> {
   public IntegerProperty(final String key) {
     super(key, new IntegerValue());
   }

@@ -18,7 +18,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class MessageRecord extends UnifiedRecordValue implements MessageRecordValue {
+public final class MessageRecord extends UnifiedRecordValue implements MessageRecordValue {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey");

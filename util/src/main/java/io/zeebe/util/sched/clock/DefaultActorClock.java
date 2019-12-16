@@ -11,7 +11,7 @@ package io.zeebe.util.sched.clock;
  * Default actor clock implementation; minimizes calls to {@link System#currentTimeMillis()} to once
  * per millisecond.
  */
-public class DefaultActorClock implements ActorClock {
+public final class DefaultActorClock implements ActorClock {
   long timeMillis;
 
   long nanoTime;

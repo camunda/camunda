@@ -14,7 +14,7 @@ import io.zeebe.msgpack.spec.MsgPackType;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DocumentValue extends BinaryValue {
+public final class DocumentValue extends BinaryValue {
   public static final DirectBuffer EMPTY_DOCUMENT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
   public DocumentValue() {}

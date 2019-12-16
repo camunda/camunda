@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import java.util.function.Consumer;
 
-public class JobStubs {
+public final class JobStubs {
 
   private final StubBrokerRule broker;
 

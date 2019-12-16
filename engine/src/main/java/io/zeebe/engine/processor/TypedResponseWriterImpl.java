@@ -16,10 +16,10 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
+public final class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
 
-  protected final CommandResponseWriter writer;
-  protected final int partitionId;
+  private final CommandResponseWriter writer;
+  private final int partitionId;
   private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
   private long requestId;
   private int requestStreamId;

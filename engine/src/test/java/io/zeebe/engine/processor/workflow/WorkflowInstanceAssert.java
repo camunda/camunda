@@ -20,7 +20,7 @@ import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
 
-public class WorkflowInstanceAssert
+public final class WorkflowInstanceAssert
     extends AbstractListAssert<
         WorkflowInstanceAssert,
         List<Record<WorkflowInstanceRecord>>,

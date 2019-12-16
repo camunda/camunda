@@ -14,7 +14,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WorkflowInstances {
+public final class WorkflowInstances {
   public static Map<String, String> getCurrentVariables(final long workflowInstanceKey) {
     final Record<WorkflowInstanceRecordValue> completed =
         RecordingExporter.workflowInstanceRecords()

@@ -16,7 +16,7 @@ import io.zeebe.util.allocation.BufferAllocators;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PartitionBuilderTest {
+public final class PartitionBuilderTest {
 
   PartitionBuilder partitionBuilder;
 

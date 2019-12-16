@@ -18,7 +18,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class ClientTransport implements AutoCloseable {
+public final class ClientTransport implements AutoCloseable {
 
   public static final int UNKNOWN_NODE_ID = -1;
 

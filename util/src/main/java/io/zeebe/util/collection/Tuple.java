@@ -7,7 +7,7 @@
  */
 package io.zeebe.util.collection;
 
-public class Tuple<L, R> {
+public final class Tuple<L, R> {
   private L left;
   private R right;
 

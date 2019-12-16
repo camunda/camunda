@@ -13,7 +13,7 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ControlMessages {
+public final class ControlMessages {
   // do not change; must be stable for backwards/forwards compatibility
   public static final ByteOrder CONTROL_MESSAGE_BYTEORDER =
       TransportHeaderDescriptor.HEADER_BYTE_ORDER;

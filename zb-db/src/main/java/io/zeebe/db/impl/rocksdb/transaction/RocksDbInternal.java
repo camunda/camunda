@@ -28,7 +28,7 @@ import org.rocksdb.Status;
 import org.rocksdb.Status.Code;
 import org.rocksdb.Transaction;
 
-public class RocksDbInternal {
+public final class RocksDbInternal {
   static final EnumSet<Code> RECOVERABLE_ERROR_CODES =
       EnumSet.of(Ok, Aborted, Expired, IOError, Busy, TimedOut, TryAgain, MergeInProgress);
 

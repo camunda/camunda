@@ -11,7 +11,7 @@ import java.util.Arrays;
 import org.agrona.DirectBuffer;
 import org.mockito.ArgumentMatcher;
 
-public class BufferMatcher implements ArgumentMatcher<DirectBuffer> {
+public final class BufferMatcher implements ArgumentMatcher<DirectBuffer> {
   protected byte[] expectedBytes;
   protected int position = 0;
 

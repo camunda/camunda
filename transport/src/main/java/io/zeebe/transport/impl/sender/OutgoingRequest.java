@@ -25,7 +25,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class OutgoingRequest {
+public final class OutgoingRequest {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final TransportHeaderWriter headerWriter = new TransportHeaderWriter();

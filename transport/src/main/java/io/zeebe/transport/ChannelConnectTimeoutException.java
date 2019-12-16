@@ -7,7 +7,7 @@
  */
 package io.zeebe.transport;
 
-public class ChannelConnectTimeoutException extends TransportException {
+public final class ChannelConnectTimeoutException extends TransportException {
 
   private static final long serialVersionUID = 1L;
 

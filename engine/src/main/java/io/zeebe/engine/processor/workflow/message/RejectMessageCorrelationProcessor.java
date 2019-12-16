@@ -24,7 +24,7 @@ import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
-public class RejectMessageCorrelationProcessor
+public final class RejectMessageCorrelationProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
   private final MessageState messageState;

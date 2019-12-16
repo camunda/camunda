@@ -38,7 +38,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
-public class BrokerRequestManager extends Actor {
+public final class BrokerRequestManager extends Actor {
 
   private final ClientOutput clientOutput;
   private final RequestDispatchStrategy dispatchStrategy;

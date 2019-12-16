@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndConsumeTest {
+public final class ActorLifecyclePhasesAndConsumeTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 

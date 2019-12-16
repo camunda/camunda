@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.agrona.DeadlineTimerWheel;
 import org.agrona.collections.Long2ObjectHashMap;
 
-public class ActorTimerQueue extends DeadlineTimerWheel {
+public final class ActorTimerQueue extends DeadlineTimerWheel {
   private static final int DEFAULT_TICKS_PER_WHEEL = 32;
   private final Long2ObjectHashMap<TimerSubscription> timerJobMap = new Long2ObjectHashMap<>();
 

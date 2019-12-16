@@ -21,7 +21,7 @@ import io.zeebe.msgpack.mapping.MappingBuilder;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 
-public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
+public final class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
 
   private final MappingBuilder mappingBuilder = new MappingBuilder();
 

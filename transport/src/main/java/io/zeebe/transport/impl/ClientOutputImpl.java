@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ClientOutputImpl implements ClientOutput {
+public final class ClientOutputImpl implements ClientOutput {
   protected final EndpointRegistry endpointRegistry;
   protected final Sender requestManager;
   protected final Duration defaultRequestRetryTimeout;

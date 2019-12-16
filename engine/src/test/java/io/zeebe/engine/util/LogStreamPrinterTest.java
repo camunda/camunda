@@ -10,7 +10,7 @@ package io.zeebe.engine.util;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class LogStreamPrinterTest {
+public final class LogStreamPrinterTest {
 
   @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 

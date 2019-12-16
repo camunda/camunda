@@ -13,7 +13,7 @@ import io.zeebe.transport.impl.selector.ReadTransportPoller;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class Receiver extends Actor {
+public final class Receiver extends Actor {
   protected final ReadTransportPoller transportPoller;
   private final String name;
 

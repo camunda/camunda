@@ -7,7 +7,7 @@
  */
 package io.zeebe.transport;
 
-public class Transports {
+public final class Transports {
   public static ServerTransportBuilder newServerTransport() {
     return new ServerTransportBuilder();
   }

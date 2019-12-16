@@ -30,7 +30,7 @@ import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorFutureTest {
+public final class ActorFutureTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 

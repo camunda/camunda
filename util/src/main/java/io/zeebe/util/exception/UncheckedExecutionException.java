@@ -11,7 +11,7 @@ package io.zeebe.util.exception;
  * Should be use to indicate an unexpected exception during execution. This exception extends {@link
  * RuntimeException} to be unchecked.
  */
-public class UncheckedExecutionException extends RuntimeException {
+public final class UncheckedExecutionException extends RuntimeException {
 
   public UncheckedExecutionException(final String message, final Throwable cause) {
     super(message, cause);

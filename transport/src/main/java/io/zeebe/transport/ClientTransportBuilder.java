@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ClientTransportBuilder {
+public final class ClientTransportBuilder {
   /** In the same order of magnitude of what apache and nginx use. */
   private static final Duration DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = Duration.ofSeconds(5);
 

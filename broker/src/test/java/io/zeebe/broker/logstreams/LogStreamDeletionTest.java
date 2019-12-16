@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class LogStreamDeletionTest {
+public final class LogStreamDeletionTest {
   private static final long POSITION_TO_DELETE = 6L;
 
   private final ActorSchedulerRule actorScheduler = new ActorSchedulerRule();

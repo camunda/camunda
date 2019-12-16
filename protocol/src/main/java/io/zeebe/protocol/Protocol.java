@@ -18,7 +18,7 @@ package io.zeebe.protocol;
 import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import java.nio.ByteOrder;
 
-public class Protocol {
+public final class Protocol {
 
   public static final int PROTOCOL_VERSION = ExecuteCommandRequestDecoder.SCHEMA_VERSION;
 
@@ -62,11 +62,11 @@ public class Protocol {
    */
   public static final int KEY_BITS = 51;
 
-  public static final long encodePartitionId(final int partitionId, final long key) {
+  public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }
 
-  public static final int decodePartitionId(final long key) {
+  public static int decodePartitionId(final long key) {
     return (int) (key >> KEY_BITS);
   }
 }

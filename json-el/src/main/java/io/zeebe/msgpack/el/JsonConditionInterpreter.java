@@ -18,7 +18,7 @@ import io.zeebe.msgpack.spec.MsgPackType;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class JsonConditionInterpreter {
+public final class JsonConditionInterpreter {
   private final MsgPackQueryExecutor visitor = new MsgPackQueryExecutor();
   private final MsgPackTraverser traverser = new MsgPackTraverser();
 

@@ -11,7 +11,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 
-public class WorkflowInstanceCreator {
+public final class WorkflowInstanceCreator {
 
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";

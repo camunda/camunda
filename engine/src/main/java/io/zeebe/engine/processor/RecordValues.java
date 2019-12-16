@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class RecordValues {
+public final class RecordValues {
 
   private final Map<ValueType, UnifiedRecordValue> eventCache;
 

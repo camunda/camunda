@@ -25,7 +25,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackWriterTest {
+public final class MsgPackWriterTest {
 
   protected static final long LONG_POS_5_BIT = longOfLength(5);
   protected static final long LONG_NEG_5_BIT = -longOfLength(5);

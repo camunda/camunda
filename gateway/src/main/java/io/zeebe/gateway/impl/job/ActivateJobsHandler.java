@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class ActivateJobsHandler {
+public final class ActivateJobsHandler {
 
   private final Map<String, Integer> jobTypeToNextPartitionId = new HashMap<>();
   private final BrokerClient brokerClient;

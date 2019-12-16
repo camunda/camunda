@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.junit.rules.ExternalResource;
 
-public class StubBrokerRule extends ExternalResource {
+public final class StubBrokerRule extends ExternalResource {
   public static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
   protected final int nodeId;
   protected final SocketAddress socketAddress;

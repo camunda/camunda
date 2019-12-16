@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
-public class ActorLifecyclePhasesAndBlockPhaseTest {
+public final class ActorLifecyclePhasesAndBlockPhaseTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 

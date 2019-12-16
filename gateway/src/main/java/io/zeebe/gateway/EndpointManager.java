@@ -59,7 +59,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-public class EndpointManager extends GatewayGrpc.GatewayImplBase {
+public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;

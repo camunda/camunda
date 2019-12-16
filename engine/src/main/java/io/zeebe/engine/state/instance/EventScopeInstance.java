@@ -17,7 +17,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class EventScopeInstance extends UnpackedObject implements DbValue {
+public final class EventScopeInstance extends UnpackedObject implements DbValue {
 
   private final BooleanProperty acceptingProp = new BooleanProperty("accepting");
   private final ArrayProperty<StringValue> interruptingProp =

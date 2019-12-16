@@ -14,7 +14,7 @@ import java.util.Map;
  * Exporter component configuration. To be expanded eventually to allow enabling/disabling
  * exporters, and other general configuration.
  */
-public class ExporterCfg implements ConfigurationEntry {
+public final class ExporterCfg implements ConfigurationEntry {
   /** locally unique ID of the exporter */
   private String id;
 

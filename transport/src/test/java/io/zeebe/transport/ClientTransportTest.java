@@ -55,7 +55,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.ArgumentMatchers;
 
-public class ClientTransportTest {
+public final class ClientTransportTest {
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
   public static final BufferWriter WRITER1 = writerFor(BUF1);
   public static final int NODE_ID1 = 1;

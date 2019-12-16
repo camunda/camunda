@@ -14,7 +14,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class BrokerCreateWorkflowInstanceWithResultRequest
+public final class BrokerCreateWorkflowInstanceWithResultRequest
     extends BrokerExecuteCommand<WorkflowInstanceResultRecord> {
   private final WorkflowInstanceCreationRecord requestDto = new WorkflowInstanceCreationRecord();
 

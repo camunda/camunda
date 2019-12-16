@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
-public class LongPollingActivateJobsRequest {
+public final class LongPollingActivateJobsRequest {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final BrokerActivateJobsRequest request;

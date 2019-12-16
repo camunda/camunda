@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
-public class BackpressureCfg implements ConfigurationEntry {
+public final class BackpressureCfg implements ConfigurationEntry {
 
   private boolean enabled = true;
   private boolean useWindowed = true;

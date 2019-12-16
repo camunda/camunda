@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class CreateWorkflowInstanceWithResultCommandImpl
+public final class CreateWorkflowInstanceWithResultCommandImpl
     implements CreateWorkflowInstanceWithResultCommandStep1 {
 
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);

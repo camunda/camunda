@@ -19,7 +19,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import java.util.function.Consumer;
 
-public class CommandApiService implements PartitionListener {
+public final class CommandApiService implements PartitionListener {
 
   private final CommandApiMessageHandler service;
   private final PartitionAwareRequestLimiter limiter;

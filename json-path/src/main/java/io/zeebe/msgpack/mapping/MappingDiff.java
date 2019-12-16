@@ -15,7 +15,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MappingDiff implements MsgPackDiff {
+public final class MappingDiff implements MsgPackDiff {
 
   public static final DirectBuffer CONSTANTS_DOCUMENT;
   /*

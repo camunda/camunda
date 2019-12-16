@@ -18,7 +18,7 @@ package io.zeebe.client.util;
 import java.util.Map;
 import org.junit.rules.ExternalResource;
 
-public class EnvironmentRule extends ExternalResource {
+public final class EnvironmentRule extends ExternalResource {
 
   private Map<String, String> previousEnvironment;
 

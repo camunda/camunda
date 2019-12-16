@@ -21,7 +21,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 
-public class ClientConductor extends Conductor {
+public final class ClientConductor extends Conductor {
   private final ConnectTransportPoller connectTransportPoller;
 
   public ClientConductor(final ActorContext actorContext, final TransportContext context) {

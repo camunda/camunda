@@ -21,7 +21,7 @@ import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.Map;
 
-public class ActivatedJobImpl implements ActivatedJob {
+public final class ActivatedJobImpl implements ActivatedJob {
 
   @JsonIgnore private final ZeebeObjectMapper objectMapper;
 

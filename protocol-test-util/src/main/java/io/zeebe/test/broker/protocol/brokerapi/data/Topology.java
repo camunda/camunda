@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Topology {
+public final class Topology {
 
   protected Map<Integer, TopologyBroker> brokers = new HashMap<>();
 

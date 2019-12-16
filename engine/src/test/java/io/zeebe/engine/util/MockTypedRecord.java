@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 
-public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
+public final class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
 
   private final long timestamp;
   private long key;

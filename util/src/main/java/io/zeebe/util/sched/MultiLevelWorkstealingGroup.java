@@ -11,7 +11,7 @@ package io.zeebe.util.sched;
  * Maintains multiple levels of queues for each thread. Levels can be used for priorities (each
  * thread maintains a queue for each priority) or other things like IO-devices.
  */
-public class MultiLevelWorkstealingGroup {
+public final class MultiLevelWorkstealingGroup {
   private final WorkStealingGroup[] workStealingGroups;
 
   public MultiLevelWorkstealingGroup(final int numOfThreads, final int levels) {

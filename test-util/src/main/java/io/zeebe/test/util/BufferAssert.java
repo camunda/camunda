@@ -17,7 +17,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.AbstractAssert;
 
-public class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer> {
+public final class BufferAssert extends AbstractAssert<BufferAssert, DirectBuffer> {
 
   protected BufferAssert(final DirectBuffer actual) {
     super(actual, BufferAssert.class);

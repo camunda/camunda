@@ -14,7 +14,7 @@ import java.io.InputStream;
 import java.util.Map;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
-public class MsgPackHelper {
+public final class MsgPackHelper {
   protected final ObjectMapper objectMapper;
 
   public MsgPackHelper() {

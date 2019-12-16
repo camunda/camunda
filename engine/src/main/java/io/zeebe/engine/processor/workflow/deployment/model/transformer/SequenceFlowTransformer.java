@@ -20,7 +20,7 @@ import io.zeebe.msgpack.el.JsonConditionFactory;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
-public class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
+public final class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
   @Override
   public Class<SequenceFlow> getType() {
     return SequenceFlow.class;

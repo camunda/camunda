@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-public class TopologyClusterTest {
+public final class TopologyClusterTest {
 
   private static final Timeout TEST_TIMEOUT = Timeout.seconds(120);
   private static final ClusteringRule CLUSTERING_RULE = new ClusteringRule();

@@ -31,7 +31,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class LongPollingActivateJobsTest {
+public final class LongPollingActivateJobsTest {
 
   private static final String TYPE = "test";
 

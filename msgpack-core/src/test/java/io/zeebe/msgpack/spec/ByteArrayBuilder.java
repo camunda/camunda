@@ -7,7 +7,7 @@
  */
 package io.zeebe.msgpack.spec;
 
-public class ByteArrayBuilder {
+public final class ByteArrayBuilder {
   protected byte[] value = new byte[0];
 
   /**

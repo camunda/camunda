@@ -11,7 +11,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
-public class LogUtil {
+public final class LogUtil {
   /** see https://logback.qos.ch/manual/mdc.html */
   public static void doWithMDC(final Map<String, String> context, final Runnable r) {
     final Map<String, String> currentContext = MDC.getCopyOfContextMap();

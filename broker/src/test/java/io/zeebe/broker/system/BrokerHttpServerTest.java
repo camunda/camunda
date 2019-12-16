@@ -21,7 +21,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class BrokerHttpServerTest {
+public final class BrokerHttpServerTest {
 
   @ClassRule public static final EmbeddedBrokerRule RULE = new EmbeddedBrokerRule();
 

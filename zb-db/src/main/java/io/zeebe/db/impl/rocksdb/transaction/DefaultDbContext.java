@@ -28,7 +28,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Status;
 
-public class DefaultDbContext implements DbContext {
+public final class DefaultDbContext implements DbContext {
   private static final byte[] ZERO_SIZE_ARRAY = new byte[0];
 
   private final ZeebeTransaction transaction;

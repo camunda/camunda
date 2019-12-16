@@ -34,7 +34,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVariablesCommandStep2 {
+public final class SetVariablesCommandImpl
+    implements SetVariablesCommandStep1, SetVariablesCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;

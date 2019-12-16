@@ -15,7 +15,7 @@ import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.junit.rules.ExternalResource;
 
-public class ActorSchedulerRule extends ExternalResource {
+public final class ActorSchedulerRule extends ExternalResource {
 
   private final int numOfIoThreads;
   private final int numOfThreads;

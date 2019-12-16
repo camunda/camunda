@@ -19,7 +19,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
 
-public class JsonPathQueryCompilerTest {
+public final class JsonPathQueryCompilerTest {
 
   @Test
   public void testQueryCompiler() {

@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class ExporterRepositoryTest {
+public final class ExporterRepositoryTest {
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
 

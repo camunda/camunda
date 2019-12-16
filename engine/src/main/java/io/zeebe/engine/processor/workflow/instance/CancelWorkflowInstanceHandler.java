@@ -16,7 +16,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
+public final class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a workflow instance with key '%d', but ";

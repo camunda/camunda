@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class JobUpdateRetriesCommandImpl
+public final class JobUpdateRetriesCommandImpl
     implements UpdateRetriesJobCommandStep1, UpdateRetriesJobCommandStep2 {
 
   private final GatewayStub asyncStub;

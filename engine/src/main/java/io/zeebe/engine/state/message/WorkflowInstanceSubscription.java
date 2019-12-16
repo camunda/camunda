@@ -17,7 +17,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class WorkflowInstanceSubscription implements DbValue {
+public final class WorkflowInstanceSubscription implements DbValue {
 
   private static final int STATE_OPENING = 0;
   private static final int STATE_OPENED = 1;

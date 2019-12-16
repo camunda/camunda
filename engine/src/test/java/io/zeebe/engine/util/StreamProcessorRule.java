@@ -43,7 +43,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
-public class StreamProcessorRule implements TestRule {
+public final class StreamProcessorRule implements TestRule {
 
   private static final Logger LOG = new ZbLogger("io.zeebe.broker.test");
 

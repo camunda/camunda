@@ -20,7 +20,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
-public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElement>
+public final class StartEventEventOccurredHandler<T extends ExecutableCatchEventElement>
     extends EventOccurredHandler<T> {
   private static final String NO_WORKFLOW_FOUND_MESSAGE =
       "Expected to create an instance of workflow with key '%d', but no such workflow was found";

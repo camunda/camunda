@@ -10,7 +10,7 @@ package io.zeebe.util.sched.future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class FirstSuccessfullyCompletedFutureConsumer<T> implements BiConsumer<T, Throwable> {
+public final class FirstSuccessfullyCompletedFutureConsumer<T> implements BiConsumer<T, Throwable> {
   private final BiConsumer<T, Throwable> callback;
   private final Consumer<T> closer;
   private boolean isCompleted = false;

@@ -15,7 +15,8 @@ import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.Objects;
 
-public class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue implements DbValue {
+public final class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue
+    implements DbValue {
 
   private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
   private final IntegerProperty requestStreamIdProperty =

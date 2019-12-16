@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class TransformContext {
+public final class TransformContext {
 
   private final Map<DirectBuffer, ExecutableWorkflow> workflows = new HashMap<>();
   private final Map<DirectBuffer, ExecutableMessage> messages = new HashMap<>();

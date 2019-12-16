@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class ActivateJobsCommandImpl
+public final class ActivateJobsCommandImpl
     implements ActivateJobsCommandStep1, ActivateJobsCommandStep2, ActivateJobsCommandStep3 {
 
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);

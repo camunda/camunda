@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class BrokerRejection {
+public final class BrokerRejection {
 
   private final Intent intent;
   private final long key;

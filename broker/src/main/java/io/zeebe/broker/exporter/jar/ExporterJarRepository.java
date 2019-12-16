@@ -18,7 +18,7 @@ import java.util.Map;
  * Maintains a map of all loaded exporter JARs and their corresponding class loaders for quick
  * reuse.
  */
-public class ExporterJarRepository {
+public final class ExporterJarRepository {
   public static final String JAR_EXTENSION = ".jar";
 
   private final Map<Path, ExporterJarClassLoader> loadedJars;

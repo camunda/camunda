@@ -22,7 +22,7 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
-public class OpenMessageSubscriptionProcessor
+public final class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
   public static final String SUBSCRIPTION_ALREADY_OPENED_MESSAGE =

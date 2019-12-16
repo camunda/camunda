@@ -20,7 +20,7 @@ import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import org.agrona.DirectBuffer;
 
-public class MessageState {
+public final class MessageState {
 
   /**
    * <pre>message key -> message

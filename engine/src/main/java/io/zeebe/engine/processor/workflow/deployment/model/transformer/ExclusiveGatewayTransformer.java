@@ -18,7 +18,8 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 
-public class ExclusiveGatewayTransformer implements ModelElementTransformer<ExclusiveGateway> {
+public final class ExclusiveGatewayTransformer
+    implements ModelElementTransformer<ExclusiveGateway> {
 
   @Override
   public Class<ExclusiveGateway> getType() {

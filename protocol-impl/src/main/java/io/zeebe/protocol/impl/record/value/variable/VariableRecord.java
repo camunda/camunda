@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class VariableRecord extends UnifiedRecordValue
+public final class VariableRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, VariableRecordValue {
 
   private final StringProperty nameProp = new StringProperty("name");

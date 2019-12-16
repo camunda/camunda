@@ -29,7 +29,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamWriterTest {
+public final class LogStreamWriterTest {
   private static final DirectBuffer EVENT_VALUE = wrapString("value");
   private static final DirectBuffer EVENT_METADATA = wrapString("metadata");
 

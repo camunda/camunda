@@ -13,7 +13,8 @@ import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class IntermediateCatchEventElementTerminatingHandler<T extends ExecutableCatchEventElement>
+public final class IntermediateCatchEventElementTerminatingHandler<
+        T extends ExecutableCatchEventElement>
     extends ElementTerminatingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 

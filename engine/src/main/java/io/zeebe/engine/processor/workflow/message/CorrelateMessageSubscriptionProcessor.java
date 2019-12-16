@@ -22,7 +22,7 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
-public class CorrelateMessageSubscriptionProcessor
+public final class CorrelateMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
   public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to correlate subscription for element with key '%d' and message name '%s', "

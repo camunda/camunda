@@ -13,7 +13,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import java.util.Iterator;
 
 @SuppressWarnings({"rawtypes"})
-public class RecordProcessorMap {
+public final class RecordProcessorMap {
   private final TypedRecordProcessor[] elements;
 
   private final int valueTypeCardinality;

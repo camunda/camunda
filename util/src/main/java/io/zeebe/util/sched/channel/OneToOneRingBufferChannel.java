@@ -12,7 +12,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 
-public class OneToOneRingBufferChannel extends OneToOneRingBuffer implements ConsumableChannel {
+public final class OneToOneRingBufferChannel extends OneToOneRingBuffer
+    implements ConsumableChannel {
   private final ActorConditions conditions = new ActorConditions();
 
   public OneToOneRingBufferChannel(final AtomicBuffer buffer) {

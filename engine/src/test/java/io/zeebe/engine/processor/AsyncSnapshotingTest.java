@@ -43,7 +43,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class AsyncSnapshotingTest {
+public final class AsyncSnapshotingTest {
 
   private static final VerificationWithTimeout TIMEOUT = timeout(2000L);
 

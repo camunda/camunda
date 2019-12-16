@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import org.junit.Test;
 
-public class UpdateJobRetriesTest extends GatewayTest {
+public final class UpdateJobRetriesTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

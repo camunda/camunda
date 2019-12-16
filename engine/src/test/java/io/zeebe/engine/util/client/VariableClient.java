@@ -18,7 +18,7 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class VariableClient {
+public final class VariableClient {
 
   private final VariableDocumentRecord variableDocumentRecord;
   private final StreamProcessorRule environmentRule;

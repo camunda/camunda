@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Map;
 
-public class JsonUtil {
+public final class JsonUtil {
 
   static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =

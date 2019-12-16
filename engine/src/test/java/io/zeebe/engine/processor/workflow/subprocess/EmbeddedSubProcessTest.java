@@ -32,7 +32,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class EmbeddedSubProcessTest {
+public final class EmbeddedSubProcessTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance ONE_TASK_SUBPROCESS =

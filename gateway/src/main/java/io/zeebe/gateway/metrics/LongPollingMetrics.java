@@ -9,7 +9,7 @@ package io.zeebe.gateway.metrics;
 
 import io.prometheus.client.Gauge;
 
-public class LongPollingMetrics {
+public final class LongPollingMetrics {
   private static final Gauge REQUESTS_QUEUED_CURRENT =
       Gauge.build()
           .namespace("zeebe")

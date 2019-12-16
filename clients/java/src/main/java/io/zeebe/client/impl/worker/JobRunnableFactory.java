@@ -23,7 +23,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.slf4j.Logger;
 
-public class JobRunnableFactory {
+public final class JobRunnableFactory {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
 

@@ -22,7 +22,7 @@ import io.zeebe.protocol.record.Record;
 import java.io.IOException;
 import org.junit.Test;
 
-public class ExporterTest {
+public final class ExporterTest {
 
   @Test
   public void shouldAllowExporterToThrowCheckedExceptions() {

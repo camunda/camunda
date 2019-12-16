@@ -10,28 +10,26 @@ package io.zeebe.msgpack.spec;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackToken {
+public final class MsgPackToken {
   public static final MsgPackToken NIL = new MsgPackToken();
 
-  protected static final int MAX_MAP_ELEMENTS = 0x3fff_ffff;
-
-  protected MsgPackType type = MsgPackType.NIL;
-  protected int totalLength;
+  private MsgPackType type = MsgPackType.NIL;
+  private int totalLength;
 
   // string
-  protected final UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
 
   // boolean
-  protected boolean booleanValue;
+  private boolean booleanValue;
 
   // map/array
-  protected int size;
+  private int size;
 
   // int
-  protected long integerValue;
+  private long integerValue;
 
   // float32/float64
-  protected double floatValue;
+  private double floatValue;
 
   public int getTotalLength() {
     return totalLength;

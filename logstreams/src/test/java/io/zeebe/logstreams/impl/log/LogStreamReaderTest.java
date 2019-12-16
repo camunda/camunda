@@ -26,7 +26,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamReaderTest {
+public final class LogStreamReaderTest {
   private static final UnsafeBuffer EVENT_VALUE = new UnsafeBuffer(getBytes("test"));
   private static final int LOG_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(4).toBytes();
   private static final UnsafeBuffer BIG_EVENT_VALUE = new UnsafeBuffer(new byte[64 * 1024]);

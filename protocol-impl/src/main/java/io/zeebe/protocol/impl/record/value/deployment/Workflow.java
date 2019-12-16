@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class Workflow extends UnpackedObject implements DeployedWorkflow {
+public final class Workflow extends UnpackedObject implements DeployedWorkflow {
   private final StringProperty bpmnProcessIdProp =
       new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);

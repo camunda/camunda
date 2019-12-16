@@ -28,6 +28,7 @@ import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -39,12 +40,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public class BrokerClientImpl implements BrokerClient {
+public final class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
+  private static final String ERROR_MSG_STOP_FAILED =
+      "Failed to gracefully shutdown gateway broker client";
 
-  protected final ActorScheduler actorScheduler;
-  protected final ClientTransport transport;
-  protected final BrokerTopologyManagerImpl topologyManager;
+  private final ActorScheduler actorScheduler;
+  private final ClientTransport transport;
+  private final BrokerTopologyManagerImpl topologyManager;
   private final AtomixCluster atomixCluster;
   private final boolean ownsActorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
@@ -152,7 +155,7 @@ public class BrokerClientImpl implements BrokerClient {
 
     LOG.debug("Closing gateway broker client ...");
 
-    doAndLogException(() -> topologyManager.close());
+    doAndLogException(topologyManager::close);
     LOG.debug("topology manager closed");
     doAndLogException(transport::close);
     LOG.debug("transport closed");
@@ -166,8 +169,11 @@ public class BrokerClientImpl implements BrokerClient {
     if (ownsActorScheduler) {
       try {
         actorScheduler.stop().get(15, TimeUnit.SECONDS);
-      } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-        throw new RuntimeException("Failed to gracefully shutdown gateway broker client", e);
+      } catch (final InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        throw new UncheckedExecutionException(ERROR_MSG_STOP_FAILED, ie);
+      } catch (final ExecutionException | TimeoutException e) {
+        throw new UncheckedExecutionException(ERROR_MSG_STOP_FAILED, e);
       }
     }
 
@@ -225,7 +231,7 @@ public class BrokerClientImpl implements BrokerClient {
             .join();
   }
 
-  protected void doAndLogException(final Runnable r) {
+  private void doAndLogException(final Runnable r) {
     try {
       r.run();
     } catch (final Exception e) {

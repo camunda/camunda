@@ -11,7 +11,7 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Objects;
 
-public class EnumValue<E extends Enum<E>> extends BaseValue {
+public final class EnumValue<E extends Enum<E>> extends BaseValue {
   private final StringValue decodedValue = new StringValue();
 
   private final StringValue[] binaryEnumValues;

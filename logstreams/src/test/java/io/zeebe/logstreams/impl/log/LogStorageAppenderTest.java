@@ -37,7 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStorageAppenderTest {
+public final class LogStorageAppenderTest {
 
   private static final int MAX_FRAGMENT_SIZE = 1024;
   private static final int PARTITION_ID = 0;

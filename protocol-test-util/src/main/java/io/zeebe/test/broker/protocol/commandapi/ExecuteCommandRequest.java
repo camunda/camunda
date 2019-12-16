@@ -27,7 +27,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ExecuteCommandRequest implements BufferWriter {
+public final class ExecuteCommandRequest implements BufferWriter {
   protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   protected final ExecuteCommandRequestEncoder requestEncoder = new ExecuteCommandRequestEncoder();
   protected final MsgPackHelper msgPackHelper;

@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
-public class TransformingDeploymentCreateProcessor
+public final class TransformingDeploymentCreateProcessor
     implements TypedRecordProcessor<DeploymentRecord> {
 
   public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =

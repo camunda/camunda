@@ -31,7 +31,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class PublishMessageCommandImpl extends CommandWithVariables<PublishMessageCommandImpl>
+public final class PublishMessageCommandImpl extends CommandWithVariables<PublishMessageCommandImpl>
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final GatewayStub asyncStub;

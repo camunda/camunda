@@ -10,7 +10,7 @@ package io.zeebe.engine.metrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
-public class JobMetrics {
+public final class JobMetrics {
 
   private static final Counter JOB_EVENTS =
       Counter.build()

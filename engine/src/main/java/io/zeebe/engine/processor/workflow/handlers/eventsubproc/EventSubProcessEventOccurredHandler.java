@@ -19,7 +19,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
+public final class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     extends EventOccurredHandler<T> {
   private final WorkflowInstanceRecord containerRecord = new WorkflowInstanceRecord();
 

@@ -14,7 +14,7 @@ import io.zeebe.util.sched.clock.ActorClock;
  * the future, more sophisticated logic can be implemented such as limiting concurrency by Io Device
  * or similar schemes.
  */
-public class IoScheduler implements TaskScheduler {
+public final class IoScheduler implements TaskScheduler {
 
   private final MultiLevelWorkstealingGroup tasks;
 

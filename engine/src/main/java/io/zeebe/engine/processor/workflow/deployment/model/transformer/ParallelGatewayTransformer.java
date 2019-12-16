@@ -15,7 +15,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ParallelGatewayTransformer implements ModelElementTransformer<ParallelGateway> {
+public final class ParallelGatewayTransformer implements ModelElementTransformer<ParallelGateway> {
 
   @Override
   public Class<ParallelGateway> getType() {

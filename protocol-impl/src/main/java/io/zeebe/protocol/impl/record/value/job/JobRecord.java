@@ -25,7 +25,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
+public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   private static final String EMPTY_STRING = "";
   private static final String RETRIES = "retries";

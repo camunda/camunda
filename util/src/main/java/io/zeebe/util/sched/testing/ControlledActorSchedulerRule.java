@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 
-public class ControlledActorSchedulerRule extends ExternalResource {
+public final class ControlledActorSchedulerRule extends ExternalResource {
   private final ActorScheduler actorScheduler;
   private final ControlledActorThread controlledActorTaskRunner;
   private final ThreadPoolExecutor blockingTasksRunner;

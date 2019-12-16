@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Function;
 
-public class MultiInstanceBodyActivatingHandler extends AbstractMultiInstanceBodyHandler {
+public final class MultiInstanceBodyActivatingHandler extends AbstractMultiInstanceBodyHandler {
 
   private final CatchEventSubscriber catchEventSubscriber;
 

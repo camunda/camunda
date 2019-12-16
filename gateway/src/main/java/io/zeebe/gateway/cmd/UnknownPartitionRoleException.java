@@ -9,7 +9,7 @@ package io.zeebe.gateway.cmd;
 
 import io.zeebe.protocol.PartitionState;
 
-public class UnknownPartitionRoleException extends ClientException {
+public final class UnknownPartitionRoleException extends ClientException {
   private static final String FORMAT =
       "Expected broker role for partition '%d' to be one of [LEADER, FOLLOWER], but got '%s'";
 

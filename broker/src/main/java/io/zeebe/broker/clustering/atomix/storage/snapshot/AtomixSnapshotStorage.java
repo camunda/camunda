@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 
-public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
+public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
   private static final Logger LOGGER = new ZbLogger(AtomixSnapshotStorage.class);
 
   private final Path runtimeDirectory;

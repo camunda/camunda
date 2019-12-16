@@ -32,7 +32,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class TestEnvironmentRule extends ExternalResource {
+public final class TestEnvironmentRule extends ExternalResource {
 
   private final GrpcServerRule serverRule = new GrpcServerRule();
   private final Consumer<ZeebeClientBuilder> clientConfigurator;

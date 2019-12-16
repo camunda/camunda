@@ -29,7 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class SetVariablesTest {
+public final class SetVariablesTest {
 
   private static final String PROCESS_ID = "process";
 

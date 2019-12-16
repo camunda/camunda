@@ -31,7 +31,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
 
-public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
+public final class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
   private static final String ALREADY_PUBLISHED_MESSAGE =
       "Expected to publish a new message with id '%s', but a message with that id was already published";

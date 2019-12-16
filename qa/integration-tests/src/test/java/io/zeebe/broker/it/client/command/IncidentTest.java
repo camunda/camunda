@@ -29,7 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class IncidentTest {
+public final class IncidentTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);

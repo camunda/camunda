@@ -9,7 +9,7 @@ package io.zeebe.msgpack.util;
 
 import org.agrona.DirectBuffer;
 
-public class ByteUtil {
+public final class ByteUtil {
 
   public static boolean equal(
       final byte[] arr1, final DirectBuffer buf2, final int buf2Offset, final int length) {

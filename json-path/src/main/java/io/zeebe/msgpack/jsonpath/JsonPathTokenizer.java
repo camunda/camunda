@@ -11,7 +11,7 @@ import io.zeebe.msgpack.util.ByteUtil;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 
-public class JsonPathTokenizer {
+public final class JsonPathTokenizer {
 
   public static final StaticToken SYMBOL_ROOT_OBJECT =
       new StaticToken(JsonPathToken.ROOT_OBJECT, "$".getBytes(StandardCharsets.UTF_8));

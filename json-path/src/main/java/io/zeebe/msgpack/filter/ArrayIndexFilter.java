@@ -12,7 +12,7 @@ import io.zeebe.msgpack.spec.MsgPackToken;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ArrayIndexFilter implements MsgPackFilter {
+public final class ArrayIndexFilter implements MsgPackFilter {
 
   @Override
   public boolean matches(

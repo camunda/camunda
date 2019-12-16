@@ -9,7 +9,7 @@ package io.zeebe.msgpack;
 
 import io.zeebe.msgpack.value.StringValue;
 
-public class MsgpackPropertyException extends MsgpackException {
+public final class MsgpackPropertyException extends MsgpackException {
 
   private static final String MESSAGE_FORMAT = "Property '%s' is invalid: %s";
   private final StringValue property;

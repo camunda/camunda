@@ -9,7 +9,7 @@ package io.zeebe.test.broker.protocol.brokerapi.data;
 
 import java.util.Objects;
 
-public class BrokerPartitionState {
+public final class BrokerPartitionState {
   public static final String LEADER_STATE = "LEADER";
   public static final String FOLLOWER_STATE = "FOLLOWER";
 

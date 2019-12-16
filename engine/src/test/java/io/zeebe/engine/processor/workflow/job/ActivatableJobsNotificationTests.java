@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class ActivatableJobsNotificationTests {
+public final class ActivatableJobsNotificationTests {
 
   private static final String PROCESS_ID = "process";
   private static final Function<String, BpmnModelInstance> MODEL_SUPPLIER =

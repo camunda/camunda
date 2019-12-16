@@ -17,7 +17,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class MessageTransformer implements ModelElementTransformer<Message> {
+public final class MessageTransformer implements ModelElementTransformer<Message> {
 
   @Override
   public Class<Message> getType() {

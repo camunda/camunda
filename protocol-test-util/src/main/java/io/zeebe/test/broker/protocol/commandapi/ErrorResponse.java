@@ -14,7 +14,7 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
-public class ErrorResponse implements BufferReader {
+public final class ErrorResponse implements BufferReader {
   protected final MsgPackHelper msgPackHelper;
   protected String errorData;
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();

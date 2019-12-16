@@ -20,7 +20,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /** A request limiter that manages the limits for each partition independently. */
-public class PartitionAwareRequestLimiter {
+public final class PartitionAwareRequestLimiter {
 
   private final Map<Integer, RequestLimiter<Intent>> partitionLimiters = new ConcurrentHashMap<>();
 

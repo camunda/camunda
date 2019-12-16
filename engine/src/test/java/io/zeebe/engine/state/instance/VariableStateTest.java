@@ -34,7 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class VariableStateTest {
+public final class VariableStateTest {
 
   @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
   private static final long WORKFLOW_KEY = 123;

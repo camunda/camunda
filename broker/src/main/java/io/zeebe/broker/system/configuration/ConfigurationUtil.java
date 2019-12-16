@@ -10,8 +10,8 @@ package io.zeebe.broker.system.configuration;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class ConfigurationUtil {
-  public static String toAbsolutePath(final String path, final String base) {
+public final class ConfigurationUtil {
+  public static String toAbsolutePath(String path, String base) {
     final Path asPath = Paths.get(path);
 
     if (asPath.isAbsolute()) {

@@ -22,7 +22,7 @@ import java.util.Objects;
 import org.agrona.BitUtil;
 
 /** Builder for a {@link Dispatcher} */
-public class DispatcherBuilder {
+public final class DispatcherBuilder {
 
   private static final int DEFAULT_BUFFER_SIZE = (int) ByteValue.ofMegabytes(1).toBytes();
 

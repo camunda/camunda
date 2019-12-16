@@ -13,7 +13,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 
-public class IncidentEventProcessors {
+public final class IncidentEventProcessors {
 
   public static void addProcessors(
       final TypedRecordProcessors typedRecordProcessors,

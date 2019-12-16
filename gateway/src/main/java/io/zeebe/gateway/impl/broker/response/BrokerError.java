@@ -11,7 +11,7 @@ import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class BrokerError {
+public final class BrokerError {
 
   private final ErrorCode code;
   private final String message;

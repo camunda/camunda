@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
-public class ServerTransportTest {
+public final class ServerTransportTest {
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
   public static final DirectBuffer BUF2 = BufferUtil.wrapBytes(5, 6, 7, 8);
 

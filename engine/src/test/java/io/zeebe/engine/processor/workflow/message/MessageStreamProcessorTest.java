@@ -38,7 +38,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public class MessageStreamProcessorTest {
+public final class MessageStreamProcessorTest {
 
   @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 

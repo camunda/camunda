@@ -13,7 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class SystemContextTest {
+public final class SystemContextTest {
 
   @Rule public final ExpectedException expectedException = ExpectedException.none();
 

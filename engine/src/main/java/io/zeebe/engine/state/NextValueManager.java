@@ -13,7 +13,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 
-public class NextValueManager {
+public final class NextValueManager {
 
   private static final int INITIAL_VALUE = 0;
 

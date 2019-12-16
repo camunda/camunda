@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class MessageCorrelationTest {
+public final class MessageCorrelationTest {
 
   private static final String CORRELATION_KEY_VARIABLE = "orderId";
   private static final String CATCH_EVENT_ELEMENT_ID = "catch-event";

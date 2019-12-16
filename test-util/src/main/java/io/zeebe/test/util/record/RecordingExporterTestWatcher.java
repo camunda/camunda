@@ -12,7 +12,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 
-public class RecordingExporterTestWatcher extends TestWatcher {
+public final class RecordingExporterTestWatcher extends TestWatcher {
 
   public static final Logger LOG = new ZbLogger("io.zeebe.test.records");
 

@@ -15,7 +15,7 @@ import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.function.BiFunction;
 
-public class JobActivationClient {
+public final class JobActivationClient {
   private static final int DEFAULT_PARTITION = 1;
   private static final long DEFAULT_TIMEOUT = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";

@@ -19,7 +19,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class IncidentRecord extends UnifiedRecordValue
+public final class IncidentRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, IncidentRecordValue {
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);

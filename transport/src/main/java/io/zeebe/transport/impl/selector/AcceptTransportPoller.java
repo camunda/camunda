@@ -15,7 +15,7 @@ import java.nio.channels.SocketChannel;
 import java.util.function.ToIntFunction;
 import org.agrona.nio.TransportPoller;
 
-public class AcceptTransportPoller extends TransportPoller {
+public final class AcceptTransportPoller extends TransportPoller {
   private final ServerConductor serverConductor;
   private final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
 

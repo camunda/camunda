@@ -32,7 +32,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class PushDeploymentRequestHandler
+public final class PushDeploymentRequestHandler
     implements Function<byte[], CompletableFuture<byte[]>>, DeploymentResponder {
 
   private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;

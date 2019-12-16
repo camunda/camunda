@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandl
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
-public class ProcessCompletedHandler
+public final class ProcessCompletedHandler
     extends ElementCompletedHandler<ExecutableFlowElementContainer> {
 
   private final List<WorkflowPostProcessor> postProcessors;

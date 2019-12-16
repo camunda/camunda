@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.junit.Test;
 
-public class CancelWorkflowInstanceTest extends GatewayTest {
+public final class CancelWorkflowInstanceTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

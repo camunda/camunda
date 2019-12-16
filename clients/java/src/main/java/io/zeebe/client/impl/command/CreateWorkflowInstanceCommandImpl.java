@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class CreateWorkflowInstanceCommandImpl
+public final class CreateWorkflowInstanceCommandImpl
     implements CreateWorkflowInstanceCommandStep1,
         CreateWorkflowInstanceCommandStep2,
         CreateWorkflowInstanceCommandStep3 {

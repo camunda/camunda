@@ -16,7 +16,7 @@ import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.function.ObjLongConsumer;
 
-public class IncidentState {
+public final class IncidentState {
   public static final int MISSING_INCIDENT = -1;
 
   /** incident key -> incident record */

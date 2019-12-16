@@ -12,7 +12,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBE
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.util.Environment;
 
-public class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry {
+public final class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry {
 
   private boolean enable = true;
 

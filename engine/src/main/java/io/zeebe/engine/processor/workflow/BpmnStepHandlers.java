@@ -62,7 +62,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-public class BpmnStepHandlers {
+public final class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler<?>> stepHandlers = new EnumMap<>(BpmnStep.class);
 
   BpmnStepHandlers(final ZeebeState state, final CatchEventBehavior catchEventBehavior) {

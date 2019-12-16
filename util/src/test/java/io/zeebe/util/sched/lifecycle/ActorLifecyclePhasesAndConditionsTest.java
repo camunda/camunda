@@ -17,7 +17,7 @@ import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndConditionsTest {
+public final class ActorLifecyclePhasesAndConditionsTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 

@@ -7,7 +7,7 @@
  */
 package io.zeebe.gateway.impl.broker.response;
 
-public class BrokerRejectionResponse<T> extends BrokerResponse<T> {
+public final class BrokerRejectionResponse<T> extends BrokerResponse<T> {
 
   private final BrokerRejection rejection;
 

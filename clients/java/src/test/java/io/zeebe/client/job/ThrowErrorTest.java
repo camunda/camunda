@@ -22,7 +22,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public class ThrowErrorTest extends ClientTest {
+public final class ThrowErrorTest extends ClientTest {
 
   @Test
   public void shouldThrowError() {

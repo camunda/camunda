@@ -32,7 +32,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
+public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final JobState jobState;
   private final VariablesState variablesState;

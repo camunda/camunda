@@ -19,12 +19,12 @@ import io.zeebe.client.api.response.Workflow;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
 import java.util.Objects;
 
-public class WorkflowImpl implements Workflow {
+public final class WorkflowImpl implements Workflow {
 
-  protected final long workflowKey;
-  protected final String bpmnProcessId;
-  protected final int version;
-  protected final String resourceName;
+  private final long workflowKey;
+  private final String bpmnProcessId;
+  private final int version;
+  private final String resourceName;
 
   public WorkflowImpl(final WorkflowMetadata workflow) {
     this(

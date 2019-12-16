@@ -21,7 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class LargeMessageSizeTest {
+public final class LargeMessageSizeTest {
 
   private static final ByteValue MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
   // only use half of the max message size because some commands produce two events

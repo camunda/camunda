@@ -17,7 +17,7 @@ import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 
-public class ExportersState {
+public final class ExportersState {
   public static final long VALUE_NOT_FOUND = -1;
 
   private final DbString exporterId;

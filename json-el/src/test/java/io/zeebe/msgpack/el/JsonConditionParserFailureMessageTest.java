@@ -17,7 +17,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JsonConditionParserFailureMessageTest {
+public final class JsonConditionParserFailureMessageTest {
   @Parameter(0)
   public String expression;
 

@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ElementInstanceStateTest {
+public final class ElementInstanceStateTest {
 
   private static final long WORKFLOW_KEY = 123;
 

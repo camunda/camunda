@@ -19,7 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Has the same purpose as InetSocketAddress. However, we can't use that because InetSocketAddress is immutable
  * which is not practical in a garbage-free environment.
  */
-public class SocketAddress implements Comparable<SocketAddress> {
+public final class SocketAddress implements Comparable<SocketAddress> {
 
   public static final int MAX_HOST_LENGTH = 128;
 

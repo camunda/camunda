@@ -15,7 +15,7 @@ import org.slf4j.Logger;
  * used for transports where you do not need to limit memory (like client requests in the zeebe
  * broker)
  */
-public class UnboundedMemoryPool implements TransportMemoryPool {
+public final class UnboundedMemoryPool implements TransportMemoryPool {
   private static final Logger LOG = Loggers.TRANSPORT_MEMORY_LOGGER;
 
   @Override

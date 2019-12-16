@@ -37,7 +37,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ClusteredDataDeletionTest {
+public final class ClusteredDataDeletionTest {
   private static final int SNAPSHOT_PERIOD_SECONDS = 30;
   private static final int MAX_SNAPSHOTS = 1;
   @Parameter public Consumer<BrokerCfg> configurator;

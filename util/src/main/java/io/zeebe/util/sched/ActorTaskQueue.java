@@ -13,7 +13,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
 @SuppressWarnings("restriction")
-public class ActorTaskQueue extends ActorTaskQueueHead {
+public final class ActorTaskQueue extends ActorTaskQueueHead {
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();

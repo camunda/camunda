@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MultiInstanceBodyCompletedHandler extends AbstractMultiInstanceBodyHandler {
+public final class MultiInstanceBodyCompletedHandler extends AbstractMultiInstanceBodyHandler {
 
   private final BpmnStepHandler multiInstanceBodyHandler;
 

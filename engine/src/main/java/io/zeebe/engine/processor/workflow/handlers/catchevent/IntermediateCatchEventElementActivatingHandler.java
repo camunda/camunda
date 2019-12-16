@@ -14,7 +14,8 @@ import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class IntermediateCatchEventElementActivatingHandler<T extends ExecutableCatchEventElement>
+public final class IntermediateCatchEventElementActivatingHandler<
+        T extends ExecutableCatchEventElement>
     extends ElementActivatingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 

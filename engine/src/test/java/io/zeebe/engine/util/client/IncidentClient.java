@@ -15,7 +15,7 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 
-public class IncidentClient {
+public final class IncidentClient {
 
   private final StreamProcessorRule environmentRule;
 

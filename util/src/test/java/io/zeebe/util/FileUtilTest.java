@@ -17,7 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class FileUtilTest {
+public final class FileUtilTest {
 
   @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
 

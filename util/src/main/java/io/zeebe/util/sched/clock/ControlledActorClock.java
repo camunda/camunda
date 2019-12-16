@@ -11,7 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 /** For testcases */
-public class ControlledActorClock implements ActorClock {
+public final class ControlledActorClock implements ActorClock {
   private volatile long currentTime;
   private volatile long currentOffset;
 

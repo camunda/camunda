@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 
-public class EventScopeInstanceState {
+public final class EventScopeInstanceState {
 
   private final DbLong eventScopeKey;
   private final EventScopeInstance eventScopeInstance;

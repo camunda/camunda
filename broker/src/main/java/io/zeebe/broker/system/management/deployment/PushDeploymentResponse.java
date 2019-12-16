@@ -13,7 +13,7 @@ import io.zeebe.engine.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class PushDeploymentResponse
+public final class PushDeploymentResponse
     extends SbeBufferWriterReader<PushDeploymentResponseEncoder, PushDeploymentResponseDecoder> {
 
   private final PushDeploymentResponseEncoder bodyEncoder = new PushDeploymentResponseEncoder();

@@ -15,7 +15,7 @@ import java.net.Socket;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class EmbeddedGatewayTest {
+public final class EmbeddedGatewayTest {
 
   @Rule
   public final EmbeddedBrokerRule brokerWithEnabledGateway =

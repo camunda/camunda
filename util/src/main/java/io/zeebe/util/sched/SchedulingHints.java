@@ -7,7 +7,7 @@
  */
 package io.zeebe.util.sched;
 
-public class SchedulingHints {
+public final class SchedulingHints {
 
   public static int ioBound() {
     int hints = 0;

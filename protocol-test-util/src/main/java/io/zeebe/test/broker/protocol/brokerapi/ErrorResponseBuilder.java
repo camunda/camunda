@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.util.function.Consumer;
 
-public class ErrorResponseBuilder<R> {
+public final class ErrorResponseBuilder<R> {
   protected final Consumer<MessageBuilder<R>> registrationFunction;
   protected final ErrorResponseWriter<R> commandResponseWriter;
 
