@@ -7,27 +7,22 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.model.bpmn.util.time.Timer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public interface ExecutableCatchEvent extends ExecutableFlowElement {
+public class ExecutableError extends AbstractFlowElement {
 
-  boolean isTimer();
+  private final DirectBuffer errorCode = new UnsafeBuffer();
 
-  boolean isMessage();
-
-  boolean isError();
-
-  default boolean isNone() {
-    return !isTimer() && !isMessage() && !isError();
+  public ExecutableError(final String id) {
+    super(id);
   }
 
-  ExecutableMessage getMessage();
-
-  default boolean shouldCloseMessageSubscriptionOnCorrelate() {
-    return true;
+  public DirectBuffer getErrorCode() {
+    return errorCode;
   }
 
-  Timer getTimer();
-
-  ExecutableError getError();
+  public void setErrorCode(final DirectBuffer errorCode) {
+    this.errorCode.wrap(errorCode);
+  }
 }

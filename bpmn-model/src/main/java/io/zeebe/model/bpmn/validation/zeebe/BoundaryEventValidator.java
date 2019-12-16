@@ -16,6 +16,7 @@
 package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
@@ -72,6 +73,8 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
       } else {
         return SupportLevel.All;
       }
+    } else if (eventDefinition instanceof ErrorEventDefinition) {
+      return SupportLevel.Interrupting;
     } else {
       return SupportLevel.None;
     }
@@ -83,7 +86,8 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
       final SupportLevel supportLevel) {
     switch (supportLevel) {
       case None:
-        validationResultCollector.addError(0, "Boundary events must be one of: timer, message");
+        validationResultCollector.addError(
+            0, "Boundary events must be one of: timer, message, error");
         break;
       case Interrupting:
         if (!element.cancelActivity()) {

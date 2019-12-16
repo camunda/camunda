@@ -19,6 +19,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   private ExecutableMessage message;
   private Timer timer;
+  private ExecutableError error;
   private boolean interrupting;
 
   public ExecutableCatchEventElement(final String id) {
@@ -33,6 +34,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public boolean isMessage() {
     return message != null;
+  }
+
+  @Override
+  public boolean isError() {
+    return error != null;
   }
 
   @Override
@@ -51,6 +57,15 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   public void setTimer(final Timer timer) {
     this.timer = timer;
+  }
+
+  @Override
+  public ExecutableError getError() {
+    return error;
+  }
+
+  public void setError(final ExecutableError error) {
+    this.error = error;
   }
 
   @Override

@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.zeebe.model.bpmn.instance.Activity;
+import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import java.util.List;
@@ -27,13 +28,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ModelUtil {
-  public static Stream<MessageEventDefinition> getActivityMessageBoundaryEvents(
-      final Activity activity) {
+
+  public static <E extends EventDefinition> Stream<E> getBoundaryEvents(
+      final Activity activity, final Class<E> definitionType) {
 
     return activity.getBoundaryEvents().stream()
         .flatMap(event -> event.getEventDefinitions().stream())
-        .filter(definition -> definition instanceof MessageEventDefinition)
-        .map(MessageEventDefinition.class::cast);
+        .filter(definitionType::isInstance)
+        .map(definitionType::cast);
   }
 
   public static List<String> getDuplicateMessageNames(
