@@ -14,14 +14,14 @@ import * as Styled from './styled';
 const iconTypes = {
   [PILL_TYPE.TIMESTAMP]: Styled.Clock
 };
-export default function Pill(props) {
+function Pill(props) {
   const TargetIcon = iconTypes[props.type] || (() => null);
-
   return (
     <Styled.Pill
       onClick={props.onClick}
       className={props.className}
       isActive={props.isActive}
+      disabled={props.isDisabled}
       type={props.type}
     >
       <TargetIcon />
@@ -36,6 +36,7 @@ export default function Pill(props) {
 Pill.propTypes = {
   type: PropTypes.oneOf(Object.values(PILL_TYPE)),
   isActive: PropTypes.bool.isRequired,
+  isDisabled: PropTypes.bool,
   children: PropTypes.node,
   count: PropTypes.number,
   grow: PropTypes.bool,
@@ -47,3 +48,4 @@ Pill.defaultProps = {
   isActive: false,
   grow: false
 };
+export default React.memo(Pill);

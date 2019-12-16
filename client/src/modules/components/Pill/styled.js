@@ -83,6 +83,22 @@ export const Pill = themed(styled.button`
     })};
   }
 
+  &:disabled{
+    border: solid 1px ${themeStyle({
+      dark: Colors.uiDark05,
+      light: Colors.uiLight03
+    })};
+    background-color:  ${themeStyle({
+      dark: Colors.darkButton03,
+      light: Colors.lightButton04
+    })};
+    color: ${themeStyle({
+      dark: 'rgba(255, 255, 255, 0.5)',
+      light: 'rgba(69, 70, 78, 0.5)'
+    })};
+    
+  }
+  
   &:hover {
     background: ${setHoverColors(Colors.darkPillHover, Colors.lightButton01)};
     border-color: ${setHoverColors(Colors.darkButton02, Colors.lightButton02)};

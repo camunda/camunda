@@ -14,11 +14,17 @@ import Pill from 'modules/components/Pill';
 import {PILL_TYPE} from 'modules/constants';
 
 import TimeStampPill from './TimeStampPill';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+import {DataManagerProvider} from 'modules/DataManager';
+
+jest.mock('modules/utils/bpmn');
 
 const renderNode = node => {
   return mount(
     <ThemeProvider>
-      <FlowNodeTimeStampProvider>{node}</FlowNodeTimeStampProvider>
+      <DataManagerProvider>
+        <FlowNodeTimeStampProvider>{node}</FlowNodeTimeStampProvider>
+      </DataManagerProvider>
     </ThemeProvider>
   );
 };
@@ -27,6 +33,7 @@ describe('TimeStampPill', () => {
   let node;
 
   beforeEach(() => {
+    createMockDataManager();
     node = renderNode(<TimeStampPill />);
   });
 

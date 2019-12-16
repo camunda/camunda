@@ -4,31 +4,42 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import Pill from 'modules/components/Pill';
 
-import {PILL_TYPE} from 'modules/constants';
-
+import {PILL_TYPE, LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
+import useDataManager from 'modules/hooks/useDataManager';
 import {withFlowNodeTimeStampContext} from 'modules/contexts/FlowNodeTimeStampContext';
 
-class TimeStampPill extends React.Component {
-  static propTypes = {
-    onTimeStampToggle: PropTypes.func.isRequired,
-    showTimeStamp: PropTypes.bool.isRequired
-  };
+import * as Styled from './styled';
 
-  render() {
-    const {showTimeStamp, onTimeStampToggle} = this.props;
-    return (
-      <Pill
-        isActive={showTimeStamp}
-        onClick={onTimeStampToggle}
-        type={PILL_TYPE.TIMESTAMP}
-      >
-        {`${showTimeStamp ? 'Hide' : 'Show'} End Time`}
-      </Pill>
+function TimeStampPill(props) {
+  const {showTimeStamp, onTimeStampToggle} = props;
+  const [isDisabled, setDisabled] = useState(true);
+  const {subscribe} = useDataManager();
+
+  useEffect(() => {
+    subscribe(SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE, LOADING_STATE.LOADED, () =>
+      setDisabled(false)
     );
-  }
+  }, []);
+
+  return (
+    <Styled.Pill
+      isActive={showTimeStamp}
+      onClick={onTimeStampToggle}
+      type={PILL_TYPE.TIMESTAMP}
+      isDisabled={isDisabled}
+    >
+      {`${showTimeStamp ? 'Hide' : 'Show'} End Time`}
+    </Styled.Pill>
+  );
 }
+
+TimeStampPill.propTypes = {
+  onTimeStampToggle: PropTypes.func.isRequired,
+  showTimeStamp: PropTypes.bool.isRequired
+};
+
 export default withFlowNodeTimeStampContext(TimeStampPill);
