@@ -267,4 +267,23 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .map(EventProcessPublishStateDto::getId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get id of published process"));
   }
+
+  protected static EventMappingDto startMapping(final String eventName) {
+    return EventMappingDto.builder()
+      .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(eventName).build())
+      .build();
+  }
+
+  protected static EventMappingDto endMapping(final String eventName) {
+    return EventMappingDto.builder()
+      .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(eventName).build())
+      .build();
+  }
+
+  protected static EventMappingDto startAndEndMapping(final String startEventName, final String endEventName) {
+    return EventMappingDto.builder()
+      .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(startEventName).build())
+      .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(endEventName).build())
+      .build();
+  }
 }

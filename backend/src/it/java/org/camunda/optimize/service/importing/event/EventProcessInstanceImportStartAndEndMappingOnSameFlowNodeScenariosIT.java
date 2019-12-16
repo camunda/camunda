@@ -20,26 +20,41 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EventProcessInstanceImportSingleMappingScenariosIT extends AbstractEventProcessIT {
+public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenariosIT extends AbstractEventProcessIT {
 
   public static final String FIRST_EVENT_NAME = "firstEvent";
   public static final String SECOND_EVENT_NAME = "secondEvent";
   public static final String THIRD_EVENT_NAME = "thirdEvent";
+  public static final String FOURTH_EVENT_NAME = "fourthEvent";
+
 
   public static final OffsetDateTime FIRST_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:00.000+01:00");
   public static final OffsetDateTime SECOND_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:30.000+01:00");
-  public static final OffsetDateTime THIRD_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:01:00.000+01:00");
+  public static final OffsetDateTime THIRD_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:45.000+01:00");
+  public static final OffsetDateTime FOURTH_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:01:00.000+01:00");
 
   private static Stream<Arguments> getScenarios() {
     return Stream.of(
-      Arguments.of(startMapping(FIRST_EVENT_NAME), startMapping(SECOND_EVENT_NAME), startMapping(THIRD_EVENT_NAME)),
-      Arguments.of(startMapping(FIRST_EVENT_NAME), startMapping(SECOND_EVENT_NAME), endMapping(THIRD_EVENT_NAME)),
-      Arguments.of(startMapping(FIRST_EVENT_NAME), endMapping(SECOND_EVENT_NAME), startMapping(THIRD_EVENT_NAME)),
-      Arguments.of(startMapping(FIRST_EVENT_NAME), endMapping(SECOND_EVENT_NAME), endMapping(THIRD_EVENT_NAME)),
-      Arguments.of(endMapping(FIRST_EVENT_NAME), endMapping(SECOND_EVENT_NAME), endMapping(THIRD_EVENT_NAME)),
-      Arguments.of(endMapping(FIRST_EVENT_NAME), endMapping(SECOND_EVENT_NAME), startMapping(THIRD_EVENT_NAME)),
-      Arguments.of(endMapping(FIRST_EVENT_NAME), startMapping(SECOND_EVENT_NAME), endMapping(THIRD_EVENT_NAME)),
-      Arguments.of(endMapping(FIRST_EVENT_NAME), startMapping(SECOND_EVENT_NAME), startMapping(THIRD_EVENT_NAME))
+      Arguments.of(
+        startMapping(FIRST_EVENT_NAME),
+        startAndEndMapping(SECOND_EVENT_NAME, THIRD_EVENT_NAME),
+        startMapping(FOURTH_EVENT_NAME)
+      ),
+      Arguments.of(
+        startMapping(FIRST_EVENT_NAME),
+        startAndEndMapping(SECOND_EVENT_NAME, THIRD_EVENT_NAME),
+        endMapping(FOURTH_EVENT_NAME)
+      ),
+      Arguments.of(
+        endMapping(FIRST_EVENT_NAME),
+        startAndEndMapping(SECOND_EVENT_NAME, THIRD_EVENT_NAME),
+        endMapping(FOURTH_EVENT_NAME)
+      ),
+      Arguments.of(
+        endMapping(FIRST_EVENT_NAME),
+        startAndEndMapping(SECOND_EVENT_NAME, THIRD_EVENT_NAME),
+        startMapping(FOURTH_EVENT_NAME)
+      )
     );
   }
 
@@ -52,6 +67,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
     final String thirdEventId = ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
+    final String fourthEventId = ingestTestEvent(FOURTH_EVENT_NAME, FOURTH_EVENT_DATETIME);
 
     createAndPublishMapping(startEventMapping, intermediateEventMapping, endEventMapping);
 
@@ -60,7 +76,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
 
     // then
     assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
+      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, fourthEventId
     );
   }
 
@@ -75,6 +91,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
     final String thirdEventId = ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
+    final String fourthEventId = ingestTestEvent(FOURTH_EVENT_NAME, FOURTH_EVENT_DATETIME);
 
     createAndPublishMapping(startEventMapping, intermediateEventMapping, endEventMapping);
 
@@ -82,10 +99,11 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     executeImportCycle();
     executeImportCycle();
     executeImportCycle();
+    executeImportCycle();
 
     // then
     assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
+      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, fourthEventId
     );
   }
 
@@ -98,9 +116,10 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     // given
     embeddedOptimizeExtension.getConfigurationService().getEventImportConfiguration().setMaxPageSize(1);
 
-    final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
     final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
+    final String secondEventId = ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
     final String thirdEventId = ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
+    final String fourthEventId = ingestTestEvent(FOURTH_EVENT_NAME, FOURTH_EVENT_DATETIME);
 
     createAndPublishMapping(startEventMapping, intermediateEventMapping, endEventMapping);
 
@@ -108,59 +127,12 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     executeImportCycle();
     executeImportCycle();
     executeImportCycle();
-
-    // then
-    assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
-    );
-  }
-
-  @ParameterizedTest
-  @MethodSource("getScenarios")
-  public void instancesAreGeneratedWithIntermediateEventMappingMissing(final EventMappingDto startEventMapping,
-                                                                       final EventMappingDto intermediateEventMapping,
-                                                                       final EventMappingDto endEventMapping) {
-    // given
-    final String firstEventId = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
-    ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
-    final String thirdEventId = ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
-
-    // intermediate mapping is missing
-    createAndPublishMapping(startEventMapping, null, endEventMapping);
-
-    // when
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
-    assertThat(processInstances)
-      .hasSize(1)
-      .hasOnlyOneElementSatisfying(
-        processInstanceDto -> {
-          assertThat(processInstanceDto)
-            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)
-            .hasFieldOrPropertyWithValue(
-              ProcessInstanceDto.Fields.duration,
-              Duration.between(FIRST_EVENT_DATETIME, THIRD_EVENT_DATETIME).toMillis()
-            )
-            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.startDate, FIRST_EVENT_DATETIME)
-            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
-            .extracting(ProcessInstanceDto::getEvents)
-            .satisfies(events -> assertThat(events)
-              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
-              .extracting(
-                SimpleEventDto::getId,
-                SimpleEventDto::getActivityId,
-                SimpleEventDto::getStartDate,
-                SimpleEventDto::getEndDate
-              )
-              .containsExactlyInAnyOrder(
-                Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
-                Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-              )
-            );
-        }
-      );
+    assertProcessInstanceIsAsExpected(
+      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, fourthEventId
+    );
   }
 
   private void createAndPublishMapping(final EventMappingDto startEventMapping,
@@ -175,9 +147,9 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
   private void assertProcessInstanceIsAsExpected(final EventMappingDto startEventMapping,
                                                  final EventMappingDto intermediateEventMapping,
                                                  final EventMappingDto endEventMapping,
-                                                 final String startEventId,
-                                                 final String intermediateEventId,
-                                                 final String endEventId) {
+                                                 final String firstEventId,
+                                                 final String secondEventId,
+                                                 final String fourthEventId) {
     final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
@@ -187,10 +159,10 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)
             .hasFieldOrPropertyWithValue(
               ProcessInstanceDto.Fields.duration,
-              Duration.between(FIRST_EVENT_DATETIME, THIRD_EVENT_DATETIME).toMillis()
+              Duration.between(FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME).toMillis()
             )
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.startDate, FIRST_EVENT_DATETIME)
-            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
+            .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, FOURTH_EVENT_DATETIME)
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(events -> assertThat(events)
               .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
@@ -202,27 +174,26 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
               )
               .containsExactlyInAnyOrder(
                 Tuple.tuple(
-                  startEventId,
+                  firstEventId,
                   BPMN_START_EVENT_ID,
                   FIRST_EVENT_DATETIME,
                   startEventMapping.getEnd() != null ? FIRST_EVENT_DATETIME : SECOND_EVENT_DATETIME
                 ),
                 Tuple.tuple(
-                  intermediateEventId,
+                  secondEventId,
                   BPMN_INTERMEDIATE_EVENT_ID,
-                  intermediateEventMapping.getStart() != null ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME,
-                  intermediateEventMapping.getEnd() != null ? SECOND_EVENT_DATETIME : THIRD_EVENT_DATETIME
+                  SECOND_EVENT_DATETIME,
+                  THIRD_EVENT_DATETIME
                 ),
                 Tuple.tuple(
-                  endEventId,
+                  fourthEventId,
                   BPMN_END_EVENT_ID,
-                  endEventMapping.getStart() != null ? THIRD_EVENT_DATETIME : SECOND_EVENT_DATETIME,
-                  THIRD_EVENT_DATETIME
+                  endEventMapping.getStart() != null ? FOURTH_EVENT_DATETIME : THIRD_EVENT_DATETIME,
+                  FOURTH_EVENT_DATETIME
                 )
               )
             );
         }
       );
   }
-
 }

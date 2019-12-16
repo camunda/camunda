@@ -147,19 +147,32 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
           .activityId(eventToFlowNodeMapping.getFlowNodeId())
           .activityType(eventToFlowNodeMapping.getFlowNodeType())
           .build();
-        processInstanceDto.getEvents().add(flowNodeInstance);
 
         final EventMappingDto eventMapping = eventProcessPublishStateDto.getMappings()
           .get(eventToFlowNodeMapping.getFlowNodeId());
         if (eventMapping.getStart() != null && eventMapping.getEnd() != null) {
-          // multiple events are mapped to one activity
-          // TODO with OPT-3015 we need to correlate start & end on write
           switch (eventToFlowNodeMapping.getMappedAs()) {
             case START:
+              // start events will create actual flow node instances
               flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
+              processInstanceDto.getEvents().add(flowNodeInstance);
+              updateEndDateTimeForPreviousFlowNodesWithoutOwnEndMapping(
+                eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
+              );
               break;
             case END:
+              // end events we only handle as updates to not create duplicate instances
               flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
+              final FlowNodeInstanceUpdateDto previousMappingEventUpdate = FlowNodeInstanceUpdateDto.builder()
+                .sourceEventId(eventId)
+                .flowNodeId(eventToFlowNodeMapping.getFlowNodeId())
+                .flowNodeType(eventToFlowNodeMapping.getFlowNodeType())
+                .endDate(eventTimeStampAsOffsetDateTime)
+                .build();
+              processInstanceDto.getPendingFlowNodeInstanceUpdates().add(previousMappingEventUpdate);
+              updateStartDateTimeForNextFlowNodesWithoutOwnStartMapping(
+                eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
+              );
               break;
             default:
               throw new OptimizeRuntimeException("Unsupported mappedAs type: " + eventToFlowNodeMapping.getMappedAs());
@@ -181,6 +194,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
             default:
               throw new OptimizeRuntimeException("Unsupported mappedAs type: " + eventToFlowNodeMapping.getMappedAs());
           }
+          processInstanceDto.getEvents().add(flowNodeInstance);
           updateEndDateTimeForPreviousFlowNodesWithoutOwnEndMapping(
             eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
           );
