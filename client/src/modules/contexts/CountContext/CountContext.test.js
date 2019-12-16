@@ -18,7 +18,7 @@ jest.mock('modules/utils/bpmn');
 function FooComp(props) {
   return (
     <CountContext.Consumer>
-      {dataStore => <div dataStore={dataStore} />}
+      {countStore => <div countStore={countStore} />}
     </CountContext.Consumer>
   );
 }
@@ -78,8 +78,8 @@ describe('CountContext', () => {
 
         // Then:
         compProps = node.find('div').props();
-        expect(compProps.dataStore.selectionCount).toBe(0);
-        expect(compProps.dataStore.instancesInSelectionsCount).toBe(0);
+        expect(compProps.countStore.selectionCount).toBe(0);
+        expect(compProps.countStore.instancesInSelectionsCount).toBe(0);
 
         // // When: pass null
         const {nullValues} = localStorage.selection;
@@ -87,10 +87,10 @@ describe('CountContext', () => {
 
         // Then:
         compProps = node.find('div').props();
-        expect(compProps.dataStore.selectionCount).toBe(
+        expect(compProps.countStore.selectionCount).toBe(
           nullValues.selectionCount
         );
-        expect(compProps.dataStore.instancesInSelectionsCount).toBe(
+        expect(compProps.countStore.instancesInSelectionsCount).toBe(
           nullValues.instancesInSelectionsCount
         );
 
@@ -100,10 +100,10 @@ describe('CountContext', () => {
 
         // Then:
         compProps = node.find('div').props();
-        expect(compProps.dataStore.selectionCount).toBe(
+        expect(compProps.countStore.selectionCount).toBe(
           integerValues.selectionCount
         );
-        expect(compProps.dataStore.instancesInSelectionsCount).toBe(
+        expect(compProps.countStore.instancesInSelectionsCount).toBe(
           integerValues.instancesInSelectionsCount
         );
       });
@@ -115,7 +115,7 @@ describe('CountContext', () => {
 
         // Then:
         compProps = node.find('div').props();
-        expect(compProps.dataStore.filterCount).toBe(null);
+        expect(compProps.countStore.filterCount).toBe(null);
 
         // When: pass null
         const {nullValues} = localStorage.filters;
@@ -123,7 +123,7 @@ describe('CountContext', () => {
 
         // Then:
         compProps = node.find('div').props();
-        expect(compProps.dataStore.filterCount).toBe(null);
+        expect(compProps.countStore.filterCount).toBe(null);
 
         // When: pass number
         const {integerValues} = localStorage.filters;
@@ -131,7 +131,9 @@ describe('CountContext', () => {
 
         // Then:
         compProps = node.find('div').props();
-        expect(compProps.dataStore.filterCount).toBe(integerValues.filterCount);
+        expect(compProps.countStore.filterCount).toBe(
+          integerValues.filterCount
+        );
       });
     });
 
@@ -148,9 +150,9 @@ describe('CountContext', () => {
 
         jest.setTimeout(1, () => {
           const compProps = node.find('div').props();
-          expect(compProps.dataStore.running).toBe(coreStatistics.running);
-          expect(compProps.dataStore.active).toBe(coreStatistics.active);
-          expect(compProps.dataStore.withIncidents).toBe(
+          expect(compProps.countStore.running).toBe(coreStatistics.running);
+          expect(compProps.countStore.active).toBe(coreStatistics.active);
+          expect(compProps.countStore.withIncidents).toBe(
             coreStatistics.withIncidents
           );
         });
@@ -168,10 +170,10 @@ describe('CountContext', () => {
 
         jest.setTimeout(1, () => {
           const compProps = node.find('div').props();
-          expect(compProps.dataStore.selectionCount).toBe(
+          expect(compProps.countStore.selectionCount).toBe(
             selections.selectionCount
           );
-          expect(compProps.dataStore.instancesInSelectionsCount).toBe(
+          expect(compProps.countStore.instancesInSelectionsCount).toBe(
             selections.instancesInSelectionsCount
           );
         });
@@ -190,12 +192,12 @@ describe('CountContext', () => {
 
         jest.setTimeout(1, () => {
           const compProps = node.find('div').props();
-          expect(compProps.dataStore.running).toBe(coreStatistics.running);
-          expect(compProps.dataStore.active).toBe(coreStatistics.active);
-          expect(compProps.dataStore.withIncidents).toBe(
+          expect(compProps.countStore.running).toBe(coreStatistics.running);
+          expect(compProps.countStore.active).toBe(coreStatistics.active);
+          expect(compProps.countStore.withIncidents).toBe(
             coreStatistics.withIncidents
           );
-          expect(compProps.dataStore.filterCount).toBe(totalCount);
+          expect(compProps.countStore.filterCount).toBe(totalCount);
         });
       });
 
@@ -212,7 +214,7 @@ describe('CountContext', () => {
 
         jest.setTimeout(1, () => {
           const compProps = node.find('div').props();
-          expect(compProps.dataStore.filterCount).toBe(response.totalCount);
+          expect(compProps.countStore.filterCount).toBe(response.totalCount);
         });
       });
     });

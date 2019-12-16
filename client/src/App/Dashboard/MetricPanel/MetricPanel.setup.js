@@ -4,28 +4,28 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const dataStoreEmpty = {
+export const countStoreEmpty = {
   running: 0,
   active: 0,
   withIncidents: 0,
   isLoaded: true
 };
 
-export const dataStoreComplete = {
+export const countStoreComplete = {
   running: 23,
   active: 12,
   withIncidents: 11,
   isLoaded: true
 };
 
-export const dataStoreWithoutIncidents = {
+export const countStoreWithoutIncidents = {
   running: 23,
   active: 12,
   withIncidents: 0,
   isLoaded: true
 };
 
-export const dataStoreLoading = {
+export const countStoreLoading = {
   running: 0,
   active: 0,
   withIncidents: 0,

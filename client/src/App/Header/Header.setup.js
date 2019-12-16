@@ -7,7 +7,7 @@
 import {createInstance} from 'modules/testUtils';
 import {PATHNAME} from './constants';
 
-export const dataStore = {
+export const countStore = {
   running: 0,
   active: 0,
   withIncidents: 0,
@@ -16,7 +16,7 @@ export const dataStore = {
   selectionCount: 0
 };
 
-export const dataStoreWithCount = {
+export const countStoreWithCount = {
   running: 100,
   active: 80,
   withIncidents: 20,

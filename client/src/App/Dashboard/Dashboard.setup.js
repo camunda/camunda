@@ -13,4 +13,4 @@ export const fetchError = {data: [], error: 'fetchError'};
 export const emptyData = {data: [], error: null};
 export const incidentsByError = {data: createIncidentsByError()};
 export const instancesByWorkflow = {data: createInstancesByWorkflow()};
-export const mockDataStore = {running: 120, active: 20, withIncidents: 100};
+export const mockCountStore = {running: 120, active: 20, withIncidents: 100};

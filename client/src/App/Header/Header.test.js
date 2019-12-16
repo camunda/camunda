@@ -22,9 +22,9 @@ import * as Styled from './styled.js';
 import {LOADING_STATE} from 'modules/constants';
 
 import {
-  dataStore,
+  countStore,
   location,
-  dataStoreWithCount,
+  countStoreWithCount,
   mockInstance
 } from './Header.setup';
 
@@ -74,7 +74,7 @@ describe('Header', () => {
     it('should render all nav elements', () => {
       const mockProps = {
         location: location.dashboard,
-        dataStore,
+        countStore,
         dataManager,
         ...mockCollapsablePanelProps
       };
@@ -131,7 +131,7 @@ describe('Header', () => {
     it('should render skeletons', () => {
       const mockProps = {
         location: location.dashboard,
-        dataStore,
+        countStore,
         dataManager,
         ...mockCollapsablePanelProps
       };
@@ -168,7 +168,7 @@ describe('Header', () => {
     it('should render values', () => {
       const mockProps = {
         location: location.dashboard,
-        dataStore: dataStoreWithCount,
+        countStore: countStoreWithCount,
         dataManager,
         ...mockCollapsablePanelProps
       };
@@ -191,30 +191,30 @@ describe('Header', () => {
       );
 
       expect(InstancesLinkNode.find(Badge).text()).toBe(
-        dataStoreWithCount.running.toString()
+        countStoreWithCount.running.toString()
       );
       expect(FiltersLinkNode.find(Badge).text()).toBe(
-        dataStoreWithCount.running.toString()
+        countStoreWithCount.running.toString()
       );
       expect(IncidentsLinkNode.find(Badge).text()).toBe(
-        dataStoreWithCount.withIncidents.toString()
+        countStoreWithCount.withIncidents.toString()
       );
       expect(
         SelectionsLinkNode.find(Badge)
           .at(0)
           .text()
-      ).toBe(dataStoreWithCount.selectionCount.toString());
+      ).toBe(countStoreWithCount.selectionCount.toString());
       expect(
         SelectionsLinkNode.find(Badge)
           .at(1)
           .text()
-      ).toBe(dataStoreWithCount.instancesInSelectionsCount.toString());
+      ).toBe(countStoreWithCount.instancesInSelectionsCount.toString());
     });
 
     it('should render user element', () => {
       const mockProps = {
         location: location.dashboard,
-        dataStore,
+        countStore,
         dataManager,
         ...mockCollapsablePanelProps
       };
@@ -228,7 +228,7 @@ describe('Header', () => {
     it('should render instance details skeleton on instance view', () => {
       const mockProps = {
         location: location.instance,
-        dataStore: dataStoreWithCount,
+        countStore: countStoreWithCount,
         dataManager,
         ...mockCollapsablePanelProps
       };
@@ -240,7 +240,7 @@ describe('Header', () => {
     it('should render instance details when on instance view', () => {
       const mockProps = {
         location: location.instance,
-        dataStore: dataStoreWithCount,
+        countStore: countStoreWithCount,
         dataManager,
         ...mockCollapsablePanelProps
       };
@@ -268,7 +268,7 @@ describe('Header', () => {
     it('should highlight instances and filters', () => {
       const mockProps = {
         location: location.instances,
-        dataStore: dataStoreWithCount,
+        countStore: countStoreWithCount,
         dataManager,
         ...mockCollapsablePanelProps
       };
@@ -293,7 +293,7 @@ describe('Header', () => {
     it('should highlight dashboard', () => {
       const mockProps = {
         location: location.dashboard,
-        dataStore: dataStoreWithCount,
+        countStore: countStoreWithCount,
         dataManager,
         ...mockCollapsablePanelProps
       };

@@ -141,7 +141,7 @@ function withCountStore(Component) {
   function withCountStore(props) {
     return (
       <CountContext.Consumer>
-        {dataStore => <Component {...props} dataStore={dataStore} />}
+        {countStore => <Component {...props} countStore={countStore} />}
       </CountContext.Consumer>
     );
   }

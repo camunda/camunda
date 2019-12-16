@@ -11,10 +11,10 @@ import {MetricPanel} from './MetricPanel';
 import * as Styled from './styled.js';
 
 import {
-  dataStoreEmpty,
-  dataStoreComplete,
-  dataStoreWithoutIncidents,
-  dataStoreLoading
+  countStoreEmpty,
+  countStoreComplete,
+  countStoreWithoutIncidents,
+  countStoreLoading
 } from './MetricPanel.setup';
 
 jest.mock('modules/utils/bpmn');
@@ -23,19 +23,19 @@ describe('MetricPanel', () => {
   describe('Title', () => {
     it('should render title containing instances count', () => {
       // when
-      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
+      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
       const titleNode = node.find(Styled.Title);
 
       // then
       expect(titleNode).toExist();
       expect(titleNode.text()).toEqual(
-        `${dataStoreComplete.running} Running Instances in total`
+        `${countStoreComplete.running} Running Instances in total`
       );
     });
 
     it('should render title during loading without instances count', () => {
       // when
-      const node = shallow(<MetricPanel dataStore={dataStoreLoading} />);
+      const node = shallow(<MetricPanel countStore={countStoreLoading} />);
       const titleNode = node.find(Styled.Title);
 
       // then
@@ -45,7 +45,7 @@ describe('MetricPanel', () => {
 
     it('should render correct link (if instances)', () => {
       // when
-      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
+      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
       const titleNode = node.find(Styled.Title);
 
       // then
@@ -56,7 +56,7 @@ describe('MetricPanel', () => {
 
     it('should render correct link (if no instances)', () => {
       // when
-      const node = shallow(<MetricPanel dataStore={dataStoreEmpty} />);
+      const node = shallow(<MetricPanel countStore={countStoreEmpty} />);
       const titleNode = node.find(Styled.Title);
 
       // then
@@ -69,7 +69,7 @@ describe('MetricPanel', () => {
   describe('Label', () => {
     it('should pass correct link to incident label (if incidents)', () => {
       // when
-      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
+      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
       const IncidentsLabelNode = node.find(Styled.Label).at(0);
 
       // then
@@ -81,7 +81,7 @@ describe('MetricPanel', () => {
     it('should pass correct link to incident label (if no incidents)', () => {
       // when
       const node = shallow(
-        <MetricPanel dataStore={dataStoreWithoutIncidents} />
+        <MetricPanel countStore={countStoreWithoutIncidents} />
       );
       const IncidentsLabelNode = node.find(Styled.Label).at(0);
 
@@ -93,7 +93,7 @@ describe('MetricPanel', () => {
 
     it('should pass correct link to active instances label (if instances)', () => {
       // when
-      const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
+      const node = shallow(<MetricPanel countStore={countStoreComplete} />);
       const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
 
       // then
@@ -104,7 +104,7 @@ describe('MetricPanel', () => {
 
     it('should pass correct link to active instances label (if no instances)', () => {
       // when
-      const node = shallow(<MetricPanel dataStore={dataStoreEmpty} />);
+      const node = shallow(<MetricPanel countStore={countStoreEmpty} />);
       const ActiveInstancesLabelNode = node.find(Styled.Label).at(1);
 
       // then
@@ -115,7 +115,7 @@ describe('MetricPanel', () => {
   });
 
   it('should pass panel data to InstancesBar', () => {
-    const node = shallow(<MetricPanel dataStore={dataStoreComplete} />);
+    const node = shallow(<MetricPanel countStore={countStoreComplete} />);
 
     const InstancesBarNode = node.find(Styled.InstancesBar);
 
@@ -123,9 +123,9 @@ describe('MetricPanel', () => {
 
     const InstancesBarProps = InstancesBarNode.props();
 
-    expect(InstancesBarProps.activeCount).toEqual(dataStoreComplete.active);
+    expect(InstancesBarProps.activeCount).toEqual(countStoreComplete.active);
     expect(InstancesBarProps.incidentsCount).toEqual(
-      dataStoreComplete.withIncidents
+      countStoreComplete.withIncidents
     );
   });
 });

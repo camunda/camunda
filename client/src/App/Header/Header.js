@@ -40,7 +40,7 @@ import * as Styled from './styled.js';
 class Header extends React.Component {
   static propTypes = {
     dataManager: PropTypes.object,
-    dataStore: PropTypes.shape({
+    countStore: PropTypes.shape({
       running: PropTypes.number,
       active: PropTypes.number,
       filterCount: PropTypes.number,
@@ -136,7 +136,7 @@ class Header extends React.Component {
       selectionCount,
       instancesInSelectionsCount,
       ...includedCounts
-    } = this.props.dataStore;
+    } = this.props.countStore;
 
     return Object.values(includedCounts).every(count => count > 0);
   }
@@ -212,7 +212,7 @@ class Header extends React.Component {
       instancesInSelectionsCount,
       selectionCount,
       filterCount
-    } = this.props.dataStore;
+    } = this.props.countStore;
 
     if (!this.state.isLoaded) {
       return '';

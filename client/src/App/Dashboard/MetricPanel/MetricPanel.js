@@ -22,8 +22,8 @@ function getUrl({filter, hasFinishedInstances}) {
   return `/instances?filter=${JSON.stringify(filter)}`;
 }
 
-export function MetricPanel({dataStore}) {
-  const {running, active, withIncidents, isLoaded} = dataStore;
+export function MetricPanel({countStore}) {
+  const {running, active, withIncidents, isLoaded} = countStore;
 
   return (
     <Styled.Panel>
@@ -68,7 +68,7 @@ export function MetricPanel({dataStore}) {
 }
 
 MetricPanel.propTypes = {
-  dataStore: PropTypes.shape({
+  countStore: PropTypes.shape({
     running: PropTypes.number,
     active: PropTypes.number,
     withIncidents: PropTypes.number,

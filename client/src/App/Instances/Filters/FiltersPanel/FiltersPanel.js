@@ -17,7 +17,7 @@ import * as Styled from './styled';
 
 function FiltersPanel(props) {
   function renderCount() {
-    return props.dataStore.isLoaded ? props.dataStore.filterCount : '';
+    return props.countStore.isLoaded ? props.countStore.filterCount : '';
   }
   return (
     <CollapsablePanel
@@ -49,7 +49,7 @@ function FiltersPanel(props) {
 FiltersPanel.propTypes = {
   isFiltersCollapsed: PropTypes.bool.isRequired,
   toggleFilters: PropTypes.func.isRequired,
-  dataStore: PropTypes.shape({
+  countStore: PropTypes.shape({
     running: PropTypes.number,
     active: PropTypes.number,
     withIncidents: PropTypes.number,
