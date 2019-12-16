@@ -161,6 +161,11 @@ public final class ElementInstanceState {
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
+        if (parentInstance == null) {
+          final var errorMsg =
+              "Expected to find parent instance for element instance with key %d, but none was found.";
+          throw new IllegalStateException(String.format(errorMsg, parentKey));
+        }
         parentInstance.decrementChildCount();
         updateInstance(parentInstance);
       }

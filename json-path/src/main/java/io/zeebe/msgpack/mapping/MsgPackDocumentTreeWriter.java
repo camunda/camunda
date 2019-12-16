@@ -24,10 +24,10 @@ import org.agrona.concurrent.UnsafeBuffer;
  * result buffer is available via the {@link #getResult()} method.
  */
 public final class MsgPackDocumentTreeWriter {
-  protected final MsgPackWriter msgPackWriter;
-  protected final MutableDirectBuffer resultingBuffer;
-  protected final DirectBuffer nodeName;
-  protected MsgPackTree documentTree;
+  private final MsgPackWriter msgPackWriter;
+  private final MutableDirectBuffer resultingBuffer;
+  private final DirectBuffer nodeName;
+  private MsgPackTree documentTree;
 
   public MsgPackDocumentTreeWriter(final int initialDocumentSize) {
     this.msgPackWriter = new MsgPackWriter();

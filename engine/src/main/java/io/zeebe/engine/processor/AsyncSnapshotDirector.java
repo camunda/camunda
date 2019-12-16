@@ -192,7 +192,7 @@ public final class AsyncSnapshotDirector extends Actor {
             });
   }
 
-  protected void enforceSnapshotCreation(
+  void enforceSnapshotCreation(
       final long commitPosition, final long lastWrittenPosition, final long lastProcessedPosition) {
     if (commitPosition >= lastWrittenPosition
         && lastProcessedPosition > lastValidSnapshotPosition) {

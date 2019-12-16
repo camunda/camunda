@@ -24,7 +24,7 @@ import org.agrona.MutableDirectBuffer;
 
 /** Represents the implementation of the logged event. */
 public final class LoggedEventImpl implements ReadableFragment, LoggedEvent {
-  protected DirectBuffer buffer;
+  private DirectBuffer buffer;
   private int fragmentOffset = -1;
   private int messageOffset = -1;
 

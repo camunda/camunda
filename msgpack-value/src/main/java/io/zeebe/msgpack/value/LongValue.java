@@ -12,7 +12,7 @@ import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Objects;
 
 public final class LongValue extends BaseValue {
-  protected long value;
+  private long value;
 
   public LongValue() {
     this(0L);

@@ -19,7 +19,7 @@ public final class SubscriptionUtil {
    * @param correlationKey the correlation key
    * @return the hash code of the subscription
    */
-  protected static int getSubscriptionHashCode(final DirectBuffer correlationKey) {
+  static int getSubscriptionHashCode(final DirectBuffer correlationKey) {
     // is equal to java.lang.String#hashCode
     int hashCode = 0;
 

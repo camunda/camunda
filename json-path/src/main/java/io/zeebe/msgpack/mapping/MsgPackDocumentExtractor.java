@@ -67,8 +67,8 @@ import org.agrona.DirectBuffer;
  * }</pre>
  */
 public final class MsgPackDocumentExtractor {
-  public static final String EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH = "No data found for query %s.";
-  public static final String EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE =
+  private static final String EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH = "No data found for query %s.";
+  private static final String EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE =
       "JSON path mapping has more than one matching source.";
 
   private final MappingDiff diff = new MappingDiff();

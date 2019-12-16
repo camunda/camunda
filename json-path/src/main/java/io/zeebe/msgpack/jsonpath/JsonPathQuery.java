@@ -14,19 +14,19 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JsonPathQuery {
-  protected static final int MAX_DEPTH = 30;
-  protected static final int MAX_FILTER_CONTEXT_LENGTH = 50;
-  protected static final int NO_INVALID_POSITION = -1;
+  private static final int MAX_DEPTH = 30;
+  private static final int MAX_FILTER_CONTEXT_LENGTH = 50;
+  private static final int NO_INVALID_POSITION = -1;
 
-  protected final MsgPackFilter[] filters;
-  protected final MsgPackFilterContext filterInstances =
+  private final MsgPackFilter[] filters;
+  private final MsgPackFilterContext filterInstances =
       new MsgPackFilterContext(MAX_DEPTH, MAX_FILTER_CONTEXT_LENGTH);
 
-  protected final UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
-  protected final DirectBuffer variableName = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
+  private final DirectBuffer variableName = new UnsafeBuffer(0, 0);
 
-  protected int invalidPosition;
-  protected String errorMessage;
+  private int invalidPosition;
+  private String errorMessage;
 
   public JsonPathQuery(final MsgPackFilter[] filters) {
     this.filters = filters;

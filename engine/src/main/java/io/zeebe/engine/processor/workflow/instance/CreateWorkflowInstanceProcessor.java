@@ -46,7 +46,7 @@ public final class CreateWorkflowInstanceProcessor
   private static final String ERROR_INVALID_VARIABLES_LOGGED_MESSAGE =
       "Expected to set variables from document, but the document is invalid";
 
-  protected final WorkflowInstanceRecord newWorkflowInstance = new WorkflowInstanceRecord();
+  private final WorkflowInstanceRecord newWorkflowInstance = new WorkflowInstanceRecord();
   private final WorkflowState workflowState;
   private final ElementInstanceState elementInstanceState;
   private final VariablesState variablesState;

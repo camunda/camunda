@@ -13,12 +13,12 @@ import org.agrona.DirectBuffer;
 
 public final class MsgPackTraverser {
 
-  protected static final int NO_INVALID_POSITION = -1;
+  private static final int NO_INVALID_POSITION = -1;
 
-  protected String errorMessage;
-  protected int invalidPosition;
+  private String errorMessage;
+  private int invalidPosition;
 
-  protected final MsgPackReader msgPackReader = new MsgPackReader();
+  private final MsgPackReader msgPackReader = new MsgPackReader();
 
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     this.msgPackReader.wrap(buffer, offset, length);

@@ -28,12 +28,12 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   public static final int BLOCK_LENGTH =
       MessageHeaderEncoder.ENCODED_LENGTH + RecordMetadataEncoder.BLOCK_LENGTH;
 
-  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  protected final RecordMetadataEncoder encoder = new RecordMetadataEncoder();
-  protected final RecordMetadataDecoder decoder = new RecordMetadataDecoder();
-  protected long requestId;
-  protected ValueType valueType = ValueType.NULL_VAL;
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  private final RecordMetadataEncoder encoder = new RecordMetadataEncoder();
+  private final RecordMetadataDecoder decoder = new RecordMetadataDecoder();
+  private long requestId;
+  private ValueType valueType = ValueType.NULL_VAL;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private RecordType recordType = RecordType.NULL_VAL;
   private short intentValue = Intent.NULL_VAL;

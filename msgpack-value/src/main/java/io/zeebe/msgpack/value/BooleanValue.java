@@ -12,7 +12,7 @@ import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Objects;
 
 public final class BooleanValue extends BaseValue {
-  protected boolean val = false;
+  private boolean val = false;
 
   public BooleanValue() {
     this(false);

@@ -21,10 +21,10 @@ import java.util.Objects;
 
 public final class WorkflowImpl implements Workflow {
 
-  protected final long workflowKey;
-  protected final String bpmnProcessId;
-  protected final int version;
-  protected final String resourceName;
+  private final long workflowKey;
+  private final String bpmnProcessId;
+  private final int version;
+  private final String resourceName;
 
   public WorkflowImpl(final WorkflowMetadata workflow) {
     this(

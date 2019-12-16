@@ -18,8 +18,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
 
-  protected final CommandResponseWriter writer;
-  protected final int partitionId;
+  private final CommandResponseWriter writer;
+  private final int partitionId;
   private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
   private long requestId;
   private int requestStreamId;

@@ -12,7 +12,7 @@ import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Objects;
 
 public final class IntegerValue extends BaseValue {
-  protected int value;
+  private int value;
 
   public IntegerValue() {
     this(0);

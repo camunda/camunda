@@ -41,7 +41,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class MsgPackReader {
-  protected final MsgPackToken token = new MsgPackToken();
+  private final MsgPackToken token = new MsgPackToken();
   private final DirectBuffer buffer = new UnsafeBuffer(0, 0);
   private int offset;
 
@@ -468,7 +468,7 @@ public final class MsgPackReader {
     return offset < buffer.capacity();
   }
 
-  protected MsgpackReaderException exceptionOnUnknownHeader(
+  private MsgpackReaderException exceptionOnUnknownHeader(
       final String name, final byte headerByte) {
     return new MsgpackReaderException(
         String.format(

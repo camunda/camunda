@@ -153,9 +153,7 @@ public final class TopologyManagerImpl extends Actor
             notifyPartitionLeaderUpdated(leaderPartitionId, brokerInfo);
           }
         },
-        followerPartitionId -> {
-          removeIfLeader(brokerInfo, followerPartitionId);
-        });
+        followerPartitionId -> removeIfLeader(brokerInfo, followerPartitionId));
   }
 
   private boolean updatePartitionLeader(

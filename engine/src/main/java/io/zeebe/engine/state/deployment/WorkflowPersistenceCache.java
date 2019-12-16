@@ -89,8 +89,7 @@ public final class WorkflowPersistenceCache {
     workflowsByKey = new Long2ObjectHashMap<>();
   }
 
-  protected boolean putDeployment(
-      final long deploymentKey, final DeploymentRecord deploymentRecord) {
+  boolean putDeployment(final long deploymentKey, final DeploymentRecord deploymentRecord) {
     final boolean isNewDeployment = !deployments.contains(deploymentKey);
     if (isNewDeployment) {
       for (final Workflow workflow : deploymentRecord.workflows()) {

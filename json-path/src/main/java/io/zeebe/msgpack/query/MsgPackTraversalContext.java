@@ -11,12 +11,12 @@ import org.agrona.BitUtil;
 
 public final class MsgPackTraversalContext extends AbstractDynamicContext {
 
-  protected static final int CURRENT_ELEMENT_OFFSET = 0;
-  protected static final int NUM_ELEMENTS_OFFSET = BitUtil.SIZE_OF_INT;
-  protected static final int APPLYING_FILTER_OFFSET = BitUtil.SIZE_OF_INT * 2;
-  protected static final int CONTAINER_TYPE_OFFSET = BitUtil.SIZE_OF_INT * 3;
+  private static final int CURRENT_ELEMENT_OFFSET = 0;
+  private static final int NUM_ELEMENTS_OFFSET = BitUtil.SIZE_OF_INT;
+  private static final int APPLYING_FILTER_OFFSET = BitUtil.SIZE_OF_INT * 2;
+  private static final int CONTAINER_TYPE_OFFSET = BitUtil.SIZE_OF_INT * 3;
 
-  protected static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT * 4;
+  private static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT * 4;
 
   public MsgPackTraversalContext(final int maxTraversalDepth, final int dynamicContextSize) {
     super(maxTraversalDepth, STATIC_ELEMENT_SIZE, dynamicContextSize);
