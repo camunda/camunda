@@ -8,7 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 import {HashRouter as Router} from 'react-router-dom';
 
-import {createMockDataManager} from '../../modules/testHelpers/dataManager';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 
 import {LinkElement} from './NavElements';
 

@@ -17,6 +17,12 @@ import TimeStampPill from './TimeStampPill';
 
 import * as Styled from './styled';
 
+jest.mock('./TimeStampPill', () => {
+  return function TimeStampPill() {
+    return <div />;
+  };
+});
+
 describe('BottomPanel', () => {
   let node;
   let ChildNode;

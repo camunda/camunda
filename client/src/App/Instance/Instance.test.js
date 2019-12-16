@@ -45,6 +45,12 @@ jest.mock('./TopPanel', () => {
   };
 });
 
+jest.mock('./TopPanel', () => {
+  return function TopPanel() {
+    return <div />;
+  };
+});
+
 jest.mock('./FlowNodeInstanceLog', () => {
   return function FlowNodeInstanceLog() {
     return <div />;
@@ -59,6 +65,12 @@ jest.mock('./FlowNodeInstancesTree', () => {
 
 jest.mock('./BottomPanel/VariablePanel', () => {
   return function VariablePanel() {
+    return <div />;
+  };
+});
+
+jest.mock('./BottomPanel/TimeStampPill', () => {
+  return function TimeStampPill() {
     return <div />;
   };
 });
