@@ -91,24 +91,24 @@ public class EventProcessClient {
     createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
   }
 
-  public EventProcessMappingDto createEventProcessMappingDto(final String xmlPath) {
-    return createEventProcessMappingDto(null, xmlPath);
+  public EventProcessMappingDto buildEventProcessMappingDto(final String xmlPath) {
+    return buildEventProcessMappingDto(null, xmlPath);
   }
 
-  public EventProcessMappingDto createEventProcessMappingDto(final String name, final String xmlPath) {
-    return createEventProcessMappingDtoWithMappings(null, name, xmlPath);
+  public EventProcessMappingDto buildEventProcessMappingDto(final String name, final String xmlPath) {
+    return buildEventProcessMappingDtoWithMappings(null, name, xmlPath);
   }
 
   @SneakyThrows
-  public EventProcessMappingDto createEventProcessMappingDtoWithMappings(
+  public EventProcessMappingDto buildEventProcessMappingDtoWithMappings(
     final Map<String, EventMappingDto> flowNodeEventMappingsDto,
     final String name,
     final String xmlPath) {
-    return createEventProcessMappingDtoWithMappingsWithXml(flowNodeEventMappingsDto, name, xmlPath);
+    return buildEventProcessMappingDtoWithMappingsWithXml(flowNodeEventMappingsDto, name, xmlPath);
   }
 
   @SneakyThrows
-  public EventProcessMappingDto createEventProcessMappingDtoWithMappingsWithXml(
+  public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsWithXml(
     final Map<String, EventMappingDto> flowNodeEventMappingsDto, final String name, final String xml) {
     return EventProcessMappingDto.builder()
       .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))

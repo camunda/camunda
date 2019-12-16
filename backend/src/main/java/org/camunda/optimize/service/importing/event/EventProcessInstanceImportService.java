@@ -8,7 +8,9 @@ package org.camunda.optimize.service.importing.event;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.bpm.model.bpmn.instance.FlowNode;
+import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.persistence.FlowNodeInstanceUpdateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
@@ -24,11 +26,9 @@ import org.camunda.optimize.service.es.job.importing.EventProcessInstanceElastic
 import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,6 +53,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
 
   private final EventProcessPublishStateDto eventProcessPublishStateDto;
   private final Map<String, EventToFlowNodeMapping> eventMappingIdToEventMapping;
+  private final BpmnModelInstance modelInstance;
 
   public EventProcessInstanceImportService(final EventProcessPublishStateDto eventProcessPublishStateDto,
                                            final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
@@ -60,7 +62,10 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     this.eventProcessInstanceWriter = eventProcessInstanceWriter;
     this.eventProcessPublishStateDto = eventProcessPublishStateDto;
 
-    this.eventMappingIdToEventMapping = extractMappingByEventIdentifier(eventProcessPublishStateDto);
+    this.modelInstance = parseBpmnModel(eventProcessPublishStateDto.getXml());
+    this.eventMappingIdToEventMapping = extractMappingByEventIdentifier(
+      eventProcessPublishStateDto, this.modelInstance
+    );
   }
 
   @Override
@@ -69,7 +74,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
 
     boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
-      final List<ProcessInstanceDto> newOptimizeEntities = mapToProcessInstances(pageOfEvents);
+      final List<EventProcessInstanceDto> newOptimizeEntities = mapToProcessInstances(pageOfEvents);
       elasticsearchImportJobExecutor.executeImportJob(
         createElasticsearchImportJob(newOptimizeEntities, callback)
       );
@@ -82,7 +87,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     elasticsearchImportJobExecutor.shutdown();
   }
 
-  private List<ProcessInstanceDto> mapToProcessInstances(final List<EventDto> engineEntities) {
+  private List<EventProcessInstanceDto> mapToProcessInstances(final List<EventDto> engineEntities) {
     final Map<String, List<EventDto>> eventsGroupedByTraceId = engineEntities.stream()
       .filter(eventDto -> eventMappingIdToEventMapping.containsKey(getMappingIdentifier(eventDto)))
       // for the same event id we want the last ingested event to win to allow updates
@@ -97,23 +102,25 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
       .collect(Collectors.toList());
   }
 
-  private ProcessInstanceDto mapToProcessInstanceDto(final Map.Entry<String, List<EventDto>> eventTraceGroup) {
+  private EventProcessInstanceDto mapToProcessInstanceDto(final Map.Entry<String, List<EventDto>> eventTraceGroup) {
     final String processInstanceId = eventTraceGroup.getKey();
 
-    final ProcessInstanceDto processInstanceDto = ProcessInstanceDto.builder()
+    final EventProcessInstanceDto processInstanceDto = EventProcessInstanceDto.eventProcessInstanceBuilder()
       .processInstanceId(processInstanceId)
       .processDefinitionKey(eventProcessPublishStateDto.getProcessMappingId())
       .processDefinitionId(eventProcessPublishStateDto.getProcessMappingId())
       .processDefinitionVersion("1")
       .build();
 
-    processInstanceDto.setEvents(
-      eventTraceGroup.getValue()
-        .stream()
-        .map(this::mapToSimpleEventDto)
-        .collect(Collectors.toList())
-    );
+    addFlowNodeInstances(eventTraceGroup, processInstanceDto);
 
+    addVariables(eventTraceGroup, processInstanceDto);
+
+    return processInstanceDto;
+  }
+
+  private void addVariables(final Map.Entry<String, List<EventDto>> eventTraceGroup,
+                            final EventProcessInstanceDto processInstanceDto) {
     processInstanceDto.setVariables(
       eventTraceGroup.getValue()
         .stream()
@@ -122,63 +129,107 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
         .distinct()
         .collect(Collectors.toList())
     );
-
-    return processInstanceDto;
   }
 
-  private SimpleEventDto mapToSimpleEventDto(final EventDto eventDto) {
-    final EventToFlowNodeMapping eventMapping = eventMappingIdToEventMapping.get(getMappingIdentifier(eventDto));
-    final OffsetDateTime eventTimeStampAsOffsetDateTime = OffsetDateTime.ofInstant(
-      Instant.ofEpochMilli(eventDto.getTimestamp()), ZoneId.systemDefault()
-    );
+  private void addFlowNodeInstances(final Map.Entry<String, List<EventDto>> eventTraceGroup,
+                                    final EventProcessInstanceDto processInstanceDto) {
+    eventTraceGroup.getValue()
+      .forEach(eventDto -> {
+        final String eventId = eventDto.getId();
+        final EventToFlowNodeMapping eventToFlowNodeMapping =
+          eventMappingIdToEventMapping.get(getMappingIdentifier(eventDto));
+        final OffsetDateTime eventTimeStampAsOffsetDateTime = OffsetDateTime.ofInstant(
+          Instant.ofEpochMilli(eventDto.getTimestamp()), ZoneId.systemDefault()
+        );
 
-    final SimpleEventDto activityInstanceDto = SimpleEventDto.builder()
-      .id(eventDto.getId())
-      .activityId(eventMapping.getFlowNodeId())
-      .activityType(eventMapping.getFlowNodeType())
-      .build();
+        final SimpleEventDto flowNodeInstance = SimpleEventDto.builder()
+          .id(eventId)
+          .activityId(eventToFlowNodeMapping.getFlowNodeId())
+          .activityType(eventToFlowNodeMapping.getFlowNodeType())
+          .build();
+        processInstanceDto.getEvents().add(flowNodeInstance);
 
-    final EventMappingDto flowNodeMapping = eventProcessPublishStateDto.getMappings()
-      .get(eventMapping.getFlowNodeId());
-    if (flowNodeMapping.getStart() != null && flowNodeMapping.getEnd() != null) {
-      // multiple events are mapped to one activity
-      // TODO with OPT-3015 we need to correlate start & end on write
-      switch (eventMapping.getMappedAs()) {
-        case START:
-          activityInstanceDto.setStartDate(eventTimeStampAsOffsetDateTime);
-          break;
-        case END:
-          activityInstanceDto.setEndDate(eventTimeStampAsOffsetDateTime);
-          break;
-        default:
-          throw new OptimizeRuntimeException("Unsupported mappedAs type: " + eventMapping.getMappedAs());
+        final EventMappingDto eventMapping = eventProcessPublishStateDto.getMappings()
+          .get(eventToFlowNodeMapping.getFlowNodeId());
+        if (eventMapping.getStart() != null && eventMapping.getEnd() != null) {
+          // multiple events are mapped to one activity
+          // TODO with OPT-3015 we need to correlate start & end on write
+          switch (eventToFlowNodeMapping.getMappedAs()) {
+            case START:
+              flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
+              break;
+            case END:
+              flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
+              break;
+            default:
+              throw new OptimizeRuntimeException("Unsupported mappedAs type: " + eventToFlowNodeMapping.getMappedAs());
+          }
+        } else {
+          switch (eventToFlowNodeMapping.getMappedAs()) {
+            case START:
+              flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
+              if (eventToFlowNodeMapping.getNextMappedFlowNodeIds().isEmpty()) {
+                flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
+              }
+              break;
+            case END:
+              flowNodeInstance.setEndDate(eventTimeStampAsOffsetDateTime);
+              if (eventToFlowNodeMapping.getPreviousMappedFlowNodeIds().isEmpty()) {
+                flowNodeInstance.setStartDate(eventTimeStampAsOffsetDateTime);
+              }
+              break;
+            default:
+              throw new OptimizeRuntimeException("Unsupported mappedAs type: " + eventToFlowNodeMapping.getMappedAs());
+          }
+          updateEndDateTimeForPreviousFlowNodesWithoutOwnEndMapping(
+            eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
+          );
+          updateStartDateTimeForNextFlowNodesWithoutOwnStartMapping(
+            eventId, eventTimeStampAsOffsetDateTime, eventToFlowNodeMapping, processInstanceDto
+          );
+        }
+      });
+
+  }
+
+  private void updateStartDateTimeForNextFlowNodesWithoutOwnStartMapping(final String updateSourceEventId,
+                                                                         final OffsetDateTime eventDateTime,
+                                                                         final EventToFlowNodeMapping eventToFlowNodeMapping,
+                                                                         final EventProcessInstanceDto processInstanceDto) {
+    eventToFlowNodeMapping.getNextMappedFlowNodeIds().forEach(nextFlowNodeId -> {
+      final EventMappingDto nextFlowNodeMapping = eventProcessPublishStateDto.getMappings().get(nextFlowNodeId);
+      if (nextFlowNodeMapping != null && nextFlowNodeMapping.getStart() == null) {
+        final FlowNodeInstanceUpdateDto nextFlowNodeInstanceUpdate = FlowNodeInstanceUpdateDto.builder()
+          .sourceEventId(updateSourceEventId)
+          .flowNodeId(nextFlowNodeId)
+          .flowNodeType(getModelElementType(nextFlowNodeId))
+          .startDate(eventDateTime)
+          .build();
+        processInstanceDto.getPendingFlowNodeInstanceUpdates().add(nextFlowNodeInstanceUpdate);
       }
-    } else {
-      // if only a single event is mapped everything can get calculated
-      final OffsetDateTime startDate;
-      final OffsetDateTime endDate;
-      switch (eventMapping.getMappedAs()) {
-        case START:
-          startDate = eventTimeStampAsOffsetDateTime;
-          endDate = Optional.ofNullable(eventDto.getDuration())
-            .map(value -> startDate.plus(value, ChronoUnit.MILLIS))
-            .orElse(eventTimeStampAsOffsetDateTime);
-          break;
-        case END:
-          endDate = eventTimeStampAsOffsetDateTime;
-          startDate = Optional.ofNullable(eventDto.getDuration())
-            .map(value -> endDate.minus(value, ChronoUnit.MILLIS))
-            .orElse(eventTimeStampAsOffsetDateTime);
-          break;
-        default:
-          throw new OptimizeRuntimeException("Unsupported mappedAs type: " + eventMapping.getMappedAs());
-      }
-      activityInstanceDto.setStartDate(startDate);
-      activityInstanceDto.setEndDate(endDate);
-      activityInstanceDto.setDurationInMs(Duration.between(startDate, endDate).toMillis());
-    }
+    });
+  }
 
-    return activityInstanceDto;
+  private void updateEndDateTimeForPreviousFlowNodesWithoutOwnEndMapping(final String updateSourceEventId,
+                                                                         final OffsetDateTime eventDateTime,
+                                                                         final EventToFlowNodeMapping eventToFlowNodeMapping,
+                                                                         final EventProcessInstanceDto processInstanceDto) {
+    eventToFlowNodeMapping.getPreviousMappedFlowNodeIds().forEach(previousFlowNodeId -> {
+      final EventMappingDto previousFlowNodeMapping = eventProcessPublishStateDto.getMappings().get(previousFlowNodeId);
+      if (previousFlowNodeMapping != null && previousFlowNodeMapping.getEnd() == null) {
+        final FlowNodeInstanceUpdateDto previousFlowNodeUpdate = FlowNodeInstanceUpdateDto.builder()
+          .sourceEventId(updateSourceEventId)
+          .flowNodeId(previousFlowNodeId)
+          .flowNodeType(getModelElementType(previousFlowNodeId))
+          .endDate(eventDateTime)
+          .build();
+        processInstanceDto.getPendingFlowNodeInstanceUpdates().add(previousFlowNodeUpdate);
+      }
+    });
+  }
+
+  private String getModelElementType(final String nextFlowNodeId) {
+    return modelInstance.getModelElementById(nextFlowNodeId).getElementType().getTypeName();
   }
 
   private List<SimpleProcessVariableDto> extractSimpleVariables(final EventDto eventDto) {
@@ -200,8 +251,8 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     return result;
   }
 
-  private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto> processInstances,
-                                                                                  Runnable callback) {
+  private ElasticsearchImportJob<EventProcessInstanceDto> createElasticsearchImportJob(List<EventProcessInstanceDto> processInstances,
+                                                                                       Runnable callback) {
     EventProcessInstanceElasticsearchImportJob importJob = new EventProcessInstanceElasticsearchImportJob(
       eventProcessInstanceWriter, callback
     );
@@ -210,18 +261,23 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   }
 
   private Map<String, EventToFlowNodeMapping> extractMappingByEventIdentifier(
-    final EventProcessPublishStateDto eventProcessDefinitionDto) {
+    final EventProcessPublishStateDto eventProcessPublishState,
+    final BpmnModelInstance bpmnModelInstance) {
 
-    final BpmnModelInstance bpmnModelInstance = parseBpmnModel(eventProcessDefinitionDto.getXml());
-    return eventProcessDefinitionDto.getMappings().entrySet()
+    final Set<String> mappedFlowNodeIds = eventProcessPublishState.getMappings().keySet();
+    return eventProcessPublishState.getMappings().entrySet()
       .stream()
       .flatMap(flowNodeAndEventMapping -> {
         final EventMappingDto mappingValue = flowNodeAndEventMapping.getValue();
         final String flowNodeId = flowNodeAndEventMapping.getKey();
         return Stream.of(
-          convertToFlowNodeMapping(mappingValue.getStart(), MappedEventType.START, flowNodeId, bpmnModelInstance)
+          convertToFlowNodeMapping(
+            mappingValue.getStart(), MappedEventType.START, flowNodeId, bpmnModelInstance, mappedFlowNodeIds
+          )
             .orElse(null),
-          convertToFlowNodeMapping(mappingValue.getEnd(), MappedEventType.END, flowNodeId, bpmnModelInstance)
+          convertToFlowNodeMapping(
+            mappingValue.getEnd(), MappedEventType.END, flowNodeId, bpmnModelInstance, mappedFlowNodeIds
+          )
             .orElse(null)
         ).filter(Objects::nonNull);
       })
@@ -231,14 +287,30 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   private Optional<EventToFlowNodeMapping> convertToFlowNodeMapping(final EventTypeDto event,
                                                                     final MappedEventType mappedAs,
                                                                     final String flowNodeId,
-                                                                    final BpmnModelInstance bpmModel) {
+                                                                    final BpmnModelInstance bpmModel,
+                                                                    final Set<String> mappedFlowNodeIds) {
     return Optional.ofNullable(event)
-      .map(value -> new EventToFlowNodeMapping(
-        getMappingIdentifier(value),
-        mappedAs,
-        flowNodeId,
-        bpmModel.getModelElementById(flowNodeId).getElementType().getTypeName()
-      ));
+      .map(value -> {
+        final FlowNode flowNode = bpmModel.getModelElementById(flowNodeId);
+        return EventToFlowNodeMapping.builder()
+          .eventIdentifier(getMappingIdentifier(value))
+          .mappedAs(mappedAs)
+          .flowNodeId(flowNodeId)
+          .flowNodeType(flowNode.getElementType().getTypeName())
+          .previousMappedFlowNodeIds(
+            flowNode.getPreviousNodes().list().stream()
+              .map(FlowNode::getId)
+              .filter(mappedFlowNodeIds::contains)
+              .collect(Collectors.toList())
+          )
+          .nextMappedFlowNodeIds(
+            flowNode.getSucceedingNodes().list().stream()
+              .map(FlowNode::getId)
+              .filter(mappedFlowNodeIds::contains)
+              .collect(Collectors.toList())
+          )
+          .build();
+      });
   }
 
   private String getMappingIdentifier(final EventDto eventDto) {

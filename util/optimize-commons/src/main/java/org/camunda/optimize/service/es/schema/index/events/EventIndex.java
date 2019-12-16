@@ -25,7 +25,6 @@ public class EventIndex extends StrictIndexMappingCreator {
   public static final String TRACE_ID = EventDto.Fields.traceId;
   public static final String TIMESTAMP = EventDto.Fields.timestamp;
   public static final String INGESTION_TIMESTAMP = EventDto.Fields.ingestionTimestamp;
-  public static final String DURATION = EventDto.Fields.duration;
   public static final String GROUP = EventDto.Fields.group;
   public static final String SOURCE = EventDto.Fields.source;
   public static final String DATA = EventDto.Fields.data;
@@ -73,9 +72,6 @@ public class EventIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(INGESTION_TIMESTAMP)
         .field("type", "date")
-      .endObject()
-      .startObject(DURATION)
-        .field("type", "long")
       .endObject()
       .startObject(GROUP)
         .field("type", "keyword")

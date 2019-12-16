@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.event;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
@@ -108,7 +109,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -126,9 +127,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .build(),
                     SimpleEventDto.builder()
                       .id(ingestedEndEventId)
-                      .startDate(endDateTime)
+                      .startDate(startDateTime)
                       .endDate(endDateTime)
-                      .durationInMs(0L)
+                      .durationInMs(30000L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
                       .build()
@@ -172,7 +173,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -190,9 +191,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .build(),
                     SimpleEventDto.builder()
                       .id(ingestedEndEventId)
-                      .startDate(endDateTime)
+                      .startDate(startDateTime)
                       .endDate(endDateTime)
-                      .durationInMs(0L)
+                      .durationInMs(30_000L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
                       .build()
@@ -237,7 +238,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -255,9 +256,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .build(),
                     SimpleEventDto.builder()
                       .id(ingestedEndEventId)
-                      .startDate(endDateTime)
+                      .startDate(startDateTime)
                       .endDate(endDateTime)
-                      .durationInMs(0L)
+                      .durationInMs(30_000L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
                       .build()
@@ -303,7 +304,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedProcessInstanceForTraceId(eventProcessId, startDateTime, updatedEndDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, updatedEndDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -321,9 +322,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .build(),
                     SimpleEventDto.builder()
                       .id(ingestedEndEventId)
-                      .startDate(updatedEndDateTime)
+                      .startDate(startDateTime)
                       .endDate(updatedEndDateTime)
-                      .durationInMs(0L)
+                      .durationInMs(50_000L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
                       .build()
@@ -367,12 +368,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                 .processDefinitionVersion("1")
                 .processInstanceId(MY_TRACE_ID_1)
                 .duration(null)
-                .engine(null)
-                .tenantId(null)
-                .businessKey(null)
                 .startDate(startDateTime)
                 .endDate(null)
-                .state("ACTIVE")
+                .state(PROCESS_INSTANCE_STATE_ACTIVE)
                 .variables(Collections.singletonList(
                   SimpleProcessVariableDto.builder()
                     .id(VARIABLE_ID)
@@ -382,7 +380,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                     .build()
                 ))
                 .build(),
-              ProcessInstanceDto.Fields.events
+              ProcessInstanceDto.Fields.events, ProcessInstanceDto.Fields.userTasks
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
@@ -437,7 +435,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -455,9 +453,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .build(),
                     SimpleEventDto.builder()
                       .id(ingestedEndEventId)
-                      .startDate(endDateTime)
+                      .startDate(startDateTime)
                       .endDate(endDateTime)
-                      .durationInMs(0L)
+                      .durationInMs(30_000L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
                       .build()
@@ -494,7 +492,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedProcessInstanceForTraceId(eventProcessId, null, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, null, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -504,9 +502,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                   .containsOnly(
                     SimpleEventDto.builder()
                       .id(ingestedEndEventId)
-                      .startDate(endDateTime)
+                      .startDate(null)
                       .endDate(endDateTime)
-                      .durationInMs(0L)
+                      .durationInMs(null)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
                       .build()
@@ -516,25 +514,22 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
       );
   }
 
-  private ProcessInstanceDto createExpectedCompletedProcessInstanceForTraceId(final String eventProcessId,
-                                                                              final OffsetDateTime startDateTime,
-                                                                              final OffsetDateTime endDateTime) {
+  private EventProcessInstanceDto createExpectedCompletedEventProcessInstanceForTraceId(final String eventProcessId,
+                                                                                        final OffsetDateTime startDateTime,
+                                                                                        final OffsetDateTime endDateTime) {
     Long duration = null;
     if (startDateTime != null && endDateTime != null) {
       duration = startDateTime.until(endDateTime, ChronoUnit.MILLIS);
     }
-    return ProcessInstanceDto.builder()
+    return EventProcessInstanceDto.eventProcessInstanceBuilder()
       .processDefinitionId(eventProcessId)
       .processDefinitionKey(eventProcessId)
       .processDefinitionVersion("1")
       .processInstanceId(MY_TRACE_ID_1)
       .duration(duration)
-      .engine(null)
-      .tenantId(null)
-      .businessKey(null)
       .startDate(startDateTime)
       .endDate(endDateTime)
-      .state("COMPLETED")
+      .state(PROCESS_INSTANCE_STATE_COMPLETED)
       .variables(Collections.singletonList(
         SimpleProcessVariableDto.builder()
           .id(VARIABLE_ID)

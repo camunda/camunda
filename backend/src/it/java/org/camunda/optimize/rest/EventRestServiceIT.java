@@ -726,7 +726,6 @@ public class EventRestServiceIT extends AbstractIT {
       .id(UUID.randomUUID().toString())
       .timestamp(System.currentTimeMillis())
       .traceId(RandomStringUtils.randomAlphabetic(10))
-      .duration(Math.abs(RANDOM.nextLong()))
       .data(ImmutableMap.of(
         RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
         RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),

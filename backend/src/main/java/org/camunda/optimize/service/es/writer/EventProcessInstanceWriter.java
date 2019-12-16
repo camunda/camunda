@@ -10,7 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -34,14 +34,14 @@ public class EventProcessInstanceWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void importProcessInstances(final List<ProcessInstanceDto> processInstanceDtos) {
-    String importItemName = "event process instances";
-    log.debug("Writing [{}] {} to ES.", processInstanceDtos.size(), importItemName);
+  public void importProcessInstances(final List<EventProcessInstanceDto> eventProcessInstanceDtos) {
+    final String importItemName = "event process instances";
+    log.debug("Writing [{}] {} to ES.", eventProcessInstanceDtos.size(), importItemName);
 
     ElasticsearchWriterUtil.doBulkRequestWithList(
       esClient,
       importItemName,
-      processInstanceDtos,
+      eventProcessInstanceDtos,
       this::addImportProcessInstanceRequest
     );
   }
@@ -50,63 +50,25 @@ public class EventProcessInstanceWriter {
     return eventProcessInstanceIndex.getIndexName();
   }
 
-  private String createInlineUpdateScript() {
-    // @formatter:off
-    return
-      "for (def variableEntry : params.processInstance.variables) {" +
-        "ctx._source.variables.removeIf(item -> item.id.equals(variableEntry.id));" +
-      "}" +
-      "ctx._source.variables.addAll(params.processInstance.variables);" +
-
-      "for (def newEvent : params.processInstance.events) {" +
-        "ctx._source.events.removeIf(item -> item.id.equals(newEvent.id));" +
-      "}" +
-      "ctx._source.events.addAll(params.processInstance.events);" +
-
-      "def startDate = ctx._source.events.stream()" +
-        ".filter(event -> event.activityType.equals(\"startEvent\"))" +
-        ".map(event -> event.startDate)" +
-        ".sorted()" +
-        ".findFirst();" +
-      "startDate.ifPresent(value -> ctx._source.startDate = value);" +
-      "def endDate = ctx._source.events.stream()" +
-        ".filter(event -> event.activityType.equals(\"endEvent\"))" +
-        ".map(event -> event.endDate)" +
-        ".sorted(Comparator.reverseOrder())" +
-        ".findFirst();" +
-      "ctx._source.state = \"ACTIVE\";" +
-      "endDate.ifPresent(endDateValue -> {" +
-        "ctx._source.endDate = endDateValue;" +
-        "ctx._source.state = \"COMPLETED\";" +
-        "def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);\n" +
-        "startDate.ifPresent(" +
-        "  startDateValue -> ctx._source.duration = " +
-        "    dateFormatter.parse(endDateValue).getTime() - dateFormatter.parse(startDateValue).getTime()" +
-        ");" +
-      "});"
-      ;
-    // @formatter:on
-  }
-
-  private void addImportProcessInstanceRequest(BulkRequest bulkRequest,
-                                               ProcessInstanceDto processInstanceDto) {
+  private void addImportProcessInstanceRequest(final BulkRequest bulkRequest,
+                                               final EventProcessInstanceDto eventProcessInstanceDto) {
     final Map<String, Object> params = new HashMap<>();
     params.put(
       "processInstance",
       // @formatter:off
-      objectMapper.convertValue(processInstanceDto, new TypeReference<Map>() {})
+      objectMapper.convertValue(eventProcessInstanceDto, new TypeReference<Map>() {})
       // @formatter:on
     );
     params.put("dateFormatPattern", OPTIMIZE_DATE_FORMAT);
-    final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
+    final Script updateScript = createDefaultScript(createUpdateInlineUpdateScript(), params);
 
-    String newEntryIfAbsent = "";
+    final String newEntryIfAbsent;
     try {
-      newEntryIfAbsent = objectMapper.writeValueAsString(processInstanceDto);
+      newEntryIfAbsent = objectMapper.writeValueAsString(eventProcessInstanceDto);
     } catch (JsonProcessingException e) {
       String reason =
         String.format(
-          "Error while processing JSON for process instance dto with [%s].", processInstanceDto.toString()
+          "Error while processing JSON for process instance dto with [%s].", eventProcessInstanceDto.toString()
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -114,13 +76,120 @@ public class EventProcessInstanceWriter {
 
     UpdateRequest request = new UpdateRequest()
       .index(getIndexName())
-      .id(processInstanceDto.getProcessInstanceId())
+      .id(eventProcessInstanceDto.getProcessInstanceId())
+      .upsert(newEntryIfAbsent, XContentType.JSON)
       .script(updateScript)
       .scriptedUpsert(true)
-      .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(request);
   }
 
+  private String createUpdateInlineUpdateScript() {
+    // @formatter:off
+    return
+      createInstanceUpdateFunction() +
+      "void calculateAndAssignEventDuration(def event, def formatter) {\n" +
+        "if (event.startDate != null && event.endDate != null) {\n" +
+        "  event.durationInMs = formatter.parse(event.endDate).getTime() - formatter.parse(event.startDate).getTime();\n" +
+        "}\n" +
+      "}\n" +
+
+      "def dateFormatter = new SimpleDateFormat(params.dateFormatPattern);\n" +
+      "def processInstance = ctx._source;\n" +
+      "def processInstanceUpdate = params.processInstance;\n" +
+      "def eventDateComparator = Comparator\n" +
+        ".comparing(event -> event.startDate, Comparator.nullsLast(Comparator.naturalOrder()))" +
+        ".thenComparing(event -> event.endDate, Comparator.nullsFirst(Comparator.naturalOrder()));\n" +
+
+      "for (def variableEntry : processInstanceUpdate.variables) {\n" +
+        "processInstance.variables.removeIf(item -> item.id.equals(variableEntry.id));\n" +
+      "}\n" +
+      "processInstance.variables.addAll(processInstanceUpdate.variables);\n" +
+
+      "Map existingEventsByIdMap = processInstance.events.stream()\n" +
+        ".collect(Collectors.toMap(event -> event.id, Function.identity()));\n" +
+      "def eventUpserts = processInstanceUpdate.events;\n" +
+      "for (def eventUpsert : eventUpserts) {\n" +
+        "def event = existingEventsByIdMap.get(eventUpsert.id);\n" +
+        "if (event == null) {\n" +
+        "  existingEventsByIdMap.put(eventUpsert.id, eventUpsert);\n" +
+        "  event = eventUpsert;\n" +
+        "} else {\n" +
+        "  event.startDate = eventUpsert.startDate ?: event.startDate;\n" +
+        "  event.endDate = eventUpsert.endDate ?: event.endDate;\n" +
+        "}\n" +
+        "calculateAndAssignEventDuration(event, dateFormatter);\n" +
+      "}\n" +
+
+      "Map existingFlowNodeInstancesByActivityId = existingEventsByIdMap.values().stream()\n" +
+        ".collect(Collectors.groupingBy(" +
+          "event -> event.activityId," +
+          "Collectors.toCollection(() -> new TreeSet(eventDateComparator))" +
+        "));\n" +
+      "List pendingFlowNodeInstanceUpdates = new ArrayList(processInstance.pendingFlowNodeInstanceUpdates);\n" +
+      "for (def newPendingUpdate : processInstanceUpdate.pendingFlowNodeInstanceUpdates) {\n" +
+        "pendingFlowNodeInstanceUpdates.removeIf(existingUpdate -> existingUpdate.id.equals(newPendingUpdate.id));\n" +
+        "pendingFlowNodeInstanceUpdates.add(newPendingUpdate);\n" +
+      "}\n" +
+      "Collections.sort(pendingFlowNodeInstanceUpdates, eventDateComparator);\n" +
+      "Set appliedUpdates = new HashSet();\n" +
+      "for (def eventUpdate : pendingFlowNodeInstanceUpdates) {\n" +
+        "def updateableEvent = Optional.ofNullable(existingFlowNodeInstancesByActivityId.get(eventUpdate.flowNodeId))" +
+          ".flatMap(events -> \n" +
+            "events.stream()\n" +
+              ".filter(event -> event.startDate == null || event.endDate == null)\n" +
+              ".findFirst()\n" +
+          ");\n" +
+        "if(updateableEvent.isPresent()) {\n" +
+        "  def event = updateableEvent.get();\n" +
+        "  event.startDate = eventUpdate.startDate ?: event.startDate;\n" +
+        "  event.endDate = eventUpdate.endDate ?: event.endDate;\n" +
+        "  appliedUpdates.add(eventUpdate);\n" +
+        "  calculateAndAssignEventDuration(event, dateFormatter);\n" +
+        "}\n" +
+      "}\n" +
+
+      "processInstance.events = new ArrayList(\n" +
+        "existingFlowNodeInstancesByActivityId.values().stream().flatMap(List::stream).collect(Collectors.toList())\n" +
+      ");\n" +
+      "processInstance.pendingFlowNodeInstanceUpdates = pendingFlowNodeInstanceUpdates.stream()\n" +
+        ".filter(eventUpdate -> !appliedUpdates.contains(eventUpdate))\n" +
+        ".collect(Collectors.toList());\n" +
+      "updateProcessInstance(processInstance, dateFormatter);\n"
+      ;
+    // @formatter:on
+  }
+
+  private String createInstanceUpdateFunction() {
+    // @formatter:off
+    return
+      "void updateProcessInstance(def instance, def formatter) {\n" +
+        "def startDate = instance.events.stream()\n" +
+        "  .filter(event -> event.activityType.equals(\"startEvent\"))\n" +
+        "  .map(event -> event.startDate)\n" +
+        "  .filter(value -> value != null)\n" +
+        "  .sorted()\n" +
+        "  .findFirst()\n" +
+        "  .ifPresent(value -> instance.startDate = value);\n" +
+        "def endDate = instance.events.stream()\n" +
+        "  .filter(event -> event.activityType.equals(\"endEvent\"))\n" +
+        "  .map(event -> event.endDate)\n" +
+        "  .filter(value -> value != null)\n" +
+        "  .sorted(Comparator.reverseOrder())\n" +
+        "  .findFirst()\n" +
+        "  .ifPresent(value -> instance.endDate = value);\n" +
+
+        "if(instance.endDate != null) {\n" +
+        "  instance.state = \"COMPLETED\";\n" +
+        "} else {" +
+        "  instance.state = \"ACTIVE\";\n" +
+        "}\n" +
+
+        "if (instance.startDate != null && instance.endDate != null) {\n" +
+        "  instance.duration = formatter.parse(instance.endDate).getTime() - formatter.parse(instance.startDate).getTime();\n" +
+        "}" +
+      "}\n";
+    // @formatter:on
+  }
 }

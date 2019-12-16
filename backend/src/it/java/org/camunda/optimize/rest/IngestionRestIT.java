@@ -37,7 +37,6 @@ import static java.util.stream.Collectors.toList;
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.duration;
 import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.eventName;
 import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.id;
 import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.timestamp;
@@ -109,7 +108,6 @@ public class IngestionRestIT extends AbstractIT {
     eventDto.setEventName("");
     eventDto.setTimestamp(-500L);
     eventDto.setTraceId("");
-    eventDto.setDuration(-5L);
 
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -118,13 +116,13 @@ public class IngestionRestIT extends AbstractIT {
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
-    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(5);
+    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(4);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
         .collect(toList()))
-      .contains(id, eventName, timestamp, traceId, duration);
+      .contains(id, eventName, timestamp, traceId);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
@@ -259,10 +257,6 @@ public class IngestionRestIT extends AbstractIT {
     invalidEventDto1.setId(null);
     eventDtos.add(invalidEventDto1);
 
-    final EventDto invalidEventDto2 = createEventDto();
-    invalidEventDto2.setDuration(-500L);
-    eventDtos.add(invalidEventDto2);
-
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getApiSecret())
@@ -270,13 +264,13 @@ public class IngestionRestIT extends AbstractIT {
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
-    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(2);
+    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(1);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
         .collect(toList()))
-      .contains("element[2]." + id, "element[3]." + duration);
+      .contains("element[2]." + id);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
@@ -309,18 +303,19 @@ public class IngestionRestIT extends AbstractIT {
   private EventDto createEventDto() {
     return EventDto.builder()
       .id(IdGenerator.getNextId())
-      .eventName(RandomStringUtils.randomAlphabetic(10))
-      .timestamp(System.currentTimeMillis())
       .traceId(RandomStringUtils.randomAlphabetic(10))
-      .duration(Math.abs(RANDOM.nextLong()))
+      .timestamp(System.currentTimeMillis())
+      .ingestionTimestamp(System.currentTimeMillis())
       .group(RandomStringUtils.randomAlphabetic(10))
       .source(RandomStringUtils.randomAlphabetic(10))
-      .data(ImmutableMap.of(
-        RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
-        RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),
-        RandomStringUtils.randomAlphabetic(5), RandomStringUtils.randomAlphabetic(5)
-      ))
-      .build();
+      .eventName(RandomStringUtils.randomAlphabetic(10))
+      .data(
+        ImmutableMap.of(
+          RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
+          RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),
+          RandomStringUtils.randomAlphabetic(5), RandomStringUtils.randomAlphabetic(5)
+        )
+      ).build();
   }
 
 }

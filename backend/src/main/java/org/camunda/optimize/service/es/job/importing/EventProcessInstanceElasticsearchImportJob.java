@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
 
 import java.util.List;
 
-public class EventProcessInstanceElasticsearchImportJob extends ElasticsearchImportJob<ProcessInstanceDto> {
+public class EventProcessInstanceElasticsearchImportJob extends ElasticsearchImportJob<EventProcessInstanceDto> {
 
   private EventProcessInstanceWriter eventProcessInstanceWriter;
 
@@ -22,7 +22,7 @@ public class EventProcessInstanceElasticsearchImportJob extends ElasticsearchImp
   }
 
   @Override
-  protected void persistEntities(List<ProcessInstanceDto> newOptimizeEntities) {
+  protected void persistEntities(List<EventProcessInstanceDto> newOptimizeEntities) {
     eventProcessInstanceWriter.importProcessInstances(newOptimizeEntities);
   }
 }

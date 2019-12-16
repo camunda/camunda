@@ -24,7 +24,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     ingestTestEvent("startedEvent");
     ingestTestEvent("finishedEvent");
 
-    final EventProcessMappingDto simpleEventProcessMappingDto = createSimpleEventProcessMappingDto(
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
       "startedEvent", "finishedEvent"
     );
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
@@ -67,7 +67,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     ingestTestEvent("startedEvent");
     ingestTestEvent("finishedEvent");
 
-    final EventProcessMappingDto simpleEventProcessMappingDto = createSimpleEventProcessMappingDto(
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
       "startedEvent", "finishedEvent"
     );
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
@@ -109,7 +109,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     ingestTestEvent("startedEvent");
     ingestTestEvent("finishedEvent");
 
-    final EventProcessMappingDto simpleEventProcessMappingDto = createSimpleEventProcessMappingDto(
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
       "startedEvent", "finishedEvent"
     );
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);
@@ -137,7 +137,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     ingestTestEvent("startedEvent");
     ingestTestEvent("finishedEvent");
 
-    final EventProcessMappingDto simpleEventProcessMappingDto = createSimpleEventProcessMappingDto(
+    final EventProcessMappingDto simpleEventProcessMappingDto = buildSimpleEventProcessMappingDto(
       "startedEvent", "finishedEvent"
     );
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(simpleEventProcessMappingDto);

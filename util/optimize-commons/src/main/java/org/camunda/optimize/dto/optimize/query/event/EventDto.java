@@ -44,8 +44,6 @@ public class EventDto {
   @NotBlank
   @ToString.Include
   private String traceId;
-  @Min(0)
-  private Long duration;
   @ToString.Include
   private String group;
   @ToString.Include

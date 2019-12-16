@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.service.events.stateprocessing.EventStateProcessingService;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -523,7 +524,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
 
   private EventDto.EventDtoBuilder createRandomEventDtoPropertiesBuilder() {
     return EventDto.builder()
-      .duration(Math.abs(RANDOM.nextLong()))
+      .id(IdGenerator.getNextId())
       .data(ImmutableMap.of(
         RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
         RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),

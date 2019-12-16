@@ -49,8 +49,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -59,12 +59,16 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String MY_TRACE_ID_1 = "myTraceId1";
 
   protected static final String BPMN_START_EVENT_ID = "StartEvent_1";
+  protected static final String BPMN_INTERMEDIATE_EVENT_ID = "IntermediateEvent_1";
   protected static final String BPMN_END_EVENT_ID = "EndEvent_2";
   protected static final String VARIABLE_ID = "var";
   protected static final String VARIABLE_VALUE = "value";
   protected static final String EVENT_GROUP = "test";
   protected static final String EVENT_SOURCE = "integrationTest";
-  public static final String EVENT_PROCESS_NAME = "myEventProcess";
+  protected static final String EVENT_PROCESS_NAME = "myEventProcess";
+
+  protected static final String PROCESS_INSTANCE_STATE_COMPLETED = "COMPLETED";
+  protected static final String PROCESS_INSTANCE_STATE_ACTIVE = "ACTIVE";
 
   @BeforeEach
   public void enableEventBasedProcessFeature() {
@@ -73,31 +77,49 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .add(DEFAULT_USERNAME);
   }
 
-  protected String createSimpleEventProcessMapping(final String ingestedStartEventName,
-                                                   final String ingestedEndEventName) {
-    EventProcessMappingDto eventProcessMappingDto = createSimpleEventProcessMappingDto(
-      ingestedStartEventName,
-      ingestedEndEventName
+  protected String createEventProcessMappingFromEventMappings(final EventMappingDto startEventMapping,
+                                                              final EventMappingDto intermediateEventMapping,
+                                                              final EventMappingDto endEventMapping) {
+    final EventProcessMappingDto eventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      startEventMapping, intermediateEventMapping, endEventMapping
     );
+    eventProcessMappingDto.setXml(createThreeActivitiesProcessDefinitionXml());
     return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
   }
 
-  protected EventProcessMappingDto createSimpleEventProcessMappingDto(final String ingestedStartEventName,
-                                                                      final String ingestedEndEventName) {
+  protected String createSimpleEventProcessMapping(final String ingestedStartEventName,
+                                                   final String ingestedEndEventName) {
+    final EventProcessMappingDto eventProcessMappingDto = buildSimpleEventProcessMappingDto(
+      ingestedStartEventName, ingestedEndEventName
+    );
+    eventProcessMappingDto.setXml(createSimpleProcessDefinitionXml());
+    return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+  }
+
+  protected EventProcessMappingDto buildSimpleEventProcessMappingDto(final String ingestedStartEventName,
+                                                                     final String ingestedEndEventName) {
+    return buildSimpleEventProcessMappingDto(
+      EventMappingDto.builder()
+        .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedStartEventName).build())
+        .build(),
+      null,
+      EventMappingDto.builder()
+        .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedEndEventName).build())
+        .build()
+    );
+  }
+
+  protected EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
+                                                                     final EventMappingDto intermediateEventMapping,
+                                                                     final EventMappingDto endEventMapping) {
     final Map<String, EventMappingDto> eventMappings = new HashMap<>();
-    eventMappings.put(
-      BPMN_START_EVENT_ID,
-      EventMappingDto.builder()
-        .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedStartEventName).build())
-        .build()
-    );
-    eventMappings.put(
-      BPMN_END_EVENT_ID,
-      EventMappingDto.builder()
-        .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedEndEventName).build())
-        .build()
-    );
-    return eventProcessClient.createEventProcessMappingDtoWithMappingsWithXml(
+    Optional.ofNullable(startEventMapping)
+      .ifPresent(mapping -> eventMappings.put(BPMN_START_EVENT_ID, mapping));
+    Optional.ofNullable(intermediateEventMapping)
+      .ifPresent(mapping -> eventMappings.put(BPMN_INTERMEDIATE_EVENT_ID, mapping));
+    Optional.ofNullable(endEventMapping)
+      .ifPresent(mapping -> eventMappings.put(BPMN_END_EVENT_ID, mapping));
+    return eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXml(
       eventMappings, EVENT_PROCESS_NAME, createSimpleProcessDefinitionXml()
     );
   }
@@ -197,20 +219,34 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return ingestTestEvent(IdGenerator.getNextId(), event, eventTimestamp);
   }
 
-  protected String ingestTestEvent(final String eventId, final String event, final OffsetDateTime eventTimestamp) {
+  protected String ingestTestEvent(final String eventId, final String eventName, final OffsetDateTime eventTimestamp) {
     embeddedOptimizeExtension.getEventService()
-      .saveEvent(new EventDto(
-        eventId,
-        event,
-        eventTimestamp.toInstant().toEpochMilli(),
-        null,
-        MY_TRACE_ID_1,
-        null,
-        EVENT_GROUP,
-        EVENT_SOURCE,
-        ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE)
-      ));
+      .saveEvent(
+        EventDto.builder()
+          .id(eventId)
+          .eventName(eventName)
+          .timestamp(eventTimestamp.toInstant().toEpochMilli())
+          .traceId(MY_TRACE_ID_1)
+          .group(EVENT_GROUP)
+          .source(EVENT_SOURCE)
+          .data(ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE))
+          .build()
+      );
     return eventId;
+  }
+
+  @SneakyThrows
+  protected String createThreeActivitiesProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name("aProcessName")
+      .startEvent(BPMN_START_EVENT_ID)
+      .intermediateCatchEvent(BPMN_INTERMEDIATE_EVENT_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
+    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
 
   @SneakyThrows
