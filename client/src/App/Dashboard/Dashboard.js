@@ -46,6 +46,11 @@ export class Dashboard extends Component {
     dataManager.getIncidentsByError();
   };
 
+  componentWillUnmount = async () => {
+    const {dataManager} = this.props;
+    dataManager.unsubscribe(this.subscriptions);
+  };
+
   subscriptions = {
     LOAD_INSTANCES_BY_WORKFLOW: ({state, response}) => {
       if (
