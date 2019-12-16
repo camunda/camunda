@@ -26,6 +26,10 @@ const mockUser = {
   firstname: 'foo',
   lastname: 'bar'
 };
+const mockSsoUser = {
+  firstname: null,
+  lastname: 'foo bar'
+};
 
 describe('User', () => {
   beforeEach(() => {
@@ -51,6 +55,20 @@ describe('User', () => {
 
     expect(node.find(Styled.Dropdown).text()).toContain(mockUser.firstname);
     expect(node.find(Styled.Dropdown).text()).toContain(mockUser.lastname);
+  });
+
+  it('renders with SSO User data', async () => {
+    api.fetchUser = mockResolvedAsyncFn(mockSsoUser);
+    const node = mount(
+      <ThemeProvider>
+        <User />
+      </ThemeProvider>
+    );
+
+    await flushPromises();
+    node.update();
+
+    expect(node.find(Styled.Dropdown).text()).toContain(mockSsoUser.lastname);
   });
 
   it('renders without User data', async () => {

@@ -43,7 +43,7 @@ export default function User({handleRedirect}) {
     <Styled.ProfileDropdown>
       <ThemeConsumer>
         {({toggleTheme}) =>
-          user.firstname && user.lastname ? (
+          user.firstname || user.lastname ? (
             <Styled.Dropdown label={`${user.firstname} ${user.lastname}`}>
               <Dropdown.Option
                 label="Toggle Theme"
