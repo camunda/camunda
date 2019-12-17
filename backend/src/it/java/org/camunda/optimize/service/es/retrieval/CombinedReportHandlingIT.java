@@ -32,6 +32,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResult
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -148,7 +149,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
   }
 
   @ParameterizedTest
@@ -438,7 +439,6 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(updateResponse.getStatus(), is(403));
   }
 
-
   @Test
   public void addUncombinableReportThrowsError() {
     // given
@@ -452,10 +452,13 @@ public class CombinedReportHandlingIT extends AbstractIT {
     String combinedReportId = createNewCombinedReport();
     CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
     combinedReport.setData(createCombinedReportData(numberReportId, rawReportId));
-    Response response = getUpdateCombinedProcessReportResponse(combinedReportId, combinedReport, true);
+    ErrorResponseDto response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReport, true)
+      .execute(ErrorResponseDto.class, HttpStatus.SC_BAD_REQUEST);
 
     // then
-    assertThat(response.getStatus(), is(HttpStatus.SC_INTERNAL_SERVER_ERROR));
+    assertThat(response.getErrorCode(), is("reportsNotCombinable"));
   }
 
   @Test

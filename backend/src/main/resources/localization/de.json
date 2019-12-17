@@ -763,6 +763,7 @@
     "collectionConflict": "Die Änderung an der Sammlung konnte aufgrund von Konflikten nicht ausgeführt werden.",
     "sharingNotAllowed": "Teilen nicht möglich, da diese Funktion momentan gesperrt ist.",
     "reportEvaluationError": "Der Bericht konnte nicht evaluiert werden.",
+    "reportsNotCombinable": "Die ausgewählten Berichte sind nicht miteinander kombinierbar.",
     "forbiddenError": "Ihnen fehlt die Befugnis, diese Aktion auszuführen.",
     "notAuthorizedError": "Sie konnten nicht authentifiziert werden, bitte überprüfen Sie Ihren Benutzernamen und Passwort.",
     "notFoundError": "Der Server konnte die angeforderte Seite oder Datei nicht finden.",

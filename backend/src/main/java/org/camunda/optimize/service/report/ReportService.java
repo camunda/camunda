@@ -35,11 +35,14 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.rest.providers.OptimizeConflictExceptionMapper;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeReportConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeScopeComplianceException;
@@ -293,7 +296,7 @@ public class ReportService implements CollectionReferencingService {
             data.getReportIds()
           );
         log.error(errorMessage);
-        throw new OptimizeRuntimeException(errorMessage);
+        throw new UncombinableReportsException(errorMessage);
       }
     }
   }
