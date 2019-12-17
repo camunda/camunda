@@ -316,6 +316,24 @@ public class ProcessReportDataBuilderHelper {
     );
   }
 
+  public static ProcessReportDataDto createFlowNodeDurationGroupByFlowNodeBarReport(
+    String processDefinitionKey,
+    List<String> processDefinitionVersions
+  ) {
+    ProcessViewDto view = ProcessViewDtoCreator.createFlowNodeDurationView();
+
+    ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersions,
+      ProcessVisualization.BAR,
+      view,
+      groupByDto
+    );
+  }
+
+
   public static ProcessReportDataDto createUserTaskFrequencyMapGroupByUserTaskReport(
     final String processDefinitionKey,
     final List<String> processDefinitionVersions
@@ -454,6 +472,25 @@ public class ProcessReportDataBuilderHelper {
     );
     reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
     reportDataViewRaw.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+
+    return reportDataViewRaw;
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByFlowNodeReport(
+    final String processDefinitionKey,
+    final List<String> processDefinitionVersions
+  ) {
+    final ProcessViewDto view = createUserTaskDurationView();
+    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    ProcessReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersions,
+      ProcessVisualization.BAR,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
 
     return reportDataViewRaw;
   }

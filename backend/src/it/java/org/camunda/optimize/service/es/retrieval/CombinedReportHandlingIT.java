@@ -6,6 +6,11 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.apache.http.HttpStatus;
+import org.assertj.core.util.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -26,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -42,31 +48,46 @@ import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByEndDate;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByVariable;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeBarReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByFlowNodeReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNull.notNullValue;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CombinedReportHandlingIT extends AbstractIT {
 
   private static final String START_EVENT = "startEvent";
@@ -76,7 +97,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
@@ -92,7 +114,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // then
     GetRequest getRequest = new GetRequest(COMBINED_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .get(getRequest, RequestOptions.DEFAULT);
 
     assertThat(getResponse.isExists(), is(true));
     CombinedReportDefinitionDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
@@ -102,6 +125,160 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(data.getConfiguration(), notNullValue());
     assertThat(data.getConfiguration(), equalTo(new CombinedReportConfigurationDto()));
     assertThat(definitionDto.getData().getReportIds(), notNullValue());
+  }
+
+  @ParameterizedTest
+  @MethodSource("getUncombinableSingleReports")
+  public void combineUncombinableSingleReports(List<SingleProcessReportDefinitionDto> singleReports) {
+    //given
+    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+
+    List<CombinedReportItemDto> reportIds = singleReports.stream()
+      .map(r -> new CombinedReportItemDto(createNewSingleReport(r)))
+      .collect(Collectors.toList());
+
+    combinedReportData.setReports(reportIds);
+    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    //when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute();
+
+    //then
+    assertThat(response.getStatus(), is(500));
+  }
+
+  @ParameterizedTest
+  @MethodSource("getCombinableSingleReports")
+  public void combineCombinableSingleReports(List<SingleProcessReportDefinitionDto> singleReports) {
+    //given
+    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+
+    List<CombinedReportItemDto> reportIds = singleReports.stream()
+      .map(r -> new CombinedReportItemDto(createNewSingleReport(r)))
+      .collect(Collectors.toList());
+
+    combinedReportData.setReports(reportIds);
+    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    //when
+    IdDto response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute(IdDto.class, HttpStatus.SC_OK);
+
+    //then
+    AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
+      evaluateCombinedReportById(response.getId());
+
+    assertThat(result.getReportDefinition().getData().getReports(), containsInAnyOrder(reportIds.toArray()));
+  }
+
+  private static Stream<List<SingleProcessReportDefinitionDto>> getCombinableSingleReports() {
+    //different procDefs
+    SingleProcessReportDefinitionDto procDefKeyReport = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto procDefKeyReportData = createCountProcessInstanceFrequencyGroupByStartDate(
+      "key",
+      Collections.singletonList("1"),
+      GroupByDateUnit.YEAR
+    );
+    procDefKeyReportData.setVisualization(ProcessVisualization.BAR);
+    procDefKeyReport.setData(procDefKeyReportData);
+
+    SingleProcessReportDefinitionDto procDefAnotherKeyReport = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto procDefAnotherKeyReportData = createCountProcessInstanceFrequencyGroupByStartDate(
+      "anotherKey",
+      Collections.singletonList("1"),
+      GroupByDateUnit.YEAR
+    );
+    procDefAnotherKeyReportData.setVisualization(ProcessVisualization.BAR);
+    procDefAnotherKeyReport.setData(procDefAnotherKeyReportData);
+
+    //byStartDate/byEndDate
+    SingleProcessReportDefinitionDto byEndDate = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto byEndDateData = createCountProcessInstanceFrequencyGroupByEndDate(
+      "key",
+      Collections.singletonList("1"),
+      GroupByDateUnit.YEAR
+    );
+    byEndDateData.setVisualization(ProcessVisualization.BAR);
+    byEndDate.setData(byEndDateData);
+
+    //userTaskDuration/flowNodeDuration
+    SingleProcessReportDefinitionDto userTaskDuration = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto userTaskDurationData = createUserTaskIdleDurationMapGroupByFlowNodeReport(
+      "key",
+      Collections.singletonList("1")
+    );
+    userTaskDurationData.setVisualization(ProcessVisualization.BAR);
+    userTaskDuration.setData(userTaskDurationData);
+
+    SingleProcessReportDefinitionDto flowNodeDuration = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto flowNodeDurationData = createFlowNodeDurationGroupByFlowNodeBarReport(
+      "key",
+      Collections.singletonList("1")
+    );
+    flowNodeDurationData.setVisualization(ProcessVisualization.BAR);
+    flowNodeDuration.setData(flowNodeDurationData);
+
+
+    return Stream.of(
+      Lists.newArrayList(procDefKeyReport, procDefAnotherKeyReport),
+      Lists.newArrayList(byEndDate, procDefKeyReport),
+      Lists.newArrayList(userTaskDuration, flowNodeDuration)
+    );
+  }
+
+  private static Stream<List<SingleProcessReportDefinitionDto>> getUncombinableSingleReports() {
+    //uncombinable visualization
+    SingleProcessReportDefinitionDto PICount_startDateYear_bar = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto PICount_startDateYear_barData = createCountProcessInstanceFrequencyGroupByStartDate(
+      "key",
+      Collections.singletonList("1"),
+      GroupByDateUnit.YEAR
+    );
+    PICount_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
+    PICount_startDateYear_bar.setData(PICount_startDateYear_barData);
+
+    SingleProcessReportDefinitionDto PICount_startDateYear_line = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto PICount_startDateYear_lineData = createCountProcessInstanceFrequencyGroupByStartDate(
+      "key",
+      Collections.singletonList("1"),
+      GroupByDateUnit.YEAR
+    );
+    PICount_startDateYear_lineData.setVisualization(ProcessVisualization.LINE);
+    PICount_startDateYear_line.setData(PICount_startDateYear_lineData);
+
+    //uncombinable groupBy
+    ProcessReportDataDto PICount_byVariable_barData = createCountProcessInstanceFrequencyGroupByVariable(
+      "key",
+      Collections.singletonList("1"),
+      "var",
+      VariableType.BOOLEAN
+    );
+    PICount_byVariable_barData.setVisualization(ProcessVisualization.BAR);
+    SingleProcessReportDefinitionDto PICount_byVariable_bar = new SingleProcessReportDefinitionDto();
+    PICount_byVariable_bar.setData(PICount_byVariable_barData);
+
+    //uncombinable view
+    SingleProcessReportDefinitionDto PIDuration_startDateYear_bar = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto PIDuration_startDateYear_barData = createProcessInstanceDurationGroupByStartDateReport(
+      "key",
+      Collections.singletonList("1"),
+      GroupByDateUnit.YEAR
+    );
+    PIDuration_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
+    PIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
+
+    return Stream.of(
+      Lists.newArrayList(PICount_startDateYear_bar, PICount_startDateYear_line),
+      Lists.newArrayList(PICount_byVariable_bar, PICount_startDateYear_bar),
+      Lists.newArrayList(PICount_startDateYear_bar, PIDuration_startDateYear_bar)
+    );
   }
 
   @Test
@@ -162,82 +339,105 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(newReport.getOwner(), is(DEFAULT_USERNAME));
   }
 
-  @Test
-  public void updateCombinedReportCollectionReportCanBeAddedToSameCollectionCombinedReport() {
+  private Stream<Function<CombinedReportUpdateData, Response>> reportUpdateScenarios() {
+    return Stream.of(
+      data -> {
+        String combinedReportId = createNewCombinedReportInCollection(data.getCollectionId());
+        return addSingleReportToCombinedReport(combinedReportId, data.getSingleReportId());
+      },
+      data -> {
+        CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+        combinedReportData.setReports(Collections.singletonList(new CombinedReportItemDto(data.getSingleReportId())));
+        CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+        combinedReport.setData(combinedReportData);
+        combinedReport.setCollectionId(data.getCollectionId());
+        return embeddedOptimizeExtension
+          .getRequestExecutor()
+          .buildCreateCombinedReportRequest(combinedReport)
+          .execute();
+      }
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("reportUpdateScenarios")
+  public void updateCombinedReportCollectionReportCanBeAddedToSameCollectionCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
     String collectionId = addEmptyCollectionToOptimize();
-    String combinedReportId = createNewCombinedReportInCollection(collectionId);
     final String singleReportId = addEmptySingleProcessReportToCollection(collectionId);
 
     // when
-    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+    Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
 
     // then
-    assertThat(updateResponse.getStatus(), is(204));
+    assertThat(updateResponse.getStatus(), anyOf(equalTo(HttpStatus.SC_OK), equalTo(204)));
   }
 
-  @Test
-  public void updateCombinedReportCollectionReportCannotBeAddedToOtherCollectionCombinedReport() {
+  @ParameterizedTest
+  @MethodSource("reportUpdateScenarios")
+  public void updateCombinedReportCollectionReportCannotBeAddedToOtherCollectionCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
     String collectionId1 = addEmptyCollectionToOptimize();
     String collectionId2 = addEmptyCollectionToOptimize();
-    String combinedReportId = createNewCombinedReportInCollection(collectionId1);
     final String singleReportId = addEmptySingleProcessReportToCollection(collectionId2);
 
     // when
-    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+    Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId1));
 
     // then
     assertThat(updateResponse.getStatus(), is(400));
   }
 
-  @Test
-  public void updateCombinedReportCollectionReportCannotBeAddedToPrivateCombinedReport() {
+  @ParameterizedTest
+  @MethodSource("reportUpdateScenarios")
+  public void updateCombinedReportCollectionReportCannotBeAddedToPrivateCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
     String collectionId = addEmptyCollectionToOptimize();
-    String combinedReportId = createNewCombinedReport();
     final String singleReportId = addEmptySingleProcessReportToCollection(collectionId);
 
     // when
-    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+    Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, null));
 
     // then
     assertThat(updateResponse.getStatus(), is(400));
   }
 
-  @Test
-  public void updatePrivateCombinedReportReportCannotBeAddedToCollectionCombinedReport() {
+  @ParameterizedTest
+  @MethodSource("reportUpdateScenarios")
+  public void updatePrivateCombinedReportReportCannotBeAddedToCollectionCombinedReport(Function<CombinedReportUpdateData, Response> scenario) {
     // given
     String collectionId = addEmptyCollectionToOptimize();
-    String combinedReportId = createNewCombinedReportInCollection(collectionId);
     final String singleReportId = addEmptySingleProcessReportToCollection(null);
 
     // when
-    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, singleReportId);
+    Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
 
     // then
     assertThat(updateResponse.getStatus(), is(400));
   }
 
-  @Test
-  public void updatePrivateCombinedReportAddingOtherUsersPrivateReportFails() {
+  @ParameterizedTest
+  @MethodSource("reportUpdateScenarios")
+  public void updatePrivateCombinedReportAddingOtherUsersPrivateReportFails(Function<CombinedReportUpdateData,
+    Response> scenario) {
     //given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    String combinedReportId = createNewCombinedReportInCollection(null);
     final String reportId = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
 
     // when
-    final Response updateResponse = addSingleReportToCombinedReport(combinedReportId, reportId);
+    Response updateResponse = scenario.apply(new CombinedReportUpdateData(reportId, null));
+
 
     // then
     assertThat(updateResponse.getStatus(), is(403));
   }
+
 
   @Test
   public void addUncombinableReportThrowsError() {
@@ -255,7 +455,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response response = getUpdateCombinedProcessReportResponse(combinedReportId, combinedReport, true);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(HttpStatus.SC_INTERNAL_SERVER_ERROR));
   }
 
   @Test
@@ -1047,7 +1247,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
   }
 
@@ -1088,7 +1288,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
   }
 
@@ -1156,7 +1356,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .addQueryParams(queryParams)
       .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .executeAndReturnList(ReportDefinitionDto.class, HttpStatus.SC_OK);
   }
 
   private String addEmptySingleProcessReportToCollection(final String collectionId) {
@@ -1165,7 +1365,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
   }
 
@@ -1173,7 +1373,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
   }
 
@@ -1184,5 +1384,13 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
       .execute();
+  }
+
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  protected static class CombinedReportUpdateData {
+    String singleReportId;
+    String collectionId;
   }
 }
