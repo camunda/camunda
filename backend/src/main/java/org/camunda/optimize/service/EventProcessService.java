@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
@@ -191,16 +190,9 @@ public class EventProcessService {
     Set<String> flowNodeIds = eventProcessMappingDto.getXml() == null ? Collections.emptySet() :
       extractFlowNodeNames(BpmnModelUtility.parseBpmnModel(
         eventProcessMappingDto.getXml())).keySet();
-    Map<String, EventMappingDto> eventMappings = eventProcessMappingDto.getMappings();
-
-    if (eventMappings != null) {
-      if (!flowNodeIds.containsAll(eventMappings.keySet())) {
-        throw new BadRequestException("All Flow Node IDs for event mappings must exist within the provided XML");
-      }
-      if (eventMappings.entrySet().stream()
-        .anyMatch(mapping -> mapping.getValue().getStart() == null && mapping.getValue().getEnd() == null)) {
-        throw new BadRequestException("All Flow Node mappings provided must have either a start or end event mapped");
-      }
+    if (eventProcessMappingDto.getMappings() != null
+      && !flowNodeIds.containsAll(eventProcessMappingDto.getMappings().keySet())) {
+      throw new BadRequestException("All Flow Node IDs for event mappings must exist within the provided XML");
     }
   }
 
