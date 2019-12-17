@@ -28,7 +28,7 @@ createNewIndexes(){
 }
 
 createPipelines(){
-	for pipeline in pipelines/*.json; do
+	for pipeline in pipeline/*.json; do
     	pipelinename=`basename $pipeline .json`
     	echo "Create pipeline $pipelinename"
     	echo "-------------------------------"
@@ -41,7 +41,7 @@ createPipelines(){
 removePipelines(){
 	echo "Delete all pipelines that match operate-*-to-*"
 	echo "-------------------------------"
-	$RESTCLIENT --request DELETE --url $ES/_ingest/pipeline/operate-*-to-*
+	$RESTCLIENT --request DELETE --url $ES/_ingest/pipeline/operate-*
 	echo
 	echo "-------------------------------"
 }
@@ -60,6 +60,6 @@ migrate(){
 ## main
 createNewIndexes
 createNewTemplatesAndTheirIndexes
-#createPipelines
+createPipelines
 migrate
-#removePipelines
+removePipelines

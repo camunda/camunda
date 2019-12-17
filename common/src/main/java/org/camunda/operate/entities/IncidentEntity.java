@@ -26,6 +26,9 @@ public class IncidentEntity extends OperateZeebeEntity {
   private ErrorType errorType;
 
   private String errorMessage;
+  
+  // Is only used by binding to ES results
+  private Integer errorMessageHash;
 
   private IncidentState state;
 
@@ -60,9 +63,14 @@ public class IncidentEntity extends OperateZeebeEntity {
 
   public IncidentEntity setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+    setErrorMessageHash(errorMessage.hashCode());
     return this;
   }
   
+  public void setErrorMessageHash(Integer errorMessageHash) {
+    this.errorMessageHash = errorMessageHash;
+  }
+
   public Integer getErrorMessageHash() {
     return errorMessage.hashCode();
   }
@@ -145,6 +153,8 @@ public class IncidentEntity extends OperateZeebeEntity {
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
       return false;
+    if (errorMessageHash != null ? !errorMessageHash.equals(that.errorMessageHash) : that.errorMessageHash != null)
+      return false;
     if (state != that.state)
       return false;
     if (flowNodeId != null ? !flowNodeId.equals(that.flowNodeId) : that.flowNodeId != null)
@@ -165,6 +175,7 @@ public class IncidentEntity extends OperateZeebeEntity {
     int result = super.hashCode();
     result = 31 * result + (errorType != null ? errorType.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
+    result = 31 * result + (errorMessageHash != null ? getErrorMessageHash().hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceKey != null ? flowNodeInstanceKey.hashCode() : 0);

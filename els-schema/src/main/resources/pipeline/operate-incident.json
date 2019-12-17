@@ -1,0 +1,10 @@
+{
+	"processors": [
+		{
+			"script": {
+				"lang": "painless",
+				"source": "ctx.errorMessageHash = ctx.errorMessage.hashCode()"
+			}
+		}
+	]
+}

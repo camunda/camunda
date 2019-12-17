@@ -5,6 +5,7 @@
 		]
 	},
 	"dest": {
-		"index": "operate-incident-${schema.version}_"
+		"index": "operate-incident-${schema.version}_",
+		"pipeline": "operate-incident"
 	}
 }
