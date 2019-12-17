@@ -99,11 +99,7 @@ class Login extends React.Component {
           <Styled.Anchor href="https://zeebe.io/legal/operate-evaluation-license">
             Terms and Conditions
           </Styled.Anchor>{' '}
-          of the Operate Trial Version and our{' '}
-          <Styled.Anchor href="https://zeebe.io/privacy/">
-            Privacy Statement
-          </Styled.Anchor>
-          .
+          of the Operate Trial Version.
         </Styled.Disclaimer>
         <Styled.Copyright />
       </Styled.Login>
