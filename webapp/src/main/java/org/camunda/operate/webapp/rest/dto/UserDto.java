@@ -43,8 +43,8 @@ public class UserDto {
 
   public static UserDto fromUserDetails(UserDetails userDetails) {
     return new UserDto()
-        .setFirstname("Trial")
-        .setLastname("License")
+        .setFirstname("Demo")
+        .setLastname("User")
         .setCanLogout(true);
   }
   
