@@ -241,10 +241,10 @@ public class BatchOperationWriter {
     Map<String,Object> paramsMap = new HashMap<>();
     paramsMap.put("batchOperationId", batchOperationId);
 
-    String script = "if (ctx._source.batchOperationId == null){"
-        + "ctx._source.batchOperationId = new String[]{params.batchOperationId};"
+    String script = "if (ctx._source.batchOperationIds == null){"
+        + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
         + "} else {"
-        + "ctx._source.batchOperationId.add(params.batchOperationId);"
+        + "ctx._source.batchOperationIds.add(params.batchOperationId);"
         + "}";
     return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, paramsMap);
   }
