@@ -6,10 +6,6 @@ In addition to providing visibility into active and completed workflow instances
 
 In the [Getting Started tutorial](/getting-started/), we walk through how to install and run Operate and how to use it to monitor workflow instances. In this Operate User Guide, we’ll cover some of Operate’s more advanced features.
 
-Currently, Operate is available under a developer license for **free, non-production use only**. [You can find the license here](https://zeebe.io/legal/operate-evaluation-license/). 
+Because Operate can be a helpful tool when getting started with Zeebe and building an initial proof of concept, we make it available under a developer license for **free, non-production use**. [You can find the developer license here](https://zeebe.io/legal/operate-evaluation-license/). There are no restrictions under this license when it comes to the length of the evaluation period or the available feature set _as long as you use Operate in non-production environments only._ 
 
-There are no restrictions under this license when it comes to the length of the evaluation period or the feature set–as long as you use Operate in non-production environments only. 
-
-In the future, we plan to make Operate available for production deployments under an enterprise license. If this sounds interesting to you, please [contact us](mailto:feedback@zeebe.io), and we’ll notify you when an enterprise version of Operate is available.
-
-Even after Operate is available for production use as an enterprise product, we will continue to offer Operate for free, non-production use because we have found it to be a helpful tool for becoming familiar with Zeebe and building an initial proof-of-concept. 
+Operate is also available for production use (with support) under an enterprise license. If you'd like to learn more about an enterprise license for Operate, [please contact us here.](https://zeebe.io/enterprise/)
