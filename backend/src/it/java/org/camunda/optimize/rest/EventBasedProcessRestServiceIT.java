@@ -7,8 +7,11 @@ package org.camunda.optimize.rest;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
@@ -19,6 +22,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.event.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,18 +33,24 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 
 public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
@@ -203,7 +213,8 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // given event mappings with ID does not exist in XML
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappings(
       Collections.singletonMap("invalid_Id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
-      "process name", simpleDiagramXml);
+      "process name", simpleDiagramXml
+    );
 
     // when
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
@@ -233,7 +244,8 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // given event mapping entry but neither start nor end is mapped
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappings(
       Collections.singletonMap("some_task_id", createEventMappingsDto(null, null)),
-      "process name", simpleDiagramXml);
+      "process name", simpleDiagramXml
+    );
 
     // when
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
@@ -759,6 +771,53 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  public void deletePublishedEventProcessMappingDependentResourcesGetCleared() {
+    // given a published event process with various dependent resources created using its definition
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
+
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    collectionClient.addScopeEntryToCollection(collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey));
+
+    String reportWithEventProcessDefKey = reportClient.createSingleProcessReport(
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, eventProcessDefinitionKey, Collections.emptyList()));
+    String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
+    reportClient.createCombinedReport(collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey));
+
+    alertClient.createAlertForReport(reportWithEventProcessDefKey);
+    String alertIdToRemain = alertClient.createAlertForReport(reportIdWithDefaultDefKey);
+
+    String dashboardId = dashboardClient.createDashboard(
+      collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)
+    );
+
+    // when the event process is deleted
+    eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKey);
+
+    // then the event process is deleted and the associated resources are cleaned up
+    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey).execute(HttpStatus.SC_NOT_FOUND);
+    assertThat(collectionClient.getReportsForCollection(collectionId))
+      .extracting("definitionDto.id")
+      .containsExactly(reportIdWithDefaultDefKey);
+    assertThat(alertClient.getAlertsForCollectionAsDefaultUser(collectionId))
+      .extracting("id")
+      .containsExactly(alertIdToRemain);
+    assertThat(getAllCollectionDefinitions())
+      .hasSize(1)
+      .extracting("data.scope")
+      .contains(Collections.singletonList(new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
+    assertThat(dashboardClient.getDashboard(dashboardId).getReports())
+      .extracting("id")
+      .containsExactly(reportIdWithDefaultDefKey);
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isEmpty();
+  }
+
+  @Test
   public void deleteEventProcessMappingNotExists() {
     // when
     Response response = eventProcessClient
@@ -829,6 +888,22 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(xmlOutput, bpmnModel);
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  @SneakyThrows
+  private List<CollectionDefinitionDto> getAllCollectionDefinitions() {
+    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
+      COLLECTION_INDEX_NAME);
+    return Arrays
+      .stream(searchResponse.getHits().getHits())
+      .map(doc -> {
+        try {
+          return elasticSearchIntegrationTestExtension.getObjectMapper().readValue(doc.getSourceAsString(), CollectionDefinitionDto.class);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      })
+      .collect(Collectors.toList());
   }
 
 }

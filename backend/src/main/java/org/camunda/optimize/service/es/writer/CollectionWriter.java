@@ -10,19 +10,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
@@ -39,20 +39,27 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.index.CollectionIndex.DATA;
+import static org.camunda.optimize.service.es.schema.index.CollectionIndex.SCOPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @AllArgsConstructor
 @Component
@@ -235,6 +242,34 @@ public class CollectionWriter {
     }
   }
 
+  public void deleteScopeEntryFromAllCollections(final String scopeEntryId) {
+    log.info("Removing scope entry with ID [{}] from all collections.", scopeEntryId);
+
+    Script removeScopeEntryFromCollectionsScript = new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      "def scopes = ctx._source.data.scope;" +
+        "if(scopes != null) {" +
+        "  scopes.removeIf(scope -> scope.id.equals(params.scopeEntryIdToRemove));" +
+        "}",
+      Collections.singletonMap("scopeEntryIdToRemove", scopeEntryId)
+    );
+
+    NestedQueryBuilder query = nestedQuery(
+      DATA,
+      nestedQuery(
+        String.join(".", DATA, SCOPE),
+        termQuery(String.join(".", DATA, SCOPE, CollectionScopeEntryDto.Fields.id.name()), scopeEntryId),
+        ScoreMode.None
+      ),
+      ScoreMode.None
+    );
+
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+      esClient, "collection scopes", scopeEntryId, removeScopeEntryFromCollectionsScript, query, COLLECTION_INDEX_NAME
+    );
+  }
+
   public void removeScopeEntry(String collectionId, String scopeEntryId, String userId) throws NotFoundException {
     try {
       final Map<String, Object> params = new HashMap<>();
@@ -260,7 +295,7 @@ public class CollectionWriter {
       );
 
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
-        final String message = String.format("Scope entry for id [%s] doesn't exists.", scopeEntryId);
+        final String message = String.format("Scope entry for id [%s] doesn't exist.", scopeEntryId);
         log.warn(message);
         throw new NotFoundException(message);
       }

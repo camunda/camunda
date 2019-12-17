@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.definition;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -19,6 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
   @NonNull
   private List<String> tenantIds;

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
@@ -18,10 +19,12 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.engine.importing.BpmnModelUtility;
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
+import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -39,6 +42,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractFlowNodeNames;
 
 @RequiredArgsConstructor
@@ -54,6 +58,8 @@ public class EventProcessService {
   );
 
   private final ConfigurationService configurationService;
+  private final ReportService reportService;
+  private final CollectionWriter collectionWriter;
 
   private final EventProcessMappingReader eventProcessMappingReader;
   private final EventProcessMappingWriter eventProcessMappingWriter;
@@ -76,6 +82,9 @@ public class EventProcessService {
   }
 
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
+    reportService.deleteAllReportsForProcessDefinitionKey(eventProcessMappingId);
+    collectionWriter.deleteScopeEntryFromAllCollections(CollectionScopeEntryDto.convertTypeAndKeyToScopeEntryId(
+      PROCESS, eventProcessMappingId));
     eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
     return eventProcessMappingWriter.deleteEventProcessMapping(eventProcessMappingId);
   }

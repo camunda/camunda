@@ -69,7 +69,7 @@ public class CollectionScopeEntryDto {
       .orElse(false);
   }
 
-  private String convertTypeAndKeyToScopeEntryId(final DefinitionType definitionType, final String definitionKey) {
+  public static String convertTypeAndKeyToScopeEntryId(final DefinitionType definitionType, final String definitionKey) {
     return definitionType.getId() + ID_SEGMENT_SEPARATOR + definitionKey;
   }
 }

@@ -224,4 +224,5 @@ public class CollectionClient {
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(IdDto.class, 200);
   }
+
 }

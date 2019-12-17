@@ -54,6 +54,7 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -200,6 +201,27 @@ public class ReportService implements CollectionReferencingService {
     return filterAuthorizedReports(userId, reports);
   }
 
+  public void deleteAllReportsForProcessDefinitionKey(String processDefinitionKey) {
+    List<ReportDefinitionDto> allReports = reportReader.getAllReportsOmitXml();
+    List<ReportDefinitionDto> reportsForDefinitionKey = allReports.stream()
+      .filter(report -> report instanceof SingleProcessReportDefinitionDto)
+      .filter(reportDefinitionDto -> ((SingleProcessReportDefinitionDto) reportDefinitionDto).getData()
+        .getProcessDefinitionKey()
+        .equals(processDefinitionKey))
+      .collect(Collectors.toList());
+    reportsForDefinitionKey.addAll(
+      allReports.stream()
+        .filter(report -> report instanceof CombinedReportDefinitionDto)
+        .filter(combinedReport -> !Collections.disjoint(
+          reportsForDefinitionKey.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
+          ((CombinedReportDefinitionDto) combinedReport).getData().getReportIds()
+        ))
+        .collect(Collectors.toList())
+    );
+
+    reportsForDefinitionKey.forEach(report -> removeReportAndAssociatedResources(report.getId(), report));
+  }
+
   public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId, String collectionId) {
     // verify user is authorized to access collection
     collectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
@@ -337,7 +359,10 @@ public class ReportService implements CollectionReferencingService {
         throw new OptimizeReportConflictException(conflictedItems);
       }
     }
+    removeReportAndAssociatedResources(reportId, reportDefinition);
+  }
 
+  private void removeReportAndAssociatedResources(final String reportId, final ReportDefinitionDto reportDefinition) {
     reportRelationService.handleDeleted(reportDefinition);
     if (reportDefinition.getCombined()) {
       reportWriter.deleteCombinedReport(reportId);

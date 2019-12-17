@@ -90,11 +90,8 @@ public class EventBasedProcessRestService {
   public void updateEventProcessMapping(@PathParam("id") final String eventProcessId,
                                         @Context final ContainerRequestContext requestContext,
                                         @Valid final EventProcessMappingDto eventProcessMappingDto) {
-    validateAccessToEventProcessManagement(
-      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
-    );
-
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateAccessToEventProcessManagement(userId);
     eventProcessMappingDto.setId(eventProcessId);
     eventProcessMappingDto.setLastModifier(userId);
     eventProcessService.updateEventProcessMapping(eventProcessMappingDto);
@@ -127,9 +124,7 @@ public class EventBasedProcessRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteEventProcess(@PathParam("id") final String eventProcessId,
                                  @Context final ContainerRequestContext requestContext) {
-    validateAccessToEventProcessManagement(
-      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
-    );
+    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final boolean wasFoundAndDeleted = eventProcessService.deleteEventProcessMapping(eventProcessId);
 
     if (!wasFoundAndDeleted) {

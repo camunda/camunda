@@ -71,7 +71,7 @@ public class ReportServiceConflictTest {
   }
 
   @Test
-  public void testUpdateSingleProcessReport() throws OptimizeException {
+  public void testUpdateSingleProcessReport() {
     // given
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
@@ -146,7 +146,7 @@ public class ReportServiceConflictTest {
   }
 
   @Test
-  public void testDeleteReport() throws OptimizeException {
+  public void testDeleteReport() {
     // given
     final SingleProcessReportDefinitionDto testDefinition = new SingleProcessReportDefinitionDto();
     when(reportReader.getReport("test1")).thenReturn(testDefinition);
