@@ -55,6 +55,8 @@ public class EventReader {
   private static final String GROUP = EventDto.Fields.group;
   private static final String KEYWORD_ANALYZER = "keyword";
 
+  public static final String DEFAULT_MISSING_KEY = "";
+
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -175,13 +177,16 @@ public class EventReader {
   private TermsAggregationBuilder createAggregationBuilder() {
     final TermsAggregationBuilder eventNameAggregation = terms(EVENT_NAME)
       .field(EVENT_NAME)
+      .missing(DEFAULT_MISSING_KEY)
       .size(MAX_RESPONSE_SIZE_LIMIT);
     final TermsAggregationBuilder sourceAggregation = terms(SOURCE)
       .field(SOURCE)
+      .missing(DEFAULT_MISSING_KEY)
       .size(MAX_RESPONSE_SIZE_LIMIT)
       .subAggregation(eventNameAggregation);
     return terms(GROUP)
       .field(GROUP)
+      .missing(DEFAULT_MISSING_KEY)
       .size(MAX_RESPONSE_SIZE_LIMIT)
       .subAggregation(sourceAggregation);
   }

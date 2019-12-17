@@ -69,6 +69,24 @@ public class IngestionRestIT extends AbstractIT {
   }
 
   @Test
+  public void ingestSingleEventWithNoGroupOrSource() {
+    // given
+    final EventDto eventDto = createEventDto();
+    eventDto.setGroup(null);
+    eventDto.setSource(null);
+
+    // when
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestSingleEvent(eventDto, getApiSecret())
+      .execute();
+
+    // then
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+
+    assertEventDtosArePersisted(Collections.singletonList(eventDto));
+  }
+
+  @Test
   public void ingestSingleEvent_rejectMandatoryPropertiesNull() {
     // given
     final EventDto eventDto = createEventDto();

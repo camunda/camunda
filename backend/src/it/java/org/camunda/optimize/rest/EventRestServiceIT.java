@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.service.es.reader.EventReader;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -41,6 +43,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.es.reader.EventReader.DEFAULT_MISSING_KEY;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
 
 public class EventRestServiceIT extends AbstractIT {
@@ -50,7 +53,7 @@ public class EventRestServiceIT extends AbstractIT {
   private static final String SECOND_TASK_ID = "taskID_2";
   private static final String THIRD_TASK_ID = "taskID_3";
   private static final String FOURTH_TASK_ID = "taskID_4";
-  private static final String END_EVENT_ID = "endEventId";
+  private static final String END_EVENT_ID = "endEventID";
 
   private static final Random RANDOM = new Random();
 
@@ -64,8 +67,10 @@ public class EventRestServiceIT extends AbstractIT {
     createEventDtoListWithProperties("ketchup", "mayonnaise", "blacklisted_event", 2);
   private static final List<EventDto> backendMayoEvents =
     createEventDtoListWithProperties("BACKEND", "mayonnaise", "ketchupevent", 2);
+  private static final List<EventDto> nullNullEvents =
+    createEventDtoListWithProperties(null, null, "ketchupevent", 2);
   private static final List<EventDto> allEventDtos =
-    Stream.of(backendKetchupEvents, frontendMayoEvents, managementBbqEvents, ketchupMayoEvents, backendMayoEvents)
+    Stream.of(backendKetchupEvents, frontendMayoEvents, managementBbqEvents, ketchupMayoEvents, backendMayoEvents, nullNullEvents)
     .flatMap(Collection::stream)
     .collect(toList());
 
@@ -90,8 +95,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then all events are sorted using default group case-insensitive ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(5)
+      .hasSize(6)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendKetchupEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(frontendMayoEvents, false),
@@ -116,10 +122,11 @@ public class EventRestServiceIT extends AbstractIT {
     // then matching events are returned with ordering parameters respected
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(3)
+      .hasSize(4)
       .containsExactly(
         toEventCountDto(backendKetchupEvents, false),
         toEventCountDto(backendMayoEvents, false),
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(ketchupMayoEvents, false)
       );
   }
@@ -133,8 +140,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then all events are sorted using default group case-insensitive ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(5)
+      .hasSize(6)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendKetchupEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(frontendMayoEvents, false),
@@ -166,8 +174,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then matching event counts are return using default group case-insensitive ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(3)
+      .hasSize(4)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendKetchupEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(ketchupMayoEvents, false)
@@ -206,13 +215,14 @@ public class EventRestServiceIT extends AbstractIT {
     // then all matching event counts are return using sort and ordering provided
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(5)
+      .hasSize(6)
       .containsExactly(
         toEventCountDto(ketchupMayoEvents, false),
         toEventCountDto(frontendMayoEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(managementBbqEvents, false),
+        toEventCountDto(nullNullEvents, false)
       );
   }
 
@@ -231,8 +241,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then all matching event counts are return using sort and ordering provided
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(5)
+      .hasSize(6)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendKetchupEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(frontendMayoEvents, false),
@@ -271,10 +282,11 @@ public class EventRestServiceIT extends AbstractIT {
     // then matching events are returned with ordering parameters respected
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(3)
+      .hasSize(4)
       .containsExactly(
         toEventCountDto(backendKetchupEvents, false),
         toEventCountDto(backendMayoEvents, false),
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(ketchupMayoEvents, false)
       );
   }
@@ -310,10 +322,11 @@ public class EventRestServiceIT extends AbstractIT {
     // then events that are sequenced with mapped events are first and marked as suggested
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(3)
+      .hasSize(4)
       .containsExactly(
         toEventCountDto(backendMayoEvents, true),
         toEventCountDto(frontendMayoEvents, true),
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(managementBbqEvents, false)
       );
   }
@@ -349,9 +362,10 @@ public class EventRestServiceIT extends AbstractIT {
     // then only the event in sequence before closest neighbour is suggested, non-suggestions use default ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(3)
+      .hasSize(4)
       .containsExactly(
         toEventCountDto(ketchupMayoEvents, true),
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(managementBbqEvents, false)
       );
@@ -384,8 +398,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then no suggestions returned as matching sequence event has already been mapped
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(3)
+      .hasSize(4)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(ketchupMayoEvents, false),
         toEventCountDto(managementBbqEvents, false)
@@ -420,13 +435,14 @@ public class EventRestServiceIT extends AbstractIT {
     // then counts that are not suggestions respect custom ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(4)
+      .hasSize(5)
       .containsExactly(
         toEventCountDto(frontendMayoEvents, true),
         toEventCountDto(ketchupMayoEvents, false),
         toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
-        );
+        toEventCountDto(managementBbqEvents, false),
+        toEventCountDto(nullNullEvents, false)
+      );
   }
 
   @Test
@@ -487,8 +503,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then suggested and non-suggested counts are filtered out by search term
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(2)
+      .hasSize(3)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(ketchupMayoEvents, false)
       );
@@ -510,8 +527,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then all events are returned with no suggested using default group case-insensitive ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(5)
+      .hasSize(6)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendKetchupEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(frontendMayoEvents, false),
@@ -544,8 +562,9 @@ public class EventRestServiceIT extends AbstractIT {
     // then all unmapped events are returned with no suggested using default group case-insensitive ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(4)
+      .hasSize(5)
       .containsExactly(
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(frontendMayoEvents, false),
         toEventCountDto(ketchupMayoEvents, false),
@@ -580,9 +599,10 @@ public class EventRestServiceIT extends AbstractIT {
     // then all unmapped events are returned and only event sequenced to the mapped end event is suggested
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(3)
+      .hasSize(4)
       .containsExactly(
         toEventCountDto(managementBbqEvents, true),
+        toEventCountDto(nullNullEvents, false),
         toEventCountDto(backendMayoEvents, false),
         toEventCountDto(ketchupMayoEvents, false)
       );
@@ -666,8 +686,8 @@ public class EventRestServiceIT extends AbstractIT {
   private EventCountDto toEventCountDto(List<EventDto> events, boolean suggested) {
     EventDto eventFromList = events.get(0);
     return EventCountDto.builder()
-      .group(eventFromList.getGroup())
-      .source(eventFromList.getSource())
+      .group(Optional.ofNullable(eventFromList.getGroup()).orElse(DEFAULT_MISSING_KEY))
+      .source(Optional.ofNullable(eventFromList.getSource()).orElse(DEFAULT_MISSING_KEY))
       .eventName(eventFromList.getEventName())
       .count((long) events.size())
       .suggested(suggested)

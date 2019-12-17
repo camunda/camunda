@@ -31,13 +31,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 @RequiredArgsConstructor
 @Component
@@ -194,10 +194,10 @@ public class EventStateProcessingService {
   private TracedEventDto getExistingTracedEventToBeReplaced(final List<TracedEventDto> eventTrace,
                                                             final EventDto newEventDto) {
     return eventTrace.stream()
-      .filter(tracedEvent -> tracedEvent.getEventId().equals(newEventDto.getId())
-        && tracedEvent.getGroup().equals(newEventDto.getGroup())
-        && tracedEvent.getSource().equals(newEventDto.getSource())
-        && tracedEvent.getEventName().equals(newEventDto.getEventName()))
+      .filter(tracedEvent -> Objects.equals(tracedEvent.getEventId(), newEventDto.getId())
+        && Objects.equals(tracedEvent.getGroup(), newEventDto.getGroup())
+        && Objects.equals(tracedEvent.getSource(), newEventDto.getSource())
+        && Objects.equals(tracedEvent.getEventName(), newEventDto.getEventName()))
       .findAny()
       .orElse(null);
   }

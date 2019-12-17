@@ -21,9 +21,7 @@ import javax.validation.constraints.NotBlank;
 @FieldNameConstants
 public class EventTypeDto implements OptimizeDto {
 
-  @NotBlank
   private String group;
-  @NotBlank
   private String source;
   @NotBlank
   private String eventName;

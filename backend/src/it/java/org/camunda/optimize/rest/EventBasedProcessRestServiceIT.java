@@ -55,7 +55,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   private static final String USER_TASK_ID_ONE = "User_task_id_one";
-  private static final String USER_TASK_ID = "User_task_id_two";
+  private static final String USER_TASK_ID_TWO = "User_task_id_two";
   private static final String USER_TASK_ID_THREE = "User_task_id_three";
 
   private static String simpleDiagramXml;
@@ -195,7 +195,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // given event mappings with IDs existing in XML
     Map<String, EventMappingDto> eventMappings = new HashMap<>();
     eventMappings.put(USER_TASK_ID_ONE, createEventMappingsDto(createMappedEventDto(), createMappedEventDto()));
-    eventMappings.put(USER_TASK_ID, createEventMappingsDto(createMappedEventDto(), null));
+    eventMappings.put(USER_TASK_ID_TWO, createEventMappingsDto(createMappedEventDto(), null));
     eventMappings.put(USER_TASK_ID_THREE, createEventMappingsDto(null, createMappedEventDto()));
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappings(
       eventMappings, "process name", simpleDiagramXml
@@ -238,14 +238,18 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // then
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
-
-  @ParameterizedTest(name = "Invalid mapped event: {0}")
-  @MethodSource("createInvalidMappedEventDtos")
-  public void createEventProcessMappingWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) {
+  
+  @Test
+  public void createEventProcessMappingWithInvalidEventMappings() {
     // given event mappings but mapped events have fields missing
+    EventTypeDto invalidEventTypeDto = EventTypeDto.builder()
+      .group(IdGenerator.getNextId())
+      .source(IdGenerator.getNextId())
+      .eventName(null)
+      .build();
     invalidEventTypeDto.setGroup(null);
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappings(
-      Collections.singletonMap("some_task_id", createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
+      Collections.singletonMap(USER_TASK_ID_ONE, createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
       "process name", simpleDiagramXml
     );
 
@@ -459,13 +463,17 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
 
-  @ParameterizedTest(name = "Invalid mapped event: {0}")
-  @MethodSource("createInvalidMappedEventDtos")
-  public void updateEventProcessMappingWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) {
+  @Test
+  public void updateEventProcessMappingWithInvalidEventMappings() {
     // given existing event based process
     String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
       eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml)
     );
+    EventTypeDto invalidEventTypeDto = EventTypeDto.builder()
+      .group(IdGenerator.getNextId())
+      .source(IdGenerator.getNextId())
+      .eventName(null)
+      .build();
 
     // when update event mappings with a mapped event with missing fields
     EventProcessMappingDto updateDto = eventProcessClient.buildEventProcessMappingDtoWithMappings(
@@ -831,26 +839,6 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .build();
   }
 
-  private static Stream<EventTypeDto> createInvalidMappedEventDtos() {
-    return Stream.of(
-      EventTypeDto.builder()
-        .group(null)
-        .source(IdGenerator.getNextId())
-        .eventName(IdGenerator.getNextId())
-        .build(),
-      EventTypeDto.builder()
-        .group(IdGenerator.getNextId())
-        .source(null)
-        .eventName(IdGenerator.getNextId())
-        .build(),
-      EventTypeDto.builder()
-        .group(IdGenerator.getNextId())
-        .source(IdGenerator.getNextId())
-        .eventName(null)
-        .build()
-    );
-  }
-
   private static EventTypeDto createMappedEventDto() {
     return EventTypeDto.builder()
       .group(IdGenerator.getNextId())
@@ -866,7 +854,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .name("aProcessName")
       .startEvent("startEvent_ID")
       .userTask(USER_TASK_ID_ONE)
-      .userTask(USER_TASK_ID)
+      .userTask(USER_TASK_ID_TWO)
       .userTask(USER_TASK_ID_THREE)
       .endEvent("endEvent_ID")
       .done();

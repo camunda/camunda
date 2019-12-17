@@ -154,9 +154,9 @@ public class EventService {
 
   private boolean eventCountIsInEventTypeList(EventCountDto eventCountDto, List<EventTypeDto> eventTypes) {
     return eventTypes.stream()
-      .anyMatch(suggested -> suggested.getGroup().equals(eventCountDto.getGroup()) &&
-        suggested.getSource().equals(eventCountDto.getSource()) &&
-        suggested.getEventName().equals(eventCountDto.getEventName()));
+      .anyMatch(suggested -> Objects.equals(suggested.getGroup(), eventCountDto.getGroup())
+        && Objects.equals(suggested.getSource(), eventCountDto.getSource())
+        && Objects.equals(suggested.getEventName(), eventCountDto.getEventName()));
   }
 
   private List<String> getNearestIncomingMappedFlowNodeIds(final Map<String, EventMappingDto> currentMappings,

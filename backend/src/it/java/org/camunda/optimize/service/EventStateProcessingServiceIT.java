@@ -59,9 +59,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     EventDto eventDtoTraceOne = createEventDtoWithProperties(
       "traceOne", "eventIdOne", "backend", "ketchup", "signup-event", 100L);
     EventDto eventDtoTraceTwo = createEventDtoWithProperties(
-      "traceTwo", "eventIdTwo", "backend", "ketchup", "register-event", 200L);
+      "traceTwo", "eventIdTwo", "backend", null, "register-event", 200L);
     EventDto eventDtoTraceThree = createEventDtoWithProperties(
-      "traceThree", "eventIdThree", "backend", "mayonnaise", "onboard-event", 300L
+      "traceThree", "eventIdThree", null, "mayonnaise", "onboard-event", 300L
     );
     ingestEventBatch(Arrays.asList(eventDtoTraceOne, eventDtoTraceTwo, eventDtoTraceThree));
 
@@ -99,9 +99,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     EventDto eventDtoOne = createEventDtoWithProperties(
       traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
     EventDto eventDtoTwo = createEventDtoWithProperties(
-      traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
+      traceId, "eventIdTwo", "backend", null, "register-event", 200L);
     EventDto eventDtoThree = createEventDtoWithProperties(
-      traceId, "eventIdThree", "backend", "mayonnaise", "onboard-event", 300L);
+      traceId, "eventIdThree", null, "mayonnaise", "onboard-event", 300L);
     ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
     // when
@@ -188,11 +188,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     String traceIdTwo = "traceIdTwo";
     String traceIdThree = "traceIdThree";
     EventDto eventOneTraceOne = createEventDtoWithProperties(
-      traceIdOne, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+      traceIdOne, "eventIdOne", null, "ketchup", "signup-event", 100L);
     EventDto eventOneTraceTwo = createEventDtoWithProperties(
-      traceIdTwo, "eventIdTwo", "backend", "ketchup", "signup-event", 200L);
+      traceIdTwo, "eventIdTwo", null, "ketchup", "signup-event", 200L);
     EventDto eventOneTraceThree = createEventDtoWithProperties(
-      traceIdThree, "eventIdThree", "backend", "ketchup", "signup-event", 300L);
+      traceIdThree, "eventIdThree", null, "ketchup", "signup-event", 300L);
     ingestEventBatch(Arrays.asList(eventOneTraceOne, eventOneTraceTwo, eventOneTraceThree));
 
     // when
@@ -253,9 +253,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // given
     String traceId = "traceId";
     EventDto eventDtoOne = createEventDtoWithProperties(
-      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+      traceId, "eventIdOne", "backend", null, "signup-event", 100L);
     EventDto eventDtoTwo = createEventDtoWithProperties(
-      traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
+      traceId, "eventIdTwo", null, "ketchup", "register-event", 200L);
     EventDto eventDtoThree = createEventDtoWithProperties(
       traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
@@ -317,11 +317,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // given
     String traceId = "traceIdOne";
     EventDto eventOne = createEventDtoWithProperties(
-      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+      traceId, "eventIdOne", null, "ketchup", "signup-event", 100L);
     EventDto eventTwo = createEventDtoWithProperties(
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
     EventDto eventThree = createEventDtoWithProperties
-      (traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
+      (traceId, "eventIdThree", "backend", null, "onboarded-event", 300L);
     ingestEventBatch(Arrays.asList(eventOne, eventTwo, eventThree));
 
     // when
@@ -372,11 +372,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // given
     String traceId = "traceIdOne";
     EventDto eventTaskA = createEventDtoWithProperties(
-      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+      traceId, "eventIdOne", null, "ketchup", "signup-event", 100L);
     EventDto eventTaskB = createEventDtoWithProperties(
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
     EventDto eventTaskC = createEventDtoWithProperties(
-      traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
+      traceId, "eventIdThree", "backend", null, "onboarded-event", 300L);
     ingestEventBatch(Arrays.asList(eventTaskA, eventTaskB, eventTaskC));
 
     // when
