@@ -46,42 +46,38 @@ pipeline {
             }
         }
 
-        stage('Tests') {
-            parallel {
-                stage('Go') {
-                    stages {
-                        stage('Build') {
-                            environment {
-                                IMAGE = "camunda/zeebe"
-                                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
-                                TAG = 'current-test'
-                            }
+        stage('Build (Go)') {
+            environment {
+                IMAGE = "camunda/zeebe"
+                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                TAG = 'current-test'
+            }
 
-                            steps {
-                                container('golang') {
-                                    sh '.ci/scripts/distribution/build-go.sh'
-                                }
-
-                                container('maven') {
-                                    sh '.ci/scripts/docker/prepare.sh'
-                                }
-
-                                container('docker') {
-                                    sh '.ci/scripts/docker/build.sh'
-                                }
-                            }
-                        }
-
-                        stage('Test') {
-                            steps {
-                                container('golang') {
-                                    sh '.ci/scripts/distribution/test-go.sh'
-                                }
-                            }
-                        }
-                    }
+            steps {
+                container('golang') {
+                    sh '.ci/scripts/distribution/build-go.sh'
                 }
 
+                container('maven') {
+                    sh '.ci/scripts/docker/prepare.sh'
+                }
+
+                container('docker') {
+                    sh '.ci/scripts/docker/build.sh'
+                }
+            }
+        }
+
+        stage('Test (Go)') {
+            steps {
+                container('golang') {
+                    sh '.ci/scripts/distribution/test-go.sh'
+                }
+            }
+        }
+
+        stage('Test (Java)') {
+            parallel {
                 stage('Analyse (Java)') {
                       steps {
                           container('maven') {
