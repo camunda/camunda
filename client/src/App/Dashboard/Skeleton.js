@@ -6,7 +6,12 @@
 
 import React from 'react';
 import * as Styled from './styled';
+import MultiRow from 'modules/components/MultiRow';
 
 export default props => {
-  return <Styled.MultiRow Component={Styled.Block} {...props} />;
+  return (
+    <Styled.MultiRowContainer>
+      <MultiRow Component={Styled.Block} {...props} />
+    </Styled.MultiRowContainer>
+  );
 };

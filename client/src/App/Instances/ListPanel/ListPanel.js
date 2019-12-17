@@ -147,7 +147,7 @@ class ListPanel extends React.Component {
     if (!isListEmpty) {
       return <List.Item.Body />;
     } else if (this.state.initialLoad) {
-      return <List.Item.Skeleton />;
+      return <List.Item.Skeleton rowsToDisplay={this.props.rowsToDisplay} />;
     } else {
       return <List.Item.Message message={this.getEmptyListMessage()} />;
     }

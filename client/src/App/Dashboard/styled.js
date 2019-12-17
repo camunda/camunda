@@ -7,7 +7,6 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import EmptyPanel from 'modules/components/EmptyPanel';
-import BasicMultiRow from 'modules/components/MultiRow';
 
 const HEADER_HEIGHT = 56;
 const METRIC_PANEL_HEIGHT = 234;
@@ -107,7 +106,7 @@ export const EmptyMetricPanelWrapper = styled.div`
   height: 100%;
 `;
 
-export const MultiRow = styled(BasicMultiRow)`
+export const MultiRowContainer = styled.div`
   display: flex;
   flex-direction: column;
 `;

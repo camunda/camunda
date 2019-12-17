@@ -8,7 +8,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {remove} from 'lodash';
 
-import SpinnerSkeleton from 'modules/components/Skeletons';
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import Actions from 'modules/components/Actions';
@@ -23,6 +22,7 @@ import {withSelection} from 'modules/contexts/SelectionContext';
 
 import ColumnHeader from './ColumnHeader';
 import ListContext, {useListContext} from './ListContext';
+import Skeleton from './Skeleton';
 import * as Styled from './styled';
 
 const {THead, TBody, TH, TR, TD} = Table;
@@ -54,7 +54,7 @@ class List extends React.Component {
 
   constructor(props) {
     super(props);
-    this.myRef = React.createRef();
+    this.containerRef = React.createRef();
   }
 
   componentDidMount() {
@@ -158,8 +158,8 @@ class List extends React.Component {
   };
 
   recalculateHeight() {
-    if (this.myRef.current) {
-      const rows = ~~(this.myRef.current.clientHeight / 38) - 1;
+    if (this.containerRef.current) {
+      const rows = ~~(this.containerRef.current.clientHeight / 38) - 1;
       this.props.onEntriesPerPageChange(rows);
     }
   }
@@ -171,7 +171,7 @@ class List extends React.Component {
   render() {
     return (
       <Styled.List>
-        <Styled.TableContainer ref={this.myRef}>
+        <Styled.TableContainer ref={this.containerRef}>
           {this.props.Overlay && this.props.Overlay()}
 
           <ListContext.Provider
@@ -202,16 +202,9 @@ WrappedList.Item = List;
 
 export default WrappedList;
 
-WrappedList.Item.Skeleton = function Skeleton() {
-  return (
-    <TBody>
-      <Styled.EmptyTR>
-        <Styled.EmptyTD colSpan={6}>
-          <SpinnerSkeleton />
-        </Styled.EmptyTD>
-      </Styled.EmptyTR>
-    </TBody>
-  );
+WrappedList.Item.Skeleton = function ItemSkeleton(props) {
+  const {rowsToDisplay} = useListContext();
+  return <Skeleton {...props} rowsToDisplay={rowsToDisplay} />;
 };
 
 WrappedList.Item.Message = class Message extends React.Component {

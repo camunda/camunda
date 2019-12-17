@@ -18,10 +18,10 @@ function MultiRow({Component, rowsToDisplay, children, ...props}) {
   }
 
   return (
-    <div {...props}>
+    <>
       {children}
       {rowMultiplier(rowsToDisplay)}
-    </div>
+    </>
   );
 }
 
