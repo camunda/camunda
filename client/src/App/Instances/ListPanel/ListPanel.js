@@ -40,7 +40,7 @@ class ListPanel extends React.Component {
     this.state = {
       entriesPerPage: 0,
       instancesLoaded: false,
-      initialLoad: false
+      initialLoad: true
     };
 
     this.subscriptions = {
@@ -50,7 +50,7 @@ class ListPanel extends React.Component {
         }
 
         if (response.state === LOADING_STATE.LOADED) {
-          this.setState({initialLoad: true, instancesLoaded: true});
+          this.setState({initialLoad: false, instancesLoaded: true});
         }
       }
     };
@@ -146,7 +146,7 @@ class ListPanel extends React.Component {
   renderContent(isListEmpty) {
     if (!isListEmpty) {
       return <List.Item.Body />;
-    } else if (!this.state.initialLoad) {
+    } else if (this.state.initialLoad) {
       return <List.Item.Skeleton />;
     } else {
       return <List.Item.Message message={this.getEmptyListMessage()} />;
@@ -156,7 +156,7 @@ class ListPanel extends React.Component {
   renderSpinner() {
     return (
       !this.state.instancesLoaded &&
-      this.state.initialLoad &&
+      !this.state.initialLoad &&
       (() => <Styled.Spinner />)
     );
   }
