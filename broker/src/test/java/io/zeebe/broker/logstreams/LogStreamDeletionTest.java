@@ -20,7 +20,6 @@ import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,7 +64,7 @@ public final class LogStreamDeletionTest {
         .join();
 
     // then
-    verify(mockLogStream, timeout(Duration.ofSeconds(1))).delete(POSITION_TO_DELETE);
+    verify(mockLogStream, timeout(1000)).delete(POSITION_TO_DELETE);
   }
 
   @Test
