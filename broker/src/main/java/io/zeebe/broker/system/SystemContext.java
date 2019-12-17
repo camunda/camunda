@@ -65,9 +65,8 @@ public final class SystemContext {
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    final SocketBindingCfg commandApiCfg = brokerCfg.getNetwork().getCommandApi();
-    final String brokerId =
-        String.format("%s:%d", commandApiCfg.getHost(), commandApiCfg.getPort());
+    final var cluster = brokerCfg.getCluster();
+    final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
     this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
     this.scheduler = initScheduler(clock, brokerId);
