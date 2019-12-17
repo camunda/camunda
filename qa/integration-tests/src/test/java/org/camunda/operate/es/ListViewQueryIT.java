@@ -1074,21 +1074,21 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //running instance with one activity and without incidents
     final Long workflowKey = 27L;
     runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
-    runningInstance.setBatchOperationId(Arrays.asList("a", batchOperationId));
+    runningInstance.setBatchOperationIds(Arrays.asList("a", batchOperationId));
     final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
     vars.add(createVariableForListView(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var1", "X"));
     vars.add(createVariableForListView(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var2", "Y"));
 
     //completed instance with one activity and without incidents
     completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowKey);
-    completedInstance.setBatchOperationId(Arrays.asList("b", batchOperationId));
+    completedInstance.setBatchOperationIds(Arrays.asList("b", batchOperationId));
     final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstance(completedInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
     vars.add(createVariableForListView(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var1", "X"));
     vars.add(createVariableForListView(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var2", "Z"));
 
     //canceled instance with two activities and without incidents
     canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-    canceledInstance.setBatchOperationId(Arrays.asList("c", "d"));
+    canceledInstance.setBatchOperationIds(Arrays.asList("c", "d"));
     final ActivityInstanceForListViewEntity activityInstance3 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
     final ActivityInstanceForListViewEntity activityInstance4 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.TERMINATED);
     vars.add(createVariableForListView(canceledInstance.getWorkflowInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));

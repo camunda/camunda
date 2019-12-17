@@ -99,7 +99,7 @@
 				"activityType": {
 					"type": "keyword"
 				},
-				"batchOperationId": {
+				"batchOperationIds": {
 					"type": "keyword"
 				},
 				"startDate": {

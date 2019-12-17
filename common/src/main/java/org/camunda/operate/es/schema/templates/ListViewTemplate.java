@@ -35,7 +35,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor {
   public static final String VAR_VALUE = "varValue";
   public static final String SCOPE_KEY = "scopeKey";
 
-  public static final String BATCH_OPERATION_ID = "batchOperationId";
+  public static final String BATCH_OPERATION_IDS = "batchOperationIds";
 
   public static final String JOIN_RELATION = "joinRelation";
   public static final String WORKFLOW_INSTANCE_JOIN_RELATION = "workflowInstance";

@@ -228,7 +228,7 @@ public class ListViewReader {
 
   private QueryBuilder createBatchOperatioIdQuery(ListViewQueryDto query) {
     if (query.getBatchOperationId() != null) {
-      return termQuery(ListViewTemplate.BATCH_OPERATION_ID, query.getBatchOperationId());
+      return termQuery(ListViewTemplate.BATCH_OPERATION_IDS, query.getBatchOperationId());
     }
     return null;
   }

@@ -337,7 +337,7 @@ public class BatchOperationWriter {
   private UpdateRequest getUpdateWorkflowInstanceRequest(Long workflowInstanceKey, String batchOperationId) throws PersistenceException {
     try {
       Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ListViewTemplate.BATCH_OPERATION_ID, batchOperationId);
+      updateFields.put(ListViewTemplate.BATCH_OPERATION_IDS, batchOperationId);
 
       return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, String.valueOf(workflowInstanceKey))
           .script(getUpdateBatchOperationIdScript(batchOperationId));

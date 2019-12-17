@@ -574,7 +574,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //check batch operation id stored in workflow instance
     List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = getWorkflowInstanceEntities(workflowInstanceQuery);
     assertThat(workflowInstanceEntities).hasSize(1);
-    assertThat(workflowInstanceEntities.get(0).getBatchOperationId()).containsExactly(batchOperationEntity.getId());
+    assertThat(workflowInstanceEntities.get(0).getBatchOperationIds()).containsExactly(batchOperationEntity.getId());
   }
 
   private List<WorkflowInstanceForListViewEntity> getWorkflowInstanceEntities(ListViewQueryDto workflowInstanceQuery) {
