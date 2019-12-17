@@ -49,8 +49,6 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
 
   private static final Logger logger = LoggerFactory.getLogger(WorkflowInstancesArchiverJob.class);
 
-  protected boolean shutdown = false;
-
   private List<Integer> partitionIds;
 
   @Autowired
@@ -165,12 +163,6 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
       logger.debug("Nothing to archive");
       return 0;
     }
-  }
-
-  @PreDestroy
-  public void shutdown() {
-    logger.info("Shutdown archiver for partitions: {}", partitionIds);
-    shutdown = true;
   }
 
 }

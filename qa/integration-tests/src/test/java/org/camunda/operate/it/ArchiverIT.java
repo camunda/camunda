@@ -34,7 +34,6 @@ import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.OperationReader;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -97,9 +96,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
-
-  @Autowired
-  private OperationReader operationReader;
 
   @Autowired
   private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
