@@ -22,7 +22,7 @@ import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 
-import SpinnerSkeleton from 'modules/components/Skeletons';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 
 jest.mock('modules/utils/bpmn');
 

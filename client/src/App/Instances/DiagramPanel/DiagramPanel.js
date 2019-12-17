@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 import {LOADING_STATE, EXPAND_STATE} from 'modules/constants';
 import SplitPane from 'modules/components/SplitPane';
 import {withData} from 'modules/DataManager';
-import SpinnerSkeleton from 'modules/components/Skeletons';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import Diagram from 'modules/components/Diagram';
 import * as Styled from './styled.js';
 

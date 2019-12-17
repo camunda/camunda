@@ -4,75 +4,58 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import {BaseCircle, BaseBlock} from 'modules/components/Skeleton';
+import styled from 'styled-components';
 
 import * as Header from '../styled';
 
-const colors = css`
-  background: ${themeStyle({
-    dark: 'rgba(136, 136, 141)',
-    light: Colors.uiLight06
-  })};
-  opacity: ${themeStyle({
-    dark: 0.2,
-    light: 0.09
-  })};
-`;
-
-export const SkeletonTD = themed(styled(Header.Td)`
+export const SkeletonTD = styled(Header.Td)`
   display: flex;
 
   align-items: center;
-`);
+`;
 
-export const ActionSkeletonTD = themed(styled(Header.Td)`
+export const ActionSkeletonTD = styled(Header.Td)`
   width: 250px;
-`);
+`;
 
-export const Skeleton = themed(styled.div`
+export const Skeleton = styled.div`
   width: 100%;
   overflow: hidden;
-`);
+`;
 
-export const Row = themed(styled.div`
+export const Row = styled.div`
   display: flex;
   padding: 8px 0;
-`);
+`;
 
-export const Block = themed(styled.div`
-  /* margin-left: 52px; */
+export const Block = styled(BaseBlock)`
   height: 12px;
+`;
 
-  ${colors}
-`);
-
-export const InitialBlock = themed(styled(Block)`
+export const InitialBlock = styled(Block)`
   width: 125px;
   margin-left: 10px;
-`);
+`;
 
-export const IdBlock = themed(styled(Block)`
+export const IdBlock = styled(Block)`
   width: 120px;
-`);
+`;
 
-export const VersionBlock = themed(styled(Block)`
+export const VersionBlock = styled(Block)`
   width: 80px;
-`);
+`;
 
-export const TimeStampBlock = themed(styled(Block)`
+export const TimeStampBlock = styled(Block)`
   width: 155px;
-`);
+`;
 
-export const RoundedBlock = themed(styled(Block)`
+export const RoundedBlock = styled(Block)`
   width: 45px;
   border-radius: 20px;
-`);
+`;
 
-export const Circle = themed(styled.div`
-  border-radius: 50%;
+export const Circle = styled(BaseCircle)`
   height: 16px;
   width: 16px;
-
-  ${colors};
-`);
+`;

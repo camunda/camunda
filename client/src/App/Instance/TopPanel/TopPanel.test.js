@@ -22,7 +22,7 @@ import {mockProps, instanceWithIncident} from './TopPanel.setup';
 import IncidentsWrapper from '../IncidentsWrapper';
 
 import Diagram from 'modules/components/Diagram';
-import SpinnerSkeleton from 'modules/components/Skeletons';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import SplitPane from 'modules/components/SplitPane';
 import {ThemeProvider} from 'modules/theme';
 

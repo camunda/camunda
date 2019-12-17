@@ -17,7 +17,7 @@ import {isRunning} from 'modules/utils/instance';
 
 import {withData} from 'modules/DataManager';
 import Skeleton from './Skeleton';
-import SpinnerSkeleton from 'modules/components/Skeletons';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import {LOADING_STATE} from 'modules/constants';
 
 import * as Styled from './styled';

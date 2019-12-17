@@ -13,7 +13,7 @@ import {
 } from './service';
 
 import {withData} from 'modules/DataManager';
-import SpinnerSkeleton from 'modules/components/Skeletons';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 
 import Diagram from 'modules/components/Diagram';
 import IncidentsWrapper from '../IncidentsWrapper';
