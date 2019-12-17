@@ -36,11 +36,14 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,11 +55,13 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 @Component
 public class IncidentStatisticsReader extends AbstractReader {
 
+  private static final String ERROR_MESSAGE = "errorMessages";
+
   public static final String WORKFLOW_KEYS = "workflowKeys";
 
   private static final String UNIQ_WORKFLOW_INSTANCES = "uniq_workflowInstances";
 
-  private static final String GROUP_BY_ERROR_MESSAGES = "group_by_errorMessages";
+  private static final String GROUP_BY_ERROR_MESSAGE_HASH = "group_by_errorMessages";
 
   private static final String GROUP_BY_WORKFLOW_KEYS = "group_by_workflowKeys";
 
@@ -198,9 +203,10 @@ public class IncidentStatisticsReader extends AbstractReader {
     Map<Long, WorkflowEntity> workflows = workflowReader.getWorkflowsWithFields(
         WorkflowIndex.KEY, WorkflowIndex.NAME, WorkflowIndex.BPMN_PROCESS_ID, WorkflowIndex.VERSION);
     
-    TermsAggregationBuilder aggregation = terms(GROUP_BY_ERROR_MESSAGES)
-        .field(IncidentTemplate.ERROR_MSG)
+    TermsAggregationBuilder aggregation = terms(GROUP_BY_ERROR_MESSAGE_HASH)
+        .field(IncidentTemplate.ERROR_MSG_HASH)
         .size(ElasticsearchUtil.TERMS_AGG_SIZE)
+        .subAggregation(topHits(ERROR_MESSAGE).size(1).fetchSource(IncidentTemplate.ERROR_MSG,null))
         .subAggregation(terms(GROUP_BY_WORKFLOW_KEYS)
             .field(IncidentTemplate.WORKFLOW_KEY)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
@@ -209,12 +215,13 @@ public class IncidentStatisticsReader extends AbstractReader {
 
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
-            .aggregation(aggregation).size(0));
+            .aggregation(aggregation)
+            .size(0));
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       
-      Terms errorMessageAggregation = (Terms) searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGES);
+      Terms errorMessageAggregation = (Terms) searchResponse.getAggregations().get(GROUP_BY_ERROR_MESSAGE_HASH);
       for (Bucket bucket : errorMessageAggregation.getBuckets()) {
         result.add(getIncidentsByErrorMsgStatistic(workflows, bucket));
       }
@@ -227,7 +234,9 @@ public class IncidentStatisticsReader extends AbstractReader {
   }
 
   private IncidentsByErrorMsgStatisticsDto getIncidentsByErrorMsgStatistic(Map<Long, WorkflowEntity> workflows, Bucket errorMessageBucket) {
-    String errorMessage = errorMessageBucket.getKeyAsString();
+    SearchHits searchHits = ((TopHits)errorMessageBucket.getAggregations().get(ERROR_MESSAGE)).getHits();
+    SearchHit searchHit = searchHits.getHits()[0];
+    String errorMessage  = (String) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG);
     
     IncidentsByErrorMsgStatisticsDto workflowStatistics = new IncidentsByErrorMsgStatisticsDto(errorMessage);
     

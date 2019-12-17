@@ -45,10 +45,11 @@ public class IncidentEntity extends OperateZeebeEntity {
     return errorType;
   }
 
-  public void setErrorType(ErrorType errorType) {
+  public IncidentEntity setErrorType(ErrorType errorType) {
     this.errorType = errorType;
+    return this;
   }
-
+  
   public static String getErrorTypeTitle(ErrorType errorType) {
     return ErrorType2Title.getOrDefault(errorType, "Unknown error");
   }
@@ -57,60 +58,72 @@ public class IncidentEntity extends OperateZeebeEntity {
     return errorMessage;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public IncidentEntity setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
+  }
+  
+  public Integer getErrorMessageHash() {
+    return errorMessage.hashCode();
   }
 
   public IncidentState getState() {
     return state;
   }
 
-  public void setState(IncidentState state) {
+  public IncidentEntity setState(IncidentState state) {
     this.state = state;
+    return this;
   }
 
   public String getFlowNodeId() {
     return flowNodeId;
   }
 
-  public void setFlowNodeId(String flowNodeId) {
+  public IncidentEntity setFlowNodeId(String flowNodeId) {
     this.flowNodeId = flowNodeId;
+    return this;
   }
 
   public Long getFlowNodeInstanceKey() {
     return flowNodeInstanceKey;
   }
 
-  public void setFlowNodeInstanceKey(Long flowNodeInstanceId) {
+  public IncidentEntity setFlowNodeInstanceKey(Long flowNodeInstanceId) {
     this.flowNodeInstanceKey = flowNodeInstanceId;
+    return this;
   }
 
   public Long getJobKey() {
     return jobKey;
   }
 
-  public void setJobKey(Long jobKey) {
+  public IncidentEntity setJobKey(Long jobKey) {
     this.jobKey = jobKey;
+    return this;
   }
 
   public Long getWorkflowInstanceKey() {
     return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+  public IncidentEntity setWorkflowInstanceKey(Long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
+    return this;
   }
 
   public OffsetDateTime getCreationTime() {
     return creationTime;
   }
 
-  public void setCreationTime(OffsetDateTime creationTime) {
+  public IncidentEntity setCreationTime(OffsetDateTime creationTime) {
     this.creationTime = creationTime;
+    return this;
   }
 
-  public void setWorkflowKey(Long workflowKey) {
+  public IncidentEntity setWorkflowKey(Long workflowKey) {
     this.workflowKey = workflowKey;
+    return this;
   }
 
   public Long getWorkflowKey() {

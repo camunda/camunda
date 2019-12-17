@@ -39,7 +39,10 @@
 				},
 				"errorMessage": {
 					"eager_global_ordinals": true,
-					"type": "keyword"
+					"type": "text"
+				},
+				"errorMessageHash": {
+					"type":"integer"
 				},
 				"workflowKey": {
 					"type": "long"

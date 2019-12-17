@@ -75,7 +75,8 @@ public class IncidentZeebeRecordProcessor {
       if (recordValue.getWorkflowKey() > 0) {
         incident.setWorkflowKey(recordValue.getWorkflowKey());
       }
-      incident.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+      String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
+      incident.setErrorMessage(errorMessage);
       incident.setErrorType(recordValue.getErrorType());
       incident.setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {

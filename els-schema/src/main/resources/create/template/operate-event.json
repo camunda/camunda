@@ -37,7 +37,7 @@
 							"enabled": false
 						},
 						"incidentErrorMessage": {
-							"type": "keyword"
+							"type": "text"
 						},
 						"jobWorker": {
 							"type": "keyword"

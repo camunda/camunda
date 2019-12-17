@@ -22,6 +22,7 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Work
   public static final String JOB_KEY = "jobKey";
   public static final String ERROR_TYPE = "errorType";
   public static final String ERROR_MSG = "errorMessage";
+  public static final String ERROR_MSG_HASH = "errorMessageHash";
   public static final String STATE = "state";
   public static final String CREATION_TIME = "creationTime";
 
