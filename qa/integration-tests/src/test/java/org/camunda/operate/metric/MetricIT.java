@@ -60,10 +60,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
       .startWorkflowInstance("demoProcess","{\"a\": \"b\"}").waitUntil().workflowInstanceIsFinished();
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"DEPLOYMENT\",}"),
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"WORKFLOW_INSTANCE\",}"),
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"VARIABLE\",}"),
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"JOB\",}"),
+        containsString("operate_events_processed_total"),
         containsString("operate_import_query"),
         containsString("operate_import_index_query")
     ));
@@ -79,11 +76,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
       .and()
       .failTask("taskA","Some error").waitUntil().incidentIsActive();
     // Then
-    assertThatMetricsFrom(mockMvc,allOf(
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"DEPLOYMENT\",}"),
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"WORKFLOW_INSTANCE\",}"),
-        containsString("operate_events_processed_total{status=\"succeeded\",type=\"INCIDENT\",}")
-    ));
+    assertThatMetricsFrom(mockMvc, containsString("operate_events_processed_total"));
   }
   
   @Test // OPE-642
