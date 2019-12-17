@@ -114,7 +114,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
     final NetworkCfg network = brokerCfg.getNetwork();
     brokerCfg.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
     network.getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
-    network.getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
     network.getMonitoringApi().setPort(SocketUtil.getNextAddress().getPort());
   }
 
