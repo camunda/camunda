@@ -39,7 +39,7 @@ createPipelines(){
 }
 
 removePipelines(){
-	echo "Delete all pipelines that match operate-*-to-*"
+	echo "Delete all pipelines that match operate-*"
 	echo "-------------------------------"
 	$RESTCLIENT --request DELETE --url $ES/_ingest/pipeline/operate-*
 	echo

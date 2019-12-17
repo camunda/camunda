@@ -67,7 +67,7 @@
 					"type": "keyword"
 				},
 				"payload": {
-					"type": "keyword"
+					"type": "text"
 				},
 				"flowNodeInstanceKey": {
 					"type": "long"
