@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.http.HttpStatus;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -34,6 +33,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -92,7 +93,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType, ImmutableList.of(tenantId));
+    String reportId = createReportForDefinition(definitionResourceType, Arrays.asList(tenantId));
 
     // when
     Response response = embeddedOptimizeExtension
@@ -119,7 +120,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
     deployStartAndImportDefinition(definitionResourceType);
 
-    String reportId = createReportForDefinition(definitionResourceType, ImmutableList.of(tenantId1, tenantId2));
+    String reportId = createReportForDefinition(definitionResourceType, Arrays.asList(tenantId1, tenantId2));
 
     // when
     Response response = embeddedOptimizeExtension
@@ -148,7 +149,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     deployStartAndImportDefinition(definitionResourceType);
 
     String reportId = createReportForDefinitionAsUser(
-      definitionResourceType, ImmutableList.of(tenantId1, tenantId2), KERMIT_USER, KERMIT_USER
+      definitionResourceType, Arrays.asList(tenantId1, tenantId2), KERMIT_USER, KERMIT_USER
     );
 
     // when

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,5 +28,9 @@ public class BranchAnalysisQueryDto {
   @JsonIgnore
   public void setProcessDefinitionVersion(String definitionVersion) {
     this.processDefinitionVersions = Lists.newArrayList(definitionVersion);
+  }
+
+  public List<String> getTenantIds() {
+    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 }

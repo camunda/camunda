@@ -63,7 +63,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
                                                   final String definitionKey,
                                                   final String definitionVersion,
                                                   final String tenantId) {
-    return getProcessDefinitionXmlAsService(definitionKey, definitionVersion, tenantId)
+    return getProcessDefinitionWithXmlAsService(definitionKey, definitionVersion, tenantId)
       .map(processDefinitionOptimizeDto -> {
         if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
           return processDefinitionOptimizeDto.getBpmn20Xml();
@@ -73,9 +73,9 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
       });
   }
 
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionXmlAsService(final String definitionKey,
-                                                                                 final String definitionVersion,
-                                                                                 final String tenantId) {
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXmlAsService(final String definitionKey,
+                                                                                     final String definitionVersion,
+                                                                                     final String tenantId) {
     // first try to load tenant specific definition
     Optional<ProcessDefinitionOptimizeDto> fullyImportedDefinition =
       processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, tenantId);

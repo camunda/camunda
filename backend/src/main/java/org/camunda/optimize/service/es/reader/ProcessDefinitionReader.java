@@ -190,7 +190,7 @@ public class ProcessDefinitionReader {
     return fetchProcessDefinitions(fullyImported, withXml, matchAllQuery());
   }
 
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionIfAvailable(
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromFirstTenantIfAvailable(
     final ProcessReportDataDto reportData) {
 
     String mostRecentValidVersion = convertToValidDefinitionVersion(

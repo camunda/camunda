@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -47,8 +46,6 @@ public class BranchAnalysisQueryIT extends AbstractIT {
   private static final String GATEWAY_C = "gw_c";
   private static final String GATEWAY_D = "gw_d";
   private static final String GATEWAY_F = "gw_f";
-
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   private static final String START_EVENT_ID = "startEvent";
   private static final String SPLITTING_GATEWAY_ID = "splittingGateway";
@@ -543,7 +540,8 @@ public class BranchAnalysisQueryIT extends AbstractIT {
         .connectTo(GATEWAY_F)
       .done();
     // @formatter:on
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      modelInstance);
     startBypassProcessAndTakeLongWayWithoutTask(processDefinition);
     startBypassProcessAndTakeShortcut(processDefinition);
     startBypassProcessAndTakeLongWayWithTask(processDefinition);

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -189,7 +188,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     //when
     List<Response> responses = executeVariableRequestsAsKermit(
       decisionDefinition1,
-      ImmutableList.of(tenantId1, tenantId2)
+      Lists.newArrayList(tenantId1, tenantId2)
     );
 
     //then

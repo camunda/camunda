@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.variable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import lombok.Data;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,5 +24,9 @@ public class DecisionVariableNameRequestDto {
   @JsonIgnore
   public void setDecisionDefinitionVersion(String decisionDefinitionVersion) {
     this.decisionDefinitionVersions = Lists.newArrayList(decisionDefinitionVersion);
+  }
+
+  public List<String> getTenantIds() {
+    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 }

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -172,7 +171,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     //when
     List<Response> responses = executeVariableRequestsAsKermit(
       processDefinition1,
-      ImmutableList.of(tenantId1, tenantId2)
+      Lists.newArrayList(tenantId1, tenantId2)
     );
 
     //then

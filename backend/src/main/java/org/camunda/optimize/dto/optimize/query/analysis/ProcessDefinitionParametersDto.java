@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.analysis;
 
 import lombok.Data;
 import org.camunda.optimize.rest.queryparam.QueryParamUtil;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,5 +30,9 @@ public class ProcessDefinitionParametersDto {
       .map(QueryParamUtil::normalizeNullStringValue)
       .collect(Collectors.toList());
     return normalizedTenantIds.isEmpty() ? DEFAULT_TENANT_IDS : normalizedTenantIds;
+  }
+
+  public List<String> getTenantIds() {
+    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 }

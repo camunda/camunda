@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -155,7 +155,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    Response response = executeBranchAnalysisAsKermit(processDefinition1, ImmutableList.of(tenantId1, tenantId2));
+    Response response = executeBranchAnalysisAsKermit(processDefinition1, Lists.newArrayList(tenantId1, tenantId2));
 
     //then
     assertThat(response.getStatus(), is(403));
@@ -175,7 +175,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final Response response = executeBranchAnalysisAsKermit(processDefinition, ImmutableList.of(tenantId));
+    final Response response = executeBranchAnalysisAsKermit(processDefinition, Lists.newArrayList(tenantId));
 
     // then
     assertThat(response.getStatus(), is(403));

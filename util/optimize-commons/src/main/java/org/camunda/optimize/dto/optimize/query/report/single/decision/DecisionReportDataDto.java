@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,6 +77,10 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
     return Combinable.isCombinable(view, that.view) &&
       Combinable.isCombinable(groupBy, that.groupBy) &&
       Objects.equals(visualization, that.visualization);
+  }
+
+  public List<String> getTenantIds() {
+    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 
 }

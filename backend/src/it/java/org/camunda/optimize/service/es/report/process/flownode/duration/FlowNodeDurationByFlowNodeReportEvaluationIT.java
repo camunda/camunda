@@ -6,22 +6,25 @@
 package org.camunda.optimize.service.es.report.process.flownode.duration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -33,7 +36,9 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +74,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -107,12 +113,12 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     );
   }
 
-
   @Test
   public void reportEvaluationForSeveralProcesses() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
@@ -141,7 +147,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -180,7 +187,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -214,7 +222,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     final ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -250,7 +259,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void testEvaluationResultForAllAggregationTypes() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
@@ -285,7 +295,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -327,7 +338,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
@@ -370,7 +382,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
@@ -412,7 +425,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
@@ -427,8 +441,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    ProcessReportDataDto reportData = createReport(latestDefinition.getKey(),
-                                                   ALL_VERSIONS);
+    ProcessReportDataDto reportData = createReport(
+      latestDefinition.getKey(),
+      ALL_VERSIONS
+    );
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
@@ -449,7 +465,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
@@ -504,11 +521,46 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
+  public void orderOfTenantSelectionDoesNotAffectResult() {
+    // given
+    final String definitionKey = "aKey";
+    final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
+    final String otherTenantId = "tenant1";
+
+    engineIntegrationExtension.createTenant(otherTenantId);
+
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(definitionKey)
+      .name("aProcessName")
+      .startEvent(START_EVENT)
+      .endEvent(END_EVENT)
+      .done();
+
+    engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    List<String> tenantListNoneTenantFirst = Lists.newArrayList(noneTenantId, otherTenantId);
+    List<String> tenantListOtherTenantFirst = Lists.newArrayList(otherTenantId, noneTenantId);
+
+    // when
+    final ReportMapResultDto resultNoneTenantFirst =
+      getReportEvaluationResult(definitionKey, ALL_VERSIONS, tenantListNoneTenantFirst);
+    final ReportMapResultDto resultOtherTenantFirst =
+      getReportEvaluationResult(definitionKey, ALL_VERSIONS, tenantListOtherTenantFirst);
+
+    // then
+    Assertions.assertThat(resultNoneTenantFirst.getData()).isNotEmpty();
+    Assertions.assertThat(resultOtherTenantFirst.getData()).isEqualTo(resultNoneTenantFirst.getData());
+  }
+
+  @Test
   public void otherProcessDefinitionsDoNotInfluenceResult() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 80L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 40L);
@@ -550,7 +602,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void evaluateReportWithIrrationalAverageNumberAsResult() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
     processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 300L);
@@ -589,7 +642,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     LocalDateUtil.setCurrentTime(now);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
@@ -602,8 +656,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processDefinition.getKey(),
-                   processDefinition.getVersionAsString());
+      createReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
@@ -629,7 +685,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     LocalDateUtil.setCurrentTime(now);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
@@ -642,8 +699,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processDefinition.getKey(),
-                   processDefinition.getVersionAsString());
+      createReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.COMPLETED);
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
@@ -669,7 +728,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     LocalDateUtil.setCurrentTime(now);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
@@ -682,8 +742,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData =
-      createReport(processDefinition.getKey(),
-                   processDefinition.getVersionAsString());
+      createReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.ALL);
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
@@ -725,7 +787,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
           .endEvent("miEnd")
         .done();
     // @formatter:on
-    ProcessDefinitionEngineDto subProcessDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(subProcess);
+    ProcessDefinitionEngineDto subProcessDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      subProcess);
     String processDefinitionId = engineIntegrationExtension.deployProcessAndGetId(miProcess);
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
     engineDatabaseExtension.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
@@ -749,7 +812,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
-  public void evaluateReportForMoreThenTenEvents() throws Exception {
+  public void evaluateReportForMoreThanTenEvents() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
 
@@ -791,8 +854,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
-                                                   engineDto.getProcessDefinitionVersion());
+    ProcessReportDataDto reportData = createReport(
+      engineDto.getProcessDefinitionKey(),
+      engineDto.getProcessDefinitionVersion()
+    );
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
@@ -808,7 +873,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void filterInReport() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 10L);
     OffsetDateTime past = engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -945,15 +1011,36 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   private ProcessReportDataDto createReport(String definitionKey, String definitionVersion) {
-    return createReport(definitionKey, ImmutableList.of(definitionVersion));
+    return createReport(definitionKey, ImmutableList.of(definitionVersion),  Collections.singletonList(null));
+  }
+
+  private ProcessReportDataDto createReport(String definitionKey, String definitionVersion, List<String> tenantIds) {
+    return createReport(definitionKey, ImmutableList.of(definitionVersion), tenantIds);
   }
 
   private ProcessReportDataDto createReport(String definitionKey, List<String> definitionVersions) {
+    return createReport(definitionKey, definitionVersions, Collections.singletonList(null));
+  }
+
+  private ProcessReportDataDto createReport(String definitionKey, List<String> definitionVersions,
+                                            List<String> tenantIds) {
     return ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersions(definitionVersions)
+      .setTenantIds(tenantIds)
       .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
       .build();
+  }
+
+  private ReportMapResultDto getReportEvaluationResult(final String definitionKey,
+                                                       final String version,
+                                                       final List<String> tenantIds) {
+    ProcessReportDataDto reportData = createReport(
+      definitionKey,
+      version,
+      tenantIds
+    );
+    return evaluateMapReport(reportData).getResult();
   }
 }

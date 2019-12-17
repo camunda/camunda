@@ -6,21 +6,23 @@
 package org.camunda.optimize.service.es.report.process.flownode.frequency;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
@@ -164,6 +167,40 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     //then
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
+  }
+
+  @Test
+  public void orderOfTenantSelectionDoesNotAffectResult() {
+    // given
+    final String definitionKey = "aKey";
+    final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
+    final String otherTenantId = "tenant1";
+
+    engineIntegrationExtension.createTenant(otherTenantId);
+
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(definitionKey)
+      .name("aProcessName")
+      .startEvent(START_EVENT)
+      .endEvent(END_EVENT)
+      .done();
+
+    engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    List<String> tenantListNoneTenantFirst = Lists.newArrayList(noneTenantId, otherTenantId);
+    List<String> tenantListOtherTenantFirst = Lists.newArrayList(otherTenantId, noneTenantId);
+
+    // when
+    final ReportMapResultDto resultNoneTenantFirst =
+      getReportEvaluationResult(definitionKey, ALL_VERSIONS, tenantListNoneTenantFirst);
+    final ReportMapResultDto resultOtherTenantFirst =
+      getReportEvaluationResult(definitionKey, ALL_VERSIONS, tenantListOtherTenantFirst);
+
+    // then
+    assertThat(resultNoneTenantFirst.getData()).isNotEmpty();
+    assertThat(resultOtherTenantFirst.getData()).isEqualTo(resultNoneTenantFirst.getData());
   }
 
   @Test
@@ -669,15 +706,37 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, String definitionVersion) {
-    return createReport(processDefinitionKey, ImmutableList.of(definitionVersion));
+    return createReport(processDefinitionKey, ImmutableList.of(definitionVersion), Collections.singletonList(null));
+  }
+
+  private ProcessReportDataDto createReport(String processDefinitionKey, String definitionVersion,
+                                            List<String> tenantIds) {
+    return createReport(processDefinitionKey, ImmutableList.of(definitionVersion), tenantIds);
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, List<String> definitionVersions) {
+    return createReport(processDefinitionKey, definitionVersions, Collections.singletonList(null));
+  }
+
+  private ProcessReportDataDto createReport(String processDefinitionKey, List<String> definitionVersions,
+                                            List<String> tenantIds) {
     return ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(definitionVersions)
+      .setTenantIds(tenantIds)
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
+  }
+
+  private ReportMapResultDto getReportEvaluationResult(final String definitionKey,
+                                                       final String version,
+                                                       final List<String> tenantIds) {
+    ProcessReportDataDto reportData = createReport(
+      definitionKey,
+      version,
+      tenantIds
+    );
+    return evaluateMapReport(reportData).getResult();
   }
 }

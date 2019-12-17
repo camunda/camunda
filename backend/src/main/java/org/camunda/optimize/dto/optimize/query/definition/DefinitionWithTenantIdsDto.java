@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.List;
 
@@ -29,5 +30,9 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
                                     @NonNull final List<String> tenantIds) {
     super(key, name, type, isEventProcess);
     this.tenantIds = tenantIds;
+  }
+
+  public List<String> getTenantIds() {
+    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 }

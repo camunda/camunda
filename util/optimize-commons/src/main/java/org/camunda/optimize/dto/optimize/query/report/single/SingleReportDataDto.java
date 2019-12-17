@@ -17,11 +17,16 @@ import java.util.List;
 @FieldNameConstants(asEnum = true)
 public abstract class SingleReportDataDto implements ReportDataDto, Combinable {
 
-  @Getter @Setter private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
+  @Getter
+  @Setter
+  private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
 
   public abstract String getDefinitionKey();
+
   public abstract List<String> getDefinitionVersions();
+
   public abstract String getDefinitionName();
+
   public abstract List<String> getTenantIds();
 
 }

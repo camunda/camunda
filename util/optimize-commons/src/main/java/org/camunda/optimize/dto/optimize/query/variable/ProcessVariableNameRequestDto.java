@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,5 +29,9 @@ public class ProcessVariableNameRequestDto {
   @JsonIgnore
   public void setProcessDefinitionVersion(String processDefinitionVersion) {
     this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
+  }
+
+  public List<String> getTenantIds() {
+    return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 }

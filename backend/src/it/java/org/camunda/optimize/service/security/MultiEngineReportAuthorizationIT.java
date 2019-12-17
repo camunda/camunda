@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -212,7 +212,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     final SingleReportDataDto multiTenantReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType),
       definitionResourceType,
-      ImmutableList.of(tenantId1, tenantId2)
+      Lists.newArrayList(tenantId1, tenantId2)
     );
 
     // when
@@ -250,7 +250,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     final SingleReportDataDto multiTenantReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType),
       definitionResourceType,
-      ImmutableList.of(tenantId1, tenantId2)
+      Lists.newArrayList(tenantId1, tenantId2)
     );
 
     // when
@@ -288,7 +288,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     final SingleReportDataDto multiTenantReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType),
       definitionResourceType,
-      ImmutableList.of(tenantId1, tenantId2)
+      Lists.newArrayList(tenantId1, tenantId2)
     );
 
     // when
@@ -328,12 +328,12 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     final SingleReportDataDto defaultEngineTenantReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType),
       definitionResourceType,
-      ImmutableList.of(tenantId1)
+      Lists.newArrayList(tenantId1)
     );
     final SingleReportDataDto secondEngineTenantReport = constructReportData(
       getDefinitionKeySecondEngine(definitionResourceType),
       definitionResourceType,
-      ImmutableList.of(tenantId2)
+      Lists.newArrayList(tenantId2)
     );
 
     // when
@@ -380,7 +380,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     final SingleReportDataDto secondEngineTenantReport = constructReportData(
       getDefinitionKeySecondEngine(definitionResourceType),
       definitionResourceType,
-      ImmutableList.of(tenantId2)
+      Lists.newArrayList(tenantId2)
     );
 
     // when
@@ -420,7 +420,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     final SingleReportDataDto secondEngineTenantReport = constructReportData(
       getDefinitionKeySecondEngine(definitionResourceType),
       definitionResourceType,
-      ImmutableList.of(tenantId2)
+      Lists.newArrayList(tenantId2)
     );
 
     // when

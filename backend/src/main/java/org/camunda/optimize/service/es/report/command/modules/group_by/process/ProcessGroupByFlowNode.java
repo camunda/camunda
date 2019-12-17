@@ -122,7 +122,7 @@ public class ProcessGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
-    return processDefinitionReader.getProcessDefinitionIfAvailable(reportData)
+    return processDefinitionReader.getProcessDefinitionFromFirstTenantIfAvailable(reportData)
       .orElse(new ProcessDefinitionOptimizeDto())
       .getFlowNodeNames();
   }

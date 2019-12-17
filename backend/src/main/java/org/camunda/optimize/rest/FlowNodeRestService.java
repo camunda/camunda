@@ -39,7 +39,7 @@ public class FlowNodeRestService {
     final FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
 
     final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = processDefinitionService
-      .getProcessDefinitionXmlAsService(
+      .getProcessDefinitionWithXmlAsService(
         request.getProcessDefinitionKey(), request.getProcessDefinitionVersion(), request.getTenantId()
       );
 
