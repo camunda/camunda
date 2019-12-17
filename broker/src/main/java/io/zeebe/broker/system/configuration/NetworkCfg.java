@@ -25,12 +25,10 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final int DEFAULT_MONITORING_API_PORT = 9600;
   public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
-  public static final int DEFAULT_MAX_MESSAGE_COUNT = 16;
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
   private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
-  private int maxMessageCount = DEFAULT_MAX_MESSAGE_COUNT;
   private String advertisedHost;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
@@ -84,15 +82,6 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
-  public int getMaxMessageCount() {
-    return maxMessageCount;
-  }
-
-  public NetworkCfg setMaxMessageCount(final int maxMessageCount) {
-    this.maxMessageCount = maxMessageCount;
-    return this;
-  }
-
   public CommandApiCfg getCommandApi() {
     return commandApi;
   }
@@ -124,8 +113,6 @@ public final class NetworkCfg implements ConfigurationEntry {
         + '\''
         + ", maxMessageSize="
         + maxMessageSize
-        + ", maxMessageCount="
-        + maxMessageCount
         + ", commandApi="
         + commandApi
         + ", internalApi="
