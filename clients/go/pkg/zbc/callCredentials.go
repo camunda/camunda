@@ -22,9 +22,9 @@ type callCredentials struct {
 	credentialsProvider CredentialsProvider
 }
 
-func (cc *callCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (cc *callCredentials) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
 	headers := make(map[string]string)
-	cc.credentialsProvider.ApplyCredentials(headers)
+	cc.credentialsProvider.ApplyCredentials(ctx, headers)
 	return headers, nil
 }
 

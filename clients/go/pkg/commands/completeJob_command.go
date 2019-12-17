@@ -93,14 +93,14 @@ func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {
 	defer cancel()
 
 	response, err := cmd.gateway.CompleteJob(ctx, &cmd.request)
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CompleteJobCommandStep1 {
+func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
 		Command: Command{
 			SerializerMixin: utils.NewJsonStringSerializer(),

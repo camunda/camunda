@@ -49,14 +49,14 @@ func (cmd *ResolveIncidentCommand) Send() (*pb.ResolveIncidentResponse, error) {
 	defer cancel()
 
 	response, err := cmd.gateway.ResolveIncident(ctx, &cmd.request)
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewResolveIncidentCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ResolveIncidentCommandStep1 {
+func NewResolveIncidentCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) ResolveIncidentCommandStep1 {
 	return &ResolveIncidentCommand{
 		Command: Command{
 			gateway:        gateway,

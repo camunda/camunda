@@ -38,7 +38,7 @@ func (cmd CancelWorkflowInstanceCommand) Send() (*pb.CancelWorkflowInstanceRespo
 	defer cancel()
 
 	response, err := cmd.gateway.CancelWorkflowInstance(ctx, &cmd.request)
-	if cmd.retryPredicate(err) {
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
@@ -50,7 +50,7 @@ func (cmd CancelWorkflowInstanceCommand) WorkflowInstanceKey(key int64) Dispatch
 	return cmd
 }
 
-func NewCancelInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CancelInstanceStep1 {
+func NewCancelInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) CancelInstanceStep1 {
 	return &CancelWorkflowInstanceCommand{
 		Command: Command{
 			gateway:        gateway,

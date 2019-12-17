@@ -92,7 +92,7 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 
 	stream, err := cmd.gateway.ActivateJobs(ctx, &cmd.request)
 	if err != nil {
-		if cmd.retryPredicate(err) {
+		if cmd.retryPredicate(ctx, err) {
 			return cmd.Send()
 		}
 		return nil, err
@@ -116,7 +116,7 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 	return activatedJobs, nil
 }
 
-func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ActivateJobsCommandStep1 {
+func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) ActivateJobsCommandStep1 {
 	return &ActivateJobsCommand{
 		request: pb.ActivateJobsRequest{
 			Timeout:        DefaultJobTimeoutInMs,

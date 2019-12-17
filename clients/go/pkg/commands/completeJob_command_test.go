@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -35,7 +36,9 @@ func TestCompleteJobCommand(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	response, err := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobKey(123).Send()
+	response, err := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+		return false
+	}).JobKey(123).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -62,7 +65,7 @@ func TestCompleteJobCommandWithVariablesFromString(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromString(variables)
 	if err != nil {
@@ -96,7 +99,9 @@ func TestCompleteJobCommandWithVariablesFromStringer(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+		return false
+	})
 
 	variablesCommand, err := command.JobKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -130,7 +135,7 @@ func TestCompleteJobCommandWithVariablesFromObject(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -164,7 +169,7 @@ func TestCompleteJobCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
@@ -198,7 +203,7 @@ func TestCompleteJobCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) 
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
@@ -234,7 +239,7 @@ func TestCompleteJobCommandWithVariablesFromMap(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromMap(variableMaps)
 	if err != nil {
