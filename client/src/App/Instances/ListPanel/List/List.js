@@ -48,15 +48,13 @@ class List extends React.Component {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
-    ])
+    ]),
+    rowsToDisplay: PropTypes.number
   };
 
   constructor(props) {
     super(props);
     this.myRef = React.createRef();
-    this.state = {
-      rowsToDisplay: 9
-    };
   }
 
   componentDidMount() {
@@ -162,7 +160,6 @@ class List extends React.Component {
   recalculateHeight() {
     if (this.myRef.current) {
       const rows = ~~(this.myRef.current.clientHeight / 38) - 1;
-      this.setState({rowsToDisplay: rows});
       this.props.onEntriesPerPageChange(rows);
     }
   }
@@ -185,7 +182,7 @@ class List extends React.Component {
               onSort: this.props.onSort,
               areAllInstancesSelected: this.areAllInstancesSelected,
               handleSelectAll: this.handleSelectAll,
-              rowsToDisplay: this.state.rowsToDisplay,
+              rowsToDisplay: this.props.rowsToDisplay,
               isSelected: this.isSelected,
               isDataLoaded: this.props.isDataLoaded,
               handleSelectInstance: this.handleSelectInstance,

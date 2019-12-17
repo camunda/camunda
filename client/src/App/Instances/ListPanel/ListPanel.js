@@ -187,8 +187,8 @@ class ListPanel extends React.Component {
             onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})
             }
+            rowsToDisplay={this.state.entriesPerPage}
             isDataLoaded={this.state.instancesLoaded}
-            initialLoad={this.state.initialLoad}
             onActionButtonClick={this.handleActionButtonClick}
             Overlay={this.renderSpinner()}
           >
