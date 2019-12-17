@@ -177,8 +177,10 @@ export const THead = themed(styled.thead`
 
 export const VariableName = styled.span`
   height: 100%;
-  padding-top: 9px;
-  padding-bottom: 5px;
+
+  padding-top: 4px;
+  margin-top: 3px;
+  line-height: 18px;
 
   display: block;
   text-overflow: ellipsis;
