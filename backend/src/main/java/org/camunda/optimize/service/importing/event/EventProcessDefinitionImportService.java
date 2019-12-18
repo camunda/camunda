@@ -44,13 +44,18 @@ public class EventProcessDefinitionImportService {
 
     final List<EventProcessDefinitionDto> definitions = publishedEventProcesses.stream()
       .filter(eventProcessPublishStateDto -> !existingEventProcessDefinitionIds.contains(eventProcessPublishStateDto.getId()))
-      .map(this::createEventProcessDefinitionDto).collect(Collectors.toList());
-    eventProcessDefinitionService.importEventProcessDefinitions(definitions);
+      .map(this::createEventProcessDefinitionDto)
+      .collect(Collectors.toList());
+    if (!definitions.isEmpty()) {
+      eventProcessDefinitionService.importEventProcessDefinitions(definitions);
+    }
 
-    final Set<String> definitionsIdsToDelete = existingEventProcessDefinitionIds.stream()
+    final Set<String> definitionIdsToDelete = existingEventProcessDefinitionIds.stream()
       .filter(definitionId -> !publishedStateProcessIds.contains(definitionId))
       .collect(Collectors.toSet());
-    eventProcessDefinitionService.deleteEventProcessDefinitions(definitionsIdsToDelete);
+    if (!definitionIdsToDelete.isEmpty()) {
+      eventProcessDefinitionService.deleteEventProcessDefinitions(definitionIdsToDelete);
+    }
   }
 
   private EventProcessDefinitionDto createEventProcessDefinitionDto(final EventProcessPublishStateDto eventProcessPublishStateDto) {
