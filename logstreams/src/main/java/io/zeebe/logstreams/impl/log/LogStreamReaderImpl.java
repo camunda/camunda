@@ -82,11 +82,9 @@ public final class LogStreamReaderImpl implements LogStreamReader {
     // invalidate events first as the buffer content may change
     invalidateBufferAndOffsets();
 
-    final long blockAddress = storageReader.getFirstBlockAddress();
-    if (blockAddress < 0) {
-      // no block found => empty log
+    if (storageReader.isEmpty()) {
       state = IteratorState.EMPTY_LOG_STREAM;
-      return -1;
+      return UNINITIALIZED;
     } else {
       if (readLastBlockIntoBuffer()) {
         do {

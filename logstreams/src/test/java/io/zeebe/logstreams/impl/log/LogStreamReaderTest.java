@@ -254,7 +254,7 @@ public final class LogStreamReaderTest {
   }
 
   @Test
-  public void shouldSeekToLastBigLoggedEvents() {
+  public void shouldSeekToEnd() {
     // given
     final int eventCount = 1000;
     final long lastPosition = writer.writeEvents(eventCount, BIG_EVENT_VALUE);
@@ -350,5 +350,17 @@ public final class LogStreamReaderTest {
 
     // then
     assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  public void shouldReturnNegativeOnSeekToEndOfEmptyLog() {
+    // given
+    final var reader = logStreamRule.getLogStreamReader();
+
+    // when
+    final var result = reader.seekToEnd();
+
+    // then
+    assertThat(result).isLessThan(0);
   }
 }
