@@ -97,7 +97,6 @@ public final class BrokerClientImpl implements BrokerClient {
 
     dataFrameReceiveBuffer =
         Dispatchers.create("gateway-receive-buffer")
-            .modePubSub()
             .maxFragmentLength(maxMessageSize)
             .actorScheduler(actorScheduler)
             .build();
