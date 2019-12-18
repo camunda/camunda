@@ -28,6 +28,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
@@ -202,12 +203,12 @@ public class SessionService implements ConfigurationReloadable {
     // this allows to apply life time config changes onto existing tokens
     return Optional.ofNullable(decodedJWT.getIssuedAt())
       .map(Date::toInstant)
-      .map(instant -> instant.atZone(ZoneId.systemDefault()).toLocalDateTime())
+      .map(instant -> instant.atZone(ZoneOffset.UTC).toLocalDateTime())
       .map(localDateTime -> localDateTime.plus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
   }
 
   private String generateAuthToken(final String sessionId, final String userId) {
-    final Instant issuedAt = LocalDateUtil.getCurrentLocalDateTime().atZone(ZoneId.systemDefault()).toInstant();
+    final Instant issuedAt = LocalDateUtil.getCurrentLocalDateTime().atZone(ZoneOffset.UTC).toInstant();
     return JWT.create()
       .withJWTId(sessionId)
       .withIssuer(ISSUER)
