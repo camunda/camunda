@@ -6,7 +6,6 @@
 
 import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
-import Pill from 'modules/components/Pill';
 
 import {PILL_TYPE, LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 import useDataManager from 'modules/hooks/useDataManager';
