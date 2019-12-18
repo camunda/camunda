@@ -15,8 +15,8 @@ import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
@@ -30,7 +30,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private final ExecuteCommandRequestEncoder requestEncoder = new ExecuteCommandRequestEncoder();
   private final MsgPackHelper msgPackHelper;
 
-  private final ClientOutput output;
+  private final ClientTransport output;
   private final int target;
 
   private int partitionId = partitionIdNullValue();
@@ -41,7 +41,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private Intent intent = null;
 
   public ExecuteCommandRequest(
-      final ClientOutput output, final int target, final MsgPackHelper msgPackHelper) {
+      final ClientTransport output, final int target, final MsgPackHelper msgPackHelper) {
     this.output = output;
     this.target = target;
     this.msgPackHelper = msgPackHelper;

@@ -36,8 +36,6 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     this.templateId = templateId;
   }
 
-  public abstract int getPartitionId();
-
   public abstract void setPartitionId(int partitionId);
 
   public abstract boolean addressesSpecificPartition();

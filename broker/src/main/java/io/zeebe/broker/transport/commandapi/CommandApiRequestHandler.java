@@ -28,6 +28,7 @@ import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
+import io.zeebe.transport.RequestHandler;
 import io.zeebe.transport.ServerOutput;
 import java.util.EnumMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;
 
-public final class CommandApiMessageHandler {
+final class CommandApiRequestHandler implements RequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -57,7 +58,7 @@ public final class CommandApiMessageHandler {
   private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
 
-  public CommandApiMessageHandler() {
+  CommandApiRequestHandler() {
     this.metrics = new BackpressureMetrics();
     initEventTypeMap();
   }
@@ -73,7 +74,7 @@ public final class CommandApiMessageHandler {
     recordsByType.put(ValueType.WORKFLOW_INSTANCE_CREATION, new WorkflowInstanceCreationRecord());
   }
 
-  private boolean handleExecuteCommandRequest(
+  private void handleExecuteCommandRequest(
       final ServerOutput output,
       final int partitionId,
       final long requestId,
@@ -92,9 +93,10 @@ public final class CommandApiMessageHandler {
     final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
 
     if (logStreamWriter == null) {
-      return errorResponseWriter
+      errorResponseWriter
           .partitionLeaderMismatch(partitionId)
           .tryWriteResponseOrLogFailure(output, partitionId, requestId);
+      return;
     }
 
     final ValueType eventType = executeCommandRequestDecoder.valueType();
@@ -102,9 +104,10 @@ public final class CommandApiMessageHandler {
     final UnpackedObject event = recordsByType.get(eventType);
 
     if (event == null) {
-      return errorResponseWriter
+      errorResponseWriter
           .unsupportedMessage(eventType.name(), recordsByType.keySet().toArray())
           .tryWriteResponseOrLogFailure(output, partitionId, requestId);
+      return;
     }
 
     final int eventOffset =
@@ -119,9 +122,10 @@ public final class CommandApiMessageHandler {
     } catch (final RuntimeException e) {
       LOG.error("Failed to deserialize message of type {} in client API", eventType.name(), e);
 
-      return errorResponseWriter
+      errorResponseWriter
           .malformedRequest(e)
           .tryWriteResponseOrLogFailure(output, partitionId, requestId);
+      return;
     }
 
     eventMetadata.recordType(RecordType.COMMAND);
@@ -139,9 +143,8 @@ public final class CommandApiMessageHandler {
           limiter.getLimit(),
           limiter.getInflightCount(),
           requestId);
-      return errorResponseWriter
-          .resourceExhausted()
-          .tryWriteResponse(output, partitionId, requestId);
+      errorResponseWriter.resourceExhausted().tryWriteResponse(output, partitionId, requestId);
+      return;
     }
 
     boolean written = false;
@@ -154,7 +157,6 @@ public final class CommandApiMessageHandler {
         limiter.onIgnore(partitionId, requestId);
       }
     }
-    return written;
   }
 
   private boolean writeCommand(
@@ -181,7 +183,7 @@ public final class CommandApiMessageHandler {
     return eventPosition >= 0;
   }
 
-  public void addPartition(
+  void addPartition(
       final int partitionId,
       final LogStreamRecordWriter logStreamWriter,
       final RequestLimiter<Intent> limiter) {
@@ -192,7 +194,7 @@ public final class CommandApiMessageHandler {
         });
   }
 
-  public void removePartition(final LogStream logStream) {
+  void removePartition(final LogStream logStream) {
     cmdQueue.add(
         () -> {
           leadingStreams.remove(logStream.getPartitionId());
@@ -200,13 +202,14 @@ public final class CommandApiMessageHandler {
         });
   }
 
-  public boolean onRequest(
+  @Override
+  public void onRequest(
       final ServerOutput output,
       final int partitionId,
+      final long requestId,
       final DirectBuffer buffer,
       final int offset,
-      final int length,
-      final long requestId) {
+      final int length) {
     drainCommandQueue();
 
     messageHeaderDecoder.wrap(buffer, offset);
@@ -215,9 +218,10 @@ public final class CommandApiMessageHandler {
     final int clientVersion = messageHeaderDecoder.version();
 
     if (clientVersion > Protocol.PROTOCOL_VERSION) {
-      return errorResponseWriter
+      errorResponseWriter
           .invalidClientVersion(Protocol.PROTOCOL_VERSION, clientVersion)
           .tryWriteResponse(output, partitionId, requestId);
+      return;
     }
 
     eventMetadata.reset();
@@ -226,11 +230,12 @@ public final class CommandApiMessageHandler {
     eventMetadata.requestStreamId(partitionId);
 
     if (templateId == ExecuteCommandRequestDecoder.TEMPLATE_ID) {
-      return handleExecuteCommandRequest(
+      handleExecuteCommandRequest(
           output, partitionId, requestId, eventMetadata, buffer, offset, length);
+      return;
     }
 
-    return errorResponseWriter
+    errorResponseWriter
         .invalidMessageTemplate(templateId, ExecuteCommandRequestDecoder.TEMPLATE_ID)
         .tryWriteResponse(output, partitionId, requestId);
   }

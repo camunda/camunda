@@ -18,7 +18,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.transport.impl.AtomixClientOutputAdapter;
+import io.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -89,7 +89,7 @@ public final class BrokerClientImpl implements BrokerClient {
             member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
     final var atomixTransportAdapter =
-        new AtomixClientOutputAdapter(atomixCluster.getCommunicationService());
+        new AtomixClientTransportAdapter(atomixCluster.getCommunicationService());
     actorScheduler.submitActor(atomixTransportAdapter);
     requestManager =
         new BrokerRequestManager(

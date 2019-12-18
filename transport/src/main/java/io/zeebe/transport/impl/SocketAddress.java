@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.transport;
+package io.zeebe.transport.impl;
 
 import static io.zeebe.util.StringUtil.fromBytes;
 import static io.zeebe.util.StringUtil.getBytes;
@@ -21,11 +21,11 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public final class SocketAddress implements Comparable<SocketAddress> {
 
-  public static final int MAX_HOST_LENGTH = 128;
+  private static final int MAX_HOST_LENGTH = 128;
 
-  protected final byte[] byteArray;
-  protected final UnsafeBuffer hostBuffer;
-  protected int port;
+  private final byte[] byteArray;
+  private final UnsafeBuffer hostBuffer;
+  private int port;
 
   public SocketAddress() {
     byteArray = new byte[MAX_HOST_LENGTH];
@@ -48,7 +48,7 @@ public final class SocketAddress implements Comparable<SocketAddress> {
     port(other.port);
   }
 
-  public MutableDirectBuffer getHostBuffer() {
+  private MutableDirectBuffer getHostBuffer() {
     return hostBuffer;
   }
 
@@ -84,18 +84,18 @@ public final class SocketAddress implements Comparable<SocketAddress> {
     return fromBytes(tmp);
   }
 
-  public int hostLength() {
+  private int hostLength() {
     return hostBuffer.capacity();
   }
 
-  public SocketAddress hostLength(final int hostLength) {
+  private SocketAddress hostLength(final int hostLength) {
     hostBuffer.wrap(byteArray, 0, hostLength);
     return this;
   }
 
-  protected void checkHostLength(final int hostLength) {
+  private void checkHostLength(final int hostLength) {
     if (hostLength > MAX_HOST_LENGTH) {
-      throw new RuntimeException(
+      throw new IllegalArgumentException(
           String.format(
               "Host length exceeds max length (%d > %d bytes)", hostLength, MAX_HOST_LENGTH));
     }

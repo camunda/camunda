@@ -10,8 +10,9 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import io.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
+import io.zeebe.transport.RequestHandler;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.impl.ServerResponseImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -19,7 +20,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class StubResponseChannelHandler {
+public final class StubRequestHandler implements RequestHandler {
 
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final List<ResponseStub<ExecuteCommandRequest>> cmdRequestStubs = new ArrayList<>();
@@ -29,9 +30,9 @@ public final class StubResponseChannelHandler {
   private final List<Object> allRequests = new CopyOnWriteArrayList<>();
   private final List<ExecuteCommandRequest> commandRequests = new CopyOnWriteArrayList<>();
 
-  private final ServerResponse response = new ServerResponse();
+  private final ServerResponseImpl response = new ServerResponseImpl();
 
-  StubResponseChannelHandler(final MsgPackHelper msgPackHelper) {
+  StubRequestHandler(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
   }
 
@@ -43,12 +44,14 @@ public final class StubResponseChannelHandler {
     return commandRequests;
   }
 
-  boolean onRequest(
+  @Override
+  public void onRequest(
       final ServerOutput output,
+      final int partitionId,
+      final long requestId,
       final DirectBuffer buffer,
       final int offset,
-      final int length,
-      final long requestId) {
+      final int length) {
     final MutableDirectBuffer copy = new UnsafeBuffer(new byte[length]);
     copy.putBytes(0, buffer, offset, length);
 
@@ -62,7 +65,7 @@ public final class StubResponseChannelHandler {
       commandRequests.add(request);
       allRequests.add(request);
 
-      requestHandled = handleRequest(output, request, cmdRequestStubs, requestId);
+      requestHandled = handleRequest(output, partitionId, request, cmdRequestStubs, requestId);
     }
 
     if (!requestHandled) {
@@ -70,13 +73,12 @@ public final class StubResponseChannelHandler {
           String.format(
               "no stub applies to request with schema id %s and template id %s ",
               headerDecoder.schemaId(), headerDecoder.templateId()));
-    } else {
-      return true;
     }
   }
 
   private <T> boolean handleRequest(
       final ServerOutput output,
+      final int partitionId,
       final T request,
       final List<? extends ResponseStub<T>> responseStubs,
       final long requestId) {
@@ -86,15 +88,17 @@ public final class StubResponseChannelHandler {
           final MessageBuilder<T> responseWriter = stub.getResponseWriter();
           responseWriter.initializeFrom(request);
 
-          response.reset().requestId(requestId).writer(responseWriter);
+          response
+              .reset()
+              .setRequestId(requestId)
+              .setPartitionId(partitionId)
+              .writer(responseWriter);
 
           responseWriter.beforeResponse();
 
-          return output.sendResponse(response);
-        } else {
-          // just ignore the request; this can be used to simulate requests that never return
-          return true;
+          output.sendResponse(response);
         }
+        return true;
       }
     }
     return false;

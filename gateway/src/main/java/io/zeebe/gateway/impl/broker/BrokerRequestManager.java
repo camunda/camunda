@@ -26,7 +26,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -39,17 +39,17 @@ import org.agrona.DirectBuffer;
 
 public final class BrokerRequestManager extends Actor {
 
-  private final ClientOutput clientOutput;
+  private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManagerImpl topologyManager;
   private final Duration requestTimeout;
 
   public BrokerRequestManager(
-      final ClientOutput clientOutput,
+      final ClientTransport clientTransport,
       final BrokerTopologyManagerImpl topologyManager,
       final RequestDispatchStrategy dispatchStrategy,
       final Duration requestTimeout) {
-    this.clientOutput = clientOutput;
+    this.clientTransport = clientTransport;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
     this.requestTimeout = requestTimeout;
@@ -168,7 +168,7 @@ public final class BrokerRequestManager extends Actor {
     final BrokerNodeIdProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
 
     final ActorFuture<DirectBuffer> responseFuture =
-        clientOutput.sendRequestWithRetry(
+        clientTransport.sendRequestWithRetry(
             nodeIdProvider, BrokerRequestManager::responseValidation, request, requestTimeout);
 
     if (responseFuture != null) {

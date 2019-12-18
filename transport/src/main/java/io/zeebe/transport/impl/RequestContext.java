@@ -7,8 +7,9 @@
  */
 package io.zeebe.transport.impl;
 
-import static io.zeebe.transport.impl.AtomixRequestSubscription.topicName;
+import static io.zeebe.transport.impl.AtomixServerTransport.topicName;
 
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.function.Predicate;
@@ -36,7 +37,7 @@ final class RequestContext {
     this.nodeIdSupplier = nodeIdSupplier;
     this.partitionId = partitionId;
     this.requestBytes = requestBytes;
-    this.startTime = System.currentTimeMillis();
+    this.startTime = ActorClock.currentTimeMillis();
     this.responseValidator = responseValidator;
     this.timeout = timeout;
   }
@@ -45,7 +46,7 @@ final class RequestContext {
     return currentFuture.isDone();
   }
 
-  public CompletableActorFuture<DirectBuffer> getCurrentFuture() {
+  CompletableActorFuture<DirectBuffer> getCurrentFuture() {
     return currentFuture;
   }
 
@@ -53,11 +54,11 @@ final class RequestContext {
     return nodeIdSupplier.get();
   }
 
-  public String getTopicName() {
+  String getTopicName() {
     return topicName(partitionId);
   }
 
-  public byte[] getRequestBytes() {
+  byte[] getRequestBytes() {
     return requestBytes;
   }
 
@@ -69,14 +70,14 @@ final class RequestContext {
    * @return the time out, which is calculated via given timeout minus the already elapsed time.
    *     this is necessary to respect the retries
    */
-  public Duration calculateTimeout() {
-    final var currentTime = System.currentTimeMillis();
+  Duration calculateTimeout() {
+    final var currentTime = ActorClock.currentTimeMillis();
     final var elapsedTime = currentTime - startTime;
 
     return timeout.minus(Duration.ofMillis(elapsedTime));
   }
 
-  public boolean verifyResponse(DirectBuffer response) {
+  boolean verifyResponse(final DirectBuffer response) {
     // the predicate returns true when the response is valid and the request should not be retried
     return responseValidator.test(response);
   }

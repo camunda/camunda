@@ -15,10 +15,9 @@ import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.ErrorResponseEncoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.impl.ServerResponseImpl;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
@@ -45,7 +44,7 @@ public final class ErrorResponseWriter implements BufferWriter {
   private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   private final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
   private final ServerOutput output;
-  private final ServerResponse response = new ServerResponse();
+  private final ServerResponseImpl response = new ServerResponseImpl();
   private ErrorCode errorCode;
   private byte[] errorMessage;
 
@@ -138,40 +137,31 @@ public final class ErrorResponseWriter implements BufferWriter {
     return errorMessage;
   }
 
-  public boolean tryWriteResponseOrLogFailure(
+  public void tryWriteResponseOrLogFailure(
       final ServerOutput output, final int streamId, final long requestId) {
-    final boolean isWritten = tryWriteResponse(output, streamId, requestId);
-
-    if (!isWritten) {
-      LOG.error(
-          "Failed to write error response. Error code: '{}', error message: '{}'",
-          errorCode != null ? errorCode.name() : ErrorCode.NULL_VAL.name(),
-          new String(errorMessage, StandardCharsets.UTF_8));
-    }
-
-    return isWritten;
+    tryWriteResponse(output, streamId, requestId);
   }
 
-  public boolean tryWriteResponseOrLogFailure(final int streamId, final long requestId) {
-    return tryWriteResponseOrLogFailure(this.output, streamId, requestId);
+  public void tryWriteResponseOrLogFailure(final int streamId, final long requestId) {
+    tryWriteResponseOrLogFailure(this.output, streamId, requestId);
   }
 
-  public boolean tryWriteResponse(
+  public void tryWriteResponse(
       final ServerOutput output, final int streamId, final long requestId) {
     EnsureUtil.ensureNotNull("error code", errorCode);
     EnsureUtil.ensureNotNull("error message", errorMessage);
 
     try {
-      response.reset().remoteStreamId(streamId).writer(this).requestId(requestId);
+      response.reset().setPartitionId(streamId).writer(this).setRequestId(requestId);
 
-      return output.sendResponse(response);
+      output.sendResponse(response);
     } finally {
       reset();
     }
   }
 
-  public boolean tryWriteResponse(final int streamId, final long requestId) {
-    return tryWriteResponse(this.output, streamId, requestId);
+  public void tryWriteResponse(final int streamId, final long requestId) {
+    tryWriteResponse(this.output, streamId, requestId);
   }
 
   @Override

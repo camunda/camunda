@@ -11,39 +11,37 @@ import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.atomix.cluster.AtomixCluster;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.Loggers;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.AtomixClientOutputAdapter;
-import io.zeebe.transport.impl.AtomixRequestSubscription;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.TransportFactory;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 
 public final class StubBrokerRule extends ExternalResource {
-  public static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
-  protected final int nodeId;
-  protected final SocketAddress socketAddress;
-  protected ActorScheduler scheduler;
-  protected MsgPackHelper msgPackHelper;
-  protected final AtomicReference<Topology> currentTopology = new AtomicReference<>();
+  private static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
+  private final int nodeId;
+  private final SocketAddress socketAddress;
+  private ActorScheduler scheduler;
+  private MsgPackHelper msgPackHelper;
+  private final AtomicReference<Topology> currentTopology = new AtomicReference<>();
   private final ControlledActorClock clock = new ControlledActorClock();
   private final int partitionCount;
-  private StubResponseChannelHandler channelHandler;
-  private final AtomicInteger requestCount = new AtomicInteger(0);
+  private StubRequestHandler channelHandler;
   private AtomixCluster cluster;
   private int currentStubPort;
   private String currentStubHost;
+  private ServerTransport serverTransport;
 
   public StubBrokerRule() {
     this.nodeId = 0;
@@ -82,33 +80,11 @@ public final class StubBrokerRule extends ExternalResource {
             .build();
     cluster.start().join();
     final var communicationService = cluster.getCommunicationService();
-    final var atomixClientOuputAdapter = new AtomixClientOutputAdapter(communicationService);
-    final var atomixRequestSubscription = new AtomixRequestSubscription(communicationService);
-    scheduler.submitActor(atomixClientOuputAdapter);
+    final var transportFactory = new TransportFactory(scheduler);
+    serverTransport = transportFactory.createServerTransport(0, communicationService);
 
-    channelHandler = new StubResponseChannelHandler(msgPackHelper);
-    atomixRequestSubscription.subscribe(
-        1,
-        (bytes) -> {
-          final var completableFuture = new CompletableFuture<byte[]>();
-          final var requestId = requestCount.getAndIncrement();
-
-          channelHandler.onRequest(
-              response -> {
-                final var length = response.getLength();
-                final var bytes1 = new byte[length];
-                final var unsafeBuffer = new UnsafeBuffer(bytes1);
-                response.write(unsafeBuffer, 0);
-                completableFuture.complete(bytes1);
-                return true;
-              },
-              new UnsafeBuffer(bytes),
-              0,
-              bytes.length,
-              requestId);
-
-          return completableFuture;
-        });
+    channelHandler = new StubRequestHandler(msgPackHelper);
+    serverTransport.subscribe(1, channelHandler);
 
     currentTopology.set(topology);
   }
@@ -123,6 +99,11 @@ public final class StubBrokerRule extends ExternalResource {
 
   @Override
   protected void after() {
+    try {
+      serverTransport.close();
+    } catch (final Exception e) {
+      Loggers.PROTOCOL_LOGGER.error("Error on closing server transport.", e);
+    }
     if (scheduler != null) {
       scheduler.stop();
     }

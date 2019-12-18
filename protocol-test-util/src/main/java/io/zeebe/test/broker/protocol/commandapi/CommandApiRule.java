@@ -18,7 +18,8 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.impl.AtomixClientOutputAdapter;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Collections;
@@ -35,24 +36,17 @@ public final class CommandApiRule extends ExternalResource {
 
   private static final String DEFAULT_WORKER = "defaultWorker";
 
-  protected final int nodeId;
-  protected final Supplier<AtomixCluster> atomixSupplier;
-  protected final int partitionCount;
-  protected MsgPackHelper msgPackHelper;
-  protected int defaultPartitionId = -1;
+  private final int nodeId;
+  private final Supplier<AtomixCluster> atomixSupplier;
+  private MsgPackHelper msgPackHelper;
+  private int defaultPartitionId = -1;
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
 
   public CommandApiRule(final Supplier<AtomixCluster> atomixSupplier) {
-    this(0, 1, atomixSupplier);
-  }
-
-  public CommandApiRule(
-      final int nodeId, final int partitionCount, final Supplier<AtomixCluster> atomixSupplier) {
-    this.nodeId = nodeId;
-    this.partitionCount = partitionCount;
+    this.nodeId = 0;
     this.atomixSupplier = atomixSupplier;
   }
 
@@ -86,23 +80,21 @@ public final class CommandApiRule extends ExternalResource {
 
   /** targets the default partition by default */
   public ExecuteCommandRequestBuilder createCmdRequest() {
-    final var outputAdapter = createOutput();
+    final var outputAdapter = createClientTransport();
     return new ExecuteCommandRequestBuilder(outputAdapter, nodeId, msgPackHelper)
         .partitionId(defaultPartitionId);
   }
 
   public ExecuteCommandRequestBuilder createCmdRequest(final int partition) {
-    final var outputAdapter = createOutput();
-    return new ExecuteCommandRequestBuilder(outputAdapter, nodeId, msgPackHelper)
+    final var clientTransport = createClientTransport();
+    return new ExecuteCommandRequestBuilder(clientTransport, nodeId, msgPackHelper)
         .partitionId(partition);
   }
 
-  private AtomixClientOutputAdapter createOutput() {
+  private ClientTransport createClientTransport() {
     final var atomixCluster = fetchAtomix();
-    final var outputAdapter =
-        new AtomixClientOutputAdapter(atomixCluster.getCommunicationService());
-    scheduler.submitActor(outputAdapter);
-    return outputAdapter;
+    return new TransportFactory(scheduler)
+        .createClientTransport(atomixCluster.getCommunicationService());
   }
 
   public PartitionTestClient partitionClient() {

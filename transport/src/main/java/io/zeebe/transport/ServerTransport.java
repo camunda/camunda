@@ -7,10 +7,7 @@
  */
 package io.zeebe.transport;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-
-public interface RequestSubscription {
+public interface ServerTransport extends ServerOutput, AutoCloseable {
 
   /**
    * Subscribes to the given partition and call's the given handler on each new request.
@@ -18,7 +15,7 @@ public interface RequestSubscription {
    * @param partitionId the partition, for which should be subscribed
    * @param requestHandler the handler which should be called.
    */
-  void subscribe(int partitionId, Function<byte[], CompletableFuture<byte[]>> requestHandler);
+  void subscribe(int partitionId, RequestHandler requestHandler);
 
   /**
    * Unsubscribe from the given partition, the registered handler will no longer be called on new

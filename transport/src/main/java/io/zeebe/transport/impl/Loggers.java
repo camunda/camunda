@@ -5,15 +5,13 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.transport;
+package io.zeebe.transport.impl;
 
-import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.ZbLogger;
+import org.slf4j.Logger;
 
-public interface ServerResponse extends BufferWriter {
+public final class Loggers {
+  static final Logger TRANSPORT_LOGGER = new ZbLogger("io.zeebe.transport");
 
-  /** @return the id of the corresponding request */
-  long getRequestId();
-
-  /** @return the partition id on which the requests was received and should be send back */
-  int getPartitionId();
+  private Loggers() {}
 }

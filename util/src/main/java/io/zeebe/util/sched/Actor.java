@@ -61,4 +61,8 @@ public abstract class Actor implements CloseableSilently {
   public ActorFuture<Void> closeAsync() {
     return actor.close();
   }
+
+  public static String actorNamePattern(final int nodeId, final String name) {
+    return String.format("Broker-%d-%s", nodeId, name);
+  }
 }

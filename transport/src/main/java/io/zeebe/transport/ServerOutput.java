@@ -9,10 +9,13 @@ package io.zeebe.transport;
 
 public interface ServerOutput {
   /**
-   * Sends a response according to the request response protocol.
+   * Sends the given response. The corresponding partition and request id is extracted from the
+   * response object.
    *
-   * <p>Returns null if the response cannot be currently written due to exhausted capacity. Throws
-   * an exception if the response is not sendable at all (e.g. buffer writer throws exception).
+   * <p>This method should decouple the the request handling, such that response sending can be done
+   * later asynchronously.
+   *
+   * @param response the response which should be send
    */
-  boolean sendResponse(ServerResponse response);
+  void sendResponse(ServerResponse response);
 }

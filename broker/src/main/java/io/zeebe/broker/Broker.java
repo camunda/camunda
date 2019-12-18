@@ -43,8 +43,9 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.impl.AtomixRequestSubscription;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.TransportFactory;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.Actor;
@@ -89,6 +90,7 @@ public final class Broker implements AutoCloseable {
   private ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
+  private ServerTransport serverTransport;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -156,6 +158,7 @@ public final class Broker implements AutoCloseable {
 
     startContext.addStep("actor scheduler", this::actorSchedulerStep);
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
+    startContext.addStep("server transport", () -> serverTransport(localBroker));
     startContext.addStep("command api", () -> commandAPIStep(brokerCfg, networkCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
@@ -190,6 +193,14 @@ public final class Broker implements AutoCloseable {
     return () -> atomix.stop().join();
   }
 
+  private AutoCloseable serverTransport(final BrokerInfo localBroker) {
+    final var transportFactory = new TransportFactory(scheduler);
+    serverTransport =
+        transportFactory.createServerTransport(
+            localBroker.getNodeId(), atomix.getCommunicationService());
+    return serverTransport;
+  }
+
   private AutoCloseable commandAPIStep(
       final BrokerCfg brokerCfg, final NetworkCfg networkCfg, final BrokerInfo localBroker) {
 
@@ -204,17 +215,11 @@ public final class Broker implements AutoCloseable {
     final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
     final InetSocketAddress bindAddress = bindAddr.toInetSocketAddress();
 
-    final var commandApiRequestSubscription =
-        new AtomixRequestSubscription(atomix.getCommunicationService());
-    commandHandler = new CommandApiService(commandApiRequestSubscription, localBroker, limiter);
+    commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
     partitionListeners.add(commandHandler);
     scheduleActor(commandHandler);
     LOG.info("Command api bound to {}.", bindAddress);
     return commandHandler;
-  }
-
-  public static String actorNamePattern(final BrokerInfo local, final String name) {
-    return String.format("Broker-%d-%s", local.getNodeId(), name);
   }
 
   private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {

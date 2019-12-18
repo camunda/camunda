@@ -13,7 +13,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
-public interface ClientOutput {
+public interface ClientTransport extends AutoCloseable {
   /**
    * Similar to {@link #sendRequestWithRetry(Supplier, Predicate, ClientRequest, Duration)}, but no
    * requests are validated before completing the future.
@@ -39,8 +39,10 @@ public interface ClientOutput {
    *     timeout.
    */
   default ActorFuture<DirectBuffer> sendRequestWithRetry(
-      Supplier<Integer> nodeIdSupplier, ClientRequest clientRequest, Duration timeout) {
-    return sendRequestWithRetry(nodeIdSupplier, (response) -> true, clientRequest, timeout);
+      final Supplier<Integer> nodeIdSupplier,
+      final ClientRequest clientRequest,
+      final Duration timeout) {
+    return sendRequestWithRetry(nodeIdSupplier, response -> true, clientRequest, timeout);
   }
 
   /**

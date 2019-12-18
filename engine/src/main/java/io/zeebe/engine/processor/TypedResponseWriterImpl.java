@@ -106,12 +106,12 @@ public final class TypedResponseWriterImpl implements TypedResponseWriter, SideE
         eventValue);
   }
 
+  @Override
   public boolean flush() {
     if (isResponseStaged) {
-      return writer.tryWriteResponse(requestStreamId, requestId);
-    } else {
-      return true;
+      writer.tryWriteResponse(requestStreamId, requestId);
     }
+    return true;
   }
 
   private void stage(

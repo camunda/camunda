@@ -75,21 +75,16 @@ public final class BrokerClientTest {
 
     final ControlledActorClock clock = new ControlledActorClock();
 
+    final var stubAddress = Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
+    final var stubNode = Node.builder().withAddress(stubAddress).build();
+    final var listOfNodes = List.of(stubNode);
     atomixCluster =
         AtomixCluster.builder()
             .withPort(SocketUtil.getNextAddress().getPort())
             .withMemberId("gateway")
             .withClusterId("cluster")
             .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder()
-                    .withNodes(
-                        List.of(
-                            Node.builder()
-                                .withAddress(
-                                    Address.from(
-                                        broker.getCurrentStubHost(), broker.getCurrentStubPort()))
-                                .build()))
-                    .build())
+                BootstrapDiscoveryProvider.builder().withNodes(listOfNodes).build())
             .build();
     atomixCluster.start().join();
 

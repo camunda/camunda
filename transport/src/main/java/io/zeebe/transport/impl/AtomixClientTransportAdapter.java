@@ -10,8 +10,8 @@ package io.zeebe.transport.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException;
-import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -23,13 +23,13 @@ import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class AtomixClientOutputAdapter extends Actor implements ClientOutput {
+public final class AtomixClientTransportAdapter extends Actor implements ClientTransport {
 
   private static final Duration RETRY_DELAY = Duration.ofMillis(10);
 
   private final ClusterCommunicationService communicationService;
 
-  public AtomixClientOutputAdapter(final ClusterCommunicationService communicationService) {
+  public AtomixClientTransportAdapter(final ClusterCommunicationService communicationService) {
     this.communicationService = communicationService;
   }
 
@@ -80,29 +80,33 @@ public final class AtomixClientOutputAdapter extends Actor implements ClientOutp
             MemberId.from(nodeId.toString()),
             requestContext.calculateTimeout())
         .whenComplete(
-            (response, errorOnRequest) -> {
-              final var currentFuture = requestContext.getCurrentFuture();
-              if (errorOnRequest == null) {
-                final var responseBuffer = new UnsafeBuffer(response);
-                if (requestContext.verifyResponse(responseBuffer)) {
-                  currentFuture.complete(responseBuffer);
-                } else {
-                  // no valid response - retry in respect of the timeout
-                  actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
-                }
-              } else {
-                // normally the root exception is a completion exception
-                // and the cause is either connect or non remote handler
-                final var cause = errorOnRequest.getCause();
-                if (cause instanceof ConnectException
-                    || cause instanceof MessagingException.NoRemoteHandler) {
-                  // no registered subscription yet
-                  actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
-                } else {
-                  currentFuture.completeExceptionally(errorOnRequest);
-                }
-              }
-            });
+            (response, errorOnRequest) ->
+                actor.run(() -> handleResponse(requestContext, response, errorOnRequest)));
+  }
+
+  private void handleResponse(
+      final RequestContext requestContext, final byte[] response, final Throwable errorOnRequest) {
+    final var currentFuture = requestContext.getCurrentFuture();
+    if (errorOnRequest == null) {
+      final var responseBuffer = new UnsafeBuffer(response);
+      if (requestContext.verifyResponse(responseBuffer)) {
+        currentFuture.complete(responseBuffer);
+      } else {
+        // no valid response - retry in respect of the timeout
+        actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
+      }
+    } else {
+      // normally the root exception is a completion exception
+      // and the cause is either connect or non remote handler
+      final var cause = errorOnRequest.getCause();
+      if (cause instanceof ConnectException
+          || cause instanceof MessagingException.NoRemoteHandler) {
+        // no registered subscription yet
+        actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
+      } else {
+        currentFuture.completeExceptionally(errorOnRequest);
+      }
+    }
   }
 
   private void timeoutFuture(final RequestContext requestContext) {
