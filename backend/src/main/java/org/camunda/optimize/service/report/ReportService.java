@@ -35,13 +35,10 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.rest.providers.OptimizeConflictExceptionMapper;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeReportConflictException;
@@ -208,9 +205,9 @@ public class ReportService implements CollectionReferencingService {
     List<ReportDefinitionDto> allReports = reportReader.getAllReportsOmitXml();
     List<ReportDefinitionDto> reportsForDefinitionKey = allReports.stream()
       .filter(report -> report instanceof SingleProcessReportDefinitionDto)
-      .filter(reportDefinitionDto -> ((SingleProcessReportDefinitionDto) reportDefinitionDto).getData()
-        .getProcessDefinitionKey()
-        .equals(processDefinitionKey))
+      .filter(reportDefinitionDto -> Objects.equals(
+        ((SingleProcessReportDefinitionDto) reportDefinitionDto).getData().getProcessDefinitionKey(),
+        processDefinitionKey))
       .collect(Collectors.toList());
     reportsForDefinitionKey.addAll(
       allReports.stream()

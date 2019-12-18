@@ -780,13 +780,15 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       reportClient.createSingleProcessReportDefinitionDto(collectionId, eventProcessDefinitionKey, Collections.emptyList()));
     String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
       reportClient.createSingleProcessReportDefinitionDto(collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
+    String reportIdWithNoDefKey = reportClient.createSingleProcessReport(
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, null, Collections.emptyList()));
     reportClient.createCombinedReport(collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey));
 
     alertClient.createAlertForReport(reportWithEventProcessDefKey);
     String alertIdToRemain = alertClient.createAlertForReport(reportIdWithDefaultDefKey);
 
     String dashboardId = dashboardClient.createDashboard(
-      collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)
+      collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey, reportIdWithNoDefKey)
     );
 
     // when the event process is deleted
@@ -796,7 +798,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey).execute(HttpStatus.SC_NOT_FOUND);
     assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting("definitionDto.id")
-      .containsExactly(reportIdWithDefaultDefKey);
+      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(alertClient.getAlertsForCollectionAsDefaultUser(collectionId))
       .extracting("id")
       .containsExactly(alertIdToRemain);
@@ -806,7 +808,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .contains(Collections.singletonList(new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
     assertThat(dashboardClient.getDashboard(dashboardId).getReports())
       .extracting("id")
-      .containsExactly(reportIdWithDefaultDefKey);
+      .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isEmpty();
   }
 
