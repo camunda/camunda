@@ -7,37 +7,46 @@ package org.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-
-import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public class ImportFieldsIT extends OperateZeebeIntegrationTest {
-  
-  @Autowired
-  private IncidentReader incidentReader;
   
   @Test // OPE-818
   public void testErrorMessageSizeCanBeHigherThan32KB() {
     // having
     String errorMessageMoreThan32KB = buildStringWithLengthOf(32 * 1024 + 42);
-
-    deployWorkflow("demoProcess_v_1.bpmn");
-    final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, "demoProcess", "{\"a\": \"b\"}");
-
-    //when
-    //create an incident
-    failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, errorMessageMoreThan32KB);
-
-    //then
-    final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
-    assertThat(allIncidents).hasSize(1);
-    IncidentEntity incidentEntity = allIncidents.get(0);   
-    assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessageMoreThan32KB);
+    
+    // when
+    tester
+      .deployWorkflow("demoProcess_v_1.bpmn")
+      .and()
+      .startWorkflowInstance("demoProcess", "{\"a\": \"b\"}")
+      .waitUntil().workflowInstanceIsStarted()
+      .and()
+      .failTask("taskA", errorMessageMoreThan32KB)
+      .waitUntil().incidentIsActive();
+    
+    // then
+    assertThat(tester.hasIncidentWithErrorMessage(errorMessageMoreThan32KB)).isTrue();   
+  }
+  
+  @Test
+  public void testVariableValuesSizeCanBeUpTo32KB() {
+    // having
+    String varValue = buildStringWithLengthOf(32 * 1024 - 4); // 2 quotes
+    
+    // when
+    tester
+     .deployWorkflow("demoProcess_v_1.bpmn")
+     .and()
+     .startWorkflowInstance("demoProcess",  "{\"a\": \""+varValue+"\"}")
+     .waitUntil().workflowInstanceIsStarted()
+     .and()
+     .waitUntil().variableExists("a");
+  
+    // then
+    assertThat(tester.hasVariable("a","\""+varValue+"\"")).isTrue();
   }
 
   protected String buildStringWithLengthOf(int length) {

@@ -15,14 +15,17 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.AbstractArchiverJob;
-import org.camunda.operate.archiver.Archiver;
 import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.VariableReader;
+import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -41,6 +44,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+
+import static org.camunda.operate.util.CollectionUtil.*;
+
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -84,16 +90,23 @@ public class OperateTester {
   @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
-
+  
   @Autowired
-  private Archiver archiver;
+  @Qualifier("variableExistsCheck")
+  private Predicate<Object[]> variableExistsCheck;
 
   @Autowired
   private ZeebeImporter zeebeImporter;
 
   @Autowired
   protected OperationExecutor operationExecutor;
-
+  
+  @Autowired
+  protected VariableReader variableReader;
+  
+  @Autowired
+  protected IncidentReader incidentReader;
+  
   private boolean operationExecutorEnabled = true;
 
   public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
@@ -284,4 +297,40 @@ public class OperateTester {
     elasticsearchTestRule.refreshOperateESIndices();
     return this;
   }
+
+  public OperateTester variableExists(String name) {
+    elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey,name);
+    return this;
+  }
+
+  public String getVariable(String name) {
+   return getVariable(name,workflowInstanceKey);
+  }
+  
+  public String getVariable(String name,Long scopeKey) {
+    List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, scopeKey);
+    List<VariableDto> variablesWithGivenName = filter(variables, variable -> variable.getName().equals(name));
+    if(variablesWithGivenName.isEmpty()) {
+      return null;
+    }
+    return variablesWithGivenName.get(0).getValue();
+  }
+
+  public boolean hasVariable(String name, String value) {
+    String variableValue = getVariable(name);
+    return value==null? (variableValue == null): value.equals(variableValue);
+  }
+  
+  public List<IncidentEntity> getIncidents() {
+    return getIncidentsFor(workflowInstanceKey);
+  }
+  
+  public List<IncidentEntity> getIncidentsFor(Long workflowInstanceKey) {
+    return incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
+  }
+
+  public boolean hasIncidentWithErrorMessage(String errorMessage) {
+    return !filter(getIncidents(),incident -> incident.getErrorMessage().equals(errorMessage)).isEmpty();
+  }
+
 }
