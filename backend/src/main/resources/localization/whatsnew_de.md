@@ -9,7 +9,7 @@ Nur die dort eingetragenen Datenquellen sind dann für Berichte innerhalb der Sa
 
 Alarme sind jetzt ausschließlich in einem Alarme Reiter innerhalb einer Sammlung zu finden.
 
-Bestehende Berichte mit Alarmen welche sich nicht bereits in einer Sammlung befanden wurden in eine
+Bestehende Berichte mit Alarmen, welche sich nicht bereits in einer Sammlung befanden, wurden in eine
 benutzerspezifische "Alert Archive" Sammlung kopiert.
 
 ## Wartend oder in Ausführung befindliche Prozessknoten-Filter
