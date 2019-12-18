@@ -22,7 +22,8 @@ export const countStoreWithCount = {
   withIncidents: 20,
   filterCount: null,
   instancesInSelectionsCount: 0,
-  selectionCount: 0
+  selectionCount: 0,
+  isLoaded: true
 };
 
 export const location = {

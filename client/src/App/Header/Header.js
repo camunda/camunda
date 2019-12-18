@@ -51,7 +51,6 @@ class Header extends React.Component {
     location: PropTypes.object,
     selectionCount: PropTypes.number,
     instancesInSelectionsCount: PropTypes.number,
-    getStateLocally: PropTypes.func.isRequired,
     isFiltersCollapsed: PropTypes.bool.isRequired,
     isSelectionsCollapsed: PropTypes.bool.isRequired,
     expandFilters: PropTypes.func.isRequired,
@@ -87,17 +86,23 @@ class Header extends React.Component {
   }
 
   componentDidMount = () => {
-    this.props.dataManager.subscribe(this.subscriptions);
+    const {
+      countStore: {isLoaded},
+      dataManager
+    } = this.props;
 
-    const isLoaded = this.areCountsLoaded();
+    dataManager.subscribe(this.subscriptions);
+
     if (isLoaded) {
       this.setState({isLoaded});
     }
   };
 
   componentDidUpdate = (prevProps, prevState) => {
-    const {location} = this.props;
-    const isLoaded = this.areCountsLoaded();
+    const {
+      location,
+      countStore: {isLoaded}
+    } = this.props;
 
     if (prevState.isLoaded !== isLoaded) {
       this.setState({isLoaded});
@@ -128,17 +133,6 @@ class Header extends React.Component {
       isInstances: () => pathname === INSTANCES,
       isInstance: () => pathname.includes(INSTANCE)
     };
-  }
-
-  areCountsLoaded() {
-    const {
-      filterCount,
-      selectionCount,
-      instancesInSelectionsCount,
-      ...includedCounts
-    } = this.props.countStore;
-
-    return Object.values(includedCounts).every(count => count > 0);
   }
 
   handleRedirect = () => {
@@ -230,6 +224,7 @@ class Header extends React.Component {
 
   getLinkProperties(type) {
     const count = this.selectCount(type);
+
     return {
       count: count,
       isActive: this.selectActiveCondition(type),
