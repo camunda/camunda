@@ -1,24 +1,21 @@
-## Copying a Collection
+## Data Sources within Collections
 
-A user with the Manager Role on a particular collection can now create a copy of that Collection.
+Collections allow associating Reports, Alerts and Users to a set of defined Data Sources.
 
-## Data Sources for Collections
+Add Data Sources within your Collection's Data Source tab. These Data Sources will then be available for Report creation. 
 
-In order to keep your Collections focused on particular process and/or decision definitions the concept of Collection
-Data Sources was introduced. It is now required to first define the Data Sources of a collection before definitions
-can be selected in the report builder.
+## Alerts are now attached to Reports within Collections 
 
-## Alerts only inside Collections
+Create Alerts in the Alerts tab within a Collection.
 
-Alerts are now a part of a Collection. So you can only see and create Alerts inside a collection.
-Existing alerts that were associated with a Report that didn't reside within a Collection are migrated to an
-`Alert Archive` Collection that is created for each user that owned such alerts.
+Previous Reports with Alerts that were not created within a Collection have been moved to an 'Alert Archive' Collection 
+in the home page. 
 
 ## Pending or Executing Flow Node Filter
 
-Besides `was executed` and `was not executed` there is now the possibility to filter for `pending or executing` flow nodes
-in a Process Report. 
+Along with `was executed` and `was not executed`, there is now the possibility to filter for `pending or executing` 
+flow nodes in a Process Report. 
 
 ## Process Instance Duration column for Raw Data Process Reports
 
-In Raw Data Process Reports a new column was added that shows the duration of that particular process instance.
+In Raw Data Process Reports, a new column was added that shows the duration of that particular process instance.

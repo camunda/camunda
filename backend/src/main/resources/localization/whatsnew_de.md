@@ -1,25 +1,23 @@
-## Kopieren einer Sammlung
-
-Ein Benutzer mit Manager Rolle für eine Sammlung kann diese ab sofort kopieren.
-
 ## Datenquellen für Sammlungen
 
-Um Sammlungen auf bestimme Prozess- und/oder Entscheidungsdefinitionen fokussiert zu halten,
-wurden Datenquellen für Sammlungen eingeführt.
-Es ist ab sofort notwendig zuerst eine Definition als Datenquelle einer Sammlung zu konfigurieren, bevor
-diese in einem Bericht der Sammlung genutzt werden kann.
+Sammlungen erlauben es Berichte, Alarme und Benutzer mit einer Menge von Datenquellen zu verknüpfen.
 
-## Alarme nur innerhalb von Sammlungen
+Im Datenquellen Reiter der Sammlung können Datenquellen hinzugefügt werden.
+Nur die dort eingetragenen Datenquellen sind dann für Berichte innerhalb der Sammlung verfügbar.
 
-Alarme sind ab sofort Teil von Sammlungen. Alarme für bereits existierende Berichte
-die zu keiner Sammlung gehörten wurden in eine `Alert Archive` Sammlung für den jeweiligen Ersteller des Berichts
-migriert.
+## Alarme gehören jetzt zu Sammlungen
 
-## Wartend oder in Ausführung Prozesskontenfilter
+Alarme sind jetzt ausschließlich in einem Alarme Reiter innerhalb einer Sammlung zu finden.
 
-Neben `wurde ausgeführt` und `wurde nicht ausgeführt` gibt es jetzt die Möglichkeit in Prozessberichten nach Prozessknoten
-`wartend oder in Ausführung` zu filtern.
+Bestehende Berichte mit Alarmen welche sich nicht bereits in einer Sammlung befanden wurden in eine
+benutzerspezifische "Alert Archive" Sammlung kopiert.
 
-## Prozessinstanz Laufzeit in Rohdaten Prozessberichten
+## Wartend oder in Ausführung befindliche Prozessknoten-Filter
 
-Rohdaten Prozessberichte enthalten eine neue Spalte in der die Laufzeit der jeweiligen Prozessinstanz angezeigt wird.
+Neben `wurde ausgeführt` und `wurde nicht ausgeführt`, gibt es ab sofort 
+einen `wartend oder in Ausführung` Prozessknoten-Filter.
+
+## Prozessinstanz-Dauer
+
+In Rohdaten-Berichten gibt es eine neue Spalte welche die Dauer (Duration) der jeweiligen
+Prozessinstanz anzeigt.
