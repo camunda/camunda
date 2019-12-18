@@ -23,9 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UpgradeDurationFieldIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "2.6.0";
@@ -59,10 +58,11 @@ public class UpgradeDurationFieldIT extends AbstractUpgradeIT {
 
     // then
     List<ProcessInstanceDto> processInstances = getAllProcessInstances();
-    assertThat(
-      processInstances.stream().allMatch((procInst -> procInst.getDuration().equals(EXPECTED_DURATION))),
-      is(true)
-    );
+
+    assertThat(processInstances)
+      .hasSize(2)
+      .extracting(ProcessInstanceDto::getDuration)
+      .containsExactlyInAnyOrder(null, EXPECTED_DURATION);
   }
 
   @SneakyThrows

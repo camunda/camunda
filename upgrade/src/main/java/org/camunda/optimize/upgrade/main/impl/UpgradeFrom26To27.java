@@ -26,11 +26,6 @@ import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
@@ -39,6 +34,11 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
 import org.camunda.optimize.service.es.schema.index.TenantIndex;
 import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
@@ -348,10 +348,8 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
 
     // @formatter:off
     String script = substitutor.replace(
-      "if (ctx._source.${oldDurationField} != null) {\n" +
-        "ctx._source.${newDurationField} = ctx._source.${oldDurationField};\n" +
-        "ctx._source.remove(\"${oldDurationField}\");\n" +
-      "}\n"
+      "ctx._source.${newDurationField} = ctx._source.${oldDurationField};\n" +
+      "ctx._source.remove(\"${oldDurationField}\");\n"
     );
     // @formatter:on
 
