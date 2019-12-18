@@ -142,7 +142,12 @@ export default withErrorHandling(
             {homeTab && (
               <EntityList
                 name={t('home.collectionTitle')}
-                action={<CreateNewButton collection={collection && collection.id} />}
+                action={
+                  collection &&
+                  collection.currentUserRole !== 'viewer' && (
+                    <CreateNewButton collection={collection && collection.id} />
+                  )
+                }
                 empty={t('home.empty')}
                 isLoading={!collection}
                 data={
