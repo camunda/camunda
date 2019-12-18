@@ -287,6 +287,7 @@ export const DisplayTextTD = styled(TD)`
 
 export const EditButton = styled(IconButton)`
   margin-left: 10px;
+  z-index: 0;
 
   svg {
     margin-top: 4px;
