@@ -39,9 +39,12 @@ func TestThrowErrorCommand(t *testing.T) {
 
 	client.EXPECT().ThrowError(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewThrowErrorCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewThrowErrorCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.JobKey(123).ErrorCode("someErrorCode").ErrorMessage("someErrorMessage").Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.JobKey(123).ErrorCode("someErrorCode").ErrorMessage("someErrorMessage").Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

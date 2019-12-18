@@ -18,7 +18,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type ThrowErrorCommandStep1 interface {
@@ -31,7 +30,7 @@ type ThrowErrorCommandStep2 interface {
 
 type DispatchThrowErrorCommand interface {
 	ErrorMessage(string) DispatchThrowErrorCommand
-	Send() (*pb.ThrowErrorResponse, error)
+	Send(context.Context) (*pb.ThrowErrorResponse, error)
 }
 
 type ThrowErrorCommand struct {
@@ -54,24 +53,20 @@ func (c *ThrowErrorCommand) ErrorMessage(errorMsg string) DispatchThrowErrorComm
 	return c
 }
 
-func (c *ThrowErrorCommand) Send() (*pb.ThrowErrorResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.requestTimeout)
-	defer cancel()
-
+func (c *ThrowErrorCommand) Send(ctx context.Context) (*pb.ThrowErrorResponse, error) {
 	response, err := c.gateway.ThrowError(ctx, &c.request)
-	if c.retryPredicate(ctx, err) {
-		return c.Send()
+	if c.retryPred(ctx, err) {
+		return c.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewThrowErrorCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) ThrowErrorCommandStep1 {
+func NewThrowErrorCommand(gateway pb.GatewayClient, pred retryPredicate) ThrowErrorCommandStep1 {
 	return &ThrowErrorCommand{
 		Command: Command{
-			requestTimeout: requestTimeout,
-			gateway:        gateway,
-			retryPredicate: retryPredicate,
+			gateway:   gateway,
+			retryPred: pred,
 		},
 	}
 

@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type DispatchSetVariablesCommand interface {
 	Local(bool) DispatchSetVariablesCommand
-	Send() (*pb.SetVariablesResponse, error)
+	Send(context.Context) (*pb.SetVariablesResponse, error)
 }
 
 type SetVariablesCommandStep1 interface {
@@ -93,25 +92,21 @@ func (cmd *SetVariablesCommand) Local(local bool) DispatchSetVariablesCommand {
 	return cmd
 }
 
-func (cmd *SetVariablesCommand) Send() (*pb.SetVariablesResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
+func (cmd *SetVariablesCommand) Send(ctx context.Context) (*pb.SetVariablesResponse, error) {
 	response, err := cmd.gateway.SetVariables(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewSetVariablesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) SetVariablesCommandStep1 {
+func NewSetVariablesCommand(gateway pb.GatewayClient, pred retryPredicate) SetVariablesCommandStep1 {
 	return &SetVariablesCommand{
 		Command: Command{
 			SerializerMixin: utils.NewJsonStringSerializer(),
 			gateway:         gateway,
-			requestTimeout:  requestTimeout,
-			retryPredicate:  retryPredicate,
+			retryPred:       pred,
 		},
 	}
 }

@@ -74,6 +74,13 @@ pipeline {
                     sh '.ci/scripts/distribution/test-go.sh'
                 }
             }
+
+            post {
+                always {
+                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
+                }
+            }
+ 
         }
 
         stage('Test (Java)') {

@@ -50,7 +50,7 @@ type PublishMessageCommandStep3 interface {
 }
 
 type DispatchPublishMessageCommand interface {
-	Send() (*pb.PublishMessageResponse, error)
+	Send(context.Context) (*pb.PublishMessageResponse, error)
 }
 
 type PublishMessageCommand struct {
@@ -116,24 +116,20 @@ func (cmd *PublishMessageCommand) MessageName(name string) PublishMessageCommand
 	return cmd
 }
 
-func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
+func (cmd *PublishMessageCommand) Send(ctx context.Context) (*pb.PublishMessageResponse, error) {
 	response, err := cmd.gateway.PublishMessage(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 	return response, err
 }
 
-func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) PublishMessageCommandStep1 {
+func NewPublishMessageCommand(gateway pb.GatewayClient, pred retryPredicate) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
 		Command: Command{
 			SerializerMixin: utils.NewJsonStringSerializer(),
 			gateway:         gateway,
-			requestTimeout:  requestTimeout,
-			retryPredicate:  retryPredicate,
+			retryPred:       pred,
 		},
 	}
 }
