@@ -39,14 +39,20 @@ class InstanceHeader extends React.PureComponent {
   }
 
   componentDidUpdate(prevProps) {
-    // when instance data is available
-    if (!prevProps.instance && this.props.instance) {
+    const {instance, dataManager} = this.props;
+
+    if (
+      !prevProps.instance &&
+      instance &&
+      !dataManager.subscriptions[`OPERATION_APPLIED_INCIDENT_${instance.id}`] &&
+      !dataManager.subscriptions[`OPERATION_APPLIED_VARIABLE_${instance.id}`]
+    ) {
       this.addSubscriptions();
     }
 
     if (!!prevProps.instance) {
       const {hasActiveOperation: prevHasActiveOperation} = prevProps.instance;
-      const {hasActiveOperation} = this.props.instance;
+      const {hasActiveOperation} = instance;
 
       if (hasActiveOperation !== prevHasActiveOperation) {
         this.setState({hasActiveOperation});

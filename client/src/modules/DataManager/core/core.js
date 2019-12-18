@@ -61,6 +61,10 @@ export class DataManager {
     this.publisher.publish(topic, value);
   }
 
+  subscriptions() {
+    return this.publisher.subscriptions;
+  }
+
   /** Wrapped API calls */
   applyOperation(id, payload) {
     const typeStrings = payload.operationType.split('_');

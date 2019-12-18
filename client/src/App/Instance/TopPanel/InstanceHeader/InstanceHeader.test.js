@@ -30,7 +30,6 @@ import Skeleton from './Skeleton';
 jest.mock('modules/utils/bpmn');
 
 const mockInstance = createInstance();
-
 createMockDataManager();
 
 const mountInstanceHeader = props => {
@@ -56,8 +55,9 @@ describe('InstanceHeader', () => {
     root.update();
 
     node = root.find(InstanceHeader.WrappedComponent);
-    const {subscriptions} = node.instance();
-    expect(Object.keys(subscriptions)).toEqual([
+    const {subscriptions} = node.instance().props.dataManager;
+
+    expect(Object.keys(subscriptions())).toEqual([
       'OPERATION_APPLIED_INCIDENT_id_1',
       'OPERATION_APPLIED_VARIABLE_id_1'
     ]);
