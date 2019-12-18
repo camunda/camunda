@@ -81,7 +81,6 @@ describe('User', () => {
     );
 
     expect(node.find(Styled.SkeletonBlock)).toExist();
-    expect(node.find(Styled.Circle)).toExist();
   });
 
   it('should handle logout', async () => {

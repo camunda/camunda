@@ -115,3 +115,11 @@ export const SkeletonBlock = themed(styled.div`
   width: 120px;
   ${colors};
 `);
+
+export const SkeletonCircle = themed(styled.div`
+  border-radius: 50%;
+  margin-right: 5px;
+  height: 16px;
+  width: 16px;
+  ${colors};
+`);

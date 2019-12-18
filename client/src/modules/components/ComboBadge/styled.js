@@ -48,8 +48,12 @@ export const ComboBadge = styled.div`
 
 export const Left = themed(styled(Badge)`
   z-index: 4;
-  min-width: 21px;
-  height: 21px;
+  min-width: 23px;
+  height: 23px;
+  border-radius: 45%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-left: 0px;
   border-style: solid;
   border-width: 2px;

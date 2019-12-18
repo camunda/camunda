@@ -58,10 +58,7 @@ export default function User({handleRedirect}) {
               />
             </Styled.Dropdown>
           ) : (
-            <>
-              <Styled.SkeletonBlock />
-              <Styled.Circle />
-            </>
+            <Styled.SkeletonBlock />
           )
         }
       </ThemeConsumer>

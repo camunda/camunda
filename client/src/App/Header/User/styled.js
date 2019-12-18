@@ -37,16 +37,7 @@ const colors = css`
 
 export const SkeletonBlock = themed(styled.div`
   height: 12px;
-  width: 90px;
+  width: 120px;
   margin-right: 10px;
-  ${colors};
-`);
-
-export const Circle = themed(styled.div`
-  border-radius: 50%;
-  margin-right: 14px;
-  height: 16px;
-  width: 16px;
-
   ${colors};
 `);

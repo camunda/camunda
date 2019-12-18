@@ -243,7 +243,12 @@ class Header extends React.Component {
     if (this.state.instance) {
       return <InstanceDetail instance={this.state.instance} />;
     } else {
-      return <Styled.SkeletonBlock />;
+      return (
+        <>
+          <Styled.SkeletonCircle />
+          <Styled.SkeletonBlock />
+        </>
+      );
     }
   }
 
@@ -318,9 +323,9 @@ class Header extends React.Component {
             type={COMBO_BADGE_TYPE.SELECTIONS}
           />
         </Styled.Menu>
-        <Styled.Detail>
-          {this.currentView().isInstance() && this.renderInstanceDetails()}
-        </Styled.Detail>
+        {this.currentView().isInstance() && (
+          <Styled.Detail>{this.renderInstanceDetails()}</Styled.Detail>
+        )}
         <User handleRedirect={this.handleRedirect} />
       </Styled.Header>
     );

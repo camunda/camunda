@@ -10,4 +10,6 @@ import DefaultStateIcon from 'modules/components/StateIcon';
 
 export const StateIcon = styled(DefaultStateIcon)`
   top: 0px;
+  min-width: 16px;
+  min-height: 16px;
 `;
