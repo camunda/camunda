@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRest
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -78,6 +79,7 @@ public class PostMigrationTest {
     assertThat(entities.size(), is(greaterThan(0)));
   }
 
+  @Disabled
   @Test
   public void retrieveAlerts() {
     Response response = client.target(OPTIMIZE_API_ENDPOINT + "alert")
