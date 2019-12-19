@@ -10,6 +10,7 @@ import PropTypes from 'prop-types';
 import Badge from 'modules/components/Badge';
 import ComboBadge from 'modules/components/ComboBadge';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
+import {withCountStore} from 'modules/contexts/CountContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
 
 import {DIRECTION, BADGE_TYPE, COMBO_BADGE_TYPE} from 'modules/constants';
@@ -19,6 +20,14 @@ import SelectionList from './SelectionList';
 import * as Styled from './styled';
 
 function Selections(props) {
+  const {
+    isLoaded,
+    selectionCount,
+    instancesInSelectionsCount
+  } = props.countStore;
+  function renderCount() {
+    return isLoaded ? selectionCount : '';
+  }
   return (
     <Styled.Selections>
       <CollapsablePanelConsumer>
@@ -29,9 +38,7 @@ function Selections(props) {
             maxWidth={479}
             expandButton={
               <Styled.VerticalButton label="Selections">
-                <Badge type={BADGE_TYPE.SELECTIONS}>
-                  {props.selectionCount}
-                </Badge>
+                <Badge type={BADGE_TYPE.SELECTIONS}>{renderCount()}</Badge>
               </Styled.VerticalButton>
             }
             collapseButton={
@@ -45,9 +52,9 @@ function Selections(props) {
             <Styled.SelectionHeader>
               <span>Selections</span>
               <ComboBadge type={COMBO_BADGE_TYPE.SELECTIONS}>
-                <ComboBadge.Left>{props.selectionCount}</ComboBadge.Left>
+                <ComboBadge.Left>{selectionCount}</ComboBadge.Left>
                 <ComboBadge.Right>
-                  {props.instancesInSelectionsCount}
+                  {instancesInSelectionsCount}
                 </ComboBadge.Right>
               </ComboBadge>
             </Styled.SelectionHeader>
@@ -62,8 +69,7 @@ function Selections(props) {
 }
 
 Selections.propTypes = {
-  selectionCount: PropTypes.number,
-  instancesInSelectionsCount: PropTypes.number
+  countStore: PropTypes.object
 };
 
-export default withSelection(Selections);
+export default withSelection(withCountStore(Selections));

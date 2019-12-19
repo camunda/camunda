@@ -13,38 +13,42 @@ import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import ComboBadge from 'modules/components/ComboBadge';
+
 import {FILTER_SELECTION} from 'modules/constants';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 
 import Selections from './Selections';
 
+import {countStore} from './Selections.setup';
+
+import * as Styled from './styled';
+
 jest.mock('modules/utils/bpmn');
 
+const renderNode = props =>
+  mount(
+    <DataManagerProvider>
+      <ThemeProvider>
+        <CollapsablePanelProvider>
+          <SelectionProvider
+            groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
+            filter={FILTER_SELECTION.incidents}
+          >
+            <Selections countStore={props} />
+          </SelectionProvider>
+        </CollapsablePanelProvider>
+      </ThemeProvider>
+    </DataManagerProvider>
+  );
+
 describe('Selections', () => {
-  it('should render properly', () => {
+  it('should render with skelton badge', () => {
     // given
-    const selectionCount = 1;
-    const instancesInSelectionsCount = 2;
-    const node = mount(
-      <DataManagerProvider>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <SelectionProvider
-              groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
-              filter={FILTER_SELECTION.incidents}
-            >
-              <Selections />
-            </SelectionProvider>
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </DataManagerProvider>
-    );
-    node
-      .find('BasicSelectionProvider')
-      .setState({selectionCount, instancesInSelectionsCount});
+    const node = renderNode(countStore);
 
     // then
+
     const header = node.find(CollapsablePanel.Header);
     expect(header.contains('Selections')).toBe(true);
 
@@ -55,8 +59,8 @@ describe('Selections', () => {
     const rightBadge = header
       .find(ComboBadge.Right)
       .find('div[data-test="badge"]');
-    expect(leftBadge.text()).toEqual(`${selectionCount}`);
-    expect(rightBadge.text()).toEqual(`${instancesInSelectionsCount}`);
+    expect(leftBadge.text()).toEqual('');
+    expect(rightBadge.text()).toEqual('');
 
     // SelectionList
     const body = node.find(CollapsablePanel.Body);
