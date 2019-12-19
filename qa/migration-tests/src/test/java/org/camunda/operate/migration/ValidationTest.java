@@ -50,6 +50,7 @@ import org.springframework.test.context.TestContextManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import static org.camunda.operate.util.CollectionUtil.chooseOne;
 
 @ContextConfiguration(
 	classes = { 
@@ -162,6 +163,8 @@ public class ValidationTest {
 		);
 		assertThat(incidents.stream().allMatch(i -> i.getState() != null)).describedAs("Each incident has a state").isTrue();
 		assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
+		IncidentEntity randomIncident = chooseOne(incidents);
+		assertThat(randomIncident.getErrorMessageHash()).isNotNull();
 	}
 	
 	@Test
