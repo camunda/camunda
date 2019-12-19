@@ -5,55 +5,58 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.impl;
+package io.zeebe.logstreams.impl.log;
 
-import io.zeebe.logstreams.impl.log.LogStreamImpl;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
 
-@SuppressWarnings("unchecked")
-public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
+public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
-  protected int maxFragmentSize = 1024 * 1024 * 4;
-  protected int partitionId = -1;
-  protected ActorScheduler actorScheduler;
-  protected LogStorage logStorage;
-  protected String logName;
+  private int maxFragmentSize = 1024 * 1024 * 4;
+  private int partitionId = -1;
+  private ActorScheduler actorScheduler;
+  private LogStorage logStorage;
+  private String logName;
 
-  public SELF withActorScheduler(final ActorScheduler actorScheduler) {
+  @Override
+  public LogStreamBuilder withActorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
-    return (SELF) this;
+    return this;
   }
 
-  public SELF withMaxFragmentSize(final int maxFragmentSize) {
+  @Override
+  public LogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
     this.maxFragmentSize = maxFragmentSize;
-    return (SELF) this;
+    return this;
   }
 
-  public SELF withLogStorage(final LogStorage logStorage) {
+  @Override
+  public LogStreamBuilder withLogStorage(final LogStorage logStorage) {
     this.logStorage = logStorage;
-    return (SELF) this;
+    return this;
   }
 
-  public SELF withPartitionId(final int partitionId) {
+  @Override
+  public LogStreamBuilder withPartitionId(final int partitionId) {
     this.partitionId = partitionId;
-    return (SELF) this;
+    return this;
   }
 
-  public SELF withLogName(final String logName) {
+  @Override
+  public LogStreamBuilder withLogName(final String logName) {
     this.logName = logName;
-    return (SELF) this;
+    return this;
   }
 
+  @Override
   public ActorFuture<LogStream> buildAsync() {
-    applyDefaults();
     validate();
 
     final var logStreamService =
@@ -80,32 +83,7 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
     return logstreamInstallFuture;
   }
 
-  public LogStream build() {
-    // this is only called from out test's, but not to implement it multiple times we add the sync
-    // build here
-    final var buildFuture = new CompletableActorFuture<LogStream>();
-
-    actorScheduler.submitActor(
-        new Actor() {
-          @Override
-          protected void onActorStarting() {
-            actor.runOnCompletionBlockingCurrentPhase(
-                buildAsync(),
-                (logStream, t) -> {
-                  if (t == null) {
-                    buildFuture.complete(logStream);
-                  } else {
-                    buildFuture.completeExceptionally(t);
-                  }
-                });
-          }
-        });
-    return buildFuture.join();
-  }
-
-  protected void applyDefaults() {}
-
-  protected void validate() {
+  private void validate() {
     Objects.requireNonNull(actorScheduler, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
 

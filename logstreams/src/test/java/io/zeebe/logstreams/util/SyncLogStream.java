@@ -9,6 +9,7 @@ package io.zeebe.logstreams.util;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 
@@ -18,6 +19,14 @@ public class SyncLogStream implements SynchronousLogStream {
 
   public SyncLogStream(final LogStream logStream) {
     this.logStream = logStream;
+  }
+
+  public static SyncLogStreamBuilder builder() {
+    return new SyncLogStreamBuilder();
+  }
+
+  public static SyncLogStreamBuilder builder(LogStreamBuilder builder) {
+    return new SyncLogStreamBuilder(builder);
   }
 
   @Override
