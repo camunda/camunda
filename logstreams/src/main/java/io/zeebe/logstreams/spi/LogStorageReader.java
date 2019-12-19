@@ -11,11 +11,14 @@ import java.io.Closeable;
 import org.agrona.DirectBuffer;
 
 public interface LogStorageReader extends Closeable {
+
   /**
-   * Returns the address of the first block in the storage or {@link
-   * LogStorage#OP_RESULT_INVALID_ADDR} if the storage is empty.
+   * Returns true if nothing could be read from the log, regardless of the current position of the
+   * reader - meaning any seek operations would not change the result of this call.
+   *
+   * @return true no records are readable, false otherwise
    */
-  long getFirstBlockAddress();
+  boolean isEmpty();
 
   /**
    * Returns an operation result status code which is either

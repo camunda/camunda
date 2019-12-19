@@ -23,8 +23,8 @@ public final class AtomixLogStorageReader implements LogStorageReader {
   }
 
   @Override
-  public long getFirstBlockAddress() {
-    return reader.getFirstIndex();
+  public boolean isEmpty() {
+    return reader.isEmpty();
   }
 
   @Override
