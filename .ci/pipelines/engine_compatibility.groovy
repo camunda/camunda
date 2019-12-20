@@ -25,10 +25,6 @@ spec:
     configMap:
       # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
       name: ci-optimize-cambpm-config
-  - name: es-config
-    configMap:
-      # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
-      name: ci-optimize-es-config
   imagePullSecrets:
   - name: registry-camunda-cloud-secret
   initContainers:

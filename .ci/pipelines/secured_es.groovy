@@ -9,11 +9,11 @@ ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 String getCamBpmDockerImage(String camBpmVersion) {
-    return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
+  return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
 String basePodSpec() {
-    return """
+  return """
 metadata:
   labels:
     agent: optimize-ci-build
@@ -29,10 +29,10 @@ spec:
     configMap:
       # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
       name: ci-optimize-cambpm-config
-  - name: es-config
+  - name: nginx-config
     configMap:
       # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
-      name: ci-optimize-es-config
+      name: ci-optimize-nginx-proxy-config
   imagePullSecrets:
   - name: registry-camunda-cloud-secret
   initContainers:
@@ -72,8 +72,8 @@ spec:
 }
 
 String camBpmContainerSpec(String camBpmVersion) {
-    String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
-    return """
+  String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
+  return """
   - name: cambpm
     image: ${camBpmDockerImage}
     tty: true
@@ -99,35 +99,11 @@ String camBpmContainerSpec(String camBpmVersion) {
     """
 }
 
-String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false, httpPort = "9200", def esVersion) {
-    String basicAuthConfig = (basicAuth) ? """
-      - name: ELASTIC_PASSWORD
-        value: optimize
-        """ : ""
-    String imageName = (basicAuth) ? "elasticsearch-platinum" : "elasticsearch"
-    String sslConfig = (ssl) ? """
-      - name: xpack.security.http.ssl.enabled
-        value: true
-      - name: xpack.security.http.ssl.certificate_authorities
-        value: /usr/share/elasticsearch/config/certs/ca/ca.crt
-      - name: xpack.security.http.ssl.certificate
-        value: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
-      - name: xpack.security.http.ssl.key
-        value: /usr/share/elasticsearch/config/certs/optimize/optimize.key
-    volumeMounts:
-      - name: es-config
-        mountPath: /usr/share/elasticsearch/config/certs/ca/ca.crt
-        subPath: ca.crt
-      - name: es-config
-        mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
-        subPath: optimize.crt
-      - name: es-config
-        mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.key
-        subPath: optimize.key
-    """ : ""
-    return """
+String elasticSearchContainerSpec(def esVersion) {
+  String httpPort = "9203"
+  return """
   - name: elasticsearch-${httpPort}
-    image: docker.elastic.co/elasticsearch/${imageName}:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
     securityContext:
       privileged: true
       capabilities:
@@ -154,11 +130,51 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
         value: ${httpPort}
       - name: cluster.name
         value: elasticsearch
+   """
+}
+
+String nginxContainerSpec(boolean ssl = false, boolean basicAuth = false, int frontendPort,
+                          int forwardPort = 9203, String forwardHost = "localhost") {
+  String basicAuthConfig = (basicAuth) ? """
+      - name: HTPASSWD
+        value: elastic:\$apr1\$rAPWdsDW\$/7taaK2oH4AwXgLTbYSpa0                                                         
+        """ : ""
+  String imageName = "beevelop/nginx-basic-auth:latest"
+  String sslConfigName = (basicAuth) ? "ssl-basic-auth.cfg" : "ssl-auth.cfg"
+  String sslConfig = (ssl) ? """
+    volumeMounts:
+    - name: nginx-config
+      mountPath: /opt/auth.conf
+      subPath: ${sslConfigName}
+    - name: nginx-config
+      mountPath: /etc/nginx/certs/optimize.crt
+      subPath: optimize.crt
+    - name: nginx-config
+      mountPath: /etc/nginx/certs/optimize.key
+      subPath: optimize.key
+    """ : ""
+  return """
+  - name: nginx-${frontendPort}
+    image: ${imageName}
+    resources:
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    env:
+      - name: PORT
+        value: ${frontendPort}
+      - name: FORWARD_HOST
+        value: ${forwardHost}
+      - name: FORWARD_PORT
+        value: ${forwardPort}
    """ + basicAuthConfig + sslConfig
 }
 
 static String mavenAgent() {
-    return """
+  return """
 metadata:
   labels:
     agent: optimize-ci-build
@@ -192,83 +208,84 @@ spec:
 }
 
 String securityTestPodSpec(def esVersion, def camBpmVersion) {
-    def esConfigBasicAuthAndSsl = elasticSearchContainerSpec(true, true, 9200, esVersion)
-    def esConfigSsl = elasticSearchContainerSpec(true, false, 9201, esVersion)
-    def esConfigBasicAuth = elasticSearchContainerSpec(false, true, 9202, esVersion)
-    return basePodSpec() + camBpmContainerSpec(camBpmVersion) + esConfigBasicAuthAndSsl + esConfigSsl + esConfigBasicAuth
+  def nginxConfigBasicAuth = nginxContainerSpec(false, true, 80)
+  def nginxConfigSslBasicAuth = nginxContainerSpec(true, true, 9200)
+  def nginxConfigSsl = nginxContainerSpec(true, false, 9201)
+  def esConfig = elasticSearchContainerSpec(esVersion)
+  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + nginxConfigBasicAuth + nginxConfigSslBasicAuth + nginxConfigSsl + esConfig
 }
 
 pipeline {
-    agent none
-    environment {
-        NEXUS = credentials("camunda-nexus")
-    }
+  agent none
+  environment {
+    NEXUS = credentials("camunda-nexus")
+  }
 
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '50'))
-        timestamps()
-        timeout(time: 30, unit: 'MINUTES')
-    }
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '50'))
+    timestamps()
+    timeout(time: 30, unit: 'MINUTES')
+  }
 
-    stages {
-        stage("Prepare") {
-            agent {
-                kubernetes {
-                    cloud 'optimize-ci'
-                    label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-                    defaultContainer 'jnlp'
-                    yaml mavenAgent()
-                }
-            }
-            steps {
-                cloneGitRepo()
-                script {
-                    def mavenProps = readMavenPom().getProperties()
-                    env.ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
-                    env.CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-                }
-            }
+  stages {
+    stage("Prepare") {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml mavenAgent()
         }
-        stage('Security') {
-            agent {
-                kubernetes {
-                    cloud 'optimize-ci'
-                    label "optimize-ci-build-it-security_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-                    defaultContainer 'jnlp'
-                    yaml securityTestPodSpec(env.ES_VERSION, env.CAMBPM_VERSION)
-                }
-            }
-            steps {
-                retry(2) {
-                    securityTestSteps()
-                }
-            }
-            post {
-                always {
-                    junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-                }
-            }
+      }
+      steps {
+        cloneGitRepo()
+        script {
+          def mavenProps = readMavenPom().getProperties()
+          env.ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+          env.CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
         }
+      }
     }
+    stage('Security') {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-it-security_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml securityTestPodSpec(env.ES_VERSION, env.CAMBPM_VERSION)
+        }
+      }
+      steps {
+        retry(2) {
+          securityTestSteps()
+        }
+      }
+      post {
+        always {
+          junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+        }
+      }
+    }
+  }
 }
 
 void securityTestSteps() {
-    cloneGitRepo()
-    container('maven') {
-        // run migration tests
-        runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -am -Psecured-es-it")
-    }
+  cloneGitRepo()
+  container('maven') {
+    // run migration tests
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -am -Psecured-es-it")
+  }
 }
 
 private void cloneGitRepo() {
-    git url: 'git@github.com:camunda/camunda-optimize',
-            branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
-            poll: false
+  git url: 'git@github.com:camunda/camunda-optimize',
+          branch: "${params.BRANCH}",
+          credentialsId: 'camunda-jenkins-github-ssh',
+          poll: false
 }
 
 void runMaven(String cmd) {
-    configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-        sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
-    }
+  configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+    sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
+  }
 }

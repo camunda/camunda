@@ -47,10 +47,6 @@ spec:
     configMap:
       # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
       name: ci-optimize-cambpm-config
-  - name: es-config
-    configMap:
-      # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
-      name: ci-optimize-es-config
   - name: gcloud2postgres
     emptyDir: {}
   imagePullSecrets:
@@ -132,35 +128,11 @@ ${additionalEnv}
     """
 }
 
-String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false, httpPort = "9200", String esVersion) {
-  String basicAuthConfig = (basicAuth) ? """
-      - name: ELASTIC_PASSWORD
-        value: optimize
-        """ : ""
-  String imageName = (basicAuth) ? "elasticsearch-platinum" : "elasticsearch-oss"
-  String sslConfig = (ssl) ? """
-      - name: xpack.security.http.ssl.enabled
-        value: true
-      - name: xpack.security.http.ssl.certificate_authorities
-        value: /usr/share/elasticsearch/config/certs/ca/ca.crt
-      - name: xpack.security.http.ssl.certificate
-        value: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
-      - name: xpack.security.http.ssl.key
-        value: /usr/share/elasticsearch/config/certs/optimize/optimize.key
-    volumeMounts:
-      - name: es-config
-        mountPath: /usr/share/elasticsearch/config/certs/ca/ca.crt
-        subPath: ca.crt
-      - name: es-config
-        mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
-        subPath: optimize.crt
-      - name: es-config
-        mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.key
-        subPath: optimize.key
-    """ : ""
+String elasticSearchContainerSpec(String esVersion) {
+  String httpPort = "9200"
   return """
   - name: elasticsearch-${httpPort}
-    image: docker.elastic.co/elasticsearch/${imageName}:${esVersion}
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
     securityContext:
       privileged: true
       capabilities:
@@ -187,7 +159,7 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
         value: ${httpPort}
       - name: cluster.name
         value: elasticsearch
-   """ + basicAuthConfig + sslConfig
+   """
 }
 
 String postgresContainerSpec() {
@@ -242,8 +214,8 @@ String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled Chrome (large) and install Maven (small)
   // manually for performance reasons
   return basePodSpec('selenium/node-chrome:3.141.59-xenon') +
-    camBpmContainerSpec(camBpmVersion, true) + elasticSearchContainerSpec(esVersion) +
-    postgresContainerSpec() + gcloudContainerSpec()
+          camBpmContainerSpec(camBpmVersion, true) + elasticSearchContainerSpec(esVersion) +
+          postgresContainerSpec() + gcloudContainerSpec()
 }
 
 pipeline {

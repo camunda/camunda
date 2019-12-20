@@ -6,7 +6,7 @@ es:
   connection:
     nodes:
       - host: 'localhost'
-        httpPort: 9202
+        httpPort: 80
   security:
     username: 'elastic'
     password: 'optimize'
