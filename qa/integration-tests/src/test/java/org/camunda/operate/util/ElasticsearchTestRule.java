@@ -142,7 +142,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public void refreshIndexesInElasticsearch() {
-    //refreshZeebeESIndices();
+    refreshZeebeESIndices();
     refreshOperateESIndices();
   }
 
@@ -156,7 +156,6 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public void refreshOperateESIndices() {
-    sleepFor(500);
     try {
       RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
