@@ -22,6 +22,11 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   }
 
   protected abstract String getMainIndexName();
+  
+  
+  public String getFileName() {
+    return "/create/index/operate-"+getMainIndexName()+".json";
+  }
 
   @Override
   public String getAlias() {

@@ -11,4 +11,5 @@ public interface IndexDescriptor {
 
   String getAlias();
 
+  String getFileName();
 }

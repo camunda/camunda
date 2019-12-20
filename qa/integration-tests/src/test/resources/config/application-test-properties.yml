@@ -7,7 +7,6 @@ camunda.operate:
     port: 12345
     dateFormat: yyyy-MM-dd
     batchSize: 111
-    templateOrder: 50
   zeebeElasticsearch:
     clusterName: zeebeElasticClusterName
     host: someOtherHost

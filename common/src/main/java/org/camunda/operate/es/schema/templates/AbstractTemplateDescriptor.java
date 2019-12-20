@@ -30,6 +30,11 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
   public String getAlias() {
     return getMainIndexName() + "alias";
   }
+  
+  @Override
+  public String getFileName() {
+    return "/create/template/operate-"+getIndexNameFormat()+".json";
+  }
 
   @Override
   public String getIndexPattern() {

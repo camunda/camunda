@@ -57,7 +57,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
+import static org.camunda.operate.property.ElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 import static org.camunda.operate.util.ThreadUtil.*;
 
 public class ElasticsearchTestRule extends TestWatcher {
@@ -142,7 +142,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public void refreshIndexesInElasticsearch() {
-    refreshZeebeESIndices();
+    //refreshZeebeESIndices();
     refreshOperateESIndices();
   }
 
@@ -156,6 +156,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   }
 
   public void refreshOperateESIndices() {
+    sleepFor(500);
     try {
       RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
@@ -199,7 +200,6 @@ public class ElasticsearchTestRule extends TestWatcher {
       while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
         waitForImports++;
         try {
-          sleepFor(500);
           refreshZeebeESIndices();
           shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
         } catch (Exception e) {

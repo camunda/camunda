@@ -18,8 +18,6 @@ import javax.annotation.PostConstruct;
 import org.camunda.operate.es.schema.indices.IndexDescriptor;
 import org.camunda.operate.es.schema.templates.TemplateDescriptor;
 import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.property.OperateElasticsearchProperties;
-import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -47,9 +45,6 @@ public class ElasticsearchSchemaManager {
 
   @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  private OperateProperties operateProperties;
     
   @PostConstruct
   public boolean initializeSchema() {
@@ -74,17 +69,24 @@ public class ElasticsearchSchemaManager {
     return !map(templateDescriptors,this::createTemplate).contains(false);
   }
   
-  protected boolean createIndex(IndexDescriptor indexCreator) {
-    String indexName = indexCreator.getIndexName();
-    String indexNameWithoutVersion = getResourceNameFor(indexName);
-    return putIndex(indexName, "/create/index/" + indexNameWithoutVersion + ".json");
+  protected boolean createIndex(IndexDescriptor indexDescriptor) {
+    final Map<String, Object> indexDescription = readJSONFileToMap(indexDescriptor.getFileName());
+    // Adjust aliases in case of other configured indexNames
+    indexDescription.put("aliases", Collections.singletonMap(indexDescriptor.getIndexName()+"alias", Collections.EMPTY_MAP));
+    
+    return createIndex(new CreateIndexRequest(indexDescriptor.getIndexName()).source(indexDescription));
   }
   
-  protected boolean createTemplate(TemplateDescriptor templateCreator) {
-    String templateName = templateCreator.getTemplateName();
-    String templateNameWithoutVersion = getResourceNameFor(templateName);
-    String indexName = templateName.replace("template", "");
-    return putIndexTemplate(templateName,indexName, "/create/template/" + templateNameWithoutVersion + ".json") 
+  protected boolean createTemplate(TemplateDescriptor templateDescriptor) {
+    String templateName = templateDescriptor.getTemplateName();
+    String indexName = templateDescriptor.getMainIndexName();
+    final Map<String, Object> template = readJSONFileToMap(templateDescriptor.getFileName());
+    
+    // Adjust prefixes and aliases in case of other configured indexNames
+    template.put("index_patterns", Collections.singletonList(indexName + "*"));
+    template.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
+
+    return putIndexTemplate(new PutIndexTemplateRequest(templateName).source(template))
         // This is necessary, otherwise operate won't find indexes at startup
         && createIndex(new CreateIndexRequest(indexName));
   }
@@ -100,24 +102,6 @@ public class ElasticsearchSchemaManager {
     }
   }
   
-  public boolean putIndexTemplate(final String templateName,String indexName,final String filename) {
-    final Map<String, Object> template = readJSONFileToMap(filename);
-    
-    // Adjust prefixes and aliases in case of other configured indexNames
-    template.put("index_patterns", Collections.singletonList(indexName + "*"));
-    template.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
-
-    return putIndexTemplate(new PutIndexTemplateRequest(templateName).source(template));
-  }
-  
-  public boolean putIndex(final String indexName, final String filename) {
-    final Map<String, Object> indexDescription = readJSONFileToMap(getResourceNameFor(filename));
-    // Adjust aliases in case of other configured indexNames
-    indexDescription.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
-    
-    return createIndex(new CreateIndexRequest(indexName).source(indexDescription));
-  }
-
   protected Map<String, Object> readJSONFileToMap(final String filename) {
     final Map<String, Object> result;
     try (InputStream inputStream = ElasticsearchSchemaManager.class.getResourceAsStream(filename)) {
@@ -155,12 +139,5 @@ public class ElasticsearchSchemaManager {
     }
   }
   
-  protected String getResourceNameFor(String name) {
-    return name
-            .replace(operateProperties.getElasticsearch().getIndexPrefix(),OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX)
-            .replace("-"+OperateProperties.getSchemaVersion(), "")
-            .replace("template", "")
-            .replace("_", "");
-  }
 }
 

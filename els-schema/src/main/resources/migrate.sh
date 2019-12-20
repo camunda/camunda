@@ -28,7 +28,7 @@ createNewIndexes(){
 }
 
 createPipelines(){
-	for pipeline in pipeline/*.json; do
+	for pipeline in migrate/pipeline/*.json; do
     	pipelinename=`basename $pipeline .json`
     	echo "Create pipeline $pipelinename"
     	echo "-------------------------------"
@@ -47,15 +47,17 @@ removePipelines(){
 }
 
 migrate(){
-	for index in migrate/*.json; do
-		echo "Migrate $index"
+	echo "Migrate indices ( reindex old to new index and delete old index)"
+	for index in migrate/reindex/*.json; do
+		indexname=`basename $index .json`
+		echo "Migrate $index "
 		echo "-------------------------------"
     	$RESTCLIENT --request POST --url $ES/_reindex?wait_for_completion=true --data @$index
+    	$RESTCLIENT --request DELETE --url $ES/${indexname}_ 
     	echo
     	echo "-------------------------------"
 	done
 }
-
 
 ## main
 createNewIndexes

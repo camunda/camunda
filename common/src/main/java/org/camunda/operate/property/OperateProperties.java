@@ -41,7 +41,7 @@ public class OperateProperties {
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   @NestedConfigurationProperty
-  private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
+  private ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
 
   @NestedConfigurationProperty
   private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
@@ -101,11 +101,11 @@ public class OperateProperties {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
 
-  public OperateElasticsearchProperties getElasticsearch() {
+  public ElasticsearchProperties getElasticsearch() {
     return elasticsearch;
   }
 
-  public void setElasticsearch(OperateElasticsearchProperties elasticsearch) {
+  public void setElasticsearch(ElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 

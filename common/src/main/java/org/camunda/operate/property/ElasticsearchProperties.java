@@ -10,6 +10,10 @@ public class ElasticsearchProperties {
   public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
+  
+  public static final String DEFAULT_INDEX_PREFIX = "operate";
+
+  private String indexPrefix = DEFAULT_INDEX_PREFIX;
 
   private String clusterName= "elasticsearch";
 
@@ -71,4 +75,11 @@ public class ElasticsearchProperties {
     this.batchSize = batchSize;
   }
 
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  public void setIndexPrefix(String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+  }
 }

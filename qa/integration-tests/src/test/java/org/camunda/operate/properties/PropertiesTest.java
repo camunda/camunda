@@ -36,7 +36,6 @@ public class PropertiesTest {
     assertThat(operateProperties.getElasticsearch().getPort()).isEqualTo(12345);
     assertThat(operateProperties.getElasticsearch().getDateFormat()).isEqualTo("yyyy-MM-dd");
     assertThat(operateProperties.getElasticsearch().getBatchSize()).isEqualTo(111);
-    assertThat(operateProperties.getElasticsearch().getTemplateOrder()).isEqualTo(50);
     assertThat(operateProperties.getZeebeElasticsearch().getClusterName()).isEqualTo("zeebeElasticClusterName");
     assertThat(operateProperties.getZeebeElasticsearch().getHost()).isEqualTo("someOtherHost");
     assertThat(operateProperties.getZeebeElasticsearch().getPort()).isEqualTo(54321);
