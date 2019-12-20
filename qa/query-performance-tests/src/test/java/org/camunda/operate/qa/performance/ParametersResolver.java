@@ -200,7 +200,7 @@ public class ParametersResolver {
   }
 
   private String getAlias(String indexName) {
-    return String.format("%s-%s-%s_alias", prefix, indexName, schemaVersion);
+    return String.format("%s-%s-%s_alias", prefix, indexName, schemaVersion.toLowerCase());
   }
 
 }
