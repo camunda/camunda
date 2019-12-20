@@ -1,0 +1,10 @@
+{
+	"source": {
+		"index": [
+			"operate-user_"
+		]
+	},
+	"dest": {
+		"index": "operate-user-${schema.version}_"
+	}
+}
