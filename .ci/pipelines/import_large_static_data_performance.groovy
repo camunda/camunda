@@ -115,6 +115,20 @@ spec:
         requests:
           cpu: 4
           memory: 8Gi
+    - name: zeebe
+      image: camunda/zeebe:0.22.0-alpha2
+      env:
+      volumeMounts:
+        - name: zeebe-configuration
+          mountPath: /usr/local/zeebe/conf/zeebe.cfg.toml
+          subPath: zeebe.cfg.toml
+      resources:
+        limits:
+          cpu: 4
+          memory: 8Gi
+        requests:
+          cpu: 4
+          memory: 8Gi
   volumes:
   - name: configdir
     emptyDir: {}
