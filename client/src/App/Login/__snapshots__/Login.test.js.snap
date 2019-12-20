@@ -51,24 +51,7 @@ exports[`Login should display an error if any field is empty 1`] = `
       Log in
     </ForwardRef(Button)>
   </styled.form>
-  <Themed(styled.div)>
-    This Camunda Operate distribution is available under an evaluation license that is valid for development (non-production) use only. By continuing using this software, you agree to the
-     
-    <Themed(styled.a)
-      href="https://zeebe.io/legal/operate-evaluation-license"
-    >
-      Terms and Conditions
-    </Themed(styled.a)>
-     
-    of the Operate Trial Version and our
-     
-    <Themed(styled.a)
-      href="https://zeebe.io/privacy/"
-    >
-      Privacy Statement
-    </Themed(styled.a)>
-    .
-  </Themed(styled.div)>
+  <Disclaimer />
   <Styled(Copyright) />
 </styled.div>
 `;
@@ -112,24 +95,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
       Log in
     </ForwardRef(Button)>
   </styled.form>
-  <Themed(styled.div)>
-    This Camunda Operate distribution is available under an evaluation license that is valid for development (non-production) use only. By continuing using this software, you agree to the
-     
-    <Themed(styled.a)
-      href="https://zeebe.io/legal/operate-evaluation-license"
-    >
-      Terms and Conditions
-    </Themed(styled.a)>
-     
-    of the Operate Trial Version and our
-     
-    <Themed(styled.a)
-      href="https://zeebe.io/privacy/"
-    >
-      Privacy Statement
-    </Themed(styled.a)>
-    .
-  </Themed(styled.div)>
+  <Disclaimer />
   <Styled(Copyright) />
 </styled.div>
 `;
@@ -171,24 +137,7 @@ exports[`Login should render login form by default 1`] = `
       Log in
     </ForwardRef(Button)>
   </styled.form>
-  <Themed(styled.div)>
-    This Camunda Operate distribution is available under an evaluation license that is valid for development (non-production) use only. By continuing using this software, you agree to the
-     
-    <Themed(styled.a)
-      href="https://zeebe.io/legal/operate-evaluation-license"
-    >
-      Terms and Conditions
-    </Themed(styled.a)>
-     
-    of the Operate Trial Version and our
-     
-    <Themed(styled.a)
-      href="https://zeebe.io/privacy/"
-    >
-      Privacy Statement
-    </Themed(styled.a)>
-    .
-  </Themed(styled.div)>
+  <Disclaimer />
   <Styled(Copyright) />
 </styled.div>
 `;

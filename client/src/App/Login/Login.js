@@ -13,6 +13,7 @@ import withSharedState from 'modules/components/withSharedState';
 import Button from 'modules/components/Button';
 import {PAGE_TITLE} from 'modules/constants';
 
+import Disclaimer from './Disclaimer';
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 import * as Styled from './styled';
 
@@ -92,15 +93,7 @@ class Login extends React.Component {
             Log in
           </Button>
         </Styled.LoginForm>
-        <Styled.Disclaimer>
-          This Camunda Operate distribution is available under an evaluation
-          license that is valid for development (non-production) use only. By
-          continuing using this software, you agree to the{' '}
-          <Styled.Anchor href="https://zeebe.io/legal/operate-evaluation-license">
-            Terms and Conditions
-          </Styled.Anchor>{' '}
-          of the Operate Trial Version.
-        </Styled.Disclaimer>
+        <Disclaimer {...window.clientConfig} />
         <Styled.Copyright />
       </Styled.Login>
     );
