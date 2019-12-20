@@ -15,7 +15,7 @@ import * as Styled from './styled';
 
 const BarComponent = ({node, isSelected}) => {
   const name = `${node.name}${
-    node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance ${node.id})` : ''
+    node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance)` : ''
   }`;
 
   return (
