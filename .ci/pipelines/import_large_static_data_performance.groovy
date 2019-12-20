@@ -137,6 +137,12 @@ spec:
   - name: operate-ci-service-account
     secret:
       secretName: operate-ci-service-account
+  - name: zeebe-configuration
+    configMap:
+      name: zeebe-configuration
+      items:
+      - key: zeebe.cfg.toml
+        path: zeebe.cfg.toml
 """
 }
 
