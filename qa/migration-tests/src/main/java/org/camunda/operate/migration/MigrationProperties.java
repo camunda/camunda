@@ -7,9 +7,6 @@ package org.camunda.operate.migration;
 
 import static org.camunda.operate.migration.MigrationProperties.PROPERTIES_PREFIX;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -36,16 +33,6 @@ public class MigrationProperties {
   private String elasticsearchHost = "localhost";
 
   private int elasticsearchPort = 9200;
-  
-  private List<String> versions = Arrays.asList("1.1.0","1.2.0");
-  
-  public void setVersions(String versionsAsCSV) {
-	  this.versions = Arrays.asList(versionsAsCSV.split("\\s*,\\s*"));
-  }
-  
-  public List<String> getVersions(){
-	  return versions;
-  }
   
   public void setFromOperateBaseUrl(String fromOperateBaseUrl) {
 	  this.fromOperateBaseUrl = fromOperateBaseUrl;

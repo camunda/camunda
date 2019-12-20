@@ -15,7 +15,6 @@ import static org.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 
 import org.camunda.operate.entities.ActivityInstanceEntity;
@@ -79,14 +78,12 @@ public class ValidationTest {
 	
 	@Test
 	public void testImportPositions() throws Throwable {
-		assertAllIndexVersionsHasSameCounts("import-position");
 		List<ImportPositionEntity> importPositions = getEntitiesFor("import-position", ImportPositionEntity.class);
 		assertThat(importPositions.isEmpty()).describedAs("There should exists at least 1 ImportPosition").isFalse();
 	}
 	
 	@Test
 	public void testEvents() throws Throwable {
-		assertAllIndexVersionsHasSameCounts("event");
 		List<EventEntity> events = getEntitiesFor("event", EventEntity.class);
 		assertThat(events.isEmpty()).isFalse();
 		assertThat(events.stream().filter(e -> e.getMetadata() != null).count()).describedAs("At least one event has metadata").isGreaterThan(0);
@@ -96,14 +93,12 @@ public class ValidationTest {
 	
 	@Test
 	public void testSequenceFlows() throws Throwable {
-		assertAllIndexVersionsHasSameCounts("sequence-flow");
 		List<SequenceFlowEntity> sequenceFlows = getEntitiesFor("sequence-flow", SequenceFlowEntity.class);
 		assertThat(sequenceFlows.size()).isEqualTo(config.getWorkflowInstanceCount() * 2);
 	}
 	
 	@Test
 	public void testActivityInstances() throws Throwable {
-		assertAllIndexVersionsHasSameCounts("activity-instance");
 		List<ActivityInstanceEntity> activityInstances = getEntitiesFor("activity-instance", ActivityInstanceEntity.class);
 		assertThat(activityInstances.size()).isEqualTo(config.getWorkflowInstanceCount() * 3);
 		assertThat(activityInstances.stream().allMatch( a -> a.getType() != null)).as("All activity instances have a type").isTrue();
@@ -112,21 +107,18 @@ public class ValidationTest {
 	
 	@Test
 	public void testVariables() throws Throwable {
-		assertAllIndexVersionsHasSameCounts("variable");
 		List<VariableEntity> variableEntities = getEntitiesFor("variable", VariableEntity.class);
 		assertThat(variableEntities.size()).isEqualTo(config.getWorkflowInstanceCount() * 4);
 	}
 	
 	@Test
 	public void testOperations() throws Throwable {
-		assertAllIndexVersionsHasSameCounts("operation");
 		List<OperationEntity> operations = getEntitiesFor("operation", OperationEntity.class);
 		assertThat(operations.size()).describedAs("At least one operation is active").isGreaterThan(0);
 	}
         	
 	@Test
 	public void testListViews() throws Throwable {
-		assertAllIndexVersionsHasSameCounts("list-view");
 		SearchRequest searchRequest = new SearchRequest(getIndexNameFor("list-view"));
 		int workflowInstancesCount = config.getWorkflowInstanceCount();
 		
@@ -148,14 +140,12 @@ public class ValidationTest {
 	
 	@Test
 	public void testWorkflows() throws IOException {	
-		assertAllIndexVersionsHasSameCounts("workflow");
 		List<WorkflowEntity> workflows = getEntitiesFor("workflow", WorkflowEntity.class);
 		assertThat(workflows.size()).isEqualTo(config.getWorkflowCount());
 	}
 	
 	@Test
 	public void testIncidents() throws IOException {
-		assertAllIndexVersionsHasSameCounts("incident");
 		List<IncidentEntity> incidents = getEntitiesFor("incident", IncidentEntity.class);
 		assertThat(incidents.size()).isBetween(
 		    config.getIncidentCount() - (config.getCountOfCancelOperation() + config.getCountOfResolveOperation()),
@@ -225,20 +215,6 @@ public class ValidationTest {
 	    } catch (Exception e) {
 	      throw new RuntimeException("Failed to initialize context manager", e);
 	    }
-	}
-	
-	protected void assertAllIndexVersionsHasSameCounts(String indexName) {
-		List<String> versions = config.getVersions();
-		List<Long> hitsForVersions = map(versions, version -> getTotalHitsFor(getIndexNameFor(indexName,version)));
-		assertThat(new HashSet<>(hitsForVersions).size()).as("Checks %s index for versions %s has the same counts", indexName, versions).isEqualTo(1);
-	}
-
-	protected long getTotalHitsFor(String indexName) {
-		try {
-			return esClient.search(new SearchRequest(indexName), RequestOptions.DEFAULT).getHits().getTotalHits();
-		} catch (Throwable e) {
-			return 0;
-		}
 	}
 	
 	protected <T> List<T> getEntitiesFor(String index,Class<T> entityClass) throws IOException{
