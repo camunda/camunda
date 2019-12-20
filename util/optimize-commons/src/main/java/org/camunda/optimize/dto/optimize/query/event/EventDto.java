@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -21,7 +20,7 @@ import javax.validation.constraints.NotNull;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

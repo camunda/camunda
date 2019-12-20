@@ -12,6 +12,7 @@ import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
+import org.camunda.optimize.test.optimize.EventClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.optimize.SharingClient;
@@ -41,4 +42,5 @@ public abstract class AbstractIT {
   protected DashboardClient dashboardClient = new DashboardClient(embeddedOptimizeExtension);
   protected EventProcessClient eventProcessClient = new EventProcessClient(embeddedOptimizeExtension);
   protected SharingClient sharingClient = new SharingClient(embeddedOptimizeExtension);
+  protected EventClient eventClient = new EventClient(embeddedOptimizeExtension, elasticSearchIntegrationTestExtension);
 }

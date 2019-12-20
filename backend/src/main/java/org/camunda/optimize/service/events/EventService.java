@@ -36,6 +36,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractFlowNodeNames;
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.parseBpmnModel;
 
@@ -47,11 +49,12 @@ public class EventService {
   private final EventWriter eventWriter;
   private final EventSequenceCountReader eventSequenceCountReader;
 
-  private static final Comparator SUGGESTED_COMPARATOR = Comparator.comparing(EventCountDto::isSuggested).reversed();
-  private static final Comparator DEFAULT_COMPARATOR =
-    Comparator.comparing(EventCountDto::getGroup, String.CASE_INSENSITIVE_ORDER)
-      .thenComparing(EventCountDto::getSource, String.CASE_INSENSITIVE_ORDER)
-      .thenComparing(EventCountDto::getEventName, String.CASE_INSENSITIVE_ORDER);
+  private static final Comparator SUGGESTED_COMPARATOR =
+    Comparator.comparing(EventCountDto::isSuggested, nullsFirst(naturalOrder())).reversed();
+  private static final Comparator DEFAULT_COMPARATOR = nullsFirst(
+    Comparator.comparing(EventCountDto::getGroup, nullsFirst(String.CASE_INSENSITIVE_ORDER))
+      .thenComparing(EventCountDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER))
+      .thenComparing(EventCountDto::getEventName, nullsFirst(String.CASE_INSENSITIVE_ORDER)));
 
   public void saveEvent(final EventDto eventDto) {
     eventWriter.upsertEvent(eventDto);
@@ -74,9 +77,9 @@ public class EventService {
   }
 
   public List<EventCountDto> getEventCounts(EventCountServiceDto eventCountServiceDto) {
-    List<EventCountDto> eventCountDtos = eventReader.getEventCounts(eventCountServiceDto.getEventCountRequestDto());
-    applySuggestionsToEventCounts(eventCountServiceDto, eventCountDtos);
-    return sortEventCountsUsingWithRequestParameters(eventCountServiceDto.getEventCountRequestDto(), eventCountDtos);
+    List<EventCountDto> matchingEventCountDtos = eventSequenceCountReader.getEventCounts(eventCountServiceDto.getEventCountRequestDto());
+    applySuggestionsToEventCounts(eventCountServiceDto, matchingEventCountDtos);
+    return sortEventCountsUsingWithRequestParameters(eventCountServiceDto.getEventCountRequestDto(), matchingEventCountDtos);
   }
 
   private void applySuggestionsToEventCounts(final EventCountServiceDto eventCountServiceDto,
@@ -148,15 +151,17 @@ public class EventService {
       .collect(Collectors.toList());
     return eventSequenceCountDtos.stream()
       .filter(sequence -> eventsMappedToIncomingNodes.contains(sequence.getSourceEvent()))
+      .filter(sequence -> Objects.nonNull(sequence.getTargetEvent()))
       .map(EventSequenceCountDto::getTargetEvent)
       .collect(Collectors.toList());
   }
 
   private boolean eventCountIsInEventTypeList(EventCountDto eventCountDto, List<EventTypeDto> eventTypes) {
     return eventTypes.stream()
-      .anyMatch(suggested -> Objects.equals(suggested.getGroup(), eventCountDto.getGroup())
-        && Objects.equals(suggested.getSource(), eventCountDto.getSource())
-        && Objects.equals(suggested.getEventName(), eventCountDto.getEventName()));
+      .anyMatch(suggested ->
+                  (Objects.equals(suggested.getGroup(), eventCountDto.getGroup())
+                    && Objects.equals(suggested.getSource(), eventCountDto.getSource())
+                    && Objects.equals(suggested.getEventName(), eventCountDto.getEventName())));
   }
 
   private List<String> getNearestIncomingMappedFlowNodeIds(final Map<String, EventMappingDto> currentMappings,
@@ -225,11 +230,11 @@ public class EventService {
 
   private Comparator getCustomComparator(final String orderBy) {
     if (orderBy.equalsIgnoreCase(EventCountDto.Fields.group)) {
-      return Comparator.comparing(EventCountDto::getGroup, String.CASE_INSENSITIVE_ORDER);
+      return Comparator.comparing(EventCountDto::getGroup, nullsFirst(String.CASE_INSENSITIVE_ORDER));
     } else if (orderBy.equalsIgnoreCase(EventCountDto.Fields.source)) {
-      return Comparator.comparing(EventCountDto::getSource, String.CASE_INSENSITIVE_ORDER);
+      return Comparator.comparing(EventCountDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER));
     } else if (orderBy.equalsIgnoreCase(EventCountDto.Fields.eventName)) {
-      return Comparator.comparing(EventCountDto::getEventName, String.CASE_INSENSITIVE_ORDER);
+      return Comparator.comparing(EventCountDto::getEventName, nullsFirst(String.CASE_INSENSITIVE_ORDER));
     } else {
       throw new OptimizeValidationException("invalid orderBy field");
     }

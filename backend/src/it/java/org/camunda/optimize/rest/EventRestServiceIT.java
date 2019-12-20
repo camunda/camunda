@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -17,10 +16,8 @@ import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountSuggestionsRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.service.es.reader.EventReader;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,16 +32,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.reader.EventReader.DEFAULT_MISSING_KEY;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
 
 public class EventRestServiceIT extends AbstractIT {
 
@@ -55,24 +47,27 @@ public class EventRestServiceIT extends AbstractIT {
   private static final String FOURTH_TASK_ID = "taskID_4";
   private static final String END_EVENT_ID = "endEventID";
 
-  private static final Random RANDOM = new Random();
+  private EventDto backendKetchupEvent = createEventDtoWithProperties("backend", "ketchup", "signup-event");
+  private EventDto frontendMayoEvent = createEventDtoWithProperties("frontend", "mayonnaise", "registered_event");
+  private EventDto managementBbqEvent = createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
+  private EventDto ketchupMayoEvent = createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
+  private EventDto backendMayoEvent = createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
+  private EventDto nullNullEvent = createEventDtoWithProperties(null, null, "ketchupevent");
 
-  private static final List<EventDto> backendKetchupEvents =
-    createEventDtoListWithProperties("backend", "ketchup", "signup-event", 4);
-  private static final List<EventDto> frontendMayoEvents =
-    createEventDtoListWithProperties("frontend", "mayonnaise", "registered_event", 2);
-  private static final List<EventDto> managementBbqEvents =
-    createEventDtoListWithProperties("management", "BBQ_sauce", "onboarded_event", 1);
-  private static final List<EventDto> ketchupMayoEvents =
-    createEventDtoListWithProperties("ketchup", "mayonnaise", "blacklisted_event", 2);
-  private static final List<EventDto> backendMayoEvents =
-    createEventDtoListWithProperties("BACKEND", "mayonnaise", "ketchupevent", 2);
-  private static final List<EventDto> nullNullEvents =
-    createEventDtoListWithProperties(null, null, "ketchupevent", 2);
-  private static final List<EventDto> allEventDtos =
-    Stream.of(backendKetchupEvents, frontendMayoEvents, managementBbqEvents, ketchupMayoEvents, backendMayoEvents, nullNullEvents)
-    .flatMap(Collection::stream)
-    .collect(toList());
+  private final List<EventDto> eventTraceOne = createTraceFromEventList(
+    "traceIdOne", Arrays.asList(backendKetchupEvent, frontendMayoEvent, managementBbqEvent,
+                                ketchupMayoEvent, backendMayoEvent, nullNullEvent));
+  private final List<EventDto> eventTraceTwo = createTraceFromEventList(
+    "traceIdTwo", Arrays.asList(backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullNullEvent));
+  private final List<EventDto> eventTraceThree = createTraceFromEventList(
+    "traceIdThree", Arrays.asList(backendKetchupEvent, backendMayoEvent));
+  private final List<EventDto> eventTraceFour = createTraceFromEventList(
+    "traceIdFour", Collections.singletonList(backendKetchupEvent));
+
+  private final List<EventDto> allEventDtos =
+    Stream.of(eventTraceOne, eventTraceTwo, eventTraceThree, eventTraceFour)
+      .flatMap(Collection::stream)
+      .collect(toList());
 
   private static String simpleDiagramXml;
 
@@ -83,7 +78,8 @@ public class EventRestServiceIT extends AbstractIT {
 
   @BeforeEach
   public void init() {
-    ingestEvents();
+    eventClient.ingestEventBatch(allEventDtos);
+    eventClient.processEventTracesAndStates();
   }
 
   @Test
@@ -97,12 +93,12 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(frontendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
       );
   }
 
@@ -124,10 +120,10 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(ketchupMayoEvents, false)
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false)
       );
   }
 
@@ -142,12 +138,12 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(frontendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
       );
   }
 
@@ -176,10 +172,10 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false)
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false)
       );
   }
 
@@ -197,7 +193,7 @@ public class EventRestServiceIT extends AbstractIT {
     assertThat(eventCountDtos)
       .isNotNull()
       .hasSize(1)
-      .containsExactly(toEventCountDto(frontendMayoEvents, false));
+      .containsExactly(toEventCountDto(frontendMayoEvent, 2L, false));
   }
 
   @Test
@@ -217,12 +213,12 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(frontendMayoEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(managementBbqEvents, false),
-        toEventCountDto(nullNullEvents, false)
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(managementBbqEvent, 1L, false),
+        toEventCountDto(nullNullEvent, 2L, false)
       );
   }
 
@@ -243,12 +239,12 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(frontendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
       );
   }
 
@@ -284,25 +280,18 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(ketchupMayoEvents, false)
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist() {
     // given
-    EventTypeDto previousMappedEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto unmappedEventOne = eventTypeFromEvents(frontendMayoEvents);
-    EventSequenceCountDto previousRelevantEventSequence = createEventSequence(previousMappedEvent, unmappedEventOne);
-
-    EventTypeDto nextMappedEvent = eventTypeFromEvents(ketchupMayoEvents);
-    EventTypeDto unmappedEventTwo = eventTypeFromEvents(backendMayoEvents);
-    EventSequenceCountDto nextRelevantEventSequence = createEventSequence(unmappedEventTwo, nextMappedEvent);
-
-    storeSequencesInElasticsearch(Arrays.asList(previousRelevantEventSequence, nextRelevantEventSequence));
+    EventTypeDto previousMappedEvent = eventTypeFromEvent(backendKetchupEvent);
+    EventTypeDto nextMappedEvent = eventTypeFromEvent(ketchupMayoEvent);
 
     // Suggestions request for flow node with event mapped before and after
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -324,25 +313,18 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(backendMayoEvents, true),
-        toEventCountDto(frontendMayoEvents, true),
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(backendMayoEvent, 3L, true),
+        toEventCountDto(frontendMayoEvent, 2L, true),
+        toEventCountDto(managementBbqEvent, 1L, true),
+        toEventCountDto(nullNullEvent, 2L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist_onlyNearestNeighboursConsidered() {
     // given
-    EventTypeDto nearestNextMappedEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto furthestNextMappedEvent = eventTypeFromEvents(frontendMayoEvents);
-    EventTypeDto unmappedEventOne = eventTypeFromEvents(ketchupMayoEvents);
-    EventSequenceCountDto nearestRelevantEventSequence = createEventSequence(unmappedEventOne, nearestNextMappedEvent);
-    EventTypeDto unmappedEventTwo = eventTypeFromEvents(backendMayoEvents);
-    EventSequenceCountDto furthestNextRelevantEventSequence = createEventSequence(unmappedEventTwo, furthestNextMappedEvent);
-
-    storeSequencesInElasticsearch(
-      Arrays.asList(nearestRelevantEventSequence, furthestNextRelevantEventSequence));
+    EventTypeDto nearestNextMappedEvent = eventTypeFromEvent(ketchupMayoEvent);
+    EventTypeDto furthestNextMappedEvent = eventTypeFromEvent(backendMayoEvent);
 
     // Suggestions request for flow node with events mapped after in two nearest neighbours
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -364,21 +346,18 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(ketchupMayoEvents, true),
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(frontendMayoEvent, 2L, true),
+        toEventCountDto(managementBbqEvent, 1L, true),
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(backendKetchupEvent, 4L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist_alreadyMappedEventsAreOmitted() {
     // given
-    EventTypeDto nextMappedEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto otherMappedEvent = eventTypeFromEvents(frontendMayoEvents);
-    EventSequenceCountDto eventSequence = createEventSequence(otherMappedEvent, nextMappedEvent);
-
-    storeSequencesInElasticsearch(Collections.singletonList(eventSequence));
+    EventTypeDto nextMappedEvent = eventTypeFromEvent(nullNullEvent);
+    EventTypeDto otherMappedEvent = eventTypeFromEvent(backendMayoEvent);
 
     // Suggestions request for flow node with event mapped after
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -400,21 +379,17 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndMappingsExist_usingCustomSorting() {
     // given
-    EventTypeDto previousMappedEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto unmappedEvent = eventTypeFromEvents(frontendMayoEvents);
-    EventSequenceCountDto eventSequence = createEventSequence(previousMappedEvent, unmappedEvent);
-
-    storeSequencesInElasticsearch(Collections.singletonList(eventSequence));
+    EventTypeDto previousMappedEvent = eventTypeFromEvent(backendKetchupEvent);
 
     // Suggestions request for flow node with event mapped before
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -437,22 +412,18 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(5)
       .containsExactly(
-        toEventCountDto(frontendMayoEvents, true),
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false),
-        toEventCountDto(nullNullEvents, false)
+        toEventCountDto(frontendMayoEvent, 2L, true),
+        toEventCountDto(backendMayoEvent, 3L, true),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false),
+        toEventCountDto(nullNullEvent, 2L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist_usingSearchTerm() {
     // given
-    EventTypeDto previousMappedEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto unmappedEvent = eventTypeFromEvents(frontendMayoEvents);
-    EventSequenceCountDto eventSequence = createEventSequence(previousMappedEvent, unmappedEvent);
-
-    storeSequencesInElasticsearch(Collections.singletonList(eventSequence));
+    EventTypeDto previousMappedEvent = eventTypeFromEvent(backendKetchupEvent);
 
     // Suggestions request for flow node with event mapped before
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -472,20 +443,16 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(3)
       .containsExactly(
-        toEventCountDto(frontendMayoEvents, true),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false)
+        toEventCountDto(backendMayoEvent, 3L, true),
+        toEventCountDto(frontendMayoEvent, 2L, true),
+        toEventCountDto(ketchupMayoEvent, 2L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndMappingsExist_searchTermDoesNotMatchSuggestions() {
     // given
-    EventTypeDto previousMappedEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto unmappedEvent = eventTypeFromEvents(frontendMayoEvents);
-    EventSequenceCountDto eventSequence = createEventSequence(previousMappedEvent, unmappedEvent);
-
-    storeSequencesInElasticsearch(Collections.singletonList(eventSequence));
+    EventTypeDto previousMappedEvent = eventTypeFromEvent(backendKetchupEvent);
 
     // Suggestions request for flow node with event mapped before
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -505,9 +472,9 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(3)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false)
+        toEventCountDto(backendMayoEvent, 3L, true),
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false)
       );
   }
 
@@ -529,23 +496,19 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendKetchupEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(frontendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeMappingsExist_mappingsGreaterThanConsideredDistance() {
     // given
-    EventTypeDto previousMappedEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto unmappedEventOne = eventTypeFromEvents(frontendMayoEvents);
-    EventSequenceCountDto existingEventSequence = createEventSequence(previousMappedEvent, unmappedEventOne);
-
-    storeSequencesInElasticsearch(Collections.singletonList(existingEventSequence));
+    EventTypeDto previousMappedEvent = eventTypeFromEvent(backendKetchupEvent);
 
     // Suggestions request for flow node with event mapped before but greater than considered distance of 2
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -564,25 +527,19 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(5)
       .containsExactly(
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(frontendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false),
-        toEventCountDto(managementBbqEvents, false)
-      );
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(backendMayoEvent, 3L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
+        );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeWithStartAndEndMappings_onlyClosestConsidered() {
     // given
-    EventTypeDto previousMappedEndEvent = eventTypeFromEvents(backendKetchupEvents);
-    EventTypeDto previousMappedStartEvent = eventTypeFromEvents(frontendMayoEvents);
-    EventTypeDto unmappedEventOne = eventTypeFromEvents(managementBbqEvents);
-    EventTypeDto unmappedEventTwo = eventTypeFromEvents(ketchupMayoEvents);
-    EventSequenceCountDto eventSequenceToEnd = createEventSequence(previousMappedEndEvent, unmappedEventOne);
-    EventSequenceCountDto eventSequenceToStart = createEventSequence(previousMappedStartEvent, unmappedEventTwo);
-
-    storeSequencesInElasticsearch(Arrays.asList(eventSequenceToEnd, eventSequenceToStart));
+    EventTypeDto previousMappedEndEvent = eventTypeFromEvent(backendKetchupEvent);
+    EventTypeDto previousMappedStartEvent = eventTypeFromEvent(frontendMayoEvent);
 
     // Suggestions request for flow node with event mapped before as start and end event
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -601,11 +558,11 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(managementBbqEvents, true),
-        toEventCountDto(nullNullEvents, false),
-        toEventCountDto(backendMayoEvents, false),
-        toEventCountDto(ketchupMayoEvents, false)
-      );
+        toEventCountDto(backendMayoEvent, 3L, true),
+        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
+        );
   }
 
   @Test
@@ -614,7 +571,7 @@ public class EventRestServiceIT extends AbstractIT {
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
       .targetFlowNodeId("some_unknown_id")
       .xml(simpleDiagramXml)
-      .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(eventTypeFromEvents(backendKetchupEvents), null)))
+      .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(eventTypeFromEvent(backendKetchupEvent), null)))
       .build();
 
     // then the correct status code is returned
@@ -629,7 +586,7 @@ public class EventRestServiceIT extends AbstractIT {
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml(simpleDiagramXml)
-      .mappings(ImmutableMap.of("some_unknown_id", createEventMappingDto(eventTypeFromEvents(backendKetchupEvents), null)))
+      .mappings(ImmutableMap.of("some_unknown_id", createEventMappingDto(eventTypeFromEvent(backendKetchupEvent), null)))
       .build();
 
     // then the correct status code is returned
@@ -674,32 +631,21 @@ public class EventRestServiceIT extends AbstractIT {
     return Stream.of("", "   ", null);
   }
 
-  private EventTypeDto eventTypeFromEvents(List<EventDto> events) {
-    EventDto eventFromList = events.get(0);
+  private EventTypeDto eventTypeFromEvent(EventDto event) {
     return EventTypeDto.builder()
-      .group(eventFromList.getGroup())
-      .source(eventFromList.getSource())
-      .eventName(eventFromList.getEventName())
+      .group(event.getGroup())
+      .source(event.getSource())
+      .eventName(event.getEventName())
       .build();
   }
 
-  private EventCountDto toEventCountDto(List<EventDto> events, boolean suggested) {
-    EventDto eventFromList = events.get(0);
+  private EventCountDto toEventCountDto(EventDto event, Long count, boolean suggested) {
     return EventCountDto.builder()
-      .group(Optional.ofNullable(eventFromList.getGroup()).orElse(DEFAULT_MISSING_KEY))
-      .source(Optional.ofNullable(eventFromList.getSource()).orElse(DEFAULT_MISSING_KEY))
-      .eventName(eventFromList.getEventName())
-      .count((long) events.size())
+      .group(event.getGroup())
+      .source(event.getSource())
+      .eventName(event.getEventName())
+      .count(count)
       .suggested(suggested)
-      .build();
-  }
-
-  private EventSequenceCountDto createEventSequence(final EventTypeDto sourceEvent,
-                                                    final EventTypeDto targetEvent) {
-    return EventSequenceCountDto.builder()
-      .sourceEvent(sourceEvent)
-      .targetEvent(targetEvent)
-      .count(20L)
       .build();
   }
 
@@ -710,47 +656,23 @@ public class EventRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private void storeSequencesInElasticsearch(final List<EventSequenceCountDto> nextRelevantEventSequences) {
-    nextRelevantEventSequences.forEach(
-      eventSequenceCountDto -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-        EVENT_SEQUENCE_COUNT_INDEX_NAME,
-        eventSequenceCountDto.getId(),
-        eventSequenceCountDto
-      )
-    );
-  }
-
-  private void ingestEvents() {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(
-        allEventDtos,
-        embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret()
-      )
-      .execute();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  private static List<EventDto> createEventDtoListWithProperties(String group, String source, String eventName,
-                                                                 int quantity) {
-    return IntStream.range(0, quantity)
-      .mapToObj(operand -> createRandomEventDtoPropertiesBuilder()
-        .group(group)
-        .source(source)
-        .eventName(eventName)
-        .build())
+  private List<EventDto> createTraceFromEventList(String traceId, List<EventDto> events) {
+    AtomicInteger incrementCounter= new AtomicInteger(0);
+    long currentTimestamp = System.currentTimeMillis();
+    return events.stream()
+      .map(event -> createEventDtoWithProperties(event.getGroup(), event.getSource(), event.getEventName()))
+      .peek(eventDto -> eventDto.setTraceId(traceId))
+      .peek(eventDto -> eventDto.setTimestamp(currentTimestamp + (1000 * incrementCounter.getAndIncrement())))
       .collect(toList());
   }
 
-  private static EventDto.EventDtoBuilder createRandomEventDtoPropertiesBuilder() {
-    return EventDto.builder()
-      .id(UUID.randomUUID().toString())
-      .timestamp(System.currentTimeMillis())
-      .traceId(RandomStringUtils.randomAlphabetic(10))
-      .data(ImmutableMap.of(
-        RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
-        RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),
-        RandomStringUtils.randomAlphabetic(5), RandomStringUtils.randomAlphabetic(5)
-      ));
+  private EventDto createEventDtoWithProperties(final String group, final String source, final String eventName) {
+    return eventClient.createEventDto()
+      .toBuilder()
+      .group(group)
+      .source(source)
+      .eventName(eventName)
+      .build();
   }
 
   @SneakyThrows

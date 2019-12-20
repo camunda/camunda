@@ -17,7 +17,7 @@ import java.io.IOException;
 @Component
 public class EventSequenceCountIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String ID = EventSequenceCountDto.Fields.id;
   public static final String SOURCE_EVENT = EventSequenceCountDto.Fields.sourceEvent;
@@ -27,6 +27,9 @@ public class EventSequenceCountIndex extends StrictIndexMappingCreator {
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
+
+  public static final String N_GRAM_FIELD = "nGramField";
+  public static final String LOWERCASE_FIELD = "lowercase";
 
   @Override
   public String getIndexName() {
@@ -50,12 +53,42 @@ public class EventSequenceCountIndex extends StrictIndexMappingCreator {
         .startObject("properties")
           .startObject(GROUP)
             .field("type", "keyword")
+            .startObject("fields")
+              .startObject(N_GRAM_FIELD)
+                .field("type", "text")
+                .field("analyzer", "lowercase_ngram")
+              .endObject()
+              .startObject(LOWERCASE_FIELD)
+                .field("type", "keyword")
+                .field("normalizer", "lowercase_normalizer")
+              .endObject()
+            .endObject()
           .endObject()
           .startObject(SOURCE)
             .field("type", "keyword")
+            .startObject("fields")
+              .startObject(N_GRAM_FIELD)
+                .field("type", "text")
+                .field("analyzer", "lowercase_ngram")
+              .endObject()
+              .startObject(LOWERCASE_FIELD)
+                .field("type", "keyword")
+                .field("normalizer", "lowercase_normalizer")
+              .endObject()
+            .endObject()
           .endObject()
           .startObject(EVENT_NAME)
             .field("type", "keyword")
+            .startObject("fields")
+              .startObject(N_GRAM_FIELD)
+                .field("type", "text")
+                .field("analyzer", "lowercase_ngram")
+              .endObject()
+              .startObject(LOWERCASE_FIELD)
+                .field("type", "keyword")
+                .field("normalizer", "lowercase_normalizer")
+              .endObject()
+            .endObject()
           .endObject()
         .endObject()
       .endObject()

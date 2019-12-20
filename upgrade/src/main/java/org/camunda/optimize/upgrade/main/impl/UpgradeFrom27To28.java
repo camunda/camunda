@@ -5,9 +5,12 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
 public class UpgradeFrom27To28 extends UpgradeProcedure {
   private static final String FROM_VERSION = "2.7.0";
@@ -28,6 +31,8 @@ public class UpgradeFrom27To28 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
+      .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
+      .addUpgradeStep(new UpdateIndexStep(new EventSequenceCountIndex(), null))
       .build();
   }
 

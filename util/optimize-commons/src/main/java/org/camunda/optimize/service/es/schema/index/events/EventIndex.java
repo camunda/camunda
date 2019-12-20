@@ -32,7 +32,7 @@ public class EventIndex extends StrictIndexMappingCreator {
   public static final String N_GRAM_FIELD = "nGramField";
   public static final String LOWERCASE_FIELD = "lowercase";
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {
@@ -53,16 +53,6 @@ public class EventIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(EVENT_NAME)
         .field("type", "keyword")
-        .startObject("fields")
-          .startObject(N_GRAM_FIELD)
-            .field("type", "text")
-            .field("analyzer", "lowercase_ngram")
-          .endObject()
-          .startObject(LOWERCASE_FIELD)
-            .field("type", "keyword")
-            .field("normalizer", "lowercase_normalizer")
-          .endObject()
-        .endObject()
       .endObject()
       .startObject(TRACE_ID)
         .field("type", "keyword")
@@ -75,29 +65,9 @@ public class EventIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(GROUP)
         .field("type", "keyword")
-        .startObject("fields")
-          .startObject(N_GRAM_FIELD)
-            .field("type", "text")
-            .field("analyzer", "lowercase_ngram")
-          .endObject()
-          .startObject(LOWERCASE_FIELD)
-            .field("type", "keyword")
-            .field("normalizer", "lowercase_normalizer")
-          .endObject()
-        .endObject()
       .endObject()
       .startObject(SOURCE)
         .field("type", "keyword")
-        .startObject("fields")
-          .startObject(N_GRAM_FIELD)
-            .field("type", "text")
-            .field("analyzer", "lowercase_ngram")
-          .endObject()
-          .startObject(LOWERCASE_FIELD)
-            .field("type", "keyword")
-            .field("normalizer", "lowercase_normalizer")
-          .endObject()
-        .endObject()
       .endObject()
       .startObject(DATA)
         .field("enabled", false)

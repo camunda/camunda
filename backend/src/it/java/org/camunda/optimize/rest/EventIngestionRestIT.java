@@ -5,9 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import com.google.common.collect.ImmutableMap;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
@@ -19,18 +16,13 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
@@ -46,16 +38,13 @@ import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PAT
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.OPTIMIZE_API_SECRET_HEADER;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
 
-public class IngestionRestIT extends AbstractIT {
-
-  private static final Random RANDOM = new Random();
+public class EventIngestionRestIT extends AbstractIT {
 
   @Test
   public void ingestSingleEvent() {
     // given
-    final EventDto eventDto = createEventDto();
+    final EventDto eventDto = eventClient.createEventDto();
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -71,7 +60,7 @@ public class IngestionRestIT extends AbstractIT {
   @Test
   public void ingestSingleEventWithNoGroupOrSource() {
     // given
-    final EventDto eventDto = createEventDto();
+    final EventDto eventDto = eventClient.createEventDto();
     eventDto.setGroup(null);
     eventDto.setSource(null);
 
@@ -89,7 +78,7 @@ public class IngestionRestIT extends AbstractIT {
   @Test
   public void ingestSingleEvent_rejectMandatoryPropertiesNull() {
     // given
-    final EventDto eventDto = createEventDto();
+    final EventDto eventDto = eventClient.createEventDto();
     eventDto.setId(null);
     eventDto.setEventName(null);
     eventDto.setTimestamp(null);
@@ -121,7 +110,7 @@ public class IngestionRestIT extends AbstractIT {
   @Test
   public void ingestSingleEvent_rejectInvalidPropertyValues() {
     // given
-    final EventDto eventDto = createEventDto();
+    final EventDto eventDto = eventClient.createEventDto();
     eventDto.setId("  ");
     eventDto.setEventName("");
     eventDto.setTimestamp(-500L);
@@ -153,7 +142,7 @@ public class IngestionRestIT extends AbstractIT {
   @Test
   public void ingestSingleEvent_notAuthorized() {
     // given
-    final EventDto eventDto = createEventDto();
+    final EventDto eventDto = eventClient.createEventDto();
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -169,7 +158,7 @@ public class IngestionRestIT extends AbstractIT {
   @Test
   public void ingestSingleEvent_customSecret() {
     // given
-    final EventDto eventDto = createEventDto();
+    final EventDto eventDto = eventClient.createEventDto();
 
     final String customSecret = "mySecret";
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setApiSecret(customSecret);
@@ -189,7 +178,7 @@ public class IngestionRestIT extends AbstractIT {
   public void ingestEventBatch() {
     // given
     final List<EventDto> eventDtos = IntStream.range(0, 10)
-      .mapToObj(operand -> createEventDto())
+      .mapToObj(operand -> eventClient.createEventDto())
       .collect(toList());
 
     // when
@@ -207,7 +196,7 @@ public class IngestionRestIT extends AbstractIT {
   public void ingestEventBatch_notAuthorized() {
     // given
     final List<EventDto> eventDtos = IntStream.range(0, 2)
-      .mapToObj(operand -> createEventDto())
+      .mapToObj(operand -> eventClient.createEventDto())
       .collect(toList());
 
     // when
@@ -227,7 +216,7 @@ public class IngestionRestIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setMaxBatchRequestBytes(1L);
 
     final List<EventDto> eventDtos = IntStream.range(0, 2)
-      .mapToObj(operand -> createEventDto())
+      .mapToObj(operand -> eventClient.createEventDto())
       .collect(toList());
 
     // when
@@ -268,10 +257,10 @@ public class IngestionRestIT extends AbstractIT {
   public void ingestEventBatch_rejectInvalidPropertyValues() {
     // given
     final List<EventDto> eventDtos = IntStream.range(0, 2)
-      .mapToObj(operand -> createEventDto())
+      .mapToObj(operand -> eventClient.createEventDto())
       .collect(toList());
 
-    final EventDto invalidEventDto1 = createEventDto();
+    final EventDto invalidEventDto1 = eventClient.createEventDto();
     invalidEventDto1.setId(null);
     eventDtos.add(invalidEventDto1);
 
@@ -300,40 +289,13 @@ public class IngestionRestIT extends AbstractIT {
 
   private void assertEventDtosArePersisted(final List<EventDto> eventDtos) {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    final SearchResponse eventSearchResponse = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(EVENT_INDEX_NAME);
-    List<EventDto> indexedEventDtos = Arrays.stream(eventSearchResponse.getHits().getHits())
-      .map(this::readAsEventDto)
-      .collect(toList());
+    List<EventDto> indexedEventDtos = eventClient.getAllStoredEvents();
     assertThat(indexedEventDtos).usingElementComparatorIgnoringFields(EventDto.Fields.ingestionTimestamp)
       .containsExactlyInAnyOrderElementsOf(eventDtos);
   }
 
-  @SneakyThrows
-  private EventDto readAsEventDto(final SearchHit hit) {
-    return embeddedOptimizeExtension.getObjectMapper().readValue(hit.getSourceAsString(), EventDto.class);
-  }
-
   private String getApiSecret() {
     return embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret();
-  }
-
-  private EventDto createEventDto() {
-    return EventDto.builder()
-      .id(IdGenerator.getNextId())
-      .traceId(RandomStringUtils.randomAlphabetic(10))
-      .timestamp(System.currentTimeMillis())
-      .ingestionTimestamp(System.currentTimeMillis())
-      .group(RandomStringUtils.randomAlphabetic(10))
-      .source(RandomStringUtils.randomAlphabetic(10))
-      .eventName(RandomStringUtils.randomAlphabetic(10))
-      .data(
-        ImmutableMap.of(
-          RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
-          RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),
-          RandomStringUtils.randomAlphabetic(5), RandomStringUtils.randomAlphabetic(5)
-        )
-      ).build();
   }
 
 }
