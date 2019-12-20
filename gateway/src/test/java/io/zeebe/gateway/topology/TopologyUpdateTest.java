@@ -37,7 +37,7 @@ public final class TopologyUpdateTest {
   @Before
   public void setUp() {
     members = new HashSet<>();
-    topologyManager = new BrokerTopologyManagerImpl(() -> members, (a, b) -> {});
+    topologyManager = new BrokerTopologyManagerImpl(() -> members);
     actorSchedulerRule.submitActor(topologyManager);
   }
 

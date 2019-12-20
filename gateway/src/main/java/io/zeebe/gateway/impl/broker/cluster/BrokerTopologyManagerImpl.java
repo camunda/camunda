@@ -13,13 +13,11 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import org.agrona.collections.IntObjConsumer;
 import org.slf4j.Logger;
 
 public final class BrokerTopologyManagerImpl extends Actor
@@ -27,15 +25,11 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  protected final IntObjConsumer<SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
   private final Supplier<Set<Member>> membersSupplier;
 
-  public BrokerTopologyManagerImpl(
-      final Supplier<Set<Member>> membersSupplier,
-      final IntObjConsumer<SocketAddress> registerEndpoint) {
+  public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
     this.membersSupplier = membersSupplier;
-    this.registerEndpoint = registerEndpoint;
     this.topology = new AtomicReference<>(null);
   }
 
@@ -141,7 +135,6 @@ public final class BrokerTopologyManagerImpl extends Actor
     final String clientAddress = distributedBrokerInfo.getCommandApiAddress();
     if (clientAddress != null) {
       newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
-      registerEndpoint.accept(nodeId, SocketAddress.from(clientAddress));
     }
   }
 }

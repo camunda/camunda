@@ -7,8 +7,6 @@
  */
 package io.zeebe.gateway.impl.broker.cluster;
 
-import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

@@ -10,7 +10,6 @@ package io.zeebe.broker.system;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
@@ -65,9 +64,8 @@ public final class SystemContext {
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    final SocketBindingCfg commandApiCfg = brokerCfg.getNetwork().getCommandApi();
-    final String brokerId =
-        String.format("%s:%d", commandApiCfg.getHost(), commandApiCfg.getPort());
+    final var cluster = brokerCfg.getCluster();
+    final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
     this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
     this.scheduler = initScheduler(clock, brokerId);

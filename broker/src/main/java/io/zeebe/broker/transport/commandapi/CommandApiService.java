@@ -14,57 +14,100 @@ import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.util.sched.Actor;
 import java.util.function.Consumer;
+import org.agrona.collections.IntHashSet;
 
-public final class CommandApiService implements PartitionListener {
+public final class CommandApiService extends Actor implements PartitionListener {
 
-  private final CommandApiMessageHandler service;
   private final PartitionAwareRequestLimiter limiter;
-  private final ServerOutput serverOutput;
+  private final ServerTransport serverTransport;
+  private final CommandApiRequestHandler requestHandler;
+  private final IntHashSet leadPartitions = new IntHashSet();
+  private final BrokerInfo localBroker;
 
   public CommandApiService(
-      final ServerOutput serverOutput,
-      final CommandApiMessageHandler commandApiMessageHandler,
+      final ServerTransport serverTransport,
+      final BrokerInfo localBroker,
       final PartitionAwareRequestLimiter limiter) {
-    this.serverOutput = serverOutput;
+    this.serverTransport = serverTransport;
     this.limiter = limiter;
-    this.service = commandApiMessageHandler;
+    requestHandler = new CommandApiRequestHandler();
+    this.localBroker = localBroker;
+  }
+
+  @Override
+  public String getName() {
+    return actorNamePattern(localBroker.getNodeId(), "CommandApiService");
+  }
+
+  @Override
+  protected void onActorClosing() {
+    for (final Integer leadPartition : leadPartitions) {
+      removeForPartitionId(leadPartition);
+    }
+    leadPartitions.clear();
   }
 
   @Override
   public void onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    limiter.removePartition(partitionId);
-    service.removePartition(logStream);
+    actor.call(
+        () -> {
+          requestHandler.removePartition(logStream);
+          cleanLeadingPartition(partitionId);
+        });
   }
 
   @Override
   public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
-    limiter.addPartition(partitionId);
+    actor.call(
+        () -> {
+          leadPartitions.add(partitionId);
+          limiter.addPartition(partitionId);
 
-    logStream
-        .newLogStreamRecordWriter()
-        .onComplete(
-            (recordWriter, error) -> {
-              if (error == null) {
-                service.addPartition(partitionId, recordWriter, limiter.getLimiter(partitionId));
-              } else {
-                // TODO https://github.com/zeebe-io/zeebe/issues/3499
-                // the best would be to return a future onBecomingLeader
-                // when one of these futures failed we need to stop the partition installation and
-                // step down
-                // because then otherwise we are not correctly installed
-                Loggers.SYSTEM_LOGGER.error(
-                    "Error on retrieving write buffer from log stream {}", partitionId, error);
-              }
-            });
+          logStream
+              .newLogStreamRecordWriter()
+              .onComplete(
+                  (recordWriter, error) -> {
+                    if (error == null) {
+
+                      final var requestLimiter = this.limiter.getLimiter(partitionId);
+                      requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
+                      serverTransport.subscribe(partitionId, requestHandler);
+
+                    } else {
+                      // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                      // the best would be to return a future onBecomingLeader
+                      // when one of these futures failed we need to stop the partition installation
+                      // and
+                      // step down
+                      // because then otherwise we are not correctly installed
+                      Loggers.SYSTEM_LOGGER.error(
+                          "Error on retrieving write buffer from log stream {}",
+                          partitionId,
+                          error);
+                    }
+                  });
+        });
+  }
+
+  private void cleanLeadingPartition(final int partitionId) {
+    leadPartitions.remove(partitionId);
+    removeForPartitionId(partitionId);
+  }
+
+  private void removeForPartitionId(final int partitionId) {
+    limiter.removePartition(partitionId);
+    serverTransport.unsubscribe(partitionId);
   }
 
   public CommandResponseWriter newCommandResponseWriter() {
-    return new CommandResponseWriterImpl(serverOutput);
+    return new CommandResponseWriterImpl(serverTransport);
   }
 
   public Consumer<TypedRecord> getOnProcessedListener(final int partitionId) {

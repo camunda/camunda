@@ -26,7 +26,7 @@ public final class ExecuteCommandResponseBuilder {
       final MsgPackHelper msgPackConverter) {
     this.registrationFunction = registrationFunction;
     this.commandResponseWriter = new ExecuteCommandResponseWriter(msgPackConverter);
-    partitionId(r -> r.partitionId()); // default
+    partitionId(ExecuteCommandRequest::partitionId); // default
   }
 
   public ExecuteCommandResponseBuilder partitionId(final int partitionId) {

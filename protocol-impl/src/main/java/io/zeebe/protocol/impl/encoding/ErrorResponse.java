@@ -87,8 +87,10 @@ public final class ErrorResponse implements BufferWriter, BufferReader {
     final int errorDataLength = bodyDecoder.errorDataLength();
     offset += ErrorResponseDecoder.errorDataHeaderLength();
 
-    errorData.wrap(buffer, offset, errorDataLength);
-    offset += errorDataLength;
+    if (errorDataLength > 0) {
+      errorData.wrap(buffer, offset, errorDataLength);
+      offset += errorDataLength;
+    }
 
     bodyDecoder.limit(offset);
 

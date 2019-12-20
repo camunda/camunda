@@ -41,7 +41,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
@@ -259,7 +259,7 @@ public final class ClusteringRule extends ExternalResource {
       // all nodes have to join the same broker
       // https://github.com/zeebe-io/zeebe/issues/2012
 
-      setInitialContactPoints(getBrokerCfg(0).getNetwork().getInternalApi().getAddress().toString())
+      setInitialContactPoints(getBrokerCfg(0).getNetwork().getCommandApi().getAddress().toString())
           .accept(brokerCfg);
     }
 
@@ -284,7 +284,7 @@ public final class ClusteringRule extends ExternalResource {
 
   private Gateway createGateway() {
     final String contactPoint =
-        getBrokerCfg(0).getNetwork().getInternalApi().getAddress().toString();
+        getBrokerCfg(0).getNetwork().getCommandApi().getAddress().toString();
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);

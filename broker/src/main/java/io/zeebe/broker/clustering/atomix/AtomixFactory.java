@@ -63,10 +63,10 @@ public final class AtomixFactory {
             .withMembershipProtocol(membershipProtocol)
             .withAddress(
                 Address.from(
-                    networkCfg.getInternalApi().getAdvertisedHost(),
-                    networkCfg.getInternalApi().getAdvertisedPort()))
-            .withMessagingPort(networkCfg.getInternalApi().getPort())
-            .withMessagingInterface(networkCfg.getInternalApi().getHost())
+                    networkCfg.getCommandApi().getAdvertisedHost(),
+                    networkCfg.getCommandApi().getAdvertisedPort()))
+            .withMessagingPort(networkCfg.getCommandApi().getPort())
+            .withMessagingInterface(networkCfg.getCommandApi().getHost())
             .withMembershipProvider(discoveryProvider);
 
     final DataCfg dataConfiguration = configuration.getData();

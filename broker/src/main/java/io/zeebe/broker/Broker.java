@@ -36,7 +36,6 @@ import io.zeebe.broker.system.monitoring.BrokerHttpServer;
 import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
@@ -44,10 +43,9 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.Transports;
-import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
-import io.zeebe.util.ByteValue;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.TransportFactory;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.Actor;
@@ -92,6 +90,7 @@ public final class Broker implements AutoCloseable {
   private ActorScheduler scheduler;
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
+  private ServerTransport serverTransport;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -159,6 +158,7 @@ public final class Broker implements AutoCloseable {
 
     startContext.addStep("actor scheduler", this::actorSchedulerStep);
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
+    startContext.addStep("server transport", () -> serverTransport(localBroker));
     startContext.addStep("command api", () -> commandAPIStep(brokerCfg, networkCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
@@ -193,9 +193,16 @@ public final class Broker implements AutoCloseable {
     return () -> atomix.stop().join();
   }
 
+  private AutoCloseable serverTransport(final BrokerInfo localBroker) {
+    final var transportFactory = new TransportFactory(scheduler);
+    serverTransport =
+        transportFactory.createServerTransport(
+            localBroker.getNodeId(), atomix.getCommunicationService());
+    return serverTransport;
+  }
+
   private AutoCloseable commandAPIStep(
       final BrokerCfg brokerCfg, final NetworkCfg networkCfg, final BrokerInfo localBroker) {
-    final CommandApiMessageHandler commandApiMessageHandler = new CommandApiMessageHandler();
 
     final BackpressureCfg backpressure = brokerCfg.getBackpressure();
     PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
@@ -206,29 +213,13 @@ public final class Broker implements AutoCloseable {
     }
 
     final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
-    final ByteValue transportBufferSize =
-        ByteValue.ofBytes(
-            networkCfg.getMaxMessageSize().toBytes() * networkCfg.getMaxMessageCount());
-
     final InetSocketAddress bindAddress = bindAddr.toInetSocketAddress();
-    final var serverTransport =
-        Transports.newServerTransport()
-            .name(actorNamePattern(localBroker, "commandApi"))
-            .bindAddress(bindAddr.toInetSocketAddress())
-            .scheduler(scheduler)
-            .messageMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
-            .messageMaxLength(networkCfg.getMaxMessageSize())
-            .build(commandApiMessageHandler, commandApiMessageHandler);
 
-    commandHandler =
-        new CommandApiService(serverTransport.getOutput(), commandApiMessageHandler, limiter);
+    commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
     partitionListeners.add(commandHandler);
+    scheduleActor(commandHandler);
     LOG.info("Command api bound to {}.", bindAddress);
-    return serverTransport;
-  }
-
-  public static String actorNamePattern(final BrokerInfo local, final String name) {
-    return String.format("Broker-%d-%s", local.getNodeId(), name);
+    return commandHandler;
   }
 
   private AutoCloseable subscriptionAPIStep(final BrokerInfo localBroker) {

@@ -16,14 +16,14 @@ import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.record.ErrorResponseDecoder;
 import io.zeebe.protocol.record.ErrorResponseEncoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.ClientRequest;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public abstract class BrokerRequest<T> implements BufferWriter {
+public abstract class BrokerRequest<T> implements ClientRequest {
 
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   protected final ErrorResponse errorResponse = new ErrorResponse();
@@ -35,8 +35,6 @@ public abstract class BrokerRequest<T> implements BufferWriter {
     this.schemaId = schemaId;
     this.templateId = templateId;
   }
-
-  public abstract int getPartitionId();
 
   public abstract void setPartitionId(int partitionId);
 
@@ -65,8 +63,7 @@ public abstract class BrokerRequest<T> implements BufferWriter {
 
   protected abstract T toResponseDto(DirectBuffer buffer);
 
-  public BrokerResponse<T> getResponse(final ClientResponse clientResponse) {
-    final DirectBuffer responseBuffer = clientResponse.getResponseBuffer();
+  public BrokerResponse<T> getResponse(final DirectBuffer responseBuffer) {
     try {
       if (isValidResponse(responseBuffer)) {
         wrapResponse(responseBuffer);

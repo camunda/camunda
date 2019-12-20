@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.clustering.topology;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
-
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -60,7 +58,7 @@ public final class TopologyManagerImpl extends Actor
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "TopologyManager");
+    return actorNamePattern(localBroker.getNodeId(), "TopologyManager");
   }
 
   @Override

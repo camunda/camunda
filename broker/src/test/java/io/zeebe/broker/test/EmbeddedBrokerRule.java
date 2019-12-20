@@ -13,7 +13,6 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -29,7 +28,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -109,7 +108,6 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     setGatewayApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setGatewayClusterPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setCommandApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
-    setInternalApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setMonitoringPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
   }
 

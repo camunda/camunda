@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.system.monitoring;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
 import static io.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
 
 import io.atomix.cluster.MemberId;
@@ -27,14 +26,14 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final Atomix atomix;
-  private final BrokerInfo localMember;
+  private final BrokerInfo localBroker;
   private Map<Integer, Boolean> partitionInstallStatus;
   /* set to true when all partitions are installed. Once set to true, it is never
   changed. */
   private volatile boolean brokerStarted = false;
 
-  public BrokerHealthCheckService(final BrokerInfo localMember, final Atomix atomix) {
-    this.localMember = localMember;
+  public BrokerHealthCheckService(final BrokerInfo localBroker, final Atomix atomix) {
+    this.localBroker = localBroker;
     this.atomix = atomix;
     initializePartitionInstallStatus();
   }
@@ -82,6 +81,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   @Override
   public String getName() {
-    return actorNamePattern(localMember, "HealthCheckService");
+    return actorNamePattern(localBroker.getNodeId(), "HealthCheckService");
   }
 }

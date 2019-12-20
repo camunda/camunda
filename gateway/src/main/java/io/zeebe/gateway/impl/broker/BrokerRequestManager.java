@@ -26,8 +26,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -40,23 +39,23 @@ import org.agrona.DirectBuffer;
 
 public final class BrokerRequestManager extends Actor {
 
-  private final ClientOutput clientOutput;
+  private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManagerImpl topologyManager;
   private final Duration requestTimeout;
 
   public BrokerRequestManager(
-      final ClientOutput clientOutput,
+      final ClientTransport clientTransport,
       final BrokerTopologyManagerImpl topologyManager,
       final RequestDispatchStrategy dispatchStrategy,
       final Duration requestTimeout) {
-    this.clientOutput = clientOutput;
+    this.clientTransport = clientTransport;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
     this.requestTimeout = requestTimeout;
   }
 
-  private static boolean shouldRetryRequest(final DirectBuffer responseContent) {
+  private static boolean responseValidation(final DirectBuffer responseContent) {
     final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
     final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     headerDecoder.wrap(responseContent, 0);
@@ -69,9 +68,11 @@ public final class BrokerRequestManager extends Actor {
           headerDecoder.version());
 
       final ErrorCode errorCode = errorHandler.getErrorCode();
-      return errorCode == ErrorCode.PARTITION_LEADER_MISMATCH;
+      // we only want to retry partition leader mismatch all other errors
+      // should be directly returned
+      return errorCode != ErrorCode.PARTITION_LEADER_MISMATCH;
     } else {
-      return false;
+      return true;
     }
   }
 
@@ -166,9 +167,9 @@ public final class BrokerRequestManager extends Actor {
       final Duration requestTimeout) {
     final BrokerNodeIdProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
 
-    final ActorFuture<ClientResponse> responseFuture =
-        clientOutput.sendRequestWithRetry(
-            nodeIdProvider, BrokerRequestManager::shouldRetryRequest, request, requestTimeout);
+    final ActorFuture<DirectBuffer> responseFuture =
+        clientTransport.sendRequestWithRetry(
+            nodeIdProvider, BrokerRequestManager::responseValidation, request, requestTimeout);
 
     if (responseFuture != null) {
       actor.runOnCompletion(
@@ -210,7 +211,7 @@ public final class BrokerRequestManager extends Actor {
       }
       return new BrokerNodeIdProvider(request.getPartitionId());
     } else {
-      // random broker;
+      // random broker
       return new BrokerNodeIdProvider();
     }
   }

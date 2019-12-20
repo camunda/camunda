@@ -7,15 +7,10 @@
  */
 package io.zeebe.transport;
 
-public interface ServerOutput {
-  /**
-   * Sends the given response. The corresponding partition and request id is extracted from the
-   * response object.
-   *
-   * <p>This method should decouple the the request handling, such that response sending can be done
-   * later asynchronously.
-   *
-   * @param response the response which should be send
-   */
-  void sendResponse(ServerResponse response);
+import io.zeebe.util.buffer.BufferWriter;
+
+public interface ClientRequest extends BufferWriter {
+
+  /** @return the partition id to which the request should be send to */
+  int getPartitionId();
 }

@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
-import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.Map;
 
@@ -19,7 +19,7 @@ public final class ExecuteCommandRequestBuilder {
   protected final ExecuteCommandRequest request;
 
   public ExecuteCommandRequestBuilder(
-      final ClientOutput output, final int target, final MsgPackHelper msgPackHelper) {
+      final ClientTransport output, final int target, final MsgPackHelper msgPackHelper) {
     this.request = new ExecuteCommandRequest(output, target, msgPackHelper);
   }
 
@@ -29,10 +29,6 @@ public final class ExecuteCommandRequestBuilder {
 
   public ExecuteCommandRequest send() {
     return request.send();
-  }
-
-  public ExecuteCommandRequest sendWithoutRetries() {
-    return request.send(r -> false);
   }
 
   public ExecuteCommandRequestBuilder partitionId(final int partitionId) {

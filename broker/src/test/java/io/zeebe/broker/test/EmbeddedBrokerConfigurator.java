@@ -74,10 +74,6 @@ public final class EmbeddedBrokerConfigurator {
     return cfg -> cfg.getNetwork().getCommandApi().setPort(port);
   }
 
-  public static Consumer<BrokerCfg> setInternalApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getInternalApi().setPort(port);
-  }
-
   public static Consumer<BrokerCfg> setMonitoringPort(final int port) {
     return cfg -> cfg.getNetwork().getMonitoringApi().setPort(port);
   }

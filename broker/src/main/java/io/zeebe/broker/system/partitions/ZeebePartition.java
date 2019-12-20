@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
-
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.protocols.raft.RaftCommitListener;
 import io.atomix.protocols.raft.RaftServer.Role;
@@ -495,7 +493,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "ZeebePartition-" + partitionId);
+    return actorNamePattern(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
   }
 
   @Override

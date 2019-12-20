@@ -7,178 +7,73 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.transport.impl.TransportContext;
-import io.zeebe.transport.impl.actor.ActorContext;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import org.agrona.DirectBuffer;
 
-public final class ClientTransport implements AutoCloseable {
-
-  public static final int UNKNOWN_NODE_ID = -1;
-
-  private final ClientOutput output;
-  private final RemoteAddressList remoteAddressList;
-  private final EndpointRegistry endpointRegistry;
-  private final ActorContext transportActorContext;
-  private final Dispatcher receiveBuffer;
-  private final TransportContext transportContext;
-
-  public ClientTransport(
-      final ActorContext transportActorContext, final TransportContext transportContext) {
-    this.transportActorContext = transportActorContext;
-    this.transportContext = transportContext;
-    this.output = transportContext.getClientOutput();
-    this.remoteAddressList = transportContext.getRemoteAddressList();
-    this.endpointRegistry = transportContext.getEndpointRegistry();
-    this.receiveBuffer = transportContext.getReceiveBuffer();
-  }
-
-  /** @return interface to stage outbound data */
-  public ClientOutput getOutput() {
-    return output;
-  }
-
+public interface ClientTransport extends AutoCloseable {
   /**
-   * Register an endpoint address for node id. Transport will make sure to keep an open channel to
-   * this endpoint until it is deactivated or retired.
-   */
-  public void registerEndpoint(final int nodeId, final SocketAddress socketAddress) {
-    endpointRegistry.setEndpoint(nodeId, socketAddress);
-  }
-
-  public RemoteAddress getEndpoint(final int nodeId) {
-    return endpointRegistry.getEndpoint(nodeId);
-  }
-
-  /**
-   * Signals that the endpoint of the node is no longer in use for the time being. A transport
-   * channel will no longer be managed. A endpoint is reactivated when the endpoint is registered
-   * again.
-   */
-  public void deactivateEndpoint(final int nodeId) {
-    endpointRegistry.removeEndpoint(nodeId);
-  }
-
-  /**
-   * Signals that the endpoint is no longer used and that the stream should not be reused on
-   * reactivation. That means, when the endpoint is registered again, it is assigned a different
-   * stream id.
-   */
-  public void retireEndpoint(final int nodeId) {
-    endpointRegistry.retire(nodeId);
-  }
-
-  /**
-   * DO NOT USE in production code as it involves blocking the current thread.
+   * Similar to {@link #sendRequestWithRetry(Supplier, Predicate, ClientRequest, Duration)}, but no
+   * requests are validated before completing the future.
    *
-   * <p>Not thread-safe
+   * <p>Send a request to a node with retries if there is no current connection or the node is not
+   * resolvable. Makes this method more robust in the presence of short intermittent disconnects.
    *
-   * <p>Like {@link #registerEndpoint(int, SocketAddress)} but blockingly waits for the
-   * corresponding channel to be opened such that it is probable that subsequent requests/messages
-   * can be sent. This saves test code the need to retry sending.
+   * <p>Guarantees:
+   *
+   * <ul>
+   *   <li>Not garbage-free
+   *   <li>n intermediary copies of the request (one local copy for making retries, one copy on the
+   *       send buffer per try)
+   *
+   * @param nodeIdSupplier supplier for the node id the retries are executed against (retries may be
+   *     executed against different nodes). The supplier may resolve to <code>null
+   *     </code> to signal that a node id can not be determined. In that case, the request is
+   *     retried after resubmit timeout.
+   * @param clientRequest the request which should be send
+   * @param timeout The timeout until the returned future fails if no response is received.
+   * @return a future carrying the response that was accepted or null in case no memory is currently
+   *     available to allocate the request. Can complete exceptionally in failure cases such as
+   *     timeout.
    */
-  public void registerEndpointAndAwaitChannel(final int nodeId, final SocketAddress addr) {
-    final RemoteAddress remoteAddress = getRemoteAddress(addr);
-
-    if (remoteAddress == null) {
-      final Lock lock = new ReentrantLock();
-      final Condition connectionEstablished = lock.newCondition();
-
-      lock.lock();
-      try {
-        final TransportListener listener =
-            new TransportListener() {
-              @Override
-              public void onConnectionEstablished(final RemoteAddress remoteAddress) {
-                lock.lock();
-                try {
-                  if (remoteAddress.getAddress().equals(addr)) {
-                    connectionEstablished.signal();
-                    removeChannelListener(this);
-                  }
-                } finally {
-                  lock.unlock();
-                }
-              }
-
-              @Override
-              public void onConnectionClosed(final RemoteAddress remoteAddress) {}
-            };
-
-        transportActorContext.registerListener(listener).join();
-
-        registerEndpoint(nodeId, addr);
-        try {
-          if (!connectionEstablished.await(10, TimeUnit.SECONDS)) {
-            throw new RuntimeException(new TimeoutException());
-          }
-        } catch (final InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-      } finally {
-        lock.unlock();
-      }
-    }
-  }
-
-  private RemoteAddress getRemoteAddress(final SocketAddress addr) {
-    return remoteAddressList.getByAddress(addr);
+  default ActorFuture<DirectBuffer> sendRequestWithRetry(
+      final Supplier<Integer> nodeIdSupplier,
+      final ClientRequest clientRequest,
+      final Duration timeout) {
+    return sendRequestWithRetry(nodeIdSupplier, response -> true, clientRequest, timeout);
   }
 
   /**
-   * Creates a subscription on the receive buffer for single messages.
+   * Send a request to a node with retries if there is no current connection or the node is not
+   * resolvable. Makes this method more robust in the presence of short intermittent disconnects.
    *
-   * @throws RuntimeException if this client was not created with a receive buffer for
-   *     single-messages
+   * <p>Guarantees:
+   *
+   * <ul>
+   *   <li>Not garbage-free
+   *   <li>n intermediary copies of the request (one local copy for making retries, one copy on the
+   *       send buffer per try)
+   *
+   * @param nodeIdSupplier supplier for the node id the retries are executed against (retries may be
+   *     executed against different nodes). The supplier may resolve to <code>null
+   *     </code> to signal that a node id can not be determined. In that case, the request is
+   *     retried after resubmit timeout.
+   * @param responseValidator predicate which tests the received response, before completing the
+   *     future to verify, whether this request needs to be retried or not, in respect of the
+   *     current timeout. This avoids retrying, without new copy of the corresponding request and no
+   *     separate logic in the client. When the validator returns *true* then the request is valid
+   *     and should not be retried.
+   * @param clientRequest the request which should be send
+   * @param timeout The timeout until the returned future fails if no response is received.
+   * @return a future carrying the response that was accepted or null in case no memory is currently
+   *     available to allocate the request. Can complete exceptionally in failure cases such as
+   *     timeout.
    */
-  public ActorFuture<ClientInputMessageSubscription> openSubscription(
-      final String subscriptionName, final ClientMessageHandler messageHandler) {
-    if (receiveBuffer == null) {
-      throw new RuntimeException("Cannot throw exception. No receive buffer in use");
-    }
-
-    return transportActorContext
-        .getClientConductor()
-        .openClientInputMessageSubscription(
-            subscriptionName, messageHandler, output, remoteAddressList);
-  }
-
-  /**
-   * Registers a listener with callbacks for whenever a connection to a remote gets established or
-   * closed.
-   */
-  public ActorFuture<Void> registerChannelListener(final TransportListener channelListener) {
-    return transportActorContext.registerListener(channelListener);
-  }
-
-  public void removeChannelListener(final TransportListener listener) {
-    transportActorContext.removeListener(listener);
-  }
-
-  public ActorFuture<Void> closeAsync() {
-    return transportActorContext.onClose();
-  }
-
-  @Override
-  public void close() {
-    closeAsync().join();
-  }
-
-  public void interruptAllChannels() {
-    transportActorContext.interruptAllChannels();
-  }
-
-  public ActorFuture<Void> closeAllChannels() {
-    return transportActorContext.closeAllOpenChannels();
-  }
-
-  public Duration getChannelKeepAlivePeriod() {
-    return transportContext.getChannelKeepAlivePeriod();
-  }
+  ActorFuture<DirectBuffer> sendRequestWithRetry(
+      Supplier<Integer> nodeIdSupplier,
+      Predicate<DirectBuffer> responseValidator,
+      ClientRequest clientRequest,
+      Duration timeout);
 }

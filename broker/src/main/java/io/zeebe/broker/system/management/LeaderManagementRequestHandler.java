@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.system.management;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
-
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
@@ -60,7 +58,7 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "ManagementRequestHandler");
+    return actorNamePattern(localBroker.getNodeId(), "ManagementRequestHandler");
   }
 
   @Override

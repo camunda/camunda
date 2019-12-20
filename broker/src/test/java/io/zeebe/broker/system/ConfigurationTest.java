@@ -27,7 +27,6 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
-import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,53 +99,45 @@ public final class ConfigurationTest {
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertDefaultPorts(
-        DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT, DEFAULT_MONITORING_API_PORT);
+    assertDefaultPorts(DEFAULT_COMMAND_API_PORT, DEFAULT_MONITORING_API_PORT);
   }
 
   @Test
   public void shouldUseSpecifiedPorts() {
-    assertPorts("specific-ports", 1, 5, 6);
+    assertPorts("specific-ports", 1, 6);
   }
 
   @Test
   public void shouldUsePortOffset() {
     final int offset = 50;
     assertPorts(
-        "port-offset",
-        DEFAULT_COMMAND_API_PORT + offset,
-        DEFAULT_INTERNAL_API_PORT + offset,
-        DEFAULT_MONITORING_API_PORT + offset);
+        "port-offset", DEFAULT_COMMAND_API_PORT + offset, DEFAULT_MONITORING_API_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetWithSpecifiedPorts() {
     final int offset = 30;
-    assertPorts("specific-ports-offset", 1 + offset, 5 + offset, 6 + offset);
+    assertPorts("specific-ports-offset", 1 + offset, 6 + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "5");
     final int offset = 50;
-    assertDefaultPorts(
-        DEFAULT_COMMAND_API_PORT + offset,
-        DEFAULT_INTERNAL_API_PORT + offset,
-        DEFAULT_MONITORING_API_PORT + offset);
+    assertDefaultPorts(DEFAULT_COMMAND_API_PORT + offset, DEFAULT_MONITORING_API_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
     environment.put(ENV_PORT_OFFSET, "3");
     final int offset = 30;
-    assertPorts("specific-ports", 1 + offset, 5 + offset, 6 + offset);
+    assertPorts("specific-ports", 1 + offset, 6 + offset);
   }
 
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
-    assertDefaultPorts(
-        DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT, DEFAULT_MONITORING_API_PORT);
+    assertDefaultPorts(DEFAULT_COMMAND_API_PORT, DEFAULT_MONITORING_API_PORT);
   }
 
   @Test
@@ -154,10 +145,7 @@ public final class ConfigurationTest {
     environment.put(ENV_PORT_OFFSET, "7");
     final int offset = 70;
     assertPorts(
-        "port-offset",
-        DEFAULT_COMMAND_API_PORT + offset,
-        DEFAULT_INTERNAL_API_PORT + offset,
-        DEFAULT_MONITORING_API_PORT + offset);
+        "port-offset", DEFAULT_COMMAND_API_PORT + offset, DEFAULT_MONITORING_API_PORT + offset);
   }
 
   @Test
@@ -215,13 +203,7 @@ public final class ConfigurationTest {
 
   @Test
   public void shouldUseSpecifiedHosts() {
-    assertHost(
-        "specific-hosts",
-        DEFAULT_HOST,
-        "gatewayHost",
-        "commandHost",
-        "internalHost",
-        "monitoringHost");
+    assertHost("specific-hosts", DEFAULT_HOST, "gatewayHost", "commandHost", "monitoringHost");
   }
 
   @Test
@@ -244,8 +226,7 @@ public final class ConfigurationTest {
   @Test
   public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
     environment.put(ENV_HOST, "myHost");
-    assertHost(
-        "specific-hosts", "myHost", "gatewayHost", "commandHost", "internalHost", "monitoringHost");
+    assertHost("specific-hosts", "myHost", "gatewayHost", "commandHost", "monitoringHost");
   }
 
   @Test
@@ -510,18 +491,16 @@ public final class ConfigurationTest {
     assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
   }
 
-  private void assertDefaultPorts(final int command, final int internal, final int monitoring) {
-    assertPorts("default", command, internal, monitoring);
-    assertPorts("empty", command, internal, monitoring);
+  private void assertDefaultPorts(final int command, final int monitoring) {
+    assertPorts("default", command, monitoring);
+    assertPorts("empty", command, monitoring);
   }
 
-  private void assertPorts(
-      final String configFileName, final int command, final int internal, final int monitoring) {
+  private void assertPorts(final String configFileName, final int command, final int monitoring) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg network = brokerCfg.getNetwork();
     assertThat(network.getCommandApi().getAddress().port()).isEqualTo(command);
     assertThat(network.getCommandApi().getAdvertisedAddress().port()).isEqualTo(command);
-    assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
     assertThat(network.getMonitoringApi().getPort()).isEqualTo(monitoring);
   }
 
@@ -531,7 +510,7 @@ public final class ConfigurationTest {
   }
 
   private void assertHost(final String configFileName, final String host) {
-    assertHost(configFileName, host, host, host, host, host);
+    assertHost(configFileName, host, host, host, host);
   }
 
   private void assertHost(
@@ -539,14 +518,12 @@ public final class ConfigurationTest {
       final String host,
       final String gateway,
       final String command,
-      final String internal,
       final String monitoring) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
     assertThat(networkCfg.getCommandApi().getAddress().host()).isEqualTo(command);
-    assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
     assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
   }
 

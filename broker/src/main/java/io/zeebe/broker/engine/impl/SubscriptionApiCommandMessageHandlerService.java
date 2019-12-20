@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.engine.impl;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
-
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
@@ -35,7 +33,7 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "SubscriptionApi");
+    return actorNamePattern(localBroker.getNodeId(), "SubscriptionApi");
   }
 
   @Override

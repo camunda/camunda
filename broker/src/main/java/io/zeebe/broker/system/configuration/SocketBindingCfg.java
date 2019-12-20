@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import java.util.Optional;
 
 public class SocketBindingCfg {
@@ -92,12 +92,6 @@ public class SocketBindingCfg {
   public static class CommandApiCfg extends SocketBindingCfg {
     public CommandApiCfg() {
       super(NetworkCfg.DEFAULT_COMMAND_API_PORT);
-    }
-  }
-
-  public static class InternalApiCfg extends SocketBindingCfg {
-    public InternalApiCfg() {
-      super(NetworkCfg.DEFAULT_INTERNAL_API_PORT);
     }
   }
 

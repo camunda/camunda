@@ -7,7 +7,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
