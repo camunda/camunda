@@ -46,6 +46,17 @@ removePipelines(){
 	echo "-------------------------------"
 }
 
+removeOldTemplates(){
+	echo "Delete all old templates"
+	for template in create/template/*.json; do
+		templatename=`basename $template .json`
+		echo "-------------------------------"
+		$RESTCLIENT --request DELETE --url $ES/_template/${templatename}_template
+done
+	echo
+	echo "-------------------------------"
+}
+
 migrate(){
 	echo "Migrate indices ( reindex old to new index and delete old index)"
 	for index in migrate/reindex/*.json; do
@@ -60,6 +71,7 @@ migrate(){
 }
 
 ## main
+removeOldTemplates
 createNewIndexes
 createNewTemplatesAndTheirIndexes
 createPipelines
