@@ -6,6 +6,7 @@
 package org.camunda.operate.webapp.security;
 
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.camunda.operate.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
@@ -65,8 +66,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/swagger-resources/**",
     "/swagger-ui.html",
     "/documentation",
-    "/webjars/**"
-    ,ACTUATOR_ENDPOINTS
+    "/webjars/**",
+    ACTUATOR_ENDPOINTS,
+    CLIENT_CONFIG_RESOURCE
   };  
 
   @Override

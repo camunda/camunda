@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.webapp.security.sso;
 
+import static org.camunda.operate.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
@@ -54,7 +56,8 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
       NO_PERMISSION,
       LOGOUT_RESOURCE,
       ACTUATOR_ENDPOINTS,
-      LOGIN_RESOURCE 
+      LOGIN_RESOURCE,
+      CLIENT_CONFIG_RESOURCE
    };
   
   public static final String REQUESTED_URL = "requestedUrl";
