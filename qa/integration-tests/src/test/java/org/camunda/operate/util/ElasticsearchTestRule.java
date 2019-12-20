@@ -188,7 +188,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         if (supplier != null) {
           supplier.get();
         }
-        refreshZeebeESIndices();
+        refreshIndexesInElasticsearch(); 
         shouldImportCount +=  zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
@@ -199,7 +199,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
         waitForImports++;
         try {
-          refreshZeebeESIndices();
+          sleepFor(500);
           shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
         } catch (Exception e) {
           waitingRound = 1;
