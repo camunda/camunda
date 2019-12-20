@@ -219,7 +219,7 @@ pipeline {
   post {
     failure {
       script{
-        def notification = load "build_notification.groovy"
+        def notification = load "../.ci/pipelines/build_notification.groovy"
         notification.buildNotification(currentBuild.result)
       }
     }
