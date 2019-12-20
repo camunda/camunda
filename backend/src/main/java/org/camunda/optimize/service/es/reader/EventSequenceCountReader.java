@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -18,6 +19,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.Sum;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.COUNT;
@@ -35,13 +39,16 @@ import static org.camunda.optimize.service.es.schema.index.events.EventSequenceC
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
+import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.multiMatchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
@@ -60,11 +67,16 @@ public class EventSequenceCountReader {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public List<EventSequenceCountDto> getAllEventSequenceCounts() {
-    log.debug("Fetching all event sequence counts");
+  public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
+    final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents) {
+    log.debug("Fetching event sequences for incoming and outgoing events");
+
+    if (incomingEvents.isEmpty() && outgoingEvents.isEmpty()) {
+      return Collections.emptyList();
+    }
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
+      .query(buildSequencedEventsQuery(incomingEvents, outgoingEvents))
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(EVENT_SEQUENCE_COUNT_INDEX_NAME)
       .source(searchSourceBuilder);
@@ -83,7 +95,7 @@ public class EventSequenceCountReader {
     log.debug("Fetching event counts with filter [{}}]", eventCountRequestDto);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(buildQuery(eventCountRequestDto));
+    searchSourceBuilder.query(buildCountRequestQuery(eventCountRequestDto));
     searchSourceBuilder.aggregation(createAggregationBuilder());
     searchSourceBuilder.size(0);
 
@@ -99,19 +111,44 @@ public class EventSequenceCountReader {
       throw new OptimizeRuntimeException("Was not able to get event counts!", e);
     }
     return eventCountDtos;
-
   }
 
-  private AbstractQueryBuilder buildQuery(final EventCountRequestDto eventCountRequestDto) {
+  private QueryBuilder buildSequencedEventsQuery(
+    final List<EventTypeDto> incomingEvents,
+    final List<EventTypeDto> outgoingEvents) {
+    final BoolQueryBuilder query = boolQuery();
+    incomingEvents
+      .forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, SOURCE_EVENT)));
+    outgoingEvents
+      .forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, TARGET_EVENT)));
+    return query;
+  }
+
+  private BoolQueryBuilder buildEventTypeBoolQueryForProperty(EventTypeDto eventTypeDto, String propertyName) {
+    BoolQueryBuilder boolQuery = boolQuery();
+    getNullableFieldQuery(boolQuery, getNestedField(propertyName, GROUP), eventTypeDto.getGroup());
+    getNullableFieldQuery(boolQuery, getNestedField(propertyName, SOURCE), eventTypeDto.getSource());
+    boolQuery.must(termQuery(getNestedField(propertyName, EVENT_NAME), eventTypeDto.getEventName()));
+    return boolQuery;
+  }
+
+  private BoolQueryBuilder getNullableFieldQuery(BoolQueryBuilder builder, final String field, final String value) {
+    if (value != null) {
+      return builder.must(termQuery(field, value));
+    }
+    return builder.mustNot(existsQuery(field));
+  }
+
+  private AbstractQueryBuilder buildCountRequestQuery(final EventCountRequestDto eventCountRequestDto) {
     if (eventCountRequestDto.getSearchTerm() == null) {
       return matchAllQuery();
     }
     final String lowerCaseSearchTerm = eventCountRequestDto.getSearchTerm().toLowerCase();
     if (eventCountRequestDto.getSearchTerm().length() > IndexSettingsBuilder.MAX_GRAM) {
       return boolQuery()
-        .should(prefixQuery(getNestedSourceField(GROUP), lowerCaseSearchTerm))
-        .should(prefixQuery(getNestedSourceField(SOURCE), lowerCaseSearchTerm))
-        .should(prefixQuery(getNestedSourceField(EVENT_NAME), lowerCaseSearchTerm));
+        .should(prefixQuery(getNestedField(SOURCE_EVENT, GROUP), lowerCaseSearchTerm))
+        .should(prefixQuery(getNestedField(SOURCE_EVENT, SOURCE), lowerCaseSearchTerm))
+        .should(prefixQuery(getNestedField(SOURCE_EVENT, EVENT_NAME), lowerCaseSearchTerm));
     }
 
     return boolQuery().should(multiMatchQuery(
@@ -160,11 +197,11 @@ public class EventSequenceCountReader {
   }
 
   private String getNgramSearchField(final String searchFieldName) {
-    return getNestedSourceField(searchFieldName) + "." + N_GRAM_FIELD;
+    return getNestedField(SOURCE_EVENT, searchFieldName) + "." + N_GRAM_FIELD;
   }
 
-  private String getNestedSourceField(final String searchFieldName) {
-    return SOURCE_EVENT + "." + searchFieldName;
+  private String getNestedField(final String property, final String searchFieldName) {
+    return property + "." + searchFieldName;
   }
 
 }

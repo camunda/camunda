@@ -321,6 +321,36 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExistWithNullFields() {
+    // given
+    EventTypeDto nextMappedEventWithNullProperties = eventTypeFromEvent(nullNullEvent);
+
+    // Suggestions request for flow node with event mapped before and after
+    EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
+      .targetFlowNodeId(SECOND_TASK_ID)
+      .xml(simpleDiagramXml)
+      .mappings(ImmutableMap.of(THIRD_TASK_ID, createEventMappingDto(null, nextMappedEventWithNullProperties)))
+      .build();
+
+    // when
+    List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
+      eventCountSuggestionsRequestDto)
+      .executeAndReturnList(EventCountDto.class, 200);
+
+    // then events that are sequenced with mapped events are first and marked as suggested
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(5)
+      .containsExactly(
+        toEventCountDto(backendMayoEvent, 3L, true),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
+      );
+  }
+
+  @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist_onlyNearestNeighboursConsidered() {
     // given
     EventTypeDto nearestNextMappedEvent = eventTypeFromEvent(ketchupMayoEvent);

@@ -25,7 +25,6 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -78,17 +77,13 @@ public class EventService {
 
   public List<EventCountDto> getEventCounts(EventCountServiceDto eventCountServiceDto) {
     List<EventCountDto> matchingEventCountDtos = eventSequenceCountReader.getEventCounts(eventCountServiceDto.getEventCountRequestDto());
-    applySuggestionsToEventCounts(eventCountServiceDto, matchingEventCountDtos);
-    return sortEventCountsUsingWithRequestParameters(eventCountServiceDto.getEventCountRequestDto(), matchingEventCountDtos);
-  }
-
-  private void applySuggestionsToEventCounts(final EventCountServiceDto eventCountServiceDto,
-                                             final List<EventCountDto> eventCountDtos) {
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto =
       eventCountServiceDto.getEventCountSuggestionsRequestDto();
     if (eventCountSuggestionsRequestDto != null && eventCountSuggestionsRequestDto.getMappings() != null) {
-      addSuggestionsForEventCounts(eventCountSuggestionsRequestDto, eventCountDtos);
+      removeAlreadyMappedEventsFromCounts(matchingEventCountDtos, eventCountSuggestionsRequestDto.getMappings());
+      addSuggestionsForEventCounts(eventCountSuggestionsRequestDto, matchingEventCountDtos);
     }
+    return sortEventCountsUsingWithRequestParameters(eventCountServiceDto.getEventCountRequestDto(), matchingEventCountDtos);
   }
 
   private void addSuggestionsForEventCounts(EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto,
@@ -98,19 +93,42 @@ public class EventService {
 
     validateEventCountSuggestionsParameters(eventCountSuggestionsRequestDto, currentMappings, bpmnModelForXml);
 
-    List<EventSequenceCountDto> eventSequenceCountDtos = eventSequenceCountReader.getAllEventSequenceCounts();
-
     FlowNode targetFlowNode = bpmnModelForXml.getModelElementById(eventCountSuggestionsRequestDto.getTargetFlowNodeId());
-    final List<EventTypeDto> suggestedEvents = new ArrayList<>();
-    suggestedEvents.addAll(getEventsOccurringBeforeNextMapping(targetFlowNode, currentMappings, eventSequenceCountDtos));
-    suggestedEvents.addAll(getEventsOccurringAfterPreviousMapping(targetFlowNode, currentMappings, eventSequenceCountDtos));
+    List<EventTypeDto> eventsMappedToIncomingNodes = getNearestIncomingMappedEvents(currentMappings, targetFlowNode);
+    List<EventTypeDto> eventsMappedToOutgoingNodes = getNearestOutgoingMappedEvents(currentMappings, targetFlowNode);
 
-    removeAlreadyMappedEventsFromCounts(eventCountDtos, currentMappings);
+    final List<EventTypeDto> suggestedEvents = getSuggestedEventsForGivenMappings(
+      eventsMappedToIncomingNodes,
+      eventsMappedToOutgoingNodes
+    );
+
     eventCountDtos.forEach(eventCountDto -> {
       if (eventCountIsInEventTypeList(eventCountDto, suggestedEvents)) {
         eventCountDto.setSuggested(true);
       }
     });
+  }
+
+  private List<EventTypeDto> getSuggestedEventsForGivenMappings(final List<EventTypeDto> eventsMappedToIncomingNodes,
+                                                                final List<EventTypeDto> eventsMappedToOutgoingNodes) {
+    List<EventSequenceCountDto> suggestedEventSequenceCandidates =
+      eventSequenceCountReader.getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
+        eventsMappedToIncomingNodes, eventsMappedToOutgoingNodes
+      );
+
+    return suggestedEventSequenceCandidates.stream()
+      .filter(sequence -> Objects.nonNull(sequence.getTargetEvent()))
+      .map(suggestionSequence -> {
+        if (eventsMappedToIncomingNodes.contains(suggestionSequence.getSourceEvent())) {
+          return suggestionSequence.getTargetEvent();
+        } else if (eventsMappedToOutgoingNodes.contains(suggestionSequence.getTargetEvent())) {
+          return suggestionSequence.getSourceEvent();
+        } else {
+          return null;
+        }
+      })
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
   }
 
   private void validateEventCountSuggestionsParameters(final EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto,
@@ -127,35 +145,6 @@ public class EventService {
     }
   }
 
-  private List<EventTypeDto> getEventsOccurringBeforeNextMapping(FlowNode targetFlowNode,
-                                                                 Map<String, EventMappingDto> currentMappings,
-                                                                 List<EventSequenceCountDto> eventSequenceCountDtos) {
-    List<EventTypeDto> eventsMappedToOutgoingNodes = getNearestOutgoingMappedFlowNodeIds(currentMappings, targetFlowNode)
-      .stream()
-      .map(Objects.requireNonNull(currentMappings)::get)
-      .map(mapping -> Optional.ofNullable(mapping.getStart()).orElse(mapping.getEnd()))
-      .collect(Collectors.toList());
-    return eventSequenceCountDtos.stream()
-      .filter(sequence -> eventsMappedToOutgoingNodes.contains(sequence.getTargetEvent()))
-      .map(EventSequenceCountDto::getSourceEvent)
-      .collect(Collectors.toList());
-  }
-
-  private List<EventTypeDto> getEventsOccurringAfterPreviousMapping(FlowNode targetFlowNode,
-                                                                    Map<String, EventMappingDto> currentMappings,
-                                                                    List<EventSequenceCountDto> eventSequenceCountDtos) {
-    List<EventTypeDto> eventsMappedToIncomingNodes = getNearestIncomingMappedFlowNodeIds(currentMappings, targetFlowNode)
-      .stream()
-      .map(Objects.requireNonNull(currentMappings)::get)
-      .map(mapping -> Optional.ofNullable(mapping.getEnd()).orElse(mapping.getStart()))
-      .collect(Collectors.toList());
-    return eventSequenceCountDtos.stream()
-      .filter(sequence -> eventsMappedToIncomingNodes.contains(sequence.getSourceEvent()))
-      .filter(sequence -> Objects.nonNull(sequence.getTargetEvent()))
-      .map(EventSequenceCountDto::getTargetEvent)
-      .collect(Collectors.toList());
-  }
-
   private boolean eventCountIsInEventTypeList(EventCountDto eventCountDto, List<EventTypeDto> eventTypes) {
     return eventTypes.stream()
       .anyMatch(suggested ->
@@ -164,16 +153,24 @@ public class EventService {
                     && Objects.equals(suggested.getEventName(), eventCountDto.getEventName())));
   }
 
-  private List<String> getNearestIncomingMappedFlowNodeIds(final Map<String, EventMappingDto> currentMappings,
-                                                           final FlowNode targetFlowNode) {
+  private List<EventTypeDto> getNearestIncomingMappedEvents(final Map<String, EventMappingDto> currentMappings,
+                                                      final FlowNode targetFlowNode) {
     return getNearestMappedFlowNodeIds(currentMappings, targetFlowNode, target ->
-      target.getIncoming().stream().map(SequenceFlow::getSource).collect(Collectors.toList()));
+      target.getIncoming().stream().map(SequenceFlow::getSource).collect(Collectors.toList()))
+      .stream()
+      .map(Objects.requireNonNull(currentMappings)::get)
+      .map(mapping -> Optional.ofNullable(mapping.getEnd()).orElse(mapping.getStart()))
+      .collect(Collectors.toList());
   }
 
-  private List<String> getNearestOutgoingMappedFlowNodeIds(final Map<String, EventMappingDto> currentMappings,
-                                                           final FlowNode targetFlowNode) {
+  private List<EventTypeDto> getNearestOutgoingMappedEvents(final Map<String, EventMappingDto> currentMappings,
+                                                      final FlowNode targetFlowNode) {
     return getNearestMappedFlowNodeIds(currentMappings, targetFlowNode, target ->
-      target.getOutgoing().stream().map(SequenceFlow::getTarget).collect(Collectors.toList()));
+      target.getOutgoing().stream().map(SequenceFlow::getTarget).collect(Collectors.toList()))
+      .stream()
+      .map(Objects.requireNonNull(currentMappings)::get)
+      .map(mapping -> Optional.ofNullable(mapping.getStart()).orElse(mapping.getEnd()))
+      .collect(Collectors.toList());
   }
 
   /**

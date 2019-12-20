@@ -73,7 +73,6 @@ public class DashboardReader {
   public List<DashboardDefinitionDto> findDashboardsForCollection(String collectionId) {
     log.debug("Fetching dashboards using collection with id {}", collectionId);
 
-
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
