@@ -196,8 +196,8 @@ pipeline {
 
   post {
     failure {
-      script{
-        def notification = load "../.ci/pipelines/build_notification.groovy"
+      script {
+        def notification = load "${pwd()}/.ci/pipelines/build_notification.groovy"
         notification.buildNotification(currentBuild.result)
       }
     }
