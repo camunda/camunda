@@ -97,6 +97,8 @@ data:
     eventBasedProcess:
       enabled: true
       authorizedUserIds: ['demo']
+      eventIngestion:
+        apiSecret: secret
 
 ######################## CAM BPM ########################
   configure-and-run.sh: |
