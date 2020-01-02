@@ -71,24 +71,22 @@ public class ElasticsearchSchemaManager {
   
   protected boolean createIndex(IndexDescriptor indexDescriptor) {
     final Map<String, Object> indexDescription = readJSONFileToMap(indexDescriptor.getFileName());
-    // Adjust aliases in case of other configured indexNames
-    indexDescription.put("aliases", Collections.singletonMap(indexDescriptor.getIndexName()+"alias", Collections.EMPTY_MAP));
+    // Adjust aliases in case of other configured indexNames, e.g. non-default prefix
+    indexDescription.put("aliases", Collections.singletonMap(indexDescriptor.getAlias(), Collections.EMPTY_MAP));
     
     return createIndex(new CreateIndexRequest(indexDescriptor.getIndexName()).source(indexDescription));
   }
   
   protected boolean createTemplate(TemplateDescriptor templateDescriptor) {
-    String templateName = templateDescriptor.getTemplateName();
-    String indexName = templateDescriptor.getMainIndexName();
     final Map<String, Object> template = readJSONFileToMap(templateDescriptor.getFileName());
     
-    // Adjust prefixes and aliases in case of other configured indexNames
-    template.put("index_patterns", Collections.singletonList(indexName + "*"));
-    template.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
+    // Adjust prefixes and aliases in case of other configured indexNames, e.g. non-default prefix
+    template.put("index_patterns", Collections.singletonList(templateDescriptor.getIndexPattern()));
+    template.put("aliases", Collections.singletonMap(templateDescriptor.getAlias(), Collections.EMPTY_MAP));
 
-    return putIndexTemplate(new PutIndexTemplateRequest(templateName).source(template))
+    return putIndexTemplate(new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(template))
         // This is necessary, otherwise operate won't find indexes at startup
-        && createIndex(new CreateIndexRequest(indexName));
+        && createIndex(new CreateIndexRequest(templateDescriptor.getMainIndexName()));
   }
   
   public boolean schemaAlreadyExists() {

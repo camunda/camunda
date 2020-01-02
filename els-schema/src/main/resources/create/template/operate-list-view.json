@@ -22,101 +22,101 @@
 		}
 	},
 	"mappings": {
-			"dynamic": "strict",
-			"dynamic_templates": [
-				{
-					"string_template": {
-						"path_match": "*",
-						"mapping": {
-							"norms": {
-								"enabled": false
-							},
-							"type": "string",
-							"index_options": "docs"
+		"dynamic": "strict",
+		"dynamic_templates": [
+			{
+				"string_template": {
+					"path_match": "*",
+					"mapping": {
+						"norms": {
+							"enabled": false
 						},
-						"match_mapping_type": "string"
-					}
-				}
-			],
-			"properties": {
-				"varName": {
-					"type": "keyword"
-				},
-				"endDate": {
-					"format": "date_time",
-					"type": "date"
-				},
-				"partitionId": {
-					"type": "integer"
-				},
-				"errorMessage": {
-					"type": "text"
-				},
-				"workflowName": {
-					"normalizer": "case_insensitive",
-					"type": "keyword"
-				},
-				"joinRelation": {
-					"type": "join",
-					"relations": {
-						"workflowInstance": [
-							"activity",
-							"variable"
-						]
-					}
-				},
-				"incidentJobKey": {
-					"type": "keyword"
-				},
-				"activityId": {
-					"eager_global_ordinals": true,
-					"type": "keyword"
-				},
-				"varValue": {
-				    "analyzer":"no_analyzer",
-					"type": "text"
-				},
-				"activityState": {
-					"type": "keyword"
-				},
-				"incidentKey": {
-					"type": "long"
-				},
-				"workflowKey": {
-					"type": "long"
-				},
-				"scopeKey": {
-					"type": "long"
-				},
-				"workflowInstanceKey": {
-					"type": "long"
-				},
-				"id": {
-					"type": "keyword"
-				},
-				"workflowVersion": {
-					"type": "long"
-				},
-				"bpmnProcessId": {
-					"type": "keyword"
-				},
-				"state": {
-					"type": "keyword"
-				},
-				"activityType": {
-					"type": "keyword"
-				},
-				"batchOperationIds": {
-					"type": "keyword"
-				},
-				"startDate": {
-					"format": "date_time",
-					"type": "date"
-				},
-				"key": {
-					"type": "long"
+						"type": "string",
+						"index_options": "docs"
+					},
+					"match_mapping_type": "string"
 				}
 			}
+		],
+		"properties": {
+			"varName": {
+				"type": "keyword"
+			},
+			"endDate": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"partitionId": {
+				"type": "integer"
+			},
+			"errorMessage": {
+				"type": "text"
+			},
+			"workflowName": {
+				"normalizer": "case_insensitive",
+				"type": "keyword"
+			},
+			"joinRelation": {
+				"type": "join",
+				"relations": {
+					"workflowInstance": [
+						"activity",
+						"variable"
+					]
+				}
+			},
+			"incidentJobKey": {
+				"type": "keyword"
+			},
+			"activityId": {
+				"eager_global_ordinals": true,
+				"type": "keyword"
+			},
+			"varValue": {
+				"analyzer":"no_analyzer",
+				"type": "text"
+			},
+			"activityState": {
+				"type": "keyword"
+			},
+			"incidentKey": {
+				"type": "long"
+			},
+			"workflowKey": {
+				"type": "long"
+			},
+			"scopeKey": {
+				"type": "long"
+			},
+			"workflowInstanceKey": {
+				"type": "long"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"workflowVersion": {
+				"type": "long"
+			},
+			"bpmnProcessId": {
+				"type": "keyword"
+			},
+			"state": {
+				"type": "keyword"
+			},
+			"activityType": {
+				"type": "keyword"
+			},
+			"batchOperationIds": {
+				"type": "keyword"
+			},
+			"startDate": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"key": {
+				"type": "long"
+			}
+		}
 	},
 	"aliases": {
 		"operate-list-view-${schema.version}_alias": {

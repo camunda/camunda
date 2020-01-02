@@ -4,64 +4,64 @@
 		"operate-incident-${schema.version}_*"
 	],
 	"mappings": {
-			"dynamic": "strict",
-			"dynamic_templates": [
-				{
-					"string_template": {
-						"path_match": "*",
-						"mapping": {
-							"norms": {
-								"enabled": false
-							},
-							"type": "string",
-							"index_options": "docs"
+		"dynamic": "strict",
+		"dynamic_templates": [
+			{
+				"string_template": {
+					"path_match": "*",
+					"mapping": {
+						"norms": {
+							"enabled": false
 						},
-						"match_mapping_type": "string"
-					}
-				}
-			],
-			"properties": {
-				"creationTime": {
-					"format": "date_time",
-					"type": "date"
-				},
-				"flowNodeId": {
-					"type": "keyword"
-				},
-				"partitionId": {
-					"type": "integer"
-				},
-				"errorType": {
-					"type": "keyword"
-				},
-				"flowNodeInstanceKey": {
-					"type": "long"
-				},
-				"errorMessage": {
-					"type": "text"
-				},
-				"errorMessageHash": {
-					"type":"integer"
-				},
-				"workflowKey": {
-					"type": "long"
-				},
-				"jobKey": {
-					"type": "long"
-				},
-				"workflowInstanceKey": {
-					"type": "long"
-				},
-				"id": {
-					"type": "keyword"
-				},
-				"state": {
-					"type": "keyword"
-				},
-				"key": {
-					"type": "long"
+						"type": "string",
+						"index_options": "docs"
+					},
+					"match_mapping_type": "string"
 				}
 			}
+		],
+		"properties": {
+			"creationTime": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"flowNodeId": {
+				"type": "keyword"
+			},
+			"partitionId": {
+				"type": "integer"
+			},
+			"errorType": {
+				"type": "keyword"
+			},
+			"flowNodeInstanceKey": {
+				"type": "long"
+			},
+			"errorMessage": {
+				"type": "text"
+			},
+			"errorMessageHash": {
+				"type":"integer"
+			},
+			"workflowKey": {
+				"type": "long"
+			},
+			"jobKey": {
+				"type": "long"
+			},
+			"workflowInstanceKey": {
+				"type": "long"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"state": {
+				"type": "keyword"
+			},
+			"key": {
+				"type": "long"
+			}
+		}
 	},
 	"aliases": {
 		"operate-incident-${schema.version}_alias": {

@@ -4,45 +4,45 @@
 		"operate-variable-${schema.version}_*"
 	],
 	"mappings": {
-			"dynamic": "strict",
-			"dynamic_templates": [
-				{
-					"string_template": {
-						"path_match": "*",
-						"mapping": {
-							"norms": {
-								"enabled": false
-							},
-							"type": "string",
-							"index_options": "docs"
+		"dynamic": "strict",
+		"dynamic_templates": [
+			{
+				"string_template": {
+					"path_match": "*",
+					"mapping": {
+						"norms": {
+							"enabled": false
 						},
-						"match_mapping_type": "string"
-					}
-				}
-			],
-			"properties": {
-				"partitionId": {
-					"type": "integer"
-				},
-				"name": {
-					"type": "keyword"
-				},
-				"scopeKey": {
-					"type": "long"
-				},
-				"workflowInstanceKey": {
-					"type": "long"
-				},
-				"id": {
-					"type": "keyword"
-				},
-				"value": {
-					"type": "keyword"
-				},
-				"key": {
-					"type": "long"
+						"type": "string",
+						"index_options": "docs"
+					},
+					"match_mapping_type": "string"
 				}
 			}
+		],
+		"properties": {
+			"partitionId": {
+				"type": "integer"
+			},
+			"name": {
+				"type": "keyword"
+			},
+			"scopeKey": {
+				"type": "long"
+			},
+			"workflowInstanceKey": {
+				"type": "long"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"value": {
+				"type": "keyword"
+			},
+			"key": {
+				"type": "long"
+			}
+		}
 	},
 	"aliases": {
 		"operate-variable-${schema.version}_alias": {
