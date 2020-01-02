@@ -2,7 +2,7 @@
 
 // TODO: Use parameters for different migrations 
 // Defaults:
-//  elasticsearch-6.8.3
+//  elasticsearch-6.8.5
 //  zeebe-0.21.1
 //  operate-1.1.0 
 //  maven-3.6.1 - Used for migration, test and validation
@@ -23,7 +23,7 @@ spec:
       effect: "NoSchedule"
   initContainers:
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.5
       command:
       - "sh"
       args:
@@ -36,7 +36,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.5
       command:
       - "sh"
       args:
@@ -75,7 +75,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.5
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms512m -Xmx512m'
