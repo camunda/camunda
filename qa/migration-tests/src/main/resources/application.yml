@@ -1,6 +1,5 @@
 spring.main.web-application-type: NONE
 camunda.operate.migration:
-  versions: 1.0.0, 1.1.0, 1.2.0
   workflowCount: 11
   workflowInstanceCount: 101
   incidentCount: 27
