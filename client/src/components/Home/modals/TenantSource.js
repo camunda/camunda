@@ -10,6 +10,9 @@ import {Typeahead, LoadingIndicator, Labeled, Form} from 'components';
 import {t} from 'translation';
 import equal from 'deep-equal';
 import {formatDefinitions} from './service';
+import {formatters} from 'services';
+
+const {formatTenantName} = formatters;
 
 export default class TenantSource extends React.Component {
   state = {
@@ -57,7 +60,7 @@ export default class TenantSource extends React.Component {
               placeholder={t('common.select')}
               values={tenantsWithDefinitions}
               onSelect={this.selectTenant}
-              formatter={({name}) => name}
+              formatter={formatTenantName}
               noValuesMessage={t('common.notFound')}
             />
           </Labeled>
