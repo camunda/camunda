@@ -265,7 +265,7 @@ export default class DurationHeatmapModal extends React.Component {
               <ClickBehavior
                 onClick={({id}) => this.updateFocus(id)}
                 selectedNodes={this.state.focus ? [this.state.focus] : []}
-                nodeType={nodeType}
+                nodeTypes={[nodeType]}
               />
               <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>

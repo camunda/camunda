@@ -6,3 +6,4 @@
 
 export {default as BPMNDiagram} from './BPMNDiagram';
 export {default as ClickBehavior} from './ClickBehavior';
+export {default as PartHighlight} from './PartHighlight';

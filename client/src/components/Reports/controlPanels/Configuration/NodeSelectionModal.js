@@ -89,7 +89,7 @@ export default class NodeSelectionModal extends React.Component {
               <ClickBehavior
                 onClick={this.toggleNode}
                 selectedNodes={this.state.selectedNodes}
-                nodeType={nodeType}
+                nodeTypes={[nodeType]}
               />
             </BPMNDiagram>
           </div>

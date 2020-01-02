@@ -10,7 +10,7 @@ import './ClickBehavior.scss';
 
 export default class ClickBehavior extends React.Component {
   static defaultProps = {
-    nodeType: 'FlowNode'
+    nodeTypes: ['FlowNode']
   };
 
   render() {
@@ -91,7 +91,8 @@ export default class ClickBehavior extends React.Component {
     });
   };
 
-  isValid = element => element.businessObject.$instanceOf('bpmn:' + this.props.nodeType);
+  isValid = element =>
+    this.props.nodeTypes.some(type => element.businessObject.$instanceOf('bpmn:' + type));
 
   onClick = ({element}) => {
     if (this.isValid(element)) {

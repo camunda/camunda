@@ -5,9 +5,15 @@
  */
 
 import React from 'react';
-import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem, Message} from 'components';
-
-import PartHighlight from './PartHighlight';
+import {
+  Button,
+  Modal,
+  BPMNDiagram,
+  ClickBehavior,
+  PartHighlight,
+  ActionItem,
+  Message
+} from 'components';
 
 import './ProcessPart.scss';
 import {t} from 'translation';

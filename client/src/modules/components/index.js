@@ -13,7 +13,7 @@ export {Deleter} from './Deleter';
 export {Input} from './Input';
 export {Select} from './Select';
 export {ButtonGroup} from './ButtonGroup';
-export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
+export {BPMNDiagram, ClickBehavior, PartHighlight} from './BPMNDiagram';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ReportRenderer, NoDataNotice} from './ReportRenderer';
 export {ErrorBoundary} from './ErrorBoundary';
