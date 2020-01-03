@@ -8,7 +8,6 @@ package org.camunda.optimize.upgrade;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.indexes.UserTestIndex;
@@ -21,26 +20,20 @@ import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
-import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
@@ -201,26 +194,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Map<?,?> mappingFields = getMappingFields();
+    Map<?, ?> mappingFields = getMappingFields();
     assertThat(mappingFields.containsKey("email"), is(true));
-  }
-
-  private Map<?,?> getMappingFields() throws IOException {
-    GetMappingsRequest request = new GetMappingsRequest();
-    request.indices(TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName());
-    GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request, RequestOptions.DEFAULT);
-    final Object propertiesMap = getMappingResponse.mappings()
-      .values()
-      .stream()
-      .findFirst()
-      .orElseThrow(() -> new OptimizeRuntimeException("There should be at least one mapping available for the index!"))
-      .getSourceAsMap()
-      .get("properties");
-    if (propertiesMap instanceof Map) {
-      return (Map<?, ?>) propertiesMap;
-    } else {
-      throw new OptimizeRuntimeException("ElasticSearch index mapping properties should be of type map");
-    }
   }
 
   @Test
@@ -249,45 +224,28 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
   }
 
-  @ParameterizedTest(name = "indexMapper is updated from type {1}")
-  @MethodSource("getIndexMapperAndType")
-  public void indexTypeIsUpdatedToOrRetainsDefaultValue(StrictIndexMappingCreator indexMapper)
-    throws IOException {
-    //given index exists with previous version
-    createOptimizeIndexWithTypeAndVersion(indexMapper, indexMapper.getVersion() - 1);
-
-    UpgradePlan upgradePlan =
-      UpgradePlanBuilder.createUpgradePlan()
-        .addUpgradeDependencies(upgradeDependencies)
-        .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION)
-        .addUpgradeStep(buildUpdateIndexStep(indexMapper))
-        .build();
-
-    // when
-    upgradePlan.execute();
-
-    // then the type and index name are as expected
-    final GetIndexResponse getIndexResponse = prefixAwareClient.getHighLevelClient()
-      .indices()
-      .get(
-        new GetIndexRequest(getVersionedIndexName(indexMapper.getIndexName(), indexMapper.getVersion())),
-        RequestOptions.DEFAULT
-      );
-    assertThat(getIndexResponse.getMappings().size(), is(1));
+  private Map<?, ?> getMappingFields() throws IOException {
+    GetMappingsRequest request = new GetMappingsRequest();
+    request.indices(TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName());
+    GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request, RequestOptions.DEFAULT);
+    final Object propertiesMap = getMappingResponse.mappings()
+      .values()
+      .stream()
+      .findFirst()
+      .orElseThrow(() -> new OptimizeRuntimeException("There should be at least one mapping available for the index!"))
+      .getSourceAsMap()
+      .get("properties");
+    if (propertiesMap instanceof Map) {
+      return (Map<?, ?>) propertiesMap;
+    } else {
+      throw new OptimizeRuntimeException("ElasticSearch index mapping properties should be of type map");
+    }
   }
 
   private InsertDataStep buildInsertDataStep() {
     return new InsertDataStep(
       TEST_INDEX,
       UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
-    );
-  }
-
-  private UpdateIndexStep buildUpdateIndexStep(IndexMappingCreator indexMapping) {
-    return new UpdateIndexStep(
-      indexMapping,
-      null
     );
   }
 
@@ -319,13 +277,6 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   private DeleteIndexStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
     return new DeleteIndexStep(indexMapping);
-  }
-
-  private static Stream<Arguments> getIndexMapperAndType() {
-    return Stream.of(
-      Arguments.of(TEST_INDEX),
-      Arguments.of(TEST_INDEX)
-    );
   }
 
 }
