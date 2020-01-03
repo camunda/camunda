@@ -13,6 +13,7 @@ import org.camunda.operate.Metrics;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebe.ImportValueType;
+import org.camunda.operate.zeebe.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.processors.ActivityInstanceZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.EventZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.IncidentZeebeRecordProcessor;
@@ -30,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.micrometer.core.annotation.Timed;
 import io.zeebe.protocol.record.Record;
 
 @Component
@@ -81,10 +81,10 @@ public class ElasticsearchBulkProcessor {
       Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecords = zeebeRecords.stream()
           .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getWorkflowInstanceKey()));
       listViewZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecords, bulkRequest, importBatch);
-      Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecordsPerActivity = zeebeRecords.stream()
+      Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> groupedWIRecordsPerActivityInst = zeebeRecords.stream()
           .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
-      activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivity, bulkRequest);
-      eventZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivity, bulkRequest);
+      activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(groupedWIRecordsPerActivityInst, bulkRequest);
+      eventZeebeRecordProcessor.processWorkflowInstanceRecords(groupedWIRecordsPerActivityInst, bulkRequest);
       for (Record record : zeebeRecords) {
         sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord(record, bulkRequest);
       }
@@ -95,8 +95,10 @@ public class ElasticsearchBulkProcessor {
         listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         activityInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         incidentZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
-        eventZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
       }
+      Map<Long, List<RecordImpl<IncidentRecordValueImpl>>> groupedIncidentRecordsPerActivityInst = zeebeRecords.stream()
+          .map(obj -> (RecordImpl<IncidentRecordValueImpl>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
+      eventZeebeRecordProcessor.processIncidentRecords(groupedIncidentRecordsPerActivityInst, bulkRequest);
       break;
     case VARIABLE:
       // old style
@@ -118,9 +120,9 @@ public class ElasticsearchBulkProcessor {
       break;
     case JOB:
       // per activity
-      Map<Long, List<RecordImpl<JobRecordValueImpl>>> groupedJobRecords = zeebeRecords.stream().map(obj -> (RecordImpl<JobRecordValueImpl>) obj)
+      Map<Long, List<RecordImpl<JobRecordValueImpl>>> groupedJobRecordsPerActivityInst = zeebeRecords.stream().map(obj -> (RecordImpl<JobRecordValueImpl>) obj)
           .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));
-      eventZeebeRecordProcessor.processJobRecord(groupedJobRecords, bulkRequest);
+      eventZeebeRecordProcessor.processJobRecords(groupedJobRecordsPerActivityInst, bulkRequest);
       break;
     default:
       logger.debug("Default case triggered for type {}", importValueType.getValueType());

@@ -81,14 +81,10 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //then
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "start");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_ACTIVATED, 1, processId, workflowKey, workflowInstanceKey, "taskA");
-
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskA");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "gateway");
-
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskC");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "end1");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "processWithGateway");
 
   }
 
@@ -113,9 +109,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     //then
-    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.RESOLVED, 1, processId, null, workflowInstanceKey, activityId);
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowKey, workflowInstanceKey, activityId);
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowKey, workflowInstanceKey, processId);
 
   }
 
