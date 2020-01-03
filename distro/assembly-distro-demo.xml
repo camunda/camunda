@@ -11,24 +11,11 @@
 
   <includeBaseDirectory>false</includeBaseDirectory>
 
-  <dependencySets>
-    <dependencySet>
-      <outputDirectory>elasticsearch/</outputDirectory>
-      <includes>
-        <include>org.elasticsearch.distribution.zip:elasticsearch:zip</include>
-      </includes>
-      <useProjectArtifact>false</useProjectArtifact>
-      <useProjectAttachments>false</useProjectAttachments>
-      <unpackOptions>
-        <excludes>
-          <exclude>**/config/jvm.options</exclude>
-        </excludes>
-      </unpackOptions>
-      <unpack>true</unpack>
-    </dependencySet>
-  </dependencySets>
-
   <fileSets>
+    <fileSet>
+      <directory>${project.build.directory}/elasticsearch-${elasticsearch.version}</directory>
+      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.version}</outputDirectory>
+    </fileSet>
     <fileSet>
       <directory>src/environment/</directory>
       <excludes>
@@ -166,12 +153,6 @@
       <source>src/environment/environment-logback-demo.xml</source>
       <outputDirectory>environment</outputDirectory>
       <destName>environment-logback.xml</destName>
-    </file>
-
-    <!-- elasticsearch -->
-    <file>
-      <source>src/config/jvm.options</source>
-      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.version}/config/</outputDirectory>
     </file>
   </files>
 </assembly>

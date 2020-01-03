@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -17,13 +18,6 @@
 
 
   <dependencies>
-    <dependency>
-      <groupId>org.elasticsearch.distribution.zip</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <!-- FIXME: we can't use a version later than 7.0.0-alpha2. Will be fixed with OPT-3102    -->
-      <version>7.0.0-alpha2</version>
-      <type>zip</type>
-    </dependency>
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
@@ -45,7 +39,7 @@
     <profile>
       <id>add-license-key</id>
       <properties>
-        <exclude.from.environment />
+        <exclude.from.environment/>
       </properties>
     </profile>
   </profiles>
@@ -109,6 +103,25 @@
               <regex>(^\d\.\d)\.\d</regex>
               <replacement>$1</replacement>
               <failIfNoMatch>false</failIfNoMatch>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <version>1.4.2</version>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>wget</goal>
+            </goals>
+            <configuration>
+              <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-${elasticsearch.version}-no-jdk-windows-x86_64.zip</url>
+              <unpack>true</unpack>
+              <outputDirectory>${project.build.directory}</outputDirectory>
             </configuration>
           </execution>
         </executions>

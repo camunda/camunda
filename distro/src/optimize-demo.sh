@@ -39,6 +39,26 @@ trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
 BASEDIR=$(dirname "$0")
 mkdir -p $BASEDIR/log
 
+# we need to set the JAVA_HOME environment variable so that ElasticSearch can
+# use that one later on for the execution.
+if [ -n "$JAVA_HOME" ]; then
+  JAVA_PATH="$JAVA_HOME"
+else
+  JAVA_PATH=$(command -v java)
+  # strip the "/bin/java" suffix so it's correctly resolved later on in the ElasticSearch script
+  JAVA_PATH=${JAVA_PATH%"/bin/java"}
+fi
+# make the JAVA_HOME variable available for ElasticSearch
+export JAVA_HOME=${JAVA_PATH}
+
+if [ ! -x "$JAVA_HOME/bin/java" ]; then
+  echo "Could not find any Java installation on your machine. Please make sure that Java is installed and the JAVA_HOME environment variable is set!" >&2
+  exit 1
+fi
+
+# limit the java heapspace used by ElasticSearch to 1GB
+export ES_JAVA_OPTS="-Xms1g -Xmx1g"
+
 echo
 echo "Starting Elasticsearch ${elasticsearch.version}...";
 echo "(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)"
