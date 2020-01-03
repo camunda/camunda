@@ -118,11 +118,11 @@ spec:
     - name: operate
       image: gcr.io/ci-30-162810/camunda-operate:latest
       env:
-        - name: camunda.operate.operationExecutor.executorEnabled
+        - name: CAMUNDA_OPERATE_OPERATIONEXECUTOR_EXECUTORENABLED
           value: false
-        - name: camunda.operate.elasticsearch.createSchema
+        - name: CAMUNDA_OPERATE_ELASTICSEARCH_CREATESCHEMA
           value: false
-        - name: camunda.operate.batchOperationMaxSize
+        - name: CAMUNDA_OPERATE_BATCHOPERATIONMAXSIZE
           value: 1000000
       resources:
         limits:
