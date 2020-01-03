@@ -18,6 +18,7 @@ import javax.annotation.PostConstruct;
 import org.camunda.operate.es.schema.indices.IndexDescriptor;
 import org.camunda.operate.es.schema.templates.TemplateDescriptor;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -45,14 +46,17 @@ public class ElasticsearchSchemaManager {
 
   @Autowired
   private RestHighLevelClient esClient;
+
+  @Autowired
+  private OperateProperties operateProperties;
     
   @PostConstruct
   public boolean initializeSchema() {
-    if (!schemaAlreadyExists()) {
+    if (operateProperties.getElasticsearch().isCreateSchema() && !schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");
       return createSchema();
     } else {
-      logger.info("Elasticsearch schema already exists");
+      logger.info("Elasticsearch schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       return false;
     }
   }

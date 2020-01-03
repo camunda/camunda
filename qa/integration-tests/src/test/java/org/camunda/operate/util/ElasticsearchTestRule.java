@@ -126,10 +126,12 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected void starting(Description description) {
     String indexPrefix = TestUtil.createRandomString(10) + "-operate";
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    elasticsearchSchemaManager.createSchema();
-    assertThat(areIndicesCreatedAfterChecks(indexPrefix,5, 5 * 60 /*sec*/))
-      .describedAs("Elasticsearch %s (min %d) indices are created",indexPrefix,5)
-      .isTrue();
+    if (operateProperties.getElasticsearch().isCreateSchema()) {
+      elasticsearchSchemaManager.createSchema();
+      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
+          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
+          .isTrue();
+    }
   }
 
   @Override

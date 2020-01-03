@@ -27,6 +27,8 @@ public class ElasticsearchProperties {
 
   private int batchSize = 2000;
 
+  private boolean createSchema = true;
+
   public String getClusterName() {
     return clusterName;
   }
@@ -81,5 +83,13 @@ public class ElasticsearchProperties {
 
   public void setIndexPrefix(String indexPrefix) {
     this.indexPrefix = indexPrefix;
+  }
+
+  public boolean isCreateSchema() {
+    return createSchema;
+  }
+
+  public void setCreateSchema(boolean createSchema) {
+    this.createSchema = createSchema;
   }
 }

@@ -120,6 +120,8 @@ spec:
       env:
         - name: camunda.operate.operationExecutor.executorEnabled
           value: false
+        - name: camunda.operate.elasticsearch.createSchema
+          value: false
         - name: camunda.operate.batchOperationMaxSize
           value: 1000000
       resources:
