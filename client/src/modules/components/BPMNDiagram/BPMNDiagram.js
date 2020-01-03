@@ -9,6 +9,7 @@ import React from 'react';
 import Modeler from 'bpmn-js/lib/Modeler';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import Viewer from 'bpmn-js/lib/Viewer';
+import disableCollapsedSubprocessModule from 'bpmn-js-disable-collapsed-subprocess';
 
 import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
@@ -79,6 +80,7 @@ export default themed(
             conf.disableNavigation === this.props.disableNavigation
         );
 
+        const additionalModules = [];
         const available = availableViewers[idx];
 
         if (!this.props.allowModeling && available) {
@@ -91,6 +93,7 @@ export default themed(
           Constructor = Viewer;
         } else if (this.props.allowModeling) {
           Constructor = Modeler;
+          additionalModules.push(disableCollapsedSubprocessModule);
         }
 
         const viewer = new Constructor({
@@ -98,7 +101,8 @@ export default themed(
             deferUpdate: false
           },
           keyboard: {bindTo: document},
-          bpmnRenderer: getDiagramColors(theme)
+          bpmnRenderer: getDiagramColors(theme),
+          additionalModules
         });
 
         return new Promise(resolve => {
