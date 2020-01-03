@@ -61,7 +61,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess2");
-    assertThat(searchResponse.getHits().getTotalHits(), is(2L));
+    assertThat(searchResponse.getHits().getTotalHits().value, is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String processDefinitionKey = (String) searchHit.getSourceAsMap().get(PROCESS_DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
@@ -86,7 +86,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
     allowedProcessDefinitionKeys.add("TestProcess1");
     allowedProcessDefinitionKeys.add("TestProcess2");
-    assertThat(searchResponse.getHits().getTotalHits(), is(2L));
+    assertThat(searchResponse.getHits().getTotalHits().value, is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String processDefinitionKey = (String) searchHit.getSourceAsMap().get(PROCESS_DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));
@@ -158,7 +158,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), CoreMatchers.is(2L));
+    assertThat(idsResp.getHits().getTotalHits().value, CoreMatchers.is(2L));
     final Map<Object, List<Map<String, Object>>> tenantsByEngine = Arrays.stream(idsResp.getHits().getHits())
       .map(SearchHit::getSourceAsMap)
       .collect(Collectors.groupingBy(o -> o.get(TenantDto.Fields.engine.name())));
@@ -191,7 +191,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // then
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(18L));
+    assertThat(searchResponse.getHits().getTotalHits().value, is(18L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String typeName = searchHit.getSourceAsMap().get(ES_TYPE_INDEX_REFERS_TO).toString();
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
@@ -208,7 +208,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   }
 
   private void assertImportResults(SearchResponse searchResponse, Set<String> allowedProcessDefinitionKeys) {
-    assertThat(searchResponse.getHits().getTotalHits(), is(2L));
+    assertThat(searchResponse.getHits().getTotalHits().value, is(2L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String processDefinitionKey = (String) searchHit.getSourceAsMap().get(ProcessInstanceIndex.PROCESS_DEFINITION_KEY);
       assertThat(allowedProcessDefinitionKeys.contains(processDefinitionKey), is(true));

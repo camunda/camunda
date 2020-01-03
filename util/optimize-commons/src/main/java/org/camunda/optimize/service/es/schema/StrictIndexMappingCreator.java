@@ -15,7 +15,6 @@ import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.DynamicMappingsBuilder.DYNAMIC_MAPPINGS_VALUE_DEFAULT;
 import static org.camunda.optimize.service.es.schema.DynamicMappingsBuilder.createDynamicSettings;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 
 @Getter
 @Setter
@@ -30,7 +29,7 @@ public abstract class StrictIndexMappingCreator implements IndexMappingCreator, 
     try {
       source = createDynamicSettings(this, dynamicMappingsValue);
     } catch (IOException e) {
-      String message = "Could not add mapping to the index for type '" + getIndexName() + "' , type '" + DEFAULT_INDEX_TYPE + "'!";
+      String message = "Could not add mapping to the index '" + getIndexName() + "'!";
       logger.error(message, e);
     }
     return source;

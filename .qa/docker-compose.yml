@@ -2,7 +2,7 @@ version: '2.4'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ES_VERSION:-6.4.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ES_VERSION:-7.0.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
@@ -28,7 +28,7 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.11.0}
+    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.12.0}
     container_name: cambpm
     environment:
       - DB_DRIVER=org.postgresql.Driver

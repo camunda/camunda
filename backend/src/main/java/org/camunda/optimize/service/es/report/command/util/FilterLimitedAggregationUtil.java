@@ -41,7 +41,7 @@ public class FilterLimitedAggregationUtil {
     final Aggregations aggregations = response.getAggregations();
     if (aggregations.getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {
       final ParsedFilter limitingAggregation = aggregations.get(FILTER_LIMITED_AGGREGATION);
-      complete = limitingAggregation.getDocCount() == response.getHits().getTotalHits();
+      complete = limitingAggregation.getDocCount() == response.getHits().getTotalHits().value;
     }
     return complete;
   }

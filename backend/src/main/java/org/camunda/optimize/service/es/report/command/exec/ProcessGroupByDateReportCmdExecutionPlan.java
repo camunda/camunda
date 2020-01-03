@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.report.command.modules.distributed_by.Dis
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByDate;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
-import org.elasticsearch.search.aggregations.metrics.stats.Stats;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 
 import java.util.Optional;
 import java.util.function.Function;

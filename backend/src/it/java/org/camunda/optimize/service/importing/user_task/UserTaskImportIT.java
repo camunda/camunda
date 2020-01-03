@@ -40,7 +40,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
@@ -79,7 +79,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
@@ -115,7 +115,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
@@ -151,7 +151,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
@@ -179,7 +179,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(0L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(0L));
   }
 
   @Test
@@ -199,7 +199,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(2L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(2L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
@@ -238,7 +238,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(0L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(0L));
   }
 
   @Test
@@ -253,7 +253,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(),
@@ -285,7 +285,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(),
@@ -309,7 +309,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(),
@@ -336,7 +336,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(),

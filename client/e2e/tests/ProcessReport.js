@@ -688,7 +688,8 @@ test('process parts', async t => {
 
   await t.click(e.processPartButton);
   await t.click(e.modalFlowNode('assignApprover'));
-  await t.click(e.modalFlowNode('reviewInvoice'));
+  // FIXME: OPT-3101 -> should be reviewInvoice instead
+  await t.click(e.modalFlowNode('invoiceProcessed'));
 
   await t.takeElementScreenshot(e.modalContainer, 'process/single-report/process-part.png');
   await t.maximizeWindow();

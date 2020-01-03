@@ -70,7 +70,6 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     addAggregation(searchSourceBuilder, executionContext);
 
     SearchRequest searchRequest = new SearchRequest(getIndexName())
-      .types(getIndexName())
       .source(searchSourceBuilder);
     groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
 
@@ -104,7 +103,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
   private R retrieveQueryResult(final SearchResponse response, final ExecutionContext<Data> executionContext) {
     final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
     final R reportResult = mapToReportResult.apply(result);
-    reportResult.setInstanceCount(response.getHits().getTotalHits());
+    reportResult.setInstanceCount(response.getHits().getTotalHits().value);
     return reportResult;
   }
 

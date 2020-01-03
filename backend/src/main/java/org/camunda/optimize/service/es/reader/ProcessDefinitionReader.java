@@ -108,7 +108,7 @@ public class ProcessDefinitionReader {
     }
 
     ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = null;
-    if (searchResponse.getHits().getTotalHits() > 0L) {
+    if (searchResponse.getHits().getTotalHits().value > 0L) {
       SearchHit hit = searchResponse.getHits().getAt(0);
       String responseAsString = hit.getSourceAsString();
       try {
@@ -158,7 +158,7 @@ public class ProcessDefinitionReader {
     }
 
     ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = null;
-    if (searchResponse.getHits().getTotalHits() > 0L) {
+    if (searchResponse.getHits().getTotalHits().value > 0L) {
       String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
       try {
         processDefinitionOptimizeDto = objectMapper.readValue(responseAsString, ProcessDefinitionOptimizeDto.class);

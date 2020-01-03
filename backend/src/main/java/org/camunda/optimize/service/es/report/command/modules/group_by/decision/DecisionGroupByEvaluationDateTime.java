@@ -6,14 +6,14 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.decision;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.decision.util.DecisionInstanceQueryUtil;
@@ -33,12 +33,12 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggre
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,7 +55,6 @@ import static org.camunda.optimize.service.es.report.command.util.FilterLimitedA
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 @RequiredArgsConstructor
@@ -67,6 +66,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
   private final ConfigurationService configurationService;
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
   private final OptimizeElasticsearchClient esClient;
+  private final DateTimeFormatter dateTimeFormatter;
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
@@ -90,7 +90,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       .order(BucketOrder.key(false))
       .field(EVALUATION_DATE_TIME)
       .dateHistogramInterval(interval)
-      .timeZone(DateTimeZone.getDefault());
+      .timeZone(ZoneId.systemDefault());
 
     final List<DateFilterDataDto> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
       context.getReportData().getFilter(), EvaluationDateFilterDto.class
@@ -169,8 +169,8 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
 
       for (Histogram.Bucket entry : agg.getBuckets()) {
-        DateTime key = (DateTime) entry.getKey();
-        String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
+        ZonedDateTime keyAsDate = (ZonedDateTime) entry.getKey();
+        String formattedDate = keyAsDate.withZoneSameInstant(ZoneId.systemDefault()).format(dateTimeFormatter);
         final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, entry.getAggregations(), context);
         result.add(GroupByResult.createGroupByResult(formattedDate, distributions));

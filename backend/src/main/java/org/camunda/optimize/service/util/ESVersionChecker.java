@@ -30,12 +30,7 @@ public class ESVersionChecker {
   private static List<String> warningES = new ArrayList<>();
 
   static {
-    supportedES.add("6.4.0");
-    supportedES.add("6.5.0");
-    supportedES.add("6.6.0");
-    supportedES.add("6.7.0");
-    supportedES.add("6.8.0");
-    warningES.add("6.9.0");
+    supportedES.add("7.0.0");
   }
 
   public static void checkESVersionSupport(RestHighLevelClient esClient) throws IOException {

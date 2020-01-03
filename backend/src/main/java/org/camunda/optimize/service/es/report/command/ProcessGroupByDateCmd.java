@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.report.command.exec.ProcessGroupByDateRep
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
-import org.elasticsearch.search.aggregations.metrics.stats.Stats;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 
 import java.util.Optional;
 

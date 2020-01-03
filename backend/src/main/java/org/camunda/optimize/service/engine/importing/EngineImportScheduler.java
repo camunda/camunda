@@ -8,7 +8,6 @@ package org.camunda.optimize.service.engine.importing;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.engine.importing.service.ImportObserver;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.ScrollBasedImportMediator;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 
 import java.util.Collections;
@@ -75,14 +74,6 @@ public class EngineImportScheduler extends Thread {
       .collect(Collectors.toList());
   }
 
-  public void scheduleNextRoundScrollBasedOnly() {
-    final List<EngineImportMediator> currentImportRound = obtainActiveMediators()
-      .stream()
-      .filter(e -> e instanceof ScrollBasedImportMediator)
-      .collect(Collectors.toList());
-    scheduleCurrentImportRound(currentImportRound);
-  }
-
   public void scheduleNextRound() {
     List<EngineImportMediator> currentImportRound = obtainActiveMediators();
     if (nothingToBeImported(currentImportRound)) {
@@ -113,7 +104,7 @@ public class EngineImportScheduler extends Thread {
     importObservers.forEach(o -> o.importIsIdle(engineAlias));
   }
 
-  private boolean nothingToBeImported(List currentImportRound) {
+  private boolean nothingToBeImported(List<?> currentImportRound) {
     return currentImportRound.isEmpty();
   }
 
@@ -135,7 +126,7 @@ public class EngineImportScheduler extends Thread {
       .orElse(5000L);
   }
 
-  private void scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
+  public void scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
     String mediators = currentImportRound.stream()
       .map(c -> c.getClass().getSimpleName())
       .reduce((a, b) -> a + ", " + b).orElse("");

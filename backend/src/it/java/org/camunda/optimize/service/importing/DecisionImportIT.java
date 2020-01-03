@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.lessThan;
 
 public class DecisionImportIT extends AbstractImportIT {
 
-  protected static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
+  private static final Set<String> DECISION_DEFINITION_NULLABLE_FIELDS =
     Collections.singleton(DecisionDefinitionIndex.TENANT_ID);
 
   @Test
@@ -90,7 +90,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
   }
@@ -108,7 +108,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(tenantId));
   }
@@ -127,7 +127,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionDefinitionIndex.TENANT_ID), is(expectedTenantId));
   }
@@ -143,7 +143,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
 
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertDecisionInstanceFieldSetAsExpected(hit, false);
@@ -162,7 +162,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
   }
@@ -180,7 +180,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(tenantId));
   }
@@ -201,7 +201,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(DecisionInstanceIndex.TENANT_ID), is(expectedTenantId));
   }
@@ -234,7 +234,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // then
     SearchResponse searchDecisionInstanceTimestampBasedIndexResponse = getDecisionInstanceIndexResponse();
-    assertThat(searchDecisionInstanceTimestampBasedIndexResponse.getHits().getTotalHits(), is(1L));
+    assertThat(searchDecisionInstanceTimestampBasedIndexResponse.getHits().getTotalHits().value, is(1L));
     final TimestampBasedImportIndexDto decisionInstanceDto = parseToDto(
       searchDecisionInstanceTimestampBasedIndexResponse.getHits().getHits()[0], TimestampBasedImportIndexDto.class
     );
@@ -242,7 +242,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     final String decisionDefinitionIndexId = DECISION_DEFINITION_INDEX_NAME + "-1";
     SearchResponse searchDecisionDefinitionIndexResponse = getDecisionDefinitionIndexById(decisionDefinitionIndexId);
-    assertThat(searchDecisionDefinitionIndexResponse.getHits().getTotalHits(), is(1L));
+    assertThat(searchDecisionDefinitionIndexResponse.getHits().getTotalHits().value, is(1L));
     final AllEntitiesBasedImportIndexDto definitionImportIndex = parseToDto(
       searchDecisionDefinitionIndexResponse.getHits().getHits()[0],
       AllEntitiesBasedImportIndexDto.class
@@ -313,7 +313,7 @@ public class DecisionImportIT extends AbstractImportIT {
                                                              final boolean expectTenant) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
-    assertThat(idsResp.getHits().getTotalHits(), is(count));
+    assertThat(idsResp.getHits().getTotalHits().value, is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       // in this test suite we only care about decision types, no asserts besides count on others
       if (DECISION_INSTANCE_INDEX_NAME.equals(elasticsearchIndex)) {

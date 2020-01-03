@@ -31,12 +31,12 @@ import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuil
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.stats.Stats;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -158,7 +158,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         .field(getNestedVariableValueFieldLabel(VariableType.DATE))
         .interval(1)
         .format(OPTIMIZE_DATE_FORMAT)
-        .timeZone(DateTimeZone.getDefault());
+        .timeZone(ZoneId.systemDefault() );
     }
     return aggregationBuilder;
   }
@@ -220,7 +220,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .get(FILTERED_INSTANCE_COUNT_AGGREGATION);
     final long filteredProcInstCount = filteredInstAggr.getDocCount();
 
-    if (response.getHits().getTotalHits() > filteredProcInstCount) {
+    if (response.getHits().getTotalHits().value > filteredProcInstCount) {
 
       final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
       final List<DistributedByResult> missingVarsOperationResult =

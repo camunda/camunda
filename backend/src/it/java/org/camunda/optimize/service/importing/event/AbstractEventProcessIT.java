@@ -168,7 +168,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .search(new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX).source(searchSourceBuilder), RequestOptions.DEFAULT);
 
     EventProcessPublishStateDto result = null;
-    if (searchResponse.getHits().totalHits > 0) {
+    if (searchResponse.getHits().getTotalHits().value > 0) {
       result = elasticSearchIntegrationTestExtension.getObjectMapper().readValue(
         searchResponse.getHits().getAt(0).getSourceAsString(),
         IndexableEventProcessPublishStateDto.class

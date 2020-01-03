@@ -16,9 +16,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
@@ -26,6 +24,8 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -40,13 +40,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 
 public class ESIndexAdjuster {
 
@@ -74,7 +71,6 @@ public class ESIndexAdjuster {
     this.reindex(
       sourceIndex,
       destinationIndex,
-      null,
       null
     );
   }
@@ -91,7 +87,6 @@ public class ESIndexAdjuster {
 
   public void reindex(final String sourceIndexName,
                       final String destinationIndexName,
-                      final String sourceType,
                       final String mappingScript) {
     logger.debug(
       "Reindexing from index [{}] to [{}] using the mapping script [{}].",
@@ -100,15 +95,9 @@ public class ESIndexAdjuster {
       mappingScript
     );
 
-    Set<String> sourceTypes = new HashSet<>();
-    sourceTypes.add(DEFAULT_INDEX_TYPE);
-    Optional.ofNullable(sourceType).ifPresent(sourceTypes::add);
-
     ReindexRequest reindexRequest = new ReindexRequest()
       .setSourceIndices(sourceIndexName)
-      .setSourceDocTypes(sourceTypes.toArray(new String[sourceTypes.size()]))
       .setDestIndex(destinationIndexName)
-      .setDestDocType(DEFAULT_INDEX_TYPE)
       .setRefresh(true);
 
     if (mappingScript != null) {
@@ -160,7 +149,8 @@ public class ESIndexAdjuster {
             final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
             progress = currentProgress;
             logger.info(
-              "Reindexing from {} to {}, progress: {}%. Reindex status= total: {}, updated: {}, created: {}, deleted: {}",
+              "Reindexing from {} to {}, progress: {}%. Reindex status= total: {}, updated: {}, created: {}, deleted:" +
+                " {}",
               sourceIndex,
               destinationIndex,
               progress,
@@ -196,7 +186,7 @@ public class ESIndexAdjuster {
     );
 
     final CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName);
-    createIndexRequest.mapping(DEFAULT_INDEX_TYPE, indexMapping.getSource());
+    createIndexRequest.mapping(indexMapping.getSource());
     createIndexRequest.settings(createIndexSettings(indexMapping));
 
     try {
@@ -240,7 +230,6 @@ public class ESIndexAdjuster {
     try {
       final IndexRequest indexRequest = new IndexRequest(aliasName);
       indexRequest.source(data, XContentType.JSON);
-      indexRequest.type(DEFAULT_INDEX_TYPE);
       indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       restClient.index(indexRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -292,10 +281,13 @@ public class ESIndexAdjuster {
       DeleteByQueryRequest request = new DeleteByQueryRequest(aliasName);
       request.setRefresh(true);
       request.setQuery(query);
-      request.setDocTypes(DEFAULT_INDEX_TYPE);
       restClient.deleteByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not delete data for indexAlias [%s] with query [%s]!", aliasName, query);
+      String errorMessage = String.format(
+        "Could not delete data for indexAlias [%s] with query [%s]!",
+        aliasName,
+        query
+      );
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -315,7 +307,7 @@ public class ESIndexAdjuster {
 
     try {
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
-      putMappingRequest.type(DEFAULT_INDEX_TYPE).source(indexMapping.getSource());
+      putMappingRequest.source(indexMapping.getSource());
       restClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());

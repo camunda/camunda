@@ -79,7 +79,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
   public void testCleanupWithProcessInstanceDelete() throws SQLException, IOException {
     // given
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
-    final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
+    deployTwoProcessInstancesWithEndTimeLessThanTtl();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -96,7 +96,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
   public void testCleanupWithProcessInstanceDeleteVerifyThatNewOnesAreUnaffected() throws SQLException, IOException {
     // given
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
-    final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
+    deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -177,7 +177,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
   @Test
   public void testCleanupWithDecisionInstanceDelete() throws SQLException, IOException {
     // given
-    final List<String> clearedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
+    deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -193,7 +193,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
   @Test
   public void testCleanupWithDecisionInstanceDeleteVerifyThatNewOnesAreUnaffected() throws SQLException, IOException {
     // given
-    final List<String> clearedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
+    deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
     final List<String> unaffectedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTime(
       OffsetDateTime.now()
     );
@@ -284,7 +284,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
 
     SearchResponse idsResp = getProcessInstancesById(processIds);
 
-    assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
+    assertThat(idsResp.getHits().getTotalHits().value, is((long) processIds.size()));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       assertThat(
         VARIABLES + " is empty",
@@ -308,12 +308,12 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
 
   private void assertProcessInstanceDataCompleteInEs(List<String> processIds) throws IOException {
     SearchResponse idsResp = getProcessInstancesById(processIds);
-    assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
+    assertThat(idsResp.getHits().getTotalHits().value, is((long) processIds.size()));
 
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       assertThat(
         VARIABLES + " is not empty",
-        ((Collection) searchHit.getSourceAsMap().get(VARIABLES)).size(),
+        ((Collection<?>) searchHit.getSourceAsMap().get(VARIABLES)).size(),
         is(greaterThan(0))
       );
     }
@@ -333,7 +333,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
 
   private void assertDecisionInstancesExistInEs(List<String> decisionInstanceIds) throws IOException {
     SearchResponse idsResp = getDecisionInstancesById(decisionInstanceIds);
-    assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(decisionInstanceIds.size())));
+    assertThat(idsResp.getHits().getTotalHits().value, is((long) decisionInstanceIds.size()));
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {

@@ -20,7 +20,8 @@
     <dependency>
       <groupId>org.elasticsearch.distribution.zip</groupId>
       <artifactId>elasticsearch</artifactId>
-      <version>${elasticsearch.version}</version>
+      <!-- FIXME: we can't use a version later than 7.0.0-alpha2. Will be fixed with OPT-3102    -->
+      <version>7.0.0-alpha2</version>
       <type>zip</type>
     </dependency>
     <dependency>

@@ -6,11 +6,11 @@
 package org.camunda.optimize.upgrade;
 
 import com.google.common.collect.Lists;
-import com.jayway.jsonpath.JsonPath;
-import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.indexes.UserTestIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -24,15 +24,13 @@ import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +42,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,7 +81,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     final String versionedIndexName = getTestIndexName(TEST_INDEX);
     assertThat(
       prefixAwareClient.getHighLevelClient().indices().exists(
-        new GetIndexRequest().indices(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
+        new GetIndexRequest(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
         RequestOptions.DEFAULT
       ),
       is(true)
@@ -183,7 +180,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-      prefixAwareClient.exists(new GetIndexRequest().indices(getTestIndexName(TEST_INDEX)), RequestOptions.DEFAULT),
+      prefixAwareClient.exists(new GetIndexRequest(getTestIndexName(TEST_INDEX)), RequestOptions.DEFAULT),
       is(false)
     );
   }
@@ -204,24 +201,26 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Map mappingFields = getMappingFields();
+    Map<?,?> mappingFields = getMappingFields();
     assertThat(mappingFields.containsKey("email"), is(true));
   }
 
-  private Map getMappingFields() throws IOException {
-    // we need to perform this request manually since Elasticsearch 6.5 automatically
-    // adds "master_timeout" parameter to the get mappings request which is not
-    // recognized prior to 6.4 and throws an error. As soon as we don't support 6.3 or
-    // older those lines can be replaced with the high rest client equivalent.
-    Request request = new Request("GET", "/" + getTestIndexName(TEST_INDEX_WITH_UPDATED_MAPPING) + "/_mappings");
-    Response response = prefixAwareClient.getLowLevelClient().performRequest(request);
-    String responseBody = EntityUtils.toString(response.getEntity());
-    String jsonPathToNewField = String.format(
-      "$.%s.mappings.%s.properties",
-      getTestIndexName(TEST_INDEX_WITH_UPDATED_MAPPING),
-      DEFAULT_INDEX_TYPE
-    );
-    return JsonPath.parse(responseBody).read(jsonPathToNewField);
+  private Map<?,?> getMappingFields() throws IOException {
+    GetMappingsRequest request = new GetMappingsRequest();
+    request.indices(TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName());
+    GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request, RequestOptions.DEFAULT);
+    final Object propertiesMap = getMappingResponse.mappings()
+      .values()
+      .stream()
+      .findFirst()
+      .orElseThrow(() -> new OptimizeRuntimeException("There should be at least one mapping available for the index!"))
+      .getSourceAsMap()
+      .get("properties");
+    if (propertiesMap instanceof Map) {
+      return (Map<?, ?>) propertiesMap;
+    } else {
+      throw new OptimizeRuntimeException("ElasticSearch index mapping properties should be of type map");
+    }
   }
 
   @Test
@@ -252,10 +251,10 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @ParameterizedTest(name = "indexMapper is updated from type {1}")
   @MethodSource("getIndexMapperAndType")
-  public void indexTypeIsUpdatedToOrRetainsDefaultValue(StrictIndexMappingCreator indexMapper, String type)
+  public void indexTypeIsUpdatedToOrRetainsDefaultValue(StrictIndexMappingCreator indexMapper)
     throws IOException {
     //given index exists with previous version
-    createOptimizeIndexWithTypeAndVersion(indexMapper, type, indexMapper.getVersion() - 1);
+    createOptimizeIndexWithTypeAndVersion(indexMapper, indexMapper.getVersion() - 1);
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
@@ -272,13 +271,10 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     final GetIndexResponse getIndexResponse = prefixAwareClient.getHighLevelClient()
       .indices()
       .get(
-        new GetIndexRequest().indices(getVersionedIndexName(indexMapper.getIndexName(), indexMapper.getVersion())),
+        new GetIndexRequest(getVersionedIndexName(indexMapper.getIndexName(), indexMapper.getVersion())),
         RequestOptions.DEFAULT
       );
     assertThat(getIndexResponse.getMappings().size(), is(1));
-    final ImmutableOpenMap<String, MappingMetaData> mappingsEntry = getIndexResponse.getMappings().valuesIt().next();
-    assertThat(mappingsEntry.keys().size(), is(1));
-    assertThat(mappingsEntry.keys().iterator().next().value, is(DEFAULT_INDEX_TYPE));
   }
 
   private InsertDataStep buildInsertDataStep() {
@@ -300,7 +296,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   }
 
   private String getTestIndexName(final IndexMappingCreator index) {
-    return indexNameService.getOptimizeIndexNameForAliasAndVersion(
+    return OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion(
       indexNameService.getOptimizeIndexAliasForIndex(index.getIndexName()),
       String.valueOf(index.getVersion())
     );
@@ -327,8 +323,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   private static Stream<Arguments> getIndexMapperAndType() {
     return Stream.of(
-      Arguments.of(TEST_INDEX, TEST_INDEX.getIndexName()),
-      Arguments.of(TEST_INDEX, DEFAULT_INDEX_TYPE)
+      Arguments.of(TEST_INDEX),
+      Arguments.of(TEST_INDEX)
     );
   }
 

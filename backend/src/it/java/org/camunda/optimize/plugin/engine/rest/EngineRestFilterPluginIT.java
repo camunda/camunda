@@ -101,7 +101,7 @@ public class EngineRestFilterPluginIT extends AbstractIT {
 
   private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(elasticsearchType);
-    assertThat(idsResp.getHits().getTotalHits(), is(count));
+    assertThat(idsResp.getHits().getTotalHits().value, is(count));
   }
 
   private SearchResponse getSearchResponseForAllDocumentsOfIndex(String indexName) throws IOException {

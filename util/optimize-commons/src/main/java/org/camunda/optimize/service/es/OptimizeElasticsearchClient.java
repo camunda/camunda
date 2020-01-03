@@ -10,7 +10,6 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -33,16 +32,15 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
@@ -69,7 +67,6 @@ public class OptimizeElasticsearchClient {
 
   public final BulkResponse bulk(final BulkRequest bulkRequest, final RequestOptions options) throws IOException {
     bulkRequest.requests().forEach(this::applyIndexPrefix);
-    bulkRequest.requests().forEach(docWriteRequest -> docWriteRequest.type(DEFAULT_INDEX_TYPE));
 
     return highLevelClient.bulk(bulkRequest, options);
   }
@@ -85,7 +82,6 @@ public class OptimizeElasticsearchClient {
 
   public final DeleteResponse delete(final DeleteRequest deleteRequest, final RequestOptions options) throws IOException {
     applyIndexPrefix(deleteRequest);
-    deleteRequest.type(DEFAULT_INDEX_TYPE);
 
     return highLevelClient.delete(deleteRequest, options);
   }
@@ -99,14 +95,11 @@ public class OptimizeElasticsearchClient {
   }
 
   public final boolean exists(final GetIndexRequest getRequest, final RequestOptions options) throws IOException {
-    applyIndexPrefixes(getRequest);
-
     return highLevelClient.indices().exists(getRequest, options);
   }
 
   public final GetResponse get(final GetRequest getRequest, final RequestOptions options) throws IOException {
     getRequest.index(indexNameService.getOptimizeIndexAliasForIndex(getRequest.index()));
-    getRequest.type(DEFAULT_INDEX_TYPE);
 
     return highLevelClient.get(getRequest, options);
   }
@@ -117,18 +110,24 @@ public class OptimizeElasticsearchClient {
 
   public final IndexResponse index(final IndexRequest indexRequest, final RequestOptions options) throws IOException {
     applyIndexPrefix(indexRequest);
-    if (indexRequest.type() == null) {
-      indexRequest.type(DEFAULT_INDEX_TYPE);
-    }
 
     return highLevelClient.index(indexRequest, options);
+  }
+
+  public final GetMappingsResponse getMapping(final GetMappingsRequest getMappingsRequest,
+                                              final RequestOptions options) throws IOException {
+    getMappingsRequest.indices(
+      Arrays.stream(getMappingsRequest.indices())
+        .map(indexNameService::getOptimizeIndexAliasForIndex)
+        .toArray(String[]::new)
+    );
+    return highLevelClient.indices().getMapping(getMappingsRequest, options);
   }
 
   public final MultiGetResponse mget(final MultiGetRequest multiGetRequest, final RequestOptions options)
     throws IOException {
     multiGetRequest.getItems()
       .forEach(item -> item.index(indexNameService.getOptimizeIndexAliasForIndex(item.index())));
-    multiGetRequest.getItems().forEach(item -> item.type(DEFAULT_INDEX_TYPE));
 
     return highLevelClient.mget(multiGetRequest, options);
   }
@@ -149,20 +148,12 @@ public class OptimizeElasticsearchClient {
   public final SearchResponse search(final SearchRequest searchRequest, final RequestOptions options)
     throws IOException {
     applyIndexPrefixes(searchRequest);
-    if (searchRequest.types().length != 0) {
-      List<String> typesToSearch = new ArrayList<>();
-      typesToSearch.add(DEFAULT_INDEX_TYPE);
-      typesToSearch.addAll(Arrays.asList(searchRequest.types()));
-      searchRequest.types(typesToSearch.toArray(new String[0]));
-    }
-
     return highLevelClient.search(searchRequest, options);
   }
 
   public final UpdateResponse update(final UpdateRequest updateRequest, final RequestOptions options)
     throws IOException {
     applyIndexPrefix(updateRequest);
-    updateRequest.type(DEFAULT_INDEX_TYPE);
 
     return highLevelClient.update(updateRequest, options);
   }
@@ -170,13 +161,6 @@ public class OptimizeElasticsearchClient {
   public final BulkByScrollResponse updateByQuery(final UpdateByQueryRequest updateByQueryRequest,
                                                   final RequestOptions options) throws IOException {
     applyIndexPrefixes(updateByQueryRequest);
-    List<String> typesToSearch = new ArrayList<>();
-    typesToSearch.add(DEFAULT_INDEX_TYPE);
-    if (updateByQueryRequest.getDocTypes() != null) {
-      typesToSearch.addAll(Arrays.asList(updateByQueryRequest.getDocTypes()));
-    }
-    updateByQueryRequest.setDocTypes(typesToSearch.toArray(new String[typesToSearch.size()]));
-
     return highLevelClient.updateByQuery(updateByQueryRequest, options);
   }
 

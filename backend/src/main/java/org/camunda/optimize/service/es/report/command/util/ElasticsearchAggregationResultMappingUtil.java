@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.util;
 
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
-import org.elasticsearch.search.aggregations.metrics.percentiles.tdigest.ParsedTDigestPercentiles;
+import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 
 public class ElasticsearchAggregationResultMappingUtil {
 

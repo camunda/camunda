@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.date;
 
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -29,11 +29,11 @@ import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.metrics.stats.Stats;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,7 +47,6 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -56,13 +55,16 @@ public abstract class ProcessGroupByDate extends GroupByPart<ProcessReportDataDt
 
   protected final ConfigurationService configurationService;
   private final IntervalAggregationService intervalAggregationService;
+  private final DateTimeFormatter dateTimeFormatter;
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   protected ProcessGroupByDate(final ConfigurationService configurationService,
-                               final IntervalAggregationService intervalAggregationService) {
+                               final IntervalAggregationService intervalAggregationService,
+                               final DateTimeFormatter dateTimeFormatter) {
     this.configurationService = configurationService;
     this.intervalAggregationService = intervalAggregationService;
+    this.dateTimeFormatter = dateTimeFormatter;
   }
 
   public Optional<Stats> calculateGroupByDateRange(final ProcessReportDataDto reportData,
@@ -123,7 +125,7 @@ public abstract class ProcessGroupByDate extends GroupByPart<ProcessReportDataDt
       .order(BucketOrder.key(false))
       .field(getDateField())
       .dateHistogramInterval(interval)
-      .timeZone(DateTimeZone.getDefault());
+      .timeZone(ZoneId.systemDefault());
 
     final List<DateFilterDataDto> reportDateFilters = getReportDateFilters(context.getReportData());
 
@@ -189,8 +191,8 @@ public abstract class ProcessGroupByDate extends GroupByPart<ProcessReportDataDt
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
 
       for (Histogram.Bucket entry : agg.getBuckets()) {
-        DateTime key = (DateTime) entry.getKey();
-        String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
+        ZonedDateTime keyAsDate = (ZonedDateTime) entry.getKey();
+        String formattedDate = keyAsDate.withZoneSameInstant(ZoneId.systemDefault()).format(dateTimeFormatter);
         final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, entry.getAggregations(), context);
         result.add(GroupByResult.createGroupByResult(formattedDate, distributions));

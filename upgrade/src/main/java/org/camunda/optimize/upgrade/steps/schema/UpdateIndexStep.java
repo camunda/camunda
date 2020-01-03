@@ -38,7 +38,7 @@ public class UpdateIndexStep implements UpgradeStep {
 
     // create new index and reindex data to it
     esIndexAdjuster.createIndex(index);
-    esIndexAdjuster.reindex(sourceIndexName, targetIndexName, index.getIndexName(), mappingScript);
+    esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript);
     esIndexAdjuster.addAlias(index);
     esIndexAdjuster.deleteIndex(sourceIndexName);
   }

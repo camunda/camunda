@@ -38,4 +38,8 @@ public abstract class ScrollBasedImportMediator<T extends ScrollBasedImportIndex
     return false;
   }
 
+  public void reset() {
+    importIndexHandler.resetImportIndex();
+  }
+
 }

@@ -196,7 +196,7 @@ public class BranchAnalysisReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return searchResponse.getHits().getTotalHits();
+    return searchResponse.getHits().getTotalHits().value;
   }
 
   private List<FlowNode> fetchGatewayOutcomes(final BpmnModelInstance bpmnModelInstance,

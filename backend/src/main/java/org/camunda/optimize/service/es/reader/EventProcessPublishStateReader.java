@@ -94,7 +94,7 @@ public class EventProcessPublishStateReader {
     }
 
     EventProcessPublishStateDto result = null;
-    if (searchResponse.getHits().totalHits > 0) {
+    if (searchResponse.getHits().getTotalHits().value > 0) {
       try {
         result = objectMapper.readValue(
           searchResponse.getHits().getAt(0).getSourceAsString(),

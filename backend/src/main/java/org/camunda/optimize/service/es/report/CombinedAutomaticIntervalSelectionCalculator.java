@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report;
 
 import org.apache.commons.lang3.Range;
-import org.elasticsearch.search.aggregations.metrics.stats.Stats;
+import org.elasticsearch.search.aggregations.metrics.Stats;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;

@@ -111,7 +111,7 @@ public class ForceReimportIT extends AbstractIT {
     SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(searchRequest, RequestOptions.DEFAULT);
 
-    return response.getHits().getTotalHits() > 0L;
+    return response.getHits().getTotalHits().value > 0L;
   }
 
   private boolean licenseExists() {

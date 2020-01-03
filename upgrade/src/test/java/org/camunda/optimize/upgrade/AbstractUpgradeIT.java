@@ -6,10 +6,6 @@
 package org.camunda.optimize.upgrade;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -41,11 +37,9 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -137,27 +131,11 @@ public abstract class AbstractUpgradeIT {
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
   }
 
-  protected void setMetadataIndexVersionWithType(String version, String type) {
-    metadataService.writeMetadata(prefixAwareClient, new MetadataDto(version), type);
-  }
-
   protected void setMetadataIndexVersion(String version) {
     metadataService.writeMetadata(prefixAwareClient, new MetadataDto(version));
   }
 
-  protected void executeBulk(final String bulkPayload) throws IOException {
-    final Request request = new Request(HttpPost.METHOD_NAME, "/_bulk");
-    final HttpEntity entity = new NStringEntity(
-      UpgradeUtil.readClasspathFileAsString(bulkPayload),
-      ContentType.APPLICATION_JSON
-    );
-    request.setEntity(entity);
-    prefixAwareClient.getLowLevelClient().performRequest(request);
-    prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-  }
-
   protected void createOptimizeIndexWithTypeAndVersion(StrictIndexMappingCreator indexMapping,
-                                                       String type,
                                                        int version) throws IOException {
     final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
     final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
@@ -167,7 +145,6 @@ public abstract class AbstractUpgradeIT {
     request.alias(new Alias(aliasName));
     request.settings(indexSettings);
     indexMapping.setDynamicMappingsValue("false");
-    request.mapping(type, indexMapping.getSource());
     prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
   }
 

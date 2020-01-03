@@ -103,7 +103,7 @@ public class DecisionDefinitionReader {
     }
 
     DecisionDefinitionOptimizeDto definitionOptimizeDto = null;
-    if (searchResponse.getHits().getTotalHits() > 0L) {
+    if (searchResponse.getHits().getTotalHits().value > 0L) {
       String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
       definitionOptimizeDto = parseDecisionDefinition(responseAsString);
     } else {
@@ -147,7 +147,7 @@ public class DecisionDefinitionReader {
     }
 
     DecisionDefinitionOptimizeDto definitionOptimizeDto = null;
-    if (searchResponse.getHits().getTotalHits() > 0L) {
+    if (searchResponse.getHits().getTotalHits().value > 0L) {
       String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
       definitionOptimizeDto = parseDecisionDefinition(responseAsString);
     }

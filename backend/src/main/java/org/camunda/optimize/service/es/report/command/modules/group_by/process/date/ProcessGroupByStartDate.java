@@ -23,6 +23,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
@@ -37,9 +38,10 @@ public class ProcessGroupByStartDate extends ProcessGroupByDate {
 
   protected ProcessGroupByStartDate(final ConfigurationService configurationService,
                                     final IntervalAggregationService intervalAggregationService,
+                                    final DateTimeFormatter dateTimeFormatter,
                                     final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
                                     final OptimizeElasticsearchClient esClient) {
-    super(configurationService, intervalAggregationService);
+    super(configurationService, intervalAggregationService, dateTimeFormatter);
     this.esClient = esClient;
     this.queryFilterEnhancer = processQueryFilterEnhancer;
   }

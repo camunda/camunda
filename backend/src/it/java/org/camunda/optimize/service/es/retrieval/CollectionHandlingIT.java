@@ -94,7 +94,9 @@ public class CollectionHandlingIT extends AbstractIT {
     String id = createNewCollection();
 
     // then
-    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id);
+    GetRequest getRequest = new GetRequest()
+      .index(COLLECTION_INDEX_NAME)
+      .id(id);
     GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .get(getRequest, RequestOptions.DEFAULT);
 

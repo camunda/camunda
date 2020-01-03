@@ -1,2 +1,0 @@
-{ "index" :{"_index":"optimize-combined-report","_type":"combined-report","_id":"949299d1-53a4-4eaf-a4df-a8a4f357d0b3"}}
-{"owner":"demo","reportType":"combined","created":"2019-01-29T13:56:28.016+0100","name":"220-combined-report","lastModifier":"demo","lastModified":"2019-01-29T13:57:57.303+0100","id":"949299d1-53a4-4eaf-a4df-a8a4f357d0b3","data":{"reportIds":["3cc33186-35d4-4255-a280-d7e3454249e0"],"configuration":{}}}

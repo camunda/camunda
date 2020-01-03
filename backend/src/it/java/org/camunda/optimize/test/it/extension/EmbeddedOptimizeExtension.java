@@ -28,6 +28,7 @@ import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedIm
 import org.camunda.optimize.service.engine.importing.service.ImportObserver;
 import org.camunda.optimize.service.engine.importing.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.ScrollBasedImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
@@ -193,8 +195,23 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     scheduler.scheduleNextRound();
     makeSureAllScheduledJobsAreFinished();
     resetImportBackoff();
-    scheduler.scheduleNextRoundScrollBasedOnly();
+    scheduleNextRoundScrollBasedOnly(scheduler);
     makeSureAllScheduledJobsAreFinished();
+  }
+
+  private void scheduleNextRoundScrollBasedOnly(EngineImportScheduler scheduler) {
+    final List<EngineImportMediator> currentImportRound = scheduler.getImportMediators()
+      .stream()
+      .filter(EngineImportMediator::canImport)
+      .filter(e -> e instanceof ScrollBasedImportMediator)
+      .collect(Collectors.toList());
+    scheduler.scheduleCurrentImportRound(currentImportRound);
+    // after each scroll import round, we need to reset the scrolls, since otherwise
+    // we will have a lot of dangling scroll contexts in ElasticSearch in our integration tests.
+    currentImportRound.stream()
+      .filter(e -> e instanceof ScrollBasedImportMediator)
+      .map(ScrollBasedImportMediator.class::cast)
+      .forEach(ScrollBasedImportMediator::reset);
   }
 
   public void storeImportIndexesToElasticsearch() {

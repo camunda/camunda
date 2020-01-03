@@ -47,7 +47,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
+import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -132,7 +132,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
         ElasticsearchHighLevelRestClientBuilder.build(configurationService),
         indexNameService
       );
-      disableAutomaticIndexCreation();
+      adjustClusterSettings();
       CLIENT_CACHE.put(customIndexPrefix, prefixAwareRestHighLevelClient);
     }
   }
@@ -250,7 +250,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
     }
-    return Long.valueOf(searchResponse.getHits().getTotalHits()).intValue();
+    return Long.valueOf(searchResponse.getHits().getTotalHits().value).intValue();
   }
 
   public Integer getActivityCount() {
@@ -430,9 +430,17 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .build();
   }
 
-  private void disableAutomaticIndexCreation() {
+  private void adjustClusterSettings() {
     Settings settings = Settings.builder()
+      // disable automatic index creations to fail early in integration tests
       .put("action.auto_create_index", false)
+      // since we are running a lot of tests at the same time and also each tests starts a new import routine,
+      // this opens a lot of scroll contexts. Thus, we need to increase the open scroll.
+      .put("search.max_open_scroll_context", 10_000)
+      // all of our tests are running against a one node cluster. Since we're creating a lot of indexes
+      // and each index creates 5 shards per default, we are easily hitting the default value of 1000.
+      // Thus, we need to increase this value for the test setup.
+      .put("cluster.max_shards_per_node", 10_000)
       .build();
     ClusterUpdateSettingsRequest clusterUpdateSettingsRequest = new ClusterUpdateSettingsRequest();
     clusterUpdateSettingsRequest.persistentSettings(settings);
@@ -444,7 +452,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       ));
       prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(request);
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not update index settings!", e);
+      throw new OptimizeRuntimeException("Could not update cluster settings!", e);
     }
   }
 

@@ -62,6 +62,25 @@
               </target>
             </configuration>
           </execution>
+          <!-- 2. Starting CamBPM and old ES through docker-compose -->
+          <execution>
+            <id>start-old-ES-and-CamBpm</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skip.docker}</skip>
+              <target name="Starting CamBpm and old ES through docker-compose" xmlns:ac="antlib:net.sf.antcontrib">
+                <exec dir="${project.basedir}/../.." executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="docker-compose up -d --force-recreate --renew-anon-volumes" />
+                  <env key="CAMBPM_VERSION" value="${camunda.engine.version}" />
+                  <env key="ES_VERSION" value="${previous.optimize.elasticsearch.version}" />
+                </exec>
+              </target>
+            </configuration>
+          </execution>
           <!-- 3. Make sure CamBPM and ES are up and running -->
           <execution>
             <id>check-cambpm-is-up</id>
@@ -88,7 +107,102 @@
               </target>
             </configuration>
           </execution>
-          <!-- 4. Perform migration -->
+          <!-- 4. import the data to ElasticSearch from previous Optimize version -->
+          <execution>
+            <id>import-data-to-previous-Optimize</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skip.tests}</skip>
+              <target name="Import the data to the previous Optimize version">
+                <!-- ensure elasticsearch is clean -->
+                <echo message="Making sure that ElasticSearch is clean by wiping all data..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:9200/_all" />
+                </exec>
+                <echo message="Successfully wiped all data!" />
+
+                <echo message="Starting Optimize ${project.previousVersion}..." />
+                <exec dir="${project.build.directory}/${project.previousVersion}/" executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh" spawn="true" />
+                <echo message="Waiting for Optimize to start..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
+                </exec>
+
+                <echo message="Waiting for Optimize Import to finish..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
+                </exec>
+
+                <echo message="Authenticating on optimize api..." />
+                <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie -o authResponse" />
+                </exec>
+
+                <echo message="Reading all reports from optimize api..." />
+                <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
+                </exec>
+
+                <echo message="Killing Optimize ${project.previousVersion}..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="pkill -f org.camunda.optimize.Main" />
+                </exec>
+              </target>
+            </configuration>
+          </execution>
+          <!-- 5. Start new ElasticSearch version with old data Copy old ES data folder to target -->
+          <execution>
+            <id>start-new-ES</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skip.docker}</skip>
+              <target name="Start new ES version" xmlns:ac="antlib:net.sf.antcontrib">
+
+                <echo message="Copying data from old ES version to target folder" />
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="docker cp elasticsearch:/usr/share/elasticsearch/data ${project.build.directory}/esdata" />
+                </exec>
+
+                <echo message="Stopping old ES..." />
+                <exec dir="${project.basedir}/../.." executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="docker stop elasticsearch" />
+                </exec>
+                <echo message="Old ES is stopped." />
+
+                <echo message="Create ES with new version" />
+                <!-- The new ElasticSearch docker container will automatically mount the ES data folder -->
+                <exec dir="${project.basedir}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="docker-compose up -d --force-recreate --renew-anon-volumes" />
+                  <env key="ES_VERSION" value="${elasticsearch.version}" />
+                </exec>
+                <echo message="New ES successfully started." />
+                <echo message="Waiting for ES to be fully up..." />
+                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <socket server="localhost" port="9200" />
+                </waitfor>
+                <waitfor maxwait="50" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <http url="http://localhost:9200/_cluster/health?wait_for_status=yellow&amp;timeout=10s" />
+                </waitfor>
+                <echo message="New ES is running." />
+              </target>
+            </configuration>
+          </execution>
+          <!-- 6. Perform migration -->
           <execution>
             <id>run-migration</id>
             <goals>
@@ -97,91 +211,69 @@
             <phase>integration-test</phase>
             <configuration>
               <skip>${skip.tests}</skip>
-              <target xmlns:ac="antlib:net.sf.antcontrib">
-                <!-- ensure elasticsearch is clean -->
-                <exec executable="/bin/bash" failonerror="true">
+              <target name="perform migration" xmlns:ac="antlib:net.sf.antcontrib">
+                <echo message="Running migration to ${project.version}..." />
+                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
                   <arg value="-c" />
-                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:9200/_all" />
+                  <arg value="set -o pipefail; ./upgrade/upgrade.sh --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT ${project.version}]: /'" />
                 </exec>
-                <ac:for list="${upgrade.versions}" param="currentVersion">
-                  <sequential>
-                    <ac:if>
-                      <!-- only if not the first version in the list -->
-                      <not>
-                        <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*" />
-                      </not>
-                      <ac:then>
-                        <echo message="Running migration to @{currentVersion}..." />
-                        <ac:if>
-                          <matches string="@{currentVersion}" pattern="2\.[0-3]\.0" />
-                          <ac:then>
-                            <ac:var name="optimize.upgrade.command" value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain" />
-                          </ac:then>
-                          <ac:else>
-                            <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh " />
-                          </ac:else>
-                        </ac:if>
-                        <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash">
-                          <arg value="-c" />
-                          <arg value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'" />
-                        </exec>
-                      </ac:then>
-                    </ac:if>
-                    <echo message="Starting Optimize @{currentVersion}..." />
-                    <exec dir="${project.build.directory}/@{currentVersion}/" executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true" />
-                    <echo message="Waiting for Optimize to start..." />
-                    <exec executable="/bin/bash" failonerror="true">
-                      <arg value="-c" />
-                      <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
-                    </exec>
+                  <echo message="Starting Optimize ${project.version}..." />
+                  <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true" />
+                  <echo message="Waiting for Optimize to start..." />
+                  <exec executable="/bin/bash" failonerror="true">
+                    <arg value="-c" />
+                    <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
+                  </exec>
 
-                    <echo message="Waiting for Optimize Import to finish..." />
-                    <exec executable="/bin/bash" failonerror="true">
-                      <arg value="-c" />
-                      <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
-                    </exec>
+                  <echo message="Waiting for Optimize Import to finish..." />
+                  <exec executable="/bin/bash" failonerror="true">
+                    <arg value="-c" />
+                    <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
+                  </exec>
 
-                    <ac:if>
-                      <available file="${project.build.directory}/../src/test/resources/@{currentVersion}" type="dir" />
-                      <ac:then>
-                        <echo message="Inserting prepared reports for @{currentVersion}..." />
-                        <ac:for param="bulkFile">
-                          <fileset dir="${project.build.directory}/../src/test/resources/@{currentVersion}" casesensitive="yes">
-                          </fileset>
-                          <sequential>
-                            <echo message="Inserting report bulk @{bulkFile}" />
-                            <property name="curl.data.prefix" value="@@" />
-                            <exec dir="${project.build.directory}/../src/test/resources/@{currentVersion}" executable="/bin/bash" failonerror="true">
-                              <arg value="-c" />
-                              <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:9200/_bulk --data-binary '${curl.data.prefix}@{bulkFile}'" />
-                            </exec>
-                          </sequential>
-                        </ac:for>
-                      </ac:then>
-                    </ac:if>
+                  <echo message="Authenticating on optimize api..." />
+                  <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
+                    <arg value="-c" />
+                    <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie -o authResponse" />
+                  </exec>
 
-                    <echo message="Authenticating on optimize api..." />
-                    <!-- Note: writing authResponse and using it in the auth header is for backwardscompatibility < 2.3.0 -->
-                    <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash" failonerror="true">
-                      <arg value="-c" />
-                      <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie -o authResponse" />
-                    </exec>
-                    <loadfile property="optimize.authToken.@{currentVersion}" srcFile="${project.build.directory}/@{currentVersion}/authResponse" />
+                  <echo message="Reading all reports from optimize api..." />
+                  <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
+                    <arg value="-c" />
+                    <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
+                  </exec>
 
-                    <echo message="Reading all reports from optimize api... ${optimize.authToken.@{currentVersion}}" />
-                    <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash" failonerror="true">
-                      <arg value="-c" />
-                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie -H 'X-Optimize-Authorization: Bearer ${optimize.authToken.@{currentVersion}}'" />
-                    </exec>
+                  <echo message="Killing Optimize ${project.version}..." />
+                  <exec executable="/bin/bash" failonerror="true">
+                    <arg value="-c" />
+                    <arg value="pkill -f org.camunda.optimize.Main" />
+                  </exec>
+              </target>
+            </configuration>
+          </execution>
+          <!-- 7. Cleanup: stop all docker containers -->
+          <execution>
+            <id>cleanup</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>post-integration-test</phase>
+            <configuration>
+              <skip>${skip.docker}</skip>
+              <target name="Stop docker container" xmlns:ac="antlib:net.sf.antcontrib">
+                <echo message="Stopping CamBPM..." />
+                <exec dir="${project.basedir}/../.." executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="docker-compose rm -sfv" />
+                </exec>
+                <echo message="CamBPM successfully stopped." />
 
-                    <echo message="Killing Optimize @{currentVersion}..." />
-                    <exec executable="/bin/bash" failonerror="true">
-                      <arg value="-c" />
-                      <arg value="pkill -f org.camunda.optimize.Main" />
-                    </exec>
-
-                  </sequential>
-                </ac:for>
+                <echo message="Stopping new ES version..." />
+                <exec dir="${project.basedir}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="docker-compose rm -sfv" />
+                </exec>
+                <echo message="New ES version successfully stopped." />
               </target>
             </configuration>
           </execution>
@@ -210,59 +302,6 @@
         <skip.tests>false</skip.tests>
         <skip.docker>false</skip.docker>
       </properties>
-      <build>
-        <plugins>
-          <!-- 2. Start CamBPM and ES through docker-compose -->
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>docker-start</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <environmentVariables>
-                    <CAMBPM_VERSION>${camunda.engine-7.10}</CAMBPM_VERSION>
-                    <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
-                  </environmentVariables>
-                  <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
-                  <workingDirectory>../../</workingDirectory>
-                  <arguments>
-                    <argument>-f</argument>
-                    <argument>${docker.compose.file}</argument>
-                    <argument>up</argument>
-                    <argument>-d</argument>
-                    <argument>--force-recreate</argument>
-                    <argument>--renew-anon-volumes</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-              <!-- Shutdown test environment after integration testing -->
-              <execution>
-                <id>docker-remove</id>
-                <phase>post-integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
-                  <workingDirectory>../../</workingDirectory>
-                  <arguments>
-                    <argument>-f</argument>
-                    <argument>${docker.compose.file}</argument>
-                    <argument>down</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>static-data-upgrade-es-schema-tests</id>

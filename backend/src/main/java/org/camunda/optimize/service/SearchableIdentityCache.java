@@ -141,10 +141,10 @@ public class SearchableIdentityCache implements AutoCloseable {
         nameSort.setMissingValue(STRING_LAST);
         final Sort scoreThanNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
         final TopDocs topDocs = searcher.search(
-          createSearchIdentityQuery(terms), resultLimit, scoreThanNameSort, true, false
+          createSearchIdentityQuery(terms), resultLimit, scoreThanNameSort
         );
 
-        result.setTotal(topDocs.totalHits);
+        result.setTotal(topDocs.totalHits.value);
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
           final Document document = searcher.doc(scoreDoc.doc);
           final IdentityRestDto identityRestDto = mapDocumentToIdentityDto(document);
@@ -222,7 +222,7 @@ public class SearchableIdentityCache implements AutoCloseable {
           new TermQuery(new Term(IdentityRestDto.Fields.type.name(), identityType.name())), BooleanClause.Occur.MUST
         );
         final TopDocs topDocs = searcher.search(searchBuilder.build(), 1);
-        if (topDocs.totalHits > 0) {
+        if (topDocs.totalHits.value > 0) {
           result.set(mapperFunction.apply(searcher.doc(topDocs.scoreDocs[0].doc)));
         }
       } catch (IOException e) {

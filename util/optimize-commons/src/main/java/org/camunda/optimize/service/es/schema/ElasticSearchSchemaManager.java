@@ -16,16 +16,16 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.stereotype.Component;
@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 
 @RequiredArgsConstructor
 @Component
@@ -89,9 +88,10 @@ public class ElasticSearchSchemaManager {
 
   private boolean indicesExist(final OptimizeElasticsearchClient esClient,
                                final List<IndexMappingCreator> mappings) {
-    final List<String> indices = mappings.stream().map(IndexMappingCreator::getIndexName).collect(Collectors.toList());
-    final GetIndexRequest request = new GetIndexRequest();
-    request.indices(indices.toArray(new String[]{}));
+    final List<String> indices = mappings.stream().map(IndexMappingCreator::getIndexName)
+      .map(indexNameService::getOptimizeIndexAliasForIndex)
+      .collect(Collectors.toList());
+    final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
 
     try {
       return esClient.exists(request, RequestOptions.DEFAULT);
@@ -122,8 +122,8 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  public void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
-                                  final IndexMappingCreator mapping) {
+  private void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
+                                   final IndexMappingCreator mapping) {
     createOptimizeIndex(esClient, mapping, Collections.emptySet());
   }
 
@@ -144,7 +144,7 @@ public class ElasticSearchSchemaManager {
           )
         );
         request.settings(indexSettings);
-        request.mapping(DEFAULT_INDEX_TYPE, mapping.getSource());
+        request.mapping(mapping.getSource());
         esClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
       } catch (ElasticsearchStatusException e) {
         if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
@@ -244,7 +244,7 @@ public class ElasticSearchSchemaManager {
 
     try {
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
-      putMappingRequest.type(DEFAULT_INDEX_TYPE).source(indexMapping.getSource());
+      putMappingRequest.source(indexMapping.getSource());
       esClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());

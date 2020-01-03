@@ -29,8 +29,6 @@ public class ElasticsearchConstants {
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
   public static final String DECISION_INSTANCE_INDEX_NAME = "decision-instance";
 
-  public static final String DEFAULT_INDEX_TYPE = "_doc";
-
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
   public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";

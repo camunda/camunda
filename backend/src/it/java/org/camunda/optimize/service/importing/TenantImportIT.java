@@ -32,7 +32,7 @@ public class TenantImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.name.name()), is(tenantName));
@@ -58,7 +58,7 @@ public class TenantImportIT extends AbstractImportIT {
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.name.name()), is(newTenantName));

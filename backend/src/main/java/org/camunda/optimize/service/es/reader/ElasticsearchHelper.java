@@ -87,7 +87,7 @@ public class ElasticsearchHelper {
     while (hits != null && hits.getHits().length > 0) {
       results.addAll(mapHits(hits, limit - results.size(), itemClass, mappingFunction));
 
-      if (hits.getTotalHits() > results.size() && results.size() < limit) {
+      if (hits.getTotalHits().value > results.size() && results.size() < limit) {
         final SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResp.getScrollId());
         scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeout));
         try {

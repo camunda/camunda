@@ -17,8 +17,8 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.scripted.ScriptedMetric;
-import org.elasticsearch.search.aggregations.metrics.scripted.ScriptedMetricAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.ScriptedMetric;
+import org.elasticsearch.search.aggregations.metrics.ScriptedMetricAggregationBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -88,7 +88,6 @@ public class ProcessPartQueryUtil {
 
   public static AggregationBuilder createProcessPartAggregation(String startFlowNodeId, String endFlowNodeId) {
     Map<String, Object> params = new HashMap<>();
-    params.put("_agg", new HashMap<>());
     params.put("startFlowNodeId", startFlowNodeId);
     params.put("endFlowNodeId", endFlowNodeId);
 
@@ -112,7 +111,12 @@ public class ProcessPartQueryUtil {
   }
 
   private static Script createInitScript() {
-    return new Script("params._agg.starts = []; params._agg.ends = []");
+    // @formatter:off
+    return new Script(
+        "state.starts = [];" +
+        "state.ends = []"
+    );
+    // @formatter:on
   }
 
   private static Script createMapScript() {
@@ -120,14 +124,14 @@ public class ProcessPartQueryUtil {
     return new Script(
       "if(doc['events.activityId'].value == params.startFlowNodeId && " +
           "doc['events.startDate'].value != null && " +
-          "doc['events.startDate'].value.getMillis() != 0) {" +
-        "long startDateInMillis = doc['events.startDate'].value.getMillis();" +
-        "params._agg.starts.add(startDateInMillis);" +
+          "doc['events.startDate'].value.toInstant().toEpochMilli() != 0) {" +
+        "long startDateInMillis = doc['events.startDate'].value.toInstant().toEpochMilli();" +
+        "state.starts.add(startDateInMillis);" +
       "} else if(doc['events.activityId'].value == params.endFlowNodeId && " +
           "doc['events.endDate'].value != null && " +
-          "doc['events.endDate'].value.getMillis() != 0) {" +
-        "long endDateInMillis = doc['events.endDate'].value.getMillis();" +
-        "params._agg.ends.add(endDateInMillis);" +
+          "doc['events.endDate'].value.toInstant().toEpochMilli() != 0) {" +
+        "long endDateInMillis = doc['events.endDate'].value.toInstant().toEpochMilli();" +
+        "state.ends.add(endDateInMillis);" +
       "}"
     );
     // @formatter:on
@@ -136,9 +140,9 @@ public class ProcessPartQueryUtil {
   private static Script createCombineScript() {
     // @formatter:off
     return new Script(
-        "if (!params._agg.starts.isEmpty() && !params._agg.ends.isEmpty()) {" +
-        "long minStart = params._agg.starts.stream().min(Long::compareTo).get(); " +
-        "List endsLargerMinStart = params._agg.ends.stream().filter(e -> e >= minStart).collect(Collectors.toList());" +
+        "if (!state.starts.isEmpty() && !state.ends.isEmpty()) {" +
+        "long minStart = state.starts.stream().min(Long::compareTo).get(); " +
+        "List endsLargerMinStart = state.ends.stream().filter(e -> e >= minStart).collect(Collectors.toList());" +
         "if (!endsLargerMinStart.isEmpty()) {" +
           "long closestEnd = endsLargerMinStart.stream()" +
             ".min(Comparator.comparingDouble(v -> Math.abs(v - minStart))).get();" +
@@ -153,16 +157,16 @@ public class ProcessPartQueryUtil {
   private static Script getReduceScript() {
     // @formatter:off
     return new Script(
-      "if (params._aggs.size() == 1) {" +
-        "return params._aggs.get(0);" +
+      "if (states.size() == 1) {" +
+        "return states.get(0);" +
       "}" +
       "long sum = 0; " +
-      "for (a in params._aggs) { " +
+      "for (a in states) { " +
         "if (a != null) {" +
           "sum += a " +
         "}" +
       "} " +
-      "return sum / Math.max(1, params._aggs.size());"
+      "return sum / Math.max(1, states.size());"
     );
     // @formatter:on
   }

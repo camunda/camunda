@@ -53,7 +53,7 @@ public abstract class AbstractImportIT extends AbstractIT {
     throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
-    assertThat(idsResp.getHits().getTotalHits(), is(count));
+    assertThat(idsResp.getHits().getTotalHits().value, is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       assertAllFieldsSet(nullValueFields, searchHit);
     }

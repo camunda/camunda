@@ -49,10 +49,10 @@ public abstract class ScrollBasedImportIndexHandler
   private Long importIndex = 0L;
 
   private Set<String> fetchNextPageOfIds() {
+    Set<String> ids;
     if (scrollId == null) {
-      return performInitialSearchQuery();
+      ids = performInitialSearchQuery();
     } else {
-      Set<String> ids;
       try {
         ids = performScrollQuery();
       } catch (Exception e) {
@@ -60,9 +60,11 @@ public abstract class ScrollBasedImportIndexHandler
         this.resetScroll();
         ids = performInitialSearchQuery();
       }
-
-      return ids;
     }
+    if (ids.isEmpty()) {
+      resetScroll();
+    }
+    return ids;
   }
 
   protected abstract Set<String> performScrollQuery();

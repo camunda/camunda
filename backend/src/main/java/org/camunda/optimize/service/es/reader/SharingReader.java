@@ -64,7 +64,7 @@ public class SharingReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (searchResponse.getHits().getTotalHits() != 0) {
+    if (searchResponse.getHits().getTotalHits().value != 0) {
       try {
         result = Optional.of(
           objectMapper.readValue(
@@ -149,7 +149,7 @@ public class SharingReader {
   private Optional<DashboardShareDto> extractDashboardShareFromResponse(String dashboardId,
                                                                         SearchResponse searchResponse) {
     Optional<DashboardShareDto> result = Optional.empty();
-    if (searchResponse.getHits().getTotalHits() != 0) {
+    if (searchResponse.getHits().getTotalHits().value != 0) {
       String firstHitSource = searchResponse.getHits().getAt(0).getSourceAsString();
       try {
         result = Optional.of(

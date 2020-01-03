@@ -329,22 +329,23 @@ pipeline {
             }
           }
         }
-        stage('Rolling data upgrade') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
-            }
-          }
-          steps {
-            retry(2) {
-              unstash name: "optimize-stash-distro"
-              dataUpgradeTestSteps()
-            }
-          }
-        }
+        // FIXME: OPT-3099
+//        stage('Rolling data upgrade') {
+//          agent {
+//            kubernetes {
+//              cloud 'optimize-ci'
+//              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+//              defaultContainer 'jnlp'
+//              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+//            }
+//          }
+//          steps {
+//            retry(2) {
+//              unstash name: "optimize-stash-distro"
+//              dataUpgradeTestSteps()
+//            }
+//          }
+//        }
         stage('IT Latest') {
           agent {
             kubernetes {
@@ -515,8 +516,9 @@ void migrationTestSteps() {
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pengine-latest,it")
     runMaven("install -Dskip.docker -DskipTests -f qa")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pengine-latest,it")
+    // FIXME: OPT-3100
+//    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
   }
 }
 
