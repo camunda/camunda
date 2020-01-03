@@ -18,6 +18,8 @@
     <!-- default 30 minutes -->
     <upgrade.timeout.seconds>1800</upgrade.timeout.seconds>
     <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
+    <old.optimize.elasticsearch.port>9200</old.optimize.elasticsearch.port>
+    <new.optimize.elasticsearch.port>9250</new.optimize.elasticsearch.port>
   </properties>
 
   <build>
@@ -193,10 +195,10 @@
                 <echo message="New ES successfully started." />
                 <echo message="Waiting for ES to be fully up..." />
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9200" />
+                  <socket server="localhost" port="9250" />
                 </waitfor>
                 <waitfor maxwait="50" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9200/_cluster/health?wait_for_status=yellow&amp;timeout=10s" />
+                  <http url="http://localhost:9250/_cluster/health?wait_for_status=yellow&amp;timeout=10s" />
                 </waitfor>
                 <echo message="New ES is running." />
               </target>
@@ -212,13 +214,21 @@
             <configuration>
               <skip>${skip.tests}</skip>
               <target name="perform migration" xmlns:ac="antlib:net.sf.antcontrib">
+                <echo message="Removing the default environment-config so we can overwrite the ES port..." />
+                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
+                  <arg value="-c" />
+                  <arg value="rm ./environment/environment-config.yaml" />
+                </exec>
                 <echo message="Running migration to ${project.version}..." />
                 <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
                   <arg value="-c" />
                   <arg value="set -o pipefail; ./upgrade/upgrade.sh --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT ${project.version}]: /'" />
+                  <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
                 </exec>
                   <echo message="Starting Optimize ${project.version}..." />
-                  <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true" />
+                <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
+                  <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
+                </exec>
                   <echo message="Waiting for Optimize to start..." />
                   <exec executable="/bin/bash" failonerror="true">
                     <arg value="-c" />

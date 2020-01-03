@@ -15,8 +15,8 @@ services:
         soft: -1
         hard: -1
     ports:
-      - "9300:9300"
-      - "9200:9200"
+      - "9350:9350"
+      - "9250:9200"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green"]
