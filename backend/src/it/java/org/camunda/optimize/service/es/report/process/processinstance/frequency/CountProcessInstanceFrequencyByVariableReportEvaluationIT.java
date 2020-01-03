@@ -495,7 +495,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount("testVar", VariableType.STRING), is(2));
+    assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount("testVar"), is(2));
 
     // when
     ProcessReportDataDto reportData = createReport(

@@ -236,13 +236,13 @@ pipeline {
     stage('Elasticsearch Integration Tests') {
       failFast false
       parallel {
-        stage("Elasticsearch 6.4.0 Integration") {
+        stage("Elasticsearch 7.0.0 Integration") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_es-6.4.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build_es-7.0.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.4.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("7.0.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -256,13 +256,13 @@ pipeline {
             }
           }
         }
-        stage("Elasticsearch 6.5.0 Integration") {
+        stage("Elasticsearch 7.1.0 Integration") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_es-6.5.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build_es-7.1.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.5.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("7.1.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -276,13 +276,13 @@ pipeline {
             }
           }
         }
-        stage("Elasticsearch 6.6.0 Integration") {
+        stage("Elasticsearch 7.2.0 Integration") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_es-6.6.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build_es-7.2.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.6.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("7.2.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -296,13 +296,13 @@ pipeline {
             }
           }
         }
-        stage("Elasticsearch 6.7.0 Integration") {
+        stage("Elasticsearch 7.3.0 Integration") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_es-6.7.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build_es-7.3.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.7.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("7.3.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -316,13 +316,33 @@ pipeline {
             }
           }
         }
-        stage("Elasticsearch 6.8.0 Integration") {
+        stage("Elasticsearch 7.4.0 Integration") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_es-6.8.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build_es-7.4.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.8.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("7.4.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            retry(2) {
+              integrationTestSteps()
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("Elasticsearch 7.5.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.5.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.5.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {

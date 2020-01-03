@@ -25,6 +25,11 @@ es:
   settings:
     index:
       prefix: ${indexPrefix:optimize}
+      # we need to limit the shards to one so that ElasticSearch does not create too
+      # many scroll contexts. Context: before/after each integration test we're
+      # doing a `delete by query` request, which does scrolling on it's own for
+      # each shard that exists.
+      number_of_shards: 1
 
 eventBasedProcess:
   authorizedUserIds: ['demo']

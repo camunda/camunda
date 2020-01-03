@@ -123,12 +123,12 @@ public class ProcessPartQueryUtil {
     // @formatter:off
     return new Script(
       "if(doc['events.activityId'].value == params.startFlowNodeId && " +
-          "doc['events.startDate'].value != null && " +
+          "doc['events.startDate'].size() != 0 && doc['events.startDate'].value != null && " +
           "doc['events.startDate'].value.toInstant().toEpochMilli() != 0) {" +
         "long startDateInMillis = doc['events.startDate'].value.toInstant().toEpochMilli();" +
         "state.starts.add(startDateInMillis);" +
       "} else if(doc['events.activityId'].value == params.endFlowNodeId && " +
-          "doc['events.endDate'].value != null && " +
+          "doc['events.endDate'].size() != 0 && doc['events.endDate'].value != null && " +
           "doc['events.endDate'].value.toInstant().toEpochMilli() != 0) {" +
         "long endDateInMillis = doc['events.endDate'].value.toInstant().toEpochMilli();" +
         "state.ends.add(endDateInMillis);" +

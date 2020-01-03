@@ -14,7 +14,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -110,7 +109,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   @Override
-  public void beforeEach(final ExtensionContext extensionContext) throws Exception {
+  public void beforeEach(final ExtensionContext extensionContext) {
     before();
   }
 
@@ -325,7 +324,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return Long.valueOf(totalVariableCount).intValue();
   }
 
-  public Integer getVariableInstanceCount(String variableName, VariableType variableType) {
+  public Integer getVariableInstanceCount(String variableName) {
     final QueryBuilder query = nestedQuery(
       VARIABLES,
       boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
@@ -434,9 +433,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     Settings settings = Settings.builder()
       // disable automatic index creations to fail early in integration tests
       .put("action.auto_create_index", false)
-      // since we are running a lot of tests at the same time and also each tests starts a new import routine,
-      // this opens a lot of scroll contexts. Thus, we need to increase the open scroll.
-      .put("search.max_open_scroll_context", 10_000)
       // all of our tests are running against a one node cluster. Since we're creating a lot of indexes
       // and each index creates 5 shards per default, we are easily hitting the default value of 1000.
       // Thus, we need to increase this value for the test setup.
