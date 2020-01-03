@@ -10,16 +10,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ThreadUtil;
-
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import io.zeebe.client.ZeebeClient;
@@ -30,11 +26,9 @@ public class PartitionHolder {
 
   public static final long WAIT_TIME_IN_MS = 1000L;
 
-  public static final int MAX_RETRY = 2 /*2 * 30*/;
+  public static final int MAX_RETRY = 2;
 
   private static final Logger logger = LoggerFactory.getLogger(PartitionHolder.class);
-
-  public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
 
   private List<Integer> partitionIds = new ArrayList<>();
 
@@ -44,10 +38,6 @@ public class PartitionHolder {
   @Autowired
   private ZeebeClient zeebeClient;
 
-  @Autowired
-  @Qualifier("zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
-
   /**
    * Retrieves PartitionIds with waiting time of {@value #WAIT_TIME_IN_MS} milliseconds and retries for {@value #MAX_RETRY} times.
    */
@@ -55,9 +45,6 @@ public class PartitionHolder {
     return getPartitionIdsWithWaitingTimeAndRetries(WAIT_TIME_IN_MS, MAX_RETRY);
   }
   
-  //TODO: Use spring retry ?
-  // - Throw a exception if partition ids can't be fetched.
-  // - Use this exception for retrying (in spring retry annotation)
   public List<Integer> getPartitionIdsWithWaitingTimeAndRetries(long waitingTimeInMilliseconds, int maxRetries) {
     int retries = 0;
     while (partitionIds.isEmpty() && retries <= maxRetries) {
