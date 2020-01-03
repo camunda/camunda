@@ -1,0 +1,56 @@
+version: 1
+
+update_configs:
+- package_manager: "java:maven"
+  directory: "/"
+  update_schedule: "daily"
+  target_branch: "master"
+  commit_message:
+    prefix: "chore"
+    include_scope: true
+  default_reviewers:
+    - "camunda/optimize"
+  default_labels:
+    - "dependencies"
+  automerged_updates:
+    - match:
+        dependency_type: "all"
+        update_type: "security:patch"
+  ignored_updates:
+    - match:
+        dependency_name: "org.camunda.bpm:camunda-engine"
+    - match:
+        dependency_name: "com.h2database:h2"
+    - match:
+        dependency_name: "org.jboss.resteasy:resteasy-jaxrs"
+
+
+- package_manager: "javascript"
+  directory: "/client"
+  update_schedule: "daily"
+  target_branch: "master"
+  version_requirement_updates: "auto"
+  commit_message:
+    prefix: "chore"
+    include_scope: true
+  default_reviewers:
+    - "camunda/optimize"
+  default_labels:
+    - "dependencies"
+  automerged_updates:
+    - match:
+        dependency_type: "all"
+        update_type: "semver:patch"
+
+
+- package_manager: "docker"
+  directory: "/"
+  update_schedule: "daily"
+  target_branch: "master"
+  default_labels:
+    - "dependencies"
+  commit_message:
+    prefix: "chore"
+    include_scope: true
+  default_reviewers:
+    - "camunda/optimize"
