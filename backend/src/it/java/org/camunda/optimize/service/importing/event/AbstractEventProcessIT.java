@@ -22,6 +22,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -35,6 +36,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.provider.Arguments;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +47,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -67,6 +71,9 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String EVENT_SOURCE = "integrationTest";
   protected static final String EVENT_PROCESS_NAME = "myEventProcess";
 
+  protected static final String STARTED_EVENT = "startedEvent";
+  protected static final String FINISHED_EVENT = "finishedEvent";
+
   protected static final String PROCESS_INSTANCE_STATE_COMPLETED = "COMPLETED";
   protected static final String PROCESS_INSTANCE_STATE_ACTIVE = "ACTIVE";
 
@@ -75,6 +82,19 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().getAuthorizedUserIds()
       .add(DEFAULT_USERNAME);
+  }
+
+  protected static Stream<Arguments> cancelOrDeleteAction() {
+    return Stream.of(
+      Arguments.arguments(
+        "cancelPublish",
+        (BiConsumer<EventProcessClient, String>) EventProcessClient::cancelPublishEventProcessMapping
+      ),
+      Arguments.arguments(
+        "deleteEventProcessMapping",
+        (BiConsumer<EventProcessClient, String>) EventProcessClient::deleteEventProcessMapping
+      )
+    );
   }
 
   protected String createEventProcessMappingFromEventMappings(final EventMappingDto startEventMapping,
@@ -179,8 +199,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromElasticsearch(
-    final String definitionId) {
+  protected Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromElasticsearch(final String definitionId) {
     final GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(definitionId), RequestOptions.DEFAULT);
 
@@ -196,10 +215,15 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   @SneakyThrows
   protected List<ProcessInstanceDto> getEventProcessInstancesFromElasticsearch() {
+    return getEventProcessInstancesFromElasticsearchForProcessMappingId("*");
+  }
+
+  @SneakyThrows
+  protected List<ProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessMappingId(final String eventProcessMappingId) {
     final List<ProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(
-        new SearchRequest(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"),
+        new SearchRequest(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessMappingId),
         RequestOptions.DEFAULT
       );
     for (SearchHit hit : searchResponse.getHits().getHits()) {

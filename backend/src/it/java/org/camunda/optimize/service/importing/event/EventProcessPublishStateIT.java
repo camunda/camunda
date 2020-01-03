@@ -8,33 +8,113 @@ package org.camunda.optimize.service.importing.event;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
+public class EventProcessPublishStateIT extends AbstractEventProcessIT {
+
+  @Test
+  public void afterPublishPublishStateIsCreated() {
+    // given
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    // when
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+
+    // then
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)).isNotEmpty();
+  }
+
+  @Test
+  public void afterPublishPublishStateIsCreatedOnlyForTheExpectedEventProcess() {
+    // given
+    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    // when
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
+
+    // then
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId1)).isNotEmpty();
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId2)).isEmpty();
+  }
+
+  @ParameterizedTest(name = "Event process publish state is deleted on {0}.")
+  @MethodSource("cancelOrDeleteAction")
+  public void eventProcessPublishStateIsDeletedOn(final String actionName,
+                                                  final BiConsumer<EventProcessClient, String> action) {
+    // given
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    final String expectedProcessDefinitionId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
+
+    executeImportCycle();
+    executeImportCycle();
+
+    // when
+    action.accept(eventProcessClient, eventProcessMappingId);
+    executeImportCycle();
+
+    // then
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)).isEmpty();
+  }
+
+  @ParameterizedTest(name = "Only expected event publish state is deleted on {0}, other is still present.")
+  @MethodSource("cancelOrDeleteAction")
+  public void otherEventPublishStateIsNotAffectedOn(final String actionName,
+                                                    final BiConsumer<EventProcessClient, String> action) {
+    // given
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+
+    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
+    final String expectedProcessDefinitionId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
+
+    executeImportCycle();
+    executeImportCycle();
+
+    // when
+    action.accept(eventProcessClient, eventProcessMappingId1);
+    executeImportCycle();
+
+    // then
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId2)).isNotEmpty();
+  }
 
   @Test
   public void progressIsZeroOnNoCycleRun() {
     // given
-    final String eventProcessId = createSimpleEventProcessMapping("start", "end");
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId))
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .isEqualToIgnoringGivenFields(
         EventProcessPublishStateDto.builder()
-          .processMappingId(eventProcessId)
+          .processMappingId(eventProcessMappingId)
           .name(EVENT_PROCESS_NAME)
           .state(EventProcessState.PUBLISH_PENDING)
           .publishDateTime(publishDateTime)
@@ -56,23 +136,21 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime firstEventTimestamp = timeBaseLine.minusSeconds(60);
     LocalDateUtil.setCurrentTime(firstEventTimestamp);
-    final String ingestedStartEventName = "startedEvent";
-    ingestTestEvent(ingestedStartEventName, firstEventTimestamp);
+    ingestTestEvent(STARTED_EVENT, firstEventTimestamp);
 
     final OffsetDateTime lastEventTimestamp = timeBaseLine.minusSeconds(30);
     LocalDateUtil.setCurrentTime(lastEventTimestamp);
-    final String ingestedEndEventName = "finishedEvent";
-    ingestTestEvent(ingestedEndEventName, lastEventTimestamp);
+    ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId))
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
@@ -80,7 +158,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
     // when the second import cycle completes the status reflects the result of the previous cycle
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId))
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 50.0D);
@@ -88,7 +166,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
     // when the third import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId))
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISHED)
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 100.0D);
@@ -102,35 +180,33 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime firstEventTimestamp = timeBaseLine.minusSeconds(60);
     LocalDateUtil.setCurrentTime(firstEventTimestamp);
-    final String ingestedStartEventName = "startedEvent";
-    ingestTestEvent(ingestedStartEventName, firstEventTimestamp);
+    ingestTestEvent(STARTED_EVENT, firstEventTimestamp);
 
     final OffsetDateTime lastEventTimestamp = timeBaseLine.minusSeconds(30);
     LocalDateUtil.setCurrentTime(lastEventTimestamp);
-    final String ingestedEndEventName = "finishedEvent";
-    ingestTestEvent(ingestedEndEventName, lastEventTimestamp);
+    ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.plusSeconds(10));
-    ingestTestEvent(ingestedStartEventName, LocalDateUtil.getCurrentDateTime());
-    ingestTestEvent(ingestedStartEventName, LocalDateUtil.getCurrentDateTime());
+    ingestTestEvent(STARTED_EVENT, LocalDateUtil.getCurrentDateTime());
+    ingestTestEvent(STARTED_EVENT, LocalDateUtil.getCurrentDateTime());
 
     executeImportCycle();
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId))
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .isEqualToIgnoringGivenFields(
         EventProcessPublishStateDto.builder()
-          .processMappingId(eventProcessId)
+          .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISH_PENDING)
           .publishDateTime(publishDateTime)
           .lastImportedEventIngestDateTime(firstEventTimestamp)
@@ -150,31 +226,29 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime firstEventTimestamp = timeBaseLine.minusSeconds(60);
     LocalDateUtil.setCurrentTime(firstEventTimestamp);
-    final String ingestedStartEventName = "startedEvent";
-    ingestTestEvent(ingestedStartEventName, firstEventTimestamp);
+    ingestTestEvent(STARTED_EVENT, firstEventTimestamp);
 
     final OffsetDateTime lastEventTimestamp = timeBaseLine.minusSeconds(30);
     LocalDateUtil.setCurrentTime(lastEventTimestamp);
-    final String ingestedEndEventName = "finishedEvent";
-    ingestTestEvent(ingestedEndEventName, lastEventTimestamp);
+    ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId))
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .isEqualToIgnoringGivenFields(
         EventProcessPublishStateDto.builder()
-          .processMappingId(eventProcessId)
+          .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISHED)
           .publishDateTime(publishDateTime)
           .lastImportedEventIngestDateTime(lastEventTimestamp)
@@ -194,35 +268,33 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime firstEventTimestamp = timeBaseLine.minusSeconds(60);
     LocalDateUtil.setCurrentTime(firstEventTimestamp);
-    final String ingestedStartEventName = "startedEvent";
-    ingestTestEvent(ingestedStartEventName, firstEventTimestamp);
+    ingestTestEvent(STARTED_EVENT, firstEventTimestamp);
 
     final OffsetDateTime lastEventTimestamp = timeBaseLine.minusSeconds(30);
     LocalDateUtil.setCurrentTime(lastEventTimestamp);
-    final String ingestedEndEventName = "finishedEvent";
-    ingestTestEvent(ingestedEndEventName, lastEventTimestamp);
+    ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     final OffsetDateTime publishDateTime = LocalDateUtil.getCurrentDateTime();
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
 
     executeImportCycle();
 
-    ingestTestEvent(ingestedStartEventName, OffsetDateTime.now());
+    ingestTestEvent(STARTED_EVENT, OffsetDateTime.now());
     executeImportCycle();
 
     // then
-    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId))
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
       .isEqualToIgnoringGivenFields(
         EventProcessPublishStateDto.builder()
-          .processMappingId(eventProcessId)
+          .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISHED)
           .publishDateTime(publishDateTime)
           .lastImportedEventIngestDateTime(lastEventTimestamp)

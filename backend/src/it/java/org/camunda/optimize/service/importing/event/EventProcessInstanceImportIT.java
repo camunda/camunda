@@ -12,15 +12,19 @@ import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
@@ -30,7 +34,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   @Test
   public void dedicatedInstanceIndexIsCreatedForPublishedEventProcess() {
     // given
-    final String eventProcessMappingId = createSimpleEventProcessMapping("whatever", "huh");
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
@@ -60,16 +64,42 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void dedicatedInstanceIndexIsDeletedOnCancelPublish() {
+  public void dedicatedInstanceIndexesAreCreatedForMultipleEventProcesses() {
     // given
-    final String eventProcessId = createSimpleEventProcessMapping("whatever", "huh");
+    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
 
     executeImportCycle();
 
-    eventProcessClient.cancelPublishEventProcessMapping(eventProcessId);
+    // then
+    final String eventProcessPublishStateId1 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
+    final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
+
+    assertThat(getEventProcessInstanceIndicesWithAliasesFromElasticsearch())
+      .hasSize(2)
+      .containsKeys(
+        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId1),
+        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId2)
+      );
+  }
+
+  @ParameterizedTest(name = "Instance index is deleted on {0}.")
+  @MethodSource("cancelOrDeleteAction")
+  public void dedicatedInstanceIndexIsDeletedOn(final String actionName,
+                                                final BiConsumer<EventProcessClient, String> action) {
+    // given
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    // when
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+
+    executeImportCycle();
+
+    action.accept(eventProcessClient, eventProcessMappingId);
 
     executeImportCycle();
 
@@ -77,6 +107,31 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final Map<String, List<AliasMetaData>> eventProcessInstanceIndicesAndAliases =
       getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
     assertThat(eventProcessInstanceIndicesAndAliases).hasSize(0);
+  }
+
+  @ParameterizedTest(name = "Only expected instance index is deleted on {0}, other is still present.")
+  @MethodSource("cancelOrDeleteAction")
+  public void dedicatedInstanceIndexIsDeletedOtherInstanceIndexNotAffected(
+    final String actionName,
+    final BiConsumer<EventProcessClient, String> action) {
+    // given
+    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    // when
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
+    final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
+
+    executeImportCycle();
+
+    action.accept(eventProcessClient, eventProcessMappingId1);
+
+    executeImportCycle();
+
+    // then
+    assertThat(getEventProcessInstanceIndicesWithAliasesFromElasticsearch())
+      .containsOnlyKeys(getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId2));
   }
 
   @Test
@@ -93,11 +148,11 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final String ingestedEndEventName = "finishedEvent";
     final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, endDateTime);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
 
@@ -109,7 +164,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -141,27 +196,53 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   @Test
+  public void instancesAreGeneratedForMultipleEventProcesses() {
+    // given
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
+
+    final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+    final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
+
+    // when
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId1);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId2);
+
+    executeImportCycle();
+
+    // then
+    final String eventProcessPublishStateId1 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
+    final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
+
+    final List<ProcessInstanceDto> eventProcess1ProcessInstances =
+      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishStateId1);
+    final List<ProcessInstanceDto> eventProcess2ProcessInstances =
+      getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishStateId2);
+
+    assertThat(eventProcess1ProcessInstances).hasSize(1);
+    assertThat(eventProcess2ProcessInstances).hasSize(1);
+  }
+
+  @Test
   public void instancesAreGeneratedForExistingEventsAfterPublish_otherEventsHaveNoEffect() {
     // given
     final OffsetDateTime timeBaseLine = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(60));
     final OffsetDateTime startDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedStartEventName = "startedEvent";
-    final String ingestedStartEventId = ingestTestEvent(ingestedStartEventName, startDateTime);
+    final String ingestedStartEventId = ingestTestEvent(STARTED_EVENT, startDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(30));
     final OffsetDateTime endDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedEndEventName = "finishedEvent";
-    final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, endDateTime);
+    final String ingestedEndEventId = ingestTestEvent(FINISHED_EVENT, endDateTime);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     ingestTestEvent("randomOtherEvent", LocalDateUtil.getCurrentDateTime());
     ingestTestEvent("evenAnotherEvent", LocalDateUtil.getCurrentDateTime());
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
 
@@ -173,7 +254,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -208,24 +289,22 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   public void instancesAreGeneratedWhenEventsAreIngestedAfterPublish() {
     // given
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    final String ingestedStartEventName = "startedEvent";
-    final String ingestedEndEventName = "finishedEvent";
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
 
     final OffsetDateTime timeBaseLine = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(60));
     final OffsetDateTime startDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedStartEventId = ingestTestEvent(ingestedStartEventName, startDateTime);
+    final String ingestedStartEventId = ingestTestEvent(STARTED_EVENT, startDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(30));
     final OffsetDateTime endDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, endDateTime);
+    final String ingestedEndEventId = ingestTestEvent(FINISHED_EVENT, endDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.plusSeconds(30));
     executeImportCycle();
@@ -238,7 +317,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -272,26 +351,24 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   public void newEventsWithSameIdUpdateActivityInstances() {
     // given
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    final String ingestedStartEventName = "startedEvent";
-    final String ingestedEndEventName = "finishedEvent";
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
     executeImportCycle();
 
     final OffsetDateTime timeBaseLine = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(60));
     final OffsetDateTime startDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedStartEventId = ingestTestEvent(ingestedStartEventName, startDateTime);
+    final String ingestedStartEventId = ingestTestEvent(STARTED_EVENT, startDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(30));
-    final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, startDateTime);
+    final String ingestedEndEventId = ingestTestEvent(FINISHED_EVENT, startDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(10));
     final OffsetDateTime updatedEndDateTime = LocalDateUtil.getCurrentDateTime();
-    ingestTestEvent(ingestedEndEventId, ingestedEndEventName, updatedEndDateTime);
+    ingestTestEvent(ingestedEndEventId, FINISHED_EVENT, updatedEndDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.plusSeconds(30));
     executeImportCycle();
@@ -304,7 +381,11 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, updatedEndDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(
+                eventProcessMappingId,
+                startDateTime,
+                updatedEndDateTime
+              ),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -340,17 +421,15 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
     final OffsetDateTime timeBaseLine = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(60));
-    final String ingestedStartEventName = "startedEvent";
-    final String ingestedEndEventName = "finishedEvent";
 
     final OffsetDateTime startDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedStartEventId = ingestTestEvent(ingestedStartEventName, startDateTime);
+    final String ingestedStartEventId = ingestTestEvent(STARTED_EVENT, startDateTime);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
 
@@ -363,8 +442,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
               ProcessInstanceDto.builder()
-                .processDefinitionId(eventProcessId)
-                .processDefinitionKey(eventProcessId)
+                .processDefinitionId(eventProcessMappingId)
+                .processDefinitionKey(eventProcessMappingId)
                 .processDefinitionVersion("1")
                 .processInstanceId(MY_TRACE_ID_1)
                 .duration(null)
@@ -406,23 +485,21 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // given
     final OffsetDateTime timeBaseLine = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(60));
-    final String ingestedStartEventName = "startedEvent";
-    final String ingestedEndEventName = "finishedEvent";
 
     final OffsetDateTime startDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedStartEventId = ingestTestEvent(ingestedStartEventName, startDateTime);
+    final String ingestedStartEventId = ingestTestEvent(STARTED_EVENT, startDateTime);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(30));
     final OffsetDateTime endDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, endDateTime);
+    final String ingestedEndEventId = ingestTestEvent(FINISHED_EVENT, endDateTime);
 
     LocalDateUtil.setCurrentTime(timeBaseLine.plusSeconds(30));
     executeImportCycle();
@@ -435,7 +512,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, startDateTime, endDateTime),
+              createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
               ProcessInstanceDto.Fields.events
             )
             .extracting(ProcessInstanceDto::getEvents)
@@ -469,14 +546,12 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   public void instanceIsCompletedEvenIfOnlyEndEventGotIngested() {
     // given
     final OffsetDateTime timeBaseLine = OffsetDateTime.now();
-    final String ingestedStartEventName = "startedEvent";
-    final String ingestedEndEventName = "finishedEvent";
 
     LocalDateUtil.setCurrentTime(timeBaseLine.minusSeconds(30));
     final OffsetDateTime endDateTime = LocalDateUtil.getCurrentDateTime();
-    final String ingestedEndEventId = ingestTestEvent(ingestedEndEventName, endDateTime);
+    final String ingestedEndEventId = ingestTestEvent(FINISHED_EVENT, endDateTime);
 
-    final String eventProcessId = createSimpleEventProcessMapping(ingestedStartEventName, ingestedEndEventName);
+    final String eventProcessId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
