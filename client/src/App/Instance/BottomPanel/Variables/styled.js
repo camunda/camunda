@@ -216,7 +216,7 @@ const inputMargin = css`
 export const TextInput = styled(BasicInput)`
   height: 30px;
 
-  padding-top: 6px;
+  padding-top: 7px;
   ${inputMargin};
 
   font-size: 14px;
