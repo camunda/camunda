@@ -1,4 +1,4 @@
-FROM alpine:3.10 as builder
+FROM alpine:3.11.2 as builder
 
 ARG SKIP_DOWNLOAD=false
 ARG VERSION=2.0.0
@@ -18,7 +18,7 @@ RUN /tmp/download.sh
 
 ##### FINAL IMAGE #####
 
-FROM alpine:3.10
+FROM alpine:3.11.2
 
 ENV OPTIMIZE_CLASSPATH=/optimize/environment:/optimize/plugin/*:/optimize/*
 ENV WAIT_FOR=
