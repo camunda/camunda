@@ -143,8 +143,7 @@ public final class MessageMappingTest {
       {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
       {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
       {"interrupting event subprocess", INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW},
-      // TODO (saig0): enable test case when fixing #3552
-      // {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW}
+      {"non-interrupting event subprocess", NON_INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW}
     };
   }
 

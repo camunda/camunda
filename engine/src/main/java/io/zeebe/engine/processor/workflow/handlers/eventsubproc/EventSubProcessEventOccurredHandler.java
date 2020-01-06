@@ -47,6 +47,7 @@ public final class EventSubProcessEventOccurredHandler<T extends ExecutableStart
     if (startEvent.interrupting()) {
       interruptingKey = handleInterrupting(context, triggeredEvent, scopeKey);
     } else {
+      processEventTrigger(context, context.getKey(), context.getKey(), triggeredEvent);
       context
           .getOutput()
           .appendFollowUpEvent(
@@ -73,9 +74,12 @@ public final class EventSubProcessEventOccurredHandler<T extends ExecutableStart
     if (waitForTermination) {
       return deferEvent(context, context.getKey(), scopeKey, containerRecord, triggeredEvent);
     } else {
-      return context
-          .getOutput()
-          .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, containerRecord);
+      final long eventKey =
+          context
+              .getOutput()
+              .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, containerRecord);
+      processEventTrigger(context, context.getKey(), eventKey, triggeredEvent);
+      return eventKey;
     }
   }
 
