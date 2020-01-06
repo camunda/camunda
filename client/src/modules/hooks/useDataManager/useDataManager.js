@@ -4,27 +4,27 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useState, useEffect, useContext} from 'react';
+import {useState, useContext} from 'react';
 import {DataContext} from 'modules/DataManager';
 
 export default function useDataManager() {
   const {dataManager} = useContext(DataContext);
   const [subscriptions, setSubscription] = useState({});
 
-  function sanatizeStates(statehooks) {
+  function sanitizeStates(statehooks) {
     if (typeof statehooks === 'string') {
       return [statehooks];
     } else if (Array.isArray(statehooks)) {
-      return [...statehooks];
+      return statehooks;
     }
   }
 
   function subscribe(topic, statehooks, cb) {
-    const sanatizedStates = sanatizeStates(statehooks);
+    const sanitizedStates = sanitizeStates(statehooks);
 
     const subscription = {
       [topic]: ({state, response}) => {
-        if (!!sanatizedStates.includes(state)) {
+        if (!!sanitizedStates.includes(state)) {
           cb(response);
         }
       }
@@ -33,11 +33,12 @@ export default function useDataManager() {
     setSubscription(subscription);
   }
 
-  useEffect(() => {
-    return () =>
+  function unsubscribe() {
+    return (
       !!Object.keys(subscriptions).length &&
-      dataManager.unsubscribe(subscriptions);
-  }, []);
+      dataManager.unsubscribe(subscriptions)
+    );
+  }
 
-  return {subscribe};
+  return {subscribe, unsubscribe};
 }

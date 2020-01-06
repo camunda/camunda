@@ -22,8 +22,6 @@ import Selections from './Selections';
 
 import {countStore} from './Selections.setup';
 
-import * as Styled from './styled';
-
 jest.mock('modules/utils/bpmn');
 
 const renderNode = props =>

@@ -16,12 +16,14 @@ import * as Styled from './styled';
 function TimeStampPill(props) {
   const {showTimeStamp, onTimeStampToggle} = props;
   const [isDisabled, setDisabled] = useState(true);
-  const {subscribe} = useDataManager();
+  const {subscribe, unsubscribe} = useDataManager();
 
   useEffect(() => {
     subscribe(SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE, LOADING_STATE.LOADED, () =>
       setDisabled(false)
     );
+
+    return () => unsubscribe();
   }, []);
 
   return (
