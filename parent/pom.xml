@@ -43,7 +43,7 @@
     <version.commons-lang>3.9</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.commons-codec>1.13</version.commons-codec>
+    <version.commons-codec>1.14</version.commons-codec>
     <version.elasticsearch>6.8.6</version.elasticsearch>
     <version.error-prone>2.3.4</version.error-prone>
     <version.grpc>1.26.0</version.grpc>
@@ -66,7 +66,7 @@
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.8.0</version.prometheus>
     <version.protobuf>3.11.1</version.protobuf>
-    <version.rocksdbjni>6.4.6</version.rocksdbjni>
+    <version.rocksdbjni>6.5.2</version.rocksdbjni>
     <version.sbe>1.15.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.1</version.scala>
