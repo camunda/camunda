@@ -19,21 +19,17 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /** Represents a block of fragments to read from. */
 public class BlockPeek implements Iterable<DirectBuffer> {
-  protected ByteBuffer byteBuffer;
-  protected final UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
-  protected AtomicPosition subscriberPosition;
 
   protected int streamId;
-
-  protected int bufferOffset;
   protected int blockLength;
-
-  protected int newPartitionId;
-  protected int newPartitionOffset;
-
   protected final DataFrameIterator iterator = new DataFrameIterator();
+  private ByteBuffer byteBuffer;
+  private final UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
+  private AtomicPosition subscriberPosition;
+  private int bufferOffset;
+  private int newPartitionId;
+  private int newPartitionOffset;
   private ActorCondition dataConsumed;
-  private int fragmentCount;
 
   public void setBlock(
       final ByteBuffer byteBuffer,
@@ -43,8 +39,7 @@ public class BlockPeek implements Iterable<DirectBuffer> {
       final int bufferOffset,
       final int blockLength,
       final int newPartitionId,
-      final int newPartitionOffset,
-      final int fragmentCount) {
+      final int newPartitionOffset) {
     this.byteBuffer = byteBuffer;
     this.subscriberPosition = position;
     this.dataConsumed = dataConsumed;
@@ -53,7 +48,6 @@ public class BlockPeek implements Iterable<DirectBuffer> {
     this.blockLength = blockLength;
     this.newPartitionId = newPartitionId;
     this.newPartitionOffset = newPartitionOffset;
-    this.fragmentCount = fragmentCount;
 
     byteBuffer.limit(bufferOffset + blockLength);
     byteBuffer.position(bufferOffset);
@@ -101,17 +95,7 @@ public class BlockPeek implements Iterable<DirectBuffer> {
     updatePosition();
   }
 
-  /** Returns the position of the next block if this block was marked completed. */
-  public long getNextPosition() {
-    final long newPosition = position(newPartitionId, newPartitionOffset);
-    if (subscriberPosition.get() < newPosition) {
-      return newPosition;
-    } else {
-      return subscriberPosition.get();
-    }
-  }
-
-  protected void updatePosition() {
+  private void updatePosition() {
     subscriberPosition.proposeMaxOrdered(position(newPartitionId, newPartitionOffset));
     dataConsumed.signal();
   }
@@ -126,10 +110,6 @@ public class BlockPeek implements Iterable<DirectBuffer> {
 
   public int getBlockLength() {
     return blockLength;
-  }
-
-  public long getBlockPosition() {
-    return position(newPartitionId, newPartitionOffset);
   }
 
   @Override

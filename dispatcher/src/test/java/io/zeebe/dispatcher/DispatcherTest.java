@@ -13,12 +13,10 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -112,29 +110,6 @@ public final class DispatcherTest {
   }
 
   @Test
-  public void shouldNotWriteBeyondPublisherLimit() {
-    // given
-    // position of 0,0
-    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-    // publisher limit of 0
-    when(publisherLimit.get()).thenReturn(position(0, 0));
-
-    // if
-    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
-
-    // then
-    assertThat(newPosition).isEqualTo(-1);
-
-    verify(publisherLimit).get();
-    verifyNoMoreInteractions(publisherLimit);
-    verifyNoMoreInteractions(logAppender);
-    verify(logBuffer).getActivePartitionIdVolatile();
-    verify(logBuffer).getPartition(0);
-    verify(logBufferPartition0).getTailCounterVolatile();
-  }
-
-  @Test
   public void shouldNotClaimBeyondPublisherLimit() {
     // given
     // position of 0,0
@@ -153,35 +128,6 @@ public final class DispatcherTest {
     verifyNoMoreInteractions(publisherLimit);
     verifyNoMoreInteractions(logAppender);
     verifyNoMoreInteractions(claimedFragment);
-    verify(logBuffer).getActivePartitionIdVolatile();
-    verify(logBuffer).getPartition(0);
-    verify(logBufferPartition0).getTailCounterVolatile();
-  }
-
-  @Test
-  public void shouldWriteUnfragmented() {
-    // given
-    // position is 0,0
-    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
-
-    when(logAppender.appendFrame(
-            logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID))
-        .thenReturn(A_FRAGMENT_LENGTH);
-
-    // if
-    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
-
-    // then
-    assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
-
-    verify(logAppender)
-        .appendFrame(logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
-
-    verify(publisherLimit).get();
-    verify(publisherPosition).proposeMaxOrdered(position(0, A_FRAGMENT_LENGTH));
-
     verify(logBuffer).getActivePartitionIdVolatile();
     verify(logBuffer).getPartition(0);
     verify(logBufferPartition0).getTailCounterVolatile();
@@ -224,62 +170,6 @@ public final class DispatcherTest {
 
     verify(logBuffer).getActivePartitionIdVolatile();
     verify(logBuffer).getPartition(0);
-    verify(logBufferPartition0).getTailCounterVolatile();
-  }
-
-  @Test
-  public void shouldRollPartitionOnPartitionFilled() {
-    // given
-    // position is 0,0
-    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
-
-    when(logAppender.appendFrame(
-            logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID))
-        .thenReturn(-2);
-
-    // if
-    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
-
-    // then
-    assertThat(newPosition).isEqualTo(-2);
-
-    verify(publisherLimit).get();
-    verify(publisherPosition).proposeMaxOrdered(-2);
-
-    verify(logBuffer).getActivePartitionIdVolatile();
-    verify(logBuffer).getPartition(0);
-    verify(logBuffer).onActiveParitionFilled(0);
-
-    verify(logBufferPartition0).getTailCounterVolatile();
-  }
-
-  @Test
-  public void shouldIgnoreWriteIfPastPartitionEnd() {
-    // given
-    // position is 0,0
-    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
-    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
-    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
-
-    when(logAppender.appendFrame(
-            logBufferPartition0, 0, A_MSG, 0, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID))
-        .thenReturn(-1);
-
-    // if
-    final long newPosition = dispatcher.offer(A_MSG, 0, A_MSG_PAYLOAD_LENGTH);
-
-    // then
-    assertThat(newPosition).isEqualTo(-1);
-
-    verify(publisherLimit).get();
-    verify(publisherPosition).proposeMaxOrdered(-1);
-
-    verify(logBuffer).getActivePartitionIdVolatile();
-    verify(logBuffer).getPartition(0);
-    verify(logBuffer, times(0)).onActiveParitionFilled(anyInt());
-
     verify(logBufferPartition0).getTailCounterVolatile();
   }
 
