@@ -494,8 +494,6 @@ public final class JobStateTest {
     // fail
     assertThatThrownBy(() -> jobState.fail(1L, jobWithoutType))
         .hasMessage("type must not be empty");
-    assertThatThrownBy(() -> jobState.fail(1L, jobWithoutDeadline))
-        .hasMessage("deadline must be greater than 0");
 
     // resolve
     assertThatThrownBy(() -> jobState.resolve(1L, jobWithoutType))
