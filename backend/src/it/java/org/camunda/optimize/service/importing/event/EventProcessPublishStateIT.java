@@ -133,18 +133,12 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getEventImportConfiguration().setMaxPageSize(1);
 
-    final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
-    final OffsetDateTime firstEventTimestamp = timeBaseLine.minusSeconds(60);
-    LocalDateUtil.setCurrentTime(firstEventTimestamp);
-    ingestTestEvent(STARTED_EVENT, firstEventTimestamp);
-
-    final OffsetDateTime lastEventTimestamp = timeBaseLine.minusSeconds(30);
-    LocalDateUtil.setCurrentTime(lastEventTimestamp);
-    ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(STARTED_EVENT);
+    ingestTestEvent(FINISHED_EVENT);
 
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
-    LocalDateUtil.setCurrentTime(OffsetDateTime.now());
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     // when the first import cycle completes the status has not been updated yet
@@ -161,9 +155,17 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
-      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 50.0D);
+      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 33.3D);
 
-    // when the third import cycle completes the status is updated to Published as all events have been processed
+    // when the third import cycle completes the status reflects the result of the previous cycle
+    executeImportCycle();
+    // then
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+      .get()
+      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
+      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 66.6D);
+
+    // when the fourth import cycle completes the status is updated to Published as all events have been processed
     executeImportCycle();
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))

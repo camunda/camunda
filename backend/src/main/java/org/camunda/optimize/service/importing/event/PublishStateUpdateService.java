@@ -8,12 +8,14 @@ package org.camunda.optimize.service.importing.event;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.util.Precision;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.events.EventService;
 import org.springframework.stereotype.Component;
 
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -49,9 +51,12 @@ public class PublishStateUpdateService {
           final double importedEventCount =
             (double) eventService.countEventsIngestedBeforeAndAtIngestTimestamp(lastPersistedTimestamp);
           if (importedEventCount > 0.0D) {
-            publishState.setPublishProgress(
-              Math.min(importedEventCount / eventCountTillPublishDateTime * 100.0D, 100.0D)
+            final double publishProgress = Precision.round(
+              Math.min(importedEventCount / eventCountTillPublishDateTime * 100.0D, 100.0D),
+              1,
+              RoundingMode.DOWN.ordinal()
             );
+            publishState.setPublishProgress(publishProgress);
           }
           if (publishState.getPublishProgress() == 100.0D) {
             publishState.setState(EventProcessState.PUBLISHED);
