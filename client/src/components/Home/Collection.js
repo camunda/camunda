@@ -145,7 +145,7 @@ export default withErrorHandling(
                 action={
                   collection &&
                   collection.currentUserRole !== 'viewer' && (
-                    <CreateNewButton collection={collection && collection.id} />
+                    <CreateNewButton collection={collection.id} />
                   )
                 }
                 empty={t('home.empty')}

@@ -158,3 +158,21 @@ it('should show the copy modal when clicking the copy button', () => {
 
   expect(node.find(Copier)).toExist();
 });
+
+it('should hide create new button if the user role is viewer', () => {
+  loadEntity.mockReturnValue({
+    id: 'aCollectionId',
+    name: 'aCollectionName',
+    lastModified: '2017-11-11T11:11:11.1111+0200',
+    created: '2017-11-11T11:11:11.1111+0200',
+    owner: 'user_id',
+    lastModifier: 'user_id',
+    currentUserRole: 'viewer',
+    data: {
+      entities: []
+    }
+  });
+  const node = shallow(<Collection {...props} />);
+
+  expect(node.find('EntityList').prop('action')).toBe(false);
+});
