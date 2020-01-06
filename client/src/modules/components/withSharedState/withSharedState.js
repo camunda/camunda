@@ -19,8 +19,8 @@ export default function withSharedState(Component) {
       );
     };
 
-    clearStateLocally = () => {
-      localStorage.removeItem('sharedState');
+    clearStateLocally = (storageKey = 'sharedState') => {
+      localStorage.removeItem(storageKey);
     };
 
     getStateLocally = storageKey => {

@@ -6,37 +6,53 @@
 
 import React, {useState, useEffect} from 'react';
 import {ThemeConsumer} from 'modules/theme';
+
 import Dropdown from 'modules/components/Dropdown';
+import withSharedState from 'modules/components/withSharedState';
+
 import PropTypes from 'prop-types';
 
 import * as api from 'modules/api/header';
 import * as Styled from './styled';
 
 User.propTypes = {
-  handleRedirect: PropTypes.func
+  handleRedirect: PropTypes.func,
+  getStateLocally: PropTypes.func,
+  storeStateLocally: PropTypes.func,
+  clearStateLocally: PropTypes.func
 };
 
-export default function User({handleRedirect}) {
+function User({
+  handleRedirect,
+  getStateLocally,
+  storeStateLocally,
+  clearStateLocally,
+  ...props
+}) {
+  const {firstname, lastname} = getStateLocally('sharedState');
+
   const [user, setUser] = useState({
-    firstname: null,
-    lastname: null
+    firstname,
+    lastname
   });
 
   useEffect(() => {
-    getUser();
+    (firstname && lastname) || getUser();
   }, []);
 
   const getUser = async () => {
     try {
-      setUser(await api.fetchUser());
+      const {firstname, lastname} = await api.fetchUser();
+      setUser({firstname, lastname});
+      storeStateLocally({firstname, lastname}, 'sharedState');
     } catch (e) {
       console.log('user could not be loaded');
     }
   };
 
   const handleLogout = async () => {
-    await api.logout();
     handleRedirect({forceRedirect: true});
+    await api.logout();
   };
 
   return (
@@ -65,3 +81,5 @@ export default function User({handleRedirect}) {
     </Styled.ProfileDropdown>
   );
 }
+
+export default withSharedState(User);
