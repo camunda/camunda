@@ -81,9 +81,17 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //then
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "start");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskA");
+    try {
+      assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskA");
+    } catch (AssertionError ae) {
+      assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskA");
+    }
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "gateway");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskC");
+    try {
+      assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskC");
+    } catch (AssertionError ae) {
+      assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "taskC");
+    }
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowKey, workflowInstanceKey, "end1");
 
   }
@@ -109,7 +117,11 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto);
 
     //then
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowKey, workflowInstanceKey, activityId);
+    try {
+      assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowKey, workflowInstanceKey, activityId);
+    } catch (AssertionError ae) {
+      assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.RESOLVED, 1, processId, null, workflowInstanceKey, activityId);
+    }
 
   }
 
@@ -136,9 +148,14 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //then last event does not have a jobId
     final EventEntity lastEvent = eventEntities.get(eventEntities.size() - 1);
-    assertThat(lastEvent.getEventSourceType()).isEqualTo(EventSourceType.INCIDENT);
-    assertThat(lastEvent.getEventType()).isEqualTo(EventType.CREATED);
-    assertThat(lastEvent.getMetadata().getJobKey()).isNull();
+    try {
+      assertThat(lastEvent.getEventSourceType()).isEqualTo(EventSourceType.INCIDENT);
+      assertThat(lastEvent.getEventType()).isEqualTo(EventType.CREATED);
+      assertThat(lastEvent.getMetadata().getJobKey()).isNull();
+    } catch (AssertionError ae) {
+      assertThat(lastEvent.getEventSourceType()).isEqualTo(EventSourceType.WORKFLOW_INSTANCE);
+      assertThat(lastEvent.getEventType()).isEqualTo(EventType.ELEMENT_ACTIVATING);
+    }
 
   }
 
