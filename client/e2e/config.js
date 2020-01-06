@@ -40,7 +40,7 @@ export default {
         }
       }
     ],
-    HeadlessChrome: [
+    headless: [
       {
         user1: {
           username: 'Owee1964',

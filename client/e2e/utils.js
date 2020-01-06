@@ -10,7 +10,7 @@ import config from './config';
 
 let instanceCount = {
   Chrome: 0,
-  HeadlessChrome: 0,
+  headless: 0,
   Firefox: 0,
   Edge: 0
 };
@@ -32,13 +32,13 @@ export async function login(t, userHandle = 'user1') {
 
 export function getUser(t, userHandle) {
   const {browserConnection} = t.testRun;
-  const {family} = browserConnection.browserInfo.parsedUserAgent;
+  const name = browserConnection.browserInfo.browserName;
 
   if (typeof browserConnection.userId === 'undefined') {
-    browserConnection.userId = instanceCount[family]++;
+    browserConnection.userId = instanceCount[name]++;
   }
 
-  return config.users[family][browserConnection.userId][userHandle];
+  return config.users[name][browserConnection.userId][userHandle];
 }
 
 export async function createNewReport(t) {
