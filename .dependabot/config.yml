@@ -23,7 +23,8 @@ update_configs:
         dependency_name: "com.h2database:h2"
     - match:
         dependency_name: "org.jboss.resteasy:resteasy-jaxrs"
-
+    - match:
+        dependency_name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
 
 - package_manager: "javascript"
   directory: "/client"
