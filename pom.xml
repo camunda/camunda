@@ -117,6 +117,7 @@
       <id>release</id>
       <properties>
         <skip.docker>true</skip.docker>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
       </properties>
       <build>
         <plugins>
