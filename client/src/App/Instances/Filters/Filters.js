@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Fragment} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
 import FiltersPanel from './FiltersPanel';
@@ -206,123 +206,121 @@ export default class Filters extends React.Component {
     return (
       <FiltersPanel>
         <Styled.Filters>
-          <Fragment>
-            <Styled.Field>
-              <Styled.Select
-                value={this.state.filter.workflow}
-                disabled={isEmpty(this.props.groupedWorkflows)}
-                name="workflow"
-                placeholder="Workflow"
-                options={getOptionsForWorkflowName(this.props.groupedWorkflows)}
-                onChange={this.handleWorkflowNameChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <Styled.Select
-                value={this.state.filter.version}
-                disabled={this.state.filter.workflow === ''}
-                name="version"
-                placeholder="Workflow Version"
-                options={workflowVersions}
-                onChange={this.handleWorkflowVersionChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <Styled.ValidationTextInput
-                value={this.state.filter.ids}
-                name="ids"
-                placeholder="Instance Id(s) separated by space or comma"
-                onChange={this.handleControlledInputChange}
-                checkIsComplete={checkIsIdComplete}
-                checkIsValid={checkIsIdValid}
-                onFilterChange={() => this.waitForTimer(this.propagateFilter)}
-              >
-                <Styled.Textarea />
-              </Styled.ValidationTextInput>
-            </Styled.Field>
-            <Styled.Field>
-              <Styled.ValidationTextInput
-                value={this.state.filter.errorMessage}
-                name="errorMessage"
-                placeholder="Error Message"
-                onChange={this.handleControlledInputChange}
-                onFilterChange={() => this.waitForTimer(this.propagateFilter)}
-              >
-                <Input />
-              </Styled.ValidationTextInput>
-            </Styled.Field>
-            <Styled.Field>
-              <Styled.ValidationTextInput
-                value={this.state.filter.startDate}
-                name="startDate"
-                placeholder="Start Date yyyy-mm-dd hh:mm:ss"
-                onChange={this.handleControlledInputChange}
-                checkIsComplete={checkIsDateComplete}
-                checkIsValid={checkIsDateValid}
-                onFilterChange={() => this.waitForTimer(this.propagateFilter)}
-              >
-                <Input />
-              </Styled.ValidationTextInput>
-            </Styled.Field>
-            <Styled.Field>
-              <Styled.ValidationTextInput
-                value={this.state.filter.endDate}
-                name="endDate"
-                placeholder="End Date yyyy-mm-dd hh:mm:ss"
-                onChange={this.handleControlledInputChange}
-                checkIsComplete={checkIsDateComplete}
-                checkIsValid={checkIsDateValid}
-                onFilterChange={() => this.waitForTimer(this.propagateFilter)}
-              >
-                <Input />
-              </Styled.ValidationTextInput>
-            </Styled.Field>
-            <Styled.Field>
-              <Styled.Select
-                value={this.state.filter.activityId}
-                disabled={
-                  this.state.filter.version === '' ||
-                  this.state.filter.version === ALL_VERSIONS_OPTION
-                }
-                name="activityId"
-                placeholder="Flow Node"
-                options={sortAndModify(this.props.selectableFlowNodes)}
-                onChange={event =>
-                  this.handleControlledInputChange(event, this.propagateFilter)
-                }
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <Styled.VariableFilterInput
-                variable={this.state.filter.variable}
-                onFilterChange={() => this.waitForTimer(this.propagateFilter)}
-                onChange={this.handleVariableChange}
-                checkIsNameComplete={checkIsVariableNameComplete}
-                checkIsValueComplete={checkIsVariableValueComplete}
-                checkIsValueValid={checkIsVariableValueValid}
-              />
-            </Styled.Field>
-            <Styled.CheckboxGroup
-              type={FILTER_TYPES.RUNNING}
-              filter={{
-                active,
-                incidents
-              }}
-              onChange={status =>
-                this.setFilterState(status, this.propagateFilter)
+          <Styled.Field>
+            <Styled.Select
+              value={this.state.filter.workflow}
+              disabled={isEmpty(this.props.groupedWorkflows)}
+              name="workflow"
+              placeholder="Workflow"
+              options={getOptionsForWorkflowName(this.props.groupedWorkflows)}
+              onChange={this.handleWorkflowNameChange}
+            />
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.Select
+              value={this.state.filter.version}
+              disabled={this.state.filter.workflow === ''}
+              name="version"
+              placeholder="Workflow Version"
+              options={workflowVersions}
+              onChange={this.handleWorkflowVersionChange}
+            />
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.ValidationTextInput
+              value={this.state.filter.ids}
+              name="ids"
+              placeholder="Instance Id(s) separated by space or comma"
+              onChange={this.handleControlledInputChange}
+              checkIsComplete={checkIsIdComplete}
+              checkIsValid={checkIsIdValid}
+              onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+            >
+              <Styled.Textarea />
+            </Styled.ValidationTextInput>
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.ValidationTextInput
+              value={this.state.filter.errorMessage}
+              name="errorMessage"
+              placeholder="Error Message"
+              onChange={this.handleControlledInputChange}
+              onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+            >
+              <Input />
+            </Styled.ValidationTextInput>
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.ValidationTextInput
+              value={this.state.filter.startDate}
+              name="startDate"
+              placeholder="Start Date yyyy-mm-dd hh:mm:ss"
+              onChange={this.handleControlledInputChange}
+              checkIsComplete={checkIsDateComplete}
+              checkIsValid={checkIsDateValid}
+              onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+            >
+              <Input />
+            </Styled.ValidationTextInput>
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.ValidationTextInput
+              value={this.state.filter.endDate}
+              name="endDate"
+              placeholder="End Date yyyy-mm-dd hh:mm:ss"
+              onChange={this.handleControlledInputChange}
+              checkIsComplete={checkIsDateComplete}
+              checkIsValid={checkIsDateValid}
+              onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+            >
+              <Input />
+            </Styled.ValidationTextInput>
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.Select
+              value={this.state.filter.activityId}
+              disabled={
+                this.state.filter.version === '' ||
+                this.state.filter.version === ALL_VERSIONS_OPTION
+              }
+              name="activityId"
+              placeholder="Flow Node"
+              options={sortAndModify(this.props.selectableFlowNodes)}
+              onChange={event =>
+                this.handleControlledInputChange(event, this.propagateFilter)
               }
             />
-            <Styled.CheckboxGroup
-              type={FILTER_TYPES.FINISHED}
-              filter={{
-                completed,
-                canceled
-              }}
-              onChange={status =>
-                this.setFilterState(status, this.propagateFilter)
-              }
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.VariableFilterInput
+              variable={this.state.filter.variable}
+              onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+              onChange={this.handleVariableChange}
+              checkIsNameComplete={checkIsVariableNameComplete}
+              checkIsValueComplete={checkIsVariableValueComplete}
+              checkIsValueValid={checkIsVariableValueValid}
             />
-          </Fragment>
+          </Styled.Field>
+          <Styled.CheckboxGroup
+            type={FILTER_TYPES.RUNNING}
+            filter={{
+              active,
+              incidents
+            }}
+            onChange={status =>
+              this.setFilterState(status, this.propagateFilter)
+            }
+          />
+          <Styled.CheckboxGroup
+            type={FILTER_TYPES.FINISHED}
+            filter={{
+              completed,
+              canceled
+            }}
+            onChange={status =>
+              this.setFilterState(status, this.propagateFilter)
+            }
+          />
         </Styled.Filters>
         <Styled.ResetButtonContainer>
           <Button
