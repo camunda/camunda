@@ -15,6 +15,10 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.service.engine.importing.BpmnModelUtility;
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
@@ -23,6 +27,7 @@ import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -34,6 +39,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +48,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.COMBINED_REPORT;
+import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.REPORT;
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractFlowNodeNames;
 
 @RequiredArgsConstructor
@@ -58,6 +66,7 @@ public class EventProcessService {
 
   private final ConfigurationService configurationService;
   private final ReportService reportService;
+  private final ReportRelationService reportRelationService;
   private final CollectionWriter collectionWriter;
 
   private final EventProcessMappingReader eventProcessMappingReader;
@@ -78,6 +87,20 @@ public class EventProcessService {
   public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     validateMappingsForProvidedXml(eventProcessMappingDto);
     eventProcessMappingWriter.updateEventProcessMapping(eventProcessMappingDto);
+  }
+
+  public ConflictResponseDto getDeleteConflictingItems(final String eventProcessId) {
+    List<ReportDefinitionDto> reportsForProcessDefinitionKey = reportService.getAllReportsForProcessDefinitionKey(eventProcessId);
+    Set<ConflictedItemDto> conflictedItems = new HashSet<>();
+    for (ReportDefinitionDto reportForEventProcess : reportsForProcessDefinitionKey) {
+      if (reportForEventProcess instanceof CombinedReportDefinitionDto) {
+        conflictedItems.add(new ConflictedItemDto(reportForEventProcess.getId(), COMBINED_REPORT, reportForEventProcess.getName()));
+      } else {
+        conflictedItems.add(new ConflictedItemDto(reportForEventProcess.getId(), REPORT, reportForEventProcess.getName()));
+      }
+      conflictedItems.addAll(reportRelationService.getConflictedItemsForDeleteReport(reportForEventProcess));
+    }
+    return new ConflictResponseDto(conflictedItems);
   }
 
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {

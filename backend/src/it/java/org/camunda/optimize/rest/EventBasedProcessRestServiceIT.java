@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.http.HttpStatus;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
@@ -17,6 +18,9 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.event.AbstractEventProcessIT;
@@ -68,6 +72,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   private static Stream<Arguments> getAllEndpointsThatNeedEventAuthorization() {
     return Stream.of(
       Arguments.of(HttpMethod.GET, "/eventBasedProcess", null),
+      Arguments.of(HttpMethod.GET, "/eventBasedProcess/someId/delete-conflicts", null),
       Arguments.of(HttpMethod.POST, "/eventBasedProcess", null),
       Arguments.of(
         HttpMethod.PUT, "/eventBasedProcess/someId", EventProcessMappingDto.builder().name("someName").build()
@@ -714,6 +719,60 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(errorResponse.getErrorCode()).isEqualTo("notFoundError");
+  }
+
+  @Test
+  public void getDeleteConflictsForEventProcessMappingWithoutAuthorization() {
+    // when
+    Response response = eventProcessClient
+      .createGetDeleteConflictsForEventProcessMappingRequest("doesNotMatter")
+      .withoutAuthentication()
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+  }
+
+  @Test
+  public void getDeleteConflictsForEventProcessMappingReturnsOnlyConflictedItems() {
+    // given a published event process with various dependent resources created using its definition
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
+
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    collectionClient.addScopeEntryToCollection(collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey));
+
+    String conflictedReportId = reportClient.createSingleProcessReport(
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, eventProcessDefinitionKey, Collections.emptyList()));
+    String nonConflictedReportId = reportClient.createSingleProcessReport(
+      reportClient.createSingleProcessReportDefinitionDto(collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
+    String conflictedCombinedReportId =
+      reportClient.createCombinedReport(collectionId, Arrays.asList(conflictedReportId, nonConflictedReportId));
+
+    String conflictedAlertId = alertClient.createAlertForReport(conflictedReportId);
+    alertClient.createAlertForReport(nonConflictedReportId);
+
+    String conflictedDashboardId = dashboardClient.createDashboard(
+      collectionId, Arrays.asList(conflictedReportId, nonConflictedReportId)
+    );
+
+    // when
+    ConflictResponseDto conflictResponseDto =
+      eventProcessClient.getDeleteConflictsForEventProcessMapping(eventProcessDefinitionKey);
+
+    // then
+    assertThat(conflictResponseDto.getConflictedItems())
+      .extracting(ConflictedItemDto.Fields.id, ConflictedItemDto.Fields.type)
+      .containsExactlyInAnyOrder(
+        new Tuple(conflictedReportId, ConflictedItemType.REPORT),
+        new Tuple(conflictedCombinedReportId, ConflictedItemType.COMBINED_REPORT),
+        new Tuple(conflictedDashboardId, ConflictedItemType.DASHBOARD),
+        new Tuple(conflictedAlertId, ConflictedItemType.ALERT)
+      );
   }
 
   @Test

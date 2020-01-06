@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.security.EventProcessAuthenticationService;
@@ -117,6 +118,15 @@ public class EventBasedProcessRestService {
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
     eventProcessService.cancelPublish(eventProcessId);
+  }
+
+  @GET
+  @Path("/{id}/delete-conflicts")
+  @Produces(MediaType.APPLICATION_JSON)
+  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
+                                                @PathParam("id") String eventProcessId) {
+    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    return eventProcessService.getDeleteConflictingItems(eventProcessId);
   }
 
   @DELETE

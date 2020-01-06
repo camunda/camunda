@@ -12,6 +12,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 import javax.servlet.http.HttpServletResponse;
@@ -85,6 +86,15 @@ public class EventProcessClient {
 
   public OptimizeRequestExecutor createDeleteEventProcessMappingRequest(final String eventProcessMappingId) {
     return embeddedOptimizeExtension.getRequestExecutor().buildDeleteEventProcessMappingRequest(eventProcessMappingId);
+  }
+
+  public ConflictResponseDto getDeleteConflictsForEventProcessMapping(String eventProcessMappingId) {
+    return createGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId)
+      .execute(ConflictResponseDto.class, HttpServletResponse.SC_OK);
+  }
+
+  public OptimizeRequestExecutor createGetDeleteConflictsForEventProcessMappingRequest(final String eventProcessMappingId) {
+    return embeddedOptimizeExtension.getRequestExecutor().buildGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId);
   }
 
   public void deleteEventProcessMapping(final String eventProcessMappingId) {

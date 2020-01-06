@@ -6,8 +6,10 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import lombok.Getter;
+import lombok.experimental.FieldNameConstants;
 
 @Getter
+@FieldNameConstants
 public class ConflictedItemDto {
   private String id;
   private ConflictedItemType type;

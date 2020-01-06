@@ -202,6 +202,11 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public void deleteAllReportsForProcessDefinitionKey(String processDefinitionKey) {
+    List<ReportDefinitionDto> reportsForDefinitionKey = getAllReportsForProcessDefinitionKey(processDefinitionKey);
+    reportsForDefinitionKey.forEach(report -> removeReportAndAssociatedResources(report.getId(), report));
+  }
+
+  public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKey(String processDefinitionKey) {
     List<ReportDefinitionDto> allReports = reportReader.getAllReportsOmitXml();
     List<ReportDefinitionDto> reportsForDefinitionKey = allReports.stream()
       .filter(report -> report instanceof SingleProcessReportDefinitionDto)
@@ -218,8 +223,7 @@ public class ReportService implements CollectionReferencingService {
         ))
         .collect(Collectors.toList())
     );
-
-    reportsForDefinitionKey.forEach(report -> removeReportAndAssociatedResources(report.getId(), report));
+    return reportsForDefinitionKey;
   }
 
   public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId, String collectionId) {

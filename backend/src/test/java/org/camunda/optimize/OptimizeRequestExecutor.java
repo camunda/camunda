@@ -977,6 +977,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetDeleteConflictsForEventProcessMappingRequest(String eventProcessId) {
+    this.path = "eventBasedProcess/" + eventProcessId + "/delete-conflicts";
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildDeleteEventProcessMappingRequest(String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId;
     this.method = DELETE;
