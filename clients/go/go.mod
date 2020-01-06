@@ -6,7 +6,6 @@ replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.2019111304
 
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
-	github.com/Microsoft/hcsshim v0.8.6 // indirect
 	github.com/containerd/containerd v1.3.2 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
@@ -24,7 +23,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
-	github.com/testcontainers/testcontainers-go v0.0.9
+	github.com/testcontainers/testcontainers-go v0.0.10
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/sys v0.0.0-20191022100944-742c48ecaeb7 // indirect
