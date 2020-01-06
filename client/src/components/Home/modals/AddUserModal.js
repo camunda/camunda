@@ -103,8 +103,8 @@ export default class AddUserModal extends React.Component {
                 onChange={() => this.setState({activeRole: 'viewer'})}
                 label={
                   <>
-                    <h2 className="label">{t('home.roles.viewer')}</h2>
-                    <p className="label">{t('home.roles.viewer-description')}</p>
+                    <h2>{t('home.roles.viewer')}</h2>
+                    <p>{t('home.roles.viewer-description')}</p>
                   </>
                 }
                 type="radio"
@@ -114,8 +114,8 @@ export default class AddUserModal extends React.Component {
                 onChange={() => this.setState({activeRole: 'editor'})}
                 label={
                   <>
-                    <h2 className="label">{t('home.roles.editor')}</h2>
-                    <p className="label">{t('home.roles.editor-description')}</p>
+                    <h2>{t('home.roles.editor')}</h2>
+                    <p>{t('home.roles.editor-description')}</p>
                   </>
                 }
                 type="radio"
@@ -125,8 +125,8 @@ export default class AddUserModal extends React.Component {
                 onChange={() => this.setState({activeRole: 'manager'})}
                 label={
                   <>
-                    <h2 className="label">{t('home.roles.manager')}</h2>
-                    <p className="label">{t('home.roles.manager-description')}</p>
+                    <h2>{t('home.roles.manager')}</h2>
+                    <p>{t('home.roles.manager-description')}</p>
                   </>
                 }
                 type="radio"

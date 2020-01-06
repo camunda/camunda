@@ -27,14 +27,10 @@ exports[`should match snapshot 1`] = `
           checked={true}
           label={
             <React.Fragment>
-              <h2
-                className="label"
-              >
+              <h2>
                 Viewer
               </h2>
-              <p
-                className="label"
-              >
+              <p>
                 Read-only access to all objects
               </p>
             </React.Fragment>
@@ -46,14 +42,10 @@ exports[`should match snapshot 1`] = `
           checked={false}
           label={
             <React.Fragment>
-              <h2
-                className="label"
-              >
+              <h2>
                 Editor
               </h2>
-              <p
-                className="label"
-              >
+              <p>
                 Create, edit and delete Dashboards, Reports and Alerts
               </p>
             </React.Fragment>
@@ -65,14 +57,10 @@ exports[`should match snapshot 1`] = `
           checked={false}
           label={
             <React.Fragment>
-              <h2
-                className="label"
-              >
+              <h2>
                 Manager
               </h2>
-              <p
-                className="label"
-              >
+              <p>
                 Full rights editing Collection and Users
               </p>
             </React.Fragment>
