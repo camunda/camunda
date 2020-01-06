@@ -36,12 +36,12 @@ import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.DurationUtil;
@@ -498,8 +498,12 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
   @Override
   public void onActorStarting() {
+    final var storage = AtomixLogStorage.ofPartition(atomixRaftPartition);
 
-    LogStreams.createAtomixLogStream(atomixRaftPartition)
+    LogStream.builder()
+        .withLogStorage(storage)
+        .withLogName(atomixRaftPartition.name())
+        .withPartitionId(atomixRaftPartition.id().id())
         .withMaxFragmentSize(maxFragmentSize)
         .withActorScheduler(scheduler)
         .buildAsync()

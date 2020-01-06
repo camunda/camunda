@@ -27,7 +27,6 @@ import io.zeebe.engine.processor.TypedEventRegistry;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
-import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -133,13 +132,12 @@ public final class TestStreams {
                 .withMaxEntrySize(4 * 1024 * 1024)
                 .withMaxSegmentSize(128 * 1024 * 1024));
     final var logStream =
-        new SyncLogStream(
-            LogStreams.createLogStream()
-                .withLogName(name)
-                .withLogStorage(logStorageRule.getStorage())
-                .withPartitionId(partitionId)
-                .withActorScheduler(actorScheduler)
-                .build());
+        SyncLogStream.builder()
+            .withLogName(name)
+            .withLogStorage(logStorageRule.getStorage())
+            .withPartitionId(partitionId)
+            .withActorScheduler(actorScheduler)
+            .build();
     logStorageRule.setPositionListener(logStream::setCommitPosition);
 
     final LogContext logContext = LogContext.createLogContext(logStream, logStorageRule);
