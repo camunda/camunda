@@ -57,15 +57,15 @@ public class EventZeebeRecordProcessor {
 
   static {
     INCIDENT_EVENTS.add(IncidentIntent.CREATED.name());
-//    INCIDENT_EVENTS.add(IncidentIntent.RESOLVED.name());   // this event is always followed by some COMPLETED or TERMINATED event
+    INCIDENT_EVENTS.add(IncidentIntent.RESOLVED.name());
 
     JOB_EVENTS.add(JobIntent.CREATED.name());
     JOB_EVENTS.add(JobIntent.ACTIVATED.name());
-//    JOB_EVENTS.add(JobIntent.COMPLETED.name());         // this event is always followed by activity instance COMPLETED event
+    JOB_EVENTS.add(JobIntent.COMPLETED.name());
     JOB_EVENTS.add(JobIntent.TIMED_OUT.name());
     JOB_EVENTS.add(JobIntent.FAILED.name());
     JOB_EVENTS.add(JobIntent.RETRIES_UPDATED.name());
-//    JOB_EVENTS.add(JobIntent.CANCELED.name());          // this event is always followed by activity instance TERMINATED event
+    JOB_EVENTS.add(JobIntent.CANCELED.name());
 
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATING.name());
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
