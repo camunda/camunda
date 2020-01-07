@@ -95,6 +95,12 @@ public class SocketBindingCfg {
     }
   }
 
+  public static class InternalApiCfg extends SocketBindingCfg {
+    public InternalApiCfg() {
+      super(NetworkCfg.DEFAULT_INTERNAL_API_PORT);
+    }
+  }
+
   public static class MonitoringApiCfg extends SocketBindingCfg {
     public MonitoringApiCfg() {
       super(NetworkCfg.DEFAULT_MONITORING_API_PORT);
