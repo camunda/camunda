@@ -123,7 +123,7 @@ const colors = css`
 `;
 
 export const Block = themed(styled.div`
-  margin: 15px 0 19px 35px;
+  margin: 15px 34px 19px 35px;
   height: 21px;
   flex-grow: 1;
   ${colors};
