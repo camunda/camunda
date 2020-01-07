@@ -8,7 +8,7 @@ import React, {useState, useEffect} from 'react';
 import {ThemeConsumer} from 'modules/theme';
 
 import Dropdown from 'modules/components/Dropdown';
-import withSharedState from 'modules/components/withSharedState';
+import useLocalStorage from 'modules/hooks/useLocalStorage';
 
 import PropTypes from 'prop-types';
 
@@ -16,43 +16,34 @@ import * as api from 'modules/api/header';
 import * as Styled from './styled';
 
 User.propTypes = {
-  handleRedirect: PropTypes.func,
-  getStateLocally: PropTypes.func,
-  storeStateLocally: PropTypes.func,
-  clearStateLocally: PropTypes.func
+  handleRedirect: PropTypes.func
 };
 
-function User({
-  handleRedirect,
-  getStateLocally,
-  storeStateLocally,
-  clearStateLocally,
-  ...props
-}) {
-  const {firstname, lastname} = getStateLocally('sharedState');
-
+export default function User({handleRedirect}) {
+  const {storedValue, setLocalStorage} = useLocalStorage('sharedState');
+  const {firstname, lastname} = storedValue;
   const [user, setUser] = useState({
     firstname,
     lastname
   });
 
   useEffect(() => {
-    (firstname && lastname) || getUser();
+    !(firstname || lastname) && getUser();
   }, []);
 
   const getUser = async () => {
     try {
       const {firstname, lastname} = await api.fetchUser();
       setUser({firstname, lastname});
-      storeStateLocally({firstname, lastname}, 'sharedState');
+      setLocalStorage({firstname, lastname});
     } catch (e) {
-      console.log('user could not be loaded');
+      console.log('new user could not set');
     }
   };
 
   const handleLogout = async () => {
-    handleRedirect({forceRedirect: true});
     await api.logout();
+    handleRedirect({forceRedirect: true});
   };
 
   return (
@@ -81,5 +72,3 @@ function User({
     </Styled.ProfileDropdown>
   );
 }
-
-export default withSharedState(User);
