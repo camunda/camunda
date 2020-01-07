@@ -49,6 +49,8 @@ spec:
       name: ci-optimize-cambpm-config
   - name: gcloud2postgres
     emptyDir: {}
+  - name: es-snapshot
+    emptyDir: {}
   imagePullSecrets:
   - name: registry-camunda-cloud-secret
   initContainers:
@@ -144,6 +146,9 @@ String elasticSearchContainerSpec(String esVersion) {
       requests:
         cpu: 5
         memory: 4Gi
+    volumeMounts:
+    - name: es-snapshot
+      mountPath: /var/lib/elasticsearch/snapshots
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -159,6 +164,47 @@ String elasticSearchContainerSpec(String esVersion) {
         value: ${httpPort}
       - name: cluster.name
         value: elasticsearch
+      - name: path.repo
+        value: /var/lib/elasticsearch/snapshots
+   """
+}
+
+String elasticSearchUpgradeContainerSpec(String esVersion) {
+  String httpPort = "9250"
+  return """
+  - name: elasticsearch-old
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["IPC_LOCK", "SYS_RESOURCE"]
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 1
+        memory: 1Gi
+    volumeMounts:
+    - name: es-snapshot
+      mountPath: /var/lib/elasticsearch/snapshots
+    env:
+      - name: ES_NODE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ES_JAVA_OPTS
+        value: "-Xms512m -Xmx512m"
+      - name: bootstrap.memory_lock
+        value: true
+      - name: discovery.type
+        value: single-node
+      - name: http.port
+        value: ${httpPort}
+      - name: cluster.name
+        value: elasticsearch      
+      - name: path.repo
+        value: /var/lib/elasticsearch/snapshots
    """
 }
 
@@ -207,6 +253,11 @@ String gcloudContainerSpec() {
 }
 
 String integrationTestPodSpec(String camBpmVersion, String esVersion) {
+  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchUpgradeContainerSpec( "6.4.0")+
+          elasticSearchContainerSpec(esVersion)
+}
+
+String itLatestPodSpec(String camBpmVersion, String esVersion) {
   return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
 }
 
@@ -352,7 +403,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+              yaml itLatestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
           }
           steps {
@@ -517,8 +568,7 @@ void migrationTestSteps() {
     runMaven("install -Dskip.docker -DskipTests -f qa")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pengine-latest,it")
-    // FIXME: OPT-3100
-//    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots")
   }
 }
 

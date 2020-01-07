@@ -143,12 +143,19 @@
               <skip>${skip.tests}</skip>
               <target name="Import the data to the previous Optimize version">
                 <!-- ensure elasticsearch is clean -->
-                <echo message="Making sure that ElasticSearch is clean by wiping all data..." />
+                <echo message="Making sure that ElasticSearch is clean by wiping all data for old ES..." />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:${old.optimize.elasticsearch.port}/_all" />
                 </exec>
-                <echo message="Successfully wiped all data!" />
+                <echo message="Successfully wiped all data from old ES!" />
+
+                <echo message="Making sure that ElasticSearch is clean by wiping all data for new ES..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:${new.optimize.elasticsearch.port}/_all" />
+                </exec>
+                <echo message="Successfully wiped all data from new ES!" />
 
                 <echo message="Removing the default environment-config so we can overwrite the ES port..." />
                 <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash">
