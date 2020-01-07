@@ -5,27 +5,18 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
-export function Row({parent}) {
+export function Row() {
   return (
     <Styled.Row>
       <Styled.Circle />
-      <Styled.Block parent={parent} />
+      <Styled.Block />
     </Styled.Row>
   );
 }
 
-Row.propTypes = {
-  parent: PropTypes.bool
-};
-
 export default React.memo(function Skeleton(props) {
-  return (
-    <Styled.MultiRow Component={Row} {...props}>
-      <Row parent />
-    </Styled.MultiRow>
-  );
+  return <Styled.MultiRow Component={Row} {...props} />;
 });

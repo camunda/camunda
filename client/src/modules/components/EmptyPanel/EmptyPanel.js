@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {createRef} from 'react';
+import React, {useRef, useState, useEffect} from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
@@ -15,7 +15,7 @@ export default function EmptyPanel({
   Skeleton,
   ...props
 }) {
-  const containerRef = createRef(null);
+  const containerRef = useRef(null);
 
   return (
     <Styled.EmptyPanel {...props} ref={containerRef}>
@@ -45,10 +45,22 @@ EmptyPanel.propTypes = {
  * @param {obj} containerRef ref of the parent component
  */
 export const WithRowCount = function({rowHeight, containerRef, ...props}) {
-  function recalculateHeight() {
-    const rows = Math.floor(window.innerHeight / 3 / rowHeight);
-    return rows;
-  }
+  const [rows, setRows] = useState(0);
+
+  useEffect(() => {
+    function recalculateHeight() {
+      if (containerRef.current) {
+        const rows = Math.floor(containerRef.current.clientHeight / rowHeight);
+
+        setRows(rows);
+      }
+    }
+
+    recalculateHeight();
+
+    window.addEventListener('resize', recalculateHeight);
+    return () => window.removeEventListener('resize', recalculateHeight);
+  }, []);
 
   function renderChildren() {
     return React.Children.map(
@@ -56,7 +68,7 @@ export const WithRowCount = function({rowHeight, containerRef, ...props}) {
       child =>
         child &&
         React.cloneElement(child, {
-          rowsToDisplay: recalculateHeight()
+          rowsToDisplay: rows
         })
     );
   }

@@ -13,14 +13,8 @@ export const MultiRow = styled(BasicMultiRow)`
   width: 100%;
 `;
 
-export const Row = styled.div`
-  display: flex;
-  max-width: 300px;
-  padding: 8px 10px;
-`;
-
 export const Block = styled(BaseBlock)`
-  margin-left: ${({parent}) => (!!parent ? '20px' : '52px')};
+  margin-left: 52px;
   height: 12px;
   flex-grow: 1;
 `;
@@ -28,4 +22,16 @@ export const Block = styled(BaseBlock)`
 export const Circle = styled(BaseCircle)`
   height: 12px;
   width: 12px;
+`;
+
+export const Row = styled.div`
+  display: flex;
+  max-width: 300px;
+  padding: 8px 10px;
+
+  &:first-child {
+    ${Block} {
+      margin-left: 20px;
+    }
+  }
 `;
