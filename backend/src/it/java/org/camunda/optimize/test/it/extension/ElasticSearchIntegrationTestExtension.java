@@ -37,6 +37,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -191,13 +193,19 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return getLastImportTimestampOfTimestampBasedImportIndex(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME, "1");
   }
 
-  private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(String esType, String engine) throws IOException {
+  private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(String esType, String engine) throws
+                                                                                                         IOException {
     GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
     GetResponse response = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT);
     if (response.isExists()) {
-      return OBJECT_MAPPER.readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class).getTimestampOfLastEntity();
+      return OBJECT_MAPPER.readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class)
+        .getTimestampOfLastEntity();
     } else {
-      throw new NotFoundException(String.format("Timestamp based import index does not exist: esType: {%s}, engine: {%s}", esType, engine));
+      throw new NotFoundException(String.format(
+        "Timestamp based import index does not exist: esType: {%s}, engine: {%s}",
+        esType,
+        engine
+      ));
     }
   }
 
@@ -218,12 +226,18 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   @SneakyThrows
   public SearchResponse getSearchResponseForAllDocumentsOfIndex(final String indexName) {
+    return getSearchResponseForAllDocumentsOfIndices(new String[]{indexName});
+  }
+
+  @SneakyThrows
+  public SearchResponse getSearchResponseForAllDocumentsOfIndices(final String[] indexNames) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
+      .trackTotalHits(true)
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(indexName)
+      .indices(indexNames)
       .source(searchSourceBuilder);
 
     return prefixAwareRestHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -234,22 +248,15 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public Integer getDocumentCountOf(final String indexName, final QueryBuilder documentQuery) {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(documentQuery)
-      .fetchSource(false)
-      .size(0);
+    final CountRequest countRequest = new CountRequest(indexName)
+      .source(new SearchSourceBuilder().query(documentQuery));
 
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(indexName)
-      .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
     try {
-      searchResponse = getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+      final CountResponse countResponse = getOptimizeElasticClient().count(countRequest, RequestOptions.DEFAULT);
+      return Long.valueOf(countResponse.getCount()).intValue();
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
     }
-    return Long.valueOf(searchResponse.getHits().getTotalHits().value).intValue();
   }
 
   public Integer getActivityCount() {

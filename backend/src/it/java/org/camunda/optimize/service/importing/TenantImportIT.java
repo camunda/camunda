@@ -10,8 +10,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -20,7 +18,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class TenantImportIT extends AbstractImportIT {
 
   @Test
-  public void tenantIsAvailable() throws IOException {
+  public void tenantIsAvailable() {
     //given
     final String tenantId = "tenantId";
     final String tenantName = "My New Tenant";
@@ -31,7 +29,8 @@ public class TenantImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));
@@ -40,7 +39,7 @@ public class TenantImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void tenantNameIsUpdatable() throws IOException {
+  public void tenantNameIsUpdatable() {
     //given
     final String tenantId = "tenantId";
     final String tenantName = "My New Tenan";
@@ -57,7 +56,8 @@ public class TenantImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(TenantDto.Fields.id.name()), is(tenantId));

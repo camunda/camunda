@@ -66,8 +66,8 @@ public class ElasticsearchMetadataService {
     Optional<MetadataDto> result = Optional.empty();
 
     final SearchRequest searchRequest = new SearchRequest(METADATA_INDEX_NAME);
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery());
     searchRequest.source(searchSourceBuilder);
 
     final SearchResponse searchResponse;

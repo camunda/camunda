@@ -128,10 +128,10 @@ public class DecisionDefinitionReader {
       .must(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
       .must(termQuery(ENGINE, engineAlias));
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(query);
-    searchSourceBuilder.size(1);
-    searchSourceBuilder.fetchSource(null, DECISION_DEFINITION_XML);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(1)
+      .fetchSource(null, DECISION_DEFINITION_XML);
     SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 

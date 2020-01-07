@@ -252,11 +252,7 @@ public class EntitiesReader {
   private void addGetEntityToRequest(final MultiGetRequest request, final String entityId,
                                      final String entityIndexName) {
     if (entityId != null) {
-      request.add(new MultiGetRequest.Item(
-        entityIndexName,
-        null,
-        entityId
-      ));
+      request.add(new MultiGetRequest.Item(entityIndexName, entityId));
     }
   }
 

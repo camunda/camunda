@@ -6,19 +6,14 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,7 +31,6 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
@@ -55,7 +49,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_INDEX_NAME);
+    SearchResponse searchResponse = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -80,7 +75,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_INDEX_NAME);
+    SearchResponse searchResponse = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -105,7 +101,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse searchResponse = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -129,7 +126,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse searchResponse = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -189,7 +187,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
+    SearchResponse searchResponse = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
 
     assertThat(searchResponse.getHits().getTotalHits().value, is(18L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
@@ -218,22 +217,6 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
       List variables = (List) searchHit.getSourceAsMap().get(VARIABLES);
       //NOTE: independent from process definition
       assertThat(variables.size(), is(1));
-    }
-  }
-
-  private SearchResponse performProcessDefinitionSearchRequest(String indexName) {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(indexName)
-      .source(searchSourceBuilder);
-
-    try {
-      return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not query the import count!", e);
     }
   }
 

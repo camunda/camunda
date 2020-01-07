@@ -10,21 +10,16 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -36,22 +31,21 @@ public abstract class AbstractImportIT extends AbstractIT {
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
-  protected void allEntriesInElasticsearchHaveAllData(String elasticsearchIndex, final Set<String> excludedFields) throws
-                                                                                                                  IOException {
+  protected void allEntriesInElasticsearchHaveAllData(String elasticsearchIndex, final Set<String> excludedFields) {
     allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, 1L, excludedFields);
   }
 
 
   protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                               final long count) throws IOException {
+                                                               final long count) {
     allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, Collections.emptySet());
   }
 
   protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
                                                                final long count,
-                                                               final Set<String> nullValueFields)
-    throws IOException {
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
+                                                               final Set<String> nullValueFields) {
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
     assertThat(idsResp.getHits().getTotalHits().value, is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
@@ -73,18 +67,6 @@ public abstract class AbstractImportIT extends AbstractIT {
         }
       }
     }
-  }
-
-  protected SearchResponse getSearchResponseForAllDocumentsOfIndex(String elasticsearchIndex) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(elasticsearchIndex)
-      .source(searchSourceBuilder);
-
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {

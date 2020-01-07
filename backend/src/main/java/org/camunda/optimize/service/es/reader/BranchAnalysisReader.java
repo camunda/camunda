@@ -23,9 +23,9 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -176,16 +176,11 @@ public class BranchAnalysisReader {
   private long executeQuery(final BranchAnalysisQueryDto request, final BoolQueryBuilder query) {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter());
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(0)
-      .fetchSource(false);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
+    final CountRequest searchRequest = new CountRequest(PROCESS_INSTANCE_INDEX_NAME)
+      .source(new SearchSourceBuilder().query(query));
     try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final CountResponse countResponse = esClient.count(searchRequest, RequestOptions.DEFAULT);
+      return countResponse.getCount();
     } catch (IOException e) {
       String reason = String.format(
         "Was not able to perform branch analysis on process definition with key [%s] and versions [%s}]",
@@ -195,8 +190,6 @@ public class BranchAnalysisReader {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-
-    return searchResponse.getHits().getTotalHits().value;
   }
 
   private List<FlowNode> fetchGatewayOutcomes(final BpmnModelInstance bpmnModelInstance,

@@ -23,11 +23,8 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -94,22 +91,15 @@ public class ForceReimportIT extends AbstractIT {
     assertThat(hasEngineData(), is(false));
   }
 
-  private boolean hasEngineData() throws IOException {
+  private boolean hasEngineData() {
     List<String> indices = new ArrayList<>();
     indices.add(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
     indices.add(IMPORT_INDEX_INDEX_NAME);
     indices.add(PROCESS_DEFINITION_INDEX_NAME);
     indices.add(PROCESS_INSTANCE_INDEX_NAME);
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.matchAllQuery())
-      .size(0);
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(indices.toArray(new String[0]))
-      .source(searchSourceBuilder);
-
-    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(searchRequest, RequestOptions.DEFAULT);
+    SearchResponse response = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndices(indices.toArray(new String[0]));
 
     return response.getHits().getTotalHits().value > 0L;
   }

@@ -392,9 +392,9 @@ public class ReportReader {
 
   private MultiGetResponse performMultiGetReportRequest(String reportId) {
     MultiGetRequest request = new MultiGetRequest();
-    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, null, reportId));
-    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_INDEX_NAME, null, reportId));
-    request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, null, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_INDEX_NAME, reportId));
+    request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, reportId));
 
     MultiGetResponse multiGetItemResponses;
     try {

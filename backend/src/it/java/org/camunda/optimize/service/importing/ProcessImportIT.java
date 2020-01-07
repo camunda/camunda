@@ -98,7 +98,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void processDefinitionTenantIdIsImportedIfPresent() throws IOException {
+  public void processDefinitionTenantIdIsImportedIfPresent() {
     //given
     final String tenantId = "reallyAwesomeTenantId";
     deployProcessDefinitionWithTenant(tenantId);
@@ -108,14 +108,15 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
-  public void processDefinitionDefaultEngineTenantIdIsApplied() throws IOException {
+  public void processDefinitionDefaultEngineTenantIdIsApplied() {
     //given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
@@ -126,14 +127,15 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
-  public void processDefinitionEngineTenantIdIsPreferredOverDefaultTenantId() throws IOException {
+  public void processDefinitionEngineTenantIdIsPreferredOverDefaultTenantId() {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
@@ -145,7 +147,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID), is(expectedTenantId));
@@ -165,7 +168,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void processInstanceTenantIdIsImportedIfPresent() throws IOException {
+  public void processInstanceTenantIdIsImportedIfPresent() {
     //given
     final String tenantId = "myTenant";
     deployAndStartSimpleServiceTaskWithTenant(tenantId);
@@ -175,14 +178,15 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
-  public void processInstanceDefaultEngineTenantIdIsApplied() throws IOException {
+  public void processInstanceDefaultEngineTenantIdIsApplied() {
     //given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
@@ -193,14 +197,15 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(tenantId));
   }
 
   @Test
-  public void processInstanceEngineTenantIdIsPreferredOverDefaultTenantId() throws IOException {
+  public void processInstanceEngineTenantIdIsPreferredOverDefaultTenantId() {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
@@ -212,7 +217,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     final SearchHit hit = idsResp.getHits().getHits()[0];
     assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID), is(expectedTenantId));
@@ -255,7 +261,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void xmlFetchingIsNotRetriedOn4xx() throws IOException {
+  public void xmlFetchingIsNotRetriedOn4xx() {
     final ProcessDefinitionOptimizeDto procDef = ProcessDefinitionOptimizeDto.builder()
       .id("123")
       .key("lol")
@@ -272,7 +278,8 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    SearchResponse response = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(response.getHits().getTotalHits().value, is(2L));
     response.getHits().forEach((SearchHit hit) -> {
       Map<String, Object> source = hit.getSourceAsMap();
@@ -283,7 +290,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void runningActivitiesAreNotSkippedDuringImport() throws IOException {
+  public void runningActivitiesAreNotSkippedDuringImport() {
     // given
     deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
@@ -294,7 +301,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
@@ -302,7 +310,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void processInstanceStateIsImported() throws IOException {
+  public void processInstanceStateIsImported() {
     // given
     createStartAndCancelUserTaskProcess();
 
@@ -311,7 +319,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(
       idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceIndex.STATE),
       is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED)
@@ -319,13 +328,14 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void runningProcessesIndexedAfterFinish() throws IOException {
+  public void runningProcessesIndexedAfterFinish() {
     // given
     deployAndStartUserTaskProcess();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(2));
@@ -339,7 +349,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(notNullValue()));
@@ -347,7 +358,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void deletionOfProcessInstancesDoesNotDistortProcessInstanceImport() throws IOException {
+  public void deletionOfProcessInstancesDoesNotDistortProcessInstanceImport() {
     // given
     ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
 
@@ -390,7 +401,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void importRunningAndCompletedHistoricActivityInstances() throws IOException {
+  public void importRunningAndCompletedHistoricActivityInstances() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -405,7 +416,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -413,7 +425,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void completedActivitiesOverwriteRunningActivities() throws IOException {
+  public void completedActivitiesOverwriteRunningActivities() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -429,7 +441,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -438,7 +451,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void runningActivitiesDoNotOverwriteCompletedActivities() throws IOException {
+  public void runningActivitiesDoNotOverwriteCompletedActivities() {
     //given
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
@@ -464,7 +477,8 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);

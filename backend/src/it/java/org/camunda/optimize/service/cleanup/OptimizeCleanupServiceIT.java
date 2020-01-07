@@ -297,6 +297,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
   private SearchResponse getProcessInstancesById(List<String> processIds) throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termsQuery(PROCESS_INSTANCE_ID, processIds))
+      .trackTotalHits(true)
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
@@ -322,6 +323,7 @@ public class OptimizeCleanupServiceIT extends AbstractIT {
   private SearchResponse getDecisionInstancesById(List<String> decisionInstanceIds) throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termsQuery(DECISION_INSTANCE_ID, decisionInstanceIds))
+      .trackTotalHits(true)
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()

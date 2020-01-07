@@ -24,7 +24,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +121,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variablesCanHaveNullValue() throws IOException {
+  public void variablesCanHaveNullValue() {
     //given
     BpmnModelInstance processModel = createSimpleProcessDefinition();
 
@@ -133,8 +132,8 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    SearchResponse responseForAllDocumentsOfIndex =
-      getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    SearchResponse responseForAllDocumentsOfIndex = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
 
     // then
     for (SearchHit searchHit : responseForAllDocumentsOfIndex.getHits()) {

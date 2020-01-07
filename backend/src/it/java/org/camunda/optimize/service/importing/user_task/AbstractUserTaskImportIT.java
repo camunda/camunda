@@ -15,19 +15,12 @@ import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
-
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
@@ -101,18 +94,6 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
       .endEvent(END_EVENT)
       .done();
     return engineIntegrationExtension.deployAndStartProcess(processModel);
-  }
-
-  protected SearchResponse getSearchResponseForAllDocumentsOfIndex(String indexName) throws IOException {
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
-      .size(100);
-
-    SearchRequest searchRequest = new SearchRequest()
-      .indices(indexName)
-      .source(searchSourceBuilder);
-
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 }
