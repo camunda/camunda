@@ -7,7 +7,7 @@
  */
 package io.zeebe.transport;
 
-import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.MessagingService;
 import io.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.zeebe.transport.impl.AtomixServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
@@ -24,17 +24,14 @@ public final class TransportFactory {
   }
 
   public ServerTransport createServerTransport(
-      final int nodeId, final ClusterCommunicationService clusterCommunicationService) {
-    final var atomixServerTransport =
-        new AtomixServerTransport(nodeId, clusterCommunicationService);
+      final int nodeId, final MessagingService messagingService) {
+    final var atomixServerTransport = new AtomixServerTransport(nodeId, messagingService);
     actorScheduler.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }
 
-  public ClientTransport createClientTransport(
-      final ClusterCommunicationService clusterCommunicationService) {
-    final var atomixClientTransportAdapter =
-        new AtomixClientTransportAdapter(clusterCommunicationService);
+  public ClientTransport createClientTransport(final MessagingService messagingService) {
+    final var atomixClientTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     actorScheduler.submitActor(atomixClientTransportAdapter);
     return atomixClientTransportAdapter;
   }

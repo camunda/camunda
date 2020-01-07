@@ -19,8 +19,8 @@ public final class ExecuteCommandRequestBuilder {
   protected final ExecuteCommandRequest request;
 
   public ExecuteCommandRequestBuilder(
-      final ClientTransport output, final int target, final MsgPackHelper msgPackHelper) {
-    this.request = new ExecuteCommandRequest(output, target, msgPackHelper);
+      final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
+    this.request = new ExecuteCommandRequest(output, targetAddress, msgPackHelper);
   }
 
   public ExecuteCommandResponse sendAndAwait() {

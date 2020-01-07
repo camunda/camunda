@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
@@ -37,7 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class AtomixTransportTest {
+public class AtomixDifferentServerTransportTest {
 
   @ClassRule public static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
   private static final Supplier<String> NODE_ADDRESS_SUPPLIER = () -> "0.0.0.0:26500";
@@ -46,12 +48,13 @@ public class AtomixTransportTest {
   private static ClientTransport clientTransport;
   private static ServerTransport serverTransport;
   private static AtomixCluster cluster;
+  private static NettyMessagingService nettyMessagingService;
 
   @BeforeClass
   public static void setup() {
     cluster =
         AtomixCluster.builder()
-            .withAddress(Address.from(NODE_ADDRESS))
+            .withAddress(Address.from("0.0.0.0:26501"))
             .withMemberId("0")
             .withClusterId("cluster")
             .build();
@@ -59,7 +62,11 @@ public class AtomixTransportTest {
     final var transportFactory = new TransportFactory(SCHEDULER_RULE.get());
     final var messagingService = cluster.getMessagingService();
     clientTransport = transportFactory.createClientTransport(messagingService);
-    serverTransport = transportFactory.createServerTransport(0, messagingService);
+
+    nettyMessagingService =
+        new NettyMessagingService("cluster", Address.from(NODE_ADDRESS), new MessagingConfig());
+    nettyMessagingService.start().join();
+    serverTransport = transportFactory.createServerTransport(0, nettyMessagingService);
   }
 
   @After
@@ -70,6 +77,7 @@ public class AtomixTransportTest {
   @AfterClass
   public static void tearDown() throws Exception {
     serverTransport.close();
+    nettyMessagingService.stop().join();
     clientTransport.close();
     cluster.stop().join();
   }

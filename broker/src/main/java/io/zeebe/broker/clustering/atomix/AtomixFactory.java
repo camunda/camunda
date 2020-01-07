@@ -65,8 +65,6 @@ public final class AtomixFactory {
                 Address.from(
                     networkCfg.getInternalApi().getAdvertisedHost(),
                     networkCfg.getInternalApi().getAdvertisedPort()))
-            .withMessagingPort(networkCfg.getInternalApi().getPort())
-            .withMessagingInterface(networkCfg.getInternalApi().getHost())
             .withMembershipProvider(discoveryProvider);
 
     final DataCfg dataConfiguration = configuration.getData();

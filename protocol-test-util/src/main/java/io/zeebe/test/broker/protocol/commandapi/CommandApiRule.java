@@ -80,21 +80,29 @@ public final class CommandApiRule extends ExternalResource {
 
   /** targets the default partition by default */
   public ExecuteCommandRequestBuilder createCmdRequest() {
-    final var outputAdapter = createClientTransport();
-    return new ExecuteCommandRequestBuilder(outputAdapter, nodeId, msgPackHelper)
-        .partitionId(defaultPartitionId);
+    return createCmdRequest(defaultPartitionId);
   }
 
   public ExecuteCommandRequestBuilder createCmdRequest(final int partition) {
-    final var clientTransport = createClientTransport();
-    return new ExecuteCommandRequestBuilder(clientTransport, nodeId, msgPackHelper)
-        .partitionId(partition);
+    final var outputAdapter = createClientTransport();
+
+    final var broker =
+        getBrokerInfoStream().filter(brokerInfo -> brokerInfo.getNodeId() == nodeId).findFirst();
+
+    if (broker.isPresent()) {
+      final var brokerInfo = broker.get();
+
+      return new ExecuteCommandRequestBuilder(
+              outputAdapter, brokerInfo.getCommandApiAddress(), msgPackHelper)
+          .partitionId(partition);
+    }
+    throw new IllegalStateException("Node " + nodeId + "not yet available");
   }
 
   private ClientTransport createClientTransport() {
     final var atomixCluster = fetchAtomix();
     return new TransportFactory(scheduler)
-        .createClientTransport(atomixCluster.getCommunicationService());
+        .createClientTransport(atomixCluster.getMessagingService());
   }
 
   public PartitionTestClient partitionClient() {
