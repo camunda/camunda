@@ -42,7 +42,6 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final JobRecord job = state.getJob(jobKey);
       job.setErrorCode(command.getValue().getErrorCodeBuffer());
       job.setErrorMessage(command.getValue().getErrorMessageBuffer());
-      state.throwError(jobKey, job);
 
       commandControl.accept(JobIntent.ERROR_THROWN, job);
     }

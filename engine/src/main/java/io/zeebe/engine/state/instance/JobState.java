@@ -109,7 +109,8 @@ public final class JobState {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
 
-    validateParameters(type, deadline);
+    validateParameters(type);
+    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
     resetVariablesAndUpdateJobRecord(key, record);
 
@@ -126,7 +127,9 @@ public final class JobState {
   public void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
-    validateParameters(type, deadline);
+
+    validateParameters(type);
+    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
     createJob(key, record, type);
     removeJobDeadline(deadline);
@@ -167,7 +170,7 @@ public final class JobState {
     final DirectBuffer type = updatedValue.getTypeBuffer();
     final long deadline = updatedValue.getDeadline();
 
-    validateParameters(type, deadline);
+    validateParameters(type);
 
     resetVariablesAndUpdateJobRecord(key, updatedValue);
 
@@ -178,14 +181,15 @@ public final class JobState {
       makeJobActivatable(type, key);
     }
 
-    removeJobDeadline(deadline);
+    if (deadline > 0) {
+      removeJobDeadline(deadline);
+    }
 
     metrics.jobFailed(updatedValue.getType());
   }
 
-  private void validateParameters(final DirectBuffer type, final long deadline) {
+  private void validateParameters(final DirectBuffer type) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
-    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
   }
 
   public void resolve(final long key, final JobRecord updatedValue) {

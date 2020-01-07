@@ -38,7 +38,7 @@ public final class JobEventProcessors {
         .onEvent(
             ValueType.JOB,
             JobIntent.ERROR_THROWN,
-            new JobErrorThrownProcessor(workflowState, keyGenerator))
+            new JobErrorThrownProcessor(workflowState, keyGenerator, jobState))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor(jobState))
