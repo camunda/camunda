@@ -14,7 +14,7 @@ export const Footer = styled.div`
   width: 100%;
   height: 100%;
 
-  padding: 0 20px;
+  padding-left: 20px;
   margin-bottom: 1px;
 
   div {
