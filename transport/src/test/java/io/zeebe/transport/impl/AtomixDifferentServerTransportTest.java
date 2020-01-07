@@ -15,6 +15,7 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RequestHandler;
@@ -42,19 +43,23 @@ import org.junit.Test;
 public class AtomixDifferentServerTransportTest {
 
   @ClassRule public static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
-  private static final Supplier<String> NODE_ADDRESS_SUPPLIER = () -> "0.0.0.0:26500";
-  private static final String NODE_ADDRESS = "0.0.0.0:26500";
 
+  private static Supplier<String> nodeAddressSupplier;
   private static ClientTransport clientTransport;
   private static ServerTransport serverTransport;
   private static AtomixCluster cluster;
   private static NettyMessagingService nettyMessagingService;
+  private static String serverAddress;
 
   @BeforeClass
   public static void setup() {
+    final var clientSocketAddress = SocketUtil.getNextAddress();
+    final var clientAddress =
+        clientSocketAddress.getHostName() + ":" + clientSocketAddress.getPort();
+
     cluster =
         AtomixCluster.builder()
-            .withAddress(Address.from("0.0.0.0:26501"))
+            .withAddress(Address.from(clientAddress))
             .withMemberId("0")
             .withClusterId("cluster")
             .build();
@@ -62,9 +67,11 @@ public class AtomixDifferentServerTransportTest {
     final var transportFactory = new TransportFactory(SCHEDULER_RULE.get());
     final var messagingService = cluster.getMessagingService();
     clientTransport = transportFactory.createClientTransport(messagingService);
-
+    final var socketAddress = SocketUtil.getNextAddress();
+    serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
+    nodeAddressSupplier = () -> serverAddress;
     nettyMessagingService =
-        new NettyMessagingService("cluster", Address.from(NODE_ADDRESS), new MessagingConfig());
+        new NettyMessagingService("cluster", Address.from(serverAddress), new MessagingConfig());
     nettyMessagingService.start().join();
     serverTransport = transportFactory.createServerTransport(0, nettyMessagingService);
   }
@@ -91,7 +98,7 @@ public class AtomixDifferentServerTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER, new Request("messageABC"), Duration.ofSeconds(1));
+            nodeAddressSupplier, new Request("messageABC"), Duration.ofSeconds(1));
 
     // then
     final var response = requestFuture.join();
@@ -108,7 +115,7 @@ public class AtomixDifferentServerTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER,
+            nodeAddressSupplier,
             (response) -> false,
             new Request("messageABC"),
             Duration.ofMillis(200));
@@ -133,7 +140,7 @@ public class AtomixDifferentServerTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER, new Request("messageABC"), Duration.ofSeconds(1));
+            nodeAddressSupplier, new Request("messageABC"), Duration.ofSeconds(1));
 
     // then
     assertThatThrownBy(requestFuture::join)
@@ -151,7 +158,7 @@ public class AtomixDifferentServerTransportTest {
     serverTransport.unsubscribe(0).join();
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER, new Request("messageABC"), Duration.ofMillis(200));
+            nodeAddressSupplier, new Request("messageABC"), Duration.ofMillis(200));
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -165,7 +172,7 @@ public class AtomixDifferentServerTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26501", new Request("messageABC"), Duration.ofMillis(300));
+            () -> "0.0.0.0:26499", new Request("messageABC"), Duration.ofMillis(300));
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -188,7 +195,7 @@ public class AtomixDifferentServerTransportTest {
 
     // when
     retryLatch.await();
-    nodeAddressRef.set(NODE_ADDRESS);
+    nodeAddressRef.set(serverAddress);
 
     // then
     final var response = requestFuture.join();
@@ -202,7 +209,7 @@ public class AtomixDifferentServerTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26501", new Request("messageABC"), Duration.ofMillis(300));
+            () -> "0.0.0.0:26499", new Request("messageABC"), Duration.ofMillis(300));
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -216,7 +223,7 @@ public class AtomixDifferentServerTransportTest {
         clientTransport.sendRequestWithRetry(
             () -> {
               retryLatch.countDown();
-              return NODE_ADDRESS;
+              return serverAddress;
             },
             new Request("messageABC"),
             Duration.ofSeconds(5));

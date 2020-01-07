@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RequestHandler;
@@ -40,18 +41,22 @@ import org.junit.Test;
 public class AtomixTransportTest {
 
   @ClassRule public static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
-  private static final Supplier<String> NODE_ADDRESS_SUPPLIER = () -> "0.0.0.0:26500";
-  private static final String NODE_ADDRESS = "0.0.0.0:26500";
 
+  private static Supplier<String> nodeAddressSupplier;
   private static ClientTransport clientTransport;
   private static ServerTransport serverTransport;
   private static AtomixCluster cluster;
+  private static String serverAddress;
 
   @BeforeClass
   public static void setup() {
+    final var socketAddress = SocketUtil.getNextAddress();
+    serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
+    nodeAddressSupplier = () -> serverAddress;
+
     cluster =
         AtomixCluster.builder()
-            .withAddress(Address.from(NODE_ADDRESS))
+            .withAddress(Address.from(serverAddress))
             .withMemberId("0")
             .withClusterId("cluster")
             .build();
@@ -83,7 +88,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER, new Request("messageABC"), Duration.ofSeconds(1));
+            nodeAddressSupplier, new Request("messageABC"), Duration.ofSeconds(1));
 
     // then
     final var response = requestFuture.join();
@@ -100,7 +105,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER,
+            nodeAddressSupplier,
             (response) -> false,
             new Request("messageABC"),
             Duration.ofMillis(200));
@@ -125,7 +130,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER, new Request("messageABC"), Duration.ofSeconds(1));
+            nodeAddressSupplier, new Request("messageABC"), Duration.ofSeconds(1));
 
     // then
     assertThatThrownBy(requestFuture::join)
@@ -143,7 +148,7 @@ public class AtomixTransportTest {
     serverTransport.unsubscribe(0).join();
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            NODE_ADDRESS_SUPPLIER, new Request("messageABC"), Duration.ofMillis(200));
+            nodeAddressSupplier, new Request("messageABC"), Duration.ofMillis(200));
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -157,7 +162,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26501", new Request("messageABC"), Duration.ofMillis(300));
+            () -> "0.0.0.0:26499", new Request("messageABC"), Duration.ofMillis(300));
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -180,7 +185,7 @@ public class AtomixTransportTest {
 
     // when
     retryLatch.await();
-    nodeAddressRef.set(NODE_ADDRESS);
+    nodeAddressRef.set(serverAddress);
 
     // then
     final var response = requestFuture.join();
@@ -194,7 +199,7 @@ public class AtomixTransportTest {
     // when
     final var requestFuture =
         clientTransport.sendRequestWithRetry(
-            () -> "0.0.0.0:26501", new Request("messageABC"), Duration.ofMillis(300));
+            () -> "0.0.0.0:26499", new Request("messageABC"), Duration.ofMillis(300));
 
     // then
     assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
@@ -208,7 +213,7 @@ public class AtomixTransportTest {
         clientTransport.sendRequestWithRetry(
             () -> {
               retryLatch.countDown();
-              return NODE_ADDRESS;
+              return serverAddress;
             },
             new Request("messageABC"),
             Duration.ofSeconds(5));
