@@ -65,6 +65,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     final BoolQueryBuilder baseQuery = setupBaseQuery(reportData);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
+      .trackTotalHits(true)
       .fetchSource(false)
       .size(0);
     addAggregation(searchSourceBuilder, executionContext);
