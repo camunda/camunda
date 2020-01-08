@@ -12,6 +12,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -26,6 +27,9 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +39,7 @@ import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 /**
  * It is considered that Zeebe and Elasticsearch are running.
@@ -95,6 +100,9 @@ public class DataGenerator {
   }
 
   private void waitTillSomeInstancesAreArchived() {
+    //cheat for archiving: move the dates 1 hour back - TODO remove after version 1.2.0 is released
+    moveListViewDatesBack();
+
     ThreadUtil.sleepFor(60 * 1000L);   //after 1 minute finished instances will be archived
     int count = 0;
     while (!someInstancesAreArchived() && count < 10) {
@@ -107,13 +115,40 @@ public class DataGenerator {
     }
   }
 
+  private void moveListViewDatesBack() {
+    String script =
+        "def sf = new SimpleDateFormat(\"yyyy-MM-dd'T'HH:mm:ss.SSSZZ\");"
+            + "if (ctx._source.startDate != null) {"
+            + "   def dt = sf.parse(ctx._source.startDate);"
+            + "   def calendar = sf.getCalendar();"
+            + "   calendar.setTime(dt);"
+            + "   calendar.add(Calendar.HOUR, -1);"
+            + "   ctx._source.startDate = calendar.getTime();}"
+            + "if (ctx._source.endDate != null) {"
+            + "   def dt2 = sf.parse(ctx._source.endDate);"
+            + "   def calendar2 = sf.getCalendar();"
+            + "   calendar2.setTime(dt2);"
+            + "   calendar2.add(Calendar.HOUR, -1);"
+            + "   ctx._source.endDate = calendar2.getTime(); }";
+    UpdateByQueryRequest request = new UpdateByQueryRequest("operate-list-view*")
+        .setQuery(matchAllQuery())
+        .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, new HashMap<>()))
+        .setRefresh(true);
+    ;
+    try {
+      esClient.updateByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new RuntimeException("Exception occurred while moving dates back: " + e.getMessage(), e);
+    }
+  }
+
   private boolean someInstancesAreArchived() {
     try {
       SearchResponse search = esClient.search(
           new SearchRequest("operate-*_" + archiverDateTimeFormatter.format(Instant.now())), RequestOptions.DEFAULT);
       return search.getHits().totalHits > 0;
     } catch (IOException e) {
-      throw new RuntimeException("Exception occurred whil checking archived indices: " + e.getMessage(), e);
+      throw new RuntimeException("Exception occurred while checking archived indices: " + e.getMessage(), e);
     }
   }
 
