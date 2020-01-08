@@ -365,13 +365,19 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
   }
 
   private ActorFuture<Void> installExporter(final ZeebeDb zeebeDb) {
+    final var exporterDescriptors = exporterRepository.getExporters().values();
+
+    if (exporterDescriptors.isEmpty()) {
+      return CompletableActorFuture.completed(null);
+    }
+
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(String.format(EXPORTER_NAME, partitionId))
             .logStream(logStream)
             .zeebeDb(zeebeDb)
-            .descriptors(exporterRepository.getExporters().values());
+            .descriptors(exporterDescriptors);
 
     final var exporterDirector = new ExporterDirector(context);
     closeables.add(exporterDirector);
