@@ -17,32 +17,14 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 
 public final class ActorFrameworkIntegrationTest {
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
-
-  @Test
-  public void testOffer() throws InterruptedException {
-    final Dispatcher dispatcher =
-        Dispatchers.create("default")
-            .actorScheduler(actorSchedulerRule.get())
-            .bufferSize(ByteValue.ofMegabytes(10))
-            .build();
-
-    actorSchedulerRule.submitActor(new Consumer(dispatcher));
-    final Producer producer = new Producer(dispatcher);
-    actorSchedulerRule.submitActor(producer);
-
-    producer.latch.await();
-    dispatcher.close();
-  }
 
   @Test
   public void testClaim() throws InterruptedException {
@@ -173,42 +155,6 @@ public final class ActorFrameworkIntegrationTest {
       }
       counter = newCounter;
       return FragmentHandler.CONSUME_FRAGMENT_RESULT;
-    }
-  }
-
-  class Producer extends Actor {
-    final CountDownLatch latch = new CountDownLatch(1);
-
-    final int totalWork = 10_000;
-    final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
-
-    final Dispatcher dispatcher;
-    int counter = 1;
-
-    final Runnable produce = this::produce;
-
-    Producer(final Dispatcher dispatcher) {
-      this.dispatcher = dispatcher;
-    }
-
-    @Override
-    protected void onActorStarted() {
-      actor.run(produce);
-    }
-
-    void produce() {
-      msg.putInt(0, counter);
-
-      if (dispatcher.offer(msg) >= 0) {
-        counter++;
-      }
-
-      if (counter < totalWork) {
-        actor.yield();
-        actor.run(produce);
-      } else {
-        latch.countDown();
-      }
     }
   }
 

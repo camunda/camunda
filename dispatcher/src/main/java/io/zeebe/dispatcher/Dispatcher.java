@@ -21,18 +21,15 @@ import io.zeebe.util.sched.FutureUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Arrays;
 import java.util.function.BiFunction;
-import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 /** Component for sending and receiving messages between different threads. */
-public class Dispatcher extends Actor implements AutoCloseable {
+public class Dispatcher extends Actor {
 
   private static final Logger LOG = Loggers.DISPATCHER_LOGGER;
-
   private static final String ERROR_MESSAGE_CLAIM_FAILED =
       "Expected to claim segment of size %d, but can't claim more then %d bytes.";
-  private static final String ERROR_MESSAGE_SUBSCRIPTION_NOT_FOUND =
-      "Expected to find subscription with name '%s', but was not registered.";
+
   private final LogBuffer logBuffer;
   private final LogBufferAppender logAppender;
 
@@ -109,53 +106,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     for (int i = 0; i < subscriptionSize; i++) {
       doOpenSubscription(defaultSubscriptionNames[i], dataConsumed);
     }
-  }
-
-  /**
-   * Writes the given message to the buffer. This can fail if the publisher limit or the buffer
-   * partition size is reached.
-   *
-   * @return the new publisher position if the message was written successfully. Otherwise, the
-   *     return value is negative.
-   */
-  public long offer(final DirectBuffer msg) {
-    return offer(msg, 0, msg.capacity(), 0);
-  }
-
-  /**
-   * Writes the given message to the buffer with the given stream id. This can fail if the publisher
-   * limit or the buffer partition size is reached.
-   *
-   * @return the new publisher position if the message was written successfully. Otherwise, the
-   *     return value is negative.
-   */
-  public long offer(final DirectBuffer msg, final int streamId) {
-    return offer(msg, 0, msg.capacity(), streamId);
-  }
-
-  /**
-   * Writes the given part of the message to the buffer. This can fail if the publisher limit or the
-   * buffer partition size is reached.
-   *
-   * @return the new publisher position if the message was written successfully. Otherwise, the
-   *     return value is negative.
-   */
-  public long offer(final DirectBuffer msg, final int start, final int length) {
-    return offer(msg, start, length, 0);
-  }
-
-  /**
-   * Writes the given part of the message to the buffer with the given stream id. This can fail if
-   * the publisher limit or the buffer partition size is reached.
-   *
-   * @return the new publisher position if the message was written successfully. Otherwise, the
-   *     return value is negative.
-   */
-  public long offer(final DirectBuffer msg, final int start, final int length, final int streamId) {
-    return offer(
-        (partition, activePartitionId) ->
-            logAppender.appendFrame(partition, activePartitionId, msg, start, length, streamId),
-        length);
   }
 
   private void signalSubsciptions() {
@@ -320,14 +270,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     return actor.call(() -> doOpenSubscription(subscriptionName, dataConsumed));
   }
 
-  public ActorFuture<Subscription> getSubscriptionAsync(final String subscriptionName) {
-    return actor.call(() -> getSubscriptionByName(subscriptionName));
-  }
-
-  public Subscription getSubscription(final String subscriptionName) {
-    return FutureUtil.join(getSubscriptionAsync(subscriptionName));
-  }
-
   protected Subscription doOpenSubscription(
       final String subscriptionName, final ActorCondition onConsumption) {
     ensureUniqueSubscriptionName(subscriptionName);
@@ -372,20 +314,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     return publisherPosition;
   }
 
-  /**
-   * Close the given subscription.
-   *
-   * @throws IllegalStateException if the dispatcher runs in pipeline-mode.
-   */
-  public void closeSubscription(final Subscription subscriptionToClose) {
-    FutureUtil.join(closeSubscriptionAsync(subscriptionToClose));
-  }
-
-  /** Close the given subscription asynchronously. */
-  public ActorFuture<Void> closeSubscriptionAsync(final Subscription subscriptionToClose) {
-    return actor.call(() -> doCloseSubscription(subscriptionToClose));
-  }
-
   private void doCloseSubscription(final Subscription subscriptionToClose) {
     if (isClosed) {
       return; // don't need to adjust the subscriptions when closed
@@ -424,23 +352,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
     dataConsumed.signal();
   }
 
-  /**
-   * Returns the subscription with the given name.
-   *
-   * @return the subscription
-   * @throws RuntimeException if no such subscription was opened
-   */
-  private Subscription getSubscriptionByName(final String subscriptionName) {
-    final Subscription subscription = findSubscriptionByName(subscriptionName);
-
-    if (subscription == null) {
-      throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_SUBSCRIPTION_NOT_FOUND, subscriptionName));
-    } else {
-      return subscription;
-    }
-  }
-
   private Subscription findSubscriptionByName(final String subscriptionName) {
     Subscription subscription = null;
 
@@ -473,14 +384,6 @@ public class Dispatcher extends Actor implements AutoCloseable {
       return -1L;
     } else {
       return publisherPosition.get();
-    }
-  }
-
-  public long getPublisherLimit() {
-    if (isClosed) {
-      return -1L;
-    } else {
-      return publisherLimit.get();
     }
   }
 

@@ -23,7 +23,6 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -97,9 +96,7 @@ public final class FragmentBatchIntegrationTest {
     assertThat(readBytes).isGreaterThan(0);
     blockPeek.markCompleted();
 
-    while (dispatcher.offer(new UnsafeBuffer(MSG3), 3) <= 0) {
-      // spin
-    }
+    claimAndWriteMsgThree();
 
     while (subscription.peekBlock(blockPeek, 1024, false) == 0) {
       // skip padding
@@ -112,9 +109,7 @@ public final class FragmentBatchIntegrationTest {
     claimAndWriteFragments();
     batch.abort();
 
-    while (dispatcher.offer(new UnsafeBuffer(MSG3), 3) <= 0) {
-      // spin
-    }
+    claimAndWriteMsgThree();
 
     while (subscription.peekBlock(blockPeek, 1024, false) == 0) {
       // skip padding
@@ -149,6 +144,19 @@ public final class FragmentBatchIntegrationTest {
 
     batch.nextFragment(MSG2.length, 2);
     writeBuffer.putBytes(batch.getFragmentOffset(), MSG2);
+  }
+
+  private void claimAndWriteMsgThree() {
+    while (dispatcher.claim(batch, 1, MSG3.length) <= 0) {
+      // spin
+    }
+
+    final MutableDirectBuffer writeBuffer = batch.getBuffer();
+
+    batch.nextFragment(MSG3.length, 3);
+    writeBuffer.putBytes(batch.getFragmentOffset(), MSG3);
+
+    batch.commit();
   }
 
   private int assertThatBufferContains(
