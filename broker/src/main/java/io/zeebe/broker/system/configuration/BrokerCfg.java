@@ -23,6 +23,8 @@ public final class BrokerCfg {
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
 
+  private String stepTimeout = "5m";
+
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
   }
@@ -44,6 +46,7 @@ public final class BrokerCfg {
         .ifPresent(
             value ->
                 exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
+    environment.get(EnvironmentConstants.ENV_STEP_TIMEOUT_EXPORTER).ifPresent(this::setStepTimeout);
   }
 
   public NetworkCfg getNetwork() {
@@ -104,6 +107,14 @@ public final class BrokerCfg {
     return this;
   }
 
+  public String getStepTimeout() {
+    return stepTimeout;
+  }
+
+  public void setStepTimeout(String stepTimeout) {
+    this.stepTimeout = stepTimeout;
+  }
+
   @Override
   public String toString() {
     return "BrokerCfg{"
@@ -119,6 +130,11 @@ public final class BrokerCfg {
         + exporters
         + ", gateway="
         + gateway
+        + ", backpressure="
+        + backpressure
+        + ", stepTimeout='"
+        + stepTimeout
+        + '\''
         + '}';
   }
 

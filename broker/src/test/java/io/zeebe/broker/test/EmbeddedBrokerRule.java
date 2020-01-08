@@ -51,8 +51,8 @@ import org.slf4j.Logger;
 public final class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
-  public static final int INSTALL_TIMEOUT = 15;
-  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.SECONDS;
+  public static final int INSTALL_TIMEOUT = 5;
+  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final boolean ENABLE_HTTP_EXPORTER = false;

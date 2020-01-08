@@ -11,6 +11,7 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 public final class SystemContext {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-  private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(20);
   private static final String NODE_ID_ERROR_MSG =
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
@@ -32,7 +32,7 @@ public final class SystemContext {
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
-  private Duration closeTimeout;
+  private Duration stepTimeout;
 
   public SystemContext(String configFileLocation, final String basePath, final ActorClock clock) {
     if (!Paths.get(configFileLocation).isAbsolute()) {
@@ -64,12 +64,14 @@ public final class SystemContext {
     brokerCfg.init(basePath);
     validateConfiguration();
 
+    stepTimeout = DurationUtil.parse(brokerCfg.getStepTimeout());
+
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
     this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
     this.scheduler = initScheduler(clock, brokerId);
-    setCloseTimeout(CLOSE_TIMEOUT);
+    setStepTimeout(stepTimeout);
   }
 
   private void validateConfiguration() {
@@ -119,12 +121,12 @@ public final class SystemContext {
     return diagnosticContext;
   }
 
-  public Duration getCloseTimeout() {
-    return closeTimeout;
+  public Duration getStepTimeout() {
+    return stepTimeout;
   }
 
-  public void setCloseTimeout(final Duration closeTimeout) {
-    this.closeTimeout = closeTimeout;
-    scheduler.setBlockingTasksShutdownTime(closeTimeout);
+  private void setStepTimeout(final Duration stepTimeout) {
+    this.stepTimeout = stepTimeout;
+    scheduler.setBlockingTasksShutdownTime(stepTimeout);
   }
 }
