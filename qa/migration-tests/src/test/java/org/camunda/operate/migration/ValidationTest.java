@@ -119,7 +119,7 @@ public class ValidationTest {
         	
 	@Test
 	public void testListViews() throws Throwable {
-		SearchRequest searchRequest = new SearchRequest(getIndexNameFor("list-view"));
+		SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME));
 		int workflowInstancesCount = config.getWorkflowInstanceCount();
 		
 		// Workflow instances list
@@ -160,7 +160,7 @@ public class ValidationTest {
 	@Test
 	public void testCoreStatistics() throws IOException {
     final SearchRequest searchRequest = new SearchRequest(
-        getIndexNameFor(ListViewTemplate.INDEX_NAME))
+        getAliasFor(ListViewTemplate.INDEX_NAME))
         .source(new SearchSourceBuilder().size(0)
             .aggregation(WorkflowInstanceReader.INCIDENTS_AGGREGATION)
             .aggregation(WorkflowInstanceReader.RUNNING_AGGREGATION)
@@ -189,7 +189,7 @@ public class ValidationTest {
 	  List<Long> workflowsKeys = map(getEntitiesFor("workflow", WorkflowEntity.class),WorkflowEntity::getKey);
 	  long savedIncidents = getEntitiesFor("incident", IncidentEntity.class).size();
 	  
-    SearchRequest searchRequest = new SearchRequest(getIndexNameFor(ListViewTemplate.INDEX_NAME))
+    SearchRequest searchRequest = new SearchRequest(getAliasFor(ListViewTemplate.INDEX_NAME))
         .source(new SearchSourceBuilder()
             .query(IncidentStatisticsReader.INCIDENTS_QUERY)
             .aggregation(IncidentStatisticsReader.COUNT_WORKFLOW_KEYS).size(0));
@@ -218,7 +218,7 @@ public class ValidationTest {
 	}
 	
 	protected <T> List<T> getEntitiesFor(String index,Class<T> entityClass) throws IOException{
-		return searchEntitiesFor(new SearchRequest(getIndexNameFor(index)), entityClass);
+		return searchEntitiesFor(new SearchRequest(getAliasFor(index)), entityClass);
 	}
 	
 	protected <T> List<T> searchEntitiesFor(SearchRequest searchRequest,Class<T> entityClass) throws IOException{
@@ -227,12 +227,12 @@ public class ValidationTest {
 		return mapSearchHits(searchResponse.getHits().getHits(), objectMapper, entityClass);	
 	}
 	
-	protected String getIndexNameFor(String index) {
-		return getIndexNameFor(index, OperateProperties.getSchemaVersion());
+	protected String getAliasFor(String index) {
+		return getAliasFor(index, OperateProperties.getSchemaVersion());
 	}
 	
-	protected String getIndexNameFor(String index,String version) {
-		return String.format("operate-%s-%s_", index,version);
+	protected String getAliasFor(String index, String version) {
+		return String.format("operate-%s-%s_alias", index, version);
 	}
 	
 }
