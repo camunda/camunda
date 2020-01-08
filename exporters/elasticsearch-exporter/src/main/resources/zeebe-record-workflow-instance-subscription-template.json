@@ -29,6 +29,9 @@
             },
             "messageKey": {
               "type": "long"
+            },
+            "correlationKey": {
+              "type": "keyword"
             }
           }
         }

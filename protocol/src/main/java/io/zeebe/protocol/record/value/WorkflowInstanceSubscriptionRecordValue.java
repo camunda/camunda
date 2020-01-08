@@ -38,4 +38,7 @@ public interface WorkflowInstanceSubscriptionRecordValue extends RecordValueWith
 
   /** @return the message name */
   String getMessageName();
+
+  /** @return the correlation key */
+  String getCorrelationKey();
 }

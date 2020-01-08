@@ -105,7 +105,7 @@ public final class CorrelateWorkflowInstanceSubscription
         reason = ALREADY_CLOSING_MESSAGE;
         correlationKey = subscription.getCorrelationKey();
       } else {
-        correlationKey = null;
+        correlationKey = subscriptionRecord.getCorrelationKeyBuffer();
       }
 
       sideEffect.accept(this::sendRejectionCommand);

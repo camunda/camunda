@@ -35,6 +35,7 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final BooleanProperty closeOnCorrelateProp =
       new BooleanProperty("closeOnCorrelate", true);
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
 
   public WorkflowInstanceSubscriptionRecord() {
     declareProperty(subscriptionPartitionIdProp)
@@ -44,7 +45,8 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(messageNameProp)
         .declareProperty(variablesProp)
         .declareProperty(closeOnCorrelateProp)
-        .declareProperty(bpmnProcessIdProp);
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(correlationKeyProp);
   }
 
   public boolean shouldCloseOnCorrelate() {
@@ -79,6 +81,16 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
   @Override
   public String getMessageName() {
     return bufferAsString(messageNameProp.getValue());
+  }
+
+  @Override
+  public String getCorrelationKey() {
+    return bufferAsString(correlationKeyProp.getValue());
+  }
+
+  public WorkflowInstanceSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
   }
 
   public WorkflowInstanceSubscriptionRecord setMessageName(final DirectBuffer messageName) {
@@ -139,5 +151,10 @@ public final class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
   public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(final boolean closeOnCorrelate) {
     closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCorrelationKeyBuffer() {
+    return correlationKeyProp.getValue();
   }
 }

@@ -41,7 +41,8 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
             subscription.getBpmnProcessId(),
             subscription.getMessageName(),
             subscription.getMessageKey(),
-            subscription.getMessageVariables());
+            subscription.getMessageVariables(),
+            subscription.getCorrelationKey());
 
     if (success) {
       subscriptionState.updateSentTimeInTransaction(subscription, ActorClock.currentTimeMillis());

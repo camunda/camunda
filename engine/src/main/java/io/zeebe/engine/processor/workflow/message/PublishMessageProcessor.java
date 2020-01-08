@@ -226,7 +226,8 @@ public final class PublishMessageProcessor implements TypedRecordProcessor<Messa
                     subscription.getBpmnProcessId(),
                     messageRecord.getNameBuffer(),
                     messageKey,
-                    messageRecord.getVariablesBuffer()));
+                    messageRecord.getVariablesBuffer(),
+                    messageRecord.getCorrelationKeyBuffer()));
 
     return success ? responseWriter.flush() : false;
   }
