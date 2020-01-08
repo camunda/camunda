@@ -15,18 +15,8 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
-import static java.util.stream.Collectors.counting;
-import static java.util.stream.Collectors.groupingBy;
-
 import io.zeebe.model.bpmn.instance.Activity;
-import io.zeebe.model.bpmn.instance.Error;
-import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.util.ModelUtil;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -40,45 +30,7 @@ public class ActivityValidator implements ModelElementValidator<Activity> {
   public void validate(
       final Activity element, final ValidationResultCollector validationResultCollector) {
 
-    verifyNoDuplicatedMessageNames(element, validationResultCollector);
-    verifyNoDuplicatedErrorCodes(element, validationResultCollector);
-  }
-
-  private void verifyNoDuplicatedMessageNames(
-      final Activity element, final ValidationResultCollector validationResultCollector) {
-
-    final Stream<MessageEventDefinition> boundaryEvents =
-        ModelUtil.getBoundaryEvents(element, MessageEventDefinition.class);
-    final List<String> duplicateMessageNames = ModelUtil.getDuplicateMessageNames(boundaryEvents);
-
-    duplicateMessageNames.forEach(
-        name ->
-            validationResultCollector.addError(
-                0,
-                String.format(
-                    "Multiple message boundary events with the same name '%s' are not allowed.",
-                    name)));
-  }
-
-  private void verifyNoDuplicatedErrorCodes(
-      final Activity element, final ValidationResultCollector validationResultCollector) {
-
-    final Map<String, Long> presenceByErrorCode =
-        ModelUtil.getBoundaryEvents(element, ErrorEventDefinition.class)
-            .filter(e -> e.getError() != null)
-            .map(ErrorEventDefinition::getError)
-            .filter(error -> error.getErrorCode() != null && !error.getErrorCode().isEmpty())
-            .collect(groupingBy(Error::getErrorCode, counting()));
-
-    presenceByErrorCode.entrySet().stream()
-        .filter(e -> e.getValue() > 1)
-        .map(Entry::getKey)
-        .forEach(
-            errorCode ->
-                validationResultCollector.addError(
-                    0,
-                    String.format(
-                        "Multiple error boundary events with the same errorCode '%s' are not allowed.",
-                        errorCode)));
+    ModelUtil.verifyNoDuplicatedBoundaryEvents(
+        element, error -> validationResultCollector.addError(0, error));
   }
 }

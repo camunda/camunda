@@ -22,13 +22,13 @@ import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
+import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public class EmbeddedSubProcessBuilder
     extends AbstractEmbeddedSubProcessBuilder<
         EmbeddedSubProcessBuilder, AbstractSubProcessBuilder<?>> {
 
-  @SuppressWarnings("rawtypes")
   protected EmbeddedSubProcessBuilder(final AbstractSubProcessBuilder subProcessBuilder) {
     super(subProcessBuilder, EmbeddedSubProcessBuilder.class);
   }
@@ -81,6 +81,13 @@ public class EmbeddedSubProcessBuilder
     final EventSubProcessBuilder eventSubProcessBuilder =
         new EventSubProcessBuilder(subProcessBuilder.modelInstance, subProcess);
     return eventSubProcessBuilder;
+  }
+
+  public EmbeddedSubProcessBuilder eventSubProcess(
+      final String id, final Consumer<EventSubProcessBuilder> consumer) {
+    final EventSubProcessBuilder builder = eventSubProcess(id);
+    consumer.accept(builder);
+    return this;
   }
 
   protected void setCoordinates(final BpmnShape targetBpmnShape) {

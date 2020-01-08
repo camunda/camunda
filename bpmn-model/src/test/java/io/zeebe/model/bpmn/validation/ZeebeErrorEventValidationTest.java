@@ -21,6 +21,7 @@ import static java.util.Collections.singletonList;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import org.junit.runners.Parameterized.Parameters;
@@ -56,7 +57,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(
-            expect(BoundaryEvent.class, "Non-interrupting events of this type are not supported"))
+            expect(BoundaryEvent.class, "Non-Interrupting event of this type is not allowed"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -69,7 +70,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ServiceTask.class,
-                "Multiple error boundary events with the same errorCode 'ERROR' are not allowed."))
+                "Multiple error event definitions with the same errorCode 'ERROR' are not allowed."))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -82,7 +83,7 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 SubProcess.class,
-                "Multiple error boundary events with the same errorCode 'ERROR' are not allowed."))
+                "Multiple error event definitions with the same errorCode 'ERROR' are not allowed."))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -97,6 +98,60 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
                         .endEvent())
             .done(),
         singletonList(expect(ErrorEventDefinition.class, "ErrorCode must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess("sub", s -> s.startEvent().error("").endEvent())
+            .startEvent()
+            .endEvent()
+            .done(),
+        singletonList(expect(ErrorEventDefinition.class, "ErrorCode must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess(
+                "sub", s -> s.startEvent().interrupting(false).error("ERROR").endEvent())
+            .startEvent()
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(SubProcess.class, "Non-Interrupting event of this type is not allowed"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess(
+                "sub-1", s -> s.startEvent().interrupting(true).error("ERROR").endEvent())
+            .eventSubProcess(
+                "sub-2", s -> s.startEvent().interrupting(true).error("ERROR").endEvent())
+            .startEvent()
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                Process.class,
+                "Multiple error event definitions with the same errorCode 'ERROR' are not allowed."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .subProcess(
+                "sub",
+                s ->
+                    s.embeddedSubProcess()
+                        .eventSubProcess(
+                            "sub-1",
+                            e -> e.startEvent().interrupting(true).error("ERROR").endEvent())
+                        .eventSubProcess(
+                            "sub-2",
+                            e -> e.startEvent().interrupting(true).error("ERROR").endEvent())
+                        .startEvent()
+                        .endEvent())
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                SubProcess.class,
+                "Multiple error event definitions with the same errorCode 'ERROR' are not allowed."))
       },
     };
   }

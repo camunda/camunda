@@ -14,8 +14,9 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
+import io.zeebe.engine.processor.workflow.EventHandle;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBoundaryEvent;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.ElementInstance;
@@ -25,7 +26,6 @@ import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -36,21 +36,22 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
-  private final WorkflowState workflowState;
-  private final KeyGenerator keyGenerator;
-
   private final CatchEventTuple catchEventTuple = new CatchEventTuple();
+
+  private final WorkflowState workflowState;
   private final ElementInstanceState elementInstanceState;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final EventHandle eventHandle;
   private final JobState jobState;
 
   public JobErrorThrownProcessor(
       final WorkflowState workflowState, final KeyGenerator keyGenerator, final JobState jobState) {
-    this.keyGenerator = keyGenerator;
     this.workflowState = workflowState;
     elementInstanceState = workflowState.getElementInstanceState();
     eventScopeInstanceState = workflowState.getEventScopeInstanceState();
     this.jobState = jobState;
+
+    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
   }
 
   @Override
@@ -71,7 +72,8 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
       final var foundCatchEvent = findCatchEvent(workflow, serviceTaskInstance, errorCode);
       if (foundCatchEvent != null) {
 
-        triggerBoundaryEvent(streamWriter, foundCatchEvent.instance, foundCatchEvent.boundaryEvent);
+        eventHandle.triggerEvent(
+            streamWriter, foundCatchEvent.instance, foundCatchEvent.catchEvent, NO_VARIABLES);
 
         // remove job reference to not cancel it while terminating the task
         serviceTaskInstance.setJobKey(-1L);
@@ -112,11 +114,11 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
     final var elementId = instance.getValue().getElementIdBuffer();
     final var activity = workflow.getElementById(elementId, ExecutableActivity.class);
 
-    for (final ExecutableBoundaryEvent boundaryEvent : activity.getBoundaryEvents()) {
-      if (hasErrorCode(boundaryEvent, errorCode)) {
+    for (final ExecutableCatchEvent catchEvent : activity.getEvents()) {
+      if (hasErrorCode(catchEvent, errorCode)) {
 
         catchEventTuple.instance = instance;
-        catchEventTuple.boundaryEvent = boundaryEvent;
+        catchEventTuple.catchEvent = catchEvent;
         return catchEventTuple;
       }
     }
@@ -136,23 +138,8 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
   }
 
   private boolean hasErrorCode(
-      final ExecutableBoundaryEvent boundaryEvent, final DirectBuffer errorCode) {
-    return boundaryEvent.isError() && boundaryEvent.getError().getErrorCode().equals(errorCode);
-  }
-
-  private void triggerBoundaryEvent(
-      final TypedStreamWriter streamWriter,
-      final ElementInstance eventScopeInstance,
-      final ExecutableBoundaryEvent boundaryEvent) {
-
-    final var newElementInstanceKey = keyGenerator.nextKey();
-    eventScopeInstanceState.triggerEvent(
-        eventScopeInstance.getKey(), newElementInstanceKey, boundaryEvent.getId(), NO_VARIABLES);
-
-    streamWriter.appendFollowUpEvent(
-        eventScopeInstance.getKey(),
-        WorkflowInstanceIntent.EVENT_OCCURRED,
-        eventScopeInstance.getValue());
+      final ExecutableCatchEvent catchEvent, final DirectBuffer errorCode) {
+    return catchEvent.isError() && catchEvent.getError().getErrorCode().equals(errorCode);
   }
 
   private void raiseIncident(
@@ -183,7 +170,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
   }
 
   private static class CatchEventTuple {
-    private ExecutableBoundaryEvent boundaryEvent;
+    private ExecutableCatchEvent catchEvent;
     private ElementInstance instance;
   }
 }

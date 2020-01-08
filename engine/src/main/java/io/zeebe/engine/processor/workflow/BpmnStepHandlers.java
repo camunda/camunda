@@ -69,7 +69,10 @@ public final class BpmnStepHandlers {
     final IncidentResolver incidentResolver = new IncidentResolver(state.getIncidentState());
     final CatchEventSubscriber catchEventSubscriber = new CatchEventSubscriber(catchEventBehavior);
     final BufferedMessageToStartEventCorrelator messageStartEventCorrelator =
-        new BufferedMessageToStartEventCorrelator(state.getKeyGenerator(), state.getMessageState());
+        new BufferedMessageToStartEventCorrelator(
+            state.getKeyGenerator(),
+            state.getMessageState(),
+            state.getWorkflowState().getEventScopeInstanceState());
 
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATED, new ElementActivatedHandler<>());

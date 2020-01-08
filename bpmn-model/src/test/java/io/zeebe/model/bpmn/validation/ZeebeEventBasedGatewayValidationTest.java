@@ -71,7 +71,7 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
         singletonList(
             expect(
                 EventBasedGateway.class,
-                "Multiple message catch events with the same name 'msg' are not allowed."))
+                "Multiple message event definitions with the same name 'msg' are not allowed."))
       },
       {
         Bpmn.createExecutableProcess("process")

@@ -19,21 +19,16 @@ import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Arrays;
+import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class EventDefinitionValidator implements ModelElementValidator<EventDefinition> {
 
-  private static final Set<Class<? extends EventDefinition>> SUPPORTED_EVENT_DEFINITIONS;
-
-  static {
-    SUPPORTED_EVENT_DEFINITIONS = new HashSet<>();
-    SUPPORTED_EVENT_DEFINITIONS.add(MessageEventDefinition.class);
-    SUPPORTED_EVENT_DEFINITIONS.add(TimerEventDefinition.class);
-    SUPPORTED_EVENT_DEFINITIONS.add(ErrorEventDefinition.class);
-  }
+  private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENT_DEFINITIONS =
+      Arrays.asList(
+          MessageEventDefinition.class, TimerEventDefinition.class, ErrorEventDefinition.class);
 
   @Override
   public Class<EventDefinition> getElementType() {
