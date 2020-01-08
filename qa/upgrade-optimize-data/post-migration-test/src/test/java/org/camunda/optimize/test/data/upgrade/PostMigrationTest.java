@@ -117,8 +117,7 @@ public class PostMigrationTest {
       .collect(Collectors.toList());
 
     for (EntityDto collection : collections) {
-      final AuthorizedCollectionDefinitionRestDto collectionById = getCollectionById(collection.getId());
-      final List<EntityDto> collectionEntities = collectionById.getDefinitionDto().getData().getEntities();
+      final List<EntityDto> collectionEntities = getCollectionEntities(collection.getId());
       for (EntityDto entity : collectionEntities.stream()
         .filter(entityDto -> EntityType.REPORT.equals(entityDto.getEntityType()))
         .collect(Collectors.toList())) {
@@ -156,6 +155,13 @@ public class PostMigrationTest {
 
     return response.readEntity(new GenericType<AuthorizedCollectionDefinitionRestDto>() {
     });
+  }
+
+  private List<EntityDto> getCollectionEntities(final String collectionId) {
+    return client.target(OPTIMIZE_API_ENDPOINT + "collection/" + collectionId + "/entities")
+      .request()
+      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
+      .get(ENTITIES_TYPE);
   }
 
   private List<EntityDto> getEntityDtos() {

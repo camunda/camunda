@@ -521,6 +521,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id) {
+    this.path = "collection/" + id +"/entities";
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetAlertsForCollectionRequest(String id) {
     this.path = "collection/" + id + "/alerts/";
     this.method = GET;

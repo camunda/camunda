@@ -63,9 +63,13 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
       .buildGetCollectionRequest(collectionId)
       .execute(AuthorizedCollectionDefinitionRestDto.class, 200);
 
+    final List<EntityDto> entities = embeddedOptimizeExtension.getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetCollectionEntitiesRequest(collectionId)
+      .executeAndReturnList(EntityDto.class, 200);
+
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
-    final List<EntityDto> entities = collection.getDefinitionDto().getData().getEntities();
     assertThat(entities.stream().map(EntityDto::getId).collect(toList()), contains(expectedReport));
   }
 

@@ -18,6 +18,8 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -102,6 +104,13 @@ public class CollectionClient {
       .getId();
   }
 
+  public void updateCollection(String collectionId, PartialCollectionDefinitionDto updatedCollection) {
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdatePartialCollectionRequest(collectionId, updatedCollection)
+      .execute(204);
+  }
+
   public CollectionDefinitionRestDto getCollectionById(final String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -124,6 +133,13 @@ public class CollectionClient {
       .getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .executeAndReturnList(AlertDefinitionDto.class,200);
+  }
+
+  public List<EntityDto> getEntitiesForCollection(final String collectionId){
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetCollectionEntitiesRequest(collectionId)
+      .executeAndReturnList(EntityDto.class, 200);
   }
 
   public void updateCollectionScopeAsKermit(final String collectionId,
@@ -200,6 +216,7 @@ public class CollectionClient {
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
   }
+
   public OptimizeRequestExecutor getAlertsRequest(final String userId, final String password,
                                                   final String collectionId) {
     return embeddedOptimizeExtension
@@ -223,6 +240,23 @@ public class CollectionClient {
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(IdDto.class, 200);
+  }
+
+  public IdDto copyCollection(String collectionId) {
+    return copyCollection(collectionId, null);
+  }
+
+  public IdDto copyCollection(String collectionId, String newName) {
+    OptimizeRequestExecutor executor = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCopyCollectionRequest(collectionId);
+
+    if (newName != null) {
+      executor.addSingleQueryParam("name", newName);
+    }
+
+    return executor
+      .execute(IdDto.class, 200);
   }
 
 }

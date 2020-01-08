@@ -7,10 +7,9 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -26,14 +25,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -48,7 +46,8 @@ public class DashboardHandlingIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
@@ -64,7 +63,8 @@ public class DashboardHandlingIT extends AbstractIT {
 
     // when
     GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .get(getRequest, RequestOptions.DEFAULT);
 
     // then
     assertThat(getResponse.isExists(), is(true));
@@ -76,7 +76,7 @@ public class DashboardHandlingIT extends AbstractIT {
     String id = addEmptyPrivateDashboard();
 
     // when
-    DashboardDefinitionDto dashboard = getDashboardById(id);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(dashboard, is(notNullValue()));
@@ -90,8 +90,8 @@ public class DashboardHandlingIT extends AbstractIT {
     String id2 = addEmptyPrivateDashboard();
 
     // when
-    DashboardDefinitionDto dashboard1 = getDashboardById(id1);
-    DashboardDefinitionDto dashboard2 = getDashboardById(id2);
+    DashboardDefinitionDto dashboard1 = dashboardClient.getDashboard(id1);
+    DashboardDefinitionDto dashboard2 = dashboardClient.getDashboard(id2);
 
     // then
     assertThat(dashboard1, is(notNullValue()));
@@ -106,14 +106,14 @@ public class DashboardHandlingIT extends AbstractIT {
     String dashboardId = addEmptyPrivateDashboard();
     addEmptyReportToDashboard(dashboardId);
 
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
+    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
     assertThat(dashboard.getCollectionId(), is(collectionId));
     assertThat(oldDashboard.getCollectionId(), is(nullValue()));
@@ -136,16 +136,16 @@ public class DashboardHandlingIT extends AbstractIT {
     String dashboardId = addEmptyPrivateDashboard();
     final String reportId = addEmptySingleProcessReport();
     final String externalResource = "http://www.camunda.com";
-    addReportsToDashboard(dashboardId, reportId, externalResource);
+    dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, externalResource));
 
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
+    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
     assertThat(dashboard.getCollectionId(), is(collectionId));
     assertThat(oldDashboard.getCollectionId(), is(nullValue()));
@@ -165,16 +165,16 @@ public class DashboardHandlingIT extends AbstractIT {
     // given
     String dashboardId = addEmptyPrivateDashboard();
     String reportId = addEmptySingleProcessReport();
-    addReportsToDashboard(dashboardId, reportId, reportId);
+    dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, reportId));
 
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
+    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
     assertThat(dashboard.getCollectionId(), is(collectionId));
     assertThat(oldDashboard.getCollectionId(), is(nullValue()));
@@ -191,8 +191,8 @@ public class DashboardHandlingIT extends AbstractIT {
     );
     assertThat(newReportIds, everyItem(is(newReportIds.get(0))));
 
-    final CollectionDefinitionRestDto collectionById = getCollectionById(collectionId);
-    assertThat(collectionById.getData().getEntities().size(), is(2));
+    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    assertThat(collectionEntities.size(), is(2));
   }
 
   @Test
@@ -200,17 +200,17 @@ public class DashboardHandlingIT extends AbstractIT {
     // given
     String dashboardId = addEmptyPrivateDashboard();
     String reportId = addEmptySingleProcessReport();
-    String combinedReportId = createNewCombinedReport(reportId);
-    addReportsToDashboard(dashboardId, reportId, combinedReportId);
+    String combinedReportId = reportClient.createNewCombinedReport(reportId);
+    dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId, combinedReportId));
 
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
 
     // when
-    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
+    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
     assertThat(dashboard.getCollectionId(), is(collectionId));
     assertThat(oldDashboard.getCollectionId(), is(nullValue()));
@@ -226,14 +226,14 @@ public class DashboardHandlingIT extends AbstractIT {
       not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
     );
 
-    final CollectionDefinitionRestDto collectionById = getCollectionById(collectionId);
-    assertThat(collectionById.getData().getEntities().size(), is(3));
+    final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
+    assertThat(collectionEntities.size(), is(3));
   }
 
   @Test
   public void copyDashboardFromCollectionToPrivateEntities() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollection();
     String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
     addEmptyReportToDashboardInCollection(dashboardId, collectionId);
 
@@ -244,8 +244,8 @@ public class DashboardHandlingIT extends AbstractIT {
       .execute(IdDto.class, 200);
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
-    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
     assertThat(dashboard.getCollectionId(), is(nullValue()));
     assertThat(oldDashboard.getCollectionId(), is(collectionId));
@@ -265,11 +265,11 @@ public class DashboardHandlingIT extends AbstractIT {
   @Test
   public void copyDashboardFromCollectionToDifferentCollection() {
     // given
-    final String oldCollectionId = addEmptyCollectionToOptimize();
+    final String oldCollectionId = collectionClient.createNewCollection();
     String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(oldCollectionId);
     addEmptyReportToDashboardInCollection(dashboardId, oldCollectionId);
 
-    final String newCollectionId = addEmptyCollectionToOptimize();
+    final String newCollectionId = collectionClient.createNewCollection();
 
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
@@ -278,8 +278,8 @@ public class DashboardHandlingIT extends AbstractIT {
       .execute(IdDto.class, 200);
 
     // then
-    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
-    DashboardDefinitionDto newDashboard = getDashboardById(copyId.getId());
+    DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
+    DashboardDefinitionDto newDashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(newDashboard.getName(), is(oldDashboard.getName() + " – Copy"));
     assertThat(newDashboard.getCollectionId(), is(newCollectionId));
     assertThat(oldDashboard.getCollectionId(), is(oldCollectionId));
@@ -318,7 +318,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
     // when
     updateDashboard(id, dashboard);
-    DashboardDefinitionDto updatedDashboard = getDashboardById(id);
+    DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(updatedDashboard.getReports().size(), is(1));
@@ -336,7 +336,7 @@ public class DashboardHandlingIT extends AbstractIT {
   @Test
   public void updateDashboardCollectionReportCanBeAddedToSameCollectionDashboard() {
     // given
-    String collectionId = addEmptyCollectionToOptimize();
+    String collectionId = collectionClient.createNewCollection();
     String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
     final String privateReportId = addEmptySingleProcessReportToCollection(collectionId);
 
@@ -350,8 +350,8 @@ public class DashboardHandlingIT extends AbstractIT {
   @Test
   public void updateDashboardCollectionReportCannotBeAddedToOtherCollectionDashboard() {
     // given
-    String collectionId1 = addEmptyCollectionToOptimize();
-    String collectionId2 = addEmptyCollectionToOptimize();
+    String collectionId1 = collectionClient.createNewCollection();
+    String collectionId2 = collectionClient.createNewCollection();
     String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId1);
     final String privateReportId = addEmptySingleProcessReportToCollection(collectionId2);
 
@@ -365,7 +365,7 @@ public class DashboardHandlingIT extends AbstractIT {
   @Test
   public void updateDashboardCollectionReportCannotBeAddedToPrivateDashboard() {
     // given
-    String collectionId = addEmptyCollectionToOptimize();
+    String collectionId = collectionClient.createNewCollection();
     String dashboardId = addEmptyPrivateDashboard();
     final String privateReportId = addEmptySingleProcessReportToCollection(collectionId);
 
@@ -379,7 +379,7 @@ public class DashboardHandlingIT extends AbstractIT {
   @Test
   public void updateDashboardPrivateReportCannotBeAddedToCollectionDashboard() {
     // given
-    String collectionId = addEmptyCollectionToOptimize();
+    String collectionId = collectionClient.createNewCollection();
     String dashboardId = addEmptyDashboardToCollectionAsDefaultUser(collectionId);
     final String privateReportId = createNewSingleReport();
 
@@ -418,7 +418,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
     // when
     updateDashboard(id, dashboard);
-    DashboardDefinitionDto updatedDashboard = getDashboardById(id);
+    DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(id);
 
     // then
     assertThat(updatedDashboard.getId(), is(id));
@@ -446,7 +446,7 @@ public class DashboardHandlingIT extends AbstractIT {
     deleteReport(reportIdToDelete, true);
 
     // then
-    DashboardDefinitionDto updatedDashboard = getDashboardById(dashboardId);
+    DashboardDefinitionDto updatedDashboard = dashboardClient.getDashboard(dashboardId);
     updatedDashboard.getReports().forEach(
       reportLocationDto -> assertThat(reportLocationDto.getId(), is(not(reportIdToDelete)))
     );
@@ -476,29 +476,12 @@ public class DashboardHandlingIT extends AbstractIT {
       .getId();
   }
 
-  private DashboardDefinitionDto getDashboardById(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, 200);
-  }
-
   private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
       .execute();
     assertThat(response.getStatus(), is(204));
-  }
-
-  private void updateDashboard(final String dashboardId, final List<ReportLocationDto> reports) {
-    final DashboardDefinitionDto dashboard = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDashboardRequest(dashboardId).execute(DashboardDefinitionDto.class, 200);
-
-    if (reports != null) {
-      dashboard.setReports(reports);
-    }
-
-    updateDashboard(dashboardId, dashboard);
   }
 
   private String createNewSingleReport() {
@@ -515,17 +498,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
   private void addEmptyReportToDashboardInCollection(final String dashboardId, final String collectionId) {
     final String reportId = addEmptySingleProcessReportToCollection(collectionId);
-    addReportsToDashboard(dashboardId, reportId);
-  }
-
-  private void addReportsToDashboard(final String dashboardId, final String... reportIds) {
-    final List<ReportLocationDto> reportLocationDtos = new ArrayList<>();
-    for (String reportId : reportIds) {
-      final ReportLocationDto reportLocationDto = new ReportLocationDto();
-      reportLocationDto.setId(reportId);
-      reportLocationDtos.add(reportLocationDto);
-    }
-    updateDashboard(dashboardId, reportLocationDtos);
+    dashboardClient.updateDashboardWithReports(dashboardId, Arrays.asList(reportId));
   }
 
   private String addEmptySingleProcessReport() {
@@ -542,14 +515,6 @@ public class DashboardHandlingIT extends AbstractIT {
       .getId();
   }
 
-  private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   private Response addSingleReportToDashboard(final String dashboardId, final String privateReportId) {
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(privateReportId);
@@ -561,32 +526,5 @@ public class DashboardHandlingIT extends AbstractIT {
         new DashboardDefinitionDto(Collections.singletonList(reportLocationDto))
       )
       .execute();
-  }
-
-  private String createNewCombinedReport(String... singleReportIds) {
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReportData(singleReportIds));
-    return createNewCombinedReport(report);
-  }
-
-  private String createNewCombinedReport(CombinedReportDefinitionDto combinedReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId, collectionId)
-      .execute(IdDto.class, 200);
-  }
-
-  private CollectionDefinitionRestDto getCollectionById(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCollectionRequest(collectionId)
-      .execute(CollectionDefinitionRestDto.class, 200);
   }
 }

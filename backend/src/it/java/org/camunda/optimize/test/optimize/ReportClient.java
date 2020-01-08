@@ -7,6 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.apache.http.HttpStatus;
+import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -15,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -25,6 +27,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 
 @AllArgsConstructor
@@ -42,6 +46,16 @@ public class ReportClient {
     return createNewCombinedReport(report);
   }
 
+  public String createEmptyCombinedReport(final String collectionId) {
+    return createCombinedReport(collectionId, Lists.emptyList());
+  }
+
+  public String createNewCombinedReport(String... singleReportIds) {
+    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    report.setData(createCombinedReportData(singleReportIds));
+    return createNewCombinedReport(report);
+  }
+
   public void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds) {
     final CombinedReportDefinitionDto combinedReportData = new CombinedReportDefinitionDto();
     combinedReportData.getData()
@@ -55,6 +69,13 @@ public class ReportClient {
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
       .execute();
+  }
+
+  public void updateSingleProcessReport(final String reportId, final SingleProcessReportDefinitionDto updatedReport) {
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(reportId, updatedReport)
+      .execute(204);
   }
 
   private String createNewCombinedReport(CombinedReportDefinitionDto combinedReportDefinitionDto) {
@@ -109,23 +130,9 @@ public class ReportClient {
     return singleProcessReportDefinitionDto;
   }
 
-  public String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, HttpStatus.SC_OK)
-      .getId();
-  }
-
-  private String createSingleDecisionReport(SingleDecisionReportDefinitionDto decisionReportDefinition) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(decisionReportDefinition)
-      .execute(IdDto.class, HttpStatus.SC_OK)
-      .getId();
-  }
-
-  private String createAndStoreDecisionReport(String collectionId, String definitionKey, List<String> tenants) {
+  private SingleDecisionReportDefinitionDto createSingleDecisionReportDefinitionDto(final String collectionId,
+                                                                                    final String definitionKey,
+                                                                                    final List<String> tenants) {
     DecisionReportDataDto rawDataReport = DecisionReportDataBuilder
       .create()
       .setDecisionDefinitionKey(definitionKey)
@@ -143,13 +150,106 @@ public class ReportClient {
     decisionReportDefinition.setLastModified(someDate);
     decisionReportDefinition.setOwner(RANDOM_STRING);
     decisionReportDefinition.setCollectionId(collectionId);
+    return decisionReportDefinition;
+  }
+
+  public String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
+      .execute(IdDto.class, HttpStatus.SC_OK)
+      .getId();
+  }
+
+  public String createReportForCollectionAsUser(final String collectionId, final DefinitionType resourceType,
+                                                final String definitionKey, final List<String> tenants) {
+    return createReportForCollectionAsUser(
+      collectionId,
+      resourceType,
+      definitionKey,
+      tenants,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
+  }
+
+  public String createReportForCollectionAsUser(final String collectionId, final DefinitionType resourceType,
+                                                final String definitionKey, final List<String> tenants,
+                                                final String user, final String pw) {
+    switch (resourceType) {
+      case PROCESS:
+        SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
+          collectionId,
+          definitionKey,
+          tenants
+        );
+        return createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, pw);
+
+      case DECISION:
+        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = createSingleDecisionReportDefinitionDto(
+          collectionId,
+          definitionKey,
+          tenants
+        );
+        return createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, pw);
+
+      default:
+        throw new OptimizeRuntimeException("Unknown definition type provided.");
+    }
+  }
+
+  public String createSingleProcessReportAsUser(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
+                                                final String user, final String pw) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(user, pw)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
+      .execute(IdDto.class, HttpStatus.SC_OK)
+      .getId();
+  }
+
+  public String createNewDecisionReportAsUser(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto,
+                                              final String user, final String pw) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(user, pw)
+      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
+      .execute(IdDto.class, HttpStatus.SC_OK)
+      .getId();
+  }
+
+  public String createSingleDecisionReport(SingleDecisionReportDefinitionDto decisionReportDefinition) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest(decisionReportDefinition)
+      .execute(IdDto.class, HttpStatus.SC_OK)
+      .getId();
+  }
+
+  private String createAndStoreDecisionReport(String collectionId, String definitionKey, List<String> tenants) {
+    SingleDecisionReportDefinitionDto decisionReportDefinition = createSingleDecisionReportDefinitionDto(
+      collectionId,
+      definitionKey,
+      tenants
+    );
     return createSingleDecisionReport(decisionReportDefinition);
   }
 
+  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetReportRequest(originalReportId)
+      .execute(SingleProcessReportDefinitionDto.class, 200);
+  }
+
   public void deleteReport(final String reportId) {
+    deleteReport(reportId, false);
+  }
+
+  public void deleteReport(final String reportId, final boolean force) {
     embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildDeleteReportRequest(reportId)
-      .execute();
+      .buildDeleteReportRequest(reportId, force)
+      .execute(204);
   }
 }

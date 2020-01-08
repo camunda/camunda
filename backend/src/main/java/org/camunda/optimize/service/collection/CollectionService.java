@@ -7,42 +7,27 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataRestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.service.alert.AlertService;
-import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
-import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Component
@@ -52,11 +37,7 @@ public class CollectionService {
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
   private final CollectionRelationService collectionRelationService;
-  private final AuthorizedEntitiesService entitiesService;
-  private final CollectionRoleService collectionRoleService;
-  private final AlertService alertService;
-  private final ReportService reportService;
-  private final DashboardService dashboardService;
+  private final CollectionEntityService collectionEntityService;
 
   public IdDto createNewCollectionAndReturnId(final String userId,
                                               final PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
@@ -73,9 +54,7 @@ public class CollectionService {
         collectionId
       );
 
-    final List<EntityDto> collectionEntities = entitiesService.getAuthorizedCollectionEntities(userId, collectionId);
-
-    return mapToCollectionRestDto(collectionDefinition, collectionEntities);
+    return mapToCollectionRestDto(collectionDefinition);
   }
 
   public void updatePartialCollection(final String userId,
@@ -127,9 +106,8 @@ public class CollectionService {
     return authorizedCollectionService.getAuthorizedCollectionDefinitions(userId);
   }
 
-  private AuthorizedCollectionDefinitionRestDto mapToCollectionRestDto(
-    final AuthorizedCollectionDefinitionDto authorizedCollectionDto,
-    final Collection<EntityDto> collectionEntities) {
+  public AuthorizedCollectionDefinitionRestDto mapToCollectionRestDto(
+    final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
 
     final CollectionDefinitionDto collectionDefinitionDto = authorizedCollectionDto.getDefinitionDto();
     final CollectionDefinitionRestDto resolvedCollection = new CollectionDefinitionRestDto();
@@ -140,27 +118,7 @@ public class CollectionService {
     resolvedCollection.setCreated(collectionDefinitionDto.getCreated());
     resolvedCollection.setLastModified(collectionDefinitionDto.getLastModified());
 
-    final CollectionDataRestDto resolvedCollectionData = new CollectionDataRestDto();
-
-    final CollectionDataDto collectionData = collectionDefinitionDto.getData();
-    if (collectionData != null) {
-      resolvedCollectionData.setConfiguration(collectionData.getConfiguration());
-    }
-
-    final RoleType currentUserResourceRole = authorizedCollectionDto.getCollectionResourceRole();
-    resolvedCollectionData.setEntities(
-      collectionEntities
-        .stream()
-        .filter(Objects::nonNull)
-        .peek(entityDto -> entityDto.setCurrentUserRole(currentUserResourceRole))
-        .sorted(
-          Comparator.comparing(EntityDto::getEntityType)
-            .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())
-        )
-        .collect(Collectors.toList())
-    );
-
-    resolvedCollection.setData(resolvedCollectionData);
+    resolvedCollection.setData(collectionDefinitionDto.getData());
     return new AuthorizedCollectionDefinitionRestDto(
       authorizedCollectionDto.getCurrentUserRole(), resolvedCollection
     );
@@ -188,51 +146,16 @@ public class CollectionService {
     );
 
     CollectionDefinitionRestDto oldResolvedCollection =
-      getCollectionDefinitionRestDto(userId, oldCollection).getDefinitionDto();
+      getCollectionDefinitionRestDto(oldCollection).getDefinitionDto();
 
     collectionWriter.createNewCollection(newCollection);
 
-    copyCollectionEntities(userId, oldResolvedCollection, newCollection.getId());
+    collectionEntityService.copyCollectionEntities(userId, oldResolvedCollection, newCollection.getId());
     return new IdDto(newCollection.getId());
   }
 
   private AuthorizedCollectionDefinitionRestDto getCollectionDefinitionRestDto(
-    final String userId,
-    final AuthorizedCollectionDefinitionDto collectionDefinitionDto
-  ) {
-    return mapToCollectionRestDto(
-      collectionDefinitionDto,
-      entitiesService.getAuthorizedCollectionEntities(userId, collectionDefinitionDto.getDefinitionDto().getId())
-    );
-  }
-
-  private void copyCollectionEntities(String userId, CollectionDefinitionRestDto collectionDefinitionDto,
-                                      String newCollectionId) {
-    final Map<String, String> uniqueReportCopies = new HashMap<>();
-
-    collectionDefinitionDto.getData().getEntities().forEach(e -> {
-      final String originalEntityId = e.getId();
-      switch (e.getEntityType()) {
-        case REPORT:
-          String entityCopyId = uniqueReportCopies.get(originalEntityId);
-          if (entityCopyId == null) {
-            entityCopyId = reportService.copyAndMoveReport(
-              originalEntityId, userId, newCollectionId, e.getName(), uniqueReportCopies, true
-            ).getId();
-            uniqueReportCopies.put(originalEntityId, entityCopyId);
-          }
-          alertService.copyAndMoveAlerts(originalEntityId, entityCopyId);
-          break;
-        case DASHBOARD:
-          dashboardService.copyAndMoveDashboard(
-            originalEntityId, userId, newCollectionId, e.getName(), uniqueReportCopies, true
-          );
-          break;
-        default:
-          throw new OptimizeRuntimeException(
-            "You can't copy a " + e.getEntityType().toString().toLowerCase() + " to a collection"
-          );
-      }
-    });
+    final AuthorizedCollectionDefinitionDto collectionDefinitionDto) {
+    return mapToCollectionRestDto(collectionDefinitionDto);
   }
 }

@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -23,12 +24,12 @@ import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRes
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.collection.CollectionEntityService;
 import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -54,13 +55,14 @@ import java.util.Optional;
 @Path("/collection")
 @Component
 public class CollectionRestService {
-  private final AlertService alertService;
+  private final SessionService sessionService;
   private final CollectionService collectionService;
   private final CollectionRoleService collectionRoleService;
   private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
   private final ReportService reportService;
   private final IdentityService identityService;
+  private final CollectionEntityService collectionEntityService;
 
   /**
    * Creates a new collection.
@@ -264,7 +266,7 @@ public class CollectionRestService {
   public List<AlertDefinitionDto> getAlerts(@Context ContainerRequestContext requestContext,
                                             @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return alertService.getStoredAlertsForCollection(userId, collectionId);
+    return collectionEntityService.getStoredAlertsForCollection(userId, collectionId);
   }
 
   @GET
@@ -273,6 +275,15 @@ public class CollectionRestService {
   public List<AuthorizedReportDefinitionDto> getReports(@Context ContainerRequestContext requestContext,
                                                         @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.findAndFilterReports(userId, collectionId);
+    return collectionEntityService.findAndFilterReports(userId, collectionId);
+  }
+
+  @GET
+  @Path("/{id}/entities")
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext,
+                                     @PathParam("id") String collectionId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
   }
 }

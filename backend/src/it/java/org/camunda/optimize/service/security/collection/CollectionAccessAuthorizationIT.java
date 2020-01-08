@@ -64,7 +64,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
     assertThat(collection.getCurrentUserRole(), is(accessIdentityRolePairs.roleType));
-    final List<EntityDto> entities = collection.getDefinitionDto().getData().getEntities();
+    final List<EntityDto> entities = collectionClient.getEntitiesForCollection(collectionId);
     assertThat(entities.size(), is(2));
     assertThat(
       entities.get(0).getCurrentUserRole(),

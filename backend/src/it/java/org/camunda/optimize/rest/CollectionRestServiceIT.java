@@ -10,11 +10,13 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -139,11 +141,12 @@ public class CollectionRestServiceIT extends AbstractIT {
 
     // when
     CollectionDefinitionRestDto collection = collectionClient.getCollectionById(id);
+    List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(id);
 
     // then
     assertThat(collection, is(notNullValue()));
     assertThat(collection.getId(), is(id));
-    assertThat(collection.getData().getEntities().size(), is(0));
+    assertThat(collectionEntities.size(), is(0));
   }
 
   @Test
