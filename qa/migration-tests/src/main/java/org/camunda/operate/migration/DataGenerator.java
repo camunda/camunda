@@ -101,6 +101,7 @@ public class DataGenerator {
 
   private void waitTillSomeInstancesAreArchived() {
     //cheat for archiving: move the dates 1 hour back - TODO remove after version 1.2.0 is released
+    ThreadUtil.sleepFor(60*1000L); //wait till all data is imported
     moveListViewDatesBack();
 
     ThreadUtil.sleepFor(60 * 1000L);   //after 1 minute finished instances will be archived
@@ -133,6 +134,7 @@ public class DataGenerator {
     UpdateByQueryRequest request = new UpdateByQueryRequest("operate-list-view*")
         .setQuery(matchAllQuery())
         .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, new HashMap<>()))
+        .setAbortOnVersionConflict(false)
         .setRefresh(true);
     ;
     try {
