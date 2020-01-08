@@ -77,10 +77,9 @@ public class EventService {
 
   public List<EventCountDto> getEventCounts(EventCountServiceDto eventCountServiceDto) {
     List<EventCountDto> matchingEventCountDtos = eventSequenceCountReader.getEventCounts(eventCountServiceDto.getEventCountRequestDto());
-    EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto =
-      eventCountServiceDto.getEventCountSuggestionsRequestDto();
+    EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = eventCountServiceDto.getEventCountSuggestionsRequestDto();
     if (eventCountSuggestionsRequestDto != null && eventCountSuggestionsRequestDto.getMappings() != null) {
-      removeAlreadyMappedEventsFromCounts(matchingEventCountDtos, eventCountSuggestionsRequestDto.getMappings());
+      removePreviouslyMappedNonTargetEventsFromCounts(matchingEventCountDtos, eventCountSuggestionsRequestDto);
       addSuggestionsForEventCounts(eventCountSuggestionsRequestDto, matchingEventCountDtos);
     }
     return sortEventCountsUsingWithRequestParameters(eventCountServiceDto.getEventCountRequestDto(), matchingEventCountDtos);
@@ -198,15 +197,17 @@ public class EventService {
       .collect(Collectors.toList());
   }
 
-  private void removeAlreadyMappedEventsFromCounts(final List<EventCountDto> eventCountDtos,
-                                                   final Map<String, EventMappingDto> currentMappings) {
-    final List<EventTypeDto> currentMappedEvents = currentMappings.keySet()
+  private void removePreviouslyMappedNonTargetEventsFromCounts(final List<EventCountDto> eventCountDtos,
+                                                               final EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto) {
+    Map<String, EventMappingDto> currentMappings = eventCountSuggestionsRequestDto.getMappings();
+    final List<EventTypeDto> currentMappedNonTargetEvents = currentMappings.keySet()
       .stream()
+      .filter(mappedEvent -> !mappedEvent.equals(eventCountSuggestionsRequestDto.getTargetFlowNodeId()))
       .flatMap(key -> Stream.of(currentMappings.get(key).getStart(), currentMappings.get(key).getEnd()))
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
 
-    eventCountDtos.removeIf(eventCountDto -> eventCountIsInEventTypeList(eventCountDto, currentMappedEvents));
+    eventCountDtos.removeIf(eventCountDto -> eventCountIsInEventTypeList(eventCountDto, currentMappedNonTargetEvents));
   }
 
   private List<EventCountDto> sortEventCountsUsingWithRequestParameters(final EventCountRequestDto eventCountRequestDto,

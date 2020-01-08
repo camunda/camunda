@@ -417,6 +417,40 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEventCounts_withSuggestionsForValidTargetNodeAlreadyMapped_alreadyMappedEventForTargetNotExcluded() {
+    // given
+    EventTypeDto mappedEvent = eventTypeFromEvent(backendMayoEvent);
+    EventTypeDto otherMappedEvent = eventTypeFromEvent(nullNullEvent);
+
+    // Suggestions request for already mapped flow node and with event mapped after
+    EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
+      .targetFlowNodeId(FIRST_TASK_ID)
+      .xml(simpleDiagramXml)
+      .mappings(ImmutableMap.of(
+        FIRST_TASK_ID, createEventMappingDto(mappedEvent, null),
+        SECOND_TASK_ID, createEventMappingDto(otherMappedEvent, null)
+      ))
+      .build();
+
+    // when
+    List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
+      eventCountSuggestionsRequestDto)
+      .executeAndReturnList(EventCountDto.class, 200);
+
+    // then event count list contains suggestions and already mapped target event is included
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(5)
+      .containsExactly(
+        toEventCountDto(backendMayoEvent, 3L, true),
+        toEventCountDto(backendKetchupEvent, 4L, false),
+        toEventCountDto(frontendMayoEvent, 2L, false),
+        toEventCountDto(ketchupMayoEvent, 2L, false),
+        toEventCountDto(managementBbqEvent, 1L, false)
+      );
+  }
+
+  @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndMappingsExist_usingCustomSorting() {
     // given
     EventTypeDto previousMappedEvent = eventTypeFromEvent(backendKetchupEvent);
