@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.ClientRequest;
@@ -22,6 +24,8 @@ import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -29,24 +33,87 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class AtomixTransportTest {
 
   @ClassRule public static final ActorSchedulerRule SCHEDULER_RULE = new ActorSchedulerRule();
 
   private static Supplier<String> nodeAddressSupplier;
-  private static ClientTransport clientTransport;
-  private static ServerTransport serverTransport;
+
   private static AtomixCluster cluster;
   private static String serverAddress;
+  private static TransportFactory transportFactory;
+  private static NettyMessagingService nettyMessagingService;
+
+  @Parameter(0)
+  public String testName;
+
+  @Parameter(1)
+  public Function<AtomixCluster, ClientTransport> clientTransportFunction;
+
+  @Parameter(2)
+  public Function<AtomixCluster, ServerTransport> serverTransportFunction;
+
+  private ClientTransport clientTransport;
+  private ServerTransport serverTransport;
+
+  @Parameters(name = "{0}")
+  public static Collection<Object[]> data() {
+    return Arrays.asList(
+        new Object[][] {
+          {
+            "use same messaging service",
+            (Function<AtomixCluster, ClientTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createClientTransport(messagingService);
+                },
+            (Function<AtomixCluster, ServerTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createServerTransport(0, messagingService);
+                }
+          },
+          {
+            "use different messaging service",
+            (Function<AtomixCluster, ClientTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createClientTransport(messagingService);
+                },
+            (Function<AtomixCluster, ServerTransport>)
+                (cluster) -> {
+                  if (nettyMessagingService == null) {
+                    // do only once
+                    final var socketAddress = SocketUtil.getNextAddress();
+                    serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
+                    nodeAddressSupplier = () -> serverAddress;
+                    nettyMessagingService =
+                        new NettyMessagingService(
+                            "cluster", Address.from(serverAddress), new MessagingConfig());
+                    nettyMessagingService.start().join();
+                  }
+
+                  return transportFactory.createServerTransport(0, nettyMessagingService);
+                }
+          }
+        });
+  }
 
   @BeforeClass
   public static void setup() {
@@ -61,21 +128,27 @@ public class AtomixTransportTest {
             .withClusterId("cluster")
             .build();
     cluster.start().join();
-    final var transportFactory = new TransportFactory(SCHEDULER_RULE.get());
-    final var messagingService = cluster.getMessagingService();
-    clientTransport = transportFactory.createClientTransport(messagingService);
-    serverTransport = transportFactory.createServerTransport(0, messagingService);
+    transportFactory = new TransportFactory(SCHEDULER_RULE.get());
+  }
+
+  @Before
+  public void beforeTest() {
+    clientTransport = clientTransportFunction.apply(cluster);
+    serverTransport = serverTransportFunction.apply(cluster);
   }
 
   @After
-  public void afterTest() {
-    serverTransport.unsubscribe(0);
+  public void afterTest() throws Exception {
+    serverTransport.close();
+    clientTransport.close();
   }
 
   @AfterClass
-  public static void tearDown() throws Exception {
-    serverTransport.close();
-    clientTransport.close();
+  public static void tearDown() {
+    if (nettyMessagingService != null) {
+      nettyMessagingService.stop().join();
+      nettyMessagingService = null;
+    }
     cluster.stop().join();
   }
 
