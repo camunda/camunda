@@ -86,6 +86,10 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   private void handleResponse(
       final RequestContext requestContext, final byte[] response, final Throwable errorOnRequest) {
+    if (requestContext.isDone()) {
+      return;
+    }
+
     final var currentFuture = requestContext.getCurrentFuture();
     if (errorOnRequest == null) {
       final var responseBuffer = new UnsafeBuffer(response);
