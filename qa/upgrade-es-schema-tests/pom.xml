@@ -18,8 +18,9 @@
     <!-- default 30 minutes -->
     <upgrade.timeout.seconds>1800</upgrade.timeout.seconds>
     <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
-    <old.optimize.elasticsearch.port>9200</old.optimize.elasticsearch.port>
-    <new.optimize.elasticsearch.port>9250</new.optimize.elasticsearch.port>
+    <old.optimize.elasticsearch.port>9250</old.optimize.elasticsearch.port>
+    <new.optimize.elasticsearch.port>9200</new.optimize.elasticsearch.port>
+    <elasticsearch.snapshot.path>/usr/share/elasticsearch/essnapshots</elasticsearch.snapshot.path>
   </properties>
 
   <build>
@@ -64,9 +65,9 @@
               </target>
             </configuration>
           </execution>
-          <!-- 2. Starting CamBPM and old ES through docker-compose -->
+          <!-- 2. Starting CamBPM, old  and new ES through docker-compose -->
           <execution>
-            <id>start-old-ES-and-CamBpm</id>
+            <id>start-old-new-ES-and-CamBpm</id>
             <goals>
               <goal>run</goal>
             </goals>
@@ -76,16 +77,25 @@
               <target name="Starting CamBpm and old ES through docker-compose" xmlns:ac="antlib:net.sf.antcontrib">
                 <exec dir="${project.basedir}/../.." executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="docker-compose up -d --force-recreate --renew-anon-volumes" />
+                  <arg value="docker-compose up -d --force-recreate --renew-anon-volumes cambpm" />
                   <env key="CAMBPM_VERSION" value="${camunda.engine.version}" />
-                  <env key="ES_VERSION" value="${previous.optimize.elasticsearch.version}" />
                 </exec>
+                <echo message="Create ES instances" />
+                <!-- The old ElasticSearch docker container will automatically mount the ES data folder -->
+                <exec dir="${project.basedir}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="docker-compose up -d --force-recreate --renew-anon-volumes" />
+                  <env key="NEW_ES_VERSION" value="${elasticsearch.version}" />
+                  <env key="OLD_ES_VERSION" value="${previous.optimize.elasticsearch.version}" />
+                  <env key="ELASTICSEARCH_SNAPSHOT_PATH" value="${elasticsearch.snapshot.path}" />
+                </exec>
+                <echo message="Create ES instances have been created." />
               </target>
             </configuration>
           </execution>
           <!-- 3. Make sure CamBPM and ES are up and running -->
           <execution>
-            <id>check-cambpm-is-up</id>
+            <id>check-es-cambpm-is-up</id>
             <goals>
               <goal>run</goal>
             </goals>
@@ -93,19 +103,32 @@
             <configuration>
               <skip>${skip.docker}</skip>
               <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                <echo message="Check ES is running..." />
-                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9200" />
-                </waitfor>
-                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9200/_cluster/state" />
-                </waitfor>
-                <echo message="ES is running." />
+
                 <echo message="Check CamBPM is running..." />
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                   <socket server="localhost" port="8080" />
                 </waitfor>
                 <echo message="CamBPM is running." />
+
+                <echo message="Check new ES is running..." />
+                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <socket server="localhost" port="${new.optimize.elasticsearch.port}" />
+                </waitfor>
+                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <http url="http://localhost:${new.optimize.elasticsearch.port}/_cluster/state" />
+                </waitfor>
+                <echo message="New ES is running." />
+
+                <echo message="Old ES successfully started." />
+                <echo message="Waiting for old ES to be fully up..." />
+                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <socket server="localhost" port="${old.optimize.elasticsearch.port}" />
+                </waitfor>
+                <waitfor maxwait="50" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                  <http url="http://localhost:${old.optimize.elasticsearch.port}/_cluster/health?wait_for_status=yellow&amp;timeout=10s" />
+                </waitfor>
+                <echo message="Old ES is running." />
+
               </target>
             </configuration>
           </execution>
@@ -123,84 +146,103 @@
                 <echo message="Making sure that ElasticSearch is clean by wiping all data..." />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:9200/_all" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:${old.optimize.elasticsearch.port}/_all" />
                 </exec>
                 <echo message="Successfully wiped all data!" />
 
+                <echo message="Removing the default environment-config so we can overwrite the ES port..." />
+                <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash">
+                  <arg value="-c" />
+                  <arg value="rm ./environment/environment-config.yaml" />
+                </exec>
+
                 <echo message="Starting Optimize ${project.previousVersion}..." />
-                <exec dir="${project.build.directory}/${project.previousVersion}/" executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh" spawn="true" />
-                <echo message="Waiting for Optimize to start..." />
+                <exec dir="${project.build.directory}/${project.previousVersion}/" executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh" spawn="true">
+                  <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${old.optimize.elasticsearch.port}" />
+                </exec>
+                <echo message="Optimize ${project.previousVersion} has benn started." />
+
+                <echo message="Waiting for Optimize to fully booted up..." />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
                 </exec>
+                <echo message="Optimize has benn booted up." />
 
                 <echo message="Waiting for Optimize Import to finish..." />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
                 </exec>
+                <echo message="Import has been finished." />
 
                 <echo message="Authenticating on optimize api..." />
                 <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie -o authResponse" />
                 </exec>
+                <echo message="Authentication has been successful." />
 
                 <echo message="Reading all reports from optimize api..." />
                 <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
                 </exec>
+                <echo message="Reports successfully read." />
 
                 <echo message="Killing Optimize ${project.previousVersion}..." />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="pkill -f org.camunda.optimize.Main" />
                 </exec>
+                <echo message="Killed Optmize." />
               </target>
             </configuration>
           </execution>
-          <!-- 5. Start new ElasticSearch version with old data Copy old ES data folder to target -->
+          <!-- 5. Copy the data from the old ES to the new ES instance -->
           <execution>
-            <id>start-new-ES</id>
+            <id>copy-data</id>
             <goals>
               <goal>run</goal>
             </goals>
             <phase>pre-integration-test</phase>
             <configuration>
-              <skip>${skip.docker}</skip>
+              <skip>${skip.tests}</skip>
               <target name="Start new ES version" xmlns:ac="antlib:net.sf.antcontrib">
 
-                <echo message="Copying data from old ES version to target folder" />
+                <echo message="Create repository in old and new ES" />
                 <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="docker cp elasticsearch:/usr/share/elasticsearch/data ${project.build.directory}/esdata" />
+                  <arg value="curl -X PUT localhost:${old.optimize.elasticsearch.port}/_snapshot/my_backup?pretty -H 'Content-Type: application/json' -d'{ &quot;type&quot;: &quot;fs&quot;, &quot;settings&quot;: { &quot;location&quot;: &quot;${elasticsearch.snapshot.path}&quot;, &quot;compress&quot;: false } }' " />
                 </exec>
-
-                <echo message="Stopping old ES..." />
-                <exec dir="${project.basedir}/../.." executable="/bin/bash" failonerror="true">
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="docker stop elasticsearch" />
+                  <arg value="curl -X PUT localhost:${new.optimize.elasticsearch.port}/_snapshot/my_backup?pretty -H 'Content-Type: application/json' -d'{ &quot;type&quot;: &quot;fs&quot;, &quot;settings&quot;: { &quot;location&quot;: &quot;${elasticsearch.snapshot.path}&quot;, &quot;compress&quot;: false } }' " />
                 </exec>
-                <echo message="Old ES is stopped." />
+                <echo message="Repositories successfully created." />
 
-                <echo message="Create ES with new version" />
-                <!-- The new ElasticSearch docker container will automatically mount the ES data folder -->
-                <exec dir="${project.basedir}" executable="/bin/bash" failonerror="true">
+                <echo message="Create snapshot on old ES" />
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="docker-compose up -d --force-recreate --renew-anon-volumes" />
-                  <env key="ES_VERSION" value="${elasticsearch.version}" />
+                  <arg value="curl -X PUT localhost:${old.optimize.elasticsearch.port}/_snapshot/my_backup/snapshot_1?wait_for_completion=true" />
                 </exec>
-                <echo message="New ES successfully started." />
-                <echo message="Waiting for ES to be fully up..." />
-                <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9250" />
-                </waitfor>
-                <waitfor maxwait="50" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9250/_cluster/health?wait_for_status=yellow&amp;timeout=10s" />
-                </waitfor>
-                <echo message="New ES is running." />
+                <echo message="Snapshot successfully created." />
+
+                <!-- Both docker containers share a volume on ${elasticsearch.snapshot.path}. Thus, it's possible to immediately restore the snapshot. -->
+                <echo message="Restore snapshot on new ES" />
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -X POST localhost:${new.optimize.elasticsearch.port}/_snapshot/my_backup/snapshot_1/_restore?wait_for_completion=true" />
+                </exec>
+                <echo message="Snapshot successfully restored." />
+
+                <echo message="Deleting snapshot..." />
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -X DELETE localhost:${new.optimize.elasticsearch.port}/_snapshot/my_backup/snapshot_1?pretty" />
+                </exec>
+                <echo message="Snapshot deletion was successful." />
+
               </target>
             </configuration>
           </execution>
@@ -278,12 +320,12 @@
                 </exec>
                 <echo message="CamBPM successfully stopped." />
 
-                <echo message="Stopping new ES version..." />
+                <echo message="Stopping ES instances..." />
                 <exec dir="${project.basedir}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="docker-compose rm -sfv" />
                 </exec>
-                <echo message="New ES version successfully stopped." />
+                <echo message="ES instances successfully stopped." />
               </target>
             </configuration>
           </execution>
