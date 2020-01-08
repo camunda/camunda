@@ -81,10 +81,11 @@ public class CollectionScopeService {
       .stream()
       .map(scope -> {
         final List<String> tenantsToMask = scope.getTenants();
-        final List<TenantDto> authorizedTenantDtos =
-          definitionService.isEventProcessDefinition(scope.getDefinitionKey())
-            ? Lists.newArrayList(TenantService.TENANT_NOT_DEFINED)
-            : definitionAuthorizationService
+        List<TenantDto> authorizedTenantDtos;
+        if (definitionService.isEventProcessDefinition(scope.getDefinitionKey())) {
+          authorizedTenantDtos = Lists.newArrayList(TenantService.TENANT_NOT_DEFINED);
+        } else {
+          authorizedTenantDtos = definitionAuthorizationService
             .filterAuthorizedTenantsForDefinition(
               identityId, identityType, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
             )
@@ -93,9 +94,10 @@ public class CollectionScopeService {
             .map(tenantsForUserById::get)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
-        authorizedTenantDtos.addAll(tenantsToMask.stream()
-                                      .map((t) -> UNAUTHORIZED_TENANT_MASK)
-                                      .collect(Collectors.toList()));
+          authorizedTenantDtos.addAll(tenantsToMask.stream()
+                                        .map((t) -> UNAUTHORIZED_TENANT_MASK)
+                                        .collect(Collectors.toList()));
+        }
         return new CollectionScopeEntryRestDto()
           .setId(scope.getId())
           .setDefinitionKey(scope.getDefinitionKey())

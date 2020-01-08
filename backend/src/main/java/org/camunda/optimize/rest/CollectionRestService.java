@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;

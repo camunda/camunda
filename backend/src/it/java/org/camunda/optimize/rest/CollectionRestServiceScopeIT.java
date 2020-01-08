@@ -41,7 +41,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class CollectionRestServiceScopeIT extends AbstractIT {
-  
+
   @Test
   public void partialCollectionUpdateDoesNotAffectScopes() {
     //given
@@ -108,7 +108,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {});
+      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      });
 
     // then
     assertThat(scopeEntries)

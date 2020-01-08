@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.collection;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -141,6 +142,9 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     assertThat(scopeEntries)
       .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
       .containsExactlyInAnyOrder(key1, key2);
+    assertThat(scopeEntries)
+      .extracting(CollectionScopeEntryRestDto::getTenants)
+      .containsOnly(Lists.newArrayList(TENANT_NOT_DEFINED));
   }
 
   @ParameterizedTest(name = "get scope for collection where user is authorized for key of one type but not the other")
