@@ -26,6 +26,8 @@ public class ArchiverProperties {
 
   private int rolloverBatchSize = 100;
 
+  private String waitPeriodBeforeArchiving = "1h";
+
   public boolean isRolloverEnabled() {
     return rolloverEnabled;
   }
@@ -72,5 +74,17 @@ public class ArchiverProperties {
 
   public void setThreadsCount(int threadsCount) {
     this.threadsCount = threadsCount;
+  }
+
+  public String getWaitPeriodBeforeArchiving() {
+    return waitPeriodBeforeArchiving;
+  }
+
+  public void setWaitPeriodBeforeArchiving(String waitPeriodBeforeArchiving) {
+    this.waitPeriodBeforeArchiving = waitPeriodBeforeArchiving;
+  }
+
+  public String getArchivingTimepoint() {
+    return "now-" + waitPeriodBeforeArchiving;
   }
 }

@@ -6,17 +6,24 @@
 package org.camunda.operate.migration;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
+import org.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
@@ -53,7 +60,14 @@ public class DataGenerator {
   private Random random = new Random();
 
   private List<Long> workflowInstanceKeys = new ArrayList<>();
-  
+
+  private DateTimeFormatter archiverDateTimeFormatter;
+
+  @PostConstruct
+  public void init() {
+    archiverDateTimeFormatter = DateTimeFormatter.ofPattern(migrationProperties.getArchiverDateFormat()).withZone(ZoneId.systemDefault());
+  }
+
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     logger.info("Starting generating data...");
@@ -69,7 +83,9 @@ public class DataGenerator {
     for(int i=0;i<migrationProperties.getCountOfResolveOperation();i++) {
       createOperation(OperationType.RESOLVE_INCIDENT,workflowInstanceKeys.size() * 21);
     }
-    
+
+    waitTillSomeInstancesAreArchived();
+
     try {
       esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -77,7 +93,30 @@ public class DataGenerator {
     }
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
-  
+
+  private void waitTillSomeInstancesAreArchived() {
+    ThreadUtil.sleepFor(60 * 1000L);   //after 1 minute finished instances will be archived
+    int count = 0;
+    while (!someInstancesAreArchived() && count < 10) {
+      ThreadUtil.sleepFor(10 * 1000L);
+      count++;
+    }
+    if (count == 10 && !someInstancesAreArchived()) {
+      logger.error("There must be some archived instances");
+      throw new RuntimeException("Data generation was not full: no archived instances");
+    }
+  }
+
+  private boolean someInstancesAreArchived() {
+    try {
+      SearchResponse search = esClient.search(
+          new SearchRequest("operate-*_" + archiverDateTimeFormatter.format(Instant.now())), RequestOptions.DEFAULT);
+      return search.getHits().totalHits > 0;
+    } catch (IOException e) {
+      throw new RuntimeException("Exception occurred whil checking archived indices: " + e.getMessage(), e);
+    }
+  }
+
   private void createOperation(OperationType operationType,int maxAttempts) {
     boolean operationStarted = false;
     int attempts = 0;

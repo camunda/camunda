@@ -1,11 +1,15 @@
 {
 	"source": {
 		"index": [
-			"operate-incident_"
+			"operate-incident_*"
 		]
 	},
 	"dest": {
 		"index": "operate-incident-${schema.version}_",
 		"pipeline": "operate-incident"
+	},
+	"script": {
+		"lang": "painless",
+		"source": "ctx._index = 'operate-incident-${schema.version}_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))"
 	}
 }

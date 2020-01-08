@@ -1,10 +1,14 @@
 {
 	"source": {
 		"index": [
-			"operate-sequence-flow_"
+			"operate-sequence-flow_*"
 		]
 	},
 	"dest": {
 		"index": "operate-sequence-flow-${schema.version}_"
+	},
+	"script": {
+		"lang": "painless",
+		"source": "ctx._index = 'operate-sequence-flow-${schema.version}_' + (ctx._index.substring(ctx._index.indexOf('_') + 1, ctx._index.length()))"
 	}
 }

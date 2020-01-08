@@ -130,6 +130,8 @@ spec:
       env:
         - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
           value: false
+        - name: CAMUNDA_OPERATE_ARCHIVER_WAIT_PERIOD_BEFORE_ARCHIVING
+          value: 1m
       resources:
         limits:
           cpu: 1
