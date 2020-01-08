@@ -48,6 +48,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -68,8 +70,8 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
   public EndpointManager(
       final BrokerClient brokerClient, final LongPollingActivateJobsHandler longPollingHandler) {
     this.brokerClient = brokerClient;
-    this.topologyManager = brokerClient.getTopologyManager();
-    this.activateJobsHandler = longPollingHandler;
+    topologyManager = brokerClient.getTopologyManager();
+    activateJobsHandler = longPollingHandler;
   }
 
   private void addBrokerInfo(
@@ -186,6 +188,16 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toFailJobRequest,
         ResponseMapper::toFailJobResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void throwError(
+      final ThrowErrorRequest request, final StreamObserver<ThrowErrorResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toThrowErrorRequest,
+        ResponseMapper::toThrowErrorResponse,
         responseObserver);
   }
 
