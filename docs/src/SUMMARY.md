@@ -36,6 +36,7 @@
       * [None Events](bpmn-workflows/none-events/none-events.md)
       * [Message Events](bpmn-workflows/message-events/message-events.md)
       * [Timer Events](bpmn-workflows/timer-events/timer-events.md)
+      * [Error Events](bpmn-workflows/error-events/error-events.md)
     * [Subprocesses](bpmn-workflows/subprocesses.md)
       * [Embedded Subprocesses](bpmn-workflows/embedded-subprocesses/embedded-subprocesses.md)
       * [Call Activities](bpmn-workflows/call-activities/call-activities.md)
