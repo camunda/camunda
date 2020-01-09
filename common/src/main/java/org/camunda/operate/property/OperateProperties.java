@@ -40,6 +40,8 @@ public class OperateProperties {
    */
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
+  private boolean enterprise = false;
+
   @NestedConfigurationProperty
   private ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
 
@@ -171,7 +173,15 @@ public class OperateProperties {
   public void setClusterNode(ClusterNodeProperties clusterNode) {
     this.clusterNode = clusterNode;
   }
-  
+
+  public boolean isEnterprise() {
+    return enterprise;
+  }
+
+  public void setEnterprise(boolean enterprise) {
+    this.enterprise = enterprise;
+  }
+
   public static String getSchemaVersion() {
     String versionFromManifest = OperateProperties.class.getPackage().getImplementationVersion();
     String version = versionFromManifest==null?DEFAULT_VERSION:versionFromManifest;
