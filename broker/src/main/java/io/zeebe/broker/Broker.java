@@ -188,12 +188,13 @@ public final class Broker implements AutoCloseable {
     scheduler = brokerContext.getScheduler();
     scheduler.start();
     return () ->
-        scheduler.stop().get(brokerContext.getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        scheduler.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
-    return () -> atomix.stop().join();
+    return () ->
+        atomix.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   private AutoCloseable commandApiTransportStep(
@@ -245,7 +246,10 @@ public final class Broker implements AutoCloseable {
   }
 
   private void scheduleActor(final Actor actor) {
-    brokerContext.getScheduler().submitActor(actor).join(30, TimeUnit.SECONDS);
+    brokerContext
+        .getScheduler()
+        .submitActor(actor)
+        .join(brokerContext.getStepTimeout().toSeconds(), TimeUnit.SECONDS);
   }
 
   private AutoCloseable topologyManagerStep(
