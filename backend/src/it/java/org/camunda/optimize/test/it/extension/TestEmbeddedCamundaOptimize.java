@@ -17,6 +17,7 @@ import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.client.ClientProperties;
@@ -167,6 +168,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public SyncedIdentityCacheService getSyncedIdentityCacheService() {
     return getApplicationContext().getBean(SyncedIdentityCacheService.class);
+  }
+
+  public EventIndexRolloverService getEventIndexRolloverService() {
+    return getApplicationContext().getBean(EventIndexRolloverService.class);
   }
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {

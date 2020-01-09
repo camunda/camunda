@@ -68,6 +68,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -479,6 +480,18 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     } catch (Exception e) {
       //nothing to do
       log.error("can't clean optimize indexes", e);
+    }
+  }
+
+  public void deleteAllEventIndices() {
+    DeleteIndexRequest request = new DeleteIndexRequest(
+      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_INDEX_NAME + "_*")
+    );
+
+    try {
+      getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not delete all event indices.", e);
     }
   }
 

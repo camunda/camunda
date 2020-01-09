@@ -102,5 +102,7 @@ public interface ConfigurationServiceConstants {
 
   String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
 
+  String EVENT_INDEX_ROLLOVER_CONFIGURATION = "$.eventBasedProcess.eventIndexRollover";
+
   String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
 }

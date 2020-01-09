@@ -35,6 +35,8 @@ import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.client.indices.rollover.RolloverRequest;
+import org.elasticsearch.client.indices.rollover.RolloverResponse;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
@@ -162,6 +164,10 @@ public class OptimizeElasticsearchClient {
                                                   final RequestOptions options) throws IOException {
     applyIndexPrefixes(updateByQueryRequest);
     return highLevelClient.updateByQuery(updateByQueryRequest, options);
+  }
+
+  public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
+    return highLevelClient.indices().rollover(rolloverRequest, RequestOptions.DEFAULT);
   }
 
   private void applyIndexPrefix(final DocWriteRequest<?> request) {

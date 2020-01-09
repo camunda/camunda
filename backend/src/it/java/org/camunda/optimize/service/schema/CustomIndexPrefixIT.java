@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersionAndSuffix;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -82,12 +83,17 @@ public class CustomIndexPrefixIT extends AbstractIT {
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
     assertThat(mappings.size(), is(25));
     for (IndexMappingCreator mapping : mappings) {
-      final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
-      final String expectedIndexName = getOptimizeIndexNameForAliasAndVersion(
-        expectedAliasName, String.valueOf(mapping.getVersion())
+      final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(
+        mapping.getIndexName(),
+        CUSTOM_PREFIX
+      );
+      final String expectedIndexName = getOptimizeIndexNameForAliasAndVersionAndSuffix(
+        expectedAliasName, String.valueOf(mapping.getVersion()), mapping.getIndexNameSuffix()
       );
 
-      final RestHighLevelClient highLevelClient = customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient().getHighLevelClient();
+      final RestHighLevelClient highLevelClient =
+        customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+          .getHighLevelClient();
 
       assertThat(
         "Custom prefix alias exists for type " + mapping.getIndexName(),
@@ -113,7 +119,9 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     //when
     embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(
-      customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient().getIndexNameService().getIndexPrefix()
+      customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+        .getIndexNameService()
+        .getIndexPrefix()
     );
     embeddedOptimizeExtension.reloadConfiguration();
     initializeSchema();
@@ -124,7 +132,10 @@ public class CustomIndexPrefixIT extends AbstractIT {
     customPrefixElasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(1));
-    assertThat(customPrefixElasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(2));
+    assertThat(
+      customPrefixElasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
+      is(2)
+    );
   }
 
   private void deploySimpleProcess() {

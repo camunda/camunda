@@ -33,6 +33,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationParse
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_INDEX_ROLLOVER_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
@@ -163,6 +164,8 @@ public class ConfigurationService {
   private UIConfiguration uiConfiguration;
 
   private IdentitySyncConfiguration identitySyncConfiguration;
+
+  private EventIndexRolloverConfiguration eventIndexRolloverConfiguration;
 
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
 
@@ -581,6 +584,7 @@ public class ConfigurationService {
   public void setContainerAccessUrlValue(String containerAccessUrl) {
     this.containerAccessUrl = Optional.ofNullable(containerAccessUrl);
   }
+
   public List<String> getDecisionInputImportPluginBasePackages() {
     if (DecisionInputImportPluginBasePackages == null) {
       DecisionInputImportPluginBasePackages =
@@ -631,6 +635,7 @@ public class ConfigurationService {
   public void setContainerHttpPortValue(Integer containerHttpPort) {
     this.containerHttpPort = Optional.ofNullable(containerHttpPort);
   }
+
   @JsonIgnore
   public boolean isHttpDisabled() {
     return !getContainerHttpPort().isPresent();
@@ -866,6 +871,10 @@ public class ConfigurationService {
       identitySyncConfiguration = configJsonContext.read(IDENTITY_SYNC_CONFIGURATION, IdentitySyncConfiguration.class);
     }
     return identitySyncConfiguration;
+  }
+
+  public EventIndexRolloverConfiguration getEventIndexRolloverConfiguration() {
+    return getEventBasedProcessConfiguration().getEventIndexRollover();
   }
 
   public EventBasedProcessConfiguration getEventBasedProcessConfiguration() {

@@ -61,8 +61,7 @@ public class EventClient {
 
   private <T> List<T> getAllStoredDocumentsForIndexAsClass(String indexName, Class<T> dtoClass) {
     SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName);
-    return mapHits(response.getHits(), dtoClass, embeddedOptimizeExtension.getObjectMapper()
-    );
+    return mapHits(response.getHits(), dtoClass, embeddedOptimizeExtension.getObjectMapper());
   }
 
   public EventDto createEventDto() {

@@ -12,6 +12,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
@@ -37,6 +39,16 @@ public class EventIndex extends StrictIndexMappingCreator {
   @Override
   public String getIndexName() {
     return ElasticsearchConstants.EVENT_INDEX_NAME;
+  }
+
+  @Override
+  public String getIndexNameSuffix() {
+    return ElasticsearchConstants.EVENT_INDEX_SUFFIX;
+  }
+
+  @Override
+  public Boolean getCreateFromTemplate() {
+    return true;
   }
 
   @Override
