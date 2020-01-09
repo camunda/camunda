@@ -111,6 +111,7 @@ export default withErrorHandling(
     };
 
     setMapping = (event, mapped, mapAs) => {
+      this.setDirty();
       this.setState(({mappings, selectedNode}) => {
         let change;
         if (!mappings[selectedNode.id]) {
