@@ -21,6 +21,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -68,6 +69,11 @@ public final class ResponseMapper {
 
   public static FailJobResponse toFailJobResponse(final long key, final JobRecord brokerResponse) {
     return FailJobResponse.getDefaultInstance();
+  }
+
+  public static ThrowErrorResponse toThrowErrorResponse(
+      final long key, final JobRecord brokerResponse) {
+    return ThrowErrorResponse.getDefaultInstance();
   }
 
   public static CompleteJobResponse toCompleteJobResponse(

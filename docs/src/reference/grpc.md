@@ -12,6 +12,7 @@
   * [PublishMessage RPC](#publishmessage-rpc)
   * [ResolveIncident RPC](#resolveincident-rpc)
   * [SetVariables RPC](#setvariables-rpc)
+  * [ThrowError RPC](#throwerror-rpc)
   * [Topology RPC](#topology-rpc)
   * [UpdateJobRetries RPC](#updatejobretries-rpc)
 
@@ -28,16 +29,16 @@ As a result of this proxying, any errors which occur between the gateway and the
 the broker is unavailable, etc.) are reported to the client using the following error codes.
  * `GRPC_STATUS_RESOURCE_EXHAUSTED`: if the broker is receiving too many requests more than what it can handle, it kicks off back-pressure and rejects requests with this error code.
     In this case, it is possible to retry the requests with an appropriate retry strategy.
-    If you receive many such errors with in a small time period, it indicates that the broker is constantly under high load. 
+    If you receive many such errors with in a small time period, it indicates that the broker is constantly under high load.
     It is recommended to reduce the rate of requests.
     When the back-pressure kicks off, the broker may reject any request except *CompleteJob* RPC and *FailJob* RPC.
-    These requests are white-listed for back-pressure and are always accepted by the broker even if it is receiving requests above its limits. 
+    These requests are white-listed for back-pressure and are always accepted by the broker even if it is receiving requests above its limits.
  * `GRPC_STATUS_UNAVAILABLE`:  if the gateway itself is in an invalid state (e.g. out of memory)
  * `GRPC_STATUS_INTERNAL`:  for any other internal errors that occurred between the gateway and the broker.
 
 This behavior applies to every single possible RPC; in these cases, it is possible that retrying
 would succeed, but it is recommended to do so with an appropriate retry policy
-(e.g. a combination of exponential backoff or jitter wrapped in a circuit breaker). 
+(e.g. a combination of exponential backoff or jitter wrapped in a circuit breaker).
 
 
 In the documentation below, the documented errors are business logic errors, meaning
@@ -252,7 +253,7 @@ message CreateWorkflowInstanceResponse {
 
 ### CreateWorkflowInstanceWithResult RPC
 
-Similar to `CreateWorkflowInstance RPC` , creates and starts an instance of the specified workflow. 
+Similar to `CreateWorkflowInstance RPC` , creates and starts an instance of the specified workflow.
 Unlike `CreateWorkflowInstance RPC`, the response is returned when the workflow is completed.
 
 Note that only workflows with none start events can be started through this command.
@@ -262,7 +263,7 @@ Note that only workflows with none start events can be started through this comm
 ```protobuf
 message CreateWorkflowInstanceRequest {
    CreateWorkflowInstanceRequest request = 1;
-   // timeout in milliseconds. the request will be closed if the workflow is not completed before 
+   // timeout in milliseconds. the request will be closed if the workflow is not completed before
    // the requestTimeout.
    // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
    int64 requestTimeout = 2;
@@ -547,6 +548,44 @@ Returned if:
   - the given payload is not a valid JSON document; all payloads are expected to be
     valid JSON documents where the root node is an object.
 
+
+### ThrowError RPC
+
+Throw an error to indicate that a business error is occurred while processing the job. The error is identified by an error code and is handled by an error catch event in the workflow with the same error code.
+
+#### Input: ThrowErrorRequest
+
+```protobuf
+message ThrowErrorRequest {
+  // the unique job identifier, as obtained when activating the job
+  int64 jobKey = 1;
+  // the error code that will be matched with an error catch event
+  string errorCode = 2;
+  // an optional error message that provides additional context
+  string errorMessage = 3;
+}
+```
+
+#### Output: ThrowErrorResponse
+
+```protobuf
+message ThrowErrorResponse {
+}
+```
+
+#### Errors
+
+##### GRPC_STATUS_NOT_FOUND
+
+Returned if:
+
+  - no job was found with the given key
+
+##### GRPC_STATUS_FAILED_PRECONDITION
+
+Returned if:
+
+  - the job is already in a failed state, i.e. ran out of retries
 
 ### Topology RPC
 
