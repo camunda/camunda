@@ -8,8 +8,9 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
@@ -22,17 +23,25 @@ import org.elasticsearch.script.Script;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class EventProcessInstanceWriter {
+
   private final EventProcessInstanceIndex eventProcessInstanceIndex;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private List<Object> gatewayLookup;
+
+  public void setGatewayLookup(final List<EventProcessGatewayDto> gatewayLookup) {
+    this.gatewayLookup = gatewayLookup.stream()
+      .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {})).collect(Collectors.toList());
+  }
 
   public void importProcessInstances(final List<EventProcessInstanceDto> eventProcessInstanceDtos) {
     final String importItemName = "event process instances";
@@ -59,6 +68,7 @@ public class EventProcessInstanceWriter {
       objectMapper.convertValue(eventProcessInstanceDto, new TypeReference<Map>() {})
       // @formatter:on
     );
+    params.put("gatewayLookup", gatewayLookup);
     params.put("dateFormatPattern", OPTIMIZE_DATE_FORMAT);
     final Script updateScript = createDefaultScript(createUpdateInlineUpdateScript(), params);
 
@@ -89,6 +99,9 @@ public class EventProcessInstanceWriter {
     // @formatter:off
     return
       createInstanceUpdateFunction() +
+      createRemoveExistingGatewaysFunction() +
+      createNewGatewayFunction() +
+      createAddGatewaysForProcessInstanceFunction() +
       "void calculateAndAssignEventDuration(def event, def formatter) {\n" +
         "if (event.startDate != null && event.endDate != null) {\n" +
         "  event.durationInMs = formatter.parse(event.endDate).getTime() - formatter.parse(event.startDate).getTime();\n" +
@@ -106,6 +119,8 @@ public class EventProcessInstanceWriter {
         "processInstance.variables.removeIf(item -> item.id.equals(variableEntry.id));\n" +
       "}\n" +
       "processInstance.variables.addAll(processInstanceUpdate.variables);\n" +
+
+      "removeExistingGateways(processInstance, params.gatewayLookup);\n" +
 
       "Map existingEventsByIdMap = processInstance.events.stream()\n" +
         ".collect(Collectors.toMap(event -> event.id, Function.identity()));\n" +
@@ -143,10 +158,20 @@ public class EventProcessInstanceWriter {
           ");\n" +
         "if(updateableEvent.isPresent()) {\n" +
         "  def event = updateableEvent.get();\n" +
-        "  event.startDate = eventUpdate.startDate ?: event.startDate;\n" +
-        "  event.endDate = eventUpdate.endDate ?: event.endDate;\n" +
-        "  appliedUpdates.add(eventUpdate);\n" +
-        "  calculateAndAssignEventDuration(event, dateFormatter);\n" +
+        // These 'if' statements are required to prevent events being updated by themselves in looping models
+        // and to stop updates of the 'wrong' event in a looping sequence, which would result in the start date
+        // being after the end date
+        "  if (eventUpdate.startDate != null && event.endDate != null && " +
+        "      (dateFormatter.parse(eventUpdate.startDate).before(dateFormatter.parse(event.endDate)))) {\n" +
+        "    event.startDate = eventUpdate.startDate;\n" +
+        "    appliedUpdates.add(eventUpdate);\n" +
+        "    calculateAndAssignEventDuration(event, dateFormatter);\n" +
+        "  } else if (eventUpdate.endDate != null && event.startDate != null &&" +
+        "      (dateFormatter.parse(eventUpdate.endDate).after(dateFormatter.parse(event.startDate)))) {\n" +
+        "    event.endDate = eventUpdate.endDate;\n" +
+        "    appliedUpdates.add(eventUpdate);\n" +
+        "    calculateAndAssignEventDuration(event, dateFormatter);\n" +
+        "  }\n" +
         "}\n" +
       "}\n" +
 
@@ -156,6 +181,8 @@ public class EventProcessInstanceWriter {
       "processInstance.pendingFlowNodeInstanceUpdates = pendingFlowNodeInstanceUpdates.stream()\n" +
         ".filter(eventUpdate -> !appliedUpdates.contains(eventUpdate))\n" +
         ".collect(Collectors.toList());\n" +
+
+      "addGatewaysForProcessInstance(processInstance, params.gatewayLookup, eventDateComparator, dateFormatter);\n" +
       "updateProcessInstance(processInstance, dateFormatter);\n"
       ;
     // @formatter:on
@@ -192,4 +219,130 @@ public class EventProcessInstanceWriter {
       "}\n";
     // @formatter:on
   }
+
+  private String createRemoveExistingGatewaysFunction() {
+    // @formatter:off
+    return
+      "void removeExistingGateways(def instance, def gatewayLookup) {\n" +
+        "gatewayLookup.forEach(gatewayEvent -> \n" +
+          "instance.events.removeIf(event -> gatewayEvent.id.equals(event.activityId))\n" +
+        ")" +
+      "}\n";
+    // @formatter:on
+  }
+
+  private String createAddGatewaysForProcessInstanceFunction() {
+    // @formatter:off
+    return
+      "void addGatewaysForProcessInstance(def instance, def gatewayLookup, def startEndDateComparator, def dateFormatter) {\n" +
+        "List gatewayEventsToAdd = new ArrayList();\n" +
+        "List gatewayIdsInModel = gatewayLookup.stream().map(gateway -> gateway.id).collect(Collectors.toList());\n" +
+        "List existingEvents = new ArrayList(instance.events);\n" +
+        "if (!existingEvents.isEmpty() && !gatewayLookup.isEmpty()) { \n" +
+          "Collections.sort(existingEvents, startEndDateComparator);\n" +
+          "for (def possibleGateway : gatewayLookup) {\n" +
+            "int eventAddedCount = 0;\n" +
+            // To know which gateways can be added, we have to check each of the following conditions to find the first match
+
+            // Gateways with a single target flow node are closing gateways.
+            "if (possibleGateway.nextNodeIds.size() == 1) {\n" +
+              // A gateway with a single target flow node that isn't a gateway can be added for every occurrence of that flow node event
+              "if (!gatewayIdsInModel.contains(possibleGateway.nextNodeIds.get(0))) {" +
+                "for (def event : existingEvents) {\n" +
+                  "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
+                    "eventAddedCount ++;\n" +
+                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                        "event.startDate, event.startDate, eventAddedCount);\n" +
+                    "gatewayEventsToAdd.add(newGateway);\n" +
+                  "}\n" +
+                "}\n" +
+              // A gateway with target flow node as a gateway can be added if the expected source flow node event(s) have occurred
+              "} else {\n" +
+                 // Event based gateways must always have target events or it is not a valid model, so no logic required.
+                 // For exclusive gateways, this is when any one of the source flow node events have occurred
+                "if (possibleGateway.type.equals(\"exclusiveGateway\")) {\n" +
+                  "for (def event : existingEvents) {\n" +
+                    "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
+                      "eventAddedCount ++;\n" +
+                      "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                          "event.endDate, event.endDate, eventAddedCount);\n" +
+                      "gatewayEventsToAdd.add(newGateway);\n" +
+                    "}\n" +
+                  "}\n" +
+                // For parallel gateways, this is when all of the source flow node events have occurred
+                "} else if (possibleGateway.type.equals(\"parallelGateway\")) {\n" +
+                  "Map relatedEventsByActivityId = existingEvents.stream()\n" +
+                                       ".filter(event -> possibleGateway.previousNodeIds.contains(event.activityId))\n" +
+                                       ".filter(event -> event.endDate != null)\n" +
+                                       ".collect(Collectors.groupingBy(event -> event.activityId));\n" +
+                  "List mappablePreviousNodeIds = possibleGateway.previousNodeIds.stream()" +
+                    ".filter(nodeId -> !gatewayIdsInModel.contains(nodeId))\n" +
+                    ".collect(Collectors.toList());\n" +
+                  "boolean gatewaysCanBeAdded = relatedEventsByActivityId.keySet.containsAll(mappablePreviousNodeIds);\n" +
+                  "while (gatewaysCanBeAdded) {\n" +
+                    "List eventsForGateway = new ArrayList();\n" +
+                    "for (def previousNodeId : mappablePreviousNodeIds) {\n" +
+                      "eventsForGateway.add(relatedEventsByActivityId.get(previousNodeId).remove(0));\n" +
+                    "}\n" +
+                    "Collections.sort(eventsForGateway, startEndDateComparator);\n" +
+                    "def lastEventForGateway = eventsForGateway.get(eventsForGateway.size() - 1);" +
+                    "eventAddedCount ++;\n" +
+                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                          "lastEventForGateway.endDate, lastEventForGateway.endDate, eventAddedCount);\n" +
+                    "gatewayEventsToAdd.add(newGateway);\n" +
+                    "gatewaysCanBeAdded = !relatedEventsByActivityId.values().stream().anyMatch(eventsForActivity -> eventsForActivity.isEmpty());\n" +
+                  "}\n" +
+                "}\n" +
+              "}\n" +
+
+            // Gateways with a single source flow node are opening gateways.
+            "} else if (possibleGateway.previousNodeIds.size() == 1) {\n" +
+              // A gateway with a single source flow node that isn't a gateway can be added for every occurrence of that flow node event
+              "if (!gatewayIdsInModel.contains(possibleGateway.previousNodeIds.get(0))) {" +
+                "for (def event : existingEvents) {\n" +
+                  "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
+                    "eventAddedCount ++;\n" +
+                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                        "event.endDate, event.endDate, eventAddedCount);\n" +
+                    "gatewayEventsToAdd.add(newGateway);\n" +
+                  "}\n" +
+                "}\n" +
+              // A gateway with source flow node as a gateway can be added if the expected target flow node event(s) have occurred
+              "} else {\n" +
+                // For any gateway type, this is when any one of it's target flow node events have occurred
+                "for (def event : existingEvents) {\n" +
+                  "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
+                    "eventAddedCount ++;\n" +
+                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                        "event.startDate, event.startDate, eventAddedCount);\n" +
+                    "gatewayEventsToAdd.add(newGateway);\n" +
+                  "}\n" +
+                "}\n" +
+              "}\n" +
+            "}\n" +
+          "}\n" +
+          "existingEvents.addAll(gatewayEventsToAdd);\n" +
+          "Collections.sort(existingEvents, startEndDateComparator);\n" +
+          "instance.events = existingEvents;\n" +
+        "}\n" +
+      "}\n";
+  }
+
+  private String createNewGatewayFunction() {
+    // @formatter:off
+    return
+      "def createNewGateway(def activityId, def activityType, def startDate, def endDate, def eventAddedCount) {\n" +
+        "def newGateway = [\n" +
+          "'id': activityId + '_' + eventAddedCount,\n" +
+          "'activityId': activityId,\n" +
+          "'activityType': activityType,\n" +
+          "'durationInMs': 0,\n" +
+          "'startDate': startDate,\n" +
+          "'endDate': endDate\n" +
+        "];\n" +
+        "return newGateway;\n" +
+      "}\n";
+    // @formatter:on
+  }
+
 }

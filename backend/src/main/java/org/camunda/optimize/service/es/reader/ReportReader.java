@@ -191,11 +191,6 @@ public class ReportReader {
     );
   }
 
-  public List<ReportDefinitionDto> getAllPrivateReportsForIdsOmitXml(final List<String> reportIds) {
-    log.debug("Fetching all available private reports for IDs [{}]", reportIds);
-    return getPrivateReportDefinitionDtos(reportIds, ReportDefinitionDto.class, ALL_REPORT_INDICES);
-  }
-
   public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIdsOmitXml(final List<String> reportIds) {
     log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
     final Class<SingleProcessReportDefinitionDto> reportType = SingleProcessReportDefinitionDto.class;

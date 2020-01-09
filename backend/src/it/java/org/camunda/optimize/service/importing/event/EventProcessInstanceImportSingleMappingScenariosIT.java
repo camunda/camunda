@@ -14,21 +14,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EventProcessInstanceImportSingleMappingScenariosIT extends AbstractEventProcessIT {
-
-  public static final String FIRST_EVENT_NAME = "firstEvent";
-  public static final String SECOND_EVENT_NAME = "secondEvent";
-  public static final String THIRD_EVENT_NAME = "thirdEvent";
-
-  public static final OffsetDateTime FIRST_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:00.000+01:00");
-  public static final OffsetDateTime SECOND_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:30.000+01:00");
-  public static final OffsetDateTime THIRD_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:01:00.000+01:00");
 
   private static Stream<Arguments> getScenarios() {
     return Stream.of(

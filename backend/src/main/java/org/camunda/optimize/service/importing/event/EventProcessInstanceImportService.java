@@ -5,10 +5,17 @@
  */
 package org.camunda.optimize.service.importing.event;
 
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.Query;
+import org.camunda.bpm.model.bpmn.instance.Activity;
+import org.camunda.bpm.model.bpmn.instance.BaseElement;
+import org.camunda.bpm.model.bpmn.instance.Event;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
+import org.camunda.bpm.model.bpmn.instance.Gateway;
+import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.FlowNodeInstanceUpdateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
@@ -31,6 +38,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -48,24 +56,29 @@ import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.par
 @AllArgsConstructor
 @Slf4j
 public class EventProcessInstanceImportService implements ImportService<EventDto> {
+
+  private static final int MAX_TRAVERSAL_DISTANCE = 10;
+  private static final String EXCLUSIVE_GATEWAY = "exclusiveGateway";
+  private static final String PARALLEL_GATEWAY = "parallelGateway";
+  private static final String EVENT_BASED_GATEWAY = "eventBasedGateway";
+
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EventProcessInstanceWriter eventProcessInstanceWriter;
 
   private final EventProcessPublishStateDto eventProcessPublishStateDto;
   private final Map<String, EventToFlowNodeMapping> eventMappingIdToEventMapping;
-  private final BpmnModelInstance modelInstance;
+  private final BpmnModelInstance bpmnModelInstance;
 
   public EventProcessInstanceImportService(final EventProcessPublishStateDto eventProcessPublishStateDto,
                                            final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                            final EventProcessInstanceWriter eventProcessInstanceWriter) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
-    this.eventProcessInstanceWriter = eventProcessInstanceWriter;
     this.eventProcessPublishStateDto = eventProcessPublishStateDto;
 
-    this.modelInstance = parseBpmnModel(eventProcessPublishStateDto.getXml());
-    this.eventMappingIdToEventMapping = extractMappingByEventIdentifier(
-      eventProcessPublishStateDto, this.modelInstance
-    );
+    this.bpmnModelInstance = parseBpmnModel(eventProcessPublishStateDto.getXml());
+    this.eventMappingIdToEventMapping = extractMappingByEventIdentifier(eventProcessPublishStateDto, bpmnModelInstance);
+    this.eventProcessInstanceWriter = eventProcessInstanceWriter;
+    this.eventProcessInstanceWriter.setGatewayLookup(buildGatewayLookup(eventProcessPublishStateDto, bpmnModelInstance));
   }
 
   @Override
@@ -87,8 +100,8 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     elasticsearchImportJobExecutor.shutdown();
   }
 
-  private List<EventProcessInstanceDto> mapToProcessInstances(final List<EventDto> engineEntities) {
-    final Map<String, List<EventDto>> eventsGroupedByTraceId = engineEntities.stream()
+  private List<EventProcessInstanceDto> mapToProcessInstances(final List<EventDto> ingestedEvents) {
+    final Map<String, List<EventDto>> eventsGroupedByTraceId = ingestedEvents.stream()
       .filter(eventDto -> eventMappingIdToEventMapping.containsKey(getMappingIdentifier(eventDto)))
       // for the same event id we want the last ingested event to win to allow updates
       .sorted(Comparator.comparing(EventDto::getIngestionTimestamp).reversed())
@@ -243,7 +256,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   }
 
   private String getModelElementType(final String nextFlowNodeId) {
-    return modelInstance.getModelElementById(nextFlowNodeId).getElementType().getTypeName();
+    return bpmnModelInstance.getModelElementById(nextFlowNodeId).getElementType().getTypeName();
   }
 
   private List<SimpleProcessVariableDto> extractSimpleVariables(final EventDto eventDto) {
@@ -311,20 +324,52 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
           .mappedAs(mappedAs)
           .flowNodeId(flowNodeId)
           .flowNodeType(flowNode.getElementType().getTypeName())
-          .previousMappedFlowNodeIds(
-            flowNode.getPreviousNodes().list().stream()
-              .map(FlowNode::getId)
-              .filter(mappedFlowNodeIds::contains)
-              .collect(Collectors.toList())
-          )
-          .nextMappedFlowNodeIds(
-            flowNode.getSucceedingNodes().list().stream()
-              .map(FlowNode::getId)
-              .filter(mappedFlowNodeIds::contains)
-              .collect(Collectors.toList())
-          )
+          .previousMappedFlowNodeIds(getPreviousMappedFlowNodeIdsForFlowNode(flowNode, mappedFlowNodeIds))
+          .nextMappedFlowNodeIds(getNextMappedFlowNodeIdsForFlowNode(flowNode, mappedFlowNodeIds))
           .build();
       });
+  }
+
+  private List<String> getPreviousMappedFlowNodeIdsForFlowNode(final FlowNode flowNode, final Set<String> mappedFlowNodeIds) {
+    return new ArrayList<>(findMappedNodes(
+      Sets.newHashSet(),
+      Sets.newHashSet(flowNode),
+      mappedFlowNodeIds,
+      MAX_TRAVERSAL_DISTANCE,
+      FlowNode::getPreviousNodes
+    ));
+  }
+
+  private List<String> getNextMappedFlowNodeIdsForFlowNode(final FlowNode flowNode, final Set<String> mappedFlowNodeIds) {
+    return new ArrayList<>(findMappedNodes(
+      Sets.newHashSet(),
+      Sets.newHashSet(flowNode),
+      mappedFlowNodeIds,
+      MAX_TRAVERSAL_DISTANCE,
+      FlowNode::getSucceedingNodes
+    ));
+  }
+
+  private Set<String> findMappedNodes(Set<String> currentMappedFound,
+                                      Set<FlowNode> nodesToCheck,
+                                      final Set<String> mappedFlowNodeIds,
+                                      int distanceRemaining,
+                                      Function<FlowNode, Query<FlowNode>> getNeighbourNodeFunction) {
+    if (nodesToCheck.isEmpty() || distanceRemaining == 0) {
+      return currentMappedFound;
+    }
+    List<String> newFoundMappedIds = nodesToCheck.stream()
+      .flatMap(gateway -> getNeighbourNodeFunction.apply(gateway).list().stream())
+      .map(FlowNode::getId)
+      .filter(mappedFlowNodeIds::contains)
+      .collect(Collectors.toList());
+    currentMappedFound.addAll(newFoundMappedIds);
+    nodesToCheck = nodesToCheck.stream()
+      .flatMap(gateway -> getNeighbourNodeFunction.apply(gateway).list().stream())
+      .filter(node -> Gateway.class.isAssignableFrom(node.getClass()))
+      .collect(Collectors.toSet());
+    return findMappedNodes(currentMappedFound, nodesToCheck, mappedFlowNodeIds,
+                           distanceRemaining - 1, getNeighbourNodeFunction);
   }
 
   private String getMappingIdentifier(final EventDto eventDto) {
@@ -333,6 +378,56 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
 
   private String getMappingIdentifier(final EventTypeDto eventTypeDto) {
     return String.join(":", eventTypeDto.getGroup(), eventTypeDto.getSource(), eventTypeDto.getEventName());
+  }
+
+  private List<EventProcessGatewayDto> buildGatewayLookup(final EventProcessPublishStateDto eventProcessPublishState,
+                                                          final BpmnModelInstance bpmnModelInstance) {
+    List<EventProcessGatewayDto> eventProcessGatewayDtos = new ArrayList<>();
+
+    final Set<String> mappedFlowNodeIds = eventProcessPublishState.getMappings().keySet();
+    if (mappedFlowNodeIds.isEmpty() || bpmnModelInstance.getModelElementsByType(Gateway.class).isEmpty()) {
+      log.debug("Either no mappings or no gateways exist, no gateway lookup required");
+      return Collections.emptyList();
+    }
+
+    Collection<Gateway> gatewaysInModel = bpmnModelInstance.getModelElementsByType(Gateway.class);
+    for (Gateway gatewayInModel : gatewaysInModel) {
+      String gatewayType = gatewayInModel.getElementType().getTypeName();
+      if (!isSupportedGatewayType(gatewayType)) {
+        log.debug("Gateway type {} not supported. Gateways will not be added for gateway {}",
+          gatewayType, gatewayInModel.getId()
+        );
+      } else {
+        List<String> previousFlowNodeIds = getSupportedIdsFromFlowNodeList(gatewayInModel.getPreviousNodes().list());
+        List<String> nextFlowNodeIds = getSupportedIdsFromFlowNodeList(gatewayInModel.getSucceedingNodes().list());
+        if (previousFlowNodeIds.size() == 1 || nextFlowNodeIds.size() == 1) {
+          eventProcessGatewayDtos.add(
+            EventProcessGatewayDto.builder()
+              .id(gatewayInModel.getId())
+              .type(gatewayInModel.getElementType().getTypeName())
+              .previousNodeIds(previousFlowNodeIds)
+              .nextNodeIds(nextFlowNodeIds)
+              .build()
+          );
+        }
+      }
+    }
+    return eventProcessGatewayDtos;
+  }
+
+  private boolean isSupportedGatewayType(String gatewayType) {
+    return gatewayType.equals(EXCLUSIVE_GATEWAY)
+      || gatewayType.equals(PARALLEL_GATEWAY)
+      || gatewayType.equals(EVENT_BASED_GATEWAY);
+  }
+
+  private List<String> getSupportedIdsFromFlowNodeList(final List<FlowNode> flowNodes) {
+    return flowNodes.stream()
+            .filter(flowNode -> Event.class.isAssignableFrom(flowNode.getClass())
+              || Activity.class.isAssignableFrom(flowNode.getClass())
+              || Gateway.class.isAssignableFrom(flowNode.getClass()))
+            .map(BaseElement::getId)
+            .collect(Collectors.toList());
   }
 
 }

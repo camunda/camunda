@@ -28,4 +28,5 @@ public class SimpleEventDto implements Serializable, OptimizeDto {
   protected Long durationInMs;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
+
 }

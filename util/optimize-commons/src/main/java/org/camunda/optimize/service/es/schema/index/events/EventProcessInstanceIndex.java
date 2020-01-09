@@ -16,6 +16,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class EventProcessInstanceIndex extends ProcessInstanceIndex {
+
   public static final String PENDING_FLOW_NODE_UPDATES = EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates;
   public static final String ACTIVITY_UPDATE_ID = "id";
   public static final String ACTIVITY_UPDATE_SOURCE_EVENT_ID = FlowNodeInstanceUpdateDto.Fields.sourceEventId;
@@ -73,4 +74,5 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
       .endObject();
     // @formatter:on
   }
+
 }

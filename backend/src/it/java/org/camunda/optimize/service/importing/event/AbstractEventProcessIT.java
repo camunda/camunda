@@ -64,18 +64,51 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   protected static final String BPMN_START_EVENT_ID = "StartEvent_1";
   protected static final String BPMN_INTERMEDIATE_EVENT_ID = "IntermediateEvent_1";
+  protected static final String BPMN_INTERMEDIATE_EVENT_ID_TWO = "IntermediateEvent_2";
   protected static final String BPMN_END_EVENT_ID = "EndEvent_2";
+  protected static final String USER_TASK_ID_ONE = "user_task_1";
+  protected static final String USER_TASK_ID_TWO = "user_task_2";
+  protected static final String USER_TASK_ID_THREE = "user_task_3";
+  protected static final String USER_TASK_ID_FOUR = "user_task_4";
+  protected static final String SPLITTING_GATEWAY_ID = "splitting_gateway";
+  protected static final String SPLITTING_GATEWAY_ID_TWO = "splitting_gateway_two";
+  protected static final String SPLITTING_GATEWAY_ID_THREE = "splitting_gateway_three";
+  protected static final String SPLITTING_GATEWAY_ID_FOUR = "splitting_gateway_four";
+  protected static final String MERGING_GATEWAY_ID = "merging_gateway";
+  protected static final String MERGING_GATEWAY_ID_TWO = "merging_gateway_two";
+  protected static final String MERGING_GATEWAY_ID_THREE = "merging_gateway_three";
+  protected static final String MERGING_GATEWAY_ID_FOUR = "merging_gateway_four";
   protected static final String VARIABLE_ID = "var";
   protected static final String VARIABLE_VALUE = "value";
   protected static final String EVENT_GROUP = "test";
   protected static final String EVENT_SOURCE = "integrationTest";
   protected static final String EVENT_PROCESS_NAME = "myEventProcess";
-
+  
   protected static final String STARTED_EVENT = "startedEvent";
   protected static final String FINISHED_EVENT = "finishedEvent";
+  protected static final String START_EVENT_TYPE = "startEvent";
+  protected static final String END_EVENT_TYPE = "endEvent";
+  protected static final String EXCLUSIVE_GATEWAY_TYPE = "exclusiveGateway";
+  protected static final String PARALLEL_GATEWAY_TYPE = "parallelGateway";
+  protected static final String EVENT_BASED_GATEWAY_TYPE = "eventBasedGateway";
+  protected static final String USER_TASK_TYPE = "userTask";
+  protected static final String INTERMEDIATE_CATCH_EVENT_TYPE = "intermediateCatchEvent";
+
 
   protected static final String PROCESS_INSTANCE_STATE_COMPLETED = "COMPLETED";
   protected static final String PROCESS_INSTANCE_STATE_ACTIVE = "ACTIVE";
+
+  protected static final String FIRST_EVENT_NAME = "firstEvent";
+  protected static final String SECOND_EVENT_NAME = "secondEvent";
+  protected static final String THIRD_EVENT_NAME = "thirdEvent";
+  protected static final String FOURTH_EVENT_NAME = "fourthEvent";
+  protected static final String FIFTH_EVENT_NAME = "fifthEvent";
+
+  protected static final OffsetDateTime FIRST_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:00.000+01:00");
+  protected static final OffsetDateTime SECOND_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:30.000+01:00");
+  protected static final OffsetDateTime THIRD_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:00:45.000+01:00");
+  protected static final OffsetDateTime FOURTH_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:01:00.000+01:00");
+  protected static final OffsetDateTime FIFTH_EVENT_DATETIME = OffsetDateTime.parse("2019-12-12T12:02:00.000+01:00");
 
   @BeforeEach
   public void enableEventBasedProcessFeature() {
@@ -259,33 +292,6 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return eventId;
   }
 
-  @SneakyThrows
-  protected String createThreeActivitiesProcessDefinitionXml() {
-    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent(BPMN_START_EVENT_ID)
-      .intermediateCatchEvent(BPMN_INTERMEDIATE_EVENT_ID)
-      .endEvent(BPMN_END_EVENT_ID)
-      .done();
-    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
-    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
-  }
-
-  @SneakyThrows
-  protected String createSimpleProcessDefinitionXml() {
-    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent(BPMN_START_EVENT_ID)
-      .endEvent(BPMN_END_EVENT_ID)
-      .done();
-    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
-    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
-  }
-
   protected String getEventPublishStateIdForEventProcessMappingId(final String eventProcessMappingId) {
     return getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
       .map(EventProcessPublishStateDto::getId)
@@ -310,4 +316,216 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(endEventName).build())
       .build();
   }
+
+  @SneakyThrows
+  protected String createThreeActivitiesProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name("aProcessName")
+      .startEvent(BPMN_START_EVENT_ID)
+      .intermediateCatchEvent(BPMN_INTERMEDIATE_EVENT_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected String createSimpleProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name("aProcessName")
+      .startEvent(BPMN_START_EVENT_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createExclusiveGatewayProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_TWO)
+      .connectTo(MERGING_GATEWAY_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createParallelGatewayProcessDefinitionXml() {
+    // @formatter:off
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .parallelGateway(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .parallelGateway(MERGING_GATEWAY_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_TWO)
+      .connectTo(MERGING_GATEWAY_ID)
+      .done();
+    // @formatter:on
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createEventBasedGatewayProcessDefinitionXml() {
+    // @formatter:off
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .eventBasedGateway().id(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .intermediateCatchEvent(BPMN_INTERMEDIATE_EVENT_ID_TWO)
+      .connectTo(MERGING_GATEWAY_ID)
+      .done();
+    // @formatter:on
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createExclusiveGatewayProcessDefinitionWithConsecutiveGatewaysXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID_TWO)
+      .userTask(USER_TASK_ID_TWO)
+      .exclusiveGateway(MERGING_GATEWAY_ID_TWO)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .connectTo(MERGING_GATEWAY_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID_TWO)
+      .connectTo(MERGING_GATEWAY_ID_TWO)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createExclusiveGatewayProcessDefinitionWithLoopXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess()
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_TWO)
+      .connectTo(MERGING_GATEWAY_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createExclusiveGatewayProcessDefinitionWithThreeConsecutiveGatewaysAndLoopXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess()
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .exclusiveGateway(MERGING_GATEWAY_ID_FOUR)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID_TWO)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID_THREE)
+      .userTask(USER_TASK_ID_ONE)
+      .exclusiveGateway(MERGING_GATEWAY_ID_THREE)
+      .exclusiveGateway(MERGING_GATEWAY_ID_TWO)
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID_FOUR)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID_THREE)
+      .userTask(USER_TASK_ID_TWO)
+      .connectTo(MERGING_GATEWAY_ID_THREE)
+      .moveToNode(SPLITTING_GATEWAY_ID_TWO)
+      .userTask(USER_TASK_ID_THREE)
+      .connectTo(MERGING_GATEWAY_ID_TWO)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_FOUR)
+      .connectTo(MERGING_GATEWAY_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID_FOUR)
+      .connectTo(MERGING_GATEWAY_ID_FOUR)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createExclusiveGatewayProcessDefinitionWithEventBeforeGatewayXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_TWO)
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .connectTo(MERGING_GATEWAY_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createInclusiveGatewayProcessDefinitionXml() {
+    // @formatter:off
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .inclusiveGateway(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .inclusiveGateway(MERGING_GATEWAY_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_TWO)
+      .connectTo(MERGING_GATEWAY_ID)
+      .done();
+    // @formatter:on
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected static String createExclusiveGatewayProcessDefinitionWithMixedDirectionGatewaysXml() {
+    // @formatter:off
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name(EVENT_PROCESS_NAME)
+      .startEvent(BPMN_START_EVENT_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_ONE)
+      .exclusiveGateway(MERGING_GATEWAY_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_THREE)
+      .connectTo(MERGING_GATEWAY_ID)
+      .moveToNode(MERGING_GATEWAY_ID)
+      .userTask(USER_TASK_ID_TWO)
+      .connectTo(SPLITTING_GATEWAY_ID)
+      .done();
+    // @formatter:on
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  protected static String convertBpmnModelToXmlString(final BpmnModelInstance bpmnModel) {
+    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
+    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
+  }
+
 }

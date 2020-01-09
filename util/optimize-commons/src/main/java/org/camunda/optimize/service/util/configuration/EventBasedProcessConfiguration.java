@@ -17,9 +17,11 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 public class EventBasedProcessConfiguration {
+
   private boolean enabled;
   private List<String> authorizedUserIds;
   private EventImportConfiguration eventImport;
   private IngestionConfiguration eventIngestion;
   private EventIndexRolloverConfiguration eventIndexRollover;
+
 }

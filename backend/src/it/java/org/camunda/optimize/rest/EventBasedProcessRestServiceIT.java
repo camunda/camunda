@@ -58,10 +58,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 
 public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
-  private static final String USER_TASK_ID_ONE = "User_task_id_one";
-  private static final String USER_TASK_ID_TWO = "User_task_id_two";
-  private static final String USER_TASK_ID_THREE = "User_task_id_three";
-
   private static String simpleDiagramXml;
 
   @BeforeAll
