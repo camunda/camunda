@@ -8,9 +8,12 @@
 package io.zeebe.broker;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
+import io.atomix.utils.net.Address;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.bootstrap.CloseProcess;
@@ -45,7 +48,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.Actor;
@@ -53,7 +55,6 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -158,8 +159,10 @@ public final class Broker implements AutoCloseable {
 
     startContext.addStep("actor scheduler", this::actorSchedulerStep);
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
-    startContext.addStep("server transport", () -> serverTransport(localBroker));
-    startContext.addStep("command api", () -> commandAPIStep(brokerCfg, networkCfg, localBroker));
+    startContext.addStep(
+        "command api transport", () -> commandApiTransportStep(clusterCfg, localBroker));
+    startContext.addStep(
+        "command api handler", () -> commandApiHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     if (brokerCfg.getGateway().isEnable()) {
@@ -193,16 +196,30 @@ public final class Broker implements AutoCloseable {
     return () -> atomix.stop().join();
   }
 
-  private AutoCloseable serverTransport(final BrokerInfo localBroker) {
+  private AutoCloseable commandApiTransportStep(
+      final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
+
+    final var nettyMessagingService =
+        new NettyMessagingService(
+            clusterCfg.getClusterName(),
+            Address.from(localBroker.getCommandApiAddress()),
+            new MessagingConfig());
+
+    nettyMessagingService.start().join();
+    LOG.debug("Bound command API to {} ", nettyMessagingService.address());
+
     final var transportFactory = new TransportFactory(scheduler);
     serverTransport =
-        transportFactory.createServerTransport(
-            localBroker.getNodeId(), atomix.getCommunicationService());
-    return serverTransport;
+        transportFactory.createServerTransport(localBroker.getNodeId(), nettyMessagingService);
+
+    return () -> {
+      serverTransport.close();
+      nettyMessagingService.stop().join();
+    };
   }
 
-  private AutoCloseable commandAPIStep(
-      final BrokerCfg brokerCfg, final NetworkCfg networkCfg, final BrokerInfo localBroker) {
+  private AutoCloseable commandApiHandlerStep(
+      final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
 
     final BackpressureCfg backpressure = brokerCfg.getBackpressure();
     PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
@@ -212,13 +229,10 @@ public final class Broker implements AutoCloseable {
               backpressure.getAlgorithm(), backpressure.useWindowed());
     }
 
-    final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
-    final InetSocketAddress bindAddress = bindAddr.toInetSocketAddress();
-
     commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
     partitionListeners.add(commandHandler);
     scheduleActor(commandHandler);
-    LOG.info("Command api bound to {}.", bindAddress);
+
     return commandHandler;
   }
 

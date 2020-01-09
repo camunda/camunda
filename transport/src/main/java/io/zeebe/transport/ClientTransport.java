@@ -28,9 +28,9 @@ public interface ClientTransport extends AutoCloseable {
    *   <li>n intermediary copies of the request (one local copy for making retries, one copy on the
    *       send buffer per try)
    *
-   * @param nodeIdSupplier supplier for the node id the retries are executed against (retries may be
-   *     executed against different nodes). The supplier may resolve to <code>null
-   *     </code> to signal that a node id can not be determined. In that case, the request is
+   * @param nodeAddressSupplier supplier for the node address the retries are executed against
+   *     (retries may be executed against different nodes). The supplier may resolve to <code>null
+   *     </code> to signal that a node address can not be determined. In that case, the request is
    *     retried after resubmit timeout.
    * @param clientRequest the request which should be send
    * @param timeout The timeout until the returned future fails if no response is received.
@@ -39,10 +39,10 @@ public interface ClientTransport extends AutoCloseable {
    *     timeout.
    */
   default ActorFuture<DirectBuffer> sendRequestWithRetry(
-      final Supplier<Integer> nodeIdSupplier,
+      Supplier<String> nodeAddressSupplier,
       final ClientRequest clientRequest,
       final Duration timeout) {
-    return sendRequestWithRetry(nodeIdSupplier, response -> true, clientRequest, timeout);
+    return sendRequestWithRetry(nodeAddressSupplier, response -> true, clientRequest, timeout);
   }
 
   /**
@@ -56,9 +56,9 @@ public interface ClientTransport extends AutoCloseable {
    *   <li>n intermediary copies of the request (one local copy for making retries, one copy on the
    *       send buffer per try)
    *
-   * @param nodeIdSupplier supplier for the node id the retries are executed against (retries may be
-   *     executed against different nodes). The supplier may resolve to <code>null
-   *     </code> to signal that a node id can not be determined. In that case, the request is
+   * @param nodeAddressSupplier supplier for the node address the retries are executed against
+   *     (retries may be executed against different nodes). The supplier may resolve to <code>null
+   *     </code> to signal that a node address can not be determined. In that case, the request is
    *     retried after resubmit timeout.
    * @param responseValidator predicate which tests the received response, before completing the
    *     future to verify, whether this request needs to be retried or not, in respect of the
@@ -72,7 +72,7 @@ public interface ClientTransport extends AutoCloseable {
    *     timeout.
    */
   ActorFuture<DirectBuffer> sendRequestWithRetry(
-      Supplier<Integer> nodeIdSupplier,
+      Supplier<String> nodeAddressSupplier,
       Predicate<DirectBuffer> responseValidator,
       ClientRequest clientRequest,
       Duration timeout);

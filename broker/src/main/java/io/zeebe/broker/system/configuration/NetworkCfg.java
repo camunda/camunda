@@ -12,6 +12,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 
 import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.Environment;
@@ -21,6 +22,7 @@ public final class NetworkCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
+  public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final int DEFAULT_MONITORING_API_PORT = 9600;
   public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
 
@@ -30,6 +32,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   private String advertisedHost;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
+  private InternalApiCfg internalApi = new InternalApiCfg();
   private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
   @Override
@@ -37,6 +40,7 @@ public final class NetworkCfg implements ConfigurationEntry {
       final BrokerCfg brokerCfg, final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
     commandApi.applyDefaults(this);
+    internalApi.applyDefaults(this);
     monitoringApi.applyDefaults(this);
   }
 
@@ -90,6 +94,14 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.monitoringApi = monitoringApi;
   }
 
+  public SocketBindingCfg getInternalApi() {
+    return internalApi;
+  }
+
+  public void setInternalApi(final InternalApiCfg internalApi) {
+    this.internalApi = internalApi;
+  }
+
   @Override
   public String toString() {
     return "NetworkCfg{"
@@ -103,6 +115,8 @@ public final class NetworkCfg implements ConfigurationEntry {
         + maxMessageSize
         + ", commandApi="
         + commandApi
+        + ", internalApi="
+        + internalApi
         + ", monitoringApi="
         + monitoringApi
         + '}';

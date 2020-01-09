@@ -9,6 +9,7 @@ package io.zeebe.transport.impl;
 
 import static io.zeebe.transport.impl.AtomixServerTransport.topicName;
 
+import io.atomix.utils.net.Address;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -19,7 +20,7 @@ import org.agrona.DirectBuffer;
 final class RequestContext {
 
   private final CompletableActorFuture<DirectBuffer> currentFuture;
-  private final Supplier<Integer> nodeIdSupplier;
+  private final Supplier<String> nodeAddressSupplier;
   private final int partitionId;
   private final byte[] requestBytes;
   private final long startTime;
@@ -28,13 +29,13 @@ final class RequestContext {
 
   RequestContext(
       final CompletableActorFuture<DirectBuffer> currentFuture,
-      final Supplier<Integer> nodeIdSupplier,
+      final Supplier<String> nodeAddressSupplier,
       final int partitionId,
       final byte[] requestBytes,
       final Predicate<DirectBuffer> responseValidator,
       final Duration timeout) {
     this.currentFuture = currentFuture;
-    this.nodeIdSupplier = nodeIdSupplier;
+    this.nodeAddressSupplier = nodeAddressSupplier;
     this.partitionId = partitionId;
     this.requestBytes = requestBytes;
     this.startTime = ActorClock.currentTimeMillis();
@@ -50,8 +51,9 @@ final class RequestContext {
     return currentFuture;
   }
 
-  public Integer getNodeId() {
-    return nodeIdSupplier.get();
+  Address getNodeAddress() {
+    final var address = nodeAddressSupplier.get();
+    return address == null ? null : Address.from(address);
   }
 
   String getTopicName() {

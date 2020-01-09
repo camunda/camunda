@@ -7,11 +7,12 @@
  */
 package io.zeebe.transport.impl;
 
-import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.MessagingService;
 import io.zeebe.transport.RequestHandler;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -27,16 +28,15 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private static final String ERROR_MSG_MISSING_PARTITON_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
-  private final ClusterCommunicationService communicationService;
   private final int nodeId;
   private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
       partitionsRequestMap;
   private final AtomicLong requestCount;
   private final DirectBuffer reusableRequestBuffer;
+  private final MessagingService messagingService;
 
-  public AtomixServerTransport(
-      final int nodeId, final ClusterCommunicationService communicationService) {
-    this.communicationService = communicationService;
+  public AtomixServerTransport(final int nodeId, final MessagingService messagingService) {
+    this.messagingService = messagingService;
     this.nodeId = nodeId;
 
     this.partitionsRequestMap = new Int2ObjectHashMap<>();
@@ -50,23 +50,23 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   @Override
-  public void subscribe(final int partitionId, final RequestHandler requestHandler) {
-    actor.call(
+  public ActorFuture<Void> subscribe(final int partitionId, final RequestHandler requestHandler) {
+    return actor.call(
         () -> {
           partitionsRequestMap.put(partitionId, new Long2ObjectHashMap<>());
-          communicationService.<byte[], byte[]>subscribe(
+          messagingService.registerHandler(
               topicName(partitionId),
-              request -> handleAtomixRequest(request, partitionId, requestHandler));
+              (sender, request) -> handleAtomixRequest(request, partitionId, requestHandler));
         });
   }
 
   @Override
-  public void unsubscribe(final int partitionId) {
-    actor.call(() -> removePartition(partitionId));
+  public ActorFuture<Void> unsubscribe(final int partitionId) {
+    return actor.call(() -> removePartition(partitionId));
   }
 
   private void removePartition(final int partitionId) {
-    communicationService.unsubscribe(topicName(partitionId));
+    messagingService.unregisterHandler(topicName(partitionId));
 
     final var requestMap = partitionsRequestMap.remove(partitionId);
     if (requestMap != null) {

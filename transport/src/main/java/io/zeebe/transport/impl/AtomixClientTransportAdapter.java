@@ -7,9 +7,8 @@
  */
 package io.zeebe.transport.impl;
 
-import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.MessagingService;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.Actor;
@@ -27,15 +26,15 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   private static final Duration RETRY_DELAY = Duration.ofMillis(10);
 
-  private final ClusterCommunicationService communicationService;
+  private final MessagingService messagingService;
 
-  public AtomixClientTransportAdapter(final ClusterCommunicationService communicationService) {
-    this.communicationService = communicationService;
+  public AtomixClientTransportAdapter(final MessagingService messagingService) {
+    this.messagingService = messagingService;
   }
 
   @Override
   public ActorFuture<DirectBuffer> sendRequestWithRetry(
-      final Supplier<Integer> nodeIdSupplier,
+      final Supplier<String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final Duration timeout) {
@@ -51,7 +50,12 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     final var requestFuture = new CompletableActorFuture<DirectBuffer>();
     final var requestContext =
         new RequestContext(
-            requestFuture, nodeIdSupplier, partitionId, requestBytes, responseValidator, timeout);
+            requestFuture,
+            nodeAddressSupplier,
+            partitionId,
+            requestBytes,
+            responseValidator,
+            timeout);
     actor.call(
         () -> {
           actor.runDelayed(timeout, () -> timeoutFuture(requestContext));
@@ -66,18 +70,18 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
-    final var nodeId = requestContext.getNodeId();
-    if (nodeId == null) {
+    final var nodeAddress = requestContext.getNodeAddress();
+    if (nodeAddress == null) {
       actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       return;
     }
 
     final var requestBytes = requestContext.getRequestBytes();
-    communicationService
-        .<byte[], byte[]>send(
+    messagingService
+        .sendAndReceive(
+            nodeAddress,
             requestContext.getTopicName(),
             requestBytes,
-            MemberId.from(nodeId.toString()),
             requestContext.calculateTimeout())
         .whenComplete(
             (response, errorOnRequest) ->
@@ -99,14 +103,18 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       // normally the root exception is a completion exception
       // and the cause is either connect or non remote handler
       final var cause = errorOnRequest.getCause();
-      if (cause instanceof ConnectException
-          || cause instanceof MessagingException.NoRemoteHandler) {
+      if (exceptionShowsConnectionIssue(errorOnRequest) || exceptionShowsConnectionIssue(cause)) {
         // no registered subscription yet
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
         currentFuture.completeExceptionally(errorOnRequest);
       }
     }
+  }
+
+  private boolean exceptionShowsConnectionIssue(Throwable throwable) {
+    return throwable instanceof ConnectException
+        || throwable instanceof MessagingException.NoRemoteHandler;
   }
 
   private void timeoutFuture(final RequestContext requestContext) {
