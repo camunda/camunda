@@ -25,7 +25,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_STEP_TIMEOUT_EXPORTER;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_STEP_TIMEOUT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
@@ -88,7 +88,7 @@ public final class ConfigurationTest {
 
   @Test
   public void shouldUseStepTimeoutFromEnv() {
-    environment.put(ENV_STEP_TIMEOUT_EXPORTER, "1m");
+    environment.put(ENV_STEP_TIMEOUT, "1m");
     assertDefaultStepTimeout("1m");
   }
 

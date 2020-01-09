@@ -46,7 +46,7 @@ public final class BrokerCfg {
         .ifPresent(
             value ->
                 exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
-    environment.get(EnvironmentConstants.ENV_STEP_TIMEOUT_EXPORTER).ifPresent(this::setStepTimeout);
+    environment.get(EnvironmentConstants.ENV_STEP_TIMEOUT).ifPresent(this::setStepTimeout);
   }
 
   public NetworkCfg getNetwork() {
@@ -111,7 +111,7 @@ public final class BrokerCfg {
     return stepTimeout;
   }
 
-  public void setStepTimeout(String stepTimeout) {
+  public void setStepTimeout(final String stepTimeout) {
     this.stepTimeout = stepTimeout;
   }
 
