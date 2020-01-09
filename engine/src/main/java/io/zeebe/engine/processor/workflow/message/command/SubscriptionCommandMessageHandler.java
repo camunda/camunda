@@ -174,7 +174,8 @@ public final class SubscriptionCommandMessageHandler
         .setBpmnProcessId(correlateWorkflowInstanceSubscriptionCommand.getBpmnProcessId())
         .setMessageKey(correlateWorkflowInstanceSubscriptionCommand.getMessageKey())
         .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName())
-        .setVariables(correlateWorkflowInstanceSubscriptionCommand.getVariables());
+        .setVariables(correlateWorkflowInstanceSubscriptionCommand.getVariables())
+        .setCorrelationKey(correlateWorkflowInstanceSubscriptionCommand.getCorrelationKey());
 
     return writeCommand(
         workflowInstancePartitionId,

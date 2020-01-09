@@ -491,6 +491,7 @@ public final class JsonSerializableToJsonTest {
               final int subscriptionPartitionId = 2;
               final int messageKey = 3;
               final long workflowInstanceKey = 1345;
+              final String correlationKey = "key";
 
               return new WorkflowInstanceSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -499,9 +500,10 @@ public final class JsonSerializableToJsonTest {
                   .setMessageKey(messageKey)
                   .setSubscriptionPartitionId(subscriptionPartitionId)
                   .setWorkflowInstanceKey(workflowInstanceKey)
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setCorrelationKey(wrapString(correlationKey));
             },
-        "{'elementInstanceKey':123,'messageName':'test-message','workflowInstanceKey':1345,'variables':{'foo':'bar'},'bpmnProcessId':'workflow','messageKey':3}"
+        "{'elementInstanceKey':123,'messageName':'test-message','workflowInstanceKey':1345,'variables':{'foo':'bar'},'bpmnProcessId':'workflow','messageKey':3,'correlationKey':'key'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -518,7 +520,7 @@ public final class JsonSerializableToJsonTest {
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'elementInstanceKey':123,'messageName':'','workflowInstanceKey':1345,'variables':{},'bpmnProcessId':'','messageKey':-1}"
+        "{'elementInstanceKey':123,'messageName':'','workflowInstanceKey':1345,'variables':{},'bpmnProcessId':'','messageKey':-1,'correlationKey':''}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
