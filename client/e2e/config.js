@@ -4,137 +4,38 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+const users = require('../demo-data/users.json');
+
 export default {
   endpoint: 'http://localhost:3000',
   elasticSearchEndpoint: 'http://localhost:9200',
   users: {
     Chrome: [
-      {
-        user1: {
-          username: 'Owee1964',
-          password: 'Owee1964'
-        },
-        user2: {
-          username: 'Plasoner',
-          password: 'Plasoner'
-        }
-      },
-      {
-        user1: {
-          username: 'Abook1998',
-          password: 'Abook1998'
-        },
-        user2: {
-          username: 'Aboys1960',
-          password: 'Aboys1960'
-        }
-      },
-      {
-        user1: {
-          username: 'Abrount',
-          password: 'Abrount'
-        },
-        user2: {
-          username: 'Abse1978',
-          password: 'Abse1978'
-        }
-      }
+      createMapOfUsers(users.slice(0,2)),
+      createMapOfUsers(users.slice(2,4)),
+      createMapOfUsers(users.slice(4,6))
     ],
     headless: [
-      {
-        user1: {
-          username: 'Owee1964',
-          password: 'Owee1964'
-        },
-        user2: {
-          username: 'Plasoner',
-          password: 'Plasoner'
-        }
-      },
-      {
-        user1: {
-          username: 'Acceent',
-          password: 'Acceent'
-        },
-        user2: {
-          username: 'Adell1983',
-          password: 'Adell1983'
-        }
-      },
-      {
-        user1: {
-          username: 'Adisred',
-          password: 'Adisred'
-        },
-        user2: {
-          username: 'Aetherins94',
-          password: 'Aetherins94'
-        }
-      }
+      createMapOfUsers(users.slice(6,8)),
+      createMapOfUsers(users.slice(8,10)),
+      createMapOfUsers(users.slice(10,12))
     ],
     Firefox: [
-      {
-        user1: {
-          username: 'Figirs',
-          password: 'Figirs'
-        },
-        user2: {
-          username: 'Sidlits',
-          password: 'Sidlits'
-        }
-      },
-      {
-        user1: {
-          username: 'Affeentogy',
-          password: 'Affeentogy'
-        },
-        user2: {
-          username: 'Afteper',
-          password: 'Afteper'
-        }
-      },
-      {
-        user1: {
-          username: 'Aftly1967',
-          password: 'Aftly1967'
-        },
-        user2: {
-          username: 'Agaricest',
-          password: 'Agaricest'
-        }
-      }
+      createMapOfUsers(users.slice(12,14)),
+      createMapOfUsers(users.slice(14,16)),
+      createMapOfUsers(users.slice(16,18))
     ],
     Edge: [
-      {
-        user1: {
-          username: 'Haddry',
-          password: 'Haddry'
-        },
-        user2: {
-          username: 'Dinted',
-          password: 'Dinted'
-        }
-      },
-      {
-        user1: {
-          username: 'Agart1939',
-          password: 'Agart1939'
-        },
-        user2: {
-          username: 'Agge1964',
-          password: 'Agge1964'
-        }
-      },
-      {
-        user1: {
-          username: 'Agine1954',
-          password: 'Agine1954'
-        },
-        user2: {
-          username: 'Agniza',
-          password: 'Agniza'
-        }
-      }
+      createMapOfUsers(users.slice(18,20)),
+      createMapOfUsers(users.slice(20,22)),
+      createMapOfUsers(users.slice(22,24))
     ]
   }
 };
+
+function createMapOfUsers(users) {
+  return users.reduce((map, user, idx) => {
+    map['user' + (idx + 1)] = {username: user, password: user};
+    return map;
+  }, {});
+}

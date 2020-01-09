@@ -13,6 +13,7 @@ const WebSocket = require('ws');
 const opn = require('opn');
 const ansiHTML = require('ansi-html');
 const xml2js = require('xml2js');
+const users = require('../demo-data/users.json');
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
@@ -20,6 +21,7 @@ const ciMode = process.argv.indexOf('ci') > -1;
 // if we are in ci mode we assume data generation is already complete
 let engineDataGenerationComplete = ciMode;
 let eventIngestionComplete = false;
+let seenStateInitializationComplete = false;
 
 let backendProcess;
 let buildBackendProcess;
@@ -43,7 +45,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         if (!dockerProcess) {
           startDocker().then(generateDemoData);
         }
-        startBackend().then(ingestEventData).catch(() => {
+        startBackend().then(postStartupActions).catch(() => {
           console.log("Optimize process killed, restarting...")
         });
       }).catch(() => {
@@ -52,7 +54,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     if (ciMode) {
-      startBackend().then(ingestEventData);
+      startBackend().then(postStartupActions);
     } else {
       buildAndStartOptimize();
     }
@@ -99,6 +101,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     function startBackend() {
       return new Promise((resolve, reject) => {
+        const eventUserIds = users.join(',') + ',demo';
         backendProcess = spawn(
           'java',
           [
@@ -110,7 +113,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
             '-XX:MaxMetaspaceSize=256m',
             '-DOPTIMIZE_EVENT_INGESTION_API_SECRET=secret',
             '-DOPTIMIZE_EVENT_BASED_PROCESSES_ENABLED=true',
-            '-DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[demo]',
+            `-DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}]`,
             'org.camunda.optimize.Main'
           ],
           {
@@ -170,38 +173,54 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function generateDemoData() {
-      const dataGenerator = spawn('node', ['scripts/generate-data']);
-
-      dataGenerator.stdout.on('data', data => addLog(data, 'dataGenerator'));
-      dataGenerator.stderr.on('data', data => addLog(data, 'dataGenerator', true));
-
-      process.on('SIGINT', () => dataGenerator.kill('SIGINT'));
-      process.on('SIGTERM', () => dataGenerator.kill('SIGTERM'));
+      const dataGenerator = runDataGenerationProcess('generate-data');
 
       dataGenerator.on('exit', () => {
         engineDataGenerationComplete = true;
       });
     }
 
+    function postStartupActions() {
+      setWhatsNewSeenStateForAllUsers();
+      ingestEventData();
+    }
+
     function ingestEventData() {
-      const eventIngestProcess = spawn('node', ['scripts/ingest-event-data']);
-
-      eventIngestProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
-      eventIngestProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
-
-      process.on('SIGINT', () => eventIngestProcess.kill('SIGINT'));
-      process.on('SIGTERM', () => eventIngestProcess.kill('SIGTERM'));
+      const eventIngestProcess = runDataGenerationProcess('ingest-event-data');
 
       eventIngestProcess.on('exit', () => {
         eventIngestionComplete = true;
       });
     }
 
+    function setWhatsNewSeenStateForAllUsers() {
+      const seenStateProcess = runDataGenerationProcess('set-whatsnew-seen-state');
+
+      seenStateProcess.on('exit', () => {
+        seenStateInitializationComplete = true;
+      });
+    }
+
+    function runDataGenerationProcess(scriptName) {
+      const startedProcess = spawn('node', ['scripts/' + scriptName]);
+
+      startedProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
+      startedProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
+
+      process.on('SIGINT', () => startedProcess.kill('SIGINT'));
+      process.on('SIGTERM', () => startedProcess.kill('SIGTERM'));
+
+      return startedProcess;
+    }
+
     function startManagementServer() {
       const server = http.createServer(function(request, response) {
         if (request.url === '/api/dataGenerationComplete') {
           response.writeHead(200, {'Content-Type': 'text/plain'});
-          response.end((engineDataGenerationComplete && eventIngestionComplete).toString(), 'utf-8');
+          response.end(
+            (engineDataGenerationComplete && eventIngestionComplete && seenStateInitializationComplete).toString(),
+            'utf-8'
+          );
           return;
         }
         if (request.url === '/api/restartBackend') {
