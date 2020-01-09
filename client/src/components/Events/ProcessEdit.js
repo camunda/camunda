@@ -137,12 +137,24 @@ export default withErrorHandling(
               };
             }
           } else {
-            // unset the mapping for the one that matches the provided event
-            change = {
-              [deepEqual(mappings[selectedNode.id].start, event) ? 'start' : 'end']: {
-                $set: null
-              }
-            };
+            const mapping = mappings[selectedNode.id];
+
+            const eventType = deepEqual(mapping.start, event) ? 'start' : 'end';
+            const otherType = eventType === 'start' ? 'end' : 'start';
+
+            if (mapping[otherType]) {
+              // if we have another mapping for the node, just clear start or end
+              change = {
+                [eventType]: {
+                  $set: null
+                }
+              };
+            } else {
+              // if there is no other mapping for the node, remove the node from the mappings array
+              return {
+                mappings: update(mappings, {$unset: [selectedNode.id]})
+              };
+            }
           }
         }
 

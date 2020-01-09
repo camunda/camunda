@@ -96,14 +96,18 @@ it('should unset a mapping', () => {
   loadProcess.mockReturnValueOnce({
     name: 'Process Name',
     xml: 'Process XML',
-    mappings: {a: {end: {eventName: '1'}, start: null}}
+    mappings: {a: {end: {eventName: '1'}, start: {eventName: '2'}}}
   });
   const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});
 
   node.find(EventTable).prop('onChange')({eventName: '1'}, false);
 
-  expect(node.find(EventTable).prop('mappings')).toEqual({a: {start: null, end: null}});
+  expect(node.find(EventTable).prop('mappings')).toEqual({a: {start: {eventName: '2'}, end: null}});
+
+  node.find(EventTable).prop('onChange')({eventName: '2'}, false);
+
+  expect(node.find(EventTable).prop('mappings')).toEqual({});
 });
 
 it('should remove mappings when a node is removed', () => {
