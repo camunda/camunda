@@ -16,8 +16,8 @@ public class ArchiverProperties {
   /**
    * This format will be used to create timed indices. It must correspond to rolloverInterval parameter.
    */
-  private String rolloverDateFormat = "yyyyMMdd";
-  private String elsRolloverDateFormat = "basic_date";
+  private String rolloverDateFormat = "yyyy-MM-dd";
+  private String elsRolloverDateFormat = "date";
   /**
    * Interval description for "date histogram" aggregation, which is used to group finished instances.
    * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-datehistogram-aggregation.html">Elasticsearch docs</a>
