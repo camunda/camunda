@@ -239,6 +239,21 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // then
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
+
+  @Test
+  public void createEventProcessMappingWithNullStartAndEndEventMappings() {
+    // given event mapping entry but neither start nor end is mapped
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappings(
+      Collections.singletonMap("some_task_id", createEventMappingsDto(null, null)),
+      "process name", simpleDiagramXml
+    );
+
+    // when
+    Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+  }
   
   @Test
   public void createEventProcessMappingWithInvalidEventMappings() {
