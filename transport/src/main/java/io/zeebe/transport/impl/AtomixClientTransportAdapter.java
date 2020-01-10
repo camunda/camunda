@@ -70,6 +70,13 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
+    final var calculateTimeout = requestContext.calculateTimeout();
+    if (calculateTimeout.toMillis() <= 0L) {
+      // we reached the timeout
+      // our request future will be completedExceptionally from the scheduled timeout job
+      return;
+    }
+
     final var nodeAddress = requestContext.getNodeAddress();
     if (nodeAddress == null) {
       actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
@@ -78,11 +85,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
     final var requestBytes = requestContext.getRequestBytes();
     messagingService
-        .sendAndReceive(
-            nodeAddress,
-            requestContext.getTopicName(),
-            requestBytes,
-            requestContext.calculateTimeout())
+        .sendAndReceive(nodeAddress, requestContext.getTopicName(), requestBytes, calculateTimeout)
         .whenComplete(
             (response, errorOnRequest) ->
                 actor.run(() -> handleResponse(requestContext, response, errorOnRequest)));
