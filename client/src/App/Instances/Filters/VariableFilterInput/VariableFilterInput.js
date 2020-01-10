@@ -76,7 +76,8 @@ VariableFilterInput.propTypes = {
   variable: PropTypes.object.isRequired,
   checkIsValueValid: PropTypes.func,
   checkIsNameComplete: PropTypes.func,
-  checkIsValueComplete: PropTypes.func
+  checkIsValueComplete: PropTypes.func,
+  onChange: PropTypes.func
 };
 
 VariableFilterInput.defaultProps = {

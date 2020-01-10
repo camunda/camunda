@@ -31,7 +31,18 @@ class ListPanel extends React.Component {
     sorting: PropTypes.object.isRequired,
     onSort: PropTypes.func.isRequired,
     firstElement: PropTypes.number.isRequired,
-    onFirstElementChange: PropTypes.func.isRequired
+    onFirstElementChange: PropTypes.func.isRequired,
+    rowsToDisplay: PropTypes.number,
+    dataManager: PropTypes.shape({
+      subscribe: PropTypes.func,
+      unsubscribe: PropTypes.func,
+      update: PropTypes.func
+    }),
+    polling: PropTypes.shape({
+      active: PropTypes.object,
+      removeIds: PropTypes.func,
+      addIds: PropTypes.func
+    })
   };
 
   constructor(props) {

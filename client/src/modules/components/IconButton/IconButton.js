@@ -28,7 +28,9 @@ const IconButton = React.forwardRef(function ExpandButton(
 
 IconButton.propTypes = {
   iconButtonTheme: PropTypes.oneOf(Object.keys(IconButtonThemes)).isRequired,
-  size: PropTypes.oneOf(Object.keys(SIZES))
+  size: PropTypes.oneOf(Object.keys(SIZES)),
+  children: PropTypes.node,
+  icon: PropTypes.node
 };
 
 export default IconButton;

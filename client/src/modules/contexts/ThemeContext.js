@@ -101,6 +101,13 @@ const themed = Component => {
     }
   }
 
+  Themed.propTypes = {
+    forwardedRef: PropTypes.oneOfType([
+      PropTypes.func,
+      PropTypes.shape({current: PropTypes.instanceOf(Element)})
+    ])
+  };
+
   const ThemedWithRef = React.forwardRef((props, ref) => {
     return <Themed {...props} forwardedRef={ref} />;
   });

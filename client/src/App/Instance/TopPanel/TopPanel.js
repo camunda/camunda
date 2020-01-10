@@ -32,10 +32,18 @@ class TopPanel extends React.PureComponent {
       errorMessage: PropTypes.string,
       workflowVersion: PropTypes.number
     }),
+    incidents: PropTypes.object,
     children: PropTypes.node,
-    forceInstanceSpinner: PropTypes.bool,
+    dataManager: PropTypes.object,
     onInstanceOperation: PropTypes.func,
-    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE))
+    nodeMetaDataMap: PropTypes.object,
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+    selection: PropTypes.object,
+    diagramDefinitions: PropTypes.object,
+    activityIdToActivityInstanceMap: PropTypes.object,
+    onTreeRowSelection: PropTypes.func,
+    onFlowNodeSelection: PropTypes.func,
+    getCurrentMetadata: PropTypes.func
   };
 
   constructor(props) {

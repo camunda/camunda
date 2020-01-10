@@ -72,7 +72,7 @@ MetricPanel.propTypes = {
     running: PropTypes.number,
     active: PropTypes.number,
     withIncidents: PropTypes.number,
-    isLoaded: PropTypes.Boolean
+    isLoaded: PropTypes.bool
   })
 };
 

@@ -177,6 +177,13 @@ const withPoll = Component => {
     }
   }
 
+  WithPoll.propTypes = {
+    forwardedRef: PropTypes.oneOfType([
+      PropTypes.func,
+      PropTypes.shape({current: PropTypes.instanceOf(Element)})
+    ])
+  };
+
   const WithPollWithRef = React.forwardRef((props, ref) => {
     return <WithPoll {...props} forwardedRef={ref} />;
   });

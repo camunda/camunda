@@ -27,7 +27,8 @@ const ExpandButton = React.forwardRef(function ExpandButton(
 });
 
 ExpandButton.propTypes = {
-  isExpanded: PropTypes.bool
+  isExpanded: PropTypes.bool,
+  children: PropTypes.node
 };
 
 ExpandButton.defaultProps = {

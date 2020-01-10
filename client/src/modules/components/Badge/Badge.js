@@ -27,7 +27,8 @@ Badge.propTypes = {
     PropTypes.node
   ]),
   type: PropTypes.oneOf(Object.keys(BADGE_TYPE)),
-  isActive: PropTypes.bool
+  isActive: PropTypes.bool,
+  position: PropTypes.number
 };
 
 Badge.defaultProps = {

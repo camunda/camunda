@@ -22,7 +22,6 @@ function TimeStampPill(props) {
     subscribe(SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE, LOADING_STATE.LOADED, () =>
       setDisabled(false)
     );
-
     return () => unsubscribe();
   }, []);
 

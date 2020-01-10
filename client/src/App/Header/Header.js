@@ -41,6 +41,7 @@ class Header extends React.Component {
   static propTypes = {
     dataManager: PropTypes.object,
     countStore: PropTypes.shape({
+      isLoaded: PropTypes.bool,
       running: PropTypes.number,
       active: PropTypes.number,
       filterCount: PropTypes.number,
@@ -49,15 +50,12 @@ class Header extends React.Component {
       selectionCount: PropTypes.number
     }),
     location: PropTypes.object,
-    selectionCount: PropTypes.number,
-    instancesInSelectionsCount: PropTypes.number,
     isFiltersCollapsed: PropTypes.bool.isRequired,
     isSelectionsCollapsed: PropTypes.bool.isRequired,
     expandFilters: PropTypes.func.isRequired,
     expandSelections: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func
   };
-  static labels = labels;
 
   constructor(props) {
     super(props);
@@ -268,20 +266,20 @@ class Header extends React.Component {
             to="/"
             dataTest={brand.dataTest}
             title={brand.title}
-            label={Header.labels['brand']}
+            label={labels['brand']}
           />
           <LinkElement
             dataTest={dashboard.dataTest}
             to="/"
             isActive={dashboard.isActive}
             title={dashboard.title}
-            label={Header.labels['dashboard']}
+            label={labels['dashboard']}
           />
           <NavElement
             dataTest={instances.dataTest}
             isActive={instances.isActive}
             title={instances.title}
-            label={Header.labels['instances']}
+            label={labels['instances']}
             count={instances.count}
             linkProps={instances.linkProps}
             type={BADGE_TYPE.RUNNING_INSTANCES}
@@ -290,7 +288,7 @@ class Header extends React.Component {
             dataTest={filters.dataTest}
             isActive={filters.isActive}
             title={filters.title}
-            label={Header.labels['filters']}
+            label={labels['filters']}
             count={filters.count}
             linkProps={filters.linkProps}
             type={BADGE_TYPE.FILTERS}
@@ -299,7 +297,7 @@ class Header extends React.Component {
             dataTest={incidents.dataTest}
             isActive={incidents.isActive}
             title={incidents.title}
-            label={Header.labels['incidents']}
+            label={labels['incidents']}
             count={incidents.count}
             linkProps={incidents.linkProps}
             type={BADGE_TYPE.INCIDENTS}
@@ -308,7 +306,7 @@ class Header extends React.Component {
             to={`/instances${filter ? getFilterQueryString(filter) : ''}`}
             dataTest={selections.dataTest}
             title={selections.title}
-            label={Header.labels['selections']}
+            label={labels['selections']}
             isActive={selections.isActive}
             expandSelections={this.props.expandSelections}
             selectionCount={selections.count.selectionCount}

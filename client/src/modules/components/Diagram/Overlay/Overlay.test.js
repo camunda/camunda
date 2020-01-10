@@ -40,7 +40,7 @@ const mountNodeInContainer = (customProps = {}) => {
     </div>
   );
 
-  Container.propTypes = {removeNode: PropTypes.bool};
+  Container.propTypes = {removeChild: PropTypes.bool};
 
   return mount(<Container />);
 };

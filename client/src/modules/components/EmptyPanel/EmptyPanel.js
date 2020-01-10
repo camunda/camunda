@@ -35,8 +35,9 @@ export default function EmptyPanel({
 
 EmptyPanel.propTypes = {
   label: PropTypes.string,
-  skeleton: PropTypes.object,
-  type: PropTypes.oneOf(['info', 'warning', 'skeleton'])
+  type: PropTypes.oneOf(['info', 'warning', 'skeleton']),
+  rowHeight: PropTypes.number,
+  Skeleton: PropTypes.elementType
 };
 
 /**

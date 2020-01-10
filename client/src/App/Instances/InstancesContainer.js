@@ -39,7 +39,14 @@ class InstancesContainer extends Component {
     getStateLocally: PropTypes.func.isRequired,
     storeStateLocally: PropTypes.func.isRequired,
     location: PropTypes.object.isRequired,
-    history: PropTypes.object.isRequired
+    history: PropTypes.object.isRequired,
+    dataManager: PropTypes.shape({
+      subscribe: PropTypes.func,
+      unsubscribe: PropTypes.func,
+      getWorkflowXML: PropTypes.func,
+      getWorkflowInstances: PropTypes.func,
+      getWorkflowInstancesStatistics: PropTypes.func
+    })
   };
 
   constructor(props) {

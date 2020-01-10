@@ -20,6 +20,7 @@ export default function Variables({
   setEditMode,
   Placeholder,
   Overlay,
+  isLoading,
   ...props
 }) {
   const MODE = {EDIT: 'edit', ADD: 'add'};
@@ -112,6 +113,10 @@ export default function Variables({
       </>
     );
   }
+
+  renderEditButtons.propTypes = {
+    isDisabled: PropTypes.bool
+  };
 
   function renderInlineEdit(propValue) {
     const valueHasntChanged = propValue === value;
@@ -268,7 +273,7 @@ export default function Variables({
           size="small"
           data-test="enter-add-btn"
           onClick={() => handleOpenAddVariable()}
-          disabled={!!editMode || !isEditable || props.isLoading}
+          disabled={!!editMode || !isEditable || isLoading}
         >
           <Styled.Plus /> Add Variable
         </Styled.Button>
@@ -284,6 +289,7 @@ Variables.propTypes = {
   isEditable: PropTypes.bool.isRequired,
   onVariableUpdate: PropTypes.func.isRequired,
   setEditMode: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool,
   // render props
   Placeholder: PropTypes.func,
   Overlay: PropTypes.func

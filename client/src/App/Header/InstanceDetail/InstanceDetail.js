@@ -19,6 +19,7 @@ export default function InstanceDetail({instance}) {
 
 InstanceDetail.propTypes = {
   instance: PropTypes.shape({
+    state: PropTypes.string,
     id: PropTypes.string.isRequired
   })
 };
