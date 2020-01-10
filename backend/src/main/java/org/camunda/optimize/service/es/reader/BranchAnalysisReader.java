@@ -114,20 +114,20 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private boolean isPathPossible(final FlowNode parent, final FlowNode target, final Set<FlowNode> visitedNodes) {
-    visitedNodes.add(parent);
-    List<FlowNode> succeedingNodes = parent.getSucceedingNodes().list();
-    if (succeedingNodes.contains(target)) {
-      return true;
-    } else {
-      for (FlowNode child : succeedingNodes) {
-        if (visitedNodes.contains(child)) {
-          break;
-        }
-        return isPathPossible(child, target, visitedNodes);
+  private boolean isPathPossible(final FlowNode currentNode, final FlowNode targetNode, final Set<FlowNode> visitedNodes) {
+    visitedNodes.add(currentNode);
+    final List<FlowNode> succeedingNodes = currentNode.getSucceedingNodes().list();
+    boolean pathFound = false;
+    for (FlowNode succeedingNode : succeedingNodes) {
+      if (visitedNodes.contains(succeedingNode)) {
+        continue;
+      }
+      pathFound = succeedingNode.equals(targetNode) || isPathPossible(succeedingNode, targetNode, visitedNodes);
+      if (pathFound) {
+        break;
       }
     }
-    return false;
+    return pathFound;
   }
 
   private Set<String> extractActivitiesToExclude(final List<FlowNode> gatewayOutcomes,
