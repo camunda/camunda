@@ -13,10 +13,10 @@ import {
   ButtonGroup,
   Input,
   Select,
-  ErrorMessage,
+  Message,
   Form,
   DatePicker,
-  Message,
+  MessageBox,
   Labeled
 } from 'components';
 import './DateFilter.scss';
@@ -112,7 +112,7 @@ export default class DateFilter extends React.Component {
         </Modal.Header>
         <Modal.Content>
           {this.props.filterType === 'endDate' && (
-            <Message type="warning">{t('common.filter.dateModal.endDateWarning')}</Message>
+            <MessageBox type="warning">{t('common.filter.dateModal.endDateWarning')}</MessageBox>
           )}
           <ButtonGroup>
             <Button
@@ -174,7 +174,7 @@ export default class DateFilter extends React.Component {
                     </Form.InputGroup>
                   </Labeled>
                   {!validDate && (
-                    <ErrorMessage>{t('common.filter.dateModal.invalidInput')}</ErrorMessage>
+                    <Message error>{t('common.filter.dateModal.invalidInput')}</Message>
                   )}
                 </Form.Group>
               </Form>

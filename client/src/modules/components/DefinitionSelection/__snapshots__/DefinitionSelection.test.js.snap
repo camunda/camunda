@@ -26,17 +26,17 @@ exports[`should pass an id for every entry to the typeahead 1`] = `
 `;
 
 exports[`should show a note if more than one version is selected 1`] = `
-<InfoMessage>
+<Message>
   Note: data from the older versions can deviate, therefore the report data can be inconsistent
-</InfoMessage>
+</Message>
 `;
 
 exports[`should show an info message to add sources 1`] = `
 <div
   className="info"
 >
-  <InfoMessage>
+  <Message>
     To enable selection, Data Sources must be added to the Collection.
-  </InfoMessage>
+  </Message>
 </div>
 `;

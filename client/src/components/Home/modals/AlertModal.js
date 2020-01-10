@@ -9,14 +9,14 @@ import update from 'immutability-helper';
 
 import {
   Modal,
-  InfoMessage,
+  Message,
   Button,
   Labeled,
   Input,
   LabeledInput,
   Select,
   Typeahead,
-  Message,
+  MessageBox,
   Form
 } from 'components';
 import {formatters, isDurationReport} from 'services';
@@ -224,7 +224,7 @@ export default class AlertModal extends React.Component {
         <Modal.Content>
           <Form horizontal>
             {!emailNotificationIsEnabled && (
-              <Message
+              <MessageBox
                 type="warning"
                 dangerouslySetInnerHTML={{__html: t('alert.emailWarning', {docsLink})}}
               />
@@ -252,7 +252,7 @@ export default class AlertModal extends React.Component {
                   ))}
                 </Typeahead>
               </Labeled>
-              <InfoMessage>{t('alert.form.reportInfo')}</InfoMessage>
+              <Message>{t('alert.form.reportInfo')}</Message>
             </Form.Group>
             <Form.Group>
               <span>{t('alert.form.threshold')}</span>

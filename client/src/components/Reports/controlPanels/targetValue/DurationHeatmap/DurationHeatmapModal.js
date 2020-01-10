@@ -18,7 +18,7 @@ import {
   Input,
   Select,
   TargetValueBadge,
-  ErrorMessage,
+  Message,
   LoadingIndicator,
   ClickBehavior
 } from 'components';
@@ -282,9 +282,7 @@ export default class DurationHeatmapModal extends React.Component {
               disablePagination
             />
           )}
-          {!this.validChanges() && !this.state.loading && (
-            <ErrorMessage>{errorMessage}</ErrorMessage>
-          )}
+          {!this.validChanges() && !this.state.loading && <Message error>{errorMessage}</Message>}
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={onClose}>{t('common.cancel')}</Button>

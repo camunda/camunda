@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Button, LabeledInput, Modal, Form, InfoMessage} from 'components';
+import {Button, LabeledInput, Modal, Form, Message} from 'components';
 import {t} from 'translation';
 import MoveCopy from './MoveCopy';
 
@@ -55,7 +55,7 @@ export default class CopyModal extends React.Component {
                 onChange={({target: {value}}) => this.setState({name: value})}
               />
             </Form.Group>
-            {this.isCollection() && <InfoMessage>{t('home.copy.copyCollectionInfo')}</InfoMessage>}
+            {this.isCollection() && <Message>{t('home.copy.copyCollectionInfo')}</Message>}
             {!this.isCollection() && (
               <MoveCopy
                 entity={entity}

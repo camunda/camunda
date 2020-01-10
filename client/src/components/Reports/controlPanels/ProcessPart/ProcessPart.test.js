@@ -109,5 +109,7 @@ it('should display a warning if there is no path between start and end node', ()
     hasPath: false
   });
 
-  expect(node.find('Message').dive()).toIncludeText('Report results may be empty or misleading.');
+  expect(node.find('MessageBox').dive()).toIncludeText(
+    'Report results may be empty or misleading.'
+  );
 });

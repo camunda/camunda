@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Form, LabeledInput, ErrorMessage} from 'components';
+import {Form, LabeledInput, Message} from 'components';
 
 import {numberParser} from 'services';
 import {t} from 'translation';
@@ -41,9 +41,9 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
         />
       </Form.InputGroup>
       {(targetInvalid || baselineInvalid) && (
-        <ErrorMessage>{t('report.config.goal.invalidInput')}</ErrorMessage>
+        <Message error>{t('report.config.goal.invalidInput')}</Message>
       )}
-      {tooLow && <ErrorMessage>{t('report.config.goal.lessThanTargetError')}</ErrorMessage>}
+      {tooLow && <Message error>{t('report.config.goal.lessThanTargetError')}</Message>}
     </>
   );
 }

@@ -1,35 +1,8 @@
-@import 'shared-styles/shared-styles.scss';
-
 .Message {
-  font-size: 0.875em;
-  background-color: #f2f2f2;
-  padding: 8px 16px;
-  margin: 0;
-  border-radius: 3px;
-  margin-bottom: 1em;
-  border: 1px solid #dddddd;
-}
+  color: #888888;
+  font-size: 0.8em;
 
-.Message--blue {
-  border: 1px solid $cam-blue;
-  background-color: lighten($cam-blue, 45);
-}
-
-.Message--yellow,
-.Message--warning {
-  border: 1px solid #ffdfb9;
-  background-color: #fff2e1;
-}
-
-.Message--red,
-.Message--danger,
-.Message--error {
-  border: 1px solid $cam-red;
-  background-color: lighten($cam-red, 50);
-}
-
-.Message--green,
-.Message--success {
-  border: 1px solid $cam-green;
-  background-color: lighten($cam-green, 50);
+  &.error {
+    color: red;
+  }
 }

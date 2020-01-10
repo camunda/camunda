@@ -250,11 +250,11 @@ it('should show a note if more than one version is selected', async () => {
     <DefinitionSelection {...props} definitionKey="foo" versions={['all']} />
   );
 
-  expect(node.find('InfoMessage')).toMatchSnapshot();
+  expect(node.find('Message')).toMatchSnapshot();
   node.setProps({versions: ['1', '2']});
-  expect(node.find('InfoMessage')).toExist();
+  expect(node.find('Message')).toExist();
   node.setProps({versions: ['1']});
-  expect(node.find('InfoMessage')).not.toExist();
+  expect(node.find('Message')).not.toExist();
 });
 
 it('should show an info message to add sources', async () => {
@@ -269,7 +269,7 @@ it('should show an info message if specified by props', async () => {
     <DefinitionSelection {...props} definitionKey="foo" infoMessage="test message" />
   );
 
-  expect(node.find('InfoMessage').props().children).toBe('test message');
+  expect(node.find('Message').props().children).toBe('test message');
 });
 
 it('should pass an id for every entry to the typeahead', async () => {

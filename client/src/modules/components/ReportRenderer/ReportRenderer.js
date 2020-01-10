@@ -14,7 +14,7 @@ import SetupNotice from './SetupNotice';
 import IncompleteReport from './IncompleteReport';
 import NoDataNotice from './NoDataNotice';
 
-import {ErrorBoundary, Message} from 'components';
+import {ErrorBoundary, MessageBox} from 'components';
 
 import {formatters} from 'services';
 
@@ -79,7 +79,7 @@ export default function ReportRenderer(props) {
       </ErrorBoundary>
     );
   } else {
-    return <Message type="error">{t('report.invalidCombinationError')}</Message>;
+    return <MessageBox type="error">{t('report.invalidCombinationError')}</MessageBox>;
   }
 }
 

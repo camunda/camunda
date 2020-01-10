@@ -8,7 +8,7 @@ import React from 'react';
 
 import {login} from './service';
 
-import {Logo, Message, Button, Input, Labeled} from 'components';
+import {Logo, MessageBox, Button, Input, Labeled} from 'components';
 
 import './Login.scss';
 import {t} from 'translation';
@@ -62,7 +62,7 @@ export default class Login extends React.Component {
           <Logo />
           Camunda Optimize
         </h1>
-        {error ? <Message type="error">{error}</Message> : ''}
+        {error ? <MessageBox type="error">{error}</MessageBox> : ''}
         <div className="controls">
           <div className="row">
             <Labeled label={usernameLabel}>

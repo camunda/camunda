@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {Button, Input, ErrorMessage} from 'components';
+import {Button, Input, Message} from 'components';
 
 import ChartTargetInput from './ChartTargetInput';
 
@@ -162,5 +162,5 @@ it('should include an error message when invalid target value is typed', () => {
     }
   });
 
-  expect(node.find(ErrorMessage)).toExist();
+  expect(node.find(Message)).toExist();
 });

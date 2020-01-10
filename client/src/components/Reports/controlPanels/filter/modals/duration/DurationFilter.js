@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Modal, Button, Input, Select, ErrorMessage, Form} from 'components';
+import {Modal, Button, Input, Select, Message, Form} from 'components';
 import {numberParser} from 'services';
 
 import './DurationFilter.scss';
@@ -84,7 +84,7 @@ export default class DurationFilter extends React.Component {
                 </Select>
               </Form.InputGroup>
               {!isValidInput && (
-                <ErrorMessage>{t('common.filter.durationModal.invalidInput')}</ErrorMessage>
+                <Message error>{t('common.filter.durationModal.invalidInput')}</Message>
               )}
             </Form.Group>
           </Form>

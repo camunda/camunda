@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Button, LabeledInput, Modal, Form, OldTypeahead, ErrorMessage} from 'components';
+import {Button, LabeledInput, Modal, Form, OldTypeahead, Message} from 'components';
 import {searchIdentities} from './service';
 
 import {t} from 'translation';
@@ -90,10 +90,10 @@ export default class AddUserModal extends React.Component {
                 formatter={this.formatTypeaheadOption}
               />
               {alreadyExists && selectedIdentity.type === 'user' && (
-                <ErrorMessage>{t('home.roles.existing-user-error')}</ErrorMessage>
+                <Message error>{t('home.roles.existing-user-error')}</Message>
               )}
               {alreadyExists && selectedIdentity.type === 'group' && (
-                <ErrorMessage>{t('home.roles.existing-group-error')}</ErrorMessage>
+                <Message error>{t('home.roles.existing-group-error')}</Message>
               )}
             </Form.Group>
             {t('home.roles.userRole')}

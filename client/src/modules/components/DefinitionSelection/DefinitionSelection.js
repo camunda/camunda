@@ -7,7 +7,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {InfoMessage, BPMNDiagram, LoadingIndicator, Popover, Typeahead, Labeled} from 'components';
+import {Message, BPMNDiagram, LoadingIndicator, Popover, Typeahead, Labeled} from 'components';
 
 import {loadDefinitions, getCollection} from 'services';
 import {withRouter} from 'react-router-dom';
@@ -241,12 +241,12 @@ export default withRouter(
               </div>
               <div className="info">
                 {displayVersionWarning && (
-                  <InfoMessage>{t('common.definitionSelection.versionWarning')}</InfoMessage>
+                  <Message>{t('common.definitionSelection.versionWarning')}</Message>
                 )}
                 {collectionId && noDefinitions && (
-                  <InfoMessage>{t('common.definitionSelection.noSourcesWarning')}</InfoMessage>
+                  <Message>{t('common.definitionSelection.noSourcesWarning')}</Message>
                 )}
-                {this.props.infoMessage && <InfoMessage>{this.props.infoMessage}</InfoMessage>}
+                {this.props.infoMessage && <Message>{this.props.infoMessage}</Message>}
               </div>
             </div>
             {this.canRenderDiagram() && (

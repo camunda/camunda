@@ -5,24 +5,24 @@
  */
 
 import React from 'react';
-import {shallow, mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
-import Message from './Message';
+import MessageBox from './MessageBox';
 
 it('renders without crashing', () => {
-  shallow(<Message />);
+  shallow(<MessageBox />);
 });
 
 it('renders the message text provided as a property', () => {
   const text = 'This is a Message!';
 
-  const node = mount(<Message>{text}</Message>);
+  const node = shallow(<MessageBox>{text}</MessageBox>);
   expect(node).toIncludeText(text);
 });
 
 it('renders the class name as provided as a property', () => {
   const type = 'test';
 
-  const node = mount(<Message type={type} />);
-  expect(node.find('.Message')).toHaveClassName('Message--test');
+  const node = shallow(<MessageBox type={type} />);
+  expect(node.find('.MessageBox')).toHaveClassName('MessageBox--test');
 });

@@ -92,7 +92,7 @@ export const userTaskDurationSelect = Selector('.UserTaskDurationTime button');
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = label => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
-export const warningMessage = Selector('.Report .Message--warning');
+export const warningMessage = Selector('.Report .MessageBox--warning');
 export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('.Button');
 export const definitionSelection = Selector('.Popover.DefinitionSelection');

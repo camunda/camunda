@@ -80,7 +80,7 @@ it('should display an error message the report is defined', () => {
   const report = null;
   const node = shallow(<ReportRenderer report={report} />);
 
-  expect(node.find('Message')).toExist();
+  expect(node.find('MessageBox')).toExist();
 });
 
 it('should include the instance count if indicated in the config', () => {

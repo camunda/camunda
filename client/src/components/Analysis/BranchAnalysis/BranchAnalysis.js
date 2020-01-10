@@ -8,7 +8,7 @@ import React from 'react';
 import equal from 'deep-equal';
 
 import BranchControlPanel from './BranchControlPanel';
-import {BPMNDiagram, Message} from 'components';
+import {BPMNDiagram, MessageBox} from 'components';
 
 import {loadFrequencyData} from './service';
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
@@ -55,7 +55,7 @@ export default class BranchAnalysis extends React.Component {
           xml={xml}
         />
         {config.filter && incompatibleFilters(config.filter) && (
-          <Message type="warning">{t('common.filter.incompatibleFilters')}</Message>
+          <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
         )}
         <div className="content">
           <div className="BranchAnalysis__diagram">

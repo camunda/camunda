@@ -144,7 +144,7 @@ it('should show a warning message when there are incompatible filters', async ()
   incompatibleFilters.mockReturnValue(true);
   const node = await shallow(<BranchAnalysis />);
   await node.update();
-  expect(node.find('Message')).toExist();
+  expect(node.find('MessageBox')).toExist();
 });
 
 it('should not reset the xml when adding a filter', async () => {

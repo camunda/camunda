@@ -12,7 +12,7 @@ import {
   ClickBehavior,
   PartHighlight,
   ActionItem,
-  Message
+  MessageBox
 } from 'components';
 
 import './ProcessPart.scss';
@@ -115,7 +115,7 @@ export default class ProcessPart extends React.Component {
             </ActionItem>
           </span>
           {start && end && !hasPath && (
-            <Message type="warning">{t('report.processPart.noPathWarning')}</Message>
+            <MessageBox type="warning">{t('report.processPart.noPathWarning')}</MessageBox>
           )}
           <div className="diagram-container">
             <BPMNDiagram xml={this.props.xml}>

@@ -72,7 +72,7 @@ it('should display the error message if there is an error', () => {
 
   node.setState({error: true});
 
-  expect(node.find('Message[type="error"]')).toExist();
+  expect(node.find('MessageBox[type="error"]')).toExist();
 });
 
 it('should set the error property on failed login', async () => {

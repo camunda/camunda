@@ -60,7 +60,7 @@
       padding-bottom: 10px;
     }
 
-    .Message {
+    .MessageBox {
       margin-bottom: 10px;
     }
 
@@ -94,8 +94,8 @@
         margin-left: 30%;
       }
 
-      .InfoMessage,
-      .ErrorMessage {
+      .Message,
+      .Message {
         margin-left: 30%;
         margin-top: 3px;
       }
@@ -154,7 +154,7 @@
         }
       }
 
-      .Message {
+      .MessageBox {
         width: 110%;
       }
     }

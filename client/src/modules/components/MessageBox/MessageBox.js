@@ -5,11 +5,19 @@
  */
 
 import React from 'react';
-
 import classnames from 'classnames';
 
-import './InfoMessage.scss';
+import './MessageBox.scss';
 
-export default function InfoMessage(props) {
-  return <div className={classnames('InfoMessage', props.className)}>{props.children}</div>;
+export default function MessageBox({type, children, ...props}) {
+  return (
+    <div
+      {...props}
+      className={classnames('MessageBox', {
+        ['MessageBox--' + type]: type
+      })}
+    >
+      {children}
+    </div>
+  );
 }

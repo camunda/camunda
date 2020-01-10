@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {ButtonGroup, Button, Input, ErrorMessage, Select} from 'components';
+import {ButtonGroup, Button, Input, Message, Select} from 'components';
 import {numberParser} from 'services';
 import {t} from 'translation';
 
@@ -49,9 +49,9 @@ export default function ChartTargetInput({onChange, report}) {
         disabled={!targetValue.active}
       />
       {isInvalid && (
-        <ErrorMessage className="InvalidTargetError">
+        <Message error className="InvalidTargetError">
           {t('report.config.goal.invalidInput')}
-        </ErrorMessage>
+        </Message>
       )}
       {type === 'durationChart' && (
         <Select

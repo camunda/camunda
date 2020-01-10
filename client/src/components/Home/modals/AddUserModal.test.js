@@ -39,7 +39,7 @@ it('should show an error message when trying to add a user that already exists',
 
   node.setState({selectedIdentity: {id: 'testUser', type: 'user'}, activeRole: 'editor'});
 
-  expect(node.find('ErrorMessage')).toExist();
+  expect(node.find('Message')).toExist();
 });
 
 it('should format user list information correctly', () => {

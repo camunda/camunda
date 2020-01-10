@@ -6,7 +6,7 @@
 
 import React from 'react';
 import classnames from 'classnames';
-import {Input, ErrorMessage} from 'components';
+import {Input, Message} from 'components';
 
 import './DateInput.scss';
 import {t} from 'translation';
@@ -28,9 +28,9 @@ class DateInput extends React.PureComponent {
           disabled={this.props.disabled}
         />
         {this.props.error && (
-          <ErrorMessage className="DateInput__warning">
+          <Message error className="DateInput__warning">
             {t('common.filter.dateModal.invalidDate')}
-          </ErrorMessage>
+          </Message>
         )}
       </div>
     );

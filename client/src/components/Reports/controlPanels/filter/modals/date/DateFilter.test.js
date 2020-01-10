@@ -87,7 +87,7 @@ it('should disable the add filter button when dynamic value is not valid', () =>
 it('shoud show a warning message if the modal is for end date filter', () => {
   const endDateModal = shallow(<DateFilter filterType="endDate" />);
 
-  expect(endDateModal.find('Message')).toExist();
+  expect(endDateModal.find('MessageBox')).toExist();
 });
 
 it('shoud make difference between start and end date filter modals', () => {

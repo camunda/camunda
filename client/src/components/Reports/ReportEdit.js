@@ -12,7 +12,14 @@ import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {ReportRenderer, LoadingIndicator, Message, Modal, Button, EntityNameForm} from 'components';
+import {
+  ReportRenderer,
+  LoadingIndicator,
+  MessageBox,
+  Modal,
+  Button,
+  EntityNameForm
+} from 'components';
 
 import {
   incompatibleFilters,
@@ -241,15 +248,15 @@ export default withRouter(
             )}
 
             {this.showIncompleteResultWarning() && (
-              <Message type="warning">
+              <MessageBox type="warning">
                 {t('report.incomplete', {
                   count: report.result.data.length || Object.keys(report.result.data).length
                 })}
-              </Message>
+              </MessageBox>
             )}
 
             {data && data.filter && incompatibleFilters(data.filter) && (
-              <Message type="warning">{t('common.filter.incompatibleFilters')}</Message>
+              <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
             )}
 
             <div className="Report__view">

@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Form, LabeledInput, ErrorMessage, Select} from 'components';
+import {Form, LabeledInput, Message, Select} from 'components';
 
 import {formatters, numberParser} from 'services';
 import {t} from 'translation';
@@ -43,7 +43,7 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
           {selectionOptions()}
         </Select>
       </Form.InputGroup>
-      {baselineInvalid && <ErrorMessage>{t('report.config.goal.invalidInput')}</ErrorMessage>}
+      {baselineInvalid && <Message error>{t('report.config.goal.invalidInput')}</Message>}
       <Form.InputGroup>
         <LabeledInput
           label={t('report.config.goal.target')}
@@ -62,8 +62,8 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
           {selectionOptions()}
         </Select>
       </Form.InputGroup>
-      {targetInvalid && <ErrorMessage>{t('report.config.goal.invalidInput')}</ErrorMessage>}
-      {tooLow && <ErrorMessage>{t('report.config.goal.lessThanTargetError')}</ErrorMessage>}
+      {targetInvalid && <Message error>{t('report.config.goal.invalidInput')}</Message>}
+      {tooLow && <Message error>{t('report.config.goal.lessThanTargetError')}</Message>}
     </>
   );
 }

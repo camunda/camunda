@@ -42,7 +42,7 @@ it('should show an error message if an input field does not have a valid value',
     <DurationTargetInput {...validProps} target={{value: 'five', unit: 'seconds'}} />
   );
 
-  expect(node.find('ErrorMessage')).toExist();
+  expect(node.find('Message')).toExist();
 });
 
 it('should show an error message if target is below baseline', async () => {
@@ -53,5 +53,5 @@ it('should show an error message if target is below baseline', async () => {
     />
   );
 
-  expect(node.find('ErrorMessage')).toExist();
+  expect(node.find('Message')).toExist();
 });
