@@ -59,7 +59,7 @@ pipeline {
                 }
 
                 container('maven') {
-                    sh '.ci/scripts/docker/prepare.sh'
+                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                 }
 
                 container('docker') {
