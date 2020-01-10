@@ -44,6 +44,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   private final LogStreamReaderImpl reader;
   private final LogStorage logStorage;
   private final CompletableActorFuture<Void> closeFuture;
+  private final int nodeId;
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
@@ -55,12 +56,14 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
       final ActorConditions onCommitPositionUpdatedConditions,
       final String logName,
       final int partitionId,
+      final int nodeId,
       final ByteValue maxFrameLength,
       final LogStorage logStorage) {
     this.actorScheduler = actorScheduler;
     this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
     this.logName = logName;
     this.partitionId = partitionId;
+    this.nodeId = nodeId;
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
     this.closeFuture = new CompletableActorFuture<>();
@@ -87,6 +90,11 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   @Override
   public String getLogName() {
     return logName;
+  }
+
+  @Override
+  public String getName() {
+    return actorNamePattern(nodeId, "LogStream-" + partitionId);
   }
 
   @Override

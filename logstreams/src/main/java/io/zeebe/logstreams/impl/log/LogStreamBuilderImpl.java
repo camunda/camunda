@@ -24,6 +24,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private ActorScheduler actorScheduler;
   private LogStorage logStorage;
   private String logName;
+  private int nodeId = 0;
 
   @Override
   public LogStreamBuilder withActorScheduler(final ActorScheduler actorScheduler) {
@@ -50,6 +51,12 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withNodeId(int nodeId) {
+    this.nodeId = nodeId;
+    return this;
+  }
+
+  @Override
   public LogStreamBuilder withLogName(final String logName) {
     this.logName = logName;
     return this;
@@ -65,6 +72,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
             new ActorConditions(),
             logName,
             partitionId,
+            nodeId,
             ByteValue.ofBytes(maxFragmentSize),
             logStorage);
 

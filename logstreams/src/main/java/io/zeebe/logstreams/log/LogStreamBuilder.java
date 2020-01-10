@@ -48,6 +48,14 @@ public interface LogStreamBuilder {
   LogStreamBuilder withPartitionId(int partitionId);
 
   /**
+   * The node ID - to indicate on which node the log stream is running
+   *
+   * @param nodeId the node id
+   * @return this builder
+   */
+  LogStreamBuilder withNodeId(int nodeId);
+
+  /**
    * The log stream name - primarily used for contextualizing as well, e.g. loggers, actor name,
    * etc.
    *
