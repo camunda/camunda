@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.reader;
 
+import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -81,14 +82,28 @@ public class BranchAnalysisReader {
       final List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
       final Set<String> activityIdsWithMultipleIncomingSequenceFlows =
         extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
+      final FlowNode gateway = bpmnModelInstance.getModelElementById(request.getGateway());
+      final FlowNode end = bpmnModelInstance.getModelElementById(request.getEnd());
+      final boolean canReachEndFromGateway = isPathPossible(gateway, end, Sets.newHashSet());
 
       for (FlowNode activity : gatewayOutcomes) {
         final Set<String> activitiesToExcludeFromBranchAnalysis = extractActivitiesToExclude(
           gatewayOutcomes, activityIdsWithMultipleIncomingSequenceFlows, activity.getId(), request.getEnd()
         );
-        final BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(
-          activity, request, activitiesToExcludeFromBranchAnalysis
-        );
+        BranchAnalysisOutcomeDto branchAnalysis = new BranchAnalysisOutcomeDto();
+        if (canReachEndFromGateway) {
+          branchAnalysis = branchAnalysis(
+            activity, request, activitiesToExcludeFromBranchAnalysis
+          );
+        } else {
+          branchAnalysis.setActivityId(activity.getId());
+          branchAnalysis.setActivitiesReached(0L); // End event cannot be reached from gateway
+          branchAnalysis.setActivityCount((calculateActivityCount(
+            activity.getId(),
+            request,
+            activitiesToExcludeFromBranchAnalysis
+          )));
+        }
         result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
       }
 
@@ -97,6 +112,22 @@ public class BranchAnalysisReader {
     });
 
     return result;
+  }
+
+  private boolean isPathPossible(final FlowNode parent, final FlowNode target, final Set<FlowNode> visitedNodes) {
+    visitedNodes.add(parent);
+    List<FlowNode> succeedingNodes = parent.getSucceedingNodes().list();
+    if (succeedingNodes.contains(target)) {
+      return true;
+    } else {
+      for (FlowNode child : succeedingNodes) {
+        if (visitedNodes.contains(child)) {
+          break;
+        }
+        return isPathPossible(child, target, visitedNodes);
+      }
+    }
+    return false;
   }
 
   private Set<String> extractActivitiesToExclude(final List<FlowNode> gatewayOutcomes,

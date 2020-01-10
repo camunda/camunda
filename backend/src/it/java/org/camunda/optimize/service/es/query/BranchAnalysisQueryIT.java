@@ -51,9 +51,16 @@ public class BranchAnalysisQueryIT extends AbstractIT {
   private static final String SPLITTING_GATEWAY_ID = "splittingGateway";
   private static final String TASK_ID_1 = "serviceTask1";
   private static final String TASK_ID_2 = "serviceTask2";
+  private static final String TASK_ID_3 = "serviceTask3";
+  private static final String TASK_ID_4 = "serviceTask4";
   private static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
   private static final String END_EVENT_ID = "endEvent";
   private static final String USER_TASK_ID = "userTask";
+
+  private static final String SUBPROCESS_TASK_ID_1 = "subprocessTask1";
+  private static final String SUBPROCESS_TASK_ID_2 = "subprocessTask2";
+  private static final String SUBPROCESS_GATEWAY_ID = "subprocessGateway";
+  private static final String SUBPROCESS_END_EVENT_ID = "subprocessEnd";
 
   @Test
   public void branchAnalysis() {
@@ -80,6 +87,74 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
     assertThat(task2.getActivityId(), is(TASK_ID_2));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
+  }
+
+  @Test
+  public void branchAnalysis_withLoop() {
+    //given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinitionWithLoop();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //when
+    BranchAnalysisDto result = performBranchAnalysis(
+      processDefinition.getKey(),
+      Lists.newArrayList(processDefinition.getVersionAsString()),
+      Collections.singletonList(null),
+      END_EVENT_ID,
+      SPLITTING_GATEWAY_ID
+    );
+
+    //then
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(END_EVENT_ID));
+    assertThat(result.getTotal(), is(1L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_2);
+    assertThat(task1.getActivityId(), is(TASK_ID_2));
+    assertThat(task1.getActivitiesReached(), is(1L));
+    assertThat(task1.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_3);
+    assertThat(task2.getActivityId(), is(TASK_ID_3));
+    assertThat(task2.getActivitiesReached(), is(0L));
+    assertThat(task2.getActivityCount(), is(0L));
+  }
+
+  @Test
+  public void branchAnalysis_impossiblePath() {
+    //given
+    ProcessDefinitionEngineDto processDefinition = deployGatewayProcessWithSubprocess();
+    startSimpleGatewayProcessAndTakeTask1(processDefinition);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //when
+    BranchAnalysisDto result = performBranchAnalysis(
+      processDefinition.getKey(),
+      Lists.newArrayList(processDefinition.getVersionAsString()),
+      Collections.singletonList(null),
+      SUBPROCESS_END_EVENT_ID,
+      GATEWAY_C
+    );
+
+    // then analysis shows it is not possible to reach the chosen end from the chosen gateway
+    assertThat(result, is(notNullValue()));
+    assertThat(result.getEndEvent(), is(SUBPROCESS_END_EVENT_ID));
+    assertThat(result.getTotal(), is(1L));
+    assertThat(result.getFollowingNodes().size(), is(2));
+
+    BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_3);
+    assertThat(task1.getActivityId(), is(TASK_ID_3));
+    assertThat(task1.getActivitiesReached(), is(0L));
+    assertThat(task1.getActivityCount(), is(1L));
+
+    BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_4);
+    assertThat(task2.getActivityId(), is(TASK_ID_4));
     assertThat(task2.getActivitiesReached(), is(0L));
     assertThat(task2.getActivityCount(), is(0L));
   }
@@ -212,8 +287,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     BranchAnalysisDto result = performBranchAnalysis(
       processDefinition.getKey(),
-      ImmutableList.of(processDefinition.getVersionAsString()),
-      Collections.singletonList(null)
+      ImmutableList.of(processDefinition.getVersionAsString())
     );
 
     //then
@@ -252,7 +326,9 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
-      Lists.newArrayList(tenantId2, tenantId1)
+      Lists.newArrayList(tenantId2, tenantId1),
+      END_EVENT_ID,
+      SPLITTING_GATEWAY_ID
     );
 
     //then
@@ -291,7 +367,9 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
-      Lists.newArrayList(tenantId2)
+      Lists.newArrayList(tenantId2),
+      END_EVENT_ID,
+      SPLITTING_GATEWAY_ID
     );
 
     //then
@@ -904,18 +982,26 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
                                                   final List<String> processDefinitionVersions) {
-    return performBranchAnalysis(processDefinitionKey, processDefinitionVersions, Collections.singletonList(null));
+    return performBranchAnalysis(
+      processDefinitionKey,
+      processDefinitionVersions,
+      Collections.singletonList(null),
+      END_EVENT_ID,
+      SPLITTING_GATEWAY_ID
+    );
   }
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
                                                   final List<String> processDefinitionVersions,
-                                                  final List<String> tenantIds) {
+                                                  final List<String> tenantIds,
+                                                  final String endEventId,
+                                                  final String gatewayID) {
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionKey(processDefinitionKey);
     dto.setProcessDefinitionVersions(processDefinitionVersions);
     dto.setTenantIds(tenantIds);
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
+    dto.setGateway(gatewayID);
+    dto.setEnd(endEventId);
     return getBranchAnalysisDto(dto);
   }
 
@@ -944,6 +1030,28 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
+  private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinitionWithLoop() {
+    // @formatter:off
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+      .startEvent()
+      .serviceTask(TASK_ID_1)
+      .camundaExpression("${true}")
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+        .name("Go to task 2?")
+        .condition("yes", "#{goToTask1}")
+        .serviceTask(TASK_ID_2)
+        .camundaExpression("${true}")
+        .endEvent(END_EVENT_ID)
+      .moveToLastGateway()
+        .condition("no", "#{!goToTask1}")
+        .serviceTask(TASK_ID_3)
+        .camundaExpression("${true}")
+        .connectTo(TASK_ID_1)
+        .done();
+    // @formatter:on
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, null);
+  }
+
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessWithUserTask() {
     // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
@@ -963,6 +1071,51 @@ public class BranchAnalysisQueryIT extends AbstractIT {
         .connectTo(MERGE_GATEWAY_ID)
       .done();
     // @formatter:on
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  private ProcessDefinitionEngineDto deployGatewayProcessWithSubprocess() {
+    // @formatter:off
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+      .startEvent(START_EVENT_ID)
+      .exclusiveGateway(GATEWAY_B)
+      .name("Should we go to task 1?")
+      .condition("no", "${!goToTask1}")
+      .serviceTask(TASK_ID_2)
+      .camundaExpression("${true}")
+      .endEvent("endEvent3")
+      .moveToNode(GATEWAY_B)
+      .condition("yes", "${goToTask1}")
+      .serviceTask(TASK_ID_1)
+      .camundaExpression("${true}")
+      .subProcess()
+        .embeddedSubProcess()
+          .startEvent()
+          .exclusiveGateway(SUBPROCESS_GATEWAY_ID)
+          .condition("yes", "${goToTask1}")
+          .serviceTask(SUBPROCESS_TASK_ID_1)
+          .camundaExpression("${true}")
+          .endEvent(SUBPROCESS_END_EVENT_ID)
+          .moveToNode(SUBPROCESS_GATEWAY_ID)
+          .condition("no", "${goToTask1}")
+          .serviceTask(SUBPROCESS_TASK_ID_2)
+          .camundaExpression("${true}")
+          .endEvent("subprocessEnd2")
+          .subProcessDone()
+      .exclusiveGateway(GATEWAY_C)
+      .name("Should we go to task 3?")
+      .condition("yes", "${goToTask1}")
+      .serviceTask(TASK_ID_3)
+      .camundaExpression("${true}")
+      .endEvent(END_EVENT_ID)
+      .moveToNode(GATEWAY_C)
+      .condition("no", "${!goToTask1}")
+      .serviceTask(TASK_ID_4)
+      .camundaExpression("${true}")
+      .endEvent("endEvent2")
+      .done();
+    // @formatter:on
+
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
