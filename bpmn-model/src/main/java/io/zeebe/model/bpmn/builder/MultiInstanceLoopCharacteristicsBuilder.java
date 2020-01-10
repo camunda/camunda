@@ -25,7 +25,7 @@ public class MultiInstanceLoopCharacteristicsBuilder
         MultiInstanceLoopCharacteristicsBuilder> {
 
   public MultiInstanceLoopCharacteristicsBuilder(
-      BpmnModelInstance modelInstance, MultiInstanceLoopCharacteristics element) {
+      final BpmnModelInstance modelInstance, final MultiInstanceLoopCharacteristics element) {
     super(modelInstance, element, MultiInstanceLoopCharacteristicsBuilder.class);
   }
 }

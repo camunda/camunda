@@ -11,7 +11,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
-public class WorkflowEngineMetrics {
+public final class WorkflowEngineMetrics {
 
   private static final Counter ELEMENT_INSTANCE_EVENTS =
       Counter.build()
@@ -31,11 +31,11 @@ public class WorkflowEngineMetrics {
 
   private final String partitionIdLabel;
 
-  public WorkflowEngineMetrics(int partitionId) {
+  public WorkflowEngineMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void elementInstanceEvent(String action, BpmnElementType elementType) {
+  private void elementInstanceEvent(final String action, final BpmnElementType elementType) {
     ELEMENT_INSTANCE_EVENTS.labels(action, elementType.name(), partitionIdLabel).inc();
   }
 
@@ -47,7 +47,7 @@ public class WorkflowEngineMetrics {
     RUNNING_WORKFLOW_INSTANCES.labels(partitionIdLabel).dec();
   }
 
-  public void elementInstanceActivated(BpmnElementType elementType) {
+  public void elementInstanceActivated(final BpmnElementType elementType) {
     elementInstanceEvent("activated", elementType);
 
     if (isWorkflowInstance(elementType)) {
@@ -55,7 +55,7 @@ public class WorkflowEngineMetrics {
     }
   }
 
-  public void elementInstanceCompleted(BpmnElementType elementType) {
+  public void elementInstanceCompleted(final BpmnElementType elementType) {
     elementInstanceEvent("completed", elementType);
 
     if (isWorkflowInstance(elementType)) {
@@ -63,7 +63,7 @@ public class WorkflowEngineMetrics {
     }
   }
 
-  public void elementInstanceTerminated(BpmnElementType elementType) {
+  public void elementInstanceTerminated(final BpmnElementType elementType) {
     elementInstanceEvent("terminated", elementType);
 
     if (isWorkflowInstance(elementType)) {
@@ -71,7 +71,7 @@ public class WorkflowEngineMetrics {
     }
   }
 
-  private boolean isWorkflowInstance(BpmnElementType elementType) {
+  private boolean isWorkflowInstance(final BpmnElementType elementType) {
     return BpmnElementType.PROCESS == elementType;
   }
 }

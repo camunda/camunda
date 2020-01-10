@@ -8,23 +8,24 @@ import (
 	"errors"
 )
 
-// NotIn returns a validation rule that checks if a value os absent from, the given list of values.
+// NotIn returns a validation rule that checks if a value is absent from the given list of values.
 // Note that the value being checked and the possible range of values must be of the same type.
 // An empty value is considered valid. Use the Required rule to make sure a value is not empty.
-func NotIn(values ...interface{}) *NotInRule {
-	return &NotInRule{
+func NotIn(values ...interface{}) NotInRule {
+	return NotInRule{
 		elements: values,
 		message:  "must not be in list",
 	}
 }
 
+// NotInRule is a validation rule that checks if a value is absent from the given list of values.
 type NotInRule struct {
 	elements []interface{}
 	message  string
 }
 
 // Validate checks if the given value is valid or not.
-func (r *NotInRule) Validate(value interface{}) error {
+func (r NotInRule) Validate(value interface{}) error {
 	value, isNil := Indirect(value)
 	if isNil || IsEmpty(value) {
 		return nil
@@ -39,7 +40,7 @@ func (r *NotInRule) Validate(value interface{}) error {
 }
 
 // Error sets the error message for the rule.
-func (r *NotInRule) Error(message string) *NotInRule {
+func (r NotInRule) Error(message string) NotInRule {
 	r.message = message
 	return r
 }

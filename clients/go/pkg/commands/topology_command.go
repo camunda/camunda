@@ -21,27 +21,21 @@ import (
 	"time"
 )
 
-type TopologyCommand struct {
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
-}
+type TopologyCommand Command
 
 func (cmd *TopologyCommand) Send() (*pb.TopologyResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	request := &pb.TopologyRequest{}
-	response, err := cmd.gateway.Topology(ctx, request)
-
-	if cmd.retryPredicate(err) {
+	response, err := cmd.gateway.Topology(ctx, &pb.TopologyRequest{})
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewTopologyCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) *TopologyCommand {
+func NewTopologyCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) *TopologyCommand {
 	return &TopologyCommand{
 		gateway:        gateway,
 		requestTimeout: requestTimeout,

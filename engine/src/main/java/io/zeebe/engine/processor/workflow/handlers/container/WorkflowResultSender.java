@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public class WorkflowResultSender implements WorkflowPostProcessor {
+public final class WorkflowResultSender implements WorkflowPostProcessor {
 
   @Override
   public void accept(final BpmnStepContext<ExecutableFlowElementContainer> context) {

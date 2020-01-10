@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 
-public class DbSnapshotMetadata implements DbSnapshotId {
+public final class DbSnapshotMetadata implements DbSnapshotId {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotMetadata.class);
 
   private final long index;

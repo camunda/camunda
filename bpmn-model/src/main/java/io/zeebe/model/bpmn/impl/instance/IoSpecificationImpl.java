@@ -45,11 +45,11 @@ public class IoSpecificationImpl extends BaseElementImpl implements IoSpecificat
   protected static ChildElementCollection<InputSet> inputSetCollection;
   protected static ChildElementCollection<OutputSet> outputSetCollection;
 
-  public IoSpecificationImpl(ModelTypeInstanceContext instanceContext) {
+  public IoSpecificationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(IoSpecification.class, BPMN_ELEMENT_IO_SPECIFICATION)
@@ -58,7 +58,8 @@ public class IoSpecificationImpl extends BaseElementImpl implements IoSpecificat
             .instanceProvider(
                 new ModelTypeInstanceProvider<IoSpecification>() {
                   @Override
-                  public IoSpecification newInstance(ModelTypeInstanceContext instanceContext) {
+                  public IoSpecification newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new IoSpecificationImpl(instanceContext);
                   }
                 });

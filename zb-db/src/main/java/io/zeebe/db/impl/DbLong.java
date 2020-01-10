@@ -14,16 +14,16 @@ import io.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DbLong implements DbKey, DbValue {
+public final class DbLong implements DbKey, DbValue {
 
   private long longValue;
 
-  public void wrapLong(long value) {
+  public void wrapLong(final long value) {
     longValue = value;
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     longValue = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
   }
 
@@ -33,7 +33,7 @@ public class DbLong implements DbKey, DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putLong(offset, longValue, ZB_DB_BYTE_ORDER);
   }
 

@@ -25,7 +25,7 @@ public abstract class AbstractProcessBuilder<B extends AbstractProcessBuilder<B>
     extends AbstractCallableElementBuilder<B, Process> {
 
   protected AbstractProcessBuilder(
-      BpmnModelInstance modelInstance, Process element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final Process element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -35,7 +35,7 @@ public abstract class AbstractProcessBuilder<B extends AbstractProcessBuilder<B>
    * @param processType the process type to set
    * @return the builder object
    */
-  public B processType(ProcessType processType) {
+  public B processType(final ProcessType processType) {
     element.setProcessType(processType);
     return myself;
   }

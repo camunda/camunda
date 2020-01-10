@@ -19,10 +19,13 @@ public abstract class ActorThreadGroup {
   protected final String groupName;
   protected final ActorThread[] threads;
   protected final MultiLevelWorkstealingGroup tasks;
-  protected int numOfThreads;
+  protected final int numOfThreads;
 
   public ActorThreadGroup(
-      String groupName, int numOfThreads, int numOfQueuesPerThread, ActorSchedulerBuilder builder) {
+      final String groupName,
+      final int numOfThreads,
+      final int numOfQueuesPerThread,
+      final ActorSchedulerBuilder builder) {
     this.groupName = groupName;
     this.numOfThreads = numOfThreads;
 
@@ -52,7 +55,7 @@ public abstract class ActorThreadGroup {
   protected abstract TaskScheduler createTaskScheduler(
       MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder);
 
-  public void submit(ActorTask actorTask) {
+  public void submit(final ActorTask actorTask) {
     final int level = getLevel(actorTask);
 
     final ActorThread current = ActorThread.current();
@@ -76,7 +79,7 @@ public abstract class ActorThreadGroup {
   }
 
   public void start() {
-    for (ActorThread actorThread : threads) {
+    for (final ActorThread actorThread : threads) {
       actorThread.start();
     }
   }
@@ -88,7 +91,7 @@ public abstract class ActorThreadGroup {
     for (int i = 0; i < numOfThreads; i++) {
       try {
         terminationFutures[i] = threads[i].close();
-      } catch (IllegalStateException e) {
+      } catch (final IllegalStateException e) {
         e.printStackTrace();
         terminationFutures[i] = CompletableFuture.completedFuture(null);
       }

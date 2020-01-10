@@ -7,7 +7,9 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.util.buffer.BufferUtil;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -17,23 +19,28 @@ public class ExecutableWorkflow extends ExecutableFlowElementContainer {
 
   private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
 
-  public ExecutableWorkflow(String id) {
+  public ExecutableWorkflow(final String id) {
     super(id);
     addFlowElement(this);
   }
 
-  public void addFlowElement(AbstractFlowElement element) {
+  public void addFlowElement(final AbstractFlowElement element) {
     flowElements.put(element.getId(), element);
   }
 
-  public AbstractFlowElement getElementById(DirectBuffer id) {
+  public AbstractFlowElement getElementById(final DirectBuffer id) {
     return flowElements.get(id);
   }
 
   /** convenience function for transformation */
-  public <T extends ExecutableFlowElement> T getElementById(String id, Class<T> expectedType) {
-    final DirectBuffer buffer = BufferUtil.wrapString(id);
-    final ExecutableFlowElement element = flowElements.get(buffer);
+  public <T extends ExecutableFlowElement> T getElementById(
+      final String id, final Class<T> expectedType) {
+    return getElementById(wrapString(id), expectedType);
+  }
+
+  public <T extends ExecutableFlowElement> T getElementById(
+      final DirectBuffer id, final Class<T> expectedType) {
+    final ExecutableFlowElement element = flowElements.get(id);
     if (element == null) {
       return null;
     }
@@ -44,7 +51,9 @@ public class ExecutableWorkflow extends ExecutableFlowElementContainer {
       throw new RuntimeException(
           String.format(
               "Expected element with id '%s' to be instance of class '%s', but it is an instance of '%s'",
-              id, expectedType.getSimpleName(), element.getClass().getSimpleName()));
+              bufferAsString(id),
+              expectedType.getSimpleName(),
+              element.getClass().getSimpleName()));
     }
   }
 }

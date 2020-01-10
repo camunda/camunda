@@ -17,7 +17,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JsonPathQueryValidationTest {
+public final class JsonPathQueryValidationTest {
   @Parameter(0)
   public String jsonPath;
 

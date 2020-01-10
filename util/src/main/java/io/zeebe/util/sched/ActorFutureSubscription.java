@@ -10,19 +10,20 @@ package io.zeebe.util.sched;
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class ActorFutureSubscription implements ActorSubscription {
+public final class ActorFutureSubscription implements ActorSubscription {
   private final ActorJob callbackJob;
   private final int phaseMask;
-  private ActorFuture<?> future;
+  private final ActorFuture<?> future;
 
-  public ActorFutureSubscription(ActorFuture<?> future, ActorJob callbackJob, int phaseMask) {
+  public ActorFutureSubscription(
+      final ActorFuture<?> future, final ActorJob callbackJob, final int phaseMask) {
     this.future = future;
     this.callbackJob = callbackJob;
     this.phaseMask = phaseMask;
   }
 
   @Override
-  public boolean triggersInPhase(ActorLifecyclePhase phase) {
+  public boolean triggersInPhase(final ActorLifecyclePhase phase) {
     // triggers in all phases
     return phase != ActorLifecyclePhase.CLOSED && (phase.getValue() & phaseMask) > 0;
   }

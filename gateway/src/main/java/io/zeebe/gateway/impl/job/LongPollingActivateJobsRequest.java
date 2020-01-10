@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
-public class LongPollingActivateJobsRequest {
+public final class LongPollingActivateJobsRequest {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final BrokerActivateJobsRequest request;
@@ -34,7 +34,8 @@ public class LongPollingActivateJobsRequest {
   private BooleanSupplier cancelCheck = () -> false;
 
   public LongPollingActivateJobsRequest(
-      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ActivateJobsRequest request,
+      final StreamObserver<ActivateJobsResponse> responseObserver) {
     this(
         RequestMapper.toActivateJobsRequest(request),
         responseObserver,
@@ -44,11 +45,11 @@ public class LongPollingActivateJobsRequest {
   }
 
   private LongPollingActivateJobsRequest(
-      BrokerActivateJobsRequest request,
-      StreamObserver<ActivateJobsResponse> responseObserver,
-      String jobType,
-      int maxJobstoActivate,
-      long longPollingTimeout) {
+      final BrokerActivateJobsRequest request,
+      final StreamObserver<ActivateJobsResponse> responseObserver,
+      final String jobType,
+      final int maxJobstoActivate,
+      final long longPollingTimeout) {
     this.request = request;
     this.responseObserver = responseObserver;
 
@@ -70,7 +71,7 @@ public class LongPollingActivateJobsRequest {
     }
     try {
       responseObserver.onCompleted();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.warn("Failed to complete {}", request, e);
     }
     this.isCompleted = true;
@@ -80,11 +81,11 @@ public class LongPollingActivateJobsRequest {
     return this.isCompleted;
   }
 
-  public void onResponse(ActivateJobsResponse grpcResponse) {
+  public void onResponse(final ActivateJobsResponse grpcResponse) {
     if (!isCompleted) {
       try {
         responseObserver.onNext(grpcResponse);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.warn("Failed to send response to client.", e);
       }
     }
@@ -115,7 +116,7 @@ public class LongPollingActivateJobsRequest {
     return maxJobsToActivate;
   }
 
-  public void setScheduledTimer(ScheduledTimer scheduledTimer) {
+  public void setScheduledTimer(final ScheduledTimer scheduledTimer) {
     this.scheduledTimer = scheduledTimer;
   }
 
@@ -127,7 +128,7 @@ public class LongPollingActivateJobsRequest {
     return isTimedOut;
   }
 
-  public Duration getLongPollingTimeout(Duration defaultTimeout) {
+  public Duration getLongPollingTimeout(final Duration defaultTimeout) {
     if (longPollingTimeout == null) {
       return defaultTimeout;
     }

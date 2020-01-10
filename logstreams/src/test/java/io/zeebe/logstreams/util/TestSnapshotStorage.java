@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import org.agrona.IoUtil;
 
-public class TestSnapshotStorage implements SnapshotStorage {
+public final class TestSnapshotStorage implements SnapshotStorage {
 
   private final Path pendingDirectory;
   private final Path snapshotsDirectory;
@@ -48,7 +48,7 @@ public class TestSnapshotStorage implements SnapshotStorage {
 
     try {
       Files.list(snapshotsDirectory).map(SnapshotImpl::new).forEach(this::commitSnapshot);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
@@ -73,7 +73,7 @@ public class TestSnapshotStorage implements SnapshotStorage {
     final var destination = snapshotsDirectory.resolve(snapshotPath.getFileName());
     try {
       Files.move(snapshotPath, destination);
-    } catch (FileAlreadyExistsException ignored) {
+    } catch (final FileAlreadyExistsException ignored) {
       // safe to ignore
     } catch (final IOException e) {
       throw new UncheckedIOException(e);

@@ -30,7 +30,7 @@ import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MessageStartEventTest {
+public final class MessageStartEventTest {
 
   private static final String MESSAGE_NAME_1 = "a";
   private static final String MESSAGE_NAME_2 = "b";
@@ -41,7 +41,7 @@ public class MessageStartEventTest {
   private static final BpmnModelInstance SINGLE_START_EVENT = singleStartEvent(startEvent -> {});
   private static final BpmnModelInstance MULTIPLE_START_EVENTS = multipleStartEvents();
 
-  @Rule public EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   private static BpmnModelInstance singleStartEvent(final Consumer<StartEventBuilder> customizer) {
     final var startEventBuilder =

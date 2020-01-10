@@ -29,7 +29,7 @@ import org.slf4j.Logger;
  * <p>The metadata extraction is done by parsing the directory name using '%d-%d-%d-%d', where in
  * order we expect: index, term, timestamp, and position.
  */
-public class DbSnapshotStoreFactory implements SnapshotStoreFactory {
+public final class DbSnapshotStoreFactory implements SnapshotStoreFactory {
   static final String SNAPSHOTS_DIRECTORY = "snapshots";
   static final String PENDING_DIRECTORY = "pending";
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStoreFactory.class);
@@ -50,7 +50,7 @@ public class DbSnapshotStoreFactory implements SnapshotStoreFactory {
 
   private void loadSnapshots(
       final Path snapshotDirectory, final NavigableMap<DbSnapshotId, DbSnapshot> snapshots) {
-    try (var stream = Files.newDirectoryStream(snapshotDirectory)) {
+    try (final var stream = Files.newDirectoryStream(snapshotDirectory)) {
       for (final var path : stream) {
         collectSnapshot(snapshots, path);
       }

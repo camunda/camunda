@@ -19,9 +19,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class EndlessRetryStrategyTest {
+public final class EndlessRetryStrategyTest {
 
-  @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
   private EndlessRetryStrategy retryStrategy;
   private ActorControl actorControl;

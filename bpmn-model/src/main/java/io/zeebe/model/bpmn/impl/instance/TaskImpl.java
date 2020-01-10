@@ -40,11 +40,11 @@ public class TaskImpl extends ActivityImpl implements Task {
   /** camunda extensions */
   protected static Attribute<Boolean> camundaAsyncAttribute;
 
-  public TaskImpl(ModelTypeInstanceContext context) {
+  public TaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Task.class, BPMN_ELEMENT_TASK)
@@ -53,7 +53,7 @@ public class TaskImpl extends ActivityImpl implements Task {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Task>() {
                   @Override
-                  public Task newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Task newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new TaskImpl(instanceContext);
                   }
                 });

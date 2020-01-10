@@ -12,11 +12,11 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<JobRecord> {
+public final class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerUpdateJobRetriesRequest(long jobKey, int retries) {
+  public BrokerUpdateJobRetriesRequest(final long jobKey, final int retries) {
     super(ValueType.JOB, JobIntent.UPDATE_RETRIES);
     request.setKey(jobKey);
     requestDto.setRetries(retries);
@@ -28,7 +28,7 @@ public class BrokerUpdateJobRetriesRequest extends BrokerExecuteCommand<JobRecor
   }
 
   @Override
-  protected JobRecord toResponseDto(DirectBuffer buffer) {
+  protected JobRecord toResponseDto(final DirectBuffer buffer) {
     final JobRecord responseDto = new JobRecord();
     responseDto.wrap(buffer);
     return responseDto;

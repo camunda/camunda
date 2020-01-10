@@ -17,7 +17,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class MessageTransformer implements ModelElementTransformer<Message> {
+public final class MessageTransformer implements ModelElementTransformer<Message> {
 
   @Override
   public Class<Message> getType() {
@@ -25,7 +25,7 @@ public class MessageTransformer implements ModelElementTransformer<Message> {
   }
 
   @Override
-  public void transform(Message element, TransformContext context) {
+  public void transform(final Message element, final TransformContext context) {
 
     final String id = element.getId();
     final ExecutableMessage executableElement = new ExecutableMessage(id);

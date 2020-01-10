@@ -26,7 +26,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class WorkflowInstanceVariableTest {
+public final class WorkflowInstanceVariableTest {
 
   public static final String PROCESS_ID = "process";
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();

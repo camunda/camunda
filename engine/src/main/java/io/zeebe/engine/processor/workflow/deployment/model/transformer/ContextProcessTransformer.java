@@ -12,7 +12,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
 
-public class ContextProcessTransformer implements ModelElementTransformer<Process> {
+public final class ContextProcessTransformer implements ModelElementTransformer<Process> {
 
   @Override
   public Class<Process> getType() {
@@ -20,7 +20,7 @@ public class ContextProcessTransformer implements ModelElementTransformer<Proces
   }
 
   @Override
-  public void transform(Process element, TransformContext context) {
+  public void transform(final Process element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getWorkflow(element.getId());
     context.setCurrentWorkflow(workflow);
   }

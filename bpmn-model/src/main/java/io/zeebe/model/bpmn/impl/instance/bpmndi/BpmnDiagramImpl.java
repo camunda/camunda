@@ -43,11 +43,11 @@ public class BpmnDiagramImpl extends DiagramImpl implements BpmnDiagram {
   protected static ChildElement<BpmnPlane> bpmnPlaneChild;
   protected static ChildElementCollection<BpmnLabelStyle> bpmnLabelStyleCollection;
 
-  public BpmnDiagramImpl(ModelTypeInstanceContext instanceContext) {
+  public BpmnDiagramImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BpmnDiagram.class, BPMNDI_ELEMENT_BPMN_DIAGRAM)
@@ -56,7 +56,7 @@ public class BpmnDiagramImpl extends DiagramImpl implements BpmnDiagram {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BpmnDiagram>() {
                   @Override
-                  public BpmnDiagram newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BpmnDiagram newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new BpmnDiagramImpl(instanceContext);
                   }
                 });
@@ -76,7 +76,7 @@ public class BpmnDiagramImpl extends DiagramImpl implements BpmnDiagram {
   }
 
   @Override
-  public void setBpmnPlane(BpmnPlane bpmnPlane) {
+  public void setBpmnPlane(final BpmnPlane bpmnPlane) {
     bpmnPlaneChild.setChild(this, bpmnPlane);
   }
 

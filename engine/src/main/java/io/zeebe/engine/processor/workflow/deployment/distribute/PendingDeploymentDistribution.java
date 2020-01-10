@@ -25,7 +25,7 @@ public class PendingDeploymentDistribution implements DbValue {
   private int distributionCount;
 
   public PendingDeploymentDistribution(
-      DirectBuffer deployment, long sourcePosition, int distributionCount) {
+      final DirectBuffer deployment, final long sourcePosition, final int distributionCount) {
     this.deployment = deployment;
     this.sourcePosition = sourcePosition;
     this.distributionCount = distributionCount;
@@ -44,7 +44,7 @@ public class PendingDeploymentDistribution implements DbValue {
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     this.sourcePosition = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
@@ -65,7 +65,7 @@ public class PendingDeploymentDistribution implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     final int startOffset = offset;
     buffer.putLong(offset, sourcePosition, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;

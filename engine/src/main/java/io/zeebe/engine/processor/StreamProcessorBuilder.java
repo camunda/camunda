@@ -8,11 +8,8 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.sched.ActorScheduler;
@@ -21,52 +18,41 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class StreamProcessorBuilder {
+public final class StreamProcessorBuilder {
 
   private final ProcessingContext processingContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
-  private Dispatcher writeBuffer;
-  private LogStorage logStorage;
 
   public StreamProcessorBuilder() {
     processingContext = new ProcessingContext();
   }
 
   public StreamProcessorBuilder streamProcessorFactory(
-      TypedRecordProcessorFactory typedRecordProcessorFactory) {
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     return this;
   }
 
-  public StreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler) {
+  public StreamProcessorBuilder actorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
     return this;
   }
 
-  public StreamProcessorBuilder logStream(LogStream stream) {
+  public StreamProcessorBuilder logStream(final LogStream stream) {
     processingContext.logStream(stream);
     return this;
   }
 
-  public StreamProcessorBuilder writeBuffer(Dispatcher writeBuffer) {
-    this.writeBuffer = writeBuffer;
-    return this;
-  }
-
-  public StreamProcessorBuilder logStorage(LogStorage logStorage) {
-    this.logStorage = logStorage;
-    return this;
-  }
-
-  public StreamProcessorBuilder commandResponseWriter(CommandResponseWriter commandResponseWriter) {
+  public StreamProcessorBuilder commandResponseWriter(
+      final CommandResponseWriter commandResponseWriter) {
     processingContext.commandResponseWriter(commandResponseWriter);
     return this;
   }
 
-  public StreamProcessorBuilder onProcessedListener(Consumer<TypedRecord> onProcessed) {
+  public StreamProcessorBuilder onProcessedListener(final Consumer<TypedRecord> onProcessed) {
     processingContext.onProcessedListener(onProcessed);
     return this;
   }
@@ -99,12 +85,6 @@ public class StreamProcessorBuilder {
   public StreamProcessor build() {
     validate();
 
-    final LogStream logStream = processingContext.getLogStream();
-
-    processingContext
-        .logStreamReader(new BufferedLogStreamReader(logStorage))
-        .logStreamWriter(new TypedStreamWriterImpl(logStream.getPartitionId(), writeBuffer));
-
     final MetadataFilter metadataFilter = new VersionFilter();
     final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
     processingContext.eventFilter(eventFilter);
@@ -119,8 +99,6 @@ public class StreamProcessorBuilder {
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-    Objects.requireNonNull(logStorage, "No log storage provided.");
-    Objects.requireNonNull(writeBuffer, "No write buffer provided.");
   }
 
   private static class MetadataEventFilter implements EventFilter {
@@ -128,12 +106,12 @@ public class StreamProcessorBuilder {
     protected final RecordMetadata metadata = new RecordMetadata();
     protected final MetadataFilter metadataFilter;
 
-    MetadataEventFilter(MetadataFilter metadataFilter) {
+    MetadataEventFilter(final MetadataFilter metadataFilter) {
       this.metadataFilter = metadataFilter;
     }
 
     @Override
-    public boolean applies(LoggedEvent event) {
+    public boolean applies(final LoggedEvent event) {
       event.readMetadata(metadata);
       return metadataFilter.applies(metadata);
     }
@@ -141,7 +119,7 @@ public class StreamProcessorBuilder {
 
   private final class VersionFilter implements MetadataFilter {
     @Override
-    public boolean applies(RecordMetadata m) {
+    public boolean applies(final RecordMetadata m) {
       if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION) {
         throw new RuntimeException(
             String.format(

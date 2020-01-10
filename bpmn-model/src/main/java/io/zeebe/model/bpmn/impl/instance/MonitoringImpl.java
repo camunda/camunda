@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class MonitoringImpl extends BaseElementImpl implements Monitoring {
 
-  public MonitoringImpl(ModelTypeInstanceContext instanceContext) {
+  public MonitoringImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Monitoring.class, BPMN_ELEMENT_MONITORING)
@@ -46,7 +46,7 @@ public class MonitoringImpl extends BaseElementImpl implements Monitoring {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Monitoring>() {
                   @Override
-                  public Monitoring newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Monitoring newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new MonitoringImpl(instanceContext);
                   }
                 });

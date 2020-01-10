@@ -39,7 +39,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class BoundaryEventTest {
+public final class BoundaryEventTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance MULTIPLE_SEQUENCE_FLOWS =
@@ -128,8 +128,8 @@ public class BoundaryEventTest {
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .containsSequence(
-            tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCEL),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATED),
@@ -252,8 +252,8 @@ public class BoundaryEventTest {
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .endsWith(
-            tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCEL),
@@ -299,8 +299,8 @@ public class BoundaryEventTest {
     assertThat(records)
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
-            tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(ValueType.TIMER, TimerIntent.TRIGGERED),
             tuple(ValueType.TIMER, TimerIntent.CREATE),
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_COMPLETING),

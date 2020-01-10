@@ -7,14 +7,14 @@
  */
 package io.zeebe.msgpack.el;
 
-public class JsonConditionException extends RuntimeException {
+public final class JsonConditionException extends RuntimeException {
   private static final long serialVersionUID = 1L;
 
-  public JsonConditionException(String message) {
+  public JsonConditionException(final String message) {
     super(message);
   }
 
-  public JsonConditionException(CompiledJsonCondition condition, Exception cause) {
+  public JsonConditionException(final CompiledJsonCondition condition, final Exception cause) {
     super(
         String.format(
             "Expected to evaluate condition '%s' successfully, but failed because: %s",

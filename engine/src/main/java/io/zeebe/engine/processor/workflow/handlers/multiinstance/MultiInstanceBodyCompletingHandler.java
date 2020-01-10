@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
-public class MultiInstanceBodyCompletingHandler extends AbstractMultiInstanceBodyHandler {
+public final class MultiInstanceBodyCompletingHandler extends AbstractMultiInstanceBodyHandler {
 
   private final CatchEventSubscriber catchEventSubscriber;
 

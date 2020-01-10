@@ -26,14 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class StubbedBrokerClient implements BrokerClient {
+public final class StubbedBrokerClient implements BrokerClient {
 
-  BrokerTopologyManager topologyManager = new StubbedTopologyManager();
+  final BrokerTopologyManager topologyManager = new StubbedTopologyManager();
   private Consumer<String> jobsAvailableHandler;
 
-  private Map<Class<?>, RequestHandler> requestHandlers = new HashMap<>();
+  private final Map<Class<?>, RequestHandler> requestHandlers = new HashMap<>();
 
-  private List<BrokerRequest> brokerRequests = new ArrayList<>();
+  private final List<BrokerRequest> brokerRequests = new ArrayList<>();
 
   public StubbedBrokerClient() {}
 
@@ -41,15 +41,15 @@ public class StubbedBrokerClient implements BrokerClient {
   public void close() {}
 
   @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
+  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
     throw new UnsupportedOperationException("not implemented");
   }
 
   @Override
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
     brokerRequests.add(request);
     try {
       final RequestHandler requestHandler = requestHandlers.get(request.getClass());
@@ -64,23 +64,23 @@ public class StubbedBrokerClient implements BrokerClient {
         throwableConsumer.accept(
             new IllegalBrokerResponseException("Unknown response received: " + response));
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throwableConsumer.accept(new BrokerResponseException(e));
     }
   }
 
   @Override
   public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-      BrokerRequest<T> request, Duration requestTimeout) {
+      final BrokerRequest<T> request, final Duration requestTimeout) {
     throw new UnsupportedOperationException("not implemented");
   }
 
   @Override
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Duration requestTimeout) {
     throw new UnsupportedOperationException("not implemented");
   }
 
@@ -90,17 +90,18 @@ public class StubbedBrokerClient implements BrokerClient {
   }
 
   @Override
-  public void subscribeJobAvailableNotification(String topic, Consumer<String> handler) {
+  public void subscribeJobAvailableNotification(
+      final String topic, final Consumer<String> handler) {
     this.jobsAvailableHandler = handler;
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
       void registerHandler(
-          Class<?> requestType, RequestHandler<RequestT, ResponseT> requestHandler) {
+          final Class<?> requestType, final RequestHandler<RequestT, ResponseT> requestHandler) {
     requestHandlers.put(requestType, requestHandler);
   }
 
-  public void notifyJobsAvailable(String type) {
+  public void notifyJobsAvailable(final String type) {
     jobsAvailableHandler.accept(type);
   }
 

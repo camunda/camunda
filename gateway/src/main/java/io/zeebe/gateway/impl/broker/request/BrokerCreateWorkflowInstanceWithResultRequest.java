@@ -14,7 +14,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class BrokerCreateWorkflowInstanceWithResultRequest
+public final class BrokerCreateWorkflowInstanceWithResultRequest
     extends BrokerExecuteCommand<WorkflowInstanceResultRecord> {
   private final WorkflowInstanceCreationRecord requestDto = new WorkflowInstanceCreationRecord();
 
@@ -24,28 +24,29 @@ public class BrokerCreateWorkflowInstanceWithResultRequest
         WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setBpmnProcessId(String bpmnProcessId) {
+  public BrokerCreateWorkflowInstanceWithResultRequest setBpmnProcessId(
+      final String bpmnProcessId) {
     requestDto.setBpmnProcessId(bpmnProcessId);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setKey(long key) {
+  public BrokerCreateWorkflowInstanceWithResultRequest setKey(final long key) {
     requestDto.setWorkflowKey(key);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setVersion(int version) {
+  public BrokerCreateWorkflowInstanceWithResultRequest setVersion(final int version) {
     requestDto.setVersion(version);
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceWithResultRequest setVariables(DirectBuffer variables) {
+  public BrokerCreateWorkflowInstanceWithResultRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;
   }
 
   public BrokerCreateWorkflowInstanceWithResultRequest setFetchVariables(
-      List<String> fetchVariables) {
+      final List<String> fetchVariables) {
     requestDto.setFetchVariables(fetchVariables);
     return this;
   }
@@ -56,7 +57,7 @@ public class BrokerCreateWorkflowInstanceWithResultRequest
   }
 
   @Override
-  protected WorkflowInstanceResultRecord toResponseDto(DirectBuffer buffer) {
+  protected WorkflowInstanceResultRecord toResponseDto(final DirectBuffer buffer) {
     final WorkflowInstanceResultRecord responseDto = new WorkflowInstanceResultRecord();
     responseDto.wrap(buffer);
     return responseDto;

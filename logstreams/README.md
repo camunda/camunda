@@ -41,7 +41,7 @@ final LogStream stream = LogStreams.createLogStream()
         .withLogName("log")
         .withPartitionId(1)
         .withMaxFragmentSize(1024 * 1024 * 16)
-        .withServiceContainer(serviceContainer)
+        .withActorScheduler(scheduler)
         .withLogStorage(logStorage)
         .build();
 

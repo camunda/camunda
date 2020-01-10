@@ -10,41 +10,40 @@ package io.zeebe.test.broker.protocol.commandapi;
 import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.keyNullValue;
 import static io.zeebe.protocol.record.ExecuteCommandRequestEncoder.partitionIdNullValue;
 
-import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.ClientRequest;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Map;
-import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ExecuteCommandRequest implements BufferWriter {
-  protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-  protected final ExecuteCommandRequestEncoder requestEncoder = new ExecuteCommandRequestEncoder();
-  protected final MsgPackHelper msgPackHelper;
+public final class ExecuteCommandRequest implements ClientRequest {
+  private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+  private final ExecuteCommandRequestEncoder requestEncoder = new ExecuteCommandRequestEncoder();
+  private final MsgPackHelper msgPackHelper;
 
-  protected final ClientOutput output;
-  protected final int target;
+  private final ClientTransport output;
+  private final String target;
 
-  protected int partitionId = partitionIdNullValue();
-  protected long key = keyNullValue();
-  protected ValueType valueType = ValueType.NULL_VAL;
-  protected byte[] encodedCmd;
-  protected ActorFuture<ClientResponse> responseFuture;
+  private int partitionId = partitionIdNullValue();
+  private long key = keyNullValue();
+  private ValueType valueType = ValueType.NULL_VAL;
+  private byte[] encodedCmd;
+  private ActorFuture<DirectBuffer> responseFuture;
   private Intent intent = null;
 
-  public ExecuteCommandRequest(ClientOutput output, int target, final MsgPackHelper msgPackHelper) {
+  public ExecuteCommandRequest(
+      final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
     this.output = output;
-    this.target = target;
+    this.target = targetAddress;
     this.msgPackHelper = msgPackHelper;
   }
 
@@ -63,7 +62,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return this;
   }
 
-  public ExecuteCommandRequest intent(Intent intent) {
+  public ExecuteCommandRequest intent(final Intent intent) {
     this.intent = intent;
     return this;
   }
@@ -73,7 +72,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     return this;
   }
 
-  public ExecuteCommandRequest command(BufferWriter command) {
+  public ExecuteCommandRequest command(final BufferWriter command) {
     final int commandLength = command.getLength();
     this.encodedCmd = new byte[commandLength];
     command.write(new UnsafeBuffer(encodedCmd), 0);
@@ -82,22 +81,16 @@ public class ExecuteCommandRequest implements BufferWriter {
   }
 
   public ExecuteCommandRequest send() {
-    return send(this::shouldRetryRequest);
-  }
-
-  public ExecuteCommandRequest send(Predicate<DirectBuffer> retryFunction) {
     if (responseFuture != null) {
       throw new RuntimeException("Cannot send request more than once");
     }
 
-    responseFuture =
-        output.sendRequestWithRetry(() -> target, retryFunction, this, Duration.ofSeconds(5));
+    responseFuture = output.sendRequestWithRetry(() -> target, this, Duration.ofSeconds(5));
     return this;
   }
 
   public ExecuteCommandResponse await() {
-    final ClientResponse response = responseFuture.join();
-    final DirectBuffer responseBuffer = response.getResponseBuffer();
+    final var responseBuffer = responseFuture.join();
 
     final ExecuteCommandResponse result = new ExecuteCommandResponse(msgPackHelper);
 
@@ -106,24 +99,9 @@ public class ExecuteCommandRequest implements BufferWriter {
     return result;
   }
 
-  public ErrorResponse awaitError() {
-    final ClientResponse response = responseFuture.join();
-    final DirectBuffer responseBuffer = response.getResponseBuffer();
-
-    final ErrorResponse result = new ErrorResponse(msgPackHelper);
-    result.wrap(responseBuffer, 0, responseBuffer.capacity());
-    return result;
-  }
-
-  private boolean shouldRetryRequest(final DirectBuffer responseBuffer) {
-    final ErrorResponse error = new ErrorResponse(msgPackHelper);
-    try {
-      error.wrap(responseBuffer, 0, responseBuffer.capacity());
-      return error.getErrorCode() == ErrorCode.PARTITION_LEADER_MISMATCH;
-    } catch (final Exception e) {
-      // ignore
-      return false;
-    }
+  @Override
+  public int getPartitionId() {
+    return partitionId;
   }
 
   @Override

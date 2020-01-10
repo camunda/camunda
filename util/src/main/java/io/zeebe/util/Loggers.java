@@ -9,7 +9,7 @@ package io.zeebe.util;
 
 import org.slf4j.Logger;
 
-public class Loggers {
+public final class Loggers {
 
   public static final Logger CONFIG_LOGGER = new ZbLogger("io.zeebe.util.config");
   public static final Logger ACTOR_LOGGER = new ZbLogger("io.zeebe.util.actor");

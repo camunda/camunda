@@ -25,7 +25,7 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
     extends AbstractActivityBuilder<B, CallActivity> {
 
   protected AbstractCallActivityBuilder(
-      BpmnModelInstance modelInstance, CallActivity element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final CallActivity element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -35,19 +35,19 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
    * @param calledElement the process to call
    * @return the builder object
    */
-  public B calledElement(String calledElement) {
+  public B calledElement(final String calledElement) {
     element.setCalledElement(calledElement);
     return myself;
   }
 
-  public B zeebeProcessId(String processId) {
+  public B zeebeProcessId(final String processId) {
     final ZeebeCalledElement calledElement =
         getCreateSingleExtensionElement(ZeebeCalledElement.class);
     calledElement.setProcessId(processId);
     return myself;
   }
 
-  public B zeebeProcessIdExpression(String processIdExpression) {
+  public B zeebeProcessIdExpression(final String processIdExpression) {
     final ZeebeCalledElement calledElement =
         getCreateSingleExtensionElement(ZeebeCalledElement.class);
     calledElement.setProcessIdExpression(processIdExpression);

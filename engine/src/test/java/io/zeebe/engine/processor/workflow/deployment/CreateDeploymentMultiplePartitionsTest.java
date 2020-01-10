@@ -34,7 +34,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CreateDeploymentMultiplePartitionsTest {
+public final class CreateDeploymentMultiplePartitionsTest {
   public static final String PROCESS_ID = "process";
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;

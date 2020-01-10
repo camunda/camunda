@@ -45,7 +45,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class DeployWorkflowCommandImpl
+public final class DeployWorkflowCommandImpl
     implements DeployWorkflowCommandStep1, DeployWorkflowCommandBuilderStep2 {
 
   private final DeployWorkflowRequest.Builder requestBuilder = DeployWorkflowRequest.newBuilder();
@@ -54,7 +54,9 @@ public class DeployWorkflowCommandImpl
   private Duration requestTimeout;
 
   public DeployWorkflowCommandImpl(
-      GatewayStub asyncStub, Duration requestTimeout, Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
@@ -106,7 +108,7 @@ public class DeployWorkflowCommandImpl
       final String classpathResource) {
     ensureNotNull("classpath resource", classpathResource);
 
-    try (InputStream resourceStream =
+    try (final InputStream resourceStream =
         getClass().getClassLoader().getResourceAsStream(classpathResource)) {
       if (resourceStream != null) {
         return addResourceStream(resourceStream, classpathResource);
@@ -125,7 +127,7 @@ public class DeployWorkflowCommandImpl
   public DeployWorkflowCommandBuilderStep2 addResourceFile(final String filename) {
     ensureNotNull("filename", filename);
 
-    try (InputStream resourceStream = new FileInputStream(filename)) {
+    try (final InputStream resourceStream = new FileInputStream(filename)) {
       return addResourceStream(resourceStream, filename);
     } catch (final IOException e) {
       final String exceptionMsg =
@@ -145,7 +147,7 @@ public class DeployWorkflowCommandImpl
   }
 
   @Override
-  public FinalCommandStep<DeploymentEvent> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<DeploymentEvent> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -165,7 +167,7 @@ public class DeployWorkflowCommandImpl
     return future;
   }
 
-  private void send(DeployWorkflowRequest request, StreamObserver streamObserver) {
+  private void send(final DeployWorkflowRequest request, final StreamObserver streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .deployWorkflow(request, streamObserver);

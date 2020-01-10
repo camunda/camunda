@@ -10,7 +10,7 @@ package io.zeebe.util.buffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DirectBufferWriter implements BufferWriter {
+public final class DirectBufferWriter implements BufferWriter {
   protected DirectBuffer buffer;
   protected int offset;
   protected int length;
@@ -21,11 +21,11 @@ public class DirectBufferWriter implements BufferWriter {
   }
 
   @Override
-  public void write(MutableDirectBuffer writeBuffer, int writeOffset) {
+  public void write(final MutableDirectBuffer writeBuffer, final int writeOffset) {
     writeBuffer.putBytes(writeOffset, buffer, offset, length);
   }
 
-  public DirectBufferWriter wrap(DirectBuffer buffer, int offset, int length) {
+  public DirectBufferWriter wrap(final DirectBuffer buffer, final int offset, final int length) {
     this.buffer = buffer;
     this.offset = offset;
     this.length = length;
@@ -33,7 +33,7 @@ public class DirectBufferWriter implements BufferWriter {
     return this;
   }
 
-  public DirectBufferWriter wrap(DirectBuffer buffer) {
+  public DirectBufferWriter wrap(final DirectBuffer buffer) {
     return wrap(buffer, 0, buffer.capacity());
   }
 
@@ -43,7 +43,7 @@ public class DirectBufferWriter implements BufferWriter {
     length = 0;
   }
 
-  public static DirectBufferWriter writerFor(DirectBuffer buffer) {
+  public static DirectBufferWriter writerFor(final DirectBuffer buffer) {
     return new DirectBufferWriter().wrap(buffer);
   }
 }

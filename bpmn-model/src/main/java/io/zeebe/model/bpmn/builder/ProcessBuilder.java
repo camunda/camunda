@@ -23,11 +23,12 @@ import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
 
-  public ProcessBuilder(BpmnModelInstance modelInstance, Process process) {
+  public ProcessBuilder(final BpmnModelInstance modelInstance, final Process process) {
     super(modelInstance, process, ProcessBuilder.class);
   }
 
@@ -35,7 +36,7 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     return startEvent(null);
   }
 
-  public StartEventBuilder startEvent(String id) {
+  public StartEventBuilder startEvent(final String id) {
     final StartEvent start = createChild(StartEvent.class, id);
     final BpmnShape bpmnShape = createBpmnShape(start);
     setCoordinates(bpmnShape);
@@ -46,7 +47,7 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     return eventSubProcess(null);
   }
 
-  public EventSubProcessBuilder eventSubProcess(String id) {
+  public EventSubProcessBuilder eventSubProcess(final String id) {
     // Create a subprocess, triggered by an event, and add it to modelInstance
     final SubProcess subProcess = createChild(SubProcess.class, id);
     subProcess.setTriggeredByEvent(true);
@@ -62,14 +63,21 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     return new EventSubProcessBuilder(modelInstance, subProcess);
   }
 
+  public ProcessBuilder eventSubProcess(
+      final String id, final Consumer<EventSubProcessBuilder> consumer) {
+    final EventSubProcessBuilder builder = eventSubProcess(id);
+    consumer.accept(builder);
+    return this;
+  }
+
   @Override
-  protected void setCoordinates(BpmnShape targetBpmnShape) {
+  protected void setCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds bounds = targetBpmnShape.getBounds();
     bounds.setX(100);
     bounds.setY(100);
   }
 
-  protected void setEventSubProcessCoordinates(BpmnShape targetBpmnShape) {
+  protected void setEventSubProcessCoordinates(final BpmnShape targetBpmnShape) {
     final SubProcess eventSubProcess = (SubProcess) targetBpmnShape.getBpmnElement();
     final Bounds targetBounds = targetBpmnShape.getBounds();
     double lowestheight = 0;

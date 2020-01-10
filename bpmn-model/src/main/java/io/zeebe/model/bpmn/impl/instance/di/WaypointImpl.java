@@ -34,11 +34,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class WaypointImpl extends PointImpl implements Waypoint {
 
-  public WaypointImpl(ModelTypeInstanceContext instanceContext) {
+  public WaypointImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Waypoint.class, DI_ELEMENT_WAYPOINT)
@@ -47,7 +47,7 @@ public class WaypointImpl extends PointImpl implements Waypoint {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Waypoint>() {
                   @Override
-                  public Waypoint newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Waypoint newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new WaypointImpl(instanceContext);
                   }
                 });

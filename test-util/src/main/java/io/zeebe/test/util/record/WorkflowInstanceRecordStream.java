@@ -13,7 +13,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import java.util.stream.Stream;
 
-public class WorkflowInstanceRecordStream
+public final class WorkflowInstanceRecordStream
     extends ExporterRecordStream<WorkflowInstanceRecordValue, WorkflowInstanceRecordStream> {
 
   public WorkflowInstanceRecordStream(final Stream<Record<WorkflowInstanceRecordValue>> stream) {
@@ -64,16 +64,17 @@ public class WorkflowInstanceRecordStream
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 
-  public WorkflowInstanceRecordStream withElementType(BpmnElementType elementType) {
+  public WorkflowInstanceRecordStream withElementType(final BpmnElementType elementType) {
     return valueFilter(v -> v.getBpmnElementType() == elementType);
   }
 
   public WorkflowInstanceRecordStream withParentWorkflowInstanceKey(
-      long parentWorkflowInstanceKey) {
+      final long parentWorkflowInstanceKey) {
     return valueFilter(v -> v.getParentWorkflowInstanceKey() == parentWorkflowInstanceKey);
   }
 
-  public WorkflowInstanceRecordStream withParentElementInstanceKey(long parentElementInstanceKey) {
+  public WorkflowInstanceRecordStream withParentElementInstanceKey(
+      final long parentElementInstanceKey) {
     return valueFilter(v -> v.getParentElementInstanceKey() == parentElementInstanceKey);
   }
 

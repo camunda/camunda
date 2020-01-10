@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 @SuppressWarnings("unchecked")
-public class BlockingActionsTest {
+public final class BlockingActionsTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 

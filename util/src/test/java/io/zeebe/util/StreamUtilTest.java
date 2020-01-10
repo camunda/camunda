@@ -31,10 +31,10 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 /** */
-public class StreamUtilTest {
-  @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
+public final class StreamUtilTest {
+  @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
 
-  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   private File file;
 

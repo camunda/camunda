@@ -10,7 +10,7 @@ package io.zeebe.test.util.io;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class AlwaysFailingInputStream extends InputStream {
+public final class AlwaysFailingInputStream extends InputStream {
   @Override
   public int read() throws IOException {
     throw new IOException("Read failure - try again");

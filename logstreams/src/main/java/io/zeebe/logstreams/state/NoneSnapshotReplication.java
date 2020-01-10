@@ -9,13 +9,13 @@ package io.zeebe.logstreams.state;
 
 import java.util.function.Consumer;
 
-public class NoneSnapshotReplication implements SnapshotReplication {
+public final class NoneSnapshotReplication implements SnapshotReplication {
 
   @Override
-  public void replicate(SnapshotChunk snapshot) {}
+  public void replicate(final SnapshotChunk snapshot) {}
 
   @Override
-  public void consume(Consumer<SnapshotChunk> consumer) {}
+  public void consume(final Consumer<SnapshotChunk> consumer) {}
 
   @Override
   public void close() {}

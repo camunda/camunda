@@ -18,7 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
-public class ActorLifecyclePhasesAndCallablesTest {
+public final class ActorLifecyclePhasesAndCallablesTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
@@ -97,7 +97,7 @@ public class ActorLifecyclePhasesAndCallablesTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -121,7 +121,7 @@ public class ActorLifecyclePhasesAndCallablesTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -145,7 +145,7 @@ public class ActorLifecyclePhasesAndCallablesTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when

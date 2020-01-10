@@ -94,7 +94,7 @@ public class ProcessBuilderTest {
   private static ModelElementType gatewayType;
   private static ModelElementType eventType;
   private static ModelElementType processType;
-  @Rule public ExpectedException thrown = ExpectedException.none();
+  @Rule public final ExpectedException thrown = ExpectedException.none();
   private BpmnModelInstance modelInstance;
 
   @BeforeClass
@@ -1928,7 +1928,7 @@ public class ProcessBuilderTest {
         .done();
   }
 
-  protected Message assertMessageEventDefinition(String elementId, String messageName) {
+  protected Message assertMessageEventDefinition(final String elementId, final String messageName) {
     final MessageEventDefinition messageEventDefinition =
         assertAndGetSingleEventDefinition(elementId, MessageEventDefinition.class);
     final Message message = messageEventDefinition.getMessage();
@@ -1938,12 +1938,12 @@ public class ProcessBuilderTest {
     return message;
   }
 
-  protected void assertOnlyOneMessageExists(String messageName) {
+  protected void assertOnlyOneMessageExists(final String messageName) {
     final Collection<Message> messages = modelInstance.getModelElementsByType(Message.class);
     assertThat(messages).extracting("name").containsOnlyOnce(messageName);
   }
 
-  protected Signal assertSignalEventDefinition(String elementId, String signalName) {
+  protected Signal assertSignalEventDefinition(final String elementId, final String signalName) {
     final SignalEventDefinition signalEventDefinition =
         assertAndGetSingleEventDefinition(elementId, SignalEventDefinition.class);
     final Signal signal = signalEventDefinition.getSignal();
@@ -1953,12 +1953,12 @@ public class ProcessBuilderTest {
     return signal;
   }
 
-  protected void assertOnlyOneSignalExists(String signalName) {
+  protected void assertOnlyOneSignalExists(final String signalName) {
     final Collection<Signal> signals = modelInstance.getModelElementsByType(Signal.class);
     assertThat(signals).extracting("name").containsOnlyOnce(signalName);
   }
 
-  protected Error assertErrorEventDefinition(String elementId, String errorCode) {
+  protected Error assertErrorEventDefinition(final String elementId, final String errorCode) {
     final ErrorEventDefinition errorEventDefinition =
         assertAndGetSingleEventDefinition(elementId, ErrorEventDefinition.class);
     final Error error = errorEventDefinition.getError();
@@ -1968,18 +1968,19 @@ public class ProcessBuilderTest {
     return error;
   }
 
-  protected void assertErrorEventDefinitionForErrorVariables(String elementId) {
+  protected void assertErrorEventDefinitionForErrorVariables(final String elementId) {
     final ErrorEventDefinition errorEventDefinition =
         assertAndGetSingleEventDefinition(elementId, ErrorEventDefinition.class);
     assertThat(errorEventDefinition).isNotNull();
   }
 
-  protected void assertOnlyOneErrorExists(String errorCode) {
+  protected void assertOnlyOneErrorExists(final String errorCode) {
     final Collection<Error> errors = modelInstance.getModelElementsByType(Error.class);
     assertThat(errors).extracting("errorCode").containsOnlyOnce(errorCode);
   }
 
-  protected Escalation assertEscalationEventDefinition(String elementId, String escalationCode) {
+  protected Escalation assertEscalationEventDefinition(
+      final String elementId, final String escalationCode) {
     final EscalationEventDefinition escalationEventDefinition =
         assertAndGetSingleEventDefinition(elementId, EscalationEventDefinition.class);
     final Escalation escalation = escalationEventDefinition.getEscalation();
@@ -1989,17 +1990,17 @@ public class ProcessBuilderTest {
     return escalation;
   }
 
-  protected void assertOnlyOneEscalationExists(String escalationCode) {
+  protected void assertOnlyOneEscalationExists(final String escalationCode) {
     final Collection<Escalation> escalations =
         modelInstance.getModelElementsByType(Escalation.class);
     assertThat(escalations).extracting("escalationCode").containsOnlyOnce(escalationCode);
   }
 
-  protected void assertCompensationEventDefinition(String elementId) {
+  protected void assertCompensationEventDefinition(final String elementId) {
     assertAndGetSingleEventDefinition(elementId, CompensateEventDefinition.class);
   }
 
-  protected void assertTimerWithDate(String elementId, String timerDate) {
+  protected void assertTimerWithDate(final String elementId, final String timerDate) {
     final TimerEventDefinition timerEventDefinition =
         assertAndGetSingleEventDefinition(elementId, TimerEventDefinition.class);
     final TimeDate timeDate = timerEventDefinition.getTimeDate();
@@ -2007,7 +2008,7 @@ public class ProcessBuilderTest {
     assertThat(timeDate.getTextContent()).isEqualTo(timerDate);
   }
 
-  protected void assertTimerWithDuration(String elementId, String timerDuration) {
+  protected void assertTimerWithDuration(final String elementId, final String timerDuration) {
     final TimerEventDefinition timerEventDefinition =
         assertAndGetSingleEventDefinition(elementId, TimerEventDefinition.class);
     final TimeDuration timeDuration = timerEventDefinition.getTimeDuration();
@@ -2015,7 +2016,7 @@ public class ProcessBuilderTest {
     assertThat(timeDuration.getTextContent()).isEqualTo(timerDuration);
   }
 
-  protected void assertTimerWithCycle(String elementId, String timerCycle) {
+  protected void assertTimerWithCycle(final String elementId, final String timerCycle) {
     final TimerEventDefinition timerEventDefinition =
         assertAndGetSingleEventDefinition(elementId, TimerEventDefinition.class);
     final TimeCycle timeCycle = timerEventDefinition.getTimeCycle();
@@ -2025,7 +2026,7 @@ public class ProcessBuilderTest {
 
   @SuppressWarnings("unchecked")
   protected <T extends EventDefinition> T assertAndGetSingleEventDefinition(
-      String elementId, Class<T> eventDefinitionType) {
+      final String elementId, final Class<T> eventDefinitionType) {
     final BpmnModelElementInstance element = modelInstance.getModelElementById(elementId);
     assertThat(element).isNotNull();
     final Collection<EventDefinition> eventDefinitions =

@@ -43,11 +43,11 @@ public class ResourceParameterBindingImpl extends BaseElementImpl
   protected static AttributeReference<ResourceParameter> parameterRefAttribute;
   protected static ChildElement<Expression> expressionChild;
 
-  public ResourceParameterBindingImpl(ModelTypeInstanceContext instanceContext) {
+  public ResourceParameterBindingImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ResourceParameterBinding.class, BPMN_ELEMENT_RESOURCE_PARAMETER_BINDING)
@@ -57,7 +57,7 @@ public class ResourceParameterBindingImpl extends BaseElementImpl
                 new ModelTypeInstanceProvider<ResourceParameterBinding>() {
                   @Override
                   public ResourceParameterBinding newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ResourceParameterBindingImpl(instanceContext);
                   }
                 });
@@ -82,7 +82,7 @@ public class ResourceParameterBindingImpl extends BaseElementImpl
   }
 
   @Override
-  public void setParameter(ResourceParameter parameter) {
+  public void setParameter(final ResourceParameter parameter) {
     parameterRefAttribute.setReferenceTargetElement(this, parameter);
   }
 
@@ -92,7 +92,7 @@ public class ResourceParameterBindingImpl extends BaseElementImpl
   }
 
   @Override
-  public void setExpression(Expression expression) {
+  public void setExpression(final Expression expression) {
     expressionChild.setChild(this, expression);
   }
 }

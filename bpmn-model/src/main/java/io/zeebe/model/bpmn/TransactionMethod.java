@@ -28,7 +28,7 @@ public enum TransactionMethod {
     this.name = name();
   }
 
-  TransactionMethod(String name) {
+  TransactionMethod(final String name) {
     this.name = name;
   }
 

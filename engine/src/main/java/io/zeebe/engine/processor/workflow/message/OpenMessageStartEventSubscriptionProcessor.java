@@ -17,23 +17,24 @@ import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscription
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import java.util.Collections;
 
-public class OpenMessageStartEventSubscriptionProcessor
+public final class OpenMessageStartEventSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {
 
   private final MessageStartEventSubscriptionState subscriptionState;
   private final WorkflowState workflowState;
 
   public OpenMessageStartEventSubscriptionProcessor(
-      MessageStartEventSubscriptionState subscriptionState, WorkflowState workflowState) {
+      final MessageStartEventSubscriptionState subscriptionState,
+      final WorkflowState workflowState) {
     this.subscriptionState = subscriptionState;
     this.workflowState = workflowState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageStartEventSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<MessageStartEventSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final MessageStartEventSubscriptionRecord subscription = record.getValue();
     subscriptionState.put(subscription);

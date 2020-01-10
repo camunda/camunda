@@ -13,9 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import scala.util.parsing.combinator.Parsers.ParseResult;
 
-public class JsonConditionFactory {
+public final class JsonConditionFactory {
 
-  public static CompiledJsonCondition createCondition(String expression) {
+  public static CompiledJsonCondition createCondition(final String expression) {
     if (expression == null || expression.isEmpty()) {
       return CompiledJsonCondition.fail(expression, "expression is empty");
     }
@@ -40,7 +40,7 @@ public class JsonConditionFactory {
     }
   }
 
-  private static void indexJsonPathExpressions(JsonCondition condition) {
+  private static void indexJsonPathExpressions(final JsonCondition condition) {
     final List<JsonPath> pathExpressions = new ArrayList<>();
 
     JsonConditionWalker.walk(

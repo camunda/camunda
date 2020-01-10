@@ -14,18 +14,18 @@ import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatchEventElement>
+public final class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatchEventElement>
     extends EventOccurredHandler<T> {
   public IntermediateCatchEventEventOccurredHandler() {
     this(null);
   }
 
-  public IntermediateCatchEventEventOccurredHandler(WorkflowInstanceIntent nextState) {
+  public IntermediateCatchEventEventOccurredHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       final EventTrigger event = getTriggeredEvent(context, context.getKey());
       if (event == null) {

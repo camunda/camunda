@@ -44,7 +44,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class BrokerInfo implements BufferReader, BufferWriter {
+public final class BrokerInfo implements BufferReader, BufferWriter {
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
@@ -73,7 +73,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     reset();
   }
 
-  public BrokerInfo(int nodeId, String commandApiAddress) {
+  public BrokerInfo(final int nodeId, final String commandApiAddress) {
     reset();
     this.nodeId = nodeId;
     setCommandApiAddress(BufferUtil.wrapString(commandApiAddress));
@@ -99,7 +99,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return nodeId;
   }
 
-  public BrokerInfo setNodeId(int nodeId) {
+  public BrokerInfo setNodeId(final int nodeId) {
     this.nodeId = nodeId;
     return this;
   }
@@ -108,7 +108,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return partitionsCount;
   }
 
-  public BrokerInfo setPartitionsCount(int partitionsCount) {
+  public BrokerInfo setPartitionsCount(final int partitionsCount) {
     this.partitionsCount = partitionsCount;
     return this;
   }
@@ -117,7 +117,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return clusterSize;
   }
 
-  public BrokerInfo setClusterSize(int clusterSize) {
+  public BrokerInfo setClusterSize(final int clusterSize) {
     this.clusterSize = clusterSize;
     return this;
   }
@@ -126,7 +126,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return replicationFactor;
   }
 
-  public BrokerInfo setReplicationFactor(int replicationFactor) {
+  public BrokerInfo setReplicationFactor(final int replicationFactor) {
     this.replicationFactor = replicationFactor;
     return this;
   }
@@ -135,7 +135,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return addresses;
   }
 
-  public BrokerInfo addAddress(DirectBuffer apiName, DirectBuffer address) {
+  public BrokerInfo addAddress(final DirectBuffer apiName, final DirectBuffer address) {
     this.addresses.put(apiName, address);
     return this;
   }
@@ -149,11 +149,11 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     }
   }
 
-  public BrokerInfo setCommandApiAddress(String address) {
+  public BrokerInfo setCommandApiAddress(final String address) {
     return setCommandApiAddress(BufferUtil.wrapString(address));
   }
 
-  public BrokerInfo setCommandApiAddress(DirectBuffer address) {
+  public BrokerInfo setCommandApiAddress(final DirectBuffer address) {
     return addAddress(COMMAND_API_NAME, address);
   }
 
@@ -165,23 +165,23 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return partitionLeaderTerms;
   }
 
-  public BrokerInfo addPartitionRole(Integer partitionId, PartitionRole role) {
+  public BrokerInfo addPartitionRole(final Integer partitionId, final PartitionRole role) {
     partitionRoles.put(partitionId, role);
     return this;
   }
 
-  public BrokerInfo setFollowerForPartition(int partitionId) {
+  public BrokerInfo setFollowerForPartition(final int partitionId) {
     partitionLeaderTerms.remove(partitionId);
     return addPartitionRole(partitionId, PartitionRole.FOLLOWER);
   }
 
-  public BrokerInfo setLeaderForPartition(int partitionId, long term) {
+  public BrokerInfo setLeaderForPartition(final int partitionId, final long term) {
     partitionLeaderTerms.put(partitionId, term);
     return addPartitionRole(partitionId, PartitionRole.LEADER);
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
 
     final int frameEnd = offset + length;
@@ -242,7 +242,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
             + PartitionRolesEncoder.sbeHeaderSize()
             + PartitionLeaderTermsEncoder.sbeHeaderSize();
 
-    for (Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
+    for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
       length +=
           AddressesEncoder.sbeBlockLength()
               + AddressesEncoder.apiNameHeaderLength()
@@ -258,7 +258,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(bodyEncoder.sbeBlockLength())
@@ -278,7 +278,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     final int addressesCount = addresses.size();
     final AddressesEncoder addressesEncoder = bodyEncoder.addressesCount(addressesCount);
     if (addressesCount > 0) {
-      for (Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
+      for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
         final DirectBuffer apiName = entry.getKey();
         final DirectBuffer address = entry.getValue();
 
@@ -294,7 +294,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
         bodyEncoder.partitionRolesCount(partitionRolesCount);
 
     if (partitionRolesCount > 0) {
-      for (Entry<Integer, PartitionRole> entry : partitionRoles.entrySet()) {
+      for (final Entry<Integer, PartitionRole> entry : partitionRoles.entrySet()) {
         partitionRolesEncoder.next().partitionId(entry.getKey()).role(entry.getValue());
       }
     }
@@ -304,13 +304,13 @@ public class BrokerInfo implements BufferReader, BufferWriter {
         bodyEncoder.partitionLeaderTermsCount(partitionLeaderTermsCount);
 
     if (partitionLeaderTermsCount > 0) {
-      for (Entry<Integer, Long> entry : partitionLeaderTerms.entrySet()) {
+      for (final Entry<Integer, Long> entry : partitionLeaderTerms.entrySet()) {
         partitionLeaderTermsEncoder.next().partitionId(entry.getKey()).term(entry.getValue());
       }
     }
   }
 
-  public static BrokerInfo fromProperties(Properties properties) {
+  public static BrokerInfo fromProperties(final Properties properties) {
     final String property = properties.getProperty(BROKER_INFO_PROPERTY_NAME);
     if (property != null) {
       return readFromString(property);
@@ -319,7 +319,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     }
   }
 
-  private static BrokerInfo readFromString(String property) {
+  private static BrokerInfo readFromString(final String property) {
     final byte[] bytes = BASE_64_DECODER.decode(property.getBytes(BASE_64_CHARSET));
 
     final BrokerInfo brokerInfo = new BrokerInfo();
@@ -328,7 +328,7 @@ public class BrokerInfo implements BufferReader, BufferWriter {
     return brokerInfo;
   }
 
-  public void writeIntoProperties(Properties memberProperties) {
+  public void writeIntoProperties(final Properties memberProperties) {
     memberProperties.setProperty(BROKER_INFO_PROPERTY_NAME, writeToString());
   }
 
@@ -340,14 +340,15 @@ public class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public BrokerInfo consumePartitions(
-      ObjLongConsumer<Integer> leaderPartitionConsumer, IntConsumer followerPartitionsConsumer) {
+      final ObjLongConsumer<Integer> leaderPartitionConsumer,
+      final IntConsumer followerPartitionsConsumer) {
     return consumePartitions(p -> {}, leaderPartitionConsumer, followerPartitionsConsumer);
   }
 
   public BrokerInfo consumePartitions(
-      IntConsumer partitionConsumer,
-      ObjLongConsumer<Integer> leaderPartitionConsumer,
-      IntConsumer followerPartitionsConsumer) {
+      final IntConsumer partitionConsumer,
+      final ObjLongConsumer<Integer> leaderPartitionConsumer,
+      final IntConsumer followerPartitionsConsumer) {
     partitionRoles.forEach(
         (partition, role) -> {
           partitionConsumer.accept(partition);

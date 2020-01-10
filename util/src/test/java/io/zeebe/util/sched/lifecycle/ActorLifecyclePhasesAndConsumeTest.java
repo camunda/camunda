@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndConsumeTest {
+public final class ActorLifecyclePhasesAndConsumeTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
@@ -121,7 +121,7 @@ public class ActorLifecyclePhasesAndConsumeTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -147,7 +147,7 @@ public class ActorLifecyclePhasesAndConsumeTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -173,14 +173,14 @@ public class ActorLifecyclePhasesAndConsumeTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
     verify(runnable, times(0)).run();
   }
 
-  private Runnable consumerRunnable(Queue<Object> queue, Runnable wrappedRunnable) {
+  private Runnable consumerRunnable(final Queue<Object> queue, final Runnable wrappedRunnable) {
     return () -> {
       queue.poll();
       wrappedRunnable.run();

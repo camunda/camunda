@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.handlers.IncidentResolver;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatedHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ProcessTerminatedHandler
+public final class ProcessTerminatedHandler
     extends ElementTerminatedHandler<ExecutableFlowElementContainer> {
 
   private final WorkflowPostProcessor postProcessor;

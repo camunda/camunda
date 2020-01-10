@@ -17,7 +17,7 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
-public class MultiInstanceBodyActivatedHandler extends AbstractMultiInstanceBodyHandler {
+public final class MultiInstanceBodyActivatedHandler extends AbstractMultiInstanceBodyHandler {
 
   private final ExpandableArrayBuffer variableBuffer = new ExpandableArrayBuffer();
   private final MsgPackWriter variableWriter = new MsgPackWriter();

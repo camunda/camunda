@@ -5,6 +5,8 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/hcsshim/osversion
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
+# github.com/containerd/containerd v1.3.2
+github.com/containerd/containerd/errdefs
 # github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6
 github.com/containerd/continuity/fs
 github.com/containerd/continuity/pathdriver
@@ -16,7 +18,7 @@ github.com/davecgh/go-spew/spew
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
 github.com/docker/distribution/registry/api/errcode
-# github.com/docker/docker v0.7.3-0.20190506211059-b20a14b54661
+# github.com/docker/docker v0.7.3-0.20190506211059-b20a14b54661 => github.com/docker/engine v1.4.2-0.20191113042239-ea84732a7725
 github.com/docker/docker/api
 github.com/docker/docker/api/types
 github.com/docker/docker/api/types/blkiodev
@@ -49,7 +51,7 @@ github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
-# github.com/go-ozzo/ozzo-validation/v3 v3.7.0
+# github.com/go-ozzo/ozzo-validation/v3 v3.8.1
 github.com/go-ozzo/ozzo-validation/v3
 github.com/go-ozzo/ozzo-validation/v3/is
 # github.com/gogo/protobuf v1.3.1
@@ -98,10 +100,10 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.0.9
+# github.com/testcontainers/testcontainers-go v0.0.10
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
-# golang.org/x/net v0.0.0-20191204025024-5ee1b9f4859a
+# golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -123,8 +125,9 @@ golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.25.1
+# google.golang.org/grpc v1.26.0
 google.golang.org/grpc
+google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base

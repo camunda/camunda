@@ -18,14 +18,16 @@ package io.zeebe.client.impl.worker;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1;
+import io.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.zeebe.client.impl.command.FailJobCommandImpl;
+import io.zeebe.client.impl.command.ThrowErrorCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.util.function.Predicate;
 
-public class JobClientImpl implements JobClient {
+public final class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
   private final ZeebeClientConfiguration config;
@@ -33,10 +35,10 @@ public class JobClientImpl implements JobClient {
   private final Predicate<Throwable> retryPredicate;
 
   public JobClientImpl(
-      GatewayStub asyncStub,
-      ZeebeClientConfiguration config,
-      ZeebeObjectMapper objectMapper,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final ZeebeClientConfiguration config,
+      final ZeebeObjectMapper objectMapper,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.config = config;
     this.objectMapper = objectMapper;
@@ -44,14 +46,20 @@ public class JobClientImpl implements JobClient {
   }
 
   @Override
-  public CompleteJobCommandStep1 newCompleteCommand(long jobKey) {
+  public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return new CompleteJobCommandImpl(
         asyncStub, objectMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }
 
   @Override
-  public FailJobCommandStep1 newFailCommand(long jobKey) {
+  public FailJobCommandStep1 newFailCommand(final long jobKey) {
     return new FailJobCommandImpl(
+        asyncStub, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+  }
+
+  @Override
+  public ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey) {
+    return new ThrowErrorCommandImpl(
         asyncStub, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }
 }

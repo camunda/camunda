@@ -35,11 +35,11 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class StreamProcessorReprocessingTest {
+public final class StreamProcessorReprocessingTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
-  @Rule public StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
+  @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
 
   @Test
   public void shouldCallRecordProcessorLifecycle() {
@@ -281,11 +281,11 @@ public class StreamProcessorReprocessingTest {
                     new TypedRecordProcessor<UnifiedRecordValue>() {
                       @Override
                       public void processRecord(
-                          long position,
-                          TypedRecord<UnifiedRecordValue> record,
-                          TypedResponseWriter responseWriter,
-                          TypedStreamWriter streamWriter,
-                          Consumer<SideEffectProducer> sideEffect) {
+                          final long position,
+                          final TypedRecord<UnifiedRecordValue> record,
+                          final TypedResponseWriter responseWriter,
+                          final TypedStreamWriter streamWriter,
+                          final Consumer<SideEffectProducer> sideEffect) {
                         streamWriter.appendFollowUpEvent(
                             record.getKey(),
                             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
@@ -298,11 +298,11 @@ public class StreamProcessorReprocessingTest {
                     new TypedRecordProcessor<UnifiedRecordValue>() {
                       @Override
                       public void processRecord(
-                          long position,
-                          TypedRecord<UnifiedRecordValue> record,
-                          TypedResponseWriter responseWriter,
-                          TypedStreamWriter streamWriter,
-                          Consumer<SideEffectProducer> sideEffect) {
+                          final long position,
+                          final TypedRecord<UnifiedRecordValue> record,
+                          final TypedResponseWriter responseWriter,
+                          final TypedStreamWriter streamWriter,
+                          final Consumer<SideEffectProducer> sideEffect) {
                         processLatch.countDown();
                       }
                     }));
@@ -331,11 +331,11 @@ public class StreamProcessorReprocessingTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     processingLatch.countDown();
                   }
                 }));
@@ -356,11 +356,11 @@ public class StreamProcessorReprocessingTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     processedPositions.add(position);
                     newProcessLatch.countDown();
                   }
@@ -385,11 +385,11 @@ public class StreamProcessorReprocessingTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     processingLatch.countDown();
                   }
                 }));
@@ -416,11 +416,11 @@ public class StreamProcessorReprocessingTest {
                 new TypedRecordProcessor<UnifiedRecordValue>() {
                   @Override
                   public void processRecord(
-                      long position,
-                      TypedRecord<UnifiedRecordValue> record,
-                      TypedResponseWriter responseWriter,
-                      TypedStreamWriter streamWriter,
-                      Consumer<SideEffectProducer> sideEffect) {
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {
                     processedPositions.add(position);
                     newProcessLatch.countDown();
                   }

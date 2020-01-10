@@ -39,7 +39,7 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .done(),
         Arrays.asList(
             expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
-            expect("boundary", "Boundary events must be one of: timer, message"))
+            expect("boundary", "Boundary events must be one of: timer, message, error"))
       },
       {
         Bpmn.createExecutableProcess("process")

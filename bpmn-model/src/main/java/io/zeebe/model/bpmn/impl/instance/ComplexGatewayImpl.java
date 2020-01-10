@@ -44,11 +44,11 @@ public class ComplexGatewayImpl extends GatewayImpl implements ComplexGateway {
   protected static AttributeReference<SequenceFlow> defaultAttribute;
   protected static ChildElement<ActivationCondition> activationConditionChild;
 
-  public ComplexGatewayImpl(ModelTypeInstanceContext context) {
+  public ComplexGatewayImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ComplexGateway.class, BPMN_ELEMENT_COMPLEX_GATEWAY)
@@ -57,7 +57,8 @@ public class ComplexGatewayImpl extends GatewayImpl implements ComplexGateway {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ComplexGateway>() {
                   @Override
-                  public ComplexGateway newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ComplexGateway newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ComplexGatewayImpl(instanceContext);
                   }
                 });
@@ -86,7 +87,7 @@ public class ComplexGatewayImpl extends GatewayImpl implements ComplexGateway {
   }
 
   @Override
-  public void setDefault(SequenceFlow defaultFlow) {
+  public void setDefault(final SequenceFlow defaultFlow) {
     defaultAttribute.setReferenceTargetElement(this, defaultFlow);
   }
 
@@ -96,7 +97,7 @@ public class ComplexGatewayImpl extends GatewayImpl implements ComplexGateway {
   }
 
   @Override
-  public void setActivationCondition(ActivationCondition activationCondition) {
+  public void setActivationCondition(final ActivationCondition activationCondition) {
     activationConditionChild.setChild(this, activationCondition);
   }
 }

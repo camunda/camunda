@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class GlobalConversationImpl extends CollaborationImpl implements GlobalConversation {
 
-  public GlobalConversationImpl(ModelTypeInstanceContext context) {
+  public GlobalConversationImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(GlobalConversation.class, BPMN_ELEMENT_GLOBAL_CONVERSATION)
@@ -46,7 +46,8 @@ public class GlobalConversationImpl extends CollaborationImpl implements GlobalC
             .instanceProvider(
                 new ModelTypeInstanceProvider<GlobalConversation>() {
                   @Override
-                  public GlobalConversation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public GlobalConversation newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new GlobalConversationImpl(instanceContext);
                   }
                 });

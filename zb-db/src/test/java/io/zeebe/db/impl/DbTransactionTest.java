@@ -23,9 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class DbTransactionTest {
+public final class DbTransactionTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<ColumnFamilies> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(ColumnFamilies.class);
   private DbContext dbContext;
@@ -445,7 +445,7 @@ public class DbTransactionTest {
             threeColumnFamily.put(threeKey, threeValue);
             throw new RuntimeException();
           });
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // ignore
     }
 

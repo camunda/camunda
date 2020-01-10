@@ -23,7 +23,8 @@ import io.zeebe.model.bpmn.instance.BusinessRuleTask;
 public class BusinessRuleTaskBuilder
     extends AbstractBusinessRuleTaskBuilder<BusinessRuleTaskBuilder> {
 
-  public BusinessRuleTaskBuilder(BpmnModelInstance modelInstance, BusinessRuleTask element) {
+  public BusinessRuleTaskBuilder(
+      final BpmnModelInstance modelInstance, final BusinessRuleTask element) {
     super(modelInstance, element, BusinessRuleTaskBuilder.class);
   }
 }

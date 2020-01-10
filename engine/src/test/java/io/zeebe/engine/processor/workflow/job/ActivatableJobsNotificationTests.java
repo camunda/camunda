@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class ActivatableJobsNotificationTests {
+public final class ActivatableJobsNotificationTests {
 
   private static final String PROCESS_ID = "process";
   private static final Function<String, BpmnModelInstance> MODEL_SUPPLIER =
@@ -41,12 +41,12 @@ public class ActivatableJobsNotificationTests {
               .serviceTask("task", b -> b.zeebeTaskType(type).done())
               .endEvent("end")
               .done();
-  private static Consumer<String> jobAvailableCallback =
+  private static final Consumer<String> JOB_AVAILABLE_CALLBACK =
       (Consumer<String>) Mockito.spy(Consumer.class);
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withJobsAvailableCallback(jobAvailableCallback);
+      EngineRule.singlePartition().withJobsAvailableCallback(JOB_AVAILABLE_CALLBACK);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -66,7 +66,7 @@ public class ActivatableJobsNotificationTests {
     createWorkflowInstanceAndJobs(3);
 
     // then
-    Mockito.verify(jobAvailableCallback, times(3)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).accept(taskType);
   }
 
   @Test
@@ -79,7 +79,7 @@ public class ActivatableJobsNotificationTests {
     createWorkflowInstanceAndJobs(1);
 
     // then
-    Mockito.verify(jobAvailableCallback, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
   }
 
   @Test
@@ -92,7 +92,7 @@ public class ActivatableJobsNotificationTests {
     createWorkflowInstanceAndJobs(1);
 
     // then
-    Mockito.verify(jobAvailableCallback, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
   }
 
   @Test
@@ -106,7 +106,7 @@ public class ActivatableJobsNotificationTests {
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // then
-    Mockito.verify(jobAvailableCallback, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
   }
 
   @Test
@@ -122,7 +122,7 @@ public class ActivatableJobsNotificationTests {
     createWorkflowInstanceAndJobs(1);
 
     // then
-    Mockito.verify(jobAvailableCallback, times(3)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).accept(taskType);
   }
 
   @Test
@@ -136,7 +136,7 @@ public class ActivatableJobsNotificationTests {
     ENGINE.job().withKey(jobKey).withRetries(10).fail();
 
     // then
-    Mockito.verify(jobAvailableCallback, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
   }
 
   @Test
@@ -158,7 +158,7 @@ public class ActivatableJobsNotificationTests {
     ENGINE.incident().ofInstance(job.getWorkflowInstanceKey()).resolve();
 
     // then
-    Mockito.verify(jobAvailableCallback, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
   }
 
   @Test
@@ -172,23 +172,23 @@ public class ActivatableJobsNotificationTests {
     ENGINE.createJob(secondType, PROCESS_ID);
 
     // then
-    Mockito.verify(jobAvailableCallback, times(1)).accept(firstType);
-    Mockito.verify(jobAvailableCallback, times(1)).accept(secondType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1)).accept(firstType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1)).accept(secondType);
   }
 
-  private List<Long> createWorkflowInstanceAndJobs(int amount) {
+  private List<Long> createWorkflowInstanceAndJobs(final int amount) {
     return IntStream.range(0, amount)
         .mapToObj(i -> ENGINE.createJob(taskType, PROCESS_ID))
         .map(r -> r.getValue().getWorkflowInstanceKey())
         .collect(Collectors.toList());
   }
 
-  private Record<JobBatchRecordValue> activateJobs(int amount) {
+  private Record<JobBatchRecordValue> activateJobs(final int amount) {
     final Duration timeout = Duration.ofMinutes(12);
     return activateJobs(amount, timeout);
   }
 
-  private Record<JobBatchRecordValue> activateJobs(int amount, Duration timeout) {
+  private Record<JobBatchRecordValue> activateJobs(final int amount, final Duration timeout) {
     final String worker = "myTestWorker";
     return ENGINE
         .jobs()

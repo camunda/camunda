@@ -26,7 +26,7 @@ public abstract class AbstractSequenceFlowBuilder<B extends AbstractSequenceFlow
     extends AbstractFlowElementBuilder<B, SequenceFlow> {
 
   protected AbstractSequenceFlowBuilder(
-      BpmnModelInstance modelInstance, SequenceFlow element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final SequenceFlow element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -36,7 +36,7 @@ public abstract class AbstractSequenceFlowBuilder<B extends AbstractSequenceFlow
    * @param source the source of this sequence flow
    * @return the builder object
    */
-  public B from(FlowNode source) {
+  public B from(final FlowNode source) {
     element.setSource(source);
     source.getOutgoing().add(element);
     return myself;
@@ -48,7 +48,7 @@ public abstract class AbstractSequenceFlowBuilder<B extends AbstractSequenceFlow
    * @param target the target of this sequence flow
    * @return the builder object
    */
-  public B to(FlowNode target) {
+  public B to(final FlowNode target) {
     element.setTarget(target);
     target.getIncoming().add(element);
     return myself;
@@ -60,7 +60,7 @@ public abstract class AbstractSequenceFlowBuilder<B extends AbstractSequenceFlow
    * @param conditionExpression the condition expression for this sequence flow
    * @return the builder object
    */
-  public B condition(ConditionExpression conditionExpression) {
+  public B condition(final ConditionExpression conditionExpression) {
     element.setConditionExpression(conditionExpression);
     return myself;
   }

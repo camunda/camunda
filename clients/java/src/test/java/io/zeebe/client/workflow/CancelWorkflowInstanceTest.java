@@ -24,7 +24,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest
 import java.time.Duration;
 import org.junit.Test;
 
-public class CancelWorkflowInstanceTest extends ClientTest {
+public final class CancelWorkflowInstanceTest extends ClientTest {
 
   @Test
   public void shouldSendCancelCommand() {

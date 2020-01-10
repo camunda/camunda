@@ -72,7 +72,7 @@ public final class MsgPackConverter {
   }
 
   public static byte[] convertToMsgPack(final InputStream inputStream) {
-    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+    try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
       convert(inputStream, outputStream, JSON_FACTORY, MESSAGE_PACK_FACTORY);
 
       return outputStream.toByteArray();
@@ -109,7 +109,7 @@ public final class MsgPackConverter {
   }
 
   private static byte[] convertToJsonBytes(final InputStream msgPackInputStream) {
-    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+    try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
       convert(msgPackInputStream, outputStream, MESSAGE_PACK_FACTORY, JSON_FACTORY);
 
       return outputStream.toByteArray();
@@ -124,8 +124,8 @@ public final class MsgPackConverter {
       final JsonFactory inFormat,
       final JsonFactory outFormat)
       throws Exception {
-    try (JsonParser parser = inFormat.createParser(in);
-        JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING)) {
+    try (final JsonParser parser = inFormat.createParser(in);
+        final JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING)) {
 
       final JsonToken token = parser.nextToken();
       if (!token.isStructStart() && !token.isScalarValue()) {

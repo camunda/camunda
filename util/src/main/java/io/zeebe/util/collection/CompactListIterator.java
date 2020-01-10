@@ -11,7 +11,7 @@ import java.util.Iterator;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CompactListIterator implements Iterator<MutableDirectBuffer> {
+public final class CompactListIterator implements Iterator<MutableDirectBuffer> {
   protected final CompactList values;
   protected final UnsafeBuffer current;
   protected int position;

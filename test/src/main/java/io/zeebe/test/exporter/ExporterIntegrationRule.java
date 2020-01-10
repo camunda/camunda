@@ -169,7 +169,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param <T> type of the configuration instance
    * @return instantiated configuration class based on the exporter args map
    */
-  public <T> T getExporterConfiguration(String id, Class<T> configurationClass) {
+  public <T> T getExporterConfiguration(final String id, final Class<T> configurationClass) {
     return getConfiguredExporters().stream()
         .filter(cfg -> cfg.getId().equals(id))
         .findFirst()
@@ -184,7 +184,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    *
    * @param toml input stream wrapping a TOML document
    */
-  public ExporterIntegrationRule configure(InputStream toml) {
+  public ExporterIntegrationRule configure(final InputStream toml) {
     final BrokerCfg config = new Toml().read(toml).to(BrokerCfg.class);
     return configure(config.getExporters());
   }
@@ -199,7 +199,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param <E> type of the exporter
    */
   public <T, E extends Exporter> ExporterIntegrationRule configure(
-      String id, Class<E> exporterClass, T configuration) {
+      final String id, final Class<E> exporterClass, final T configuration) {
     final Map<String, Object> arguments = convertConfigToMap(configuration);
     return configure(id, exporterClass, arguments);
   }
@@ -213,7 +213,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param <E> type of the exporter
    */
   public <E extends Exporter> ExporterIntegrationRule configure(
-      String id, Class<E> exporterClass, Map<String, Object> arguments) {
+      final String id, final Class<E> exporterClass, final Map<String, Object> arguments) {
     final ExporterCfg config = new ExporterCfg();
     config.setId(id);
     config.setClassName(exporterClass.getCanonicalName());
@@ -293,7 +293,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    *
    * @param visitor record consumer
    */
-  public void visitExportedRecords(Consumer<Record<?>> visitor) {
+  public void visitExportedRecords(final Consumer<Record<?>> visitor) {
     RecordingExporter.getRecords().forEach(visitor);
   }
 
@@ -304,7 +304,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param workflow workflow to deploy
    * @param filename resource name, e.g. "workflow.bpmn"
    */
-  public void deployWorkflow(BpmnModelInstance workflow, String filename) {
+  public void deployWorkflow(final BpmnModelInstance workflow, final String filename) {
     clientRule.getClient().newDeployCommand().addWorkflowModel(workflow, filename).send().join();
   }
 
@@ -315,7 +315,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param variables initial variables for the instance
    * @return unique ID used to interact with the instance
    */
-  public long createWorkflowInstance(String processId, Map<String, Object> variables) {
+  public long createWorkflowInstance(final String processId, final Map<String, Object> variables) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
@@ -336,7 +336,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param handler handler
    * @return a new JobWorker
    */
-  public JobWorker createJobWorker(String type, JobHandler handler) {
+  public JobWorker createJobWorker(final String type, final JobHandler handler) {
     return clientRule.getClient().newWorker().jobType(type).handler(handler).open();
   }
 
@@ -346,7 +346,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @param messageName name of the message
    * @param correlationKey correlation key
    */
-  public void publishMessage(String messageName, String correlationKey) {
+  public void publishMessage(final String messageName, final String correlationKey) {
     clientRule
         .getClient()
         .newPublishMessageCommand()
@@ -361,7 +361,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    *
    * @param workflowInstanceKey ID of the workflow
    */
-  public void awaitWorkflowCompletion(long workflowInstanceKey) {
+  public void awaitWorkflowCompletion(final long workflowInstanceKey) {
     TestUtil.waitUntil(
         () ->
             workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
@@ -379,17 +379,17 @@ public class ExporterIntegrationRule extends ExternalResource {
     return properties;
   }
 
-  private ExporterIntegrationRule configure(List<ExporterCfg> exporters) {
+  private ExporterIntegrationRule configure(final List<ExporterCfg> exporters) {
     getBrokerConfig().getExporters().addAll(exporters);
 
     return this;
   }
 
-  private <T> Map<String, Object> convertConfigToMap(T configuration) {
+  private <T> Map<String, Object> convertConfigToMap(final T configuration) {
     return new Toml().read(new TomlWriter().write(configuration)).toMap();
   }
 
-  private <T> T convertMapToConfig(Map<String, Object> map, Class<T> configClass) {
+  private <T> T convertMapToConfig(final Map<String, Object> map, final Class<T> configClass) {
     return new Toml().read(new TomlWriter().write(map)).to(configClass);
   }
 }

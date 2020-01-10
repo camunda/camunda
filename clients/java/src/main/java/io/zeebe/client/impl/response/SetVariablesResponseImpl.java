@@ -18,11 +18,11 @@ package io.zeebe.client.impl.response;
 import io.zeebe.client.api.response.SetVariablesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 
-public class SetVariablesResponseImpl implements SetVariablesResponse {
+public final class SetVariablesResponseImpl implements SetVariablesResponse {
 
   private final long key;
 
-  public SetVariablesResponseImpl(GatewayOuterClass.SetVariablesResponse response) {
+  public SetVariablesResponseImpl(final GatewayOuterClass.SetVariablesResponse response) {
     key = response.getKey();
   }
 

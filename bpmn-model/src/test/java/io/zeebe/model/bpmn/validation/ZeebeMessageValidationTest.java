@@ -172,6 +172,19 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(expect(Message.class, "Name must be present and not empty"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .message(m -> m.name("message"))
+            .endEvent()
+            .done(),
+        valid()
+      },
+      {
+        getMessageEventSubProcessWithNoCorrelationKey(),
+        singletonList(
+            expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
+      },
     };
   }
 
@@ -181,5 +194,17 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
     process.startEvent("start1").message(m -> m.id("start-message").name(messageName)).endEvent();
     process.startEvent("start2").message(messageName).endEvent();
     return process.done();
+  }
+
+  private static BpmnModelInstance getMessageEventSubProcessWithNoCorrelationKey() {
+    final ProcessBuilder builder = Bpmn.createExecutableProcess("process");
+    builder
+        .eventSubProcess("subprocess")
+        .startEvent("substart")
+        .message(m -> m.name("message"))
+        .endEvent("subend")
+        .done();
+
+    return builder.startEvent("start").endEvent("end").done();
   }
 }

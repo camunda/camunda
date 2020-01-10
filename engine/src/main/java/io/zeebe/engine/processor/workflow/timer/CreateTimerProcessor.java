@@ -20,7 +20,7 @@ import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import java.util.function.Consumer;
 
-public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+public final class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   private final DueDateTimerChecker timerChecker;
 

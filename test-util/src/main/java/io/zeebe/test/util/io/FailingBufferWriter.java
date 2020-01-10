@@ -10,14 +10,14 @@ package io.zeebe.test.util.io;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.MutableDirectBuffer;
 
-public class FailingBufferWriter implements BufferWriter {
+public final class FailingBufferWriter implements BufferWriter {
   @Override
   public int getLength() {
     return 10;
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     throw new FailingBufferWriterException("Could not write - expected");
   }
 
@@ -25,7 +25,7 @@ public class FailingBufferWriter implements BufferWriter {
 
     private static final long serialVersionUID = 1L;
 
-    public FailingBufferWriterException(String string) {
+    public FailingBufferWriterException(final String string) {
       super(string);
     }
   }

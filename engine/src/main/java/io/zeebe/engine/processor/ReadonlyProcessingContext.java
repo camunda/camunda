@@ -28,6 +28,12 @@ public interface ReadonlyProcessingContext {
   /** @return the reader, which is used by the processor to read next events */
   LogStreamReader getLogStreamReader();
 
+  /**
+   * @return the maximum fragment size we can write and read this contains the record metadata and
+   *     record value etc.
+   */
+  int getMaxFragmentSize();
+
   /** @return the writer, which is used by the processor to write follow up events */
   TypedStreamWriter getLogStreamWriter();
 

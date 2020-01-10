@@ -67,8 +67,8 @@ import org.agrona.DirectBuffer;
  * }</pre>
  */
 public final class MsgPackDocumentExtractor {
-  public static final String EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH = "No data found for query %s.";
-  public static final String EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE =
+  private static final String EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH = "No data found for query %s.";
+  private static final String EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE =
       "JSON path mapping has more than one matching source.";
 
   private final MappingDiff diff = new MappingDiff();
@@ -76,7 +76,8 @@ public final class MsgPackDocumentExtractor {
   private final MsgPackTraverser traverser = new MsgPackTraverser();
   private final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
 
-  public MsgPackDiff extract(DirectBuffer document, boolean strictMode, Mapping... mappings) {
+  public MsgPackDiff extract(
+      final DirectBuffer document, final boolean strictMode, final Mapping... mappings) {
     diff.init(mappings, document);
     traverser.wrap(document, 0, document.capacity());
 
@@ -112,7 +113,7 @@ public final class MsgPackDocumentExtractor {
    *
    * @param jsonPathQuery the query which should be executed
    */
-  private void executeLeafMapping(JsonPathQuery jsonPathQuery, boolean strictMode) {
+  private void executeLeafMapping(final JsonPathQuery jsonPathQuery, final boolean strictMode) {
     queryExecutor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
 
     traverser.reset();

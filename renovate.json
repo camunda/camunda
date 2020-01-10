@@ -1,5 +1,7 @@
 {
   "extends": [
     "config:base"
-  ]
+  ],
+
+  "ignoreDeps": ["docker/engine"]
 }

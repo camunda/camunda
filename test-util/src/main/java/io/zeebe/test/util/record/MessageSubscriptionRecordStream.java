@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import java.util.stream.Stream;
 
-public class MessageSubscriptionRecordStream
+public final class MessageSubscriptionRecordStream
     extends ExporterRecordStream<MessageSubscriptionRecordValue, MessageSubscriptionRecordStream> {
 
   public MessageSubscriptionRecordStream(

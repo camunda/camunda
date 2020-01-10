@@ -225,7 +225,12 @@ When `validation.Validate` is used to validate a validatable value, if it does n
 given validation rules, it will further call the value's `Validate()` method. 
 
 Similarly, when `validation.ValidateStruct` is validating a struct field whose type is validatable, it will call 
-the field's `Validate` method after it passes the listed rules. 
+the field's `Validate` method after it passes the listed rules.
+
+> Note: When implementing `validation.Validatable`, do not call `validation.Validate()` to validate the value in its
+> original type because this will cause infinite loops. For example, if you define a new type `MyString` as `string`
+> and implement `validation.Validatable` for `MyString`, within the `Validate()` function you should cast the value 
+> to `string` first before calling `validation.Validate()` to validate it.
 
 In the following example, the `Address` field of `Customer` is validatable because `Address` implements 
 `validation.Validatable`. Therefore, when validating a `Customer` struct with `validation.ValidateStruct`,
@@ -578,6 +583,38 @@ func (u User) Validate() error {
 
 In the above example, we create a rule group `NameRule` which consists of two validation rules. We then use this rule
 group to validate both `FirstName` and `LastName`.
+
+
+## Context-aware Validation
+
+While most validation rules are self-contained, some rules may depend dynamically on a context. A rule may implement the
+`validation.RuleWithContext` interface to support the so-called context-aware validation.
+ 
+To validate an arbitrary value with a context, call `validation.ValidateWithContext()`. The `context.Conext` parameter 
+will be passed along to those rules that implement `validation.RuleWithContext`.
+
+To validate the fields of a struct with a context, call `validation.ValidateStructWithContext()`. 
+
+You can define a context-aware rule from scratch by implementing both `validation.Rule` and `validation.RuleWithContext`. 
+You can also use `validation.WithContext()` to turn a function into a context-aware rule. For example,
+
+
+```go
+rule := validation.WithContext(func(ctx context.Context, value interface{}) error {
+	if ctx.Value("secret") == value.(string) {
+	    return nil
+	}
+	return errors.New("value incorrect")
+})
+value := "xyz"
+ctx := context.WithValue(context.Background(), "secret", "example")
+err := validation.ValidateWithContext(ctx, value, rule)
+fmt.Println(err)
+// Output: value incorrect
+```
+
+When performing context-aware validation, if a rule does not implement `validation.RuleWithContext`, its
+`validation.Rule` will be used instead.
 
 
 ## Credits

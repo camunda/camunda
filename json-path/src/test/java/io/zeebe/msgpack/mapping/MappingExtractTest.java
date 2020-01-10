@@ -22,10 +22,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 /** Represents a test class to test the extract document functionality with help of mappings. */
-public class MappingExtractTest {
-  @Rule public ExpectedException expectedException = ExpectedException.none();
+public final class MappingExtractTest {
+  @Rule public final ExpectedException expectedException = ExpectedException.none();
 
-  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
+  private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
   public void shouldThrowExceptionIfMappingDoesNotMatchInStrictMode() throws Throwable {
@@ -113,10 +113,10 @@ public class MappingExtractTest {
         .hasValue("{'array':['val1', 'val2', 'val3']}");
   }
 
-  private static DirectBuffer asMsgPack(String json) {
+  private static DirectBuffer asMsgPack(final String json) {
     try {
       return new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(json)));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }

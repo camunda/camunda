@@ -9,7 +9,7 @@ package io.zeebe.msgpack;
 
 import io.zeebe.msgpack.property.LongProperty;
 
-public class POJONested extends UnpackedObject {
+public final class POJONested extends UnpackedObject {
   private final LongProperty longProp = new LongProperty("foo", -1L);
 
   public POJONested() {
@@ -20,7 +20,7 @@ public class POJONested extends UnpackedObject {
     return this.longProp.getValue();
   }
 
-  public POJONested setLong(long value) {
+  public POJONested setLong(final long value) {
     this.longProp.setValue(value);
     return this;
   }

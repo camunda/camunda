@@ -50,11 +50,11 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
   protected static Attribute<Boolean> isImmediateAttribute;
   protected static ChildElement<ConditionExpression> conditionExpressionCollection;
 
-  public SequenceFlowImpl(ModelTypeInstanceContext context) {
+  public SequenceFlowImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SequenceFlow.class, BPMN_ELEMENT_SEQUENCE_FLOW)
@@ -63,7 +63,7 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
             .instanceProvider(
                 new ModelTypeInstanceProvider<SequenceFlow>() {
                   @Override
-                  public SequenceFlow newInstance(ModelTypeInstanceContext instanceContext) {
+                  public SequenceFlow newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new SequenceFlowImpl(instanceContext);
                   }
                 });
@@ -102,7 +102,7 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
   }
 
   @Override
-  public void setSource(FlowNode source) {
+  public void setSource(final FlowNode source) {
     sourceRefAttribute.setReferenceTargetElement(this, source);
   }
 
@@ -112,7 +112,7 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
   }
 
   @Override
-  public void setTarget(FlowNode target) {
+  public void setTarget(final FlowNode target) {
     targetRefAttribute.setReferenceTargetElement(this, target);
   }
 
@@ -122,7 +122,7 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
   }
 
   @Override
-  public void setImmediate(boolean isImmediate) {
+  public void setImmediate(final boolean isImmediate) {
     isImmediateAttribute.setValue(this, isImmediate);
   }
 
@@ -132,7 +132,7 @@ public class SequenceFlowImpl extends FlowElementImpl implements SequenceFlow {
   }
 
   @Override
-  public void setConditionExpression(ConditionExpression conditionExpression) {
+  public void setConditionExpression(final ConditionExpression conditionExpression) {
     conditionExpressionCollection.setChild(this, conditionExpression);
   }
 

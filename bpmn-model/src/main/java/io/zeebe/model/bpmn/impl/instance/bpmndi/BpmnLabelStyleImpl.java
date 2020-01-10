@@ -39,11 +39,11 @@ public class BpmnLabelStyleImpl extends StyleImpl implements BpmnLabelStyle {
 
   protected static ChildElement<Font> fontChild;
 
-  public BpmnLabelStyleImpl(ModelTypeInstanceContext instanceContext) {
+  public BpmnLabelStyleImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BpmnLabelStyle.class, BPMNDI_ELEMENT_BPMN_LABEL_STYLE)
@@ -52,7 +52,8 @@ public class BpmnLabelStyleImpl extends StyleImpl implements BpmnLabelStyle {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BpmnLabelStyle>() {
                   @Override
-                  public BpmnLabelStyle newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BpmnLabelStyle newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new BpmnLabelStyleImpl(instanceContext);
                   }
                 });
@@ -70,7 +71,7 @@ public class BpmnLabelStyleImpl extends StyleImpl implements BpmnLabelStyle {
   }
 
   @Override
-  public void setFont(Font font) {
+  public void setFont(final Font font) {
     fontChild.setChild(this, font);
   }
 }

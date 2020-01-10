@@ -10,7 +10,7 @@ package io.zeebe.broker.exporter.jar;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class ExporterJarLoadException extends IOException {
+public final class ExporterJarLoadException extends IOException {
   private static final String MESSAGE_FORMAT = "Cannot load JAR at [%s]: %s";
   private static final long serialVersionUID = 1655276726721040696L;
 

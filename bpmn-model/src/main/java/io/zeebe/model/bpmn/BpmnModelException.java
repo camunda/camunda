@@ -29,15 +29,15 @@ public class BpmnModelException extends ModelException {
 
   public BpmnModelException() {}
 
-  public BpmnModelException(String message, Throwable cause) {
+  public BpmnModelException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public BpmnModelException(String message) {
+  public BpmnModelException(final String message) {
     super(message);
   }
 
-  public BpmnModelException(Throwable cause) {
+  public BpmnModelException(final Throwable cause) {
     super(cause);
   }
 }

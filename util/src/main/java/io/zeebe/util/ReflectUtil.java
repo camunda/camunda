@@ -7,12 +7,12 @@
  */
 package io.zeebe.util;
 
-public class ReflectUtil {
+public final class ReflectUtil {
 
-  public static <T> T newInstance(Class<T> clazz) {
+  public static <T> T newInstance(final Class<T> clazz) {
     try {
       return clazz.newInstance();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Could not instantiate class " + clazz.getName(), e);
     }
   }

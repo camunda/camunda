@@ -23,17 +23,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class FailingSnapshotChunkReplicationTest {
+public final class FailingSnapshotChunkReplicationTest {
 
-  @Rule public TemporaryFolder tempFolderRule = new TemporaryFolder();
-  @Rule public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
+  @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
+  @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
   private StateSnapshotController replicatorSnapshotController;
   private StateSnapshotController receiverSnapshotController;
   private SnapshotStorage receiverStorage;
   private SnapshotStorage replicatorStorage;
 
-  public void setup(SnapshotReplication replicator) throws IOException {
+  public void setup(final SnapshotReplication replicator) throws IOException {
     final var senderRoot = tempFolderRule.newFolder("sender");
     replicatorStorage = new TestSnapshotStorage(senderRoot.toPath());
 
@@ -43,7 +43,7 @@ public class FailingSnapshotChunkReplicationTest {
     setupReplication(replicator);
   }
 
-  private void setupReplication(SnapshotReplication replicator) {
+  private void setupReplication(final SnapshotReplication replicator) {
     replicatorSnapshotController =
         new StateSnapshotController(
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
@@ -115,7 +115,7 @@ public class FailingSnapshotChunkReplicationTest {
     private Consumer<SnapshotChunk> chunkConsumer;
 
     @Override
-    public void replicate(SnapshotChunk snapshot) {
+    public void replicate(final SnapshotChunk snapshot) {
       replicatedChunks.add(snapshot);
       if (chunkConsumer != null) {
         if (replicatedChunks.size() < 3) {
@@ -125,7 +125,7 @@ public class FailingSnapshotChunkReplicationTest {
     }
 
     @Override
-    public void consume(Consumer<SnapshotChunk> consumer) {
+    public void consume(final Consumer<SnapshotChunk> consumer) {
       chunkConsumer = consumer;
     }
 
@@ -139,7 +139,7 @@ public class FailingSnapshotChunkReplicationTest {
     private Consumer<SnapshotChunk> chunkConsumer;
 
     @Override
-    public void replicate(SnapshotChunk snapshot) {
+    public void replicate(final SnapshotChunk snapshot) {
       replicatedChunks.add(snapshot);
       if (chunkConsumer != null) {
         chunkConsumer.accept(
@@ -148,7 +148,7 @@ public class FailingSnapshotChunkReplicationTest {
     }
 
     @Override
-    public void consume(Consumer<SnapshotChunk> consumer) {
+    public void consume(final Consumer<SnapshotChunk> consumer) {
       chunkConsumer = consumer;
     }
 
@@ -159,7 +159,7 @@ public class FailingSnapshotChunkReplicationTest {
   private final class DisruptedSnapshotChunk implements SnapshotChunk {
     private final SnapshotChunk snapshotChunk;
 
-    DisruptedSnapshotChunk(SnapshotChunk snapshotChunk) {
+    DisruptedSnapshotChunk(final SnapshotChunk snapshotChunk) {
       this.snapshotChunk = snapshotChunk;
     }
 

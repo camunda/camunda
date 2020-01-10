@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class JobEventSequenceTest {
+public final class JobEventSequenceTest {
 
   @Rule public final EngineRule engine = EngineRule.explicitStart();
 

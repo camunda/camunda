@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public class MultiInstanceActivityTransformer implements ModelElementTransformer<Activity> {
+public final class MultiInstanceActivityTransformer implements ModelElementTransformer<Activity> {
   @Override
   public Class<Activity> getType() {
     return Activity.class;
@@ -71,6 +71,7 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
 
       // attach boundary events to the multi-instance body
       innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);
+
       innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
       innerActivity.getInterruptingElementIds().clear();
 

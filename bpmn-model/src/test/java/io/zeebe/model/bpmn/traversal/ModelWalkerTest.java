@@ -111,7 +111,7 @@ public class ModelWalkerTest {
 
           @Override
           protected void visit(
-              ModelElementType implementedType, BpmnModelElementInstance instance) {
+              final ModelElementType implementedType, final BpmnModelElementInstance instance) {
             if (implementedType.getInstanceType() == UserTask.class) {
               userTasks.add((UserTask) instance);
             }
@@ -149,7 +149,7 @@ public class ModelWalkerTest {
 
           @Override
           protected void visit(
-              ModelElementType implementedType, BpmnModelElementInstance instance) {
+              final ModelElementType implementedType, final BpmnModelElementInstance instance) {
             if (instance instanceof UserTask) {
               visitedUserTaskTypes.add(implementedType.getInstanceType());
             }

@@ -11,24 +11,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class MapBuilder<T> {
-  protected T returnValue;
-  protected Consumer<Map<String, Object>> mapCallback;
+public final class MapBuilder<T> {
+  protected final T returnValue;
+  protected final Consumer<Map<String, Object>> mapCallback;
 
-  protected Map<String, Object> map;
+  protected final Map<String, Object> map;
 
-  public MapBuilder(T returnValue, Consumer<Map<String, Object>> mapCallback) {
+  public MapBuilder(final T returnValue, final Consumer<Map<String, Object>> mapCallback) {
     this.returnValue = returnValue;
     this.mapCallback = mapCallback;
     this.map = new HashMap<>();
   }
 
-  public MapBuilder<T> putAll(Map<String, Object> map) {
+  public MapBuilder<T> putAll(final Map<String, Object> map) {
     this.map.putAll(map);
     return this;
   }
 
-  public MapBuilder<T> put(String key, Object value) {
+  public MapBuilder<T> put(final String key, final Object value) {
     this.map.put(key, value);
     return this;
   }

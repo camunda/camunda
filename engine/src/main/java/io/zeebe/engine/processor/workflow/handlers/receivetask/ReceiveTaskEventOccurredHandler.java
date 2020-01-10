@@ -13,11 +13,11 @@ import io.zeebe.engine.processor.workflow.handlers.activity.ActivityEventOccurre
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
+public final class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
     extends ActivityEventOccurredHandler<T> {
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     final EventTrigger event = getTriggeredEvent(context, context.getKey());
     if (isActivityEventHandler(context, event)) {
       processEventTrigger(context, context.getKey(), context.getKey(), event);
@@ -28,7 +28,8 @@ public class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>
     return super.handleState(context);
   }
 
-  private boolean isActivityEventHandler(BpmnStepContext<T> context, EventTrigger event) {
+  private boolean isActivityEventHandler(
+      final BpmnStepContext<T> context, final EventTrigger event) {
     return event.getElementId().equals(context.getElement().getId());
   }
 }

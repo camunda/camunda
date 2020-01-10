@@ -21,7 +21,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class LargeMessageSizeTest {
+public final class LargeMessageSizeTest {
 
   private static final ByteValue MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
   // only use half of the max message size because some commands produce two events
@@ -38,11 +38,11 @@ public class LargeMessageSizeTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String jobType;
 
-  private static BpmnModelInstance workflow(String jobType) {
+  private static BpmnModelInstance workflow(final String jobType) {
     return Bpmn.createExecutableProcess("process")
         .startEvent()
         .serviceTask("task", t -> t.zeebeTaskType(jobType))

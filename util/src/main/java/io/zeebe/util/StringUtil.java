@@ -9,7 +9,6 @@ package io.zeebe.util;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public final class StringUtil {
 
@@ -31,23 +30,7 @@ public final class StringUtil {
     return new String(bytes, charset);
   }
 
-  public static String formatStackTrace(StackTraceElement[] trace) {
-    final StringBuilder sb = new StringBuilder();
-    for (StackTraceElement element : trace) {
-      sb.append("\t");
-      sb.append(element.toString());
-      sb.append("\n");
-    }
-    return sb.toString();
-  }
-
-  public static String stringOfLength(int length) {
-    final char[] chars = new char[length];
-    Arrays.fill(chars, 'a');
-    return new String(chars);
-  }
-
-  public static String limitString(final String message, int maxLength) {
+  public static String limitString(final String message, final int maxLength) {
     if (message.length() > maxLength) {
       return message.substring(0, maxLength).concat("...");
     } else {

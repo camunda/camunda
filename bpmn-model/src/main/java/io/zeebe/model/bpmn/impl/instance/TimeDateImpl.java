@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class TimeDateImpl extends ExpressionImpl implements TimeDate {
 
-  public TimeDateImpl(ModelTypeInstanceContext instanceContext) {
+  public TimeDateImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TimeDate.class, BPMN_ELEMENT_TIME_DATE)
@@ -46,7 +46,7 @@ public class TimeDateImpl extends ExpressionImpl implements TimeDate {
             .instanceProvider(
                 new ModelTypeInstanceProvider<TimeDate>() {
                   @Override
-                  public TimeDate newInstance(ModelTypeInstanceContext instanceContext) {
+                  public TimeDate newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new TimeDateImpl(instanceContext);
                   }
                 });

@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public abstract class NodeImpl extends DiagramElementImpl implements Node {
 
-  public NodeImpl(ModelTypeInstanceContext instanceContext) {
+  public NodeImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Node.class, DI_ELEMENT_NODE)

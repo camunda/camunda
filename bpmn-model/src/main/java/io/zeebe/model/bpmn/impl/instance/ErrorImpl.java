@@ -40,11 +40,11 @@ public class ErrorImpl extends RootElementImpl implements Error {
 
   protected static AttributeReference<ItemDefinition> structureRefAttribute;
 
-  public ErrorImpl(ModelTypeInstanceContext context) {
+  public ErrorImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Error.class, BPMN_ELEMENT_ERROR)
@@ -53,7 +53,7 @@ public class ErrorImpl extends RootElementImpl implements Error {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Error>() {
                   @Override
-                  public Error newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Error newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ErrorImpl(instanceContext);
                   }
                 });
@@ -77,7 +77,7 @@ public class ErrorImpl extends RootElementImpl implements Error {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -87,7 +87,7 @@ public class ErrorImpl extends RootElementImpl implements Error {
   }
 
   @Override
-  public void setErrorCode(String errorCode) {
+  public void setErrorCode(final String errorCode) {
     errorCodeAttribute.setValue(this, errorCode);
   }
 
@@ -97,7 +97,7 @@ public class ErrorImpl extends RootElementImpl implements Error {
   }
 
   @Override
-  public void setStructure(ItemDefinition structure) {
+  public void setStructure(final ItemDefinition structure) {
     structureRefAttribute.setReferenceTargetElement(this, structure);
   }
 }

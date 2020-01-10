@@ -38,11 +38,11 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
 
   protected static Attribute<Boolean> isInterruptingAttribute;
 
-  public StartEventImpl(ModelTypeInstanceContext context) {
+  public StartEventImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -52,7 +52,7 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<StartEvent>() {
                   @Override
-                  public StartEvent newInstance(ModelTypeInstanceContext instanceContext) {
+                  public StartEvent newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new StartEventImpl(instanceContext);
                   }
                 });
@@ -74,7 +74,7 @@ public class StartEventImpl extends CatchEventImpl implements StartEvent {
   }
 
   @Override
-  public void setInterrupting(boolean isInterrupting) {
+  public void setInterrupting(final boolean isInterrupting) {
     isInterruptingAttribute.setValue(this, isInterrupting);
   }
 }

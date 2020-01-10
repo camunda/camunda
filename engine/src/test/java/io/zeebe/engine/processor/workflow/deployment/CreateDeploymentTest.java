@@ -37,7 +37,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CreateDeploymentTest {
+public final class CreateDeploymentTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String PROCESS_ID_2 = "process2";
@@ -561,7 +561,8 @@ public class CreateDeploymentTest {
                 + "Duplicated process id in resources 'p2.bpmn' and 'p3.bpmn'");
   }
 
-  private DeployedWorkflow findWorkflow(List<DeployedWorkflow> workflows, String processId) {
+  private DeployedWorkflow findWorkflow(
+      final List<DeployedWorkflow> workflows, final String processId) {
     return workflows.stream()
         .filter(w -> w.getBpmnProcessId().equals(processId))
         .findFirst()

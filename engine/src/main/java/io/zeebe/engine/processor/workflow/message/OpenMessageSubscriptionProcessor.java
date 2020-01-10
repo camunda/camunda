@@ -22,7 +22,7 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
-public class OpenMessageSubscriptionProcessor
+public final class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
   public static final String SUBSCRIPTION_ALREADY_OPENED_MESSAGE =
@@ -71,7 +71,7 @@ public class OpenMessageSubscriptionProcessor
   private void handleNewSubscription(
       final TypedRecord<MessageSubscriptionRecord> record,
       final TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final Consumer<SideEffectProducer> sideEffect) {
     final MessageSubscription subscription =
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),

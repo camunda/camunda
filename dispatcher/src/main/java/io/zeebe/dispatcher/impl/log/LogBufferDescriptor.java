@@ -31,7 +31,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *  +----------------------------+
  * </pre>
  */
-public class LogBufferDescriptor {
+public final class LogBufferDescriptor {
 
   /** The number of Partitions the log is divided into */
   public static final int PARTITION_COUNT = 3;
@@ -125,19 +125,20 @@ public class LogBufferDescriptor {
    * Calculates the required capacity for a log buffer which can hold up to the provided bytes of
    * data.
    */
-  public static int requiredCapacity(int partitionSize) {
+  public static int requiredCapacity(final int partitionSize) {
     return (PARTITION_COUNT * (partitionSize + PARTITION_META_DATA_LENGTH)) + LOG_META_DATA_LENGTH;
   }
 
-  public static int partitionMetadataSectionOffset(int partitionSize, int partitionNumber) {
+  public static int partitionMetadataSectionOffset(
+      final int partitionSize, final int partitionNumber) {
     return (PARTITION_COUNT * partitionSize) + (partitionNumber * PARTITION_META_DATA_LENGTH);
   }
 
-  public static int partitionDataSectionOffset(int partitionSize, int partitionNumber) {
+  public static int partitionDataSectionOffset(final int partitionSize, final int partitionNumber) {
     return partitionNumber * partitionSize;
   }
 
-  public static int logMetadataOffset(int partitionSize) {
+  public static int logMetadataOffset(final int partitionSize) {
     return (PARTITION_COUNT * partitionSize) + (PARTITION_COUNT * PARTITION_META_DATA_LENGTH);
   }
 }

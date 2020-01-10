@@ -15,18 +15,18 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 
-public class FailProcessor implements CommandProcessor<JobRecord> {
+public final class FailProcessor implements CommandProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to fail activated job with key '%d', but it %s";
   private final JobState state;
 
-  public FailProcessor(JobState state) {
+  public FailProcessor(final JobState state) {
     this.state = state;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long key = command.getKey();
     final JobState.State jobState = state.getState(key);
 

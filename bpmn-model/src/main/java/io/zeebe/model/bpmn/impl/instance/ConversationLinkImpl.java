@@ -43,11 +43,11 @@ public class ConversationLinkImpl extends BaseElementImpl implements Conversatio
   protected static AttributeReference<InteractionNode> sourceRefAttribute;
   protected static AttributeReference<InteractionNode> targetRefAttribute;
 
-  public ConversationLinkImpl(ModelTypeInstanceContext instanceContext) {
+  public ConversationLinkImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ConversationLink.class, BPMN_ELEMENT_CONVERSATION_LINK)
@@ -56,7 +56,8 @@ public class ConversationLinkImpl extends BaseElementImpl implements Conversatio
             .instanceProvider(
                 new ModelTypeInstanceProvider<ConversationLink>() {
                   @Override
-                  public ConversationLink newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ConversationLink newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ConversationLinkImpl(instanceContext);
                   }
                 });
@@ -86,7 +87,7 @@ public class ConversationLinkImpl extends BaseElementImpl implements Conversatio
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -96,7 +97,7 @@ public class ConversationLinkImpl extends BaseElementImpl implements Conversatio
   }
 
   @Override
-  public void setSource(InteractionNode source) {
+  public void setSource(final InteractionNode source) {
     sourceRefAttribute.setReferenceTargetElement(this, source);
   }
 
@@ -106,7 +107,7 @@ public class ConversationLinkImpl extends BaseElementImpl implements Conversatio
   }
 
   @Override
-  public void setTarget(InteractionNode target) {
+  public void setTarget(final InteractionNode target) {
     targetRefAttribute.setReferenceTargetElement(this, target);
   }
 }

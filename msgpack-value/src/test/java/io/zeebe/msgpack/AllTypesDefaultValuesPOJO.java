@@ -17,7 +17,7 @@ import io.zeebe.msgpack.property.PackedProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
-public class AllTypesDefaultValuesPOJO extends UnpackedObject {
+public final class AllTypesDefaultValuesPOJO extends UnpackedObject {
 
   private final EnumProperty<POJOEnum> enumProp;
   private final LongProperty longProp;
@@ -28,13 +28,13 @@ public class AllTypesDefaultValuesPOJO extends UnpackedObject {
   private final ObjectProperty<POJONested> objectProp;
 
   public AllTypesDefaultValuesPOJO(
-      POJOEnum enumDefault,
-      long longDefault,
-      int intDefault,
-      String stringDefault,
-      DirectBuffer packedDefault,
-      DirectBuffer binaryDefault,
-      POJONested objectDefault) {
+      final POJOEnum enumDefault,
+      final long longDefault,
+      final int intDefault,
+      final String stringDefault,
+      final DirectBuffer packedDefault,
+      final DirectBuffer binaryDefault,
+      final POJONested objectDefault) {
     enumProp = new EnumProperty<>("enumProp", POJOEnum.class, enumDefault);
     longProp = new LongProperty("longProp", longDefault);
     intProp = new IntegerProperty("intProp", intDefault);

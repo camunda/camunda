@@ -11,7 +11,7 @@ import io.zeebe.msgpack.util.ByteUtil;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 
-public class JsonPathTokenizer {
+public final class JsonPathTokenizer {
 
   public static final StaticToken SYMBOL_ROOT_OBJECT =
       new StaticToken(JsonPathToken.ROOT_OBJECT, "$".getBytes(StandardCharsets.UTF_8));
@@ -49,7 +49,10 @@ public class JsonPathTokenizer {
   }
 
   public void tokenize(
-      DirectBuffer buffer, int offset, int length, JsonPathTokenVisitor tokenVisitor) {
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final JsonPathTokenVisitor tokenVisitor) {
     int position = offset;
     int lastStaticTokenEndPosition = position;
     tokenVisitor.visit(JsonPathToken.START_INPUT, buffer, offset, length);
@@ -98,10 +101,10 @@ public class JsonPathTokenizer {
   }
 
   protected static class StaticToken {
-    protected JsonPathToken token;
-    protected byte[] representation;
+    protected final JsonPathToken token;
+    protected final byte[] representation;
 
-    public StaticToken(JsonPathToken token, byte[] representation) {
+    public StaticToken(final JsonPathToken token, final byte[] representation) {
       this.token = token;
       this.representation = representation;
     }

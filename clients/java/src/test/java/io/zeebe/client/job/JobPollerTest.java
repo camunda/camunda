@@ -22,7 +22,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public class JobPollerTest extends ClientTest {
+public final class JobPollerTest extends ClientTest {
 
   @Test
   public void shouldSetRequestTimeout() {

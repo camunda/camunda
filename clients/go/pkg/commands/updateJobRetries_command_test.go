@@ -16,6 +16,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -37,7 +38,7 @@ func TestUpdateJobRetriesCommand(t *testing.T) {
 
 	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewUpdateJobRetriesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewUpdateJobRetriesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	response, err := command.JobKey(123).Send()
 
@@ -64,7 +65,7 @@ func TestUpdateJobRetriesCommandWithRetries(t *testing.T) {
 
 	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewUpdateJobRetriesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewUpdateJobRetriesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	response, err := command.JobKey(123).Retries(23).Send()
 

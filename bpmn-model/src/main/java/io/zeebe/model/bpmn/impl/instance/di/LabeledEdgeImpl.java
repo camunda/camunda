@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public abstract class LabeledEdgeImpl extends EdgeImpl implements LabeledEdge {
 
-  public LabeledEdgeImpl(ModelTypeInstanceContext instanceContext) {
+  public LabeledEdgeImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(LabeledEdge.class, DI_ELEMENT_LABELED_EDGE)

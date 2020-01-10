@@ -20,9 +20,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class ColumnFamilyTest {
+public final class ColumnFamilyTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
@@ -328,7 +328,7 @@ public class ColumnFamilyTest {
     assertThat(columnFamily.isEmpty()).isTrue();
   }
 
-  private void putKeyValuePair(int key, int value) {
+  private void putKeyValuePair(final int key, final int value) {
     this.key.wrapLong(key);
     this.value.wrapLong(value);
     columnFamily.put(this.key, this.value);

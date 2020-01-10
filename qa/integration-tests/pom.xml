@@ -8,13 +8,18 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>0.22.0-SNAPSHOT</version>
+    <version>0.23.0-SNAPSHOT</version>
   </parent>
 
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-broker</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-logstreams</artifactId>
     </dependency>
 
     <dependency>
@@ -55,11 +60,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-service-container</artifactId>
     </dependency>
 
     <dependency>

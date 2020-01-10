@@ -11,18 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.client.api.response.BrokerInfo;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-public class GossipClusteringTest {
+public final class GossipClusteringTest {
 
-  public Timeout testTimeout = Timeout.seconds(120);
-  public ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
-  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  public final Timeout testTimeout = Timeout.seconds(120);
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
+  public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =

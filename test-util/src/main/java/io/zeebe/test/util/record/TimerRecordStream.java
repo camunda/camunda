@@ -14,7 +14,8 @@ import io.zeebe.protocol.record.value.TimerRecordValue;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 
-public class TimerRecordStream extends ExporterRecordStream<TimerRecordValue, TimerRecordStream> {
+public final class TimerRecordStream
+    extends ExporterRecordStream<TimerRecordValue, TimerRecordStream> {
 
   public TimerRecordStream(final Stream<Record<TimerRecordValue>> wrappedStream) {
     super(wrappedStream);

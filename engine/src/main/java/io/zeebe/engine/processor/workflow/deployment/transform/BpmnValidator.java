@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
 import java.io.StringWriter;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
-public class BpmnValidator {
+public final class BpmnValidator {
 
   private final ValidationVisitor designTimeAspectValidator;
   private final ValidationVisitor runtimeAspectValidator;
@@ -27,7 +27,7 @@ public class BpmnValidator {
     runtimeAspectValidator = new ValidationVisitor(ZeebeRuntimeValidators.VALIDATORS);
   }
 
-  public String validate(BpmnModelInstance modelInstance) {
+  public String validate(final BpmnModelInstance modelInstance) {
     designTimeAspectValidator.reset();
     runtimeAspectValidator.reset();
 

@@ -18,9 +18,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TimerInstanceStateTest {
+public final class TimerInstanceStateTest {
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private TimerInstanceState state;
 

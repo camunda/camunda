@@ -49,11 +49,11 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
   protected static AttributeReference<ItemDefinition> itemSubjectRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
-  public DataStoreImpl(ModelTypeInstanceContext instanceContext) {
+  public DataStoreImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataStore.class, BPMN_ELEMENT_DATA_STORE)
@@ -62,7 +62,7 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
             .instanceProvider(
                 new ModelTypeInstanceProvider<DataStore>() {
                   @Override
-                  public DataStore newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataStore newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new DataStoreImpl(instanceContext);
                   }
                 });
@@ -93,7 +93,7 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -103,7 +103,7 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
   }
 
   @Override
-  public void setCapacity(Integer capacity) {
+  public void setCapacity(final Integer capacity) {
     capacityAttribute.setValue(this, capacity);
   }
 
@@ -113,7 +113,7 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
   }
 
   @Override
-  public void setUnlimited(Boolean isUnlimited) {
+  public void setUnlimited(final Boolean isUnlimited) {
     isUnlimitedAttribute.setValue(this, isUnlimited);
   }
 
@@ -123,7 +123,7 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
   }
 
   @Override
-  public void setItemSubject(ItemDefinition itemSubject) {
+  public void setItemSubject(final ItemDefinition itemSubject) {
     itemSubjectRefAttribute.setReferenceTargetElement(this, itemSubject);
   }
 
@@ -133,7 +133,7 @@ public class DataStoreImpl extends RootElementImpl implements DataStore {
   }
 
   @Override
-  public void setDataState(DataState dataState) {
+  public void setDataState(final DataState dataState) {
     dataStateChild.setChild(this, dataState);
   }
 }

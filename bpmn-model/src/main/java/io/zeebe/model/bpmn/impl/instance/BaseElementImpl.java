@@ -51,11 +51,11 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
   protected static ChildElementCollection<Documentation> documentationCollection;
   protected static ChildElement<ExtensionElements> extensionElementsChild;
 
-  public BaseElementImpl(ModelTypeInstanceContext instanceContext) {
+  public BaseElementImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder bpmnModelBuilder) {
+  public static void registerType(final ModelBuilder bpmnModelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         bpmnModelBuilder
             .defineType(BaseElement.class, BPMN_ELEMENT_BASE_ELEMENT)
@@ -79,7 +79,7 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
   }
 
   @Override
-  public void setId(String id) {
+  public void setId(final String id) {
     idAttribute.setValue(this, id);
   }
 
@@ -94,12 +94,12 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
   }
 
   @Override
-  public void setExtensionElements(ExtensionElements extensionElements) {
+  public void setExtensionElements(final ExtensionElements extensionElements) {
     extensionElementsChild.setChild(this, extensionElements);
   }
 
   @Override
-  public <T extends BpmnModelElementInstance> T getSingleExtensionElement(Class<T> type) {
+  public <T extends BpmnModelElementInstance> T getSingleExtensionElement(final Class<T> type) {
     final ExtensionElements extensionElements = getExtensionElements();
     if (extensionElements != null) {
       final Query<T> query = extensionElements.getElementsQuery().filterByType(type);
@@ -132,7 +132,7 @@ public abstract class BaseElementImpl extends BpmnModelElementInstanceImpl imple
 
   @SuppressWarnings("rawtypes")
   public Collection<Reference> getIncomingReferencesByType(
-      Class<? extends ModelElementInstance> referenceSourceTypeClass) {
+      final Class<? extends ModelElementInstance> referenceSourceTypeClass) {
     final Collection<Reference> references = new ArrayList<>();
     // we traverse all incoming references in reverse direction
     for (final Reference<?> reference : idAttribute.getIncomingReferences()) {

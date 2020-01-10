@@ -26,11 +26,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class ExporterManagerPartitionTest {
+public final class ExporterManagerPartitionTest {
 
   private static final int PARTITIONS = 3;
 
-  public EmbeddedBrokerRule brokerRule =
+  public final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
           brokerCfg -> {
             brokerCfg.getCluster().setPartitionsCount(PARTITIONS);
@@ -42,7 +42,7 @@ public class ExporterManagerPartitionTest {
             brokerCfg.getExporters().add(exporterCfg);
           });
 
-  public CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomix);
+  public final CommandApiRule clientRule = new CommandApiRule(brokerRule::getAtomix);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Test
@@ -51,15 +51,15 @@ public class ExporterManagerPartitionTest {
     IntStream.range(START_PARTITION_ID, START_PARTITION_ID + PARTITIONS).forEach(this::createJob);
 
     // then
-    assertThat(TestExporter.configureLatch.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(TestExporter.openLatch.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(TestExporter.exportLatch.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(TestExporter.CONFIGURE_LATCH.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(TestExporter.OPEN_LATCH.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(TestExporter.EXPORT_LATCH.await(5, TimeUnit.SECONDS)).isTrue();
 
     // when
     brokerRule.stopBroker();
 
     // then
-    assertThat(TestExporter.closeLatch.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(TestExporter.CLOSE_LATCH.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
   void createJob(final int partitionId) {
@@ -69,33 +69,33 @@ public class ExporterManagerPartitionTest {
   public static class TestExporter extends DebugLogExporter {
 
     // configure will be called initial for validation and after that for every partition
-    static CountDownLatch configureLatch = new CountDownLatch(PARTITIONS + 1);
-    static CountDownLatch openLatch = new CountDownLatch(PARTITIONS);
-    static CountDownLatch closeLatch = new CountDownLatch(PARTITIONS);
-    static CountDownLatch exportLatch = new CountDownLatch(PARTITIONS);
+    static final CountDownLatch CONFIGURE_LATCH = new CountDownLatch(PARTITIONS + 1);
+    static final CountDownLatch OPEN_LATCH = new CountDownLatch(PARTITIONS);
+    static final CountDownLatch CLOSE_LATCH = new CountDownLatch(PARTITIONS);
+    static final CountDownLatch EXPORT_LATCH = new CountDownLatch(PARTITIONS);
 
     @Override
     public void configure(final Context context) {
-      configureLatch.countDown();
+      CONFIGURE_LATCH.countDown();
       super.configure(context);
     }
 
     @Override
     public void open(final Controller controller) {
-      openLatch.countDown();
+      OPEN_LATCH.countDown();
       super.open(controller);
     }
 
     @Override
     public void close() {
-      closeLatch.countDown();
+      CLOSE_LATCH.countDown();
       super.close();
     }
 
     @Override
     public void export(final Record record) {
       if (record.getValueType() == ValueType.JOB && record.getIntent() == JobIntent.CREATED) {
-        exportLatch.countDown();
+        EXPORT_LATCH.countDown();
       }
 
       super.export(record);

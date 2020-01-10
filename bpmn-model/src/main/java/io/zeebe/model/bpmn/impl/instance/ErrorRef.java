@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ErrorRef extends BpmnModelElementInstanceImpl {
 
-  public ErrorRef(ModelTypeInstanceContext instanceContext) {
+  public ErrorRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ErrorRef.class, BPMN_ELEMENT_ERROR_REF)
@@ -43,7 +43,7 @@ public class ErrorRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ErrorRef>() {
                   @Override
-                  public ErrorRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ErrorRef newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ErrorRef(instanceContext);
                   }
                 });

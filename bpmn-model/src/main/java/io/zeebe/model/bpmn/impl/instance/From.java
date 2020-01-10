@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class From extends ExpressionImpl {
 
-  public From(ModelTypeInstanceContext instanceContext) {
+  public From(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(From.class, BPMN_ELEMENT_FROM)
@@ -44,7 +44,7 @@ public class From extends ExpressionImpl {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<From>() {
                   @Override
-                  public From newInstance(ModelTypeInstanceContext instanceContext) {
+                  public From newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new From(instanceContext);
                   }
                 });

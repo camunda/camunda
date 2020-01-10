@@ -34,11 +34,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 public class DataOutputAssociationImpl extends DataAssociationImpl
     implements DataOutputAssociation {
 
-  public DataOutputAssociationImpl(ModelTypeInstanceContext instanceContext) {
+  public DataOutputAssociationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataOutputAssociation.class, BPMN_ELEMENT_DATA_OUTPUT_ASSOCIATION)
@@ -48,7 +48,7 @@ public class DataOutputAssociationImpl extends DataAssociationImpl
                 new ModelTypeInstanceProvider<DataOutputAssociation>() {
                   @Override
                   public DataOutputAssociation newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new DataOutputAssociationImpl(instanceContext);
                   }
                 });

@@ -14,7 +14,7 @@ package io.zeebe.logstreams.impl.backpressure;
  *
  * <p>The constants should then be copied to EnvironmentConstants class.
  */
-public class BackpressureConstants {
+public final class BackpressureConstants {
 
   // BACK PRESSURE ON LOG APPENDER
   public static final String ENV_BP_APPENDER = "ZEEBE_BP_APPENDER";

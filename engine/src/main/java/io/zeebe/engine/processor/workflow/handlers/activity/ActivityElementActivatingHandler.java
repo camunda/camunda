@@ -20,27 +20,27 @@ public class ActivityElementActivatingHandler<T extends ExecutableActivity>
     extends ElementActivatingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 
-  public ActivityElementActivatingHandler(CatchEventSubscriber catchEventSubscriber) {
+  public ActivityElementActivatingHandler(final CatchEventSubscriber catchEventSubscriber) {
     super();
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public ActivityElementActivatingHandler(
-      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
     super(nextState);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public ActivityElementActivatingHandler(
-      WorkflowInstanceIntent nextState,
-      IOMappingHelper ioMappingHelper,
-      CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState,
+      final IOMappingHelper ioMappingHelper,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (!super.handleState(context)) {
       return false;
     }

@@ -12,7 +12,7 @@ import io.zeebe.util.sched.clock.ActorClock;
 public interface TaskScheduler {
   ActorTask getNextTask(ActorClock now);
 
-  default void onTaskReleased(ActorTask task) {
+  default void onTaskReleased(final ActorTask task) {
     // no-op
   }
 }

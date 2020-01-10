@@ -27,15 +27,15 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 // FIXME: rewrite tests now that leader election is not controllable
-public class BrokerLeaderChangeTest {
+public final class BrokerLeaderChangeTest {
   public static final String NULL_VARIABLES = null;
   public static final String JOB_TYPE = "testTask";
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  public Timeout testTimeout = Timeout.seconds(120);
-  public ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
-  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  public final Timeout testTimeout = Timeout.seconds(120);
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
+  public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -105,7 +105,7 @@ public class BrokerLeaderChangeTest {
     void waitForJobCompletion() {
       try {
         latch.await(10, TimeUnit.SECONDS);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new RuntimeException(e);
       }
       assertJobCompleted();

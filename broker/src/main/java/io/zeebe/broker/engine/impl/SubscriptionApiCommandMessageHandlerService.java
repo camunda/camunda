@@ -8,71 +8,65 @@
 package io.zeebe.broker.engine.impl;
 
 import io.atomix.core.Atomix;
-import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class SubscriptionApiCommandMessageHandlerService extends Actor
-    implements Service<SubscriptionCommandMessageHandler> {
+public final class SubscriptionApiCommandMessageHandlerService extends Actor
+    implements PartitionListener {
 
-  private final Injector<Atomix> atomixInjector = new Injector<>();
-  private final Int2ObjectHashMap<LogStream> leaderPartitions = new Int2ObjectHashMap<>();
-  private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
-      ServiceGroupReference.<Partition>create()
-          .onAdd(this::addPartition)
-          .onRemove(this::removePartition)
-          .build();
-  private SubscriptionCommandMessageHandler messageHandler;
-  private Atomix atomix;
+  private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions =
+      new Int2ObjectHashMap<>();
+  private final Atomix atomix;
+  private final BrokerInfo localBroker;
+
+  public SubscriptionApiCommandMessageHandlerService(
+      final BrokerInfo localBroker, final Atomix atomix) {
+    this.localBroker = localBroker;
+    this.atomix = atomix;
+  }
 
   @Override
   public String getName() {
-    return "subscription-api";
+    return actorNamePattern(localBroker.getNodeId(), "SubscriptionApi");
+  }
+
+  @Override
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
+    actor.submit(() -> leaderPartitions.remove(partitionId));
+  }
+
+  @Override
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
+    actor.submit(
+        () -> {
+          logStream
+              .newLogStreamRecordWriter()
+              .onComplete(
+                  (recordWriter, error) -> {
+                    if (error == null) {
+                      leaderPartitions.put(partitionId, recordWriter);
+                    } else {
+                      // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                      Loggers.SYSTEM_LOGGER.error(
+                          "Unexpected error on retrieving write buffer for partition {}",
+                          partitionId,
+                          error);
+                    }
+                  });
+        });
   }
 
   @Override
   protected void onActorStarting() {
-    messageHandler = new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
+    final SubscriptionCommandMessageHandler messageHandler =
+        new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
     atomix.getCommunicationService().subscribe("subscription", messageHandler);
-  }
-
-  @Override
-  public void start(ServiceStartContext context) {
-    atomix = atomixInjector.getValue();
-    context.async(context.getScheduler().submitActor(this));
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(actor.close());
-  }
-
-  @Override
-  public SubscriptionCommandMessageHandler get() {
-    return messageHandler;
-  }
-
-  private void addPartition(final ServiceName<Partition> sericeName, final Partition partition) {
-    actor.submit(() -> leaderPartitions.put(partition.getPartitionId(), partition.getLogStream()));
-  }
-
-  private void removePartition(final ServiceName<Partition> sericeName, final Partition partition) {
-    actor.submit(() -> leaderPartitions.remove(partition.getPartitionId()));
-  }
-
-  public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {
-    return leaderPartitionsGroupReference;
-  }
-
-  public Injector<Atomix> getAtomixInjector() {
-    return atomixInjector;
   }
 }

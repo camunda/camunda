@@ -30,17 +30,18 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
   private final Class<ColumnFamilyType> columnFamilyTypeClass;
 
-  private ZeebeRocksDbFactory(Class<ColumnFamilyType> columnFamilyTypeClass) {
+  private ZeebeRocksDbFactory(final Class<ColumnFamilyType> columnFamilyTypeClass) {
     this.columnFamilyTypeClass = columnFamilyTypeClass;
   }
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
-      ZeebeDbFactory<ColumnFamilyType> newFactory(Class<ColumnFamilyType> columnFamilyTypeClass) {
+      ZeebeDbFactory<ColumnFamilyType> newFactory(
+          final Class<ColumnFamilyType> columnFamilyTypeClass) {
     return new ZeebeRocksDbFactory(columnFamilyTypeClass);
   }
 
   @Override
-  public ZeebeTransactionDb<ColumnFamilyType> createDb(File pathName) {
+  public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
     return open(
         pathName,
         Arrays.stream(columnFamilyTypeClass.getEnumConstants())
@@ -49,7 +50,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   protected ZeebeTransactionDb<ColumnFamilyType> open(
-      final File dbDirectory, List<byte[]> columnFamilyNames) {
+      final File dbDirectory, final List<byte[]> columnFamilyNames) {
 
     final ZeebeTransactionDb<ColumnFamilyType> db;
     try {
@@ -84,11 +85,11 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   private List<ColumnFamilyDescriptor> createFamilyDescriptors(
-      List<byte[]> columnFamilyNames, ColumnFamilyOptions columnFamilyOptions) {
+      final List<byte[]> columnFamilyNames, final ColumnFamilyOptions columnFamilyOptions) {
     final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
 
     if (columnFamilyNames != null && columnFamilyNames.size() > 0) {
-      for (byte[] name : columnFamilyNames) {
+      for (final byte[] name : columnFamilyNames) {
         final ColumnFamilyDescriptor columnFamilyDescriptor =
             new ColumnFamilyDescriptor(name, columnFamilyOptions);
         columnFamilyDescriptors.add(columnFamilyDescriptor);

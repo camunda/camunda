@@ -45,11 +45,11 @@ public class RelationshipImpl extends BaseElementImpl implements Relationship {
   protected static ChildElementCollection<Source> sourceCollection;
   protected static ChildElementCollection<Target> targetCollection;
 
-  public RelationshipImpl(ModelTypeInstanceContext instanceContext) {
+  public RelationshipImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Relationship.class, BPMN_ELEMENT_RELATIONSHIP)
@@ -58,7 +58,7 @@ public class RelationshipImpl extends BaseElementImpl implements Relationship {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Relationship>() {
                   @Override
-                  public Relationship newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Relationship newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new RelationshipImpl(instanceContext);
                   }
                 });
@@ -83,7 +83,7 @@ public class RelationshipImpl extends BaseElementImpl implements Relationship {
   }
 
   @Override
-  public void setType(String type) {
+  public void setType(final String type) {
     typeAttribute.setValue(this, type);
   }
 
@@ -93,7 +93,7 @@ public class RelationshipImpl extends BaseElementImpl implements Relationship {
   }
 
   @Override
-  public void setDirection(RelationshipDirection direction) {
+  public void setDirection(final RelationshipDirection direction) {
     directionAttribute.setValue(this, direction);
   }
 

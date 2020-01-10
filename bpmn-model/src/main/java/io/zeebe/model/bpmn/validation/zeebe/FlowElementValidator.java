@@ -67,7 +67,8 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
   }
 
   @Override
-  public void validate(FlowElement element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final FlowElement element, final ValidationResultCollector validationResultCollector) {
     final Class<?> elementType = element.getElementType().getInstanceType();
 
     if (!SUPPORTED_ELEMENT_TYPES.contains(elementType)

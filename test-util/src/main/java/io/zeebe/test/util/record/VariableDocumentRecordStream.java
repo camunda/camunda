@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class VariableDocumentRecordStream
+public final class VariableDocumentRecordStream
     extends ExporterRecordStream<VariableDocumentRecordValue, VariableDocumentRecordStream> {
 
   public VariableDocumentRecordStream(
@@ -29,25 +29,25 @@ public class VariableDocumentRecordStream
     return new VariableDocumentRecordStream(wrappedStream);
   }
 
-  public VariableDocumentRecordStream withScopeKey(long scopeKey) {
+  public VariableDocumentRecordStream withScopeKey(final long scopeKey) {
     return valueFilter(v -> v.getScopeKey() == scopeKey);
   }
 
   public VariableDocumentRecordStream withUpdateSemantics(
-      VariableDocumentUpdateSemantic updateSemantics) {
+      final VariableDocumentUpdateSemantic updateSemantics) {
     return valueFilter(v -> v.getUpdateSemantics() == updateSemantics);
   }
 
-  public VariableDocumentRecordStream withVariables(Map<String, Object> variables) {
+  public VariableDocumentRecordStream withVariables(final Map<String, Object> variables) {
     return valueFilter(v -> v.getVariables().equals(variables));
   }
 
-  public VariableDocumentRecordStream withVariables(Map.Entry<String, Object>... entries) {
+  public VariableDocumentRecordStream withVariables(final Map.Entry<String, Object>... entries) {
     return withVariables(Maps.of(entries));
   }
 
   public VariableDocumentRecordStream withVariables(
-      Predicate<Map<String, Object>> variablesMatcher) {
+      final Predicate<Map<String, Object>> variablesMatcher) {
     return valueFilter(v -> variablesMatcher.test(v.getVariables()));
   }
 }

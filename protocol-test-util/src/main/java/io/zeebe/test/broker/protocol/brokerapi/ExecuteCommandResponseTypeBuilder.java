@@ -11,14 +11,15 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class ExecuteCommandResponseTypeBuilder extends ResponseTypeBuilder<ExecuteCommandRequest> {
+public final class ExecuteCommandResponseTypeBuilder
+    extends ResponseTypeBuilder<ExecuteCommandRequest> {
 
-  protected MsgPackHelper msgPackConverter;
+  protected final MsgPackHelper msgPackConverter;
 
   public ExecuteCommandResponseTypeBuilder(
-      Consumer<ResponseStub<ExecuteCommandRequest>> stubConsumer,
-      Predicate<ExecuteCommandRequest> activationFunction,
-      MsgPackHelper msgPackConverter) {
+      final Consumer<ResponseStub<ExecuteCommandRequest>> stubConsumer,
+      final Predicate<ExecuteCommandRequest> activationFunction,
+      final MsgPackHelper msgPackConverter) {
     super(stubConsumer, activationFunction);
     this.msgPackConverter = msgPackConverter;
   }

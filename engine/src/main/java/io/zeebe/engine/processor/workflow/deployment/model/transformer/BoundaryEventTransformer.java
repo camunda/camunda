@@ -15,14 +15,14 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 
-public class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
+public final class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
   @Override
   public Class<BoundaryEvent> getType() {
     return BoundaryEvent.class;
   }
 
   @Override
-  public void transform(BoundaryEvent event, TransformContext context) {
+  public void transform(final BoundaryEvent event, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableBoundaryEvent element =
         workflow.getElementById(event.getId(), ExecutableBoundaryEvent.class);
@@ -32,7 +32,9 @@ public class BoundaryEventTransformer implements ModelElementTransformer<Boundar
   }
 
   private void attachToActivity(
-      BoundaryEvent event, ExecutableWorkflow workflow, ExecutableBoundaryEvent element) {
+      final BoundaryEvent event,
+      final ExecutableWorkflow workflow,
+      final ExecutableBoundaryEvent element) {
     final Activity attachedToActivity = event.getAttachedTo();
     final ExecutableActivity attachedToElement =
         workflow.getElementById(attachedToActivity.getId(), ExecutableActivity.class);

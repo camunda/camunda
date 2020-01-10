@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -69,7 +70,7 @@ func TestTopologyCommand(t *testing.T) {
 
 	client.EXPECT().Topology(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewTopologyCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewTopologyCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	response, err := command.Send()
 

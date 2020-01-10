@@ -31,7 +31,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
     extends AbstractCatchEventBuilder<B, BoundaryEvent> {
 
   protected AbstractBoundaryEventBuilder(
-      BpmnModelInstance modelInstance, BoundaryEvent element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final BoundaryEvent element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -41,7 +41,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
    * @param cancelActivity true if the boundary event cancels the activiy, false otherwise
    * @return the builder object
    */
-  public B cancelActivity(Boolean cancelActivity) {
+  public B cancelActivity(final Boolean cancelActivity) {
     element.setCancelActivity(cancelActivity);
 
     return myself;
@@ -66,7 +66,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
    * @param errorCode the code of the error
    * @return the builder object
    */
-  public B error(String errorCode) {
+  public B error(final String errorCode) {
     final ErrorEventDefinition errorEventDefinition = createErrorEventDefinition(errorCode);
     element.getEventDefinitions().add(errorEventDefinition);
 
@@ -79,7 +79,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
    *
    * @return the error event definition builder object
    */
-  public ErrorEventDefinitionBuilder errorEventDefinition(String id) {
+  public ErrorEventDefinitionBuilder errorEventDefinition(final String id) {
     final ErrorEventDefinition errorEventDefinition = createEmptyErrorEventDefinition();
     if (id != null) {
       errorEventDefinition.setId(id);
@@ -120,7 +120,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
    * @param escalationCode the code of the escalation
    * @return the builder object
    */
-  public B escalation(String escalationCode) {
+  public B escalation(final String escalationCode) {
     final EscalationEventDefinition escalationEventDefinition =
         createEscalationEventDefinition(escalationCode);
     element.getEventDefinitions().add(escalationEventDefinition);
@@ -129,7 +129,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
   }
 
   @Override
-  protected void setCoordinates(BpmnShape shape) {
+  protected void setCoordinates(final BpmnShape shape) {
     final BpmnShape source = findBpmnShape(element);
     final Bounds shapeBounds = shape.getBounds();
 
@@ -155,7 +155,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
 
   @Override
   protected void setWaypointsWithSourceAndTarget(
-      BpmnEdge edge, FlowNode edgeSource, FlowNode edgeTarget) {
+      final BpmnEdge edge, final FlowNode edgeSource, final FlowNode edgeTarget) {
     final BpmnShape source = findBpmnShape(edgeSource);
     final BpmnShape target = findBpmnShape(edgeTarget);
 

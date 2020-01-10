@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class HumanPerformerImpl extends PerformerImpl implements HumanPerformer {
 
-  public HumanPerformerImpl(ModelTypeInstanceContext instanceContext) {
+  public HumanPerformerImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(HumanPerformer.class, BPMN_ELEMENT_HUMAN_PERFORMER)
@@ -45,7 +45,8 @@ public class HumanPerformerImpl extends PerformerImpl implements HumanPerformer 
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<HumanPerformer>() {
                   @Override
-                  public HumanPerformer newInstance(ModelTypeInstanceContext instanceContext) {
+                  public HumanPerformer newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new HumanPerformerImpl(instanceContext);
                   }
                 });

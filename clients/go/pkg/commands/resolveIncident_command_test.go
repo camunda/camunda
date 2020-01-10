@@ -16,6 +16,7 @@
 package commands
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -37,7 +38,7 @@ func TestResolveIncidentCommand(t *testing.T) {
 
 	client.EXPECT().ResolveIncident(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewResolveIncidentCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewResolveIncidentCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	response, err := command.IncidentKey(123).Send()
 

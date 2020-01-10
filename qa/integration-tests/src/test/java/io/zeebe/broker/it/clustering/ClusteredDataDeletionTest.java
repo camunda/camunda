@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
-
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
@@ -17,14 +15,11 @@ import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.test.util.TestUtil;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +37,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ClusteredDataDeletionTest {
+public final class ClusteredDataDeletionTest {
   private static final int SNAPSHOT_PERIOD_SECONDS = 30;
   private static final int MAX_SNAPSHOTS = 1;
   @Parameter public Consumer<BrokerCfg> configurator;
@@ -159,7 +154,7 @@ public class ClusteredDataDeletionTest {
   }
 
   private Map<Integer, Integer> takeSnapshotAndWaitForReplication(
-      final List<Broker> brokers, ClusteringRule clusteringRule) {
+      final List<Broker> brokers, final ClusteringRule clusteringRule) {
     final Map<Integer, Integer> segmentCounts = new HashMap<>();
     brokers.forEach(
         b -> {
@@ -168,42 +163,26 @@ public class ClusteredDataDeletionTest {
         });
 
     clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
-    brokers.forEach(this::waitForValidSnapshotAtBroker);
+    brokers.forEach(clusteringRule::waitForValidSnapshotAtBroker);
     return segmentCounts;
   }
 
-  private File getSnapshotsDirectory(Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
-  }
-
-  private int getSegmentsCount(Broker broker) {
+  private int getSegmentsCount(final Broker broker) {
     return getSegments(broker).size();
   }
 
-  private Collection<Path> getSegments(Broker broker) {
+  private Collection<Path> getSegments(final Broker broker) {
     try {
-      return Files.list(getSegmentsDirectory(broker))
+      return Files.list(clusteringRule.getSegmentsDirectory(broker))
           .filter(path -> path.toString().endsWith(".log"))
           .collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  private Path getSegmentsDirectory(Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return Paths.get(dataDir).resolve("raft-atomix/partitions/1");
-  }
-
-  private void waitForValidSnapshotAtBroker(Broker broker) {
-    final File snapshotsDir = getSnapshotsDirectory(broker);
-
-    waitUntil(() -> Arrays.stream(snapshotsDir.listFiles()).count() > 0);
-  }
-
   public static class TestExporter implements Exporter {
-    public static List<Record> records = new CopyOnWriteArrayList<>();
+    static final List<Record> RECORDS = new CopyOnWriteArrayList<>();
     private Controller controller;
 
     @Override
@@ -213,7 +192,7 @@ public class ClusteredDataDeletionTest {
 
     @Override
     public void export(final Record record) {
-      records.add(record);
+      RECORDS.add(record);
       controller.updateLastExportedRecordPosition(record.getPosition());
     }
   }

@@ -4,7 +4,7 @@
   <name>Zeebe BOM</name>
   <groupId>io.zeebe</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>0.22.0-SNAPSHOT</version>
+  <version>0.23.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
@@ -25,7 +25,7 @@
     <nexus.release.repository>https://app.camunda.com/nexus/content/repositories/zeebe-io/
     </nexus.release.repository>
 
-    <version.netty>4.1.43.Final</version.netty>
+    <version.netty>4.1.44.Final</version.netty>
 
     <version.java>11</version.java>
     <plugin.version.javadoc>3.1.1</plugin.version.javadoc>
@@ -108,12 +108,6 @@
       <dependency>
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-protocol-impl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-service-container</artifactId>
         <version>${project.version}</version>
       </dependency>
 

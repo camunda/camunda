@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public class CallActivityActivatingHandler
+public final class CallActivityActivatingHandler
     extends ActivityElementActivatingHandler<ExecutableCallActivity> {
 
   private final KeyGenerator keyGenerator;
@@ -33,13 +33,13 @@ public class CallActivityActivatingHandler
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
 
   public CallActivityActivatingHandler(
-      CatchEventSubscriber catchEventSubscriber, KeyGenerator keyGenerator) {
+      final CatchEventSubscriber catchEventSubscriber, final KeyGenerator keyGenerator) {
     super(null, catchEventSubscriber);
     this.keyGenerator = keyGenerator;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<ExecutableCallActivity> context) {
+  protected boolean handleState(final BpmnStepContext<ExecutableCallActivity> context) {
     if (!super.handleState(context)) {
       return false;
     }
@@ -63,7 +63,8 @@ public class CallActivityActivatingHandler
     return true;
   }
 
-  private Optional<DirectBuffer> getProcessId(BpmnStepContext<ExecutableCallActivity> context) {
+  private Optional<DirectBuffer> getProcessId(
+      final BpmnStepContext<ExecutableCallActivity> context) {
     final var callActivity = context.getElement();
 
     return callActivity
@@ -76,7 +77,8 @@ public class CallActivityActivatingHandler
   }
 
   private DirectBuffer readProcessId(
-      JsonPathQuery processIdExpression, BpmnStepContext<ExecutableCallActivity> context) {
+      final JsonPathQuery processIdExpression,
+      final BpmnStepContext<ExecutableCallActivity> context) {
 
     final var variablesState = context.getElementInstanceState().getVariablesState();
     final var variables =

@@ -34,7 +34,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class BpmnElementTypeTest {
+public final class BpmnElementTypeTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final List<BpmnElementTypeScenario> SCENARIOS =

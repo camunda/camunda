@@ -13,24 +13,24 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 
-public class BlackList {
+public final class BlackList {
 
   private final ColumnFamily<DbLong, DbNil> blackListColumnFamily;
   private final DbLong workflowInstanceKey;
 
-  public BlackList(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public BlackList(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     workflowInstanceKey = new DbLong();
     blackListColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.BLACKLIST, dbContext, workflowInstanceKey, DbNil.INSTANCE);
   }
 
-  public void blacklist(long key) {
+  public void blacklist(final long key) {
     workflowInstanceKey.wrapLong(key);
     blackListColumnFamily.put(workflowInstanceKey, DbNil.INSTANCE);
   }
 
-  public boolean isOnBlacklist(long key) {
+  public boolean isOnBlacklist(final long key) {
     workflowInstanceKey.wrapLong(key);
     return blackListColumnFamily.exists(workflowInstanceKey);
   }

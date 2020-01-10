@@ -11,7 +11,7 @@ import io.atomix.protocols.raft.storage.snapshot.SnapshotChunk;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class DbSnapshotChunk implements SnapshotChunk {
+public final class DbSnapshotChunk implements SnapshotChunk {
   private final ByteBuffer id;
   private final ByteBuffer data;
 

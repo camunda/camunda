@@ -12,7 +12,7 @@ import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
 
-public class PendingMessageSubscriptionChecker implements Runnable {
+public final class PendingMessageSubscriptionChecker implements Runnable {
   private final SubscriptionCommandSender commandSender;
   private final MessageSubscriptionState subscriptionState;
 
@@ -41,7 +41,8 @@ public class PendingMessageSubscriptionChecker implements Runnable {
             subscription.getBpmnProcessId(),
             subscription.getMessageName(),
             subscription.getMessageKey(),
-            subscription.getMessageVariables());
+            subscription.getMessageVariables(),
+            subscription.getCorrelationKey());
 
     if (success) {
       subscriptionState.updateSentTimeInTransaction(subscription, ActorClock.currentTimeMillis());

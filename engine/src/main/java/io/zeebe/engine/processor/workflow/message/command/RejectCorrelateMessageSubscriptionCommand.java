@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RejectCorrelateMessageSubscriptionCommand
+public final class RejectCorrelateMessageSubscriptionCommand
     extends SbeBufferWriterReader<
         RejectCorrelateMessageSubscriptionEncoder, RejectCorrelateMessageSubscriptionDecoder> {
 
@@ -60,7 +60,7 @@ public class RejectCorrelateMessageSubscriptionCommand
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     super.write(buffer, offset);
 
     encoder
@@ -73,7 +73,7 @@ public class RejectCorrelateMessageSubscriptionCommand
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
@@ -89,7 +89,7 @@ public class RejectCorrelateMessageSubscriptionCommand
     return subscriptionPartitionId;
   }
 
-  public void setSubscriptionPartitionId(int subscriptionPartitionId) {
+  public void setSubscriptionPartitionId(final int subscriptionPartitionId) {
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
@@ -97,7 +97,7 @@ public class RejectCorrelateMessageSubscriptionCommand
     return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 

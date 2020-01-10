@@ -12,18 +12,19 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCat
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class IntermediateCatchEventElementActivatedHandler<T extends ExecutableCatchEventElement>
+public final class IntermediateCatchEventElementActivatedHandler<
+        T extends ExecutableCatchEventElement>
     extends ElementActivatedHandler<T> {
   public IntermediateCatchEventElementActivatedHandler() {
     this(null);
   }
 
-  public IntermediateCatchEventElementActivatedHandler(WorkflowInstanceIntent nextState) {
+  public IntermediateCatchEventElementActivatedHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       if (context.getElement().isNone()) {
         transitionTo(context, WorkflowInstanceIntent.ELEMENT_COMPLETING);

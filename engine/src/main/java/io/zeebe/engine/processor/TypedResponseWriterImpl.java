@@ -16,22 +16,23 @@ import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
+public final class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
 
-  protected CommandResponseWriter writer;
-  protected int partitionId;
+  private final CommandResponseWriter writer;
+  private final int partitionId;
   private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
   private long requestId;
   private int requestStreamId;
   private boolean isResponseStaged;
 
-  public TypedResponseWriterImpl(CommandResponseWriter writer, int partitionId) {
+  public TypedResponseWriterImpl(final CommandResponseWriter writer, final int partitionId) {
     this.writer = writer;
     this.partitionId = partitionId;
   }
 
   @Override
-  public void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason) {
+  public void writeRejectionOnCommand(
+      final TypedRecord<?> command, final RejectionType type, final String reason) {
     final byte[] bytes = reason.getBytes(StandardCharsets.UTF_8);
     stringWrapper.wrap(bytes);
 
@@ -48,7 +49,7 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
   }
 
   @Override
-  public void writeEvent(TypedRecord<?> event) {
+  public void writeEvent(final TypedRecord<?> event) {
     stringWrapper.wrap(0, 0);
 
     stage(
@@ -65,7 +66,10 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
 
   @Override
   public void writeEventOnCommand(
-      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command) {
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final TypedRecord<?> command) {
     stringWrapper.wrap(0, 0);
 
     stage(
@@ -82,12 +86,12 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
 
   @Override
   public void writeResponse(
-      long eventKey,
-      Intent eventState,
-      UnpackedObject eventValue,
-      ValueType valueType,
-      long requestId,
-      int requestStreamId) {
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final ValueType valueType,
+      final long requestId,
+      final int requestStreamId) {
     stringWrapper.wrap(0, 0);
 
     stage(
@@ -102,24 +106,24 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         eventValue);
   }
 
+  @Override
   public boolean flush() {
     if (isResponseStaged) {
-      return writer.tryWriteResponse(requestStreamId, requestId);
-    } else {
-      return true;
+      writer.tryWriteResponse(requestStreamId, requestId);
     }
+    return true;
   }
 
   private void stage(
-      RecordType type,
-      Intent intent,
-      long key,
-      RejectionType rejectionType,
-      DirectBuffer rejectionReason,
-      ValueType valueType,
-      long requestId,
-      int requestStreamId,
-      UnpackedObject value) {
+      final RecordType type,
+      final Intent intent,
+      final long key,
+      final RejectionType rejectionType,
+      final DirectBuffer rejectionReason,
+      final ValueType valueType,
+      final long requestId,
+      final int requestStreamId,
+      final UnpackedObject value) {
     writer
         .partitionId(partitionId)
         .key(key)

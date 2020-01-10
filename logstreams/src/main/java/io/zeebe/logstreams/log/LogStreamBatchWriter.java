@@ -23,6 +23,8 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
   /** Returns the builder to add a new log entry to the batch. */
   LogEntryBuilder event();
 
+  int getMaxFragmentLength();
+
   /** Discard all non-written batch data. */
   void reset();
 

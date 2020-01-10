@@ -41,12 +41,8 @@ type SetVariablesCommandStep2 interface {
 }
 
 type SetVariablesCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.SetVariablesRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.SetVariablesRequest
 }
 
 func (cmd *SetVariablesCommand) ElementInstanceKey(elementInstanceKey int64) SetVariablesCommandStep2 {
@@ -101,20 +97,21 @@ func (cmd *SetVariablesCommand) Send() (*pb.SetVariablesResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	response, err := cmd.gateway.SetVariables(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
+	response, err := cmd.gateway.SetVariables(ctx, &cmd.request)
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewSetVariablesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) SetVariablesCommandStep1 {
+func NewSetVariablesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) SetVariablesCommandStep1 {
 	return &SetVariablesCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.SetVariablesRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			SerializerMixin: utils.NewJsonStringSerializer(),
+			gateway:         gateway,
+			requestTimeout:  requestTimeout,
+			retryPredicate:  retryPredicate,
+		},
 	}
 }

@@ -43,11 +43,11 @@ public class ResourceParameterImpl extends BaseElementImpl implements ResourcePa
   protected static AttributeReference<ItemDefinition> typeAttribute;
   protected static Attribute<Boolean> isRequiredAttribute;
 
-  public ResourceParameterImpl(ModelTypeInstanceContext instanceContext) {
+  public ResourceParameterImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ResourceParameter.class, BPMN_ELEMENT_RESOURCE_PARAMETER)
@@ -56,7 +56,8 @@ public class ResourceParameterImpl extends BaseElementImpl implements ResourcePa
             .instanceProvider(
                 new ModelTypeInstanceProvider<ResourceParameter>() {
                   @Override
-                  public ResourceParameter newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ResourceParameter newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ResourceParameterImpl(instanceContext);
                   }
                 });
@@ -80,7 +81,7 @@ public class ResourceParameterImpl extends BaseElementImpl implements ResourcePa
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -90,7 +91,7 @@ public class ResourceParameterImpl extends BaseElementImpl implements ResourcePa
   }
 
   @Override
-  public void setType(ItemDefinition type) {
+  public void setType(final ItemDefinition type) {
     typeAttribute.setReferenceTargetElement(this, type);
   }
 
@@ -100,7 +101,7 @@ public class ResourceParameterImpl extends BaseElementImpl implements ResourcePa
   }
 
   @Override
-  public void setRequired(boolean isRequired) {
+  public void setRequired(final boolean isRequired) {
     isRequiredAttribute.setValue(this, isRequired);
   }
 }

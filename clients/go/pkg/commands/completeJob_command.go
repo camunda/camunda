@@ -41,12 +41,8 @@ type CompleteJobCommandStep2 interface {
 }
 
 type CompleteJobCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.CompleteJobRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.CompleteJobRequest
 }
 
 func (cmd *CompleteJobCommand) JobKey(jobKey int64) CompleteJobCommandStep2 {
@@ -96,20 +92,21 @@ func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	response, err := cmd.gateway.CompleteJob(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
+	response, err := cmd.gateway.CompleteJob(ctx, &cmd.request)
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CompleteJobCommandStep1 {
+func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.CompleteJobRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			SerializerMixin: utils.NewJsonStringSerializer(),
+			gateway:         gateway,
+			requestTimeout:  requestTimeout,
+			retryPredicate:  retryPredicate,
+		},
 	}
 }

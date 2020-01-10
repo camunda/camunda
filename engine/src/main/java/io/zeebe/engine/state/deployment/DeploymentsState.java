@@ -16,13 +16,13 @@ import io.zeebe.engine.state.ZbColumnFamilies;
 import java.util.function.ObjLongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DeploymentsState {
+public final class DeploymentsState {
   private final PendingDeploymentDistribution pendingDeploymentDistribution;
 
   private final DbLong deploymentKey;
   private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
-  public DeploymentsState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public DeploymentsState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
 
     deploymentKey = new DbLong();
     pendingDeploymentDistribution =

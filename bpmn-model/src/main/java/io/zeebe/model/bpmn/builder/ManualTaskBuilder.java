@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.ManualTask;
 /** @author Sebastian Menski */
 public class ManualTaskBuilder extends AbstractManualTaskBuilder<ManualTaskBuilder> {
 
-  public ManualTaskBuilder(BpmnModelInstance modelInstance, ManualTask element) {
+  public ManualTaskBuilder(final BpmnModelInstance modelInstance, final ManualTask element) {
     super(modelInstance, element, ManualTaskBuilder.class);
   }
 }

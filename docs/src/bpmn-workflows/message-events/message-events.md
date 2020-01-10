@@ -16,7 +16,9 @@ When the message subscription is created then a message can be correlated to the
 
 Messages are **not** correlated if they were published before the workflow was deployed. Or, if a new version of the workflow is deployed which doesn't have a proper start event. 
 
-The `correlationKey` of a published message has no effect on the correlation to a message start event. It only affects at which partition the workflow instance is created.
+The `correlationKey` of a published message can be used to control the workflow instance creation. If an instance of this workflow is active (independently from its version) and it was triggered by a message with the same `correlationKey` then the message is **not** correlated and no new instance is created. When the active workflow instance is ended (completed or terminated) and a message with the same `correlationKey` and a matching message name is buffered (i.e. TTL > 0) then this message is correlated and a new instance of the latest version of the workflow is created.
+
+If the `correlationKey` of a message is empty then it will always create a new workflow instance and does not check if an instance is already active.
 
 ## Intermediate Message Catch Events
 

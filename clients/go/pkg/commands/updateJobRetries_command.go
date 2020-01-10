@@ -40,14 +40,8 @@ type UpdateJobRetriesCommandStep2 interface {
 }
 
 type UpdateJobRetriesCommand struct {
-	request        *pb.UpdateJobRetriesRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
-}
-
-func (cmd *UpdateJobRetriesCommand) GetRequest() *pb.UpdateJobRetriesRequest {
-	return cmd.request
+	Command
+	request pb.UpdateJobRetriesRequest
 }
 
 func (cmd *UpdateJobRetriesCommand) JobKey(jobKey int64) UpdateJobRetriesCommandStep2 {
@@ -64,21 +58,23 @@ func (cmd *UpdateJobRetriesCommand) Send() (*pb.UpdateJobRetriesResponse, error)
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	response, err := cmd.gateway.UpdateJobRetries(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
+	response, err := cmd.gateway.UpdateJobRetries(ctx, &cmd.request)
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) UpdateJobRetriesCommandStep1 {
+func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) UpdateJobRetriesCommandStep1 {
 	return &UpdateJobRetriesCommand{
-		request: &pb.UpdateJobRetriesRequest{
+		request: pb.UpdateJobRetriesRequest{
 			Retries: DefaultJobRetries,
 		},
-		gateway:        gateway,
-		requestTimeout: requestTimeout,
-		retryPredicate: retryPredicate,
+		Command: Command{
+			gateway:        gateway,
+			requestTimeout: requestTimeout,
+			retryPredicate: retryPredicate,
+		},
 	}
 }

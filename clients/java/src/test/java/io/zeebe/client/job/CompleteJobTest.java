@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
 
-public class CompleteJobTest extends ClientTest {
+public final class CompleteJobTest extends ClientTest {
 
   @Test
   public void shouldCompleteJob() {
@@ -134,7 +134,7 @@ public class CompleteJobTest extends ClientTest {
       return key;
     }
 
-    public void setKey(String key) {
+    public void setKey(final String key) {
       this.key = key;
     }
   }

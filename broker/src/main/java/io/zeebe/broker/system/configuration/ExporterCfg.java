@@ -14,7 +14,7 @@ import java.util.Map;
  * Exporter component configuration. To be expanded eventually to allow enabling/disabling
  * exporters, and other general configuration.
  */
-public class ExporterCfg implements ConfigurationEntry {
+public final class ExporterCfg implements ConfigurationEntry {
   /** locally unique ID of the exporter */
   private String id;
 
@@ -32,7 +32,8 @@ public class ExporterCfg implements ConfigurationEntry {
   private Map<String, Object> args;
 
   @Override
-  public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
+  public void init(
+      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
     if (isExternal()) {
       jarPath = ConfigurationUtil.toAbsolutePath(jarPath, brokerBase);
     }
@@ -46,7 +47,7 @@ public class ExporterCfg implements ConfigurationEntry {
     return id;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
@@ -54,7 +55,7 @@ public class ExporterCfg implements ConfigurationEntry {
     return jarPath;
   }
 
-  public void setJarPath(String jarPath) {
+  public void setJarPath(final String jarPath) {
     this.jarPath = jarPath;
   }
 
@@ -62,7 +63,7 @@ public class ExporterCfg implements ConfigurationEntry {
     return className;
   }
 
-  public void setClassName(String className) {
+  public void setClassName(final String className) {
     this.className = className;
   }
 
@@ -70,7 +71,7 @@ public class ExporterCfg implements ConfigurationEntry {
     return args;
   }
 
-  public void setArgs(Map<String, Object> args) {
+  public void setArgs(final Map<String, Object> args) {
     this.args = args;
   }
 

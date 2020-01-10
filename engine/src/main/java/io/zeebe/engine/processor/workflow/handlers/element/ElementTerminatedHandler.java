@@ -27,18 +27,18 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
     extends AbstractTerminalStateHandler<T> {
   private final IncidentResolver incidentResolver;
 
-  public ElementTerminatedHandler(IncidentResolver incidentResolver) {
+  public ElementTerminatedHandler(final IncidentResolver incidentResolver) {
     super();
     this.incidentResolver = incidentResolver;
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return super.shouldHandleState(context) && isStateSameAsElementState(context);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
     final boolean isScopeTerminating =
         flowScopeInstance != null
@@ -62,7 +62,7 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
   }
 
   private void publishInterruptingEventSubproc(
-      BpmnStepContext<T> context, ElementInstance flowScopeInstance) {
+      final BpmnStepContext<T> context, final ElementInstance flowScopeInstance) {
     final Optional<IndexedRecord> eventSubprocOptional =
         context.getElementInstanceState().getDeferredRecords(flowScopeInstance.getKey()).stream()
             .filter(r -> r.getKey() == context.getFlowScopeInstance().getInterruptingEventKey())
@@ -79,7 +79,8 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
     }
   }
 
-  private boolean wasInterrupted(BpmnStepContext<T> context, ElementInstance flowScopeInstance) {
+  private boolean wasInterrupted(
+      final BpmnStepContext<T> context, final ElementInstance flowScopeInstance) {
     return flowScopeInstance != null
         && flowScopeInstance.getNumberOfActiveTokens() == 2
         && context.getFlowScopeInstance().getInterruptingEventKey() != -1

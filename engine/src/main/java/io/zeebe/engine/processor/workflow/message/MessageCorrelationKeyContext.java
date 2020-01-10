@@ -10,7 +10,7 @@ package io.zeebe.engine.processor.workflow.message;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class MessageCorrelationKeyContext {
+public final class MessageCorrelationKeyContext {
   private long variablesScopeKey;
   private DirectBuffer variablesDocument;
   private VariablesDocumentSupplier variablesSupplier;
@@ -18,7 +18,7 @@ public class MessageCorrelationKeyContext {
   public MessageCorrelationKeyContext() {}
 
   public MessageCorrelationKeyContext(
-      VariablesDocumentSupplier variablesSupplier, long variablesScopeKey) {
+      final VariablesDocumentSupplier variablesSupplier, final long variablesScopeKey) {
     this.variablesSupplier = variablesSupplier;
     this.variablesScopeKey = variablesScopeKey;
   }
@@ -27,7 +27,7 @@ public class MessageCorrelationKeyContext {
     return variablesScopeKey;
   }
 
-  public MessageCorrelationKeyContext setVariablesScopeKey(long variablesScopeKey) {
+  public MessageCorrelationKeyContext setVariablesScopeKey(final long variablesScopeKey) {
     this.variablesScopeKey = variablesScopeKey;
     return this;
   }
@@ -41,7 +41,7 @@ public class MessageCorrelationKeyContext {
   }
 
   public MessageCorrelationKeyContext setVariablesSupplier(
-      VariablesDocumentSupplier variablesSupplier) {
+      final VariablesDocumentSupplier variablesSupplier) {
     this.variablesSupplier = variablesSupplier;
     return this;
   }

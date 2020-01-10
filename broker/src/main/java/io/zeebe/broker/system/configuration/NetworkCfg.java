@@ -18,7 +18,7 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.Environment;
 import java.util.Optional;
 
-public class NetworkCfg implements ConfigurationEntry {
+public final class NetworkCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
@@ -31,7 +31,7 @@ public class NetworkCfg implements ConfigurationEntry {
   private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private String advertisedHost;
 
-  private CommandApiCfg commandApi = new CommandApiCfg();
+  private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
   private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 

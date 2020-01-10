@@ -27,7 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CallActivityIncidentTest {
+public final class CallActivityIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -187,14 +187,15 @@ public class CallActivityIncidentTest {
         .contains(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
   }
 
-  private Record<WorkflowInstanceRecordValue> getCallActivityInstance(long workflowInstanceKey) {
+  private Record<WorkflowInstanceRecordValue> getCallActivityInstance(
+      final long workflowInstanceKey) {
     return RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .withElementType(BpmnElementType.CALL_ACTIVITY)
         .getFirst();
   }
 
-  private Record<IncidentRecordValue> getIncident(long workflowInstanceKey) {
+  private Record<IncidentRecordValue> getIncident(final long workflowInstanceKey) {
     return RecordingExporter.incidentRecords(IncidentIntent.CREATED)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .getFirst();

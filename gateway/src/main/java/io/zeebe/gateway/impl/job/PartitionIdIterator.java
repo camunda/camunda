@@ -13,12 +13,12 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.stream.IntStream;
 
-public class PartitionIdIterator implements Iterator<Integer> {
+public final class PartitionIdIterator implements Iterator<Integer> {
 
   private final OfInt iterator;
   private int currentPartitionId;
 
-  public PartitionIdIterator(int startPartitionId, int partitionsCount) {
+  public PartitionIdIterator(final int startPartitionId, final int partitionsCount) {
     iterator =
         IntStream.range(0, partitionsCount)
             .map(index -> ((index + startPartitionId) % partitionsCount) + START_PARTITION_ID)

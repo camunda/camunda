@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.TreeSet;
 import org.slf4j.Logger;
 
-public class DbSnapshot implements Snapshot {
+public final class DbSnapshot implements Snapshot {
   // version currently hardcoded, could be used for backwards compatibility
   private static final int VERSION = 1;
   private static final Logger LOGGER = new ZbLogger(DbSnapshot.class);
@@ -166,7 +166,7 @@ public class DbSnapshot implements Snapshot {
 
   private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
     final var set = new TreeSet<>(CharSequence::compare);
-    try (var stream = Files.list(directory)) {
+    try (final var stream = Files.list(directory)) {
       stream.map(directory::relativize).map(Path::toString).forEach(set::add);
     }
     return set;

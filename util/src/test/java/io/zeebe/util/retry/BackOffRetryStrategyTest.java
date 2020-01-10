@@ -23,9 +23,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class BackOffRetryStrategyTest {
+public final class BackOffRetryStrategyTest {
 
-  @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
   private BackOffRetryStrategy retryStrategy;
   private ActorControl actorControl;

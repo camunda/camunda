@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.junit.Test;
 
-public class ActivateJobsTest extends GatewayTest {
+public final class ActivateJobsTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {
@@ -112,7 +112,7 @@ public class ActivateJobsTest extends GatewayTest {
       assertThat(responses.hasNext()).isTrue();
       final ActivateJobsResponse response = responses.next();
 
-      for (ActivatedJob activatedJob : response.getJobsList()) {
+      for (final ActivatedJob activatedJob : response.getJobsList()) {
         assertThat(Protocol.decodePartitionId(activatedJob.getKey()))
             .isEqualTo(Protocol.START_PARTITION_ID + partitionOffset);
       }

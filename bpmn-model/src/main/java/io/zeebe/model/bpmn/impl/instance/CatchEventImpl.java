@@ -51,11 +51,11 @@ public abstract class CatchEventImpl extends EventImpl implements CatchEvent {
   protected static ElementReferenceCollection<EventDefinition, EventDefinitionRef>
       eventDefinitionRefCollection;
 
-  public CatchEventImpl(ModelTypeInstanceContext context) {
+  public CatchEventImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CatchEvent.class, BPMN_ELEMENT_CATCH_EVENT)
@@ -92,7 +92,7 @@ public abstract class CatchEventImpl extends EventImpl implements CatchEvent {
   }
 
   @Override
-  public void setParallelMultiple(boolean parallelMultiple) {
+  public void setParallelMultiple(final boolean parallelMultiple) {
     parallelMultipleAttribute.setValue(this, parallelMultiple);
   }
 
@@ -112,7 +112,7 @@ public abstract class CatchEventImpl extends EventImpl implements CatchEvent {
   }
 
   @Override
-  public void setOutputSet(OutputSet outputSet) {
+  public void setOutputSet(final OutputSet outputSet) {
     outputSetChild.setChild(this, outputSet);
   }
 

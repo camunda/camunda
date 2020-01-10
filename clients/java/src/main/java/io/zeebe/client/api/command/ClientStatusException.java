@@ -18,12 +18,12 @@ package io.zeebe.client.api.command;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 
-public class ClientStatusException extends ClientException {
+public final class ClientStatusException extends ClientException {
 
   private static final long serialVersionUID = -6130332019397045094L;
   private final Status status;
 
-  public ClientStatusException(Status status, Throwable cause) {
+  public ClientStatusException(final Status status, final Throwable cause) {
     super(status.getDescription(), cause);
     this.status = status;
   }

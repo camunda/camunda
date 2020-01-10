@@ -21,7 +21,7 @@ public class IOMappingHelper {
 
   private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(4096);
 
-  public <T extends ExecutableFlowNode> void applyOutputMappings(BpmnStepContext<T> context) {
+  public <T extends ExecutableFlowNode> void applyOutputMappings(final BpmnStepContext<T> context) {
     final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
 
     final T element = context.getElement();
@@ -59,7 +59,7 @@ public class IOMappingHelper {
     }
   }
 
-  public <T extends ExecutableFlowNode> void applyInputMappings(BpmnStepContext<T> context) {
+  public <T extends ExecutableFlowNode> void applyInputMappings(final BpmnStepContext<T> context) {
 
     final T element = context.getElement();
     final Mapping[] mappings = element.getInputMappings();
@@ -85,15 +85,17 @@ public class IOMappingHelper {
   }
 
   private DirectBuffer determineVariables(
-      VariablesState variablesState, long elementInstanceKey, Mapping[] outputMappings) {
+      final VariablesState variablesState,
+      final long elementInstanceKey,
+      final Mapping[] outputMappings) {
     final Set<DirectBuffer> variableNames = new HashSet<>();
-    for (Mapping m : outputMappings) {
+    for (final Mapping m : outputMappings) {
       variableNames.add(m.getSource().getVariableName());
     }
     return variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
   }
 
-  private long getVariableScopeKey(BpmnStepContext<?> context) {
+  private long getVariableScopeKey(final BpmnStepContext<?> context) {
     final var elementInstanceKey = context.getKey();
     final var flowScopeKey = context.getValue().getFlowScopeKey();
 

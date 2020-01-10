@@ -11,6 +11,7 @@ import static io.zeebe.logstreams.log.LogStreamTest.writeEvent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.logstreams.util.LogStreamRule;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -21,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamDeleteTest {
+public final class LogStreamDeleteTest {
 
   private long firstPosition;
   private long secondPosition;
@@ -40,7 +41,7 @@ public class LogStreamDeleteTest {
     final int segmentSize = 1024;
     final int entrySize = Math.floorDiv(segmentSize, 2) + 1;
 
-    final LogStream logStream =
+    final SynchronousLogStream logStream =
         logStreamRule.startLogStreamWithStorageConfiguration(
             b -> b.withMaxSegmentSize(segmentSize).withMaxEntrySize(entrySize));
 
@@ -59,7 +60,7 @@ public class LogStreamDeleteTest {
   @Test
   public void shouldDeleteFromLogStream() {
     // given
-    final LogStream logStream = logStreamRule.getLogStream();
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
 
     // when
     logStream.delete(fourthPosition);
@@ -77,7 +78,7 @@ public class LogStreamDeleteTest {
   @Test
   public void shouldNotDeleteOnNegativePosition() {
     // given
-    final LogStream logStream = logStreamRule.getLogStream();
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
 
     // when
     logStream.delete(-1);

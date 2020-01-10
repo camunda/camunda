@@ -22,7 +22,7 @@ import io.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
 import org.junit.Test;
 
-public class SetVariablesTest extends GatewayTest {
+public final class SetVariablesTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

@@ -21,13 +21,13 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackWritingExceptionTest {
+public final class MsgPackWritingExceptionTest {
 
   protected static final int BUFFER_CAPACITY = 1024;
   protected static final int WRITE_OFFSET = 123;
   protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
       "Negative value should not be accepted by size value and unsigned 64bit integer";
-  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Parameter(0)
   public String expectedExceptionMessage;
@@ -35,7 +35,8 @@ public class MsgPackWritingExceptionTest {
   @Parameter(1)
   public CheckedConsumer<MsgPackWriter> codeUnderTest;
 
-  protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
+  protected final MutableDirectBuffer actualValueBuffer =
+      new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
 
   @Parameters
   public static Iterable<Object[]> data() {
@@ -68,7 +69,7 @@ public class MsgPackWritingExceptionTest {
   }
 
   protected static CheckedConsumer<MsgPackWriter> codeUnderTest(
-      CheckedConsumer<MsgPackWriter> arg) {
+      final CheckedConsumer<MsgPackWriter> arg) {
     return arg;
   }
 }

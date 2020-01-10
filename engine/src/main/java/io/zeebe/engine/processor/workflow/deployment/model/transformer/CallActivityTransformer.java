@@ -20,7 +20,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Optional;
 
-public class CallActivityTransformer implements ModelElementTransformer<CallActivity> {
+public final class CallActivityTransformer implements ModelElementTransformer<CallActivity> {
 
   @Override
   public Class<CallActivity> getType() {
@@ -28,7 +28,7 @@ public class CallActivityTransformer implements ModelElementTransformer<CallActi
   }
 
   @Override
-  public void transform(CallActivity element, TransformContext context) {
+  public void transform(final CallActivity element, final TransformContext context) {
 
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableCallActivity callActivity =
@@ -47,9 +47,9 @@ public class CallActivityTransformer implements ModelElementTransformer<CallActi
   }
 
   private void transformProcessId(
-      CallActivity element,
+      final CallActivity element,
       final ExecutableCallActivity callActivity,
-      JsonPathQueryCompiler jsonPathQueryCompiler) {
+      final JsonPathQueryCompiler jsonPathQueryCompiler) {
 
     final ZeebeCalledElement calledElement =
         element.getSingleExtensionElement(ZeebeCalledElement.class);

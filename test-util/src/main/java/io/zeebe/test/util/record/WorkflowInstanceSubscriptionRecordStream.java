@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
 import java.util.stream.Stream;
 
-public class WorkflowInstanceSubscriptionRecordStream
+public final class WorkflowInstanceSubscriptionRecordStream
     extends ExporterRecordWithVariablesStream<
         WorkflowInstanceSubscriptionRecordValue, WorkflowInstanceSubscriptionRecordStream> {
 

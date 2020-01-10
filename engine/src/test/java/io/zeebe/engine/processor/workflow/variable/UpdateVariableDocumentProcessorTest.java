@@ -33,7 +33,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class UpdateVariableDocumentProcessorTest
+public final class UpdateVariableDocumentProcessorTest
     extends CommandProcessorTestCase<VariableDocumentRecord> {
 
   public static final int WORKFLOW_KEY = -1;
@@ -44,7 +44,7 @@ public class UpdateVariableDocumentProcessorTest
 
   @Before
   public void setUp() {
-    final ZeebeState state = zeebeStateRule.getZeebeState();
+    final ZeebeState state = ZEEBE_STATE_RULE.getZeebeState();
     elementInstanceState = state.getWorkflowState().getElementInstanceState();
     variablesState = Mockito.spy(elementInstanceState.getVariablesState());
     processor = new UpdateVariableDocumentProcessor(elementInstanceState, variablesState);

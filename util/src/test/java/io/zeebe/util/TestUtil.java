@@ -13,7 +13,7 @@ import java.util.function.BooleanSupplier;
 
 public final class TestUtil {
 
-  public static void waitUntil(BooleanSupplier condition) {
+  public static void waitUntil(final BooleanSupplier condition) {
     boolean isMet = false;
     int iterations = 0;
 
@@ -25,7 +25,7 @@ public final class TestUtil {
 
         try {
           Thread.sleep(10);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           e.printStackTrace();
         }
       }

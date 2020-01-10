@@ -55,7 +55,6 @@
 
     <module name="ModifierOrder"/>
 
-    <module name="RedundantModifier"/>
 
     <module name="NestedTryDepth">
       <property name="max" value="2"/>

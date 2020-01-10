@@ -39,11 +39,11 @@ public class EscalationEventDefinitionImpl extends EventDefinitionImpl
 
   protected static AttributeReference<Escalation> escalationRefAttribute;
 
-  public EscalationEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public EscalationEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(EscalationEventDefinition.class, BPMN_ELEMENT_ESCALATION_EVENT_DEFINITION)
@@ -53,7 +53,7 @@ public class EscalationEventDefinitionImpl extends EventDefinitionImpl
                 new ModelTypeInstanceProvider<EscalationEventDefinition>() {
                   @Override
                   public EscalationEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new EscalationEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -73,7 +73,7 @@ public class EscalationEventDefinitionImpl extends EventDefinitionImpl
   }
 
   @Override
-  public void setEscalation(Escalation escalation) {
+  public void setEscalation(final Escalation escalation) {
     escalationRefAttribute.setReferenceTargetElement(this, escalation);
   }
 }

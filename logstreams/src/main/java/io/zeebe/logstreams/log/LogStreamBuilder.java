@@ -7,82 +7,59 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
-
-import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.channel.ActorConditions;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.Objects;
-import org.agrona.concurrent.status.AtomicLongPosition;
 
-@SuppressWarnings("unchecked")
-public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
-  private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
-  protected int maxFragmentSize = 1024 * 1024 * 4;
-  protected int partitionId = -1;
-  protected ServiceContainer serviceContainer;
-  protected LogStorage logStorage;
-  protected String logName;
+/** Builder pattern for the {@link LogStream} */
+public interface LogStreamBuilder {
 
-  public SELF withServiceContainer(final ServiceContainer serviceContainer) {
-    this.serviceContainer = serviceContainer;
-    return (SELF) this;
-  }
+  /**
+   * The actor scheduler to use for the {@link LogStream} and its child actors
+   *
+   * @param actorScheduler the scheduler to use
+   * @return this builder
+   */
+  LogStreamBuilder withActorScheduler(ActorScheduler actorScheduler);
 
-  public SELF withMaxFragmentSize(final int maxFragmentSize) {
-    this.maxFragmentSize = maxFragmentSize;
-    return (SELF) this;
-  }
+  /**
+   * The maximum fragment size read from the shared write buffer; this should be aligned with the
+   * maximum underlying storage block size.
+   *
+   * @param maxFragmentSize the maximum fragment size in bytes
+   * @return this builder
+   */
+  LogStreamBuilder withMaxFragmentSize(int maxFragmentSize);
 
-  public SELF withLogStorage(final LogStorage logStorage) {
-    this.logStorage = logStorage;
-    return (SELF) this;
-  }
+  /**
+   * The underlying log storage to read from/write to.
+   *
+   * @param logStorage the underlying log storage
+   * @return this builder
+   */
+  LogStreamBuilder withLogStorage(LogStorage logStorage);
 
-  public SELF withPartitionId(final int partitionId) {
-    this.partitionId = partitionId;
-    return (SELF) this;
-  }
+  /**
+   * The partition ID - primarily used for contextualizing the different log stream components
+   *
+   * @param partitionId the log stream's partition ID
+   * @return this builder
+   */
+  LogStreamBuilder withPartitionId(int partitionId);
 
-  public SELF withLogName(final String logName) {
-    this.logName = logName;
-    return (SELF) this;
-  }
+  /**
+   * The log stream name - primarily used for contextualizing as well, e.g. loggers, actor name,
+   * etc.
+   *
+   * @param logName the current log name
+   * @return this builder
+   */
+  LogStreamBuilder withLogName(String logName);
 
-  public ActorFuture<LogStream> buildAsync() {
-    applyDefaults();
-    validate();
-
-    final var service =
-        new LogStreamService(
-            serviceContainer,
-            new ActorConditions(),
-            logName,
-            partitionId,
-            ByteValue.ofBytes(maxFragmentSize),
-            new AtomicLongPosition(),
-            logStorage);
-    return serviceContainer.createService(logStreamServiceName(logName), service).install();
-  }
-
-  public LogStream build() {
-    return buildAsync().join();
-  }
-
-  protected void applyDefaults() {}
-
-  protected void validate() {
-    Objects.requireNonNull(serviceContainer, "Must specify a service container");
-    Objects.requireNonNull(logStorage, "Must specify a log storage");
-
-    if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected fragment size to be at least '%d', but was '%d'",
-              MINIMUM_FRAGMENT_SIZE, maxFragmentSize));
-    }
-  }
+  /**
+   * Returns a future which, when completed, contains a log stream that can be read from/written to.
+   *
+   * @return a future which on complete contains the log stream
+   */
+  ActorFuture<LogStream> buildAsync();
 }

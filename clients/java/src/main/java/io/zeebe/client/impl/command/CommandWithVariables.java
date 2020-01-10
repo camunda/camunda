@@ -23,7 +23,7 @@ public abstract class CommandWithVariables<T> {
 
   protected final ZeebeObjectMapper objectMapper;
 
-  public CommandWithVariables(ZeebeObjectMapper objectMapper) {
+  public CommandWithVariables(final ZeebeObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

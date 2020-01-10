@@ -28,11 +28,11 @@ public enum WorkflowInstanceSubscriptionIntent implements WorkflowInstanceRelate
   private final short value;
   private final boolean shouldBlacklist;
 
-  WorkflowInstanceSubscriptionIntent(short value) {
+  WorkflowInstanceSubscriptionIntent(final short value) {
     this(value, true);
   }
 
-  WorkflowInstanceSubscriptionIntent(short value, boolean shouldBlacklist) {
+  WorkflowInstanceSubscriptionIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -42,7 +42,7 @@ public enum WorkflowInstanceSubscriptionIntent implements WorkflowInstanceRelate
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return OPEN;

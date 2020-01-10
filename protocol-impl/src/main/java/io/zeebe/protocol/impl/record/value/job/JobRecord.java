@@ -9,6 +9,7 @@ package io.zeebe.protocol.impl.record.value.job;
 
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.DocumentProperty;
@@ -20,12 +21,11 @@ import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.JobRecordValue;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
+public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   private static final String EMPTY_STRING = "";
   private static final String RETRIES = "retries";
@@ -33,13 +33,18 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
   private static final String CUSTOM_HEADERS = "customHeaders";
   private static final String VARIABLES = "variables";
   private static final String ERROR_MESSAGE = "errorMessage";
-  private final LongProperty deadlineProp = new LongProperty("deadline", -1);
-  private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
-  private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
+
   private final StringProperty typeProp = new StringProperty(TYPE, EMPTY_STRING);
+
+  private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
+  private final LongProperty deadlineProp = new LongProperty("deadline", -1);
+  private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
+
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
-  private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE, "");
+
+  private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE, EMPTY_STRING);
+  private final StringProperty errorCodeProp = new StringProperty("errorCode", EMPTY_STRING);
 
   private final LongProperty workflowInstanceKeyProp =
       new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
@@ -52,13 +57,14 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 
   public JobRecord() {
-    this.declareProperty(deadlineProp)
+    declareProperty(deadlineProp)
         .declareProperty(workerProp)
         .declareProperty(retriesProp)
         .declareProperty(typeProp)
         .declareProperty(customHeadersProp)
         .declareProperty(variableProp)
         .declareProperty(errorMessageProp)
+        .declareProperty(errorCodeProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(workflowDefinitionVersionProp)
         .declareProperty(workflowKeyProp)
@@ -82,9 +88,14 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return errorMessageProp.getValue();
   }
 
+  @JsonIgnore
+  public DirectBuffer getErrorCodeBuffer() {
+    return errorCodeProp.getValue();
+  }
+
   @Override
   public String getType() {
-    return BufferUtil.bufferAsString(typeProp.getValue());
+    return bufferAsString(typeProp.getValue());
   }
 
   @Override
@@ -94,7 +105,7 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
   @Override
   public String getWorker() {
-    return BufferUtil.bufferAsString(workerProp.getValue());
+    return bufferAsString(workerProp.getValue());
   }
 
   @Override
@@ -109,12 +120,17 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
   @Override
   public String getErrorMessage() {
-    return BufferUtil.bufferAsString(errorMessageProp.getValue());
+    return bufferAsString(errorMessageProp.getValue());
+  }
+
+  @Override
+  public String getErrorCode() {
+    return bufferAsString(errorCodeProp.getValue());
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return bufferAsString(elementIdProp.getValue());
   }
 
   @Override
@@ -124,7 +140,7 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessIdProp.getValue());
   }
 
   @Override
@@ -137,79 +153,84 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return workflowKeyProp.getValue();
   }
 
-  public JobRecord setWorkflowKey(long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
+  public JobRecord setWorkflowKey(final long workflowKey) {
+    workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
-  public JobRecord setWorkflowDefinitionVersion(int version) {
-    this.workflowDefinitionVersionProp.setValue(version);
+  public JobRecord setWorkflowDefinitionVersion(final int version) {
+    workflowDefinitionVersionProp.setValue(version);
     return this;
   }
 
-  public JobRecord setBpmnProcessId(String bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+  public JobRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public JobRecord setBpmnProcessId(DirectBuffer bpmnProcessId) {
-    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+  public JobRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public JobRecord setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKeyProp.setValue(elementInstanceKey);
+  public JobRecord setElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
   }
 
-  public JobRecord setElementId(String elementId) {
-    this.elementIdProp.setValue(elementId);
+  public JobRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
     return this;
   }
 
-  public JobRecord setElementId(DirectBuffer elementId) {
+  public JobRecord setElementId(final DirectBuffer elementId) {
     return setElementId(elementId, 0, elementId.capacity());
   }
 
-  public JobRecord setErrorMessage(String errorMessage) {
+  public JobRecord setErrorCode(final DirectBuffer errorCode) {
+    errorCodeProp.setValue(errorCode);
+    return this;
+  }
+
+  public JobRecord setErrorMessage(final String errorMessage) {
     errorMessageProp.setValue(errorMessage);
     return this;
   }
 
-  public JobRecord setErrorMessage(DirectBuffer buf) {
+  public JobRecord setErrorMessage(final DirectBuffer buf) {
     return setErrorMessage(buf, 0, buf.capacity());
   }
 
-  public JobRecord setDeadline(long val) {
+  public JobRecord setDeadline(final long val) {
     deadlineProp.setValue(val);
     return this;
   }
 
-  public JobRecord setRetries(int retries) {
+  public JobRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
     return this;
   }
 
-  public JobRecord setWorker(String worker) {
-    this.workerProp.setValue(worker);
+  public JobRecord setWorker(final String worker) {
+    workerProp.setValue(worker);
     return this;
   }
 
-  public JobRecord setWorker(DirectBuffer worker) {
+  public JobRecord setWorker(final DirectBuffer worker) {
     return setWorker(worker, 0, worker.capacity());
   }
 
-  public JobRecord setCustomHeaders(DirectBuffer buffer) {
+  public JobRecord setCustomHeaders(final DirectBuffer buffer) {
     customHeadersProp.setValue(buffer, 0, buffer.capacity());
     return this;
   }
 
-  public JobRecord setType(String type) {
-    this.typeProp.setValue(type);
+  public JobRecord setType(final String type) {
+    typeProp.setValue(type);
     return this;
   }
 
-  public JobRecord setType(DirectBuffer buf) {
+  public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
   }
 
@@ -223,7 +244,7 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return MsgPackConverter.convertToMap(variableProp.getValue());
   }
 
-  public JobRecord setVariables(DirectBuffer variables) {
+  public JobRecord setVariables(final DirectBuffer variables) {
     variableProp.setValue(variables);
     return this;
   }
@@ -248,8 +269,8 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return workflowInstanceKeyProp.getValue();
   }
 
-  public JobRecord setWorkflowInstanceKey(long key) {
-    this.workflowInstanceKeyProp.setValue(key);
+  public JobRecord setWorkflowInstanceKey(final long key) {
+    workflowInstanceKeyProp.setValue(key);
     return this;
   }
 
@@ -258,22 +279,22 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return elementIdProp.getValue();
   }
 
-  public JobRecord setElementId(DirectBuffer activityId, int offset, int length) {
-    this.elementIdProp.setValue(activityId, offset, length);
+  public JobRecord setElementId(final DirectBuffer activityId, final int offset, final int length) {
+    elementIdProp.setValue(activityId, offset, length);
     return this;
   }
 
-  public JobRecord setErrorMessage(DirectBuffer buf, int offset, int length) {
+  public JobRecord setErrorMessage(final DirectBuffer buf, final int offset, final int length) {
     errorMessageProp.setValue(buf, offset, length);
     return this;
   }
 
-  public JobRecord setType(DirectBuffer buf, int offset, int length) {
+  public JobRecord setType(final DirectBuffer buf, final int offset, final int length) {
     typeProp.setValue(buf, offset, length);
     return this;
   }
 
-  public JobRecord setWorker(DirectBuffer worker, int offset, int length) {
+  public JobRecord setWorker(final DirectBuffer worker, final int offset, final int length) {
     workerProp.setValue(worker, offset, length);
     return this;
   }

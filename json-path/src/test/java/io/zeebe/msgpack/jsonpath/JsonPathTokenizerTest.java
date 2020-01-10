@@ -15,7 +15,7 @@ import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class JsonPathTokenizerTest {
+public final class JsonPathTokenizerTest {
 
   @Test
   public void testTokenization() {
@@ -48,11 +48,11 @@ public class JsonPathTokenizerTest {
 
   protected static class Token {
 
-    JsonPathToken type;
-    int position;
-    int length;
+    final JsonPathToken type;
+    final int position;
+    final int length;
 
-    public Token(JsonPathToken type, int position, int length) {
+    public Token(final JsonPathToken type, final int position, final int length) {
       this.type = type;
       this.position = position;
       this.length = length;
@@ -64,7 +64,7 @@ public class JsonPathTokenizerTest {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
       final Token otherToken = (Token) obj;
       return type == otherToken.type
           && position == otherToken.position

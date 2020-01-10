@@ -25,7 +25,9 @@ public class AbstractConditionalEventDefinitionBuilder<
     extends AbstractRootElementBuilder<B, ConditionalEventDefinition> {
 
   public AbstractConditionalEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, ConditionalEventDefinition element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final ConditionalEventDefinition element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -35,7 +37,7 @@ public class AbstractConditionalEventDefinitionBuilder<
    * @param conditionText the condition which should be evaluate to true or false
    * @return the builder object
    */
-  public B condition(String conditionText) {
+  public B condition(final String conditionText) {
     final Condition condition = createInstance(Condition.class);
     condition.setTextContent(conditionText);
     element.setCondition(condition);

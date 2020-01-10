@@ -21,12 +21,12 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadingExceptionTest {
+public final class MsgPackReadingExceptionTest {
 
   protected static final DirectBuffer NEVER_USED_BUF = new UnsafeBuffer(new byte[] {(byte) 0xc1});
   protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG = "Negative buffer size";
 
-  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Parameter(0)
   public String expectedExceptionMessage;
@@ -70,7 +70,7 @@ public class MsgPackReadingExceptionTest {
     codeUnderTest.accept(reader);
   }
 
-  protected static Consumer<MsgPackReader> codeUnderTest(Consumer<MsgPackReader> arg) {
+  protected static Consumer<MsgPackReader> codeUnderTest(final Consumer<MsgPackReader> arg) {
     return arg;
   }
 }

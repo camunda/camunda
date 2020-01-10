@@ -36,11 +36,11 @@ public abstract class StyleImpl extends BpmnModelElementInstanceImpl implements 
 
   protected static Attribute<String> idAttribute;
 
-  public StyleImpl(ModelTypeInstanceContext instanceContext) {
+  public StyleImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder.defineType(Style.class, DI_ELEMENT_STYLE).namespaceUri(DI_NS).abstractType();
 
@@ -55,7 +55,7 @@ public abstract class StyleImpl extends BpmnModelElementInstanceImpl implements 
   }
 
   @Override
-  public void setId(String id) {
+  public void setId(final String id) {
     idAttribute.setValue(this, id);
   }
 }

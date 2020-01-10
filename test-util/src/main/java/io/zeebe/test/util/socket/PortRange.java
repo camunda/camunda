@@ -54,7 +54,7 @@ class PortRange implements Iterator<InetSocketAddress> {
   }
 
   private boolean portAvailable(final int port) {
-    try (ServerSocket ss = new ServerSocket(port)) {
+    try (final ServerSocket ss = new ServerSocket(port)) {
       ss.setReuseAddress(true);
       return true;
     } catch (final IOException ignored) { // NOSONAR

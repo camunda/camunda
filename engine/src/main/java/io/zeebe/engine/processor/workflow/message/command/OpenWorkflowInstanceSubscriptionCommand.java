@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class OpenWorkflowInstanceSubscriptionCommand
+public final class OpenWorkflowInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
         OpenWorkflowInstanceSubscriptionEncoder, OpenWorkflowInstanceSubscriptionDecoder> {
 
@@ -53,7 +53,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     super.write(buffer, offset);
 
     encoder
@@ -65,7 +65,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
@@ -84,7 +84,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
     return subscriptionPartitionId;
   }
 
-  public void setSubscriptionPartitionId(int subscriptionPartitionId) {
+  public void setSubscriptionPartitionId(final int subscriptionPartitionId) {
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
@@ -92,7 +92,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
     return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
@@ -100,7 +100,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
     return elementInstanceKey;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
@@ -112,7 +112,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
     return closeOnCorrelate;
   }
 
-  public void setCloseOnCorrelate(boolean closeOnCorrelate) {
+  public void setCloseOnCorrelate(final boolean closeOnCorrelate) {
     this.closeOnCorrelate = closeOnCorrelate;
   }
 }

@@ -10,19 +10,19 @@ package io.zeebe.util.sched.future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class AllCompletedFutureConsumer<T> implements BiConsumer<T, Throwable> {
+public final class AllCompletedFutureConsumer<T> implements BiConsumer<T, Throwable> {
   private final Consumer<Throwable> callback;
   private int pendingFutures;
 
   private Throwable occuredFailure = null;
 
-  public AllCompletedFutureConsumer(int pendingFutures, Consumer<Throwable> callback) {
+  public AllCompletedFutureConsumer(final int pendingFutures, final Consumer<Throwable> callback) {
     this.pendingFutures = pendingFutures;
     this.callback = callback;
   }
 
   @Override
-  public void accept(T result, Throwable failure) {
+  public void accept(final T result, final Throwable failure) {
     pendingFutures -= 1;
 
     if (failure != null) {

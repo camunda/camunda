@@ -24,7 +24,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 
-public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
+public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
   private static final Logger LOGGER = new ZbLogger(AtomixSnapshotStorage.class);
 
   private final Path runtimeDirectory;
@@ -85,7 +85,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   @Override
   public boolean commitSnapshot(final Path snapshotPath) {
     // in the case of DbSnapshot instances, we expect the path to always contain all the metadata
-    try (var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
+    try (final var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
       return created != null;
     }
   }

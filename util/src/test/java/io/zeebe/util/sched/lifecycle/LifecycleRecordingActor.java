@@ -28,7 +28,7 @@ class LifecycleRecordingActor extends Actor {
   public static final List<ActorLifecyclePhase> FULL_LIFECYCLE =
       newArrayList(STARTING, STARTED, CLOSE_REQUESTED, CLOSING, CLOSED);
 
-  public List<ActorLifecyclePhase> phases = new ArrayList<>();
+  public final List<ActorLifecyclePhase> phases = new ArrayList<>();
 
   @Override
   public void onActorStarting() {
@@ -55,24 +55,16 @@ class LifecycleRecordingActor extends Actor {
     phases.add(actor.getLifecyclePhase());
   }
 
-  public ActorFuture<Void> close() {
-    return actor.close();
-  }
-
   protected void blockPhase() {
     blockPhase(new CompletableActorFuture<>(), mock(BiConsumer.class));
   }
 
-  protected void blockPhase(BiConsumer consumer) {
-    blockPhase(new CompletableActorFuture<>(), consumer);
-  }
-
-  protected void blockPhase(ActorFuture<Void> future) {
+  protected void blockPhase(final ActorFuture<Void> future) {
     blockPhase(future, mock(BiConsumer.class));
   }
 
   @SuppressWarnings("unchecked")
-  protected void blockPhase(ActorFuture<Void> future, BiConsumer consumer) {
+  protected void blockPhase(final ActorFuture<Void> future, final BiConsumer consumer) {
     actor.runOnCompletionBlockingCurrentPhase(future, consumer);
   }
 
@@ -82,17 +74,12 @@ class LifecycleRecordingActor extends Actor {
   }
 
   @SuppressWarnings("unchecked")
-  protected void runOnCompletion(ActorFuture<Void> future, BiConsumer consumer) {
+  protected void runOnCompletion(final ActorFuture<Void> future, final BiConsumer consumer) {
     actor.runOnCompletion(future, consumer);
   }
 
   @SuppressWarnings("unchecked")
-  protected void runOnCompletion(BiConsumer consumer) {
-    actor.runOnCompletion(new CompletableActorFuture<>(), consumer);
-  }
-
-  @SuppressWarnings("unchecked")
-  protected void runOnCompletion(ActorFuture<Void> future) {
+  protected void runOnCompletion(final ActorFuture<Void> future) {
     actor.runOnCompletion(future, mock(BiConsumer.class));
   }
 

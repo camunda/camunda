@@ -16,14 +16,14 @@ import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.record.ErrorResponseDecoder;
 import io.zeebe.protocol.record.ErrorResponseEncoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.ClientRequest;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public abstract class BrokerRequest<T> implements BufferWriter {
+public abstract class BrokerRequest<T> implements ClientRequest {
 
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   protected final ErrorResponse errorResponse = new ErrorResponse();
@@ -31,12 +31,10 @@ public abstract class BrokerRequest<T> implements BufferWriter {
   protected final int schemaId;
   protected final int templateId;
 
-  public BrokerRequest(int schemaId, int templateId) {
+  public BrokerRequest(final int schemaId, final int templateId) {
     this.schemaId = schemaId;
     this.templateId = templateId;
   }
-
-  public abstract int getPartitionId();
 
   public abstract void setPartitionId(int partitionId);
 
@@ -65,8 +63,7 @@ public abstract class BrokerRequest<T> implements BufferWriter {
 
   protected abstract T toResponseDto(DirectBuffer buffer);
 
-  public BrokerResponse<T> getResponse(ClientResponse clientResponse) {
-    final DirectBuffer responseBuffer = clientResponse.getResponseBuffer();
+  public BrokerResponse<T> getResponse(final DirectBuffer responseBuffer) {
     try {
       if (isValidResponse(responseBuffer)) {
         wrapResponse(responseBuffer);
@@ -79,7 +76,7 @@ public abstract class BrokerRequest<T> implements BufferWriter {
         throw new UnsupportedBrokerResponseException(
             headerDecoder.schemaId(), headerDecoder.templateId(), schemaId, templateId);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // Log response buffer for debugging purpose
       Loggers.GATEWAY_LOGGER.error(
           "Failed to read response: {}{}{}",
@@ -90,22 +87,22 @@ public abstract class BrokerRequest<T> implements BufferWriter {
     }
   }
 
-  protected void wrapResponseHeader(DirectBuffer buffer) {
+  protected void wrapResponseHeader(final DirectBuffer buffer) {
     headerDecoder.wrap(buffer, 0);
   }
 
-  protected boolean isErrorResponse(DirectBuffer buffer) {
+  protected boolean isErrorResponse(final DirectBuffer buffer) {
     wrapResponseHeader(buffer);
 
     return headerDecoder.schemaId() == ErrorResponseEncoder.SCHEMA_ID
         && headerDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID;
   }
 
-  protected void wrapErrorResponse(DirectBuffer buffer) {
+  protected void wrapErrorResponse(final DirectBuffer buffer) {
     errorResponse.wrap(buffer, 0, buffer.capacity());
   }
 
-  protected boolean isValidResponse(DirectBuffer buffer) {
+  protected boolean isValidResponse(final DirectBuffer buffer) {
     wrapResponseHeader(buffer);
 
     return headerDecoder.schemaId() == schemaId && headerDecoder.templateId() == templateId;

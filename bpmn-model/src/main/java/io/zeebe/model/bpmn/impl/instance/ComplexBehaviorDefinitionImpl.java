@@ -34,11 +34,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
 public class ComplexBehaviorDefinitionImpl extends BaseElementImpl
     implements ComplexBehaviorDefinition {
 
-  public ComplexBehaviorDefinitionImpl(ModelTypeInstanceContext instanceContext) {
+  public ComplexBehaviorDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ComplexBehaviorDefinition.class, BPMN_ELEMENT_COMPLEX_BEHAVIOR_DEFINITION)
@@ -48,7 +48,7 @@ public class ComplexBehaviorDefinitionImpl extends BaseElementImpl
                 new ModelTypeInstanceProvider<ComplexBehaviorDefinition>() {
                   @Override
                   public ComplexBehaviorDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ComplexBehaviorDefinitionImpl(instanceContext);
                   }
                 });

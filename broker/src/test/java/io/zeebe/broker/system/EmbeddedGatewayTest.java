@@ -15,7 +15,7 @@ import java.net.Socket;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class EmbeddedGatewayTest {
+public final class EmbeddedGatewayTest {
 
   @Rule
   public final EmbeddedBrokerRule brokerWithEnabledGateway =
@@ -28,16 +28,16 @@ public class EmbeddedGatewayTest {
   @Test
   public void shouldConfigureGateway() {
     InetSocketAddress address = brokerWithEnabledGateway.getGatewayAddress().toInetSocketAddress();
-    try (Socket socket = new Socket(address.getHostName(), address.getPort())) {
+    try (final Socket socket = new Socket(address.getHostName(), address.getPort())) {
       // expect no error
-    } catch (Exception e) {
+    } catch (final Exception e) {
       fail("Failed to connect to gateway with address: " + address, e);
     }
 
     address = brokerWithDisabledGateway.getGatewayAddress().toInetSocketAddress();
-    try (Socket socket = new Socket(address.getHostName(), address.getPort())) {
+    try (final Socket socket = new Socket(address.getHostName(), address.getPort())) {
       fail("Unexpected to be able to connect to gateway with address: " + address);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // expect error
     }
   }

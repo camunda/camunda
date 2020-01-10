@@ -45,11 +45,11 @@ public class DataObjectImpl extends FlowElementImpl implements DataObject {
   protected static Attribute<Boolean> isCollectionAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
-  public DataObjectImpl(ModelTypeInstanceContext instanceContext) {
+  public DataObjectImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataObject.class, BPMN_ELEMENT_DATA_OBJECT)
@@ -58,7 +58,7 @@ public class DataObjectImpl extends FlowElementImpl implements DataObject {
             .instanceProvider(
                 new ModelTypeInstanceProvider<DataObject>() {
                   @Override
-                  public DataObject newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataObject newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new DataObjectImpl(instanceContext);
                   }
                 });
@@ -85,7 +85,7 @@ public class DataObjectImpl extends FlowElementImpl implements DataObject {
   }
 
   @Override
-  public void setItemSubject(ItemDefinition itemSubject) {
+  public void setItemSubject(final ItemDefinition itemSubject) {
     itemSubjectRefAttribute.setReferenceTargetElement(this, itemSubject);
   }
 
@@ -95,7 +95,7 @@ public class DataObjectImpl extends FlowElementImpl implements DataObject {
   }
 
   @Override
-  public void setDataState(DataState dataState) {
+  public void setDataState(final DataState dataState) {
     dataStateChild.setChild(this, dataState);
   }
 
@@ -105,7 +105,7 @@ public class DataObjectImpl extends FlowElementImpl implements DataObject {
   }
 
   @Override
-  public void setCollection(boolean isCollection) {
+  public void setCollection(final boolean isCollection) {
     isCollectionAttribute.setValue(this, isCollection);
   }
 }

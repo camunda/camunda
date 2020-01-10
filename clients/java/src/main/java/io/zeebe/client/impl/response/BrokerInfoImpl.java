@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class BrokerInfoImpl implements BrokerInfo {
+public final class BrokerInfoImpl implements BrokerInfo {
 
   private final int nodeId;
   private final String host;

@@ -17,7 +17,7 @@ import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndConditionsTest {
+public final class ActorLifecyclePhasesAndConditionsTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
@@ -117,7 +117,7 @@ public class ActorLifecyclePhasesAndConditionsTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -144,7 +144,7 @@ public class ActorLifecyclePhasesAndConditionsTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -171,7 +171,7 @@ public class ActorLifecyclePhasesAndConditionsTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when

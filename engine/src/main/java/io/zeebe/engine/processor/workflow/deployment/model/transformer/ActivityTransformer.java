@@ -15,14 +15,14 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ActivityTransformer implements ModelElementTransformer<Activity> {
+public final class ActivityTransformer implements ModelElementTransformer<Activity> {
   @Override
   public Class<Activity> getType() {
     return Activity.class;
   }
 
   @Override
-  public void transform(Activity element, TransformContext context) {
+  public void transform(final Activity element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableActivity activity =
         workflow.getElementById(element.getId(), ExecutableActivity.class);

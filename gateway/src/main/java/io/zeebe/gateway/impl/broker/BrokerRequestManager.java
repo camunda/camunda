@@ -26,8 +26,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
-import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -38,25 +37,25 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
-public class BrokerRequestManager extends Actor {
+public final class BrokerRequestManager extends Actor {
 
-  private final ClientOutput clientOutput;
+  private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManagerImpl topologyManager;
   private final Duration requestTimeout;
 
   public BrokerRequestManager(
-      ClientOutput clientOutput,
-      BrokerTopologyManagerImpl topologyManager,
-      RequestDispatchStrategy dispatchStrategy,
-      Duration requestTimeout) {
-    this.clientOutput = clientOutput;
+      final ClientTransport clientTransport,
+      final BrokerTopologyManagerImpl topologyManager,
+      final RequestDispatchStrategy dispatchStrategy,
+      final Duration requestTimeout) {
+    this.clientTransport = clientTransport;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
     this.requestTimeout = requestTimeout;
   }
 
-  private static boolean shouldRetryRequest(final DirectBuffer responseContent) {
+  private static boolean responseValidation(final DirectBuffer responseContent) {
     final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
     final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     headerDecoder.wrap(responseContent, 0);
@@ -69,18 +68,20 @@ public class BrokerRequestManager extends Actor {
           headerDecoder.version());
 
       final ErrorCode errorCode = errorHandler.getErrorCode();
-      return errorCode == ErrorCode.PARTITION_LEADER_MISMATCH;
+      // we only want to retry partition leader mismatch all other errors
+      // should be directly returned
+      return errorCode != ErrorCode.PARTITION_LEADER_MISMATCH;
     } else {
-      return false;
+      return true;
     }
   }
 
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
+  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
     return sendRequest(request, this.requestTimeout);
   }
 
   public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-      BrokerRequest<T> request, Duration requestTimeout) {
+      final BrokerRequest<T> request, final Duration requestTimeout) {
     final ActorFuture<BrokerResponse<T>> responseFuture = new CompletableActorFuture<>();
 
     sendRequest(
@@ -98,17 +99,17 @@ public class BrokerRequestManager extends Actor {
   }
 
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
     sendRequest(request, responseConsumer, throwableConsumer, this.requestTimeout);
   }
 
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Duration requestTimeout) {
     sendRequest(
         request,
         responseConsumer,
@@ -119,12 +120,12 @@ public class BrokerRequestManager extends Actor {
   }
 
   private <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<BrokerRejection> rejectionConsumer,
-      Consumer<BrokerError> errorConsumer,
-      Consumer<Throwable> throwableConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<BrokerRejection> rejectionConsumer,
+      final Consumer<BrokerError> errorConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Duration requestTimeout) {
 
     sendRequest(
         request,
@@ -145,7 +146,7 @@ public class BrokerRequestManager extends Actor {
             } else {
               throwableConsumer.accept(error);
             }
-          } catch (RuntimeException e) {
+          } catch (final RuntimeException e) {
             throwableConsumer.accept(new BrokerResponseException(e));
           }
         },
@@ -153,22 +154,22 @@ public class BrokerRequestManager extends Actor {
   }
 
   private <T> void sendRequest(
-      BrokerRequest<T> request,
-      BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
+      final Duration requestTimeout) {
     request.serializeValue();
     actor.run(() -> sendRequestInternal(request, responseConsumer, requestTimeout));
   }
 
   private <T> void sendRequestInternal(
-      BrokerRequest<T> request,
-      BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
-      Duration requestTimeout) {
-    final BrokerNodeIdProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
+      final BrokerRequest<T> request,
+      final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
+      final Duration requestTimeout) {
+    final BrokerAddressProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
 
-    final ActorFuture<ClientResponse> responseFuture =
-        clientOutput.sendRequestWithRetry(
-            nodeIdProvider, BrokerRequestManager::shouldRetryRequest, request, requestTimeout);
+    final ActorFuture<DirectBuffer> responseFuture =
+        clientTransport.sendRequestWithRetry(
+            nodeIdProvider, BrokerRequestManager::responseValidation, request, requestTimeout);
 
     if (responseFuture != null) {
       actor.runOnCompletion(
@@ -181,7 +182,7 @@ public class BrokerRequestManager extends Actor {
               } else {
                 responseConsumer.accept(null, error);
               }
-            } catch (RuntimeException e) {
+            } catch (final RuntimeException e) {
               responseConsumer.accept(null, new ClientResponseException(e));
             }
           });
@@ -190,10 +191,10 @@ public class BrokerRequestManager extends Actor {
     }
   }
 
-  private BrokerNodeIdProvider determineBrokerNodeIdProvider(BrokerRequest<?> request) {
+  private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
     if (request.addressesSpecificPartition()) {
       // already know partition id
-      return new BrokerNodeIdProvider(request.getPartitionId());
+      return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {
       if (request instanceof BrokerPublishMessageRequest) {
         determinePartitionIdForPublishMessageRequest((BrokerPublishMessageRequest) request);
@@ -208,14 +209,15 @@ public class BrokerRequestManager extends Actor {
         }
         request.setPartitionId(partitionId);
       }
-      return new BrokerNodeIdProvider(request.getPartitionId());
+      return new BrokerAddressProvider(request.getPartitionId());
     } else {
-      // random broker;
-      return new BrokerNodeIdProvider();
+      // random broker
+      return new BrokerAddressProvider();
     }
   }
 
-  private void determinePartitionIdForPublishMessageRequest(BrokerPublishMessageRequest request) {
+  private void determinePartitionIdForPublishMessageRequest(
+      final BrokerPublishMessageRequest request) {
     final BrokerClusterState topology = topologyManager.getTopology();
     if (topology != null) {
       final int partitionsCount = topology.getPartitionsCount();
@@ -234,26 +236,26 @@ public class BrokerRequestManager extends Actor {
     }
   }
 
-  private class BrokerNodeIdProvider implements Supplier<Integer> {
+  private class BrokerAddressProvider implements Supplier<String> {
     private final Function<BrokerClusterState, Integer> nodeIdSelector;
 
-    BrokerNodeIdProvider() {
+    BrokerAddressProvider() {
       this(BrokerClusterState::getRandomBroker);
     }
 
-    BrokerNodeIdProvider(final int partitionId) {
+    BrokerAddressProvider(final int partitionId) {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 
-    BrokerNodeIdProvider(final Function<BrokerClusterState, Integer> nodeIdSelector) {
+    BrokerAddressProvider(final Function<BrokerClusterState, Integer> nodeIdSelector) {
       this.nodeIdSelector = nodeIdSelector;
     }
 
     @Override
-    public Integer get() {
+    public String get() {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null) {
-        return nodeIdSelector.apply(topology);
+        return topology.getBrokerAddress(nodeIdSelector.apply(topology));
       } else {
         return null;
       }

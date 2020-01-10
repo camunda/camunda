@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class DbSnapshotStoreTest {
+public final class DbSnapshotStoreTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private Path snapshotsDirectory;

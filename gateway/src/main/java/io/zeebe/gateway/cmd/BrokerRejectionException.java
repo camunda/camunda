@@ -16,11 +16,11 @@ public class BrokerRejectionException extends BrokerException {
 
   private final BrokerRejection rejection;
 
-  public BrokerRejectionException(BrokerRejection rejection) {
+  public BrokerRejectionException(final BrokerRejection rejection) {
     this(rejection, null);
   }
 
-  public BrokerRejectionException(BrokerRejection rejection, Throwable cause) {
+  public BrokerRejectionException(final BrokerRejection rejection, final Throwable cause) {
     super(
         String.format(
             ERROR_MESSAGE_FORMAT,

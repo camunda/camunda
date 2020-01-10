@@ -359,7 +359,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p)
+		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating reaper failed")
 		}
@@ -424,18 +424,25 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	}
 
 	// prepare mounts
-	bindMounts := []mount.Mount{}
+	mounts := []mount.Mount{}
 	for hostPath, innerPath := range req.BindMounts {
-		bindMounts = append(bindMounts, mount.Mount{
+		mounts = append(mounts, mount.Mount{
 			Type:   mount.TypeBind,
 			Source: hostPath,
+			Target: innerPath,
+		})
+	}
+	for volumeName, innerPath := range req.VolumeMounts {
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeVolume,
+			Source: volumeName,
 			Target: innerPath,
 		})
 	}
 
 	hostConfig := &container.HostConfig{
 		PortBindings: exposedPortMap,
-		Mounts:       bindMounts,
+		Mounts:       mounts,
 		AutoRemove:   true,
 		Privileged:   req.Privileged,
 	}
@@ -547,7 +554,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 
 	var termSignal chan bool
 	if !req.SkipReaper {
-		r, err := NewReaper(ctx, sessionID.String(), p)
+		r, err := NewReaper(ctx, sessionID.String(), p, req.ReaperImage)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating network reaper failed")
 		}

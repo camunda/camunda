@@ -26,7 +26,7 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
+public final class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
 
   private final StringProperty typeProp = new StringProperty("type");
   private final StringProperty workerProp = new StringProperty("worker", "");
@@ -51,12 +51,12 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
         .declareProperty(truncatedProp);
   }
 
-  public JobBatchRecord setType(DirectBuffer buf, int offset, int length) {
+  public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
     typeProp.setValue(buf, offset, length);
     return this;
   }
 
-  public JobBatchRecord setWorker(DirectBuffer worker, int offset, int length) {
+  public JobBatchRecord setWorker(final DirectBuffer worker, final int offset, final int length) {
     workerProp.setValue(worker, offset, length);
     return this;
   }
@@ -125,37 +125,37 @@ public class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecord
     return truncatedProp.getValue();
   }
 
-  public JobBatchRecord setTruncated(boolean truncated) {
+  public JobBatchRecord setTruncated(final boolean truncated) {
     truncatedProp.setValue(truncated);
     return this;
   }
 
-  public JobBatchRecord setMaxJobsToActivate(int maxJobsToActivate) {
+  public JobBatchRecord setMaxJobsToActivate(final int maxJobsToActivate) {
     maxJobsToActivateProp.setValue(maxJobsToActivate);
     return this;
   }
 
-  public JobBatchRecord setTimeout(long val) {
+  public JobBatchRecord setTimeout(final long val) {
     timeoutProp.setValue(val);
     return this;
   }
 
-  public JobBatchRecord setWorker(DirectBuffer worker) {
+  public JobBatchRecord setWorker(final DirectBuffer worker) {
     this.workerProp.setValue(worker);
     return this;
   }
 
-  public JobBatchRecord setWorker(String worker) {
+  public JobBatchRecord setWorker(final String worker) {
     this.workerProp.setValue(worker);
     return this;
   }
 
-  public JobBatchRecord setType(DirectBuffer buf) {
+  public JobBatchRecord setType(final DirectBuffer buf) {
     this.typeProp.setValue(buf);
     return this;
   }
 
-  public JobBatchRecord setType(String type) {
+  public JobBatchRecord setType(final String type) {
     this.typeProp.setValue(type);
     return this;
   }

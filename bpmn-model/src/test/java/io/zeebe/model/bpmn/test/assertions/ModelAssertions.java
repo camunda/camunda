@@ -26,24 +26,24 @@ import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 /** @author Sebastian Menski */
 public class ModelAssertions extends Assertions {
 
-  public static AttributeAssert assertThat(Attribute<?> actual) {
+  public static AttributeAssert assertThat(final Attribute<?> actual) {
     return new AttributeAssert(actual);
   }
 
-  public static ModelElementTypeAssert assertThat(ModelElementType actual) {
+  public static ModelElementTypeAssert assertThat(final ModelElementType actual) {
     return new ModelElementTypeAssert(actual);
   }
 
-  public static ChildElementAssert assertThat(ChildElementCollection<?> actual) {
+  public static ChildElementAssert assertThat(final ChildElementCollection<?> actual) {
     return new ChildElementAssert(actual);
   }
 
-  public static AttributeReferenceAssert assertThat(AttributeReference<?> actual) {
+  public static AttributeReferenceAssert assertThat(final AttributeReference<?> actual) {
     return new AttributeReferenceAssert(actual);
   }
 
   public static ElementReferenceCollectionAssert assertThat(
-      ElementReferenceCollection<?, ?> actual) {
+      final ElementReferenceCollection<?, ?> actual) {
     return new ElementReferenceCollectionAssert(actual);
   }
 }

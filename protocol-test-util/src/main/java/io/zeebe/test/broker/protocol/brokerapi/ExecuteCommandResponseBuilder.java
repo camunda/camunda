@@ -16,17 +16,17 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class ExecuteCommandResponseBuilder {
+public final class ExecuteCommandResponseBuilder {
 
   protected final Consumer<MessageBuilder<ExecuteCommandRequest>> registrationFunction;
   protected final ExecuteCommandResponseWriter commandResponseWriter;
 
   public ExecuteCommandResponseBuilder(
-      Consumer<MessageBuilder<ExecuteCommandRequest>> registrationFunction,
-      MsgPackHelper msgPackConverter) {
+      final Consumer<MessageBuilder<ExecuteCommandRequest>> registrationFunction,
+      final MsgPackHelper msgPackConverter) {
     this.registrationFunction = registrationFunction;
     this.commandResponseWriter = new ExecuteCommandResponseWriter(msgPackConverter);
-    partitionId(r -> r.partitionId()); // default
+    partitionId(ExecuteCommandRequest::partitionId); // default
   }
 
   public ExecuteCommandResponseBuilder partitionId(final int partitionId) {
@@ -34,26 +34,28 @@ public class ExecuteCommandResponseBuilder {
   }
 
   public ExecuteCommandResponseBuilder partitionId(
-      Function<ExecuteCommandRequest, Integer> partitionIdFunction) {
+      final Function<ExecuteCommandRequest, Integer> partitionIdFunction) {
     commandResponseWriter.setPartitionIdFunction(partitionIdFunction);
     return this;
   }
 
-  public ExecuteCommandResponseBuilder key(long l) {
+  public ExecuteCommandResponseBuilder key(final long l) {
     return key((r) -> l);
   }
 
-  public ExecuteCommandResponseBuilder key(Function<ExecuteCommandRequest, Long> keyFunction) {
+  public ExecuteCommandResponseBuilder key(
+      final Function<ExecuteCommandRequest, Long> keyFunction) {
     commandResponseWriter.setKeyFunction(keyFunction);
     return this;
   }
 
-  public ExecuteCommandResponseBuilder value(Map<String, Object> map) {
+  public ExecuteCommandResponseBuilder value(final Map<String, Object> map) {
     commandResponseWriter.setEventFunction((re) -> map);
     return this;
   }
 
-  public ExecuteCommandResponseBuilder rejection(RejectionType rejectionType, String reason) {
+  public ExecuteCommandResponseBuilder rejection(
+      final RejectionType rejectionType, final String reason) {
     commandResponseWriter.setRecordType(RecordType.COMMAND_REJECTION);
     commandResponseWriter.setIntentFunction(r -> r.intent());
     commandResponseWriter.setRejectionType(rejectionType);
@@ -71,7 +73,7 @@ public class ExecuteCommandResponseBuilder {
     return this;
   }
 
-  public ExecuteCommandResponseBuilder intent(Intent intent) {
+  public ExecuteCommandResponseBuilder intent(final Intent intent) {
     commandResponseWriter.setIntentFunction(r -> intent);
     return this;
   }

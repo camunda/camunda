@@ -17,7 +17,7 @@ package io.zeebe.client;
 
 import java.time.Duration;
 
-public class ClientProperties {
+public final class ClientProperties {
   /** @see ZeebeClientBuilder#brokerContactPoint(String) */
   public static final String BROKER_CONTACTPOINT = "zeebe.client.broker.contactPoint";
 
@@ -47,4 +47,7 @@ public class ClientProperties {
 
   /** @see ZeebeClientBuilder#caCertificatePath(String) */
   public static final String CA_CERTIFICATE_PATH = "zeebe.client.security.certpath";
+
+  /** @see io.zeebe.client.ZeebeClientBuilder#keepAlive(Duration) */
+  public static final String KEEP_ALIVE = "zeebe.client.keepalive";
 }

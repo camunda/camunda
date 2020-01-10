@@ -14,21 +14,17 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
-import io.zeebe.engine.processor.workflow.deployment.model.element.AbstractFlowElement;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
+import io.zeebe.engine.processor.workflow.EventHandle;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
@@ -55,6 +51,8 @@ public final class CorrelateWorkflowInstanceSubscription
   private final WorkflowState workflowState;
   private final KeyGenerator keyGenerator;
 
+  private final EventHandle eventHandle;
+
   private final WorkflowInstanceRecord eventSubprocessRecord = new WorkflowInstanceRecord();
   private WorkflowInstanceSubscriptionRecord subscriptionRecord;
   private DirectBuffer correlationKey;
@@ -67,6 +65,9 @@ public final class CorrelateWorkflowInstanceSubscription
     this.subscriptionCommandSender = subscriptionCommandSender;
     workflowState = zeebeState.getWorkflowState();
     keyGenerator = zeebeState.getKeyGenerator();
+
+    eventHandle =
+        new EventHandle(keyGenerator, zeebeState.getWorkflowState().getEventScopeInstanceState());
   }
 
   @Override
@@ -105,7 +106,7 @@ public final class CorrelateWorkflowInstanceSubscription
         reason = ALREADY_CLOSING_MESSAGE;
         correlationKey = subscription.getCorrelationKey();
       } else {
-        correlationKey = null;
+        correlationKey = subscriptionRecord.getCorrelationKeyBuffer();
       }
 
       sideEffect.accept(this::sendRejectionCommand);
@@ -123,24 +124,15 @@ public final class CorrelateWorkflowInstanceSubscription
       subscriptionState.remove(subscription);
     }
 
-    final ElementInstance elementInstance =
-        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
-    final long eventKey = keyGenerator.nextKey();
-    final boolean isOccurred =
-        workflowState
-            .getEventScopeInstanceState()
-            .triggerEvent(
-                subscriptionRecord.getElementInstanceKey(),
-                eventKey,
-                subscription.getTargetElementId(),
-                record.getValue().getVariablesBuffer());
+    final boolean isTriggered =
+        triggerCatchEvent(streamWriter, subscription, record.getValue().getVariablesBuffer());
 
-    if (isOccurred) {
+    if (isTriggered) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
-      writeEventOccurred(record, streamWriter, subscription, elementInstance);
+
     } else {
       correlationKey = subscription.getCorrelationKey();
       sideEffect.accept(this::sendRejectionCommand);
@@ -155,40 +147,23 @@ public final class CorrelateWorkflowInstanceSubscription
     }
   }
 
-  private void writeEventOccurred(
-      TypedRecord<WorkflowInstanceSubscriptionRecord> record,
-      TypedStreamWriter streamWriter,
-      WorkflowInstanceSubscription subscription,
-      ElementInstance elementInstance) {
-    final long workflowKey = elementInstance.getValue().getWorkflowKey();
-    final DeployedWorkflow workflow = workflowState.getWorkflowByKey(workflowKey);
+  private boolean triggerCatchEvent(
+      final TypedStreamWriter streamWriter,
+      final WorkflowInstanceSubscription subscription,
+      final DirectBuffer variables) {
 
-    if (isEventSubprocessStart(workflow, subscription.getTargetElementId())) {
-      eventSubprocessRecord.reset();
-      eventSubprocessRecord
-          .setWorkflowKey(workflowKey)
-          .setElementId(subscription.getTargetElementId())
-          .setWorkflowInstanceKey(record.getValue().getWorkflowInstanceKey())
-          .setBpmnElementType(BpmnElementType.START_EVENT)
-          .setBpmnProcessId(workflow.getBpmnProcessId())
-          .setVersion(workflow.getVersion())
-          .setFlowScopeKey(elementInstance.getKey());
-
-      streamWriter.appendFollowUpEvent(
-          keyGenerator.nextKey(), WorkflowInstanceIntent.EVENT_OCCURRED, eventSubprocessRecord);
-    } else {
-      streamWriter.appendFollowUpEvent(
-          subscriptionRecord.getElementInstanceKey(),
-          WorkflowInstanceIntent.EVENT_OCCURRED,
-          elementInstance.getValue());
+    final var elementInstance =
+        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
+    if (elementInstance == null) {
+      return false;
     }
-  }
 
-  private boolean isEventSubprocessStart(DeployedWorkflow workflow, DirectBuffer catchEventId) {
-    final AbstractFlowElement catchEvent = workflow.getWorkflow().getElementById(catchEventId);
+    final var workflowKey = elementInstance.getValue().getWorkflowKey();
+    final var catchEvent =
+        workflowState.getFlowElement(
+            workflowKey, subscription.getTargetElementId(), ExecutableFlowElement.class);
 
-    return ExecutableStartEvent.class.isAssignableFrom(catchEvent.getClass())
-        && ((ExecutableStartEvent) catchEvent).getEventSubProcess() != null;
+    return eventHandle.triggerEvent(streamWriter, elementInstance, catchEvent, variables);
   }
 
   private boolean sendAcknowledgeCommand() {

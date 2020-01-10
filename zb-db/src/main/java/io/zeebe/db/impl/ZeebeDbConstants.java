@@ -9,7 +9,7 @@ package io.zeebe.db.impl;
 
 import java.nio.ByteOrder;
 
-public class ZeebeDbConstants {
+public final class ZeebeDbConstants {
 
   /**
    * The byte order is used to write primitive data types into rocks db key or value buffers.

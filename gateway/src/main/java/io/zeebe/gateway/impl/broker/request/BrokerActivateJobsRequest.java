@@ -16,31 +16,31 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchRecord> {
+public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchRecord> {
 
   private final JobBatchRecord requestDto = new JobBatchRecord();
 
-  public BrokerActivateJobsRequest(String jobType) {
+  public BrokerActivateJobsRequest(final String jobType) {
     super(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE);
     requestDto.setType(jobType);
   }
 
-  public BrokerActivateJobsRequest setWorker(String worker) {
+  public BrokerActivateJobsRequest setWorker(final String worker) {
     requestDto.setWorker(worker);
     return this;
   }
 
-  public BrokerActivateJobsRequest setTimeout(long timeout) {
+  public BrokerActivateJobsRequest setTimeout(final long timeout) {
     requestDto.setTimeout(timeout);
     return this;
   }
 
-  public BrokerActivateJobsRequest setMaxJobsToActivate(int maxJobsToActivate) {
+  public BrokerActivateJobsRequest setMaxJobsToActivate(final int maxJobsToActivate) {
     requestDto.setMaxJobsToActivate(maxJobsToActivate);
     return this;
   }
 
-  public BrokerActivateJobsRequest setVariables(List<String> fetchVariables) {
+  public BrokerActivateJobsRequest setVariables(final List<String> fetchVariables) {
     final ValueArray<StringValue> variables = requestDto.variables();
     fetchVariables.stream()
         .map(BufferUtil::wrapString)
@@ -55,7 +55,7 @@ public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchReco
   }
 
   @Override
-  protected JobBatchRecord toResponseDto(DirectBuffer buffer) {
+  protected JobBatchRecord toResponseDto(final DirectBuffer buffer) {
     final JobBatchRecord responseDto = new JobBatchRecord();
     responseDto.wrap(buffer);
     return responseDto;

@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
+public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
     implements CompleteJobCommandStep1 {
 
   private final GatewayStub asyncStub;
@@ -38,11 +38,11 @@ public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobComm
   private Duration requestTimeout;
 
   public CompleteJobCommandImpl(
-      GatewayStub asyncStub,
-      ZeebeObjectMapper objectMapper,
-      long key,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final ZeebeObjectMapper objectMapper,
+      final long key,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     super(objectMapper);
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
@@ -52,7 +52,7 @@ public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobComm
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -70,14 +70,14 @@ public class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobComm
   }
 
   private void send(
-      CompleteJobRequest request, StreamObserver<CompleteJobResponse> streamObserver) {
+      final CompleteJobRequest request, final StreamObserver<CompleteJobResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .completeJob(request, streamObserver);
   }
 
   @Override
-  protected CompleteJobCommandStep1 setVariablesInternal(String variables) {
+  protected CompleteJobCommandStep1 setVariablesInternal(final String variables) {
     builder.setVariables(variables);
     return this;
   }

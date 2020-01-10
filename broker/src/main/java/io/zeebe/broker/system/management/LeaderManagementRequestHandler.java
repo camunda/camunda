@@ -8,48 +8,57 @@
 package io.zeebe.broker.system.management;
 
 import io.atomix.core.Atomix;
-import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class LeaderManagementRequestHandler extends Actor
-    implements Service<LeaderManagementRequestHandler> {
+public final class LeaderManagementRequestHandler extends Actor implements PartitionListener {
 
-  private final Injector<Atomix> atomixInjector = new Injector<>();
-  private final Int2ObjectHashMap<Partition> leaderForPartitions = new Int2ObjectHashMap<>();
-  private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
-      ServiceGroupReference.<Partition>create()
-          .onAdd((s, p) -> addPartition(p))
-          .onRemove((s, p) -> removePartition(p))
-          .build();
+  private final Int2ObjectHashMap<LogStreamRecordWriter> leaderForPartitions =
+      new Int2ObjectHashMap<>();
+  private final BrokerInfo localBroker;
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
-  private Atomix atomix;
+  private final Atomix atomix;
 
-  @Override
-  public void start(final ServiceStartContext startContext) {
-    this.atomix = atomixInjector.getValue();
-    startContext.async(startContext.getScheduler().submitActor(this));
+  public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
+    this.localBroker = localBroker;
+    this.atomix = atomix;
   }
 
   @Override
-  public void stop(final ServiceStopContext stopContext) {
-    stopContext.async(actor.close());
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
+    actor.submit(() -> leaderForPartitions.remove(partitionId));
   }
 
   @Override
-  public LeaderManagementRequestHandler get() {
-    return this;
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
+    actor.submit(
+        () ->
+            logStream
+                .newLogStreamRecordWriter()
+                .onComplete(
+                    (recordWriter, error) -> {
+                      if (error == null) {
+                        leaderForPartitions.put(partitionId, recordWriter);
+                      } else {
+                        Loggers.CLUSTERING_LOGGER.error(
+                            "Unexpected error on retrieving write buffer for partition {}",
+                            partitionId,
+                            error);
+                        // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                      }
+                    }));
   }
 
   @Override
   public String getName() {
-    return "management-request-handler";
+    return actorNamePattern(localBroker.getNodeId(), "ManagementRequestHandler");
   }
 
   @Override
@@ -57,22 +66,6 @@ public class LeaderManagementRequestHandler extends Actor
     pushDeploymentRequestHandler =
         new PushDeploymentRequestHandler(leaderForPartitions, actor, atomix);
     atomix.getCommunicationService().subscribe("deployment", pushDeploymentRequestHandler);
-  }
-
-  private void addPartition(final Partition partition) {
-    actor.submit(() -> leaderForPartitions.put(partition.getPartitionId(), partition));
-  }
-
-  private void removePartition(final Partition partition) {
-    actor.submit(() -> leaderForPartitions.remove(partition.getPartitionId()));
-  }
-
-  public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference() {
-    return leaderPartitionsGroupReference;
-  }
-
-  public Injector<Atomix> getAtomixInjector() {
-    return atomixInjector;
   }
 
   public PushDeploymentRequestHandler getPushDeploymentRequestHandler() {

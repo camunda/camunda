@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
 )
@@ -68,21 +67,13 @@ type CreateInstanceWithResultCommandStep1 interface {
 }
 
 type CreateInstanceCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.CreateWorkflowInstanceRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.CreateWorkflowInstanceRequest
 }
 
 type CreateInstanceWithResultCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.CreateWorkflowInstanceWithResultRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.CreateWorkflowInstanceWithResultRequest
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (CreateInstanceCommandStep3, error) {
@@ -145,14 +136,16 @@ func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommand
 
 func (cmd *CreateInstanceCommand) WithResult() CreateInstanceWithResultCommandStep1 {
 	return &CreateInstanceWithResultCommand{
-		SerializerMixin: cmd.SerializerMixin,
-		request: &pb.CreateWorkflowInstanceWithResultRequest{
-			Request:        cmd.request,
+		request: pb.CreateWorkflowInstanceWithResultRequest{
+			Request:        &cmd.request,
 			RequestTimeout: int64(cmd.requestTimeout / time.Millisecond),
 		},
-		gateway:        cmd.gateway,
-		requestTimeout: cmd.requestTimeout,
-		retryPredicate: cmd.retryPredicate,
+		Command: Command{
+			SerializerMixin: cmd.SerializerMixin,
+			gateway:         cmd.gateway,
+			requestTimeout:  cmd.requestTimeout,
+			retryPredicate:  cmd.retryPredicate,
+		},
 	}
 }
 
@@ -165,8 +158,8 @@ func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, er
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	response, err := cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
+	response, err := cmd.gateway.CreateWorkflowInstance(ctx, &cmd.request)
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
@@ -178,20 +171,21 @@ func (cmd *CreateInstanceWithResultCommand) Send() (*pb.CreateWorkflowInstanceWi
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout+DeadLineOffset)
 	defer cancel()
 
-	response, err := cmd.gateway.CreateWorkflowInstanceWithResult(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
+	response, err := cmd.gateway.CreateWorkflowInstanceWithResult(ctx, &cmd.request)
+	if cmd.retryPredicate(ctx, err) {
 		return cmd.Send()
 	}
 
 	return response, err
 }
 
-func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CreateInstanceCommandStep1 {
+func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.CreateWorkflowInstanceRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			SerializerMixin: utils.NewJsonStringSerializer(),
+			gateway:         gateway,
+			requestTimeout:  requestTimeout,
+			retryPredicate:  retryPredicate,
+		},
 	}
 }

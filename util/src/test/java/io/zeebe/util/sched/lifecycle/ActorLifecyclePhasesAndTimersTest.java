@@ -17,7 +17,7 @@ import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActorLifecyclePhasesAndTimersTest {
+public final class ActorLifecyclePhasesAndTimersTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
@@ -110,7 +110,7 @@ public class ActorLifecyclePhasesAndTimersTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -135,7 +135,7 @@ public class ActorLifecyclePhasesAndTimersTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when

@@ -35,17 +35,18 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final SideEffectQueue queue = new SideEffectQueue();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
-  public ResolveIncidentProcessor(BpmnStepProcessor stepProcessor, ZeebeState zeebeState) {
+  public ResolveIncidentProcessor(
+      final BpmnStepProcessor stepProcessor, final ZeebeState zeebeState) {
     this.stepProcessor = stepProcessor;
     this.zeebeState = zeebeState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<IncidentRecord> command,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<IncidentRecord> command,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     final long incidentKey = command.getKey();
     final IncidentState incidentState = zeebeState.getIncidentState();
 
@@ -65,10 +66,10 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   }
 
   private void rejectResolveCommand(
-      TypedRecord<IncidentRecord> command,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      long incidentKey) {
+      final TypedRecord<IncidentRecord> command,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final long incidentKey) {
     final String errorMessage = String.format(NO_INCIDENT_FOUND_MSG, incidentKey);
 
     streamWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -76,10 +77,10 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   }
 
   private void attemptToResolveIncident(
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      IncidentRecord incidentRecord) {
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect,
+      final IncidentRecord incidentRecord) {
     final long jobKey = incidentRecord.getJobKey();
     final boolean isJobIncident = jobKey > 0;
 
@@ -91,10 +92,10 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   }
 
   private void attemptToContinueWorkflowProcessing(
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      IncidentRecord incidentRecord) {
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect,
+      final IncidentRecord incidentRecord) {
     final long elementInstanceKey = incidentRecord.getElementInstanceKey();
     final IndexedRecord failedRecord =
         zeebeState.getWorkflowState().getElementInstanceState().getFailedRecord(elementInstanceKey);
@@ -115,7 +116,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     }
   }
 
-  private void attemptToMakeJobActivatableAgain(long jobKey) {
+  private void attemptToMakeJobActivatableAgain(final long jobKey) {
     final JobState jobState = zeebeState.getJobState();
     final JobRecord job = jobState.getJob(jobKey);
     if (job != null) {

@@ -29,9 +29,9 @@ import org.rocksdb.Status;
 import org.rocksdb.Status.Code;
 import org.rocksdb.Status.SubCode;
 
-public class ZeebeRocksDbTransactionTest {
+public final class ZeebeRocksDbTransactionTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
   private DbContext dbContext;

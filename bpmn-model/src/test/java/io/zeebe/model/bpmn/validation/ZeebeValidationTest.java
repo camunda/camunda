@@ -99,21 +99,22 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 "task",
-                "Multiple message boundary events with the same name 'message' are not allowed."))
+                "Multiple message event definitions with the same name 'message' are not allowed."))
       },
       {
         eventSubprocWithNoneStart(),
         singletonList(
             expect(
                 "subprocess",
-                "Start events in event subprocesses must be of type message or timer"))
+                "Start events in event subprocesses must be one of: message, timer, error"))
       },
       {
         eventSubprocWithSignalStart(),
         Arrays.asList(
             expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
             expect(
-                "subprocess", "Start events in event subprocesses must of type message or timer"))
+                "subprocess",
+                "Start events in event subprocesses must be one of: message, timer, error"))
       }
     };
   }

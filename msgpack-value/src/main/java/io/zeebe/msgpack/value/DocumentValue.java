@@ -14,12 +14,12 @@ import io.zeebe.msgpack.spec.MsgPackType;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DocumentValue extends BinaryValue {
+public final class DocumentValue extends BinaryValue {
   public static final DirectBuffer EMPTY_DOCUMENT = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
   public DocumentValue() {}
 
-  public DocumentValue(DirectBuffer initialValue, int offset, int length) {
+  public DocumentValue(final DirectBuffer initialValue, final int offset, final int length) {
     super(initialValue, offset, length);
   }
 

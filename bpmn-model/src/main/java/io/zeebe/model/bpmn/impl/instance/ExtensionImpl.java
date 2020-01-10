@@ -43,11 +43,11 @@ public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Exten
   protected static Attribute<Boolean> mustUnderstandAttribute;
   protected static ChildElementCollection<Documentation> documentationCollection;
 
-  public ExtensionImpl(ModelTypeInstanceContext instanceContext) {
+  public ExtensionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Extension.class, BPMN_ELEMENT_EXTENSION)
@@ -55,7 +55,7 @@ public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Exten
             .instanceProvider(
                 new ModelTypeInstanceProvider<Extension>() {
                   @Override
-                  public Extension newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Extension newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ExtensionImpl(instanceContext);
                   }
                 });
@@ -79,7 +79,7 @@ public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Exten
   }
 
   @Override
-  public void setDefinition(String definition) {
+  public void setDefinition(final String definition) {
     definitionAttribute.setValue(this, definition);
   }
 
@@ -89,7 +89,7 @@ public class ExtensionImpl extends BpmnModelElementInstanceImpl implements Exten
   }
 
   @Override
-  public void setMustUnderstand(boolean mustUnderstand) {
+  public void setMustUnderstand(final boolean mustUnderstand) {
     mustUnderstandAttribute.setValue(this, mustUnderstand);
   }
 

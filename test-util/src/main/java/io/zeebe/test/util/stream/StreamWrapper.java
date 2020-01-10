@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements Stream<T> {
   private final Stream<T> wrappedStream;
 
-  public StreamWrapper(Stream<T> wrappedStream) {
+  public StreamWrapper(final Stream<T> wrappedStream) {
     this.wrappedStream = wrappedStream;
   }
 
@@ -44,14 +44,14 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
    * Skips elements until the predicate is matched. Retains the first element that matches the
    * predicate.
    */
-  public S skipUntil(Predicate<T> predicate) {
+  public S skipUntil(final Predicate<T> predicate) {
     return supply(dropWhile(predicate.negate()));
   }
 
   /**
    * short-circuiting operation; limits the stream to the first element that fulfills the predicate
    */
-  public S limit(Predicate<T> predicate) {
+  public S limit(final Predicate<T> predicate) {
     // looks a bit hacky but we can't use takeWhile(predicate.negate()) here
     // because this doesn't include the element that fulfills the predicate
     // and the underlying record iterator blocks on hasNext()
@@ -99,42 +99,42 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
   }
 
   @Override
-  public <R> Stream<R> map(Function<? super T, ? extends R> mapper) {
+  public <R> Stream<R> map(final Function<? super T, ? extends R> mapper) {
     return wrappedStream.map(mapper);
   }
 
   @Override
-  public IntStream mapToInt(ToIntFunction<? super T> mapper) {
+  public IntStream mapToInt(final ToIntFunction<? super T> mapper) {
     return wrappedStream.mapToInt(mapper);
   }
 
   @Override
-  public LongStream mapToLong(ToLongFunction<? super T> mapper) {
+  public LongStream mapToLong(final ToLongFunction<? super T> mapper) {
     return wrappedStream.mapToLong(mapper);
   }
 
   @Override
-  public DoubleStream mapToDouble(ToDoubleFunction<? super T> mapper) {
+  public DoubleStream mapToDouble(final ToDoubleFunction<? super T> mapper) {
     return wrappedStream.mapToDouble(mapper);
   }
 
   @Override
-  public <R> Stream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
+  public <R> Stream<R> flatMap(final Function<? super T, ? extends Stream<? extends R>> mapper) {
     return wrappedStream.flatMap(mapper);
   }
 
   @Override
-  public IntStream flatMapToInt(Function<? super T, ? extends IntStream> mapper) {
+  public IntStream flatMapToInt(final Function<? super T, ? extends IntStream> mapper) {
     return wrappedStream.flatMapToInt(mapper);
   }
 
   @Override
-  public LongStream flatMapToLong(Function<? super T, ? extends LongStream> mapper) {
+  public LongStream flatMapToLong(final Function<? super T, ? extends LongStream> mapper) {
     return wrappedStream.flatMapToLong(mapper);
   }
 
   @Override
-  public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
+  public DoubleStream flatMapToDouble(final Function<? super T, ? extends DoubleStream> mapper) {
     return wrappedStream.flatMapToDouble(mapper);
   }
 
@@ -171,12 +171,12 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
   }
 
   @Override
-  public void forEach(Consumer<? super T> action) {
+  public void forEach(final Consumer<? super T> action) {
     wrappedStream.forEach(action);
   }
 
   @Override
-  public void forEachOrdered(Consumer<? super T> action) {
+  public void forEachOrdered(final Consumer<? super T> action) {
     wrappedStream.forEachOrdered(action);
   }
 
@@ -186,44 +186,48 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
   }
 
   @Override
-  public <A> A[] toArray(IntFunction<A[]> generator) {
+  public <A> A[] toArray(final IntFunction<A[]> generator) {
     return wrappedStream.toArray(generator);
   }
 
   @Override
-  public T reduce(T identity, BinaryOperator<T> accumulator) {
+  public T reduce(final T identity, final BinaryOperator<T> accumulator) {
     return wrappedStream.reduce(identity, accumulator);
   }
 
   @Override
-  public Optional<T> reduce(BinaryOperator<T> accumulator) {
+  public Optional<T> reduce(final BinaryOperator<T> accumulator) {
     return wrappedStream.reduce(accumulator);
   }
 
   @Override
   public <U> U reduce(
-      U identity, BiFunction<U, ? super T, U> accumulator, BinaryOperator<U> combiner) {
+      final U identity,
+      final BiFunction<U, ? super T, U> accumulator,
+      final BinaryOperator<U> combiner) {
     return wrappedStream.reduce(identity, accumulator, combiner);
   }
 
   @Override
   public <R> R collect(
-      Supplier<R> supplier, BiConsumer<R, ? super T> accumulator, BiConsumer<R, R> combiner) {
+      final Supplier<R> supplier,
+      final BiConsumer<R, ? super T> accumulator,
+      final BiConsumer<R, R> combiner) {
     return wrappedStream.collect(supplier, accumulator, combiner);
   }
 
   @Override
-  public <R, A> R collect(Collector<? super T, A, R> collector) {
+  public <R, A> R collect(final Collector<? super T, A, R> collector) {
     return wrappedStream.collect(collector);
   }
 
   @Override
-  public Optional<T> min(Comparator<? super T> comparator) {
+  public Optional<T> min(final Comparator<? super T> comparator) {
     return wrappedStream.min(comparator);
   }
 
   @Override
-  public Optional<T> max(Comparator<? super T> comparator) {
+  public Optional<T> max(final Comparator<? super T> comparator) {
     return wrappedStream.max(comparator);
   }
 
@@ -233,17 +237,17 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
   }
 
   @Override
-  public boolean anyMatch(Predicate<? super T> predicate) {
+  public boolean anyMatch(final Predicate<? super T> predicate) {
     return wrappedStream.anyMatch(predicate);
   }
 
   @Override
-  public boolean allMatch(Predicate<? super T> predicate) {
+  public boolean allMatch(final Predicate<? super T> predicate) {
     return wrappedStream.allMatch(predicate);
   }
 
   @Override
-  public boolean noneMatch(Predicate<? super T> predicate) {
+  public boolean noneMatch(final Predicate<? super T> predicate) {
     return wrappedStream.noneMatch(predicate);
   }
 

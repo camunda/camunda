@@ -21,7 +21,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.List;
 import org.junit.Test;
 
-public class CreateWorkflowInstanceWithResultTest extends GatewayTest {
+public final class CreateWorkflowInstanceWithResultTest extends GatewayTest {
 
   @Test
   public void shouldMapToBrokerRequest() {

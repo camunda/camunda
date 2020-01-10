@@ -17,7 +17,7 @@ import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 
-public class ContainerElementTerminatingHandler<T extends ExecutableFlowElementContainer>
+public final class ContainerElementTerminatingHandler<T extends ExecutableFlowElementContainer>
     extends ActivityElementTerminatingHandler<T> {
 
   public ContainerElementTerminatingHandler(final CatchEventSubscriber catchEventSubscriber) {

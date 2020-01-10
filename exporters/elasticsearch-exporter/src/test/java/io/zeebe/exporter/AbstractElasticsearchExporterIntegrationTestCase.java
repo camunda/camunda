@@ -67,7 +67,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   protected void assertIndexSettings() {
     final ImmutableOpenMap<String, Settings> settingsForIndices = esClient.getSettingsForIndices();
-    for (ObjectCursor<String> key : settingsForIndices.keys()) {
+    for (final ObjectCursor<String> key : settingsForIndices.keys()) {
       final String indexName = key.value;
       final Settings settings = settingsForIndices.get(indexName);
       final Integer numberOfShards = settings.getAsInt("index.number_of_shards", -1);
@@ -88,7 +88,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     }
   }
 
-  protected void assertRecordExported(Record<?> record) {
+  protected void assertRecordExported(final Record<?> record) {
     final Map<String, Object> source = esClient.get(record);
     assertThat(source)
         .withFailMessage("Failed to fetch record %s from elasticsearch", record)
@@ -98,7 +98,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   }
 
   protected ElasticsearchTestClient createElasticsearchClient(
-      ElasticsearchExporterConfiguration configuration) {
+      final ElasticsearchExporterConfiguration configuration) {
     return new ElasticsearchTestClient(
         configuration, new ZbLogger("io.zeebe.exporter.elasticsearch"));
   }
@@ -107,14 +107,14 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     final JsonNode jsonNode;
     try {
       jsonNode = MAPPER.readTree(record.toJson());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new AssertionError("Failed to deserialize json of record " + record.toJson(), e);
     }
 
     return MAPPER.convertValue(jsonNode, Map.class);
   }
 
-  private int numberOfShardsForIndex(String indexName) {
+  private int numberOfShardsForIndex(final String indexName) {
     if (indexName.startsWith(
             esClient.indexPrefixForValueTypeWithDelimiter(ValueType.WORKFLOW_INSTANCE))
         || indexName.startsWith(esClient.indexPrefixForValueTypeWithDelimiter(ValueType.JOB))) {
@@ -156,7 +156,8 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
 
   protected static class ElasticsearchTestClient extends ElasticsearchClient {
 
-    ElasticsearchTestClient(ElasticsearchExporterConfiguration configuration, Logger log) {
+    ElasticsearchTestClient(
+        final ElasticsearchExporterConfiguration configuration, final Logger log) {
       super(configuration, log);
     }
 
@@ -167,12 +168,12 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
             .indices()
             .getSettings(settingsRequest, RequestOptions.DEFAULT)
             .getIndexToSettings();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new ElasticsearchExporterException("Failed to get index settings", e);
       }
     }
 
-    Map<String, Object> get(Record<?> record) {
+    Map<String, Object> get(final Record<?> record) {
       final GetRequest request =
           new GetRequest(indexFor(record), typeFor(record), idFor(record))
               .routing(String.valueOf(record.getPartitionId()));
@@ -183,7 +184,7 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
         } else {
           return null;
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new ElasticsearchExporterException(
             "Failed to get record " + idFor(record) + " from index " + indexFor(record));
       }

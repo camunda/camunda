@@ -15,14 +15,16 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue>
 
   /** @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer) */
   default void processRecord(
-      TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {}
+      final TypedRecord<T> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {}
 
   /** @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer) */
   default void processRecord(
-      TypedRecord<T> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<T> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record, responseWriter, streamWriter);
   }
 
@@ -38,11 +40,11 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue>
    *     in the {@link SideEffectProducer} implementation.
    */
   default void processRecord(
-      long position,
-      TypedRecord<T> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final long position,
+      final TypedRecord<T> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     processRecord(record, responseWriter, streamWriter, sideEffect);
   }
 }

@@ -26,7 +26,7 @@ public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBui
     extends AbstractFlowElementBuilder<B, SubProcess> {
 
   protected AbstractEventSubProcessBuilder(
-      BpmnModelInstance modelInstance, SubProcess element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final SubProcess element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -34,7 +34,7 @@ public class AbstractEventSubProcessBuilder<B extends AbstractEventSubProcessBui
     return startEvent(null);
   }
 
-  public StartEventBuilder startEvent(String id) {
+  public StartEventBuilder startEvent(final String id) {
     final StartEvent start = createChild(StartEvent.class, id);
 
     final BpmnShape startShape = createBpmnShape(start);

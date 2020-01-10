@@ -30,7 +30,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadTokenTest {
+public final class MsgPackReadTokenTest {
 
   @Parameter(0)
   public String name;
@@ -238,11 +238,11 @@ public class MsgPackReadTokenTest {
     assertion.accept(msgPackToken);
   }
 
-  protected static Consumer<ByteArrayBuilder> given(Consumer<ByteArrayBuilder> arg) {
+  protected static Consumer<ByteArrayBuilder> given(final Consumer<ByteArrayBuilder> arg) {
     return arg;
   }
 
-  protected static Consumer<MsgPackToken> doAssert(Consumer<MsgPackToken> arg) {
+  protected static Consumer<MsgPackToken> doAssert(final Consumer<MsgPackToken> arg) {
     return arg;
   }
 }

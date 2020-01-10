@@ -16,12 +16,12 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.protocol.record.ValueType;
 
-public class DeploymentEventProcessors {
+public final class DeploymentEventProcessors {
 
   public static void addDeploymentCreateProcessor(
-      TypedRecordProcessors typedRecordProcessors,
-      WorkflowState workflowState,
-      DeploymentResponder deploymentResponder,
+      final TypedRecordProcessors typedRecordProcessors,
+      final WorkflowState workflowState,
+      final DeploymentResponder deploymentResponder,
       final int partitionId) {
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT,
@@ -30,9 +30,9 @@ public class DeploymentEventProcessors {
   }
 
   public static void addTransformingDeploymentProcessor(
-      TypedRecordProcessors typedRecordProcessors,
-      ZeebeState zeebeState,
-      CatchEventBehavior catchEventBehavior) {
+      final TypedRecordProcessors typedRecordProcessors,
+      final ZeebeState zeebeState,
+      final CatchEventBehavior catchEventBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT,
         CREATE,

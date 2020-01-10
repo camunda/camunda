@@ -13,32 +13,32 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.db.impl.DefaultColumnFamily;
 
-public class RocksDBWrapper {
+public final class RocksDBWrapper {
 
   private DbString key;
   private DbLong value;
   private ColumnFamily<DbString, DbLong> defaultColumnFamily;
 
-  public void wrap(ZeebeDb<DefaultColumnFamily> db) {
+  public void wrap(final ZeebeDb<DefaultColumnFamily> db) {
     key = new DbString();
     value = new DbLong();
     defaultColumnFamily =
         db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
   }
 
-  public int getInt(String key) {
+  public int getInt(final String key) {
     this.key.wrapString(key);
     final DbLong zbLong = defaultColumnFamily.get(this.key);
     return zbLong != null ? (int) zbLong.getValue() : -1;
   }
 
-  public void putInt(String key, int value) {
+  public void putInt(final String key, final int value) {
     this.key.wrapString(key);
     this.value.wrapLong(value);
     defaultColumnFamily.put(this.key, this.value);
   }
 
-  public boolean mayExist(String key) {
+  public boolean mayExist(final String key) {
     this.key.wrapString(key);
     return defaultColumnFamily.exists(this.key);
   }

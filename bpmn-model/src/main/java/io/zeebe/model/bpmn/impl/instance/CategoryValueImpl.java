@@ -37,11 +37,11 @@ public class CategoryValueImpl extends BaseElementImpl implements CategoryValue 
 
   protected static Attribute<String> valueAttribute;
 
-  public CategoryValueImpl(ModelTypeInstanceContext instanceContext) {
+  public CategoryValueImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CategoryValue.class, BPMN_ELEMENT_CATEGORY_VALUE)
@@ -50,7 +50,7 @@ public class CategoryValueImpl extends BaseElementImpl implements CategoryValue 
             .instanceProvider(
                 new ModelTypeInstanceProvider<CategoryValue>() {
                   @Override
-                  public CategoryValue newInstance(ModelTypeInstanceContext instanceContext) {
+                  public CategoryValue newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new CategoryValueImpl(instanceContext);
                   }
                 });
@@ -66,7 +66,7 @@ public class CategoryValueImpl extends BaseElementImpl implements CategoryValue 
   }
 
   @Override
-  public void setValue(String name) {
+  public void setValue(final String name) {
     valueAttribute.setValue(this, name);
   }
 }

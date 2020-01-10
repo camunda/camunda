@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MessageOutputMappingTest {
+public final class MessageOutputMappingTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
@@ -206,15 +206,15 @@ public class MessageOutputMappingTest {
   }
 
   private static Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mapping(
-      Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mappingBuilder) {
+      final Consumer<ZeebeVariablesMappingBuilder<IntermediateCatchEventBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 
-  private static List<Tuple> activityVariables(Tuple... variables) {
+  private static List<Tuple> activityVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 
-  private static List<Tuple> scopeVariables(Tuple... variables) {
+  private static List<Tuple> scopeVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 }

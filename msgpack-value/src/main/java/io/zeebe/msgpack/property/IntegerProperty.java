@@ -9,12 +9,12 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.IntegerValue;
 
-public class IntegerProperty extends BaseProperty<IntegerValue> {
-  public IntegerProperty(String key) {
+public final class IntegerProperty extends BaseProperty<IntegerValue> {
+  public IntegerProperty(final String key) {
     super(key, new IntegerValue());
   }
 
-  public IntegerProperty(String key, int defaultValue) {
+  public IntegerProperty(final String key, final int defaultValue) {
     super(key, new IntegerValue(), new IntegerValue(defaultValue));
   }
 
@@ -22,7 +22,7 @@ public class IntegerProperty extends BaseProperty<IntegerValue> {
     return resolveValue().getValue();
   }
 
-  public void setValue(int value) {
+  public void setValue(final int value) {
     this.value.setValue(value);
     this.isSet = true;
   }

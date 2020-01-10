@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 /** @author Sebastian Menski */
 public class SequenceFlowBuilder extends AbstractSequenceFlowBuilder<SequenceFlowBuilder> {
 
-  public SequenceFlowBuilder(BpmnModelInstance modelInstance, SequenceFlow element) {
+  public SequenceFlowBuilder(final BpmnModelInstance modelInstance, final SequenceFlow element) {
     super(modelInstance, element, SequenceFlowBuilder.class);
   }
 }

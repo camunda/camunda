@@ -64,11 +64,11 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   protected static ChildElementCollection<BpmnDiagram> bpmnDiagramCollection;
   protected static ChildElementCollection<Relationship> relationshipCollection;
 
-  public DefinitionsImpl(ModelTypeInstanceContext instanceContext) {
+  public DefinitionsImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder bpmnModelBuilder) {
+  public static void registerType(final ModelBuilder bpmnModelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
         bpmnModelBuilder
@@ -77,7 +77,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<Definitions>() {
                   @Override
-                  public Definitions newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Definitions newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new DefinitionsImpl(instanceContext);
                   }
                 });
@@ -126,7 +126,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   }
 
   @Override
-  public void setId(String id) {
+  public void setId(final String id) {
     idAttribute.setValue(this, id);
   }
 
@@ -136,7 +136,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -146,7 +146,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   }
 
   @Override
-  public void setTargetNamespace(String namespace) {
+  public void setTargetNamespace(final String namespace) {
     targetNamespaceAttribute.setValue(this, namespace);
   }
 
@@ -156,7 +156,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   }
 
   @Override
-  public void setExpressionLanguage(String expressionLanguage) {
+  public void setExpressionLanguage(final String expressionLanguage) {
     expressionLanguageAttribute.setValue(this, expressionLanguage);
   }
 
@@ -166,7 +166,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   }
 
   @Override
-  public void setTypeLanguage(String typeLanguage) {
+  public void setTypeLanguage(final String typeLanguage) {
     typeLanguageAttribute.setValue(this, typeLanguage);
   }
 
@@ -176,7 +176,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   }
 
   @Override
-  public void setExporter(String exporter) {
+  public void setExporter(final String exporter) {
     exporterAttribute.setValue(this, exporter);
   }
 
@@ -186,7 +186,7 @@ public class DefinitionsImpl extends BpmnModelElementInstanceImpl implements Def
   }
 
   @Override
-  public void setExporterVersion(String exporterVersion) {
+  public void setExporterVersion(final String exporterVersion) {
     exporterVersionAttribute.setValue(this, exporterVersion);
   }
 

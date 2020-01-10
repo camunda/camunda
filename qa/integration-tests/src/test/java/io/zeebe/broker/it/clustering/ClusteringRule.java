@@ -8,7 +8,6 @@
 package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.broker.Broker.LOG;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DISABLE_EMBEDDED_GATEWAY;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
@@ -24,6 +23,8 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.PartitionListener;
+import io.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -35,19 +36,20 @@ import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +57,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -66,11 +72,12 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class ClusteringRule extends ExternalResource {
+public final class ClusteringRule extends ExternalResource {
 
   public static final int TOPOLOGY_RETRIES = 250;
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
+  private static final String RAFT_PARTITION_PATH = AtomixFactory.GROUP_NAME + "/partitions/1";
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -94,12 +101,13 @@ public class ClusteringRule extends ExternalResource {
   private ZeebeClient client;
   private Gateway gateway;
   private AtomixCluster atomixCluster;
+  private LeaderListener leaderListener;
 
   public ClusteringRule() {
     this(3);
   }
 
-  public ClusteringRule(int clusterSize) {
+  public ClusteringRule(final int clusterSize) {
     this(clusterSize, clusterSize, clusterSize);
   }
 
@@ -168,6 +176,7 @@ public class ClusteringRule extends ExternalResource {
 
   @Override
   protected void before() throws IOException {
+    leaderListener = new LeaderListener(partitionCount);
     // create brokers
     for (int nodeId = 0; nodeId < clusterSize; nodeId++) {
       getBroker(nodeId);
@@ -187,15 +196,18 @@ public class ClusteringRule extends ExternalResource {
       waitUntilBrokersInTopology();
       LOG.info("All brokers in topology {}", getTopologyFromClient());
 
-    } catch (Error e) {
+    } catch (final Exception e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
       closeables.after();
-      throw e;
+      throw new UncheckedExecutionException("Cluster start failed", e);
     }
   }
 
   @Override
   protected void after() {
+
+    brokers.values().parallelStream().forEach(Broker::close);
+
     closeables.after();
     brokerBases.clear();
     brokerCfgs.clear();
@@ -206,35 +218,29 @@ public class ClusteringRule extends ExternalResource {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
 
-  private void waitUntilBrokersStarted() {
-    // A hack to see if Atomix cluster has started
-    brokers.forEach(
-        (i, b) -> {
-          b.getBrokerContext()
-              .getServiceContainer()
-              .createService(ServiceName.newServiceName("test", Void.class), () -> null)
-              .dependency(ATOMIX_JOIN_SERVICE)
-              .install()
-              .join();
-          b.getBrokerContext()
-              .getServiceContainer()
-              .removeService(ServiceName.newServiceName("test", Void.class));
-        });
+  private void waitUntilBrokersStarted()
+      throws InterruptedException, TimeoutException, ExecutionException {
+    final var brokerStartFutures =
+        brokers.values().parallelStream().map(Broker::start).toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(brokerStartFutures).get(120, TimeUnit.SECONDS);
+
+    leaderListener.awaitLeaders();
   }
 
-  private Broker createBroker(int nodeId) {
+  private Broker createBroker(final int nodeId) {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
-    closeables.manage(broker);
+    broker.addPartitionListener(leaderListener);
+    new Thread(broker::start).start();
     return broker;
   }
 
-  private BrokerCfg getBrokerCfg(int nodeId) {
+  private BrokerCfg getBrokerCfg(final int nodeId) {
     return brokerCfgs.computeIfAbsent(nodeId, this::createBrokerCfg);
   }
 
-  private BrokerCfg createBrokerCfg(int nodeId) {
+  private BrokerCfg createBrokerCfg(final int nodeId) {
     final BrokerCfg brokerCfg = new BrokerCfg();
 
     // build-in exporters
@@ -266,11 +272,11 @@ public class ClusteringRule extends ExternalResource {
     return brokerCfg;
   }
 
-  private File getBrokerBase(int nodeId) {
+  private File getBrokerBase(final int nodeId) {
     return brokerBases.computeIfAbsent(nodeId, this::createBrokerBase);
   }
 
-  private File createBrokerBase(int nodeId) {
+  private File createBrokerBase(final int nodeId) {
     final File base = Files.newTemporaryFolder();
     closeables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
     return base;
@@ -420,7 +426,7 @@ public class ClusteringRule extends ExternalResource {
    */
   public void restartBroker(final int nodeId) {
     stopBroker(nodeId);
-    final Broker broker = getBroker(nodeId);
+    final Broker broker = getBroker(nodeId).start().join();
     final SocketAddress commandApi = broker.getConfig().getNetwork().getCommandApi().getAddress();
     waitUntilBrokerIsAddedToTopology(commandApi);
     waitForPartitionReplicationFactor();
@@ -540,7 +546,7 @@ public class ClusteringRule extends ExternalResource {
         getTopologyFromClient());
   }
 
-  public long createWorkflowInstanceOnPartition(int partitionId, String bpmnProcessId) {
+  public long createWorkflowInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
     final BrokerCreateWorkflowInstanceRequest request =
         new BrokerCreateWorkflowInstanceRequest().setBpmnProcessId(bpmnProcessId);
 
@@ -562,10 +568,6 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  public AtomixCluster getAtomixCluster() {
-    return atomixCluster;
-  }
-
   public SocketAddress getGatewayAddress() {
     return gateway.getGatewayCfg().getNetwork().toSocketAddress();
   }
@@ -582,36 +584,48 @@ public class ClusteringRule extends ExternalResource {
     return partitionIds;
   }
 
-  public List<Broker> getOtherBrokerObjects(int leaderNodeId) {
+  public List<Broker> getOtherBrokerObjects(final int leaderNodeId) {
     return brokers.keySet().stream()
         .filter(id -> id != leaderNodeId)
         .map(brokers::get)
         .collect(Collectors.toList());
   }
 
-  public <S> S getService(final ServiceName<S> serviceName, int nodeId) {
-    final Broker broker = getBroker(nodeId);
-    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
+  public Path getSegmentsDirectory(final Broker broker) {
+    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
+    return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
+  }
 
-    final Injector<S> injector = new Injector<>();
+  public File getSnapshotsDirectory(final Broker broker) {
+    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
+    return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
+  }
 
-    final ServiceName<Void> accessorServiceName =
-        ServiceName.newServiceName("serviceAccess" + serviceName.getName(), Void.class);
-    try {
-      serviceContainer
-          .createService(accessorServiceName, () -> null)
-          .dependency(serviceName, injector)
-          .install()
-          .get();
-    } catch (final InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
+  public void waitForValidSnapshotAtBroker(final Broker broker) {
+    final File snapshotsDir = getSnapshotsDirectory(broker);
+    waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
+  }
+
+  private static class LeaderListener implements PartitionListener {
+
+    final CountDownLatch latch;
+
+    LeaderListener(final int partitionCount) {
+      this.latch = new CountDownLatch(partitionCount);
     }
 
-    // need to extract value before removing the service, as once stopped we will
-    // uninject the value
-    final var injected = injector.getValue();
-    serviceContainer.removeService(accessorServiceName);
+    @Override
+    public void onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {}
 
-    return injected;
+    @Override
+    public void onBecomingLeader(
+        final int partitionId, final long term, final LogStream logStream) {
+      latch.countDown();
+    }
+
+    public void awaitLeaders() throws InterruptedException {
+      latch.await(15, TimeUnit.SECONDS);
+    }
   }
 }

@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
-public class ActorLifecyclePhasesAndRunOnCompletionTest {
+public final class ActorLifecyclePhasesAndRunOnCompletionTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
@@ -81,20 +81,20 @@ public class ActorLifecyclePhasesAndRunOnCompletionTest {
   public void shouldNotWaitOnFutureInCloseRequested() {
     // given
     final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
-
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final LifecycleRecordingActor actor =
         new LifecycleRecordingActor() {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
-            runOnCompletion(callback);
+            runOnCompletion(future, callback);
           }
         };
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -116,7 +116,7 @@ public class ActorLifecyclePhasesAndRunOnCompletionTest {
           }
         };
     schedulerRule.submitActor(actor);
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
 
     // when
     schedulerRule.workUntilDone();

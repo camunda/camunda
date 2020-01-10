@@ -22,7 +22,8 @@ import io.zeebe.model.bpmn.instance.ParallelGateway;
 /** @author Sebastian Menski */
 public class ParallelGatewayBuilder extends AbstractParallelGatewayBuilder<ParallelGatewayBuilder> {
 
-  public ParallelGatewayBuilder(BpmnModelInstance modelInstance, ParallelGateway element) {
+  public ParallelGatewayBuilder(
+      final BpmnModelInstance modelInstance, final ParallelGateway element) {
     super(modelInstance, element, ParallelGatewayBuilder.class);
   }
 }

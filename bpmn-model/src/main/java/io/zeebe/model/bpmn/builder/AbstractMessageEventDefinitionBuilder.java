@@ -24,12 +24,14 @@ public abstract class AbstractMessageEventDefinitionBuilder<
     extends AbstractRootElementBuilder<B, MessageEventDefinition> {
 
   public AbstractMessageEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, MessageEventDefinition element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final MessageEventDefinition element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
   @Override
-  public B id(String identifier) {
+  public B id(final String identifier) {
     return super.id(identifier);
   }
 
@@ -39,7 +41,7 @@ public abstract class AbstractMessageEventDefinitionBuilder<
    * @param message the message for the message event definition
    * @return the builder object
    */
-  public B message(String message) {
+  public B message(final String message) {
     element.setMessage(findMessageForName(message));
     return myself;
   }

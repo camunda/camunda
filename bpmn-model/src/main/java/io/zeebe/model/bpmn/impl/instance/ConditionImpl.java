@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ConditionImpl extends ExpressionImpl implements Condition {
 
-  public ConditionImpl(ModelTypeInstanceContext instanceContext) {
+  public ConditionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Condition.class, BPMN_ELEMENT_CONDITION)
@@ -46,7 +46,7 @@ public class ConditionImpl extends ExpressionImpl implements Condition {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Condition>() {
                   @Override
-                  public Condition newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Condition newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ConditionImpl(instanceContext);
                   }
                 });

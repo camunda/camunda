@@ -38,7 +38,7 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
 
-public class DeployWorkflowTest extends ClientTest {
+public final class DeployWorkflowTest extends ClientTest {
 
   public static final String BPMN_1_FILENAME = "/workflows/demo-process.bpmn";
   public static final String BPMN_2_FILENAME = "/workflows/another-demo-process.bpmn";
@@ -266,10 +266,10 @@ public class DeployWorkflowTest extends ClientTest {
     rule.verifyRequestTimeout(requestTimeout);
   }
 
-  private byte[] getBytes(String filename) {
+  private byte[] getBytes(final String filename) {
     try {
       return StreamUtil.readInputStream(DeployWorkflowTest.class.getResourceAsStream(filename));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new AssertionError("Failed to read bytes of file: " + filename, e);
     }
   }

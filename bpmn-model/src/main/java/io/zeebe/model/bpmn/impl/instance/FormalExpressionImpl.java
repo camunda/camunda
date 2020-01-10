@@ -41,11 +41,11 @@ public class FormalExpressionImpl extends ExpressionImpl implements FormalExpres
   protected static Attribute<String> languageAttribute;
   protected static AttributeReference<ItemDefinition> evaluatesToTypeRefAttribute;
 
-  public FormalExpressionImpl(ModelTypeInstanceContext instanceContext) {
+  public FormalExpressionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(FormalExpression.class, BPMN_ELEMENT_FORMAL_EXPRESSION)
@@ -54,7 +54,8 @@ public class FormalExpressionImpl extends ExpressionImpl implements FormalExpres
             .instanceProvider(
                 new ModelTypeInstanceProvider<FormalExpression>() {
                   @Override
-                  public FormalExpression newInstance(ModelTypeInstanceContext instanceContext) {
+                  public FormalExpression newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new FormalExpressionImpl(instanceContext);
                   }
                 });
@@ -76,7 +77,7 @@ public class FormalExpressionImpl extends ExpressionImpl implements FormalExpres
   }
 
   @Override
-  public void setLanguage(String language) {
+  public void setLanguage(final String language) {
     languageAttribute.setValue(this, language);
   }
 
@@ -86,7 +87,7 @@ public class FormalExpressionImpl extends ExpressionImpl implements FormalExpres
   }
 
   @Override
-  public void setEvaluatesToType(ItemDefinition evaluatesToType) {
+  public void setEvaluatesToType(final ItemDefinition evaluatesToType) {
     evaluatesToTypeRefAttribute.setReferenceTargetElement(this, evaluatesToType);
   }
 }

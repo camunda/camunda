@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class FlowNodeRef extends BpmnModelElementInstanceImpl {
 
-  public FlowNodeRef(ModelTypeInstanceContext instanceContext) {
+  public FlowNodeRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(FlowNodeRef.class, BPMN_ELEMENT_FLOW_NODE_REF)
@@ -43,7 +43,7 @@ public class FlowNodeRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<FlowNodeRef>() {
                   @Override
-                  public FlowNodeRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public FlowNodeRef newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new FlowNodeRef(instanceContext);
                   }
                 });

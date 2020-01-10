@@ -10,10 +10,11 @@ package io.zeebe.logstreams.log;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -28,7 +29,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamWriterTest {
+public final class LogStreamWriterTest {
   private static final DirectBuffer EVENT_VALUE = wrapString("value");
   private static final DirectBuffer EVENT_METADATA = wrapString("metadata");
 
@@ -38,10 +39,10 @@ public class LogStreamWriterTest {
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
-  public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
-  public LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
+  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  public final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
+  public final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
+  public final LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -54,7 +55,8 @@ public class LogStreamWriterTest {
 
   @Before
   public void setUp() {
-    writer = new LogStreamWriterImpl(logStreamRule.getLogStream());
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    writer = logStream.newLogStreamRecordWriter();
   }
 
   private LoggedEvent getWrittenEvent(final long position) {

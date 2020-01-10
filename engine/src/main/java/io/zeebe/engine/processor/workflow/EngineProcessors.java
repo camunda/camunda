@@ -21,30 +21,28 @@ import io.zeebe.engine.processor.workflow.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.function.Consumer;
 
-public class EngineProcessors {
+public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
-      ProcessingContext processingContext,
-      int partitionsCount,
-      SubscriptionCommandSender subscriptionCommandSender,
-      DeploymentDistributor deploymentDistributor,
-      DeploymentResponder deploymentResponder,
-      Consumer<String> onJobsAvailableCallback) {
+      final ProcessingContext processingContext,
+      final int partitionsCount,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final DeploymentDistributor deploymentDistributor,
+      final DeploymentResponder deploymentResponder,
+      final Consumer<String> onJobsAvailableCallback) {
 
     final ZeebeState zeebeState = processingContext.getZeebeState();
     final TypedRecordProcessors typedRecordProcessors = TypedRecordProcessors.processors();
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
-    final int maxRecordSize = stream.getWriteBuffer().getMaxFragmentLength();
+    final int maxFragmentSize = processingContext.getMaxFragmentSize();
 
-    addDistributeDeploymentProcessors(
-        zeebeState, stream, typedRecordProcessors, deploymentDistributor);
+    addDistributeDeploymentProcessors(zeebeState, typedRecordProcessors, deploymentDistributor);
 
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
@@ -57,32 +55,28 @@ public class EngineProcessors {
         addWorkflowProcessors(
             zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
     addIncidentProcessors(zeebeState, stepProcessor, typedRecordProcessors);
-    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxRecordSize);
+    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize);
 
     return typedRecordProcessors;
   }
 
   private static void addDistributeDeploymentProcessors(
-      ZeebeState zeebeState,
-      LogStream stream,
-      TypedRecordProcessors typedRecordProcessors,
-      DeploymentDistributor deploymentDistributor) {
+      final ZeebeState zeebeState,
+      final TypedRecordProcessors typedRecordProcessors,
+      final DeploymentDistributor deploymentDistributor) {
 
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
-        new DeploymentDistributeProcessor(
-            zeebeState.getDeploymentState(),
-            new LogStreamWriterImpl(stream),
-            deploymentDistributor);
+        new DeploymentDistributeProcessor(zeebeState.getDeploymentState(), deploymentDistributor);
 
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
   }
 
   private static BpmnStepProcessor addWorkflowProcessors(
-      ZeebeState zeebeState,
-      TypedRecordProcessors typedRecordProcessors,
-      SubscriptionCommandSender subscriptionCommandSender,
-      CatchEventBehavior catchEventBehavior) {
+      final ZeebeState zeebeState,
+      final TypedRecordProcessors typedRecordProcessors,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final CatchEventBehavior catchEventBehavior) {
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         zeebeState,
@@ -93,11 +87,11 @@ public class EngineProcessors {
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
-      CatchEventBehavior catchEventBehavior,
-      int partitionId,
-      ZeebeState zeebeState,
-      TypedRecordProcessors typedRecordProcessors,
-      DeploymentResponder deploymentResponder) {
+      final CatchEventBehavior catchEventBehavior,
+      final int partitionId,
+      final ZeebeState zeebeState,
+      final TypedRecordProcessors typedRecordProcessors,
+      final DeploymentResponder deploymentResponder) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final boolean isDeploymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
     if (isDeploymentPartition) {
@@ -115,25 +109,25 @@ public class EngineProcessors {
   }
 
   private static void addIncidentProcessors(
-      ZeebeState zeebeState,
-      BpmnStepProcessor stepProcessor,
-      TypedRecordProcessors typedRecordProcessors) {
+      final ZeebeState zeebeState,
+      final BpmnStepProcessor stepProcessor,
+      final TypedRecordProcessors typedRecordProcessors) {
     IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, stepProcessor);
   }
 
   private static void addJobProcessors(
-      ZeebeState zeebeState,
-      TypedRecordProcessors typedRecordProcessors,
-      Consumer<String> onJobsAvailableCallback,
-      int maxRecordSize) {
+      final ZeebeState zeebeState,
+      final TypedRecordProcessors typedRecordProcessors,
+      final Consumer<String> onJobsAvailableCallback,
+      final int maxFragmentSize) {
     JobEventProcessors.addJobProcessors(
-        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxRecordSize);
+        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize);
   }
 
   private static void addMessageProcessors(
-      SubscriptionCommandSender subscriptionCommandSender,
-      ZeebeState zeebeState,
-      TypedRecordProcessors typedRecordProcessors) {
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final ZeebeState zeebeState,
+      final TypedRecordProcessors typedRecordProcessors) {
     MessageEventProcessors.addMessageProcessors(
         typedRecordProcessors, zeebeState, subscriptionCommandSender);
   }

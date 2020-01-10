@@ -12,10 +12,11 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.ringbuffer.OneToOneRingBuffer;
 
-public class OneToOneRingBufferChannel extends OneToOneRingBuffer implements ConsumableChannel {
+public final class OneToOneRingBufferChannel extends OneToOneRingBuffer
+    implements ConsumableChannel {
   private final ActorConditions conditions = new ActorConditions();
 
-  public OneToOneRingBufferChannel(AtomicBuffer buffer) {
+  public OneToOneRingBufferChannel(final AtomicBuffer buffer) {
     super(buffer);
   }
 
@@ -25,17 +26,18 @@ public class OneToOneRingBufferChannel extends OneToOneRingBuffer implements Con
   }
 
   @Override
-  public void registerConsumer(ActorCondition onDataAvailable) {
+  public void registerConsumer(final ActorCondition onDataAvailable) {
     conditions.registerConsumer(onDataAvailable);
   }
 
   @Override
-  public void removeConsumer(ActorCondition onDataAvailable) {
+  public void removeConsumer(final ActorCondition onDataAvailable) {
     conditions.removeConsumer(onDataAvailable);
   }
 
   @Override
-  public boolean write(int msgTypeId, DirectBuffer srcBuffer, int srcIndex, int length) {
+  public boolean write(
+      final int msgTypeId, final DirectBuffer srcBuffer, final int srcIndex, final int length) {
     try {
       return super.write(msgTypeId, srcBuffer, srcIndex, length);
     } finally {

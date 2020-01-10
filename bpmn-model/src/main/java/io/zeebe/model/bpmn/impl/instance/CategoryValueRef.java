@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class CategoryValueRef extends BpmnModelElementInstanceImpl {
 
-  public CategoryValueRef(ModelTypeInstanceContext instanceContext) {
+  public CategoryValueRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CategoryValueRef.class, BPMN_ELEMENT_CATEGORY_VALUE_REF)
@@ -43,7 +43,8 @@ public class CategoryValueRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<CategoryValueRef>() {
                   @Override
-                  public CategoryValueRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public CategoryValueRef newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CategoryValueRef(instanceContext);
                   }
                 });

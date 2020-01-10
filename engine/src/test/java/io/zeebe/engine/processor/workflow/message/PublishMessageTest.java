@@ -26,7 +26,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class PublishMessageTest {
+public final class PublishMessageTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
 

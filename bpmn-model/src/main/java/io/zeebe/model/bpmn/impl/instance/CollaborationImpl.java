@@ -62,11 +62,11 @@ public class CollaborationImpl extends RootElementImpl implements Collaboration 
   /** TODO: choreographyRef */
   protected static ChildElementCollection<ConversationLink> conversationLinkCollection;
 
-  public CollaborationImpl(ModelTypeInstanceContext context) {
+  public CollaborationImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Collaboration.class, BPMN_ELEMENT_COLLABORATION)
@@ -75,7 +75,7 @@ public class CollaborationImpl extends RootElementImpl implements Collaboration 
             .instanceProvider(
                 new ModelTypeInstanceProvider<Collaboration>() {
                   @Override
-                  public Collaboration newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Collaboration newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new CollaborationImpl(instanceContext);
                   }
                 });
@@ -117,7 +117,7 @@ public class CollaborationImpl extends RootElementImpl implements Collaboration 
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -127,7 +127,7 @@ public class CollaborationImpl extends RootElementImpl implements Collaboration 
   }
 
   @Override
-  public void setClosed(boolean isClosed) {
+  public void setClosed(final boolean isClosed) {
     isClosedAttribute.setValue(this, isClosed);
   }
 

@@ -15,10 +15,10 @@ import java.util.List;
  * Not-thread-safe utility to take timestamps and print a summary of time elapsed between
  * timestamps. Useful for analyzing where tests spend runtime.
  */
-public class Stopwatch {
-  protected List<Checkpoint> checkpoints = new ArrayList<>();
+public final class Stopwatch {
+  protected final List<Checkpoint> checkpoints = new ArrayList<>();
 
-  public void record(String checkpoint) {
+  public void record(final String checkpoint) {
     System.out.println(checkpoint);
     final Checkpoint c = new Checkpoint();
     c.name = checkpoint;

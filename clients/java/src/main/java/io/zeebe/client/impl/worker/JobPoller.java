@@ -31,7 +31,7 @@ import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 
-public class JobPoller implements StreamObserver<ActivateJobsResponse> {
+public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
 
   private static final Logger LOG = Loggers.JOB_POLLER_LOGGER;
 
@@ -47,11 +47,11 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   private BooleanSupplier openSupplier;
 
   public JobPoller(
-      GatewayStub gatewayStub,
-      Builder requestBuilder,
-      ZeebeObjectMapper objectMapper,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub gatewayStub,
+      final Builder requestBuilder,
+      final ZeebeObjectMapper objectMapper,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.gatewayStub = gatewayStub;
     this.requestBuilder = requestBuilder;
     this.objectMapper = objectMapper;
@@ -64,10 +64,10 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   }
 
   public void poll(
-      int maxJobsToActivate,
-      Consumer<ActivatedJob> jobConsumer,
-      IntConsumer doneCallback,
-      BooleanSupplier openSupplier) {
+      final int maxJobsToActivate,
+      final Consumer<ActivatedJob> jobConsumer,
+      final IntConsumer doneCallback,
+      final BooleanSupplier openSupplier) {
     reset();
 
     requestBuilder.setMaxJobsToActivate(maxJobsToActivate);
@@ -90,7 +90,7 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   }
 
   @Override
-  public void onNext(ActivateJobsResponse activateJobsResponse) {
+  public void onNext(final ActivateJobsResponse activateJobsResponse) {
     activatedJobs += activateJobsResponse.getJobsCount();
     activateJobsResponse.getJobsList().stream()
         .map(job -> new ActivatedJobImpl(objectMapper, job))
@@ -98,7 +98,7 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   }
 
   @Override
-  public void onError(Throwable throwable) {
+  public void onError(final Throwable throwable) {
     if (retryPredicate.test(throwable)) {
       poll();
     } else {

@@ -170,7 +170,7 @@ public class DiGeneratorForSequenceFlowsTest {
     assertBpmnEdgeExists("s4");
   }
 
-  protected BpmnEdge findBpmnEdge(String sequenceFlowId) {
+  protected BpmnEdge findBpmnEdge(final String sequenceFlowId) {
     final Collection<BpmnEdge> allEdges = instance.getModelElementsByType(BpmnEdge.class);
     final Iterator<BpmnEdge> iterator = allEdges.iterator();
 
@@ -183,7 +183,7 @@ public class DiGeneratorForSequenceFlowsTest {
     return null;
   }
 
-  protected void assertBpmnEdgeExists(String id) {
+  protected void assertBpmnEdgeExists(final String id) {
     final BpmnEdge edge = findBpmnEdge(id);
     assertNotNull(edge);
   }

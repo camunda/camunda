@@ -24,7 +24,7 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
-public class ExecuteCommandResponse implements BufferReader {
+public final class ExecuteCommandResponse implements BufferReader {
   protected final ErrorResponse errorResponse;
   protected final MsgPackHelper msgPackHelper;
   protected Map<String, Object> value;
@@ -34,7 +34,7 @@ public class ExecuteCommandResponse implements BufferReader {
   private int valueLengthOffset;
   private String rejectionReason;
 
-  public ExecuteCommandResponse(MsgPackHelper msgPackHelper) {
+  public ExecuteCommandResponse(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
     this.errorResponse = new ErrorResponse(msgPackHelper);
   }
@@ -81,7 +81,7 @@ public class ExecuteCommandResponse implements BufferReader {
   }
 
   @Override
-  public void wrap(DirectBuffer responseBuffer, int offset, int length) {
+  public void wrap(final DirectBuffer responseBuffer, final int offset, final int length) {
     messageHeaderDecoder.wrap(responseBuffer, offset);
 
     if (messageHeaderDecoder.templateId() != responseDecoder.sbeTemplateId()) {
@@ -109,9 +109,10 @@ public class ExecuteCommandResponse implements BufferReader {
     final int valueOffset = valueLengthOffset + ExecuteCommandResponseDecoder.valueHeaderLength();
     this.responseBuffer.wrap(responseBuffer, valueOffset, valueLength);
 
-    try (InputStream is = new DirectBufferInputStream(responseBuffer, valueOffset, valueLength)) {
+    try (final InputStream is =
+        new DirectBufferInputStream(responseBuffer, valueOffset, valueLength)) {
       value = msgPackHelper.readMsgPack(is);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LangUtil.rethrowUnchecked(e);
     }
 
@@ -119,7 +120,7 @@ public class ExecuteCommandResponse implements BufferReader {
     rejectionReason = responseDecoder.rejectionReason();
   }
 
-  public <T extends BufferReader> T readInto(T record) {
+  public <T extends BufferReader> T readInto(final T record) {
     record.wrap(responseBuffer, 0, responseBuffer.capacity());
     return record;
   }

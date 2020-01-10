@@ -9,13 +9,13 @@ package io.zeebe.msgpack.property;
 
 import io.zeebe.msgpack.value.BooleanValue;
 
-public class BooleanProperty extends BaseProperty<BooleanValue> {
+public final class BooleanProperty extends BaseProperty<BooleanValue> {
 
-  public BooleanProperty(String key) {
+  public BooleanProperty(final String key) {
     super(key, new BooleanValue());
   }
 
-  public BooleanProperty(String key, boolean defaultValue) {
+  public BooleanProperty(final String key, final boolean defaultValue) {
     super(key, new BooleanValue(), new BooleanValue(defaultValue));
   }
 
@@ -23,7 +23,7 @@ public class BooleanProperty extends BaseProperty<BooleanValue> {
     return resolveValue().getValue();
   }
 
-  public void setValue(boolean value) {
+  public void setValue(final boolean value) {
     this.value.setValue(value);
     this.isSet = true;
   }

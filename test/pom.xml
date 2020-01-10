@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.22.0-SNAPSHOT</version>
+    <version>0.23.0-SNAPSHOT</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath>../parent</relativePath>
   </parent>
@@ -42,11 +42,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-gateway</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-service-container</artifactId>
     </dependency>
 
     <dependency>

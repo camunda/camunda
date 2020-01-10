@@ -11,7 +11,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.JobRecordValue;
 import java.util.stream.Stream;
 
-public class JobRecordStream
+public final class JobRecordStream
     extends ExporterRecordWithVariablesStream<JobRecordValue, JobRecordStream> {
 
   public JobRecordStream(final Stream<Record<JobRecordValue>> wrappedStream) {
@@ -31,7 +31,7 @@ public class JobRecordStream
     return valueFilter(v -> v.getRetries() == retries);
   }
 
-  public JobRecordStream withWorkflowInstanceKey(long workflowInstanceKey) {
+  public JobRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 }

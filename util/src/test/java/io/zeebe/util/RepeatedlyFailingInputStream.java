@@ -14,7 +14,7 @@ import java.io.InputStream;
  * Throws an {@link IOException} on every {@code failureFrequency} call to {@link #read}. Otherwise
  * reads the next byte from the {@code underlyingInputStream}.
  */
-public class RepeatedlyFailingInputStream extends InputStream {
+public final class RepeatedlyFailingInputStream extends InputStream {
 
   public static final long DEFAULT_FAILURE_FREQUENCY = 8;
 
@@ -47,7 +47,7 @@ public class RepeatedlyFailingInputStream extends InputStream {
   }
 
   @Override
-  public int read(byte[] b, int off, int len) throws IOException {
+  public int read(final byte[] b, final int off, final int len) throws IOException {
     readCount = 0;
     return super.read(b, off, len);
   }

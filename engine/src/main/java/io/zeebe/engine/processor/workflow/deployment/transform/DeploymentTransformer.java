@@ -35,7 +35,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.slf4j.Logger;
 
-public class DeploymentTransformer {
+public final class DeploymentTransformer {
   private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
   private final BpmnValidator validator = new BpmnValidator();
@@ -55,7 +55,7 @@ public class DeploymentTransformer {
 
     try {
       this.digestGenerator = MessageDigest.getInstance("MD5");
-    } catch (NoSuchAlgorithmException e) {
+    } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException(e);
     }
   }
@@ -111,14 +111,15 @@ public class DeploymentTransformer {
       } else {
         errors.append("\n'").append(resourceName).append("': ").append(validationError);
       }
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       LOG.error("Unexpected error while processing resource '{}'", resourceName, e);
       errors.append("\n'").append(resourceName).append("': ").append(e.getMessage());
     }
     return success;
   }
 
-  private String checkForDuplicateBpmnId(BpmnModelInstance model, String currentResource) {
+  private String checkForDuplicateBpmnId(
+      final BpmnModelInstance model, final String currentResource) {
     final Collection<Process> processes =
         model.getDefinitions().getChildElementsByType(Process.class);
 

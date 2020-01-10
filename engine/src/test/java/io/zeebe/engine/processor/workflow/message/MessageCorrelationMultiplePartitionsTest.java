@@ -31,7 +31,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MessageCorrelationMultiplePartitionsTest {
+public final class MessageCorrelationMultiplePartitionsTest {
 
   private static final Map<Integer, String> CORRELATION_KEYS =
       Maps.of(
@@ -49,7 +49,7 @@ public class MessageCorrelationMultiplePartitionsTest {
           .endEvent("end")
           .done();
 
-  @Rule public EngineRule engine = EngineRule.multiplePartition(3);
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(3);
 
   @Before
   public void init() {

@@ -23,7 +23,7 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-public class DeploymentClient {
+public final class DeploymentClient {
 
   private static final BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>>
       SUCCESS_EXPECTATION =
@@ -64,17 +64,18 @@ public class DeploymentClient {
       SUCCESS_EXPECTATION;
 
   public DeploymentClient(
-      StreamProcessorRule environmentRule, Consumer<Consumer<Integer>> forEachPartition) {
+      final StreamProcessorRule environmentRule,
+      final Consumer<Consumer<Integer>> forEachPartition) {
     this.environmentRule = environmentRule;
     this.forEachPartition = forEachPartition;
     deploymentRecord = new DeploymentRecord();
   }
 
-  public DeploymentClient withYamlResource(byte[] resource) {
+  public DeploymentClient withYamlResource(final byte[] resource) {
     return withYamlResource("process.yaml", resource);
   }
 
-  public DeploymentClient withYamlResource(String resourceName, byte[] resource) {
+  public DeploymentClient withYamlResource(final String resourceName, final byte[] resource) {
     deploymentRecord
         .resources()
         .add()
@@ -84,11 +85,11 @@ public class DeploymentClient {
     return this;
   }
 
-  public DeploymentClient withXmlResource(BpmnModelInstance modelInstance) {
+  public DeploymentClient withXmlResource(final BpmnModelInstance modelInstance) {
     return withXmlResource("process.xml", modelInstance);
   }
 
-  public DeploymentClient withXmlResource(byte[] resourceBytes) {
+  public DeploymentClient withXmlResource(final byte[] resourceBytes) {
     deploymentRecord
         .resources()
         .add()
@@ -98,7 +99,8 @@ public class DeploymentClient {
     return this;
   }
 
-  public DeploymentClient withXmlResource(String resourceName, BpmnModelInstance modelInstance) {
+  public DeploymentClient withXmlResource(
+      final String resourceName, final BpmnModelInstance modelInstance) {
     deploymentRecord
         .resources()
         .add()

@@ -17,7 +17,7 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 
-public class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
   public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =
       "Expected to create a new deployment with key '%d', but there is already an existing deployment with that key";
 

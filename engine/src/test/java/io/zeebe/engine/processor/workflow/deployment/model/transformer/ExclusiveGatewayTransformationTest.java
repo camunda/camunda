@@ -20,7 +20,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.junit.Test;
 
-public class ExclusiveGatewayTransformationTest {
+public final class ExclusiveGatewayTransformationTest {
 
   @Test
   public void shouldTransformExclusiveGatewayCorrectly() {

@@ -38,7 +38,7 @@ public class DebugLogExporter implements Exporter {
   private LogFunction logger;
 
   @Override
-  public void configure(Context context) {
+  public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(DebugExporterConfiguration.class);
     final LogLevel logLevel = configuration.getLogLevel();
     final LogFunctionSupplier supplier = LOGGERS.get(logLevel);
@@ -55,7 +55,7 @@ public class DebugLogExporter implements Exporter {
   }
 
   @Override
-  public void open(Controller controller) {
+  public void open(final Controller controller) {
     logger.log("Debug exporter opened");
     objectMapper = new ObjectMapper();
     objectMapper.registerModule(new JavaTimeModule());
@@ -71,10 +71,10 @@ public class DebugLogExporter implements Exporter {
   }
 
   @Override
-  public void export(Record record) {
+  public void export(final Record record) {
     try {
       logger.log("{}", objectMapper.writeValueAsString(record));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       logger.log("Failed to serialize object '{}' to JSON", record, e);
     }
   }
@@ -95,7 +95,7 @@ public class DebugLogExporter implements Exporter {
       return LogLevel.valueOf(logLevel.trim().toUpperCase());
     }
 
-    public void setLogLevel(String logLevel) {
+    public void setLogLevel(final String logLevel) {
       this.logLevel = logLevel;
     }
 
@@ -103,7 +103,7 @@ public class DebugLogExporter implements Exporter {
       return prettyPrint;
     }
 
-    public void setPrettyPrint(boolean prettyPrint) {
+    public void setPrettyPrint(final boolean prettyPrint) {
       this.prettyPrint = prettyPrint;
     }
   }

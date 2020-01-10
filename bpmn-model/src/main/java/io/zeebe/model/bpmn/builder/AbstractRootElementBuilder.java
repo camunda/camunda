@@ -25,7 +25,7 @@ public abstract class AbstractRootElementBuilder<
     extends AbstractBaseElementBuilder<B, E> {
 
   protected AbstractRootElementBuilder(
-      BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 }

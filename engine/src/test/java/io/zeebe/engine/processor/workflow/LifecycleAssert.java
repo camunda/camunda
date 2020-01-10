@@ -22,7 +22,7 @@ import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
 
-public class LifecycleAssert
+public final class LifecycleAssert
     extends AbstractListAssert<
         LifecycleAssert,
         List<WorkflowInstanceIntent>,
@@ -49,7 +49,7 @@ public class LifecycleAssert
     ELEMENT_LIFECYCLE.put(ELEMENT_TERMINATED, EnumSet.noneOf(WorkflowInstanceIntent.class));
   }
 
-  public LifecycleAssert(List<WorkflowInstanceIntent> actual) {
+  public LifecycleAssert(final List<WorkflowInstanceIntent> actual) {
     super(actual, LifecycleAssert.class);
   }
 
@@ -95,17 +95,17 @@ public class LifecycleAssert
 
   @Override
   protected ObjectAssert<WorkflowInstanceIntent> toAssert(
-      WorkflowInstanceIntent value, String description) {
+      final WorkflowInstanceIntent value, final String description) {
     return new ObjectAssert<>(value).describedAs(description);
   }
 
   @Override
   protected LifecycleAssert newAbstractIterableAssert(
-      Iterable<? extends WorkflowInstanceIntent> iterable) {
+      final Iterable<? extends WorkflowInstanceIntent> iterable) {
     return new LifecycleAssert(Lists.newArrayList(iterable));
   }
 
-  public static LifecycleAssert assertThat(List<WorkflowInstanceIntent> trajectory) {
+  public static LifecycleAssert assertThat(final List<WorkflowInstanceIntent> trajectory) {
     return new LifecycleAssert(trajectory);
   }
 }

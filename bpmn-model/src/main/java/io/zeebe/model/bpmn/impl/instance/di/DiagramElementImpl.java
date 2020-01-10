@@ -41,11 +41,11 @@ public abstract class DiagramElementImpl extends BpmnModelElementInstanceImpl
   protected static Attribute<String> idAttribute;
   protected static ChildElement<Extension> extensionChild;
 
-  public DiagramElementImpl(ModelTypeInstanceContext instanceContext) {
+  public DiagramElementImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DiagramElement.class, DI_ELEMENT_DIAGRAM_ELEMENT)
@@ -67,7 +67,7 @@ public abstract class DiagramElementImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public void setId(String id) {
+  public void setId(final String id) {
     idAttribute.setValue(this, id);
   }
 
@@ -77,7 +77,7 @@ public abstract class DiagramElementImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public void setExtension(Extension extension) {
+  public void setExtension(final Extension extension) {
     extensionChild.setChild(this, extension);
   }
 }

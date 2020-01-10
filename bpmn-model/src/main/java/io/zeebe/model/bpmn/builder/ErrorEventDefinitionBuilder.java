@@ -22,7 +22,7 @@ public class ErrorEventDefinitionBuilder
     extends AbstractErrorEventDefinitionBuilder<ErrorEventDefinitionBuilder> {
 
   public ErrorEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, ErrorEventDefinition element) {
+      final BpmnModelInstance modelInstance, final ErrorEventDefinition element) {
     super(modelInstance, element, ErrorEventDefinitionBuilder.class);
   }
 }

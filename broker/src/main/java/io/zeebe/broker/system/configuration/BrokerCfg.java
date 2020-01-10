@@ -13,7 +13,7 @@ import io.zeebe.util.Environment;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BrokerCfg {
+public final class BrokerCfg {
 
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();
@@ -22,6 +22,8 @@ public class BrokerCfg {
   private List<ExporterCfg> exporters = new ArrayList<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
+
+  private String stepTimeout = "5m";
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -44,6 +46,7 @@ public class BrokerCfg {
         .ifPresent(
             value ->
                 exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
+    environment.get(EnvironmentConstants.ENV_STEP_TIMEOUT).ifPresent(this::setStepTimeout);
   }
 
   public NetworkCfg getNetwork() {
@@ -90,7 +93,7 @@ public class BrokerCfg {
     return gateway;
   }
 
-  public BrokerCfg setGateway(EmbeddedGatewayCfg gateway) {
+  public BrokerCfg setGateway(final EmbeddedGatewayCfg gateway) {
     this.gateway = gateway;
     return this;
   }
@@ -99,9 +102,17 @@ public class BrokerCfg {
     return backpressure;
   }
 
-  public BrokerCfg setBackpressure(BackpressureCfg backpressure) {
+  public BrokerCfg setBackpressure(final BackpressureCfg backpressure) {
     this.backpressure = backpressure;
     return this;
+  }
+
+  public String getStepTimeout() {
+    return stepTimeout;
+  }
+
+  public void setStepTimeout(final String stepTimeout) {
+    this.stepTimeout = stepTimeout;
   }
 
   @Override
@@ -119,6 +130,11 @@ public class BrokerCfg {
         + exporters
         + ", gateway="
         + gateway
+        + ", backpressure="
+        + backpressure
+        + ", stepTimeout='"
+        + stepTimeout
+        + '\''
         + '}';
   }
 

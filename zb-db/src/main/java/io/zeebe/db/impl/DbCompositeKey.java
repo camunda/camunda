@@ -11,13 +11,14 @@ import io.zeebe.db.DbKey;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
+public final class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends DbKey>
     implements DbKey {
 
   private final FirstKeyType firstKeyTypePart;
   private final SecondKeyType secondKeyTypePart;
 
-  public DbCompositeKey(FirstKeyType firstKeyTypePart, SecondKeyType secondKeyTypePart) {
+  public DbCompositeKey(
+      final FirstKeyType firstKeyTypePart, final SecondKeyType secondKeyTypePart) {
     this.firstKeyTypePart = firstKeyTypePart;
     this.secondKeyTypePart = secondKeyTypePart;
   }
@@ -31,7 +32,7 @@ public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends Db
   }
 
   @Override
-  public void wrap(DirectBuffer directBuffer, int offset, int length) {
+  public void wrap(final DirectBuffer directBuffer, final int offset, final int length) {
     firstKeyTypePart.wrap(directBuffer, offset, length);
     final int firstKeyLength = firstKeyTypePart.getLength();
     secondKeyTypePart.wrap(directBuffer, offset + firstKeyLength, length - firstKeyLength);
@@ -43,7 +44,7 @@ public class DbCompositeKey<FirstKeyType extends DbKey, SecondKeyType extends Db
   }
 
   @Override
-  public void write(MutableDirectBuffer mutableDirectBuffer, int offset) {
+  public void write(final MutableDirectBuffer mutableDirectBuffer, final int offset) {
     firstKeyTypePart.write(mutableDirectBuffer, offset);
     final int firstKeyPartLength = firstKeyTypePart.getLength();
     secondKeyTypePart.write(mutableDirectBuffer, offset + firstKeyPartLength);

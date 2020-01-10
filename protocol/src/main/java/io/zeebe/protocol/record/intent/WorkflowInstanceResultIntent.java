@@ -21,11 +21,11 @@ public enum WorkflowInstanceResultIntent implements Intent, WorkflowInstanceRela
   private final short value;
   private final boolean shouldBlacklist;
 
-  WorkflowInstanceResultIntent(int value, boolean shouldBlacklist) {
+  WorkflowInstanceResultIntent(final int value, final boolean shouldBlacklist) {
     this((short) value, shouldBlacklist);
   }
 
-  WorkflowInstanceResultIntent(short value, boolean shouldBlacklist) {
+  WorkflowInstanceResultIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -35,7 +35,7 @@ public enum WorkflowInstanceResultIntent implements Intent, WorkflowInstanceRela
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return COMPLETED;

@@ -17,7 +17,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class IndexedRecord implements DbValue {
+public final class IndexedRecord implements DbValue {
 
   private final WorkflowInstanceRecord value = new WorkflowInstanceRecord();
   private long key;
@@ -26,7 +26,9 @@ public class IndexedRecord implements DbValue {
   IndexedRecord() {}
 
   public IndexedRecord(
-      long key, WorkflowInstanceIntent instanceState, WorkflowInstanceRecord record) {
+      final long key,
+      final WorkflowInstanceIntent instanceState,
+      final WorkflowInstanceRecord record) {
     this.key = key;
     this.state = instanceState;
     setValue(record);
@@ -40,7 +42,7 @@ public class IndexedRecord implements DbValue {
     return state;
   }
 
-  public void setState(WorkflowInstanceIntent state) {
+  public void setState(final WorkflowInstanceIntent state) {
     this.state = state;
   }
 
@@ -48,7 +50,7 @@ public class IndexedRecord implements DbValue {
     return value;
   }
 
-  public void setValue(WorkflowInstanceRecord value) {
+  public void setValue(final WorkflowInstanceRecord value) {
     final MutableDirectBuffer valueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = value.getLength();
     valueBuffer.wrap(new byte[encodedLength]);
@@ -58,7 +60,7 @@ public class IndexedRecord implements DbValue {
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     final int startOffset = offset;
     key = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
@@ -79,7 +81,7 @@ public class IndexedRecord implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     final int startOffset = offset;
 
     buffer.putLong(offset, key, ZB_DB_BYTE_ORDER);

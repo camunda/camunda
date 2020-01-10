@@ -10,34 +10,32 @@ package io.zeebe.msgpack.spec;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackToken {
+public final class MsgPackToken {
   public static final MsgPackToken NIL = new MsgPackToken();
 
-  protected static final int MAX_MAP_ELEMENTS = 0x3fff_ffff;
-
-  protected MsgPackType type = MsgPackType.NIL;
-  protected int totalLength;
+  private MsgPackType type = MsgPackType.NIL;
+  private int totalLength;
 
   // string
-  protected UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
 
   // boolean
-  protected boolean booleanValue;
+  private boolean booleanValue;
 
   // map/array
-  protected int size;
+  private int size;
 
   // int
-  protected long integerValue;
+  private long integerValue;
 
   // float32/float64
-  protected double floatValue;
+  private double floatValue;
 
   public int getTotalLength() {
     return totalLength;
   }
 
-  public void setTotalLength(int totalLength) {
+  public void setTotalLength(final int totalLength) {
     this.totalLength = totalLength;
   }
 
@@ -49,7 +47,7 @@ public class MsgPackToken {
     return type;
   }
 
-  public void setType(MsgPackType type) {
+  public void setType(final MsgPackType type) {
     this.type = type;
   }
 
@@ -57,7 +55,7 @@ public class MsgPackToken {
     return valueBuffer;
   }
 
-  public void setValue(DirectBuffer buffer, int offset, int length) {
+  public void setValue(final DirectBuffer buffer, final int offset, final int length) {
     if (length == 0) {
       valueBuffer.wrap(0, 0);
     } else if (offset + length <= buffer.capacity()) {
@@ -71,23 +69,23 @@ public class MsgPackToken {
     }
   }
 
-  public void setValue(double value) {
+  public void setValue(final double value) {
     this.floatValue = value;
   }
 
-  public void setValue(long value) {
+  public void setValue(final long value) {
     this.integerValue = value;
   }
 
-  public void setValue(boolean value) {
+  public void setValue(final boolean value) {
     this.booleanValue = value;
   }
 
-  public void setMapHeader(int size) {
+  public void setMapHeader(final int size) {
     this.size = size;
   }
 
-  public void setArrayHeader(int size) {
+  public void setArrayHeader(final int size) {
     this.size = size;
   }
 

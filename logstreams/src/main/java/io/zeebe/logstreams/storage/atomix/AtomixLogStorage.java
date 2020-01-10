@@ -7,6 +7,7 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
+import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.nio.ByteBuffer;
@@ -26,6 +27,11 @@ public class AtomixLogStorage implements LogStorage {
     this.readerFactory = readerFactory;
     this.logCompacter = logCompacter;
     this.appenderSupplier = appenderSupplier;
+  }
+
+  public static AtomixLogStorage ofPartition(final RaftPartition partition) {
+    final var server = new AtomixRaftServer(partition.getServer());
+    return new AtomixLogStorage(server, server, server);
   }
 
   @Override

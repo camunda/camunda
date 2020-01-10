@@ -20,18 +20,18 @@ import java.util.List;
 
 // todo: this skips the sequence flow taken and just starts the next element
 // https://github.com/zeebe-io/zeebe/issues/1979
-public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBasedGateway>
+public final class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBasedGateway>
     extends EventOccurredHandler<T> {
   public EventBasedGatewayEventOccurredHandler() {
     super();
   }
 
-  public EventBasedGatewayEventOccurredHandler(WorkflowInstanceIntent nextState) {
+  public EventBasedGatewayEventOccurredHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       final EventTrigger event = getTriggeredEvent(context, context.getKey());
       final ExecutableSequenceFlow flow = getSequenceFlow(context, event);
@@ -53,7 +53,8 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
     return false;
   }
 
-  private ExecutableSequenceFlow getSequenceFlow(BpmnStepContext<T> context, EventTrigger event) {
+  private ExecutableSequenceFlow getSequenceFlow(
+      final BpmnStepContext<T> context, final EventTrigger event) {
     final List<ExecutableSequenceFlow> outgoing = context.getElement().getOutgoing();
 
     for (final ExecutableSequenceFlow flow : outgoing) {

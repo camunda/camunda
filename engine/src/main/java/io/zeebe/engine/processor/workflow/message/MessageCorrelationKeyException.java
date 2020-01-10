@@ -7,12 +7,13 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-public class MessageCorrelationKeyException extends RuntimeException {
+public final class MessageCorrelationKeyException extends RuntimeException {
   private static final long serialVersionUID = 8929284049646192937L;
 
   private final MessageCorrelationKeyContext context;
 
-  public MessageCorrelationKeyException(MessageCorrelationKeyContext context, String message) {
+  public MessageCorrelationKeyException(
+      final MessageCorrelationKeyContext context, final String message) {
     super(message);
     this.context = context;
   }

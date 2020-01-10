@@ -9,8 +9,8 @@ package io.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
+import io.zeebe.broker.clustering.topology.TopologyManager;
+import io.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
 import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
@@ -18,14 +18,14 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PartitionCommandSenderImpl implements PartitionCommandSender {
+public final class PartitionCommandSenderImpl implements PartitionCommandSender {
 
   private final Atomix atomix;
 
   private final TopologyPartitionListenerImpl partitionListener;
 
   public PartitionCommandSenderImpl(
-      Atomix atomix, final TopologyManager topologyManager, final ActorControl actor) {
+      final Atomix atomix, final TopologyManager topologyManager, final ActorControl actor) {
     this.atomix = atomix;
     this.partitionListener = new TopologyPartitionListenerImpl(actor);
     topologyManager.addTopologyPartitionListener(partitionListener);

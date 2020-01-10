@@ -8,22 +8,20 @@
 package io.zeebe.gateway.broker;
 
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Node;
+import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.utils.net.Address;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -35,7 +33,6 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -44,18 +41,11 @@ import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportListener;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,15 +53,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 
-public class BrokerClientTest {
+public final class BrokerClientTest {
 
-  private static final int CLIENT_MAX_REQUESTS = 128;
-  @Rule public StubBrokerRule broker = new StubBrokerRule();
+  @Rule public final StubBrokerRule broker = new StubBrokerRule();
   @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
-  @Rule public ExpectedException exception = ExpectedException.none();
-  @Rule public TestName testContext = new TestName();
+  @Rule public final ExpectedException exception = ExpectedException.none();
+  @Rule public final TestName testContext = new TestName();
   private BrokerClient client;
-  private ControlledActorClock clock;
+  private AtomixCluster atomixCluster;
 
   @Before
   public void setUp() {
@@ -84,19 +73,28 @@ public class BrokerClientTest {
         .setRequestTimeout("3s");
     configuration.init();
 
-    clock = new ControlledActorClock();
+    final ControlledActorClock clock = new ControlledActorClock();
 
-    final AtomixCluster atomixCluster = mock(AtomixCluster.class);
-    final ClusterMembershipService memberShipService = mock(ClusterMembershipService.class);
-    when(atomixCluster.getMembershipService()).thenReturn(memberShipService);
+    final var stubAddress = Address.from(broker.getCurrentStubHost(), broker.getCurrentStubPort());
+    final var stubNode = Node.builder().withAddress(stubAddress).build();
+    final var listOfNodes = List.of(stubNode);
+    atomixCluster =
+        AtomixCluster.builder()
+            .withPort(SocketUtil.getNextAddress().getPort())
+            .withMemberId("gateway")
+            .withClusterId("cluster")
+            .withMembershipProvider(
+                BootstrapDiscoveryProvider.builder().withNodes(listOfNodes).build())
+            .build();
+    atomixCluster.start().join();
 
     client = new BrokerClientImpl(configuration, atomixCluster, clock);
-
-    ((BrokerClientImpl) client).getTransport().registerEndpoint(0, broker.getSocketAddress());
 
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(START_PARTITION_ID);
     topology.setPartitionLeader(START_PARTITION_ID, 0, 1);
+    topology.addBrokerIfAbsent(0);
+    topology.setBrokerAddressIfPresent(0, stubAddress.toString());
 
     ((BrokerTopologyManagerImpl) client.getTopologyManager()).setTopology(topology);
   }
@@ -104,6 +102,7 @@ public class BrokerClientTest {
   @After
   public void tearDown() {
     client.close();
+    atomixCluster.stop().join();
   }
 
   @Test
@@ -161,7 +160,8 @@ public class BrokerClientTest {
   public void shouldThrowExceptionIfPartitionNotFoundResponse() {
     // given
     broker
-        .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, JobIntent.CREATE)
+        .onExecuteCommandRequest(
+            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
         .respondWithError()
         .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
         .errorData("")
@@ -180,55 +180,6 @@ public class BrokerClientTest {
   }
 
   @Test
-  public void shouldEstablishNewConnectionsAfterDisconnect() throws Exception {
-    // given
-    final ClientTransport clientTransport = ((BrokerClientImpl) client).getTransport();
-    final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
-    clientTransport
-        .registerChannelListener(
-            new TransportListener() {
-              @Override
-              public void onConnectionEstablished(RemoteAddress remoteAddress) {
-                latchRef.get().countDown();
-              }
-
-              @Override
-              public void onConnectionClosed(RemoteAddress remoteAddress) {}
-            })
-        .join();
-    latchRef.get().await(10, TimeUnit.SECONDS);
-
-    // ensuring an open connection
-    broker.onExecuteCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE).doNotRespond();
-    client.sendRequest(new BrokerDeployWorkflowRequest());
-
-    // when
-    broker.closeTransport();
-    latchRef.set(new CountDownLatch(1));
-    broker.bindTransport();
-
-    // then
-    latchRef.get().await(10, TimeUnit.SECONDS);
-  }
-
-  @Test
-  public void shouldRetryTopologyRequestAfterTimeout() {
-    // given
-    broker
-        .onExecuteCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
-        .respondWithError()
-        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
-        .errorData("")
-        .register();
-
-    // when
-    client.sendRequest(new BrokerDeployWorkflowRequest());
-
-    // then
-    waitUntil(() -> broker.getAllReceivedRequests().size() > 1, 100);
-  }
-
-  @Test
   public void shouldCloseIdempotently() {
     // given
     client.close();
@@ -239,87 +190,6 @@ public class BrokerClientTest {
     // then
     assertThat("this code has been reached, i.e. the second close does not block infinitely")
         .isNotNull();
-  }
-
-  @Test
-  public void shouldSendAsyncRequestUpToPoolCapacity() {
-    // given
-    broker.clearTopology();
-    broker.addPartition(0);
-    broker.addPartition(1);
-
-    stubJobResponse();
-
-    // when then
-    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
-      client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
-    }
-  }
-
-  @Test
-  public void shouldReleaseRequestsOnGet() {
-    // given
-
-    broker.clearTopology();
-    broker.addPartition(0);
-    broker.addPartition(1);
-
-    stubJobResponse();
-
-    final List<ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>>> futures =
-        new ArrayList<>();
-    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
-          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
-
-      futures.add(future);
-    }
-
-    // when
-    for (final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future : futures) {
-      future.join();
-    }
-
-    // then
-    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
-          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
-
-      futures.add(future);
-    }
-  }
-
-  @Test
-  public void shouldReleaseRequestsOnTimeout() {
-    // given
-    broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
-
-    // given
-    final List<ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>>> futures =
-        new ArrayList<>();
-    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
-          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
-      futures.add(future);
-    }
-
-    // when
-    for (final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future : futures) {
-      try {
-        future.join();
-        fail("exception expected");
-      } catch (final Exception e) {
-        // expected
-      }
-    }
-
-    // then
-    for (int i = 0; i < CLIENT_MAX_REQUESTS; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
-          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
-
-      futures.add(future);
-    }
   }
 
   @Test
@@ -342,7 +212,7 @@ public class BrokerClientTest {
 
     // when
     try {
-      client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
+      client.sendRequest(new BrokerCompleteJobRequest(1, new UnsafeBuffer(new byte[0]))).join();
 
       fail("should throw exception");
     } catch (final Exception e) {
@@ -377,12 +247,7 @@ public class BrokerClientTest {
     assertThat(rejection.getReason()).isEqualTo("foo");
   }
 
-  private void stubJobResponse() {
-    registerCreateWfCommand();
-    broker.jobs().registerCompleteCommand();
-  }
-
-  public void registerCreateWfCommand() {
+  private void registerCreateWfCommand() {
     final ExecuteCommandResponseBuilder builder =
         broker
             .onExecuteCommandRequest(
@@ -390,9 +255,9 @@ public class BrokerClientTest {
             .respondWith()
             .event()
             .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .key(r -> r.key())
+            .key(ExecuteCommandRequest::key)
             .value()
-            .allOf((r) -> r.getCommand())
+            .allOf(ExecuteCommandRequest::getCommand)
             .done();
 
     builder.register();

@@ -7,20 +7,24 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformation;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableError;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class TransformContext {
+public final class TransformContext {
 
   private final Map<DirectBuffer, ExecutableWorkflow> workflows = new HashMap<>();
   private final Map<DirectBuffer, ExecutableMessage> messages = new HashMap<>();
+  private final Map<DirectBuffer, ExecutableError> errors = new HashMap<>();
+
   private JsonPathQueryCompiler jsonPathQueryCompiler;
 
   /*
@@ -32,35 +36,43 @@ public class TransformContext {
     return currentWorkflow;
   }
 
-  public void setCurrentWorkflow(ExecutableWorkflow currentWorkflow) {
+  public void setCurrentWorkflow(final ExecutableWorkflow currentWorkflow) {
     this.currentWorkflow = currentWorkflow;
   }
 
-  public void addWorkflow(ExecutableWorkflow workflow) {
+  public void addWorkflow(final ExecutableWorkflow workflow) {
     workflows.put(workflow.getId(), workflow);
   }
 
-  public ExecutableWorkflow getWorkflow(String id) {
-    return workflows.get(BufferUtil.wrapString(id));
+  public ExecutableWorkflow getWorkflow(final String id) {
+    return workflows.get(wrapString(id));
   }
 
   public List<ExecutableWorkflow> getWorkflows() {
     return new ArrayList<>(workflows.values());
   }
 
-  public void addMessage(ExecutableMessage message) {
+  public void addMessage(final ExecutableMessage message) {
     messages.put(message.getId(), message);
   }
 
-  public ExecutableMessage getMessage(String id) {
-    return messages.get(BufferUtil.wrapString(id));
+  public ExecutableMessage getMessage(final String id) {
+    return messages.get(wrapString(id));
+  }
+
+  public void addError(final ExecutableError error) {
+    errors.put(error.getId(), error);
+  }
+
+  public ExecutableError getError(final String id) {
+    return errors.get(wrapString(id));
   }
 
   public JsonPathQueryCompiler getJsonPathQueryCompiler() {
     return jsonPathQueryCompiler;
   }
 
-  public void setJsonPathQueryCompiler(JsonPathQueryCompiler jsonPathQueryCompiler) {
+  public void setJsonPathQueryCompiler(final JsonPathQueryCompiler jsonPathQueryCompiler) {
     this.jsonPathQueryCompiler = jsonPathQueryCompiler;
   }
 }

@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 
-public class DbSnapshotStore implements SnapshotStore {
+public final class DbSnapshotStore implements SnapshotStore {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStore.class);
 
   // if thread-safe is a must, then switch to ConcurrentNavigableMap
@@ -186,6 +186,7 @@ public class DbSnapshotStore implements SnapshotStore {
       listeners.forEach(listener -> listener.onNewSnapshot(snapshot, this));
     }
 
+    LOGGER.debug("Committed new snapshot {}", snapshot);
     return snapshot;
   }
 
@@ -225,7 +226,7 @@ public class DbSnapshotStore implements SnapshotStore {
   private void cleanUpTemporarySnapshots(final DbSnapshotId cutoffId) throws IOException {
     LOGGER.debug("Search for orphaned snapshots below oldest valid snapshot {}", cutoffId);
 
-    try (var files = Files.newDirectoryStream(pendingDirectory)) {
+    try (final var files = Files.newDirectoryStream(pendingDirectory)) {
       for (final var file : files) {
         final var name = file.getFileName().toString();
         final var parts = name.split("-", 3);

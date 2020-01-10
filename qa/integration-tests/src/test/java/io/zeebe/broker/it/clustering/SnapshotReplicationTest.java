@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
@@ -29,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import org.junit.Before;
@@ -38,7 +36,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class SnapshotReplicationTest {
+public final class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
   private static final int SNAPSHOT_PERIOD_SECONDS = 30;
@@ -52,9 +50,9 @@ public class SnapshotReplicationTest {
 
   // NOTE: the configuration removes the RecordingExporter from the broker's configuration to enable
   // data deletion so it can't be used in tests
-  public ClusteringRule clusteringRule =
+  public final ClusteringRule clusteringRule =
       new ClusteringRule(PARTITION_COUNT, 3, 3, SnapshotReplicationTest::configureCustomExporter);
-  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
@@ -76,17 +74,17 @@ public class SnapshotReplicationTest {
     clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
 
     // when - snapshot
-    waitForValidSnapshotAtBroker(leader);
+    clusteringRule.waitForValidSnapshotAtBroker(leader);
 
     final List<Broker> otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
     for (final Broker broker : otherBrokers) {
-      waitForValidSnapshotAtBroker(broker);
+      clusteringRule.waitForValidSnapshotAtBroker(broker);
     }
 
     // then - replicated
     final Collection<Broker> brokers = clusteringRule.getBrokers();
     final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = new HashMap<>();
-    for (Broker broker : brokers) {
+    for (final Broker broker : brokers) {
       final Map<String, Long> checksums = createSnapshotDirectoryChecksums(broker);
       brokerSnapshotChecksums.put(broker.getConfig().getCluster().getNodeId(), checksums);
     }
@@ -96,8 +94,8 @@ public class SnapshotReplicationTest {
     assertThat(checksumFirstNode).isEqualTo(brokerSnapshotChecksums.get(2));
   }
 
-  private Map<String, Long> createSnapshotDirectoryChecksums(Broker broker) {
-    final File snapshotsDir = getSnapshotsDirectory(broker);
+  private Map<String, Long> createSnapshotDirectoryChecksums(final Broker broker) {
+    final File snapshotsDir = clusteringRule.getSnapshotsDirectory(broker);
 
     final Map<String, Long> checksums = createChecksumsForSnapshotDirectory(snapshotsDir);
 
@@ -105,7 +103,7 @@ public class SnapshotReplicationTest {
     return checksums;
   }
 
-  private Map<String, Long> createChecksumsForSnapshotDirectory(File snapshotDirectory) {
+  private Map<String, Long> createChecksumsForSnapshotDirectory(final File snapshotDirectory) {
     final Map<String, Long> checksums = new HashMap<>();
     final File[] snapshotDirs = snapshotDirectory.listFiles();
     if (snapshotDirs != null) {
@@ -126,8 +124,8 @@ public class SnapshotReplicationTest {
     return checksums;
   }
 
-  private long createCheckSumForFile(File snapshotFile) {
-    try (CheckedInputStream checkedInputStream =
+  private long createCheckSumForFile(final File snapshotFile) {
+    try (final CheckedInputStream checkedInputStream =
         new CheckedInputStream(Files.newInputStream(snapshotFile.toPath()), new CRC32())) {
       while (checkedInputStream.skip(512) > 0) {}
 
@@ -135,16 +133,6 @@ public class SnapshotReplicationTest {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private File getSnapshotsDirectory(Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
-  }
-
-  protected void waitForValidSnapshotAtBroker(final Broker broker) {
-    final File snapshotsDir = getSnapshotsDirectory(broker);
-    waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
   }
 
   private static void configureCustomExporter(final BrokerCfg brokerCfg) {

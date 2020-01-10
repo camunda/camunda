@@ -16,16 +16,16 @@ import io.zeebe.util.sched.clock.ActorClock;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-public class ControlledActorThread extends ActorThread {
-  private CyclicBarrier barrier = new CyclicBarrier(2);
+public final class ControlledActorThread extends ActorThread {
+  private final CyclicBarrier barrier = new CyclicBarrier(2);
 
   public ControlledActorThread(
-      String name,
-      int id,
-      ActorThreadGroup threadGroup,
-      TaskScheduler taskScheduler,
-      ActorClock clock,
-      ActorTimerQueue timerQueue) {
+      final String name,
+      final int id,
+      final ActorThreadGroup threadGroup,
+      final TaskScheduler taskScheduler,
+      final ActorClock clock,
+      final ActorTimerQueue timerQueue) {
     super(name, id, threadGroup, taskScheduler, clock, timerQueue);
     idleStrategy = new ControlledIdleStartegy();
   }
@@ -37,7 +37,7 @@ public class ControlledActorThread extends ActorThread {
         // spin until thread is idle again
         Thread.yield();
       }
-    } catch (InterruptedException | BrokenBarrierException e) {
+    } catch (final InterruptedException | BrokenBarrierException e) {
       LangUtil.rethrowUnchecked(e);
     }
   }
@@ -49,7 +49,7 @@ public class ControlledActorThread extends ActorThread {
 
       try {
         barrier.await();
-      } catch (InterruptedException | BrokenBarrierException e) {
+      } catch (final InterruptedException | BrokenBarrierException e) {
         LangUtil.rethrowUnchecked(e);
       }
     }

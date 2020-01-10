@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class ExportersStateTest {
+public final class ExportersStateTest {
 
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();

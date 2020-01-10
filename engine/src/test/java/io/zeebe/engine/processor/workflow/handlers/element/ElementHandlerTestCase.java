@@ -32,7 +32,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 
 public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
-  @ClassRule public static ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
+  @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
 
   @Mock public EventOutput eventOutput;
   @Mock public TypedStreamWriter streamWriter;
@@ -43,9 +43,10 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
 
   @Before
   public void setUp() {
-    context = new BpmnStepContext<>(zeebeStateRule.getZeebeState().getWorkflowState(), eventOutput);
+    context =
+        new BpmnStepContext<>(ZEEBE_STATE_RULE.getZeebeState().getWorkflowState(), eventOutput);
     elementInstanceState =
-        zeebeStateRule.getZeebeState().getWorkflowState().getElementInstanceState();
+        ZEEBE_STATE_RULE.getZeebeState().getWorkflowState().getElementInstanceState();
     context.setStreamWriter(streamWriter);
   }
 
@@ -61,7 +62,7 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
         .appendNewCommand(eq(IncidentIntent.CREATE), incidentCaptor.capture());
   }
 
-  protected void verifyRecordPublished(StoredRecord record, long flowScopeKey) {
+  protected void verifyRecordPublished(final StoredRecord record, final long flowScopeKey) {
     final WorkflowInstanceRecord expectedRecord = new WorkflowInstanceRecord();
     expectedRecord.wrap(record.getRecord().getValue());
     expectedRecord.setFlowScopeKey(flowScopeKey);
@@ -70,7 +71,7 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
         .appendFollowUpEvent(record.getKey(), record.getRecord().getState(), expectedRecord);
   }
 
-  protected ElementInstance createAndSetContextElementInstance(WorkflowInstanceIntent state) {
+  protected ElementInstance createAndSetContextElementInstance(final WorkflowInstanceIntent state) {
     final ElementInstance instance = newElementInstance(state);
     setContextElementInstance(instance);
 
@@ -78,22 +79,22 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
   }
 
   protected ElementInstance createAndSetContextElementInstance(
-      WorkflowInstanceIntent state, ElementInstance flowScope) {
+      final WorkflowInstanceIntent state, final ElementInstance flowScope) {
     final ElementInstance instance = newElementInstance(state, flowScope);
     setContextElementInstance(instance);
 
     return instance;
   }
 
-  protected void setContextElementInstance(ElementInstance instance) {
+  protected void setContextElementInstance(final ElementInstance instance) {
     context.init(instance.getKey(), instance.getValue(), instance.getState());
   }
 
-  protected ElementInstance newElementInstance(WorkflowInstanceIntent state) {
-    final long key = zeebeStateRule.getKeyGenerator().nextKey();
+  protected ElementInstance newElementInstance(final WorkflowInstanceIntent state) {
+    final long key = ZEEBE_STATE_RULE.getKeyGenerator().nextKey();
     final WorkflowInstanceRecord value = new WorkflowInstanceRecord();
 
-    return zeebeStateRule
+    return ZEEBE_STATE_RULE
         .getZeebeState()
         .getWorkflowState()
         .getElementInstanceState()
@@ -101,28 +102,28 @@ public abstract class ElementHandlerTestCase<T extends ExecutableFlowNode> {
   }
 
   protected ElementInstance newElementInstance(
-      WorkflowInstanceIntent state, ElementInstance flowScope) {
-    final long key = zeebeStateRule.getKeyGenerator().nextKey();
+      final WorkflowInstanceIntent state, final ElementInstance flowScope) {
+    final long key = ZEEBE_STATE_RULE.getKeyGenerator().nextKey();
     final WorkflowInstanceRecord value = new WorkflowInstanceRecord();
     value.setFlowScopeKey(flowScope.getKey());
     flowScope.spawnToken();
 
-    return zeebeStateRule
+    return ZEEBE_STATE_RULE
         .getZeebeState()
         .getWorkflowState()
         .getElementInstanceState()
         .newInstance(flowScope, key, value, state);
   }
 
-  protected StoredRecord deferRecordOn(ElementInstance scopeInstance) {
-    final long key = zeebeStateRule.getKeyGenerator().nextKey();
+  protected StoredRecord deferRecordOn(final ElementInstance scopeInstance) {
+    final long key = ZEEBE_STATE_RULE.getKeyGenerator().nextKey();
     final WorkflowInstanceRecord value =
         new WorkflowInstanceRecord().setFlowScopeKey(scopeInstance.getKey());
     final IndexedRecord indexedRecord =
         new IndexedRecord(key, WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.DEFERRED);
 
-    zeebeStateRule
+    ZEEBE_STATE_RULE
         .getZeebeState()
         .getWorkflowState()
         .getElementInstanceState()

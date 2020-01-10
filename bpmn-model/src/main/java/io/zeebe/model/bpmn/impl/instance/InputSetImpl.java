@@ -49,11 +49,11 @@ public class InputSetImpl extends BaseElementImpl implements InputSet {
   protected static ElementReferenceCollection<OutputSet, OutputSetRefs>
       outputSetOutputSetRefsCollection;
 
-  public InputSetImpl(ModelTypeInstanceContext instanceContext) {
+  public InputSetImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputSet.class, BPMN_ELEMENT_INPUT_SET)
@@ -62,7 +62,7 @@ public class InputSetImpl extends BaseElementImpl implements InputSet {
             .instanceProvider(
                 new ModelTypeInstanceProvider<InputSet>() {
                   @Override
-                  public InputSet newInstance(ModelTypeInstanceContext instanceContext) {
+                  public InputSet newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new InputSetImpl(instanceContext);
                   }
                 });
@@ -104,7 +104,7 @@ public class InputSetImpl extends BaseElementImpl implements InputSet {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 

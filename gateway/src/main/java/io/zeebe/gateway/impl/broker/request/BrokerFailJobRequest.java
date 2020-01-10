@@ -12,17 +12,17 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> {
+public final class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerFailJobRequest(long key, int retries) {
+  public BrokerFailJobRequest(final long key, final int retries) {
     super(ValueType.JOB, JobIntent.FAIL);
     request.setKey(key);
     requestDto.setRetries(retries);
   }
 
-  public BrokerFailJobRequest setErrorMessage(String errorMessage) {
+  public BrokerFailJobRequest setErrorMessage(final String errorMessage) {
     requestDto.setErrorMessage(errorMessage);
     return this;
   }
@@ -33,7 +33,7 @@ public class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> {
   }
 
   @Override
-  protected JobRecord toResponseDto(DirectBuffer buffer) {
+  protected JobRecord toResponseDto(final DirectBuffer buffer) {
     final JobRecord responseDto = new JobRecord();
     responseDto.wrap(buffer);
     return responseDto;

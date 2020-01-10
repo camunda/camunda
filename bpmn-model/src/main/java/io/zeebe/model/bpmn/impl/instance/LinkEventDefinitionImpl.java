@@ -43,11 +43,11 @@ public class LinkEventDefinitionImpl extends EventDefinitionImpl implements Link
   protected static ElementReferenceCollection<LinkEventDefinition, Source> sourceCollection;
   protected static ElementReference<LinkEventDefinition, Target> targetChild;
 
-  public LinkEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public LinkEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(LinkEventDefinition.class, BPMN_ELEMENT_LINK_EVENT_DEFINITION)
@@ -56,7 +56,8 @@ public class LinkEventDefinitionImpl extends EventDefinitionImpl implements Link
             .instanceProvider(
                 new ModelTypeInstanceProvider<LinkEventDefinition>() {
                   @Override
-                  public LinkEventDefinition newInstance(ModelTypeInstanceContext instanceContext) {
+                  public LinkEventDefinition newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new LinkEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -86,7 +87,7 @@ public class LinkEventDefinitionImpl extends EventDefinitionImpl implements Link
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -101,7 +102,7 @@ public class LinkEventDefinitionImpl extends EventDefinitionImpl implements Link
   }
 
   @Override
-  public void setTarget(LinkEventDefinition target) {
+  public void setTarget(final LinkEventDefinition target) {
     targetChild.setReferenceTargetElement(this, target);
   }
 }

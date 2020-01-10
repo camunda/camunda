@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class Transformation extends FormalExpressionImpl {
 
-  public Transformation(ModelTypeInstanceContext instanceContext) {
+  public Transformation(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Transformation.class, BPMN_ELEMENT_TRANSFORMATION)
@@ -45,7 +45,8 @@ public class Transformation extends FormalExpressionImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Transformation>() {
                   @Override
-                  public Transformation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Transformation newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new Transformation(instanceContext);
                   }
                 });

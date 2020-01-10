@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -40,7 +41,7 @@ func TestSetVariablesCommandWithVariablesFromString(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromString(variables)
 	if err != nil {
@@ -76,7 +77,7 @@ func TestSetVariablesCommandWithVariablesFromStringer(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -112,7 +113,7 @@ func TestSetVariablesCommandWithVariablesFromObject(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -148,7 +149,7 @@ func TestSetVariablesCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
@@ -184,7 +185,7 @@ func TestSetVariablesCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T)
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
@@ -222,7 +223,7 @@ func TestSetVariablesCommandWithVariablesFromMap(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromMap(variablesMap)
 	if err != nil {

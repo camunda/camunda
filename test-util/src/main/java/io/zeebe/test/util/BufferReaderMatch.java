@@ -11,12 +11,12 @@ import io.zeebe.util.buffer.BufferReader;
 import java.util.function.Function;
 import org.hamcrest.Matcher;
 
-public class BufferReaderMatch<T extends BufferReader> {
+public final class BufferReaderMatch<T extends BufferReader> {
   protected Function<T, Object> propertyExtractor;
   protected Object expectedValue;
   protected Matcher<?> expectedValueMatcher;
 
-  boolean matches(T reader) {
+  boolean matches(final T reader) {
     final Object actualValue = propertyExtractor.apply(reader);
     if (expectedValue != null) {
       return expectedValue.equals(actualValue);

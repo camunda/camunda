@@ -11,7 +11,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEventBasedGateway;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
 
-public class EventBasedGatewayElementCompletedHandler<T extends ExecutableEventBasedGateway>
+public final class EventBasedGatewayElementCompletedHandler<T extends ExecutableEventBasedGateway>
     extends ElementCompletedHandler<T> {
 
   public EventBasedGatewayElementCompletedHandler() {
@@ -19,7 +19,7 @@ public class EventBasedGatewayElementCompletedHandler<T extends ExecutableEventB
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     publishDeferredRecords(context);
     return super.handleState(context);
   }

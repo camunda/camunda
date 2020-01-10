@@ -16,13 +16,14 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-public class TestFileUtil {
+public final class TestFileUtil {
 
   /** Ant-style property substitution */
   public static InputStream readAsTextFileAndReplace(
-      InputStream inputStream, Charset charset, Map<String, String> properties) {
+      final InputStream inputStream, final Charset charset, final Map<String, String> properties) {
     final String fileContent;
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset))) {
+    try (final BufferedReader reader =
+        new BufferedReader(new InputStreamReader(inputStream, charset))) {
       final StringBuilder sb = new StringBuilder();
 
       reader
@@ -31,7 +32,7 @@ public class TestFileUtil {
               (line) -> {
                 String replacingLine = line;
 
-                for (Map.Entry<String, String> replacement : properties.entrySet()) {
+                for (final Map.Entry<String, String> replacement : properties.entrySet()) {
                   final String property = "\\$\\{" + replacement.getKey() + "\\}";
                   replacingLine =
                       replacingLine.replaceAll(
@@ -43,7 +44,7 @@ public class TestFileUtil {
               });
 
       fileContent = sb.toString();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
 

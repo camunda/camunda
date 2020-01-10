@@ -32,7 +32,7 @@ public class LogBufferPartition {
   protected final int rawBufferOffset;
 
   public LogBufferPartition(
-      UnsafeBuffer dataBuffer, UnsafeBuffer metadataBuffer, int rawBufferOffset) {
+      final UnsafeBuffer dataBuffer, final UnsafeBuffer metadataBuffer, final int rawBufferOffset) {
     dataBuffer.verifyAlignment();
     metadataBuffer.verifyAlignment();
     this.dataBuffer = dataBuffer;
@@ -56,7 +56,7 @@ public class LogBufferPartition {
     return metadataBuffer.getIntVolatile(PARTITION_TAIL_COUNTER_OFFSET);
   }
 
-  public int getAndAddTail(int frameLength) {
+  public int getAndAddTail(final int frameLength) {
     return metadataBuffer.getAndAddInt(PARTITION_TAIL_COUNTER_OFFSET, frameLength);
   }
 
@@ -64,7 +64,7 @@ public class LogBufferPartition {
     return partitionSize;
   }
 
-  public void setStatusOrdered(int status) {
+  public void setStatusOrdered(final int status) {
     metadataBuffer.putIntOrdered(PARTITION_STATUS_OFFSET, status);
   }
 

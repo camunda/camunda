@@ -24,9 +24,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class StateSnapshotControllerTest {
-  @Rule public TemporaryFolder tempFolderRule = new TemporaryFolder();
-  @Rule public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
+public final class StateSnapshotControllerTest {
+  @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
+  @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
   private StateSnapshotController snapshotController;
   private SnapshotStorage storage;

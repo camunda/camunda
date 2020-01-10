@@ -7,24 +7,20 @@
  */
 package io.zeebe.test;
 
+import static io.zeebe.test.util.TestUtil.waitUntil;
+
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.base.partitions.PartitionServiceNames;
+import io.zeebe.broker.system.EmbeddedGatewayService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.ZbLogger;
@@ -34,9 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
@@ -66,13 +59,13 @@ public class EmbeddedBrokerRule extends ExternalResource {
   private List<String> dataDirectories;
 
   @SafeVarargs
-  public EmbeddedBrokerRule(Consumer<BrokerCfg>... configurators) {
+  public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
     this(DEFAULT_CONFIG_FILE, configurators);
   }
 
   @SafeVarargs
   public EmbeddedBrokerRule(
-      final String configFileClasspathLocation, Consumer<BrokerCfg>... configurators) {
+      final String configFileClasspathLocation, final Consumer<BrokerCfg>... configurators) {
     this(
         () ->
             EmbeddedBrokerRule.class
@@ -85,14 +78,14 @@ public class EmbeddedBrokerRule extends ExternalResource {
   @SafeVarargs
   public EmbeddedBrokerRule(
       final Supplier<InputStream> configSupplier,
-      int timeout,
+      final int timeout,
       final Consumer<BrokerCfg>... configurators) {
     this.configSupplier = configSupplier;
     this.configurators = configurators;
     this.timeout = timeout;
 
     newTemporaryFolder = Files.newTemporaryFolder();
-    try (InputStream configStream = configSupplier.get()) {
+    try (final InputStream configStream = configSupplier.get()) {
       if (configStream == null) {
         brokerCfg = new BrokerCfg();
       } else {
@@ -192,32 +185,19 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void startBroker() {
-    startTime = System.currentTimeMillis();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+    broker.start().join();
 
-    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
+    final EmbeddedGatewayService embeddedGatewayService = broker.getEmbeddedGatewayService();
+    if (embeddedGatewayService != null) {
+      final BrokerClient brokerClient = embeddedGatewayService.get().getBrokerClient();
 
-    try {
-      // Hack: block until the system stream processor is available
-      // this is required in the broker-test suite, because the client rule does not perform request
-      // retries
-      // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
-      final String partitionName = Partition.getPartitionName(Protocol.DEPLOYMENT_PARTITION);
-
-      serviceContainer
-          .createService(TestService.NAME, new TestService())
-          .dependency(PartitionServiceNames.leaderPartitionServiceName(partitionName))
-          .dependency(
-              TransportServiceNames.serverTransport(TransportServiceNames.COMMAND_API_SERVER_NAME))
-          .install()
-          .get(timeout, TimeUnit.SECONDS);
-
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      stopBroker();
-      throw new RuntimeException(
-          String.format(
-              "System partition not installed into the container withing %d seconds.", timeout),
-          e);
+      waitUntil(
+          () -> {
+            final BrokerTopologyManager topologyManager = brokerClient.getTopologyManager();
+            final BrokerClusterState topology = topologyManager.getTopology();
+            return topology != null && topology.getLeaderForPartition(1) >= 0;
+          });
     }
 
     dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
@@ -231,7 +211,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     brokerCfg.getExporters().add(exporterCfg);
 
     // custom configurators
-    for (Consumer<BrokerCfg> configurator : configurators) {
+    for (final Consumer<BrokerCfg> configurator : configurators) {
       configurator.accept(brokerCfg);
     }
 
@@ -252,53 +232,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
           deleteSnapshots(stateDirectory);
         }
       }
-    }
-  }
-
-  public <S> S getService(final ServiceName<S> serviceName) {
-    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
-
-    final Injector<S> injector = new Injector<>();
-
-    final ServiceName<TestService> accessorServiceName =
-        ServiceName.newServiceName("serviceAccess" + serviceName.getName(), TestService.class);
-    try {
-      serviceContainer
-          .createService(accessorServiceName, new TestService())
-          .dependency(serviceName, injector)
-          .install()
-          .get();
-    } catch (final InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
-
-    serviceContainer.removeService(accessorServiceName);
-
-    return injector.getValue();
-  }
-
-  public <T> void removeService(final ServiceName<T> name) {
-    try {
-      broker.getBrokerContext().getServiceContainer().removeService(name).get(10, TimeUnit.SECONDS);
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException("Could not remove service " + name.getName() + " in 10 seconds.");
-    }
-  }
-
-  static class TestService implements Service<TestService> {
-
-    static final ServiceName<TestService> NAME =
-        ServiceName.newServiceName("testService", TestService.class);
-
-    @Override
-    public void start(final ServiceStartContext startContext) {}
-
-    @Override
-    public void stop(final ServiceStopContext stopContext) {}
-
-    @Override
-    public TestService get() {
-      return this;
     }
   }
 }

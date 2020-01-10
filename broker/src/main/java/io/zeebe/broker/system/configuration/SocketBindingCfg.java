@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import java.util.Optional;
 
 public class SocketBindingCfg {

@@ -17,6 +17,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
@@ -28,6 +29,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.msgpack.value.DocumentValue;
@@ -35,13 +37,13 @@ import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RequestMapper {
+public final class RequestMapper {
 
   public static BrokerDeployWorkflowRequest toDeployWorkflowRequest(
-      DeployWorkflowRequest grpcRequest) {
+      final DeployWorkflowRequest grpcRequest) {
     final BrokerDeployWorkflowRequest brokerRequest = new BrokerDeployWorkflowRequest();
 
-    for (WorkflowRequestObject workflow : grpcRequest.getWorkflowsList()) {
+    for (final WorkflowRequestObject workflow : grpcRequest.getWorkflowsList()) {
       brokerRequest.addResource(
           workflow.getDefinition().toByteArray(), workflow.getName(), workflow.getType());
     }
@@ -50,7 +52,7 @@ public class RequestMapper {
   }
 
   public static BrokerPublishMessageRequest toPublishMessageRequest(
-      PublishMessageRequest grpcRequest) {
+      final PublishMessageRequest grpcRequest) {
     final BrokerPublishMessageRequest brokerRequest =
         new BrokerPublishMessageRequest(grpcRequest.getName(), grpcRequest.getCorrelationKey());
 
@@ -63,22 +65,28 @@ public class RequestMapper {
   }
 
   public static BrokerUpdateJobRetriesRequest toUpdateJobRetriesRequest(
-      UpdateJobRetriesRequest grpcRequest) {
+      final UpdateJobRetriesRequest grpcRequest) {
     return new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
   }
 
-  public static BrokerFailJobRequest toFailJobRequest(FailJobRequest grpcRequest) {
+  public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
     return new BrokerFailJobRequest(grpcRequest.getJobKey(), grpcRequest.getRetries())
         .setErrorMessage(grpcRequest.getErrorMessage());
   }
 
-  public static BrokerCompleteJobRequest toCompleteJobRequest(CompleteJobRequest grpcRequest) {
+  public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
+    return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
+        .setErrorMessage(grpcRequest.getErrorMessage());
+  }
+
+  public static BrokerCompleteJobRequest toCompleteJobRequest(
+      final CompleteJobRequest grpcRequest) {
     return new BrokerCompleteJobRequest(
         grpcRequest.getJobKey(), ensureJsonSet(grpcRequest.getVariables()));
   }
 
   public static BrokerCreateWorkflowInstanceRequest toCreateWorkflowInstanceRequest(
-      CreateWorkflowInstanceRequest grpcRequest) {
+      final CreateWorkflowInstanceRequest grpcRequest) {
     final BrokerCreateWorkflowInstanceRequest brokerRequest =
         new BrokerCreateWorkflowInstanceRequest();
 
@@ -93,7 +101,7 @@ public class RequestMapper {
 
   public static BrokerCreateWorkflowInstanceWithResultRequest
       toCreateWorkflowInstanceWithResultRequest(
-          CreateWorkflowInstanceWithResultRequest grpcRequest) {
+          final CreateWorkflowInstanceWithResultRequest grpcRequest) {
     final BrokerCreateWorkflowInstanceWithResultRequest brokerRequest =
         new BrokerCreateWorkflowInstanceWithResultRequest();
 
@@ -109,7 +117,7 @@ public class RequestMapper {
   }
 
   public static BrokerCancelWorkflowInstanceRequest toCancelWorkflowInstanceRequest(
-      CancelWorkflowInstanceRequest grpcRequest) {
+      final CancelWorkflowInstanceRequest grpcRequest) {
     final BrokerCancelWorkflowInstanceRequest brokerRequest =
         new BrokerCancelWorkflowInstanceRequest();
 
@@ -118,7 +126,8 @@ public class RequestMapper {
     return brokerRequest;
   }
 
-  public static BrokerSetVariablesRequest toSetVariablesRequest(SetVariablesRequest grpcRequest) {
+  public static BrokerSetVariablesRequest toSetVariablesRequest(
+      final SetVariablesRequest grpcRequest) {
     final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
@@ -128,7 +137,8 @@ public class RequestMapper {
     return brokerRequest;
   }
 
-  public static BrokerActivateJobsRequest toActivateJobsRequest(ActivateJobsRequest grpcRequest) {
+  public static BrokerActivateJobsRequest toActivateJobsRequest(
+      final ActivateJobsRequest grpcRequest) {
     return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
@@ -137,7 +147,7 @@ public class RequestMapper {
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
-      ResolveIncidentRequest grpcRequest) {
+      final ResolveIncidentRequest grpcRequest) {
     return new BrokerResolveIncidentRequest(grpcRequest.getIncidentKey());
   }
 

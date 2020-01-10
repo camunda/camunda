@@ -29,21 +29,23 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class TopologyRequestImpl implements TopologyRequestStep1 {
+public final class TopologyRequestImpl implements TopologyRequestStep1 {
 
   private final GatewayStub asyncStub;
   private final Predicate<Throwable> retryPredicate;
   private Duration requestTimeout;
 
   public TopologyRequestImpl(
-      final GatewayStub asyncStub, Duration requestTimeout, Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
   }
 
   @Override
-  public FinalCommandStep<Topology> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<Topology> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -61,7 +63,8 @@ public class TopologyRequestImpl implements TopologyRequestStep1 {
     return future;
   }
 
-  private void send(TopologyRequest request, StreamObserver<TopologyResponse> streamObserver) {
+  private void send(
+      final TopologyRequest request, final StreamObserver<TopologyResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .topology(request, streamObserver);

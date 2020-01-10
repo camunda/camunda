@@ -20,7 +20,6 @@ import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
@@ -44,7 +43,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ExporterDirector extends Actor {
+public final class ExporterDirector extends Actor {
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
@@ -55,30 +54,27 @@ public class ExporterDirector extends Actor {
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<ExporterContainer> containers;
   private final LogStream logStream;
-  private final LogStreamReader logStreamReader;
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
-  private final LogStorage logStorage;
+  private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
   private ExportersState state;
 
   private ActorCondition onCommitPositionUpdatedCondition;
   private boolean inExportingPhase;
 
-  public ExporterDirector(ExporterDirectorContext context) {
+  public ExporterDirector(final ExporterDirectorContext context) {
     this.name = context.getName();
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
     this.logStream = Objects.requireNonNull(context.getLogStream());
-    this.logStorage = Objects.requireNonNull(context.getLogStorage());
     final int partitionId = logStream.getPartitionId();
     this.recordExporter = new RecordExporter(containers, partitionId);
-    this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
 
@@ -87,7 +83,7 @@ public class ExporterDirector extends Actor {
     this.metrics = new ExporterMetrics(partitionId);
   }
 
-  public ActorFuture<Void> startAsync(ActorScheduler actorScheduler) {
+  public ActorFuture<Void> startAsync(final ActorScheduler actorScheduler) {
     return actorScheduler.submitActor(this, SchedulingHints.ioBound());
   }
 
@@ -102,7 +98,23 @@ public class ExporterDirector extends Actor {
 
   @Override
   protected void onActorStarting() {
-    this.logStreamReader.wrap(logStorage);
+    final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
+    actor.runOnCompletionBlockingCurrentPhase(
+        newReaderFuture,
+        (reader, errorOnReceivingReader) -> {
+          if (errorOnReceivingReader == null) {
+            logStreamReader = reader;
+          } else {
+            // TODO https://github.com/zeebe-io/zeebe/issues/3499
+            // ideally we could fail the actor start future such that we are able to propagate the
+            // error
+            LOG.error(
+                "Unexpected error on retrieving reader from log {}",
+                logStream.getLogName(),
+                errorOnReceivingReader);
+            actor.close();
+          }
+        });
   }
 
   @Override
@@ -170,11 +182,7 @@ public class ExporterDirector extends Actor {
         snapshotPosition);
   }
 
-  public ActorFuture<Long> getLowestExporterPosition() {
-    return actor.call(() -> state.getLowestPosition());
-  }
-
-  private ExporterEventFilter createEventFilter(List<ExporterContainer> containers) {
+  private ExporterEventFilter createEventFilter(final List<ExporterContainer> containers) {
 
     final List<Context.RecordFilter> recordFilters =
         containers.stream().map(c -> c.context.getFilter()).collect(Collectors.toList());
@@ -222,7 +230,7 @@ public class ExporterDirector extends Actor {
     actor.submit(this::readNextEvent);
   }
 
-  private void skipRecord(LoggedEvent currentEvent) {
+  private void skipRecord(final LoggedEvent currentEvent) {
     final RecordMetadata metadata = new RecordMetadata();
     currentEvent.readMetadata(metadata);
     metrics.eventSkipped(metadata.getValueType());
@@ -306,12 +314,12 @@ public class ExporterDirector extends Actor {
     private boolean shouldExport;
     private int exporterIndex;
 
-    RecordExporter(List<ExporterContainer> containers, int partitionId) {
+    RecordExporter(final List<ExporterContainer> containers, final int partitionId) {
       this.containers = containers;
       typedEvent = new TypedEventImpl(partitionId);
     }
 
-    void wrap(LoggedEvent rawEvent) {
+    void wrap(final LoggedEvent rawEvent) {
       rawEvent.readMetadata(rawMetadata);
 
       final UnifiedRecordValue recordValue =
@@ -367,13 +375,14 @@ public class ExporterDirector extends Actor {
     private final Map<ValueType, Boolean> acceptValueTypes;
 
     ExporterEventFilter(
-        Map<RecordType, Boolean> acceptRecordTypes, Map<ValueType, Boolean> acceptValueTypes) {
+        final Map<RecordType, Boolean> acceptRecordTypes,
+        final Map<ValueType, Boolean> acceptValueTypes) {
       this.acceptRecordTypes = acceptRecordTypes;
       this.acceptValueTypes = acceptValueTypes;
     }
 
     @Override
-    public boolean applies(LoggedEvent event) {
+    public boolean applies(final LoggedEvent event) {
       event.readMetadata(metadata);
 
       final RecordType recordType = metadata.getRecordType();
@@ -398,7 +407,7 @@ public class ExporterDirector extends Actor {
     private final Exporter exporter;
     private long position;
 
-    ExporterContainer(ExporterDescriptor descriptor) {
+    ExporterContainer(final ExporterDescriptor descriptor) {
       context =
           new ExporterContext(
               Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
@@ -424,7 +433,7 @@ public class ExporterDirector extends Actor {
       return context.getConfiguration().getId();
     }
 
-    private boolean acceptRecord(RecordMetadata metadata) {
+    private boolean acceptRecord(final RecordMetadata metadata) {
       final Context.RecordFilter filter = context.getFilter();
       return filter.acceptType(metadata.getRecordType())
           && filter.acceptValue(metadata.getValueType());

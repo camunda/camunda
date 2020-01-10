@@ -11,9 +11,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
-public class LogUtil {
+public final class LogUtil {
   /** see https://logback.qos.ch/manual/mdc.html */
-  public static void doWithMDC(Map<String, String> context, Runnable r) {
+  public static void doWithMDC(final Map<String, String> context, final Runnable r) {
     final Map<String, String> currentContext = MDC.getCopyOfContextMap();
     MDC.setContextMap(context);
 
@@ -28,18 +28,10 @@ public class LogUtil {
     }
   }
 
-  public static void catchAndLog(Logger log, String msg, ThrowingRunnable r) {
+  public static void catchAndLog(final Logger log, final ThrowingRunnable r) {
     try {
       r.run();
-    } catch (Throwable e) {
-      log.error(msg, e);
-    }
-  }
-
-  public static void catchAndLog(Logger log, ThrowingRunnable r) {
-    try {
-      r.run();
-    } catch (Throwable e) {
+    } catch (final Throwable e) {
       log.error(e.getMessage(), e);
     }
   }

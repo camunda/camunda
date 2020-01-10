@@ -29,7 +29,7 @@ import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.Objects;
 
-public class ClusterCfg {
+public final class ClusterCfg {
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
   private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;

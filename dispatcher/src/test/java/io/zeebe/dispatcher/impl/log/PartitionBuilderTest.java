@@ -16,7 +16,7 @@ import io.zeebe.util.allocation.BufferAllocators;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PartitionBuilderTest {
+public final class PartitionBuilderTest {
 
   PartitionBuilder partitionBuilder;
 
@@ -36,7 +36,7 @@ public class PartitionBuilderTest {
 
     assertThat(partitions.length).isEqualTo(PARTITION_COUNT);
 
-    for (LogBufferPartition logBufferPartition : partitions) {
+    for (final LogBufferPartition logBufferPartition : partitions) {
       assertThat(logBufferPartition.getPartitionSize()).isEqualTo(partitionSize);
       assertThat(logBufferPartition.getDataBuffer().capacity()).isEqualTo(partitionSize);
     }

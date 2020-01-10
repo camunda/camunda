@@ -28,7 +28,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TimerCatchEventTest {
+public final class TimerCatchEventTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance SINGLE_TIMER_WORKFLOW =
       Bpmn.createExecutableProcess("SINGLE_TIMER_WORKFLOW")

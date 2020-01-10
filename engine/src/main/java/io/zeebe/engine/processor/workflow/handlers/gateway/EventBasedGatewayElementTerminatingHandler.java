@@ -13,23 +13,24 @@ import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class EventBasedGatewayElementTerminatingHandler<T extends ExecutableEventBasedGateway>
+public final class EventBasedGatewayElementTerminatingHandler<T extends ExecutableEventBasedGateway>
     extends ElementTerminatingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 
-  public EventBasedGatewayElementTerminatingHandler(CatchEventSubscriber catchEventSubscriber) {
+  public EventBasedGatewayElementTerminatingHandler(
+      final CatchEventSubscriber catchEventSubscriber) {
     super();
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public EventBasedGatewayElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
     super(nextState);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       catchEventSubscriber.unsubscribeFromEvents(context);
       return true;

@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class OutputDataItemImpl extends DataOutputImpl implements OutputDataItem {
 
-  public OutputDataItemImpl(ModelTypeInstanceContext instanceContext) {
+  public OutputDataItemImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OutputDataItem.class, BPMN_ELEMENT_OUTPUT_DATA_ITEM)
@@ -45,7 +45,8 @@ public class OutputDataItemImpl extends DataOutputImpl implements OutputDataItem
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<OutputDataItem>() {
                   @Override
-                  public OutputDataItem newInstance(ModelTypeInstanceContext instanceContext) {
+                  public OutputDataItem newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new OutputDataItemImpl(instanceContext);
                   }
                 });

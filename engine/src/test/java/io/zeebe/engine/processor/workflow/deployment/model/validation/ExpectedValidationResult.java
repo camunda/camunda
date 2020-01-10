@@ -13,13 +13,13 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResult;
 import org.camunda.bpm.model.xml.validation.ValidationResultType;
 
-public class ExpectedValidationResult {
+public final class ExpectedValidationResult {
   private String expectedElementId;
   private Class<? extends BpmnModelElementInstance> expectedElementType;
   private String expectedMessage;
   private ValidationResultType expectedType;
 
-  public static ExpectedValidationResult expect(String elementId, String message) {
+  public static ExpectedValidationResult expect(final String elementId, final String message) {
     final ExpectedValidationResult result = new ExpectedValidationResult();
     result.expectedElementId = elementId;
     result.expectedMessage = message;
@@ -29,7 +29,7 @@ public class ExpectedValidationResult {
   }
 
   public static ExpectedValidationResult expect(
-      Class<? extends BpmnModelElementInstance> elementType, String message) {
+      final Class<? extends BpmnModelElementInstance> elementType, final String message) {
     final ExpectedValidationResult result = new ExpectedValidationResult();
     result.expectedElementType = elementType;
     result.expectedMessage = message;
@@ -38,7 +38,7 @@ public class ExpectedValidationResult {
     return result;
   }
 
-  public boolean matches(ValidationResult result) {
+  public boolean matches(final ValidationResult result) {
     boolean match = true;
     final ModelElementInstance element = result.getElement();
 
@@ -90,7 +90,7 @@ public class ExpectedValidationResult {
     return sb.toString();
   }
 
-  public static String toString(ValidationResult result) {
+  public static String toString(final ValidationResult result) {
     final ModelElementInstance element = result.getElement();
 
     final StringBuilder sb = new StringBuilder();

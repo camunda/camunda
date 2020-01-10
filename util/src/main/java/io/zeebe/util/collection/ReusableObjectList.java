@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 /** An expendable list of reusable objects. */
-public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
+public final class ReusableObjectList<T extends Reusable> implements Iterable<T> {
   private final ObjectIterator iterator = new ObjectIterator();
 
   private final List<ReusableElement> elements;
@@ -22,7 +22,7 @@ public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
 
   private int size = 0;
 
-  public ReusableObjectList(Supplier<T> elementFactory) {
+  public ReusableObjectList(final Supplier<T> elementFactory) {
     this.elements = new ArrayList<>();
     this.elementFactory = elementFactory;
   }
@@ -49,7 +49,7 @@ public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
     return newElement;
   }
 
-  public void remove(T element) {
+  public void remove(final T element) {
     for (int i = 0; i < elements.size(); i++) {
       final ReusableElement e = elements.get(i);
       if (e.getElement() == element) {
@@ -80,7 +80,7 @@ public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
   }
 
   public void clear() {
-    for (ReusableElement element : elements) {
+    for (final ReusableElement element : elements) {
       element.getElement().reset();
       element.set(false);
     }
@@ -150,7 +150,7 @@ public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
 
     private boolean isSet = true;
 
-    ReusableElement(T element) {
+    ReusableElement(final T element) {
       this.element = element;
     }
 
@@ -158,7 +158,7 @@ public class ReusableObjectList<T extends Reusable> implements Iterable<T> {
       return isSet;
     }
 
-    public void set(boolean isSet) {
+    public void set(final boolean isSet) {
       this.isSet = isSet;
     }
 

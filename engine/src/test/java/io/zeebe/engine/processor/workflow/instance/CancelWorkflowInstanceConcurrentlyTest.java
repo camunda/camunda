@@ -37,7 +37,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class CancelWorkflowInstanceConcurrentlyTest {
+public final class CancelWorkflowInstanceConcurrentlyTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

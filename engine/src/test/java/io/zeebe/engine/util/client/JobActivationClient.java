@@ -15,7 +15,7 @@ import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.function.BiFunction;
 
-public class JobActivationClient {
+public final class JobActivationClient {
   private static final int DEFAULT_PARTITION = 1;
   private static final long DEFAULT_TIMEOUT = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";
@@ -45,7 +45,7 @@ public class JobActivationClient {
   private BiFunction<Integer, Long, Record<JobBatchRecordValue>> expectation =
       SUCCESS_EXPECTATION_SUPPLIER;
 
-  public JobActivationClient(StreamProcessorRule environmentRule) {
+  public JobActivationClient(final StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
 
     this.jobBatchRecord = new JobBatchRecord();
@@ -56,28 +56,28 @@ public class JobActivationClient {
     partitionId = DEFAULT_PARTITION;
   }
 
-  public JobActivationClient withType(String type) {
+  public JobActivationClient withType(final String type) {
     jobBatchRecord.setType(type);
     return this;
   }
 
-  public JobActivationClient withTimeout(long timeout) {
+  public JobActivationClient withTimeout(final long timeout) {
     jobBatchRecord.setTimeout(timeout);
 
     return this;
   }
 
-  public JobActivationClient byWorker(String name) {
+  public JobActivationClient byWorker(final String name) {
     jobBatchRecord.setWorker(name);
     return this;
   }
 
-  public JobActivationClient onPartition(int partitionId) {
+  public JobActivationClient onPartition(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
 
-  public JobActivationClient withMaxJobsToActivate(int count) {
+  public JobActivationClient withMaxJobsToActivate(final int count) {
     jobBatchRecord.setMaxJobsToActivate(count);
     return this;
   }

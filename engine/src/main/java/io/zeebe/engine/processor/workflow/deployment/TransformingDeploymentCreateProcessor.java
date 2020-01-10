@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
-public class TransformingDeploymentCreateProcessor
+public final class TransformingDeploymentCreateProcessor
     implements TypedRecordProcessor<DeploymentRecord> {
 
   public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =
@@ -42,7 +42,7 @@ public class TransformingDeploymentCreateProcessor
   private final KeyGenerator keyGenerator;
 
   public TransformingDeploymentCreateProcessor(
-      final ZeebeState zeebeState, CatchEventBehavior catchEventBehavior) {
+      final ZeebeState zeebeState, final CatchEventBehavior catchEventBehavior) {
     this.workflowState = zeebeState.getWorkflowState();
     this.keyGenerator = zeebeState.getKeyGenerator();
     this.deploymentTransformer = new DeploymentTransformer(zeebeState);
@@ -84,7 +84,7 @@ public class TransformingDeploymentCreateProcessor
   }
 
   private void createTimerIfTimerStartEvent(
-      TypedRecord<DeploymentRecord> record, TypedStreamWriter streamWriter) {
+      final TypedRecord<DeploymentRecord> record, final TypedStreamWriter streamWriter) {
     for (final Workflow workflow : record.getValue().workflows()) {
       final List<ExecutableStartEvent> startEvents =
           workflowState.getWorkflowByKey(workflow.getKey()).getWorkflow().getStartEvents();
@@ -114,7 +114,8 @@ public class TransformingDeploymentCreateProcessor
     }
   }
 
-  private void unsubscribeFromPreviousTimers(TypedStreamWriter streamWriter, Workflow workflow) {
+  private void unsubscribeFromPreviousTimers(
+      final TypedStreamWriter streamWriter, final Workflow workflow) {
     workflowState
         .getTimerState()
         .forEachTimerForElementInstance(
@@ -123,7 +124,7 @@ public class TransformingDeploymentCreateProcessor
   }
 
   private void unsubscribeFromPreviousTimer(
-      TypedStreamWriter streamWriter, Workflow workflow, TimerInstance timer) {
+      final TypedStreamWriter streamWriter, final Workflow workflow, final TimerInstance timer) {
     final DirectBuffer timerBpmnId =
         workflowState.getWorkflowByKey(timer.getWorkflowKey()).getBpmnProcessId();
 

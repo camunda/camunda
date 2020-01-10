@@ -2,10 +2,11 @@
 
 This section gives in-depth explanations of Zeebe usage concepts.
 
-* [Workflow Lifecycles](/reference/workflow-lifecycles.html)
-* [Variables](/reference/variables.html)
-* [Conditions](/reference/conditions.html)
-* [Message Correlation](/reference/message-correlation.html)
-* [Incidents](/reference/incidents.html)
-* [gRPC](/reference/grpc.html)
-* [Exporters](/reference/exporters.html)
+* [Workflow Instance Creation](/reference/workflow-instance-creation.md)
+* [Workflow Lifecycles](/reference/workflow-lifecycles.md)
+* [Variables](/reference/variables.md)
+* [Conditions](/reference/conditions.md)
+* [Message Correlation](/reference/message-correlation/message-correlation.md)
+* [Incidents](/reference/incidents.md)
+* [gRPC](/reference/grpc.md)
+* [Exporters](/reference/exporters.md)

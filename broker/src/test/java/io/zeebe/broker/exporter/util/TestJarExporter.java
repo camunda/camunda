@@ -11,9 +11,9 @@ import io.zeebe.exporter.api.Exporter;
 import io.zeebe.protocol.record.Record;
 
 /** Simple exported meant to be embedded into a JAR for testing */
-public class TestJarExporter implements Exporter {
+public final class TestJarExporter implements Exporter {
   public static final String FOO = "bar";
 
   @Override
-  public void export(Record record) {}
+  public void export(final Record record) {}
 }

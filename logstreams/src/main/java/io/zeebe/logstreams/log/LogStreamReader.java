@@ -7,7 +7,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.CloseableSilently;
 import java.util.Iterator;
 
@@ -30,20 +29,6 @@ import java.util.Iterator;
  * </pre>
  */
 public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilently {
-  /**
-   * Initialize the reader and seek to the first event.
-   *
-   * @param log the log storage to read from
-   */
-  void wrap(LogStorage log);
-
-  /**
-   * Initialize the reader and seek to the given log position.
-   *
-   * @param log the log storage to read from
-   * @param position the position in the log to seek to
-   */
-  void wrap(LogStorage log, long position);
 
   /**
    * Seeks to the event after the given position. On negative position it seeks to the first event.
@@ -81,20 +66,12 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
   /**
    * The last log storage address, from which the last block of events was read.
    *
-   * <p/>
-   * Useful if you want to found out the related block address, then just seek to a given position
-   * and call {@link #lastReadAddress).
+   * <p>Useful if you want to found out the related block address, then just seek to a given
+   * position and call this method.
    *
-   * *Note:* The returned address is not the exact log event address.
+   * <p>*Note:* The returned address is not the exact log event address.
    *
    * @return the last log storage address, from which the last block of events was read.
    */
   long lastReadAddress();
-
-  /**
-   * Returns true if the log stream reader was closed.
-   *
-   * @return true if closed, false otherwise
-   */
-  boolean isClosed();
 }

@@ -24,7 +24,9 @@ public class AbstractParallelGatewayBuilder<B extends AbstractParallelGatewayBui
     extends AbstractGatewayBuilder<B, ParallelGateway> {
 
   protected AbstractParallelGatewayBuilder(
-      BpmnModelInstance modelInstance, ParallelGateway element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final ParallelGateway element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 }

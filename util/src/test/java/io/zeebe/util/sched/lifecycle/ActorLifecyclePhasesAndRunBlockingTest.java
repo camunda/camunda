@@ -20,7 +20,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("unchecked")
-public class ActorLifecyclePhasesAndRunBlockingTest {
+public final class ActorLifecyclePhasesAndRunBlockingTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
@@ -120,7 +120,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     schedulerRule.awaitBlockingTasksCompleted(1);
     schedulerRule.workUntilDone();
@@ -147,7 +147,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     schedulerRule.awaitBlockingTasksCompleted(1);
     schedulerRule.workUntilDone();
@@ -174,7 +174,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     schedulerRule.awaitBlockingTasksCompleted(1);
     schedulerRule.workUntilDone();

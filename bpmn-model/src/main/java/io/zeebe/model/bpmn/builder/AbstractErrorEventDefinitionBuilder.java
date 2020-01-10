@@ -24,17 +24,19 @@ public abstract class AbstractErrorEventDefinitionBuilder<
     extends AbstractRootElementBuilder<B, ErrorEventDefinition> {
 
   public AbstractErrorEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, ErrorEventDefinition element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final ErrorEventDefinition element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
   @Override
-  public B id(String identifier) {
+  public B id(final String identifier) {
     return super.id(identifier);
   }
 
   /** Sets the error attribute with errorCode. */
-  public B error(String errorCode) {
+  public B error(final String errorCode) {
     element.setError(findErrorForNameAndCode(errorCode));
     return myself;
   }

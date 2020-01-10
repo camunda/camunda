@@ -14,27 +14,22 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.broker.engine.EngineServiceNames;
 import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotStorage;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class LogStreamDeletionTest {
-  private static final int PARTITION_ID = 0;
+public final class LogStreamDeletionTest {
   private static final long POSITION_TO_DELETE = 6L;
 
   private final ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
-  private final ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
-  @Rule public final RuleChain chain = RuleChain.outerRule(actorScheduler).around(serviceContainer);
+  @Rule public final RuleChain chain = RuleChain.outerRule(actorScheduler);
 
   private LogStream mockLogStream;
   private StatePositionSupplier mockPositionSupplier;
@@ -44,16 +39,11 @@ public class LogStreamDeletionTest {
   public void setup() {
     mockLogStream = mock(LogStream.class);
     mockPositionSupplier = mock(StatePositionSupplier.class);
-
-    deletionService = new LogStreamDeletionService(mockLogStream, mockPositionSupplier);
-
     final SnapshotStorage mockSnapshotStorage = mock(SnapshotStorage.class);
-    deletionService.getSnapshotStorageInjector().inject(mockSnapshotStorage);
-    serviceContainer
-        .get()
-        .createService(EngineServiceNames.logStreamDeletionService(PARTITION_ID), deletionService)
-        .install()
-        .join();
+
+    deletionService =
+        new LogStreamDeletionService(mockLogStream, mockSnapshotStorage, mockPositionSupplier);
+    actorScheduler.submitActor(deletionService).join();
   }
 
   @Test
@@ -74,7 +64,7 @@ public class LogStreamDeletionTest {
         .join();
 
     // then
-    verify(mockLogStream, timeout(Duration.ofSeconds(1))).delete(POSITION_TO_DELETE);
+    verify(mockLogStream, timeout(1000)).delete(POSITION_TO_DELETE);
   }
 
   @Test

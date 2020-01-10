@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class DocumentPropertyTest {
+public final class DocumentPropertyTest {
   @Test
   public void shouldSerializeWithDefaultValue() {
     // given
@@ -232,7 +232,7 @@ public class DocumentPropertyTest {
       return documentProperty.getValue();
     }
 
-    public void setDocument(DirectBuffer document) {
+    public void setDocument(final DirectBuffer document) {
       documentProperty.setValue(document);
     }
   }

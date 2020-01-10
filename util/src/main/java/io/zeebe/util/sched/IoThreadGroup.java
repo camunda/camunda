@@ -9,9 +9,9 @@ package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 
-public class IoThreadGroup extends ActorThreadGroup {
+public final class IoThreadGroup extends ActorThreadGroup {
 
-  public IoThreadGroup(ActorSchedulerBuilder builder) {
+  public IoThreadGroup(final ActorSchedulerBuilder builder) {
     super(
         String.format("%s-%s", builder.getSchedulerName(), "zb-fs-workers"),
         builder.getIoBoundActorThreadCount(),
@@ -21,12 +21,12 @@ public class IoThreadGroup extends ActorThreadGroup {
 
   @Override
   protected TaskScheduler createTaskScheduler(
-      MultiLevelWorkstealingGroup tasks, ActorSchedulerBuilder builder) {
+      final MultiLevelWorkstealingGroup tasks, final ActorSchedulerBuilder builder) {
     return new IoScheduler(tasks);
   }
 
   @Override
-  protected int getLevel(ActorTask actorTask) {
+  protected int getLevel(final ActorTask actorTask) {
     return 0;
   }
 }

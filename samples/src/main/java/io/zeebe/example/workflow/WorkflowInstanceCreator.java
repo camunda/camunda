@@ -11,7 +11,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 
-public class WorkflowInstanceCreator {
+public final class WorkflowInstanceCreator {
 
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";
@@ -21,7 +21,7 @@ public class WorkflowInstanceCreator {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
-    try (ZeebeClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
 
       System.out.println("Creating workflow instance");
 

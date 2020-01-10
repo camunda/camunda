@@ -18,7 +18,7 @@ package io.zeebe.client.impl.response;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 
-public class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent {
+public final class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent {
 
   private final long workflowKey;
   private final String bpmnProcessId;
@@ -26,7 +26,7 @@ public class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent
   private final long workflowInstanceKey;
 
   public CreateWorkflowInstanceResponseImpl(
-      GatewayOuterClass.CreateWorkflowInstanceResponse response) {
+      final GatewayOuterClass.CreateWorkflowInstanceResponse response) {
     this.workflowKey = response.getWorkflowKey();
     this.bpmnProcessId = response.getBpmnProcessId();
     this.version = response.getVersion();

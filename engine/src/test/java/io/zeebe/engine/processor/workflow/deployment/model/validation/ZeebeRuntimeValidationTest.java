@@ -36,7 +36,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ZeebeRuntimeValidationTest {
+public final class ZeebeRuntimeValidationTest {
 
   private static final String INVALID_PATH_QUERY = "$.x";
 
@@ -52,7 +52,7 @@ public class ZeebeRuntimeValidationTest {
   public List<ExpectedValidationResult> expectedResults;
 
   @Parameters(name = "{index}: {1}")
-  public static final Object[][] parameters() {
+  public static Object[][] parameters() {
     return new Object[][] {
       {
         // not a JSON path condition

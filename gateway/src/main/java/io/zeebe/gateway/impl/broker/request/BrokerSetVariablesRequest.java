@@ -14,7 +14,7 @@ import io.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import org.agrona.DirectBuffer;
 
-public class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocumentRecord> {
+public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocumentRecord> {
 
   private final VariableDocumentRecord requestDto = new VariableDocumentRecord();
 
@@ -22,18 +22,18 @@ public class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocu
     super(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE);
   }
 
-  public BrokerSetVariablesRequest setElementInstanceKey(long elementInstanceKey) {
+  public BrokerSetVariablesRequest setElementInstanceKey(final long elementInstanceKey) {
     request.setPartitionId(Protocol.decodePartitionId(elementInstanceKey));
     requestDto.setScopeKey(elementInstanceKey);
     return this;
   }
 
-  public BrokerSetVariablesRequest setVariables(DirectBuffer variables) {
+  public BrokerSetVariablesRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;
   }
 
-  public BrokerSetVariablesRequest setLocal(boolean local) {
+  public BrokerSetVariablesRequest setLocal(final boolean local) {
     final VariableDocumentUpdateSemantic updateSemantics =
         local ? VariableDocumentUpdateSemantic.LOCAL : VariableDocumentUpdateSemantic.PROPAGATE;
 
@@ -47,7 +47,7 @@ public class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocu
   }
 
   @Override
-  protected VariableDocumentRecord toResponseDto(DirectBuffer buffer) {
+  protected VariableDocumentRecord toResponseDto(final DirectBuffer buffer) {
     final VariableDocumentRecord responseDto = new VariableDocumentRecord();
     responseDto.wrap(buffer);
     return responseDto;

@@ -31,7 +31,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActivityTest {
+public final class ActivityTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance WITHOUT_BOUNDARY_EVENTS =
@@ -188,7 +188,7 @@ public class ActivityTest {
     createWorkflowAndAssertIgnoredHeaders(null);
   }
 
-  private void createWorkflowAndAssertIgnoredHeaders(String testValue) {
+  private void createWorkflowAndAssertIgnoredHeaders(final String testValue) {
     // given
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")
@@ -218,9 +218,9 @@ public class ActivityTest {
   }
 
   private void shouldUnsubscribeFromBoundaryEventTrigger(
-      long workflowInstanceKey,
-      WorkflowInstanceIntent leavingState,
-      WorkflowInstanceIntent leftState) {
+      final long workflowInstanceKey,
+      final WorkflowInstanceIntent leavingState,
+      final WorkflowInstanceIntent leftState) {
     // given
     final List<Record<RecordValue>> records =
         RecordingExporter.records()

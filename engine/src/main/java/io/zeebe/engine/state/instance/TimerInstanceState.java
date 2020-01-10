@@ -16,7 +16,7 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import java.util.function.Consumer;
 
-public class TimerInstanceState {
+public final class TimerInstanceState {
 
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, TimerInstance>
       timerInstanceColumnFamily;
@@ -32,7 +32,7 @@ public class TimerInstanceState {
 
   private long nextDueDate;
 
-  public TimerInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public TimerInstanceState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     timerInstance = new TimerInstance();
     timerKey = new DbLong();
     elementInstanceKey = new DbLong();
@@ -48,7 +48,7 @@ public class TimerInstanceState {
             ZbColumnFamilies.TIMER_DUE_DATES, dbContext, dueDateCompositeKey, DbNil.INSTANCE);
   }
 
-  public void put(TimerInstance timer) {
+  public void put(final TimerInstance timer) {
     timerKey.wrapLong(timer.getKey());
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
 
@@ -58,7 +58,7 @@ public class TimerInstanceState {
     dueDateColumnFamily.put(dueDateCompositeKey, DbNil.INSTANCE);
   }
 
-  public long findTimersWithDueDateBefore(final long timestamp, TimerVisitor consumer) {
+  public long findTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
     nextDueDate = -1L;
 
     dueDateColumnFamily.whileTrue(
@@ -86,7 +86,7 @@ public class TimerInstanceState {
    * iteration.
    */
   public void forEachTimerForElementInstance(
-      long elementInstanceKey, Consumer<TimerInstance> action) {
+      final long elementInstanceKey, final Consumer<TimerInstance> action) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
 
     timerInstanceColumnFamily.whileEqualPrefix(
@@ -96,14 +96,14 @@ public class TimerInstanceState {
         });
   }
 
-  public TimerInstance get(long elementInstanceKey, long timerKey) {
+  public TimerInstance get(final long elementInstanceKey, final long timerKey) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.timerKey.wrapLong(timerKey);
 
     return timerInstanceColumnFamily.get(elementAndTimerKey);
   }
 
-  public void remove(TimerInstance timer) {
+  public void remove(final TimerInstance timer) {
     elementInstanceKey.wrapLong(timer.getElementInstanceKey());
     timerKey.wrapLong(timer.getKey());
     timerInstanceColumnFamily.delete(elementAndTimerKey);

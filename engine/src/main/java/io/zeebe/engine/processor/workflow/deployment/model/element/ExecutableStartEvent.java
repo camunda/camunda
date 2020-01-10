@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 public class ExecutableStartEvent extends ExecutableCatchEventElement {
   private DirectBuffer eventSubProcess;
 
-  public ExecutableStartEvent(String id) {
+  public ExecutableStartEvent(final String id) {
     super(id);
   }
 
@@ -20,7 +20,7 @@ public class ExecutableStartEvent extends ExecutableCatchEventElement {
     return eventSubProcess;
   }
 
-  public void setEventSubProcess(DirectBuffer eventSubProcess) {
+  public void setEventSubProcess(final DirectBuffer eventSubProcess) {
     this.eventSubProcess = eventSubProcess;
   }
 

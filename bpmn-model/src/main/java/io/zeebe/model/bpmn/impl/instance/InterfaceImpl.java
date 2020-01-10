@@ -44,11 +44,11 @@ public class InterfaceImpl extends RootElementImpl implements Interface {
   protected static Attribute<String> implementationRefAttribute;
   protected static ChildElementCollection<Operation> operationCollection;
 
-  public InterfaceImpl(ModelTypeInstanceContext context) {
+  public InterfaceImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Interface.class, BPMN_ELEMENT_INTERFACE)
@@ -57,7 +57,7 @@ public class InterfaceImpl extends RootElementImpl implements Interface {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Interface>() {
                   @Override
-                  public Interface newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Interface newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new InterfaceImpl(instanceContext);
                   }
                 });
@@ -80,7 +80,7 @@ public class InterfaceImpl extends RootElementImpl implements Interface {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -90,7 +90,7 @@ public class InterfaceImpl extends RootElementImpl implements Interface {
   }
 
   @Override
-  public void setImplementationRef(String implementationRef) {
+  public void setImplementationRef(final String implementationRef) {
     implementationRefAttribute.setValue(this, implementationRef);
   }
 

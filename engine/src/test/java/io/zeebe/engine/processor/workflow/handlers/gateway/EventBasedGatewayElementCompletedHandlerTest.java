@@ -18,7 +18,7 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class EventBasedGatewayElementCompletedHandlerTest
+public final class EventBasedGatewayElementCompletedHandlerTest
     extends ElementHandlerTestCase<ExecutableEventBasedGateway> {
   private EventBasedGatewayElementCompletedHandler<ExecutableEventBasedGateway> handler;
 

@@ -38,11 +38,11 @@ public class SubConversationImpl extends ConversationNodeImpl implements SubConv
 
   protected static ChildElementCollection<ConversationNode> conversationNodeCollection;
 
-  public SubConversationImpl(ModelTypeInstanceContext instanceContext) {
+  public SubConversationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SubConversation.class, BPMN_ELEMENT_SUB_CONVERSATION)
@@ -51,7 +51,8 @@ public class SubConversationImpl extends ConversationNodeImpl implements SubConv
             .instanceProvider(
                 new ModelTypeInstanceProvider<SubConversation>() {
                   @Override
-                  public SubConversation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public SubConversation newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new SubConversationImpl(instanceContext);
                   }
                 });

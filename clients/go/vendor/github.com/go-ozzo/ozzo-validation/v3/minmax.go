@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// ThresholdRule is a validation rule that checks if a value satisfies the specified threshold requirement.
 type ThresholdRule struct {
 	threshold interface{}
 	operator  int
@@ -24,26 +25,26 @@ const (
 	lessEqualThan
 )
 
-// Min is a validation rule that checks if a value is greater or equal than the specified value.
+// Min returns a validation rule that checks if a value is greater or equal than the specified value.
 // By calling Exclusive, the rule will check if the value is strictly greater than the specified value.
 // Note that the value being checked and the threshold value must be of the same type.
 // Only int, uint, float and time.Time types are supported.
 // An empty value is considered valid. Please use the Required rule to make sure a value is not empty.
-func Min(min interface{}) *ThresholdRule {
-	return &ThresholdRule{
+func Min(min interface{}) ThresholdRule {
+	return ThresholdRule{
 		threshold: min,
 		operator:  greaterEqualThan,
 		message:   fmt.Sprintf("must be no less than %v", min),
 	}
 }
 
-// Max is a validation rule that checks if a value is less or equal than the specified value.
+// Max returns a validation rule that checks if a value is less or equal than the specified value.
 // By calling Exclusive, the rule will check if the value is strictly less than the specified value.
 // Note that the value being checked and the threshold value must be of the same type.
 // Only int, uint, float and time.Time types are supported.
 // An empty value is considered valid. Please use the Required rule to make sure a value is not empty.
-func Max(max interface{}) *ThresholdRule {
-	return &ThresholdRule{
+func Max(max interface{}) ThresholdRule {
+	return ThresholdRule{
 		threshold: max,
 		operator:  lessEqualThan,
 		message:   fmt.Sprintf("must be no greater than %v", max),
@@ -51,7 +52,7 @@ func Max(max interface{}) *ThresholdRule {
 }
 
 // Exclusive sets the comparison to exclude the boundary value.
-func (r *ThresholdRule) Exclusive() *ThresholdRule {
+func (r ThresholdRule) Exclusive() ThresholdRule {
 	if r.operator == greaterEqualThan {
 		r.operator = greaterThan
 		r.message = fmt.Sprintf("must be greater than %v", r.threshold)
@@ -63,7 +64,7 @@ func (r *ThresholdRule) Exclusive() *ThresholdRule {
 }
 
 // Validate checks if the given value is valid or not.
-func (r *ThresholdRule) Validate(value interface{}) error {
+func (r ThresholdRule) Validate(value interface{}) error {
 	value, isNil := Indirect(value)
 	if isNil || IsEmpty(value) {
 		return nil
@@ -119,12 +120,12 @@ func (r *ThresholdRule) Validate(value interface{}) error {
 }
 
 // Error sets the error message for the rule.
-func (r *ThresholdRule) Error(message string) *ThresholdRule {
+func (r ThresholdRule) Error(message string) ThresholdRule {
 	r.message = message
 	return r
 }
 
-func (r *ThresholdRule) compareInt(threshold, value int64) bool {
+func (r ThresholdRule) compareInt(threshold, value int64) bool {
 	switch r.operator {
 	case greaterThan:
 		return value > threshold
@@ -137,7 +138,7 @@ func (r *ThresholdRule) compareInt(threshold, value int64) bool {
 	}
 }
 
-func (r *ThresholdRule) compareUint(threshold, value uint64) bool {
+func (r ThresholdRule) compareUint(threshold, value uint64) bool {
 	switch r.operator {
 	case greaterThan:
 		return value > threshold
@@ -150,7 +151,7 @@ func (r *ThresholdRule) compareUint(threshold, value uint64) bool {
 	}
 }
 
-func (r *ThresholdRule) compareFloat(threshold, value float64) bool {
+func (r ThresholdRule) compareFloat(threshold, value float64) bool {
 	switch r.operator {
 	case greaterThan:
 		return value > threshold
@@ -163,7 +164,7 @@ func (r *ThresholdRule) compareFloat(threshold, value float64) bool {
 	}
 }
 
-func (r *ThresholdRule) compareTime(threshold, value time.Time) bool {
+func (r ThresholdRule) compareTime(threshold, value time.Time) bool {
 	switch r.operator {
 	case greaterThan:
 		return value.After(threshold)

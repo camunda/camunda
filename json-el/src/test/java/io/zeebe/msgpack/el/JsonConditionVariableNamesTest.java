@@ -21,14 +21,14 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JsonConditionVariableNamesTest {
+public final class JsonConditionVariableNamesTest {
 
   @Parameter public String expression;
 
   @Parameter(1)
   public DirectBuffer[] expectedVariableNames;
 
-  private static DirectBuffer[] fromStrings(String... args) {
+  private static DirectBuffer[] fromStrings(final String... args) {
     return Arrays.stream(args)
         .map(str -> BufferUtil.wrapString(str))
         .collect(Collectors.toList())

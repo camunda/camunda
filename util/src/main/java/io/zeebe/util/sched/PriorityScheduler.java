@@ -17,7 +17,7 @@ import java.util.function.IntFunction;
  * Logic and state for the priority scheduling. Each {@link ActorThread} maintains a local instance
  * if this class.
  */
-public class PriorityScheduler implements TaskScheduler {
+public final class PriorityScheduler implements TaskScheduler {
   private static final int TIME_SLICES_PER_SECOND = 100;
   private static final long TIME_SLICE_LENTH_NS =
       TimeUnit.MILLISECONDS.toNanos(1000 / TIME_SLICES_PER_SECOND);
@@ -38,7 +38,7 @@ public class PriorityScheduler implements TaskScheduler {
    *     all quotas in the array is exactly 1. The quota multiplied by 100 corresponds to the number
    *     of time slices assigned to this priority class in a second.
    */
-  public PriorityScheduler(IntFunction<ActorTask> getTaskFn, double[] quotas) {
+  public PriorityScheduler(final IntFunction<ActorTask> getTaskFn, final double[] quotas) {
     this.getTaskFn = getTaskFn;
     this.priorityCount = quotas.length;
     this.slicePriorities = calclateSlicePriorities(quotas);
@@ -48,7 +48,7 @@ public class PriorityScheduler implements TaskScheduler {
   /*
    * TODO: ask smarter person to make this better :)
    */
-  private static int[] calclateSlicePriorities(double[] quotas) {
+  private static int[] calclateSlicePriorities(final double[] quotas) {
     final int[] slicePriorities = new int[TIME_SLICES_PER_SECOND];
 
     final int[] sliceBudgetByPriority = new int[quotas.length];
@@ -87,7 +87,7 @@ public class PriorityScheduler implements TaskScheduler {
 
   /** calculates and returns the next task to execute or null if no such task can be determined. */
   @Override
-  public ActorTask getNextTask(ActorClock clock) {
+  public ActorTask getNextTask(final ActorClock clock) {
     final int priority = currentRun.getTimeSlicePriority(clock.getNanoTime());
 
     // if no task at the given priority level is available, try executing a
@@ -111,7 +111,7 @@ public class PriorityScheduler implements TaskScheduler {
 
     long sliceId = 0;
 
-    int getTimeSlicePriority(long now) {
+    int getTimeSlicePriority(final long now) {
       sliceId = ((now - startNs) / TIME_SLICE_LENTH_NS);
 
       if (sliceId >= TIME_SLICES_PER_SECOND) {

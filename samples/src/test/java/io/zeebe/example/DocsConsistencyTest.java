@@ -24,7 +24,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class DocsConsistencyTest {
+public final class DocsConsistencyTest {
   @Parameter(0)
   public Class<?> exampleClass;
 

@@ -37,6 +37,7 @@ type Client interface {
 	NewCompleteJobCommand() commands.CompleteJobCommandStep1
 	NewFailJobCommand() commands.FailJobCommandStep1
 	NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1
+	NewThrowErrorCommand() commands.ThrowErrorCommandStep1
 
 	NewJobWorker() worker.JobWorkerBuilderStep1
 

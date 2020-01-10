@@ -28,7 +28,7 @@ import java.time.Instant;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TimerStartEventTest {
+public final class TimerStartEventTest {
 
   private static final BpmnModelInstance SIMPLE_MODEL =
       Bpmn.createExecutableProcess("process")
@@ -134,13 +134,6 @@ public class TimerStartEventTest {
         .hasBpmnProcessId("process")
         .hasVersion(deployedWorkflow.getVersion())
         .hasWorkflowKey(workflowKey);
-
-    final Record<WorkflowInstanceRecordValue> startEventOccurred =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED)
-            .withWorkflowKey(workflowKey)
-            .getFirst();
-    assertThat(startEventOccurred.getKey())
-        .isLessThan(startEventActivating.getWorkflowInstanceKey());
 
     final long triggerRecordPosition =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER)

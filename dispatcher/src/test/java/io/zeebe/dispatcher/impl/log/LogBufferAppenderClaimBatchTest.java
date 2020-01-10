@@ -30,7 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-public class LogBufferAppenderClaimBatchTest {
+public final class LogBufferAppenderClaimBatchTest {
   private static final Runnable DO_NOTHING = () -> {};
 
   private static final int PARTITION_ID = 10;
@@ -62,13 +62,13 @@ public class LogBufferAppenderClaimBatchTest {
     logBufferAppender = new LogBufferAppender();
   }
 
-  private static int batchLength(int fragmentCount) {
+  private static int batchLength(final int fragmentCount) {
     return BATCH_MESSAGE_LENGTH
         + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT)
         + FRAME_ALIGNMENT;
   }
 
-  private static int batchFragmentLength(int fragmentCount) {
+  private static int batchFragmentLength(final int fragmentCount) {
     return align(batchLength(fragmentCount), FRAME_ALIGNMENT);
   }
 
