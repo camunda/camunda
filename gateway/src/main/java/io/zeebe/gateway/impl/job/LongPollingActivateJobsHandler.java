@@ -55,6 +55,11 @@ public final class LongPollingActivateJobsHandler extends Actor {
     metrics = new LongPollingMetrics();
   }
 
+  @Override
+  public String getName() {
+    return "GatewayLongPollingJobHandler";
+  }
+
   public void activateJobs(
       final ActivateJobsRequest request,
       final StreamObserver<ActivateJobsResponse> responseObserver) {
