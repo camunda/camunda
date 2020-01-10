@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationEntity;
@@ -367,6 +368,15 @@ public abstract class TestUtil {
 
   public static OperationEntity createOperationEntity(Long workflowInstanceKey, OperationState state) {
     return createOperationEntity(workflowInstanceKey, null, null, state, null, false);
+  }
+
+  public static BatchOperationEntity createBatchOperationEntity(OffsetDateTime startDate, OffsetDateTime endDate, String username) {
+    return new BatchOperationEntity()
+        .setId(UUID.randomUUID().toString())
+        .setStartDate(startDate)
+        .setEndDate(endDate)
+        .setUsername(username)
+        .setType(OperationType.CANCEL_WORKFLOW_INSTANCE);
   }
 
 }

@@ -1,44 +1,43 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
- */
-package org.camunda.operate.entities;
+package org.camunda.operate.webapp.rest.dto.operation;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.UUID;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.List;
+import org.camunda.operate.entities.BatchOperationEntity;
 
-public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
+public class BatchOperationDto {
+
+  private String id;
 
   private String name;
-  private OperationType type;
+  private OperationTypeDto type;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
-  private String username;
 
   private Integer instancesCount = 0;
   private Integer operationsTotalCount = 0;
   private Integer operationsFinishedCount = 0;
 
-  @JsonIgnore
+  /**
+   * Sort values, define the position of batch operation in the list and may be used to search for previous of following page.
+   */
   private Object[] sortValues;
 
   public String getName() {
     return name;
   }
 
-  public BatchOperationEntity setName(String name) {
+  public BatchOperationDto setName(String name) {
     this.name = name;
     return this;
   }
 
-  public OperationType getType() {
+  public OperationTypeDto getType() {
     return type;
   }
 
-  public BatchOperationEntity setType(OperationType type) {
+  public BatchOperationDto setType(OperationTypeDto type) {
     this.type = type;
     return this;
   }
@@ -47,7 +46,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return startDate;
   }
 
-  public BatchOperationEntity setStartDate(OffsetDateTime startDate) {
+  public BatchOperationDto setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -56,17 +55,8 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return endDate;
   }
 
-  public BatchOperationEntity setEndDate(OffsetDateTime endDate) {
+  public BatchOperationDto setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
-    return this;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public BatchOperationEntity setUsername(String username) {
-    this.username = username;
     return this;
   }
 
@@ -74,7 +64,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return instancesCount;
   }
 
-  public BatchOperationEntity setInstancesCount(Integer instancesCount) {
+  public BatchOperationDto setInstancesCount(Integer instancesCount) {
     this.instancesCount = instancesCount;
     return this;
   }
@@ -83,7 +73,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return operationsTotalCount;
   }
 
-  public BatchOperationEntity setOperationsTotalCount(Integer operationsTotalCount) {
+  public BatchOperationDto setOperationsTotalCount(Integer operationsTotalCount) {
     this.operationsTotalCount = operationsTotalCount;
     return this;
   }
@@ -92,8 +82,17 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return operationsFinishedCount;
   }
 
-  public BatchOperationEntity setOperationsFinishedCount(Integer operationsFinishedCount) {
+  public BatchOperationDto setOperationsFinishedCount(Integer operationsFinishedCount) {
     this.operationsFinishedCount = operationsFinishedCount;
+    return this;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public BatchOperationDto setId(String id) {
+    this.id = id;
     return this;
   }
 
@@ -101,13 +100,35 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     return sortValues;
   }
 
-  public BatchOperationEntity setSortValues(Object[] sortValues) {
+  public BatchOperationDto setSortValues(Object[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
 
-  public void generateId() {
-    setId(UUID.randomUUID().toString());
+  public static BatchOperationDto createFrom(BatchOperationEntity batchOperationEntity) {
+    return new BatchOperationDto()
+        .setId(batchOperationEntity.getId())
+        .setName(batchOperationEntity.getName())
+        .setType(OperationTypeDto.getType(batchOperationEntity.getType()))
+        .setStartDate(batchOperationEntity.getStartDate())
+        .setEndDate(batchOperationEntity.getEndDate())
+        .setInstancesCount(batchOperationEntity.getInstancesCount())
+        .setOperationsTotalCount(batchOperationEntity.getOperationsTotalCount())
+        .setOperationsFinishedCount(batchOperationEntity.getOperationsFinishedCount())
+        .setSortValues(batchOperationEntity.getSortValues());
+  }
+
+
+  public static List<BatchOperationDto> createFrom(List<BatchOperationEntity> batchOperationEntities) {
+    List<BatchOperationDto> result = new ArrayList<>();
+    if (batchOperationEntities != null) {
+      for (BatchOperationEntity batchOperationEntity: batchOperationEntities) {
+        if (batchOperationEntity != null) {
+          result.add(createFrom(batchOperationEntity));
+        }
+      }
+    }
+    return result;
   }
 
   @Override
@@ -116,11 +137,11 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
-    if (!super.equals(o))
+
+    BatchOperationDto that = (BatchOperationDto) o;
+
+    if (id != null ? !id.equals(that.id) : that.id != null)
       return false;
-
-    BatchOperationEntity that = (BatchOperationEntity) o;
-
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
     if (type != that.type)
@@ -128,8 +149,6 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
     if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
-      return false;
-    if (username != null ? !username.equals(that.username) : that.username != null)
       return false;
     if (instancesCount != null ? !instancesCount.equals(that.instancesCount) : that.instancesCount != null)
       return false;
@@ -144,12 +163,11 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (name != null ? name.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
-    result = 31 * result + (username != null ? username.hashCode() : 0);
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
     result = 31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);

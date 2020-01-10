@@ -8,16 +8,16 @@ package org.camunda.operate.webapp.rest.dto.operation;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 
-public class OperationRequestDto {
+public class CreateOperationRequestDto {
 
-  public OperationRequestDto() {
+  public CreateOperationRequestDto() {
   }
 
-  public OperationRequestDto(OperationType operationType) {
+  public CreateOperationRequestDto(OperationType operationType) {
     this.operationType = operationType;
   }
 
-  public OperationRequestDto(ListViewQueryDto query, OperationType operationType) {
+  public CreateOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
     this.query = query;
     this.operationType = operationType;
   }
@@ -108,7 +108,7 @@ public class OperationRequestDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    OperationRequestDto that = (OperationRequestDto) o;
+    CreateOperationRequestDto that = (CreateOperationRequestDto) o;
 
     if (query != null ? !query.equals(that.query) : that.query != null)
       return false;
@@ -140,7 +140,7 @@ public class OperationRequestDto {
 
   @Override
   public String toString() {
-    return "OperationRequestDto{" + "query=" + query + ", operationType=" + operationType + ", name='" + name + '\'' + ", incidentId='" + incidentId + '\''
+    return "CreateOperationRequestDto{" + "query=" + query + ", operationType=" + operationType + ", name='" + name + '\'' + ", incidentId='" + incidentId + '\''
         + ", variableScopeId='" + variableScopeId + '\'' + ", variableName='" + variableName + '\'' + ", variableValue='" + variableValue + '\'' + '}';
   }
 }

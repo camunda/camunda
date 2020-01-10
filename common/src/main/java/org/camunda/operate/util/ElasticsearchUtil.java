@@ -202,6 +202,10 @@ public abstract class ElasticsearchUtil {
 
   /* MAP QUERY RESULTS */
 
+  public static <T> List<T> mapSearchHits(SearchHit[] searchHits, Function<SearchHit, T> searchHitMapper) {
+    return map(searchHits, searchHitMapper);
+  }
+
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
     return map(searchHits, (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, clazz));
   }
@@ -218,7 +222,7 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, JavaType valueType) {
-    return map(searchHits,(searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, valueType));
+    return map(searchHits, (searchHit) -> fromSearchHit(searchHit.getSourceAsString(), objectMapper, valueType));
   }
 
   public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, JavaType valueType) {

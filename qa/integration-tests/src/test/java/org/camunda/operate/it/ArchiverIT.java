@@ -37,7 +37,7 @@ import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -186,7 +186,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   protected void createOperations(List<Long> ids1) {
     final ListViewQueryDto query = TestUtil.createGetAllWorkflowInstancesQuery().getQueries().get(0);
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
-    OperationRequestDto batchOperationRequest = new OperationRequestDto(query, OperationType.CANCEL_WORKFLOW_INSTANCE);   //the type does not matter
+    CreateOperationRequestDto batchOperationRequest = new CreateOperationRequestDto(query, OperationType.CANCEL_WORKFLOW_INSTANCE);   //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 

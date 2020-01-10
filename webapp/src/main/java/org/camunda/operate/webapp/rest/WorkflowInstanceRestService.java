@@ -29,8 +29,8 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,10 +99,10 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
-  public OperationResponseDto operation(@PathVariable String id,
+  public CreateOperationResponseDto operation(@PathVariable String id,
       @RequestBody org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto operationRequest) {
     //TODO OPE-786 remove operation conversion
-    OperationRequestDto newRequest = new OperationRequestDto();
+    CreateOperationRequestDto newRequest = new CreateOperationRequestDto();
     newRequest.setVariableScopeId(operationRequest.getScopeId());
     newRequest.setVariableName(operationRequest.getName());
     newRequest.setVariableValue(operationRequest.getValue());
@@ -112,14 +112,14 @@ public class WorkflowInstanceRestService {
     return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), newRequest);
   }
 
-  private void validateBatchOperationRequest(OperationRequestDto operationRequest) {
+  private void validateBatchOperationRequest(CreateOperationRequestDto operationRequest) {
     validateOperationRequest(operationRequest);
     if (operationRequest.getQuery() == null) {
       throw new InvalidRequestException("List view query must be defined.");
     }
   }
 
-  private void validateOperationRequest(OperationRequestDto operationRequest) {
+  private void validateOperationRequest(CreateOperationRequestDto operationRequest) {
     if (operationRequest.getOperationType() == null) {
       throw new InvalidRequestException("Operation type must be defined.");
     }
@@ -133,14 +133,14 @@ public class WorkflowInstanceRestService {
   @Deprecated //OPE-786
   @ApiOperation("DEPRECATED Perform batch operation on selection (async)")
   @PostMapping("/operation")
-  public OperationResponseDto batchOperation(
+  public CreateOperationResponseDto batchOperation(
       @RequestBody BatchOperationRequestDto batchOperationRequest) {
     return oldBatchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   @ApiOperation("Create batch operation based on filter")
   @PostMapping("/batch-operation")
-  public OperationResponseDto createBatchOperation(@RequestBody OperationRequestDto operationRequest) {
+  public CreateOperationResponseDto createBatchOperation(@RequestBody CreateOperationRequestDto operationRequest) {
     validateBatchOperationRequest(operationRequest);
     return batchOperationWriter.scheduleBatchOperation(operationRequest);
   }

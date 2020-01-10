@@ -26,7 +26,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ConversionUtils;
@@ -92,7 +92,7 @@ public class OldBatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public OperationResponseDto scheduleBatchOperation(BatchOperationRequestDto batchOperationRequest) {
+  public CreateOperationResponseDto scheduleBatchOperation(BatchOperationRequestDto batchOperationRequest) {
 
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
@@ -116,9 +116,9 @@ public class OldBatchOperationWriter {
         });
 
       if (operationsCount.get() == 0) {
-        return new OperationResponseDto(null, 0, "No operations were scheduled.");
+        return new CreateOperationResponseDto(null, 0, "No operations were scheduled.");
       } else {
-        return new OperationResponseDto(null, operationsCount.get());
+        return new CreateOperationResponseDto(null, operationsCount.get());
       }
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);

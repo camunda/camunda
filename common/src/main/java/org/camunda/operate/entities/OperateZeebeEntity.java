@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.entities;
 
-public abstract class OperateZeebeEntity extends OperateEntity {
+public abstract class OperateZeebeEntity<T extends OperateZeebeEntity<T>> extends OperateEntity<T> {
 
   private long key;
 

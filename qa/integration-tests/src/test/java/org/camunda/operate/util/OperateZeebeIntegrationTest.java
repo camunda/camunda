@@ -8,7 +8,6 @@ package org.camunda.operate.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,8 +20,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
-import org.camunda.operate.webapp.security.UserService;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ImportPositionHolder;
 import org.camunda.operate.zeebe.PartitionHolder;
@@ -242,7 +240,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
   
   protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
-    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
@@ -250,7 +248,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected void postUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
-    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
@@ -267,11 +265,11 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     }
   }
   
-  protected MvcResult postOperationWithOKResponse(Long workflowInstanceKey, OperationRequestDto operationRequest) throws Exception {
+  protected MvcResult postOperationWithOKResponse(Long workflowInstanceKey, CreateOperationRequestDto operationRequest) throws Exception {
     return postOperation(workflowInstanceKey, operationRequest, HttpStatus.SC_OK);
   }
 
-  protected MvcResult postOperation(Long workflowInstanceKey, OperationRequestDto operationRequest, int expectedStatus) throws Exception {
+  protected MvcResult postOperation(Long workflowInstanceKey, CreateOperationRequestDto operationRequest, int expectedStatus) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
       post(String.format(POST_OPERATION_URL, workflowInstanceKey))
         .content(mockMvcTestRule.json(operationRequest))
@@ -302,7 +300,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
-    OperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
+    CreateOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
     MockHttpServletRequestBuilder postOperationRequest =
       post(POST_BATCH_OPERATION_URL)
         .content(mockMvcTestRule.json(batchOperationDto))
@@ -316,8 +314,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
 
-  protected OperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
-    OperationRequestDto batchOperationDto = new OperationRequestDto();
+  protected CreateOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
+    CreateOperationRequestDto batchOperationDto = new CreateOperationRequestDto();
     batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);
     if (name != null) {

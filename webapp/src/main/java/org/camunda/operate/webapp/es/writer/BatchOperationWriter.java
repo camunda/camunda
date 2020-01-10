@@ -29,8 +29,8 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.camunda.operate.webapp.security.UserService;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -148,7 +148,7 @@ public class BatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public OperationResponseDto scheduleBatchOperation(OperationRequestDto operationRequest) {
+  public CreateOperationResponseDto scheduleBatchOperation(CreateOperationRequestDto operationRequest) {
     logger.debug("Creating batch operation: operationRequest [{}]", operationRequest.toString());
     try {
       //create batch operation with unique id
@@ -176,9 +176,9 @@ public class BatchOperationWriter {
 
       if (operationsCount.get() == 0) {
         //TODO delete batch operation entity
-        return new OperationResponseDto(batchOperationId, 0, "No operations were scheduled.");
+        return new CreateOperationResponseDto(batchOperationId, 0, "No operations were scheduled.");
       } else {
-        return new OperationResponseDto(batchOperationId, operationsCount.get());
+        return new CreateOperationResponseDto(batchOperationId, operationsCount.get());
       }
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
@@ -192,7 +192,7 @@ public class BatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public OperationResponseDto scheduleSingleOperation(long workflowInstanceKey, OperationRequestDto operationRequest) {
+  public CreateOperationResponseDto scheduleSingleOperation(long workflowInstanceKey, CreateOperationRequestDto operationRequest) {
     logger.debug("Creating operation: workflowInstanceKey [{}], operation type [{}]", workflowInstanceKey, operationRequest.getOperationType());
     try {
       //create batch operation with unique id
@@ -208,7 +208,7 @@ public class BatchOperationWriter {
         if (allIncidents.size() == 0) {
           //nothing to schedule
           //TODO delete batch operation entity
-          return new OperationResponseDto(batchOperationId, 0, "No incidents found.");
+          return new CreateOperationResponseDto(batchOperationId, 0, "No incidents found.");
         } else {
           for (IncidentEntity incident: allIncidents) {
             bulkRequest.add(getIndexOperationRequest(workflowInstanceKey, incident.getKey(), batchOperationId, operationType));
@@ -231,7 +231,7 @@ public class BatchOperationWriter {
 
       ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
 
-      return new OperationResponseDto(batchOperationId, operationsCount);
+      return new CreateOperationResponseDto(batchOperationId, operationsCount);
     } catch (Exception ex) {
       throw new OperateRuntimeException(String.format("Exception occurred, while scheduling operation: %s", ex.getMessage()), ex);
     }
@@ -250,7 +250,7 @@ public class BatchOperationWriter {
   }
 
 
-  private String createAndPersistBatchOperationEntity(OperationRequestDto operationRequest) throws PersistenceException {
+  private String createAndPersistBatchOperationEntity(CreateOperationRequestDto operationRequest) throws PersistenceException {
     BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
     batchOperationEntity.generateId();
     batchOperationEntity.setType(operationRequest.getOperationType());
@@ -270,7 +270,7 @@ public class BatchOperationWriter {
     return batchOperationEntity.getId();
   }
 
-  private int persistOperations(List<Long> workflowInstanceKeys, String batchOperationId, OperationRequestDto operationRequest) throws PersistenceException {
+  private int persistOperations(List<Long> workflowInstanceKeys, String batchOperationId, CreateOperationRequestDto operationRequest) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
     final OperationType operationType = operationRequest.getOperationType();
     int operationsCount = 0;

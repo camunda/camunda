@@ -31,13 +31,12 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,7 +120,7 @@ public class OldOperationIT extends OperateZeebeIntegrationTest {
     final MvcResult mvcResult = postBatchOperationWithOKResponse(allRunningQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
-    final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<OperationResponseDto>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
     assertThat(operationResponse.getCount()).isEqualTo(10);
 
     ListViewResponseDto response = getWorkflowInstances(allRunningQuery);
@@ -143,7 +142,7 @@ public class OldOperationIT extends OperateZeebeIntegrationTest {
     final MvcResult mvcResult = postBatchOperationWithOKResponse(ListViewQueryDto.createAllRunning(), OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
-    final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<OperationResponseDto>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
     assertThat(operationResponse.getCount()).isEqualTo(0);
     assertThat(operationResponse.getReason()).isEqualTo("No operations were scheduled.");
 

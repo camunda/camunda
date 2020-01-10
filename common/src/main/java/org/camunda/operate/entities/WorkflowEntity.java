@@ -7,7 +7,7 @@ package org.camunda.operate.entities;
 
 import org.camunda.operate.util.ConversionUtils;
 
-public class WorkflowEntity extends OperateZeebeEntity {
+public class WorkflowEntity extends OperateZeebeEntity<WorkflowEntity> {
 
   private String name;
   private int version;
@@ -20,9 +20,10 @@ public class WorkflowEntity extends OperateZeebeEntity {
   }
 
   @Override
-  public void setId(String id) {
+  public WorkflowEntity setId(String id) {
     super.setId(id);
     setKey(ConversionUtils.toLongOrNull(id));
+    return this;
   }
   
   public void setName(String name) {

@@ -21,12 +21,11 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.WorkflowInstanceRestService;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
   classes = {TestApplicationWithNoBeans.class, WorkflowInstanceRestService.class, JacksonConfig.class, OperateProperties.class}
@@ -84,7 +83,7 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
 
   @Test
   public void testBatchOperationForUpdateVariableFailsNoValue() throws Exception {
-    OperationRequestDto operationRequestDto = new OperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
+    CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
     operationRequestDto.setVariableScopeId("a");
     operationRequestDto.setVariableName("a");
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
@@ -93,7 +92,7 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
 
   @Test
   public void testBatchOperationForUpdateVariableFailsNoName() throws Exception {
-    OperationRequestDto operationRequestDto = new OperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
+    CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
     operationRequestDto.setVariableScopeId("a");
     operationRequestDto.setVariableValue("a");
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
@@ -101,7 +100,7 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
   }
   @Test
   public void testBatchOperationForUpdateVariableFailsNoScopeId() throws Exception {
-    OperationRequestDto operationRequestDto = new OperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
+    CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
     operationRequestDto.setVariableName("a");
     operationRequestDto.setVariableValue("a");
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
@@ -109,7 +108,7 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
   }
   @Test
   public void testBatchOperationForUpdateVariableFailsNoQuery() throws Exception {
-    OperationRequestDto operationRequestDto = new OperationRequestDto(null, OperationType.CANCEL_WORKFLOW_INSTANCE);
+    CreateOperationRequestDto operationRequestDto = new CreateOperationRequestDto(null, OperationType.CANCEL_WORKFLOW_INSTANCE);
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
     assertErrorMessageContains(mvcResult, "List view query must be defined.");
   }
