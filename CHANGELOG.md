@@ -1,3 +1,43 @@
+<a name="0.22.0"></a>
+## 0.22.0 (2020-01-10)
+
+
+#### Features
+
+* **broker:**
+  *  trigger error event subprocess ([871e107a](https://github.com/zeebe-io/zeebe/commit/871e107ab49b49ccdd63c5f9faf36eba9bb4dd21))
+  *  raise incident if an error is not caught ([84bbbd9e](https://github.com/zeebe-io/zeebe/commit/84bbbd9e65dc189d683ce3841d413aec81fe2663))
+  *  adjust elasticsearch exporter templates ([756423f6](https://github.com/zeebe-io/zeebe/commit/756423f6a7030343edcd9f03b0761f3e171091e4), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  support error boundary events ([a455c454](https://github.com/zeebe-io/zeebe/commit/a455c4541b9fe39586b6515d4fcddd4dd6b18dd5), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  support min keep alive interval ([0e029d8e](https://github.com/zeebe-io/zeebe/commit/0e029d8eba3d8105fa381ef88bc13dbfdd3ce689))
+* **clients/go:**
+  *  add timeouts to OAuth requests ([d9fcf314](https://github.com/zeebe-io/zeebe/commit/d9fcf3142559e04caa933e4797f4211bbe70b991), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  add throw error to zbctl ([db3479a6](https://github.com/zeebe-io/zeebe/commit/db3479a6fe59fbb9f313cf5b3590e89f67111747))
+  *  add throw error command ([66de9860](https://github.com/zeebe-io/zeebe/commit/66de986028f4a341d8e36b9bfc09309d62bf9e00))
+  *  support keep alive in Go client ([6e4f7dea](https://github.com/zeebe-io/zeebe/commit/6e4f7dea4072645ad4fbafa64b3ab069928d1f8a))
+* **clients/java:**
+  *  configure grpc interceptors in ZeebeClient ([7e3f3783](https://github.com/zeebe-io/zeebe/commit/7e3f3783b33531b7cec8aacc2e4b591033ba8add))
+  *  add throw error command ([35f17ad5](https://github.com/zeebe-io/zeebe/commit/35f17ad52e5b1645d678824f1b6a0712d2caa5ed))
+  *  support keep alive in Java client ([1bcec363](https://github.com/zeebe-io/zeebe/commit/1bcec363e0c0c55ff5a908c862bc00b57bc3354b))
+
+#### Bug Fixes
+
+* **broker:**
+  *  avoid unnecessary exporter director starting ([1fd3d0b0](https://github.com/zeebe-io/zeebe/commit/1fd3d0b02976faf6675ab99a2769df256fd59fac))
+  *  invalidate message event subprocess with no correlation key ([85fc941e](https://github.com/zeebe-io/zeebe/commit/85fc941e875c92df53af658390a0f2216379fd91))
+  *  avoid SIGSEG on close ([a09e0e5b](https://github.com/zeebe-io/zeebe/commit/a09e0e5b24f2773b84ae45bf10ff5ae6ab7221d7))
+* **logstreams:**  fixes detection of empty log on seekToEnd ([89156c31](https://github.com/zeebe-io/zeebe/commit/89156c3140bdcbf7b40c203ccd4887db4841c7dd))
+* **transport:**  fix response race condition ([b193092d](https://github.com/zeebe-io/zeebe/commit/b193092d5043a9d62302a24de440e64d4e97a011))
+
+#### Breaking Changes
+
+* **broker:**
+  *  adjust elasticsearch exporter templates ([756423f6](https://github.com/zeebe-io/zeebe/commit/756423f6a7030343edcd9f03b0761f3e171091e4), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  support error boundary events ([a455c454](https://github.com/zeebe-io/zeebe/commit/a455c4541b9fe39586b6515d4fcddd4dd6b18dd5), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **clients/go:**  add timeouts to OAuth requests ([d9fcf314](https://github.com/zeebe-io/zeebe/commit/d9fcf3142559e04caa933e4797f4211bbe70b991), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+
+
 <a name="0.22.0-alpha2"></a>
 # Release: 0.22.0-alpha2
 ## Enhancements
