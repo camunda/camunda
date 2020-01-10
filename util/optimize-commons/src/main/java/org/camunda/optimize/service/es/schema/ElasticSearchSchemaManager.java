@@ -13,11 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -309,6 +309,10 @@ public class ElasticSearchSchemaManager {
 
   private void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
                                                 IndexMappingCreator indexMapping) {
+    if (indexMapping instanceof EventIndex) {
+      // FIXME proper handling with OPT-3135
+      return;
+    }
     updateIndexDynamicSettingsAndMappings(esClient.getHighLevelClient(), indexMapping);
     if (indexMapping.getCreateFromTemplate()) {
       updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);

@@ -31,6 +31,7 @@ import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -126,6 +127,8 @@ public class SchemaInitializerIT extends AbstractIT {
     }
   }
 
+  // TODO reactivate with OPT-3135
+  @Disabled
   @Test
   public void dynamicSettingsAreUpdated() throws IOException {
     // given schema exists
@@ -144,6 +147,8 @@ public class SchemaInitializerIT extends AbstractIT {
     assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
   }
 
+  // TODO reactivate with OPT-3135
+  @Disabled
   @Test
   public void dynamicSettingsAreUpdatedForExistingIndexesWhenNewIndexesAreCreated() throws IOException {
     // given schema exists
