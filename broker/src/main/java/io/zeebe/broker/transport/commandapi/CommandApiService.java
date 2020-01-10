@@ -28,7 +28,7 @@ public final class CommandApiService extends Actor implements PartitionListener 
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler requestHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
-  private final BrokerInfo localBroker;
+  private final String actorName;
 
   public CommandApiService(
       final ServerTransport serverTransport,
@@ -37,12 +37,12 @@ public final class CommandApiService extends Actor implements PartitionListener 
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     requestHandler = new CommandApiRequestHandler();
-    this.localBroker = localBroker;
+    this.actorName = actorNamePattern(localBroker.getNodeId(), "CommandApiService");
   }
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "CommandApiService");
+    return actorName;
   }
 
   @Override

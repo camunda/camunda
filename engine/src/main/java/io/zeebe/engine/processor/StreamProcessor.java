@@ -41,6 +41,7 @@ public class StreamProcessor extends Actor {
   // processing
   private final ProcessingContext processingContext;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private final int nodeId;
   private LogStreamReader logStreamReader;
   private ActorCondition onCommitPositionUpdatedCondition;
   private long snapshotPosition = -1L;
@@ -49,22 +50,25 @@ public class StreamProcessor extends Actor {
   private Phase phase = Phase.REPROCESSING;
   private CompletableActorFuture<Void> openFuture;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
+  private final String actorName;
 
-  protected StreamProcessor(final StreamProcessorBuilder context) {
-    this.actorScheduler = context.getActorScheduler();
-    this.lifecycleAwareListeners = context.getLifecycleListeners();
+  protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
+    this.actorScheduler = processorBuilder.getActorScheduler();
+    this.lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
 
-    this.typedRecordProcessorFactory = context.getTypedRecordProcessorFactory();
-    this.zeebeDb = context.getZeebeDb();
+    this.typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
+    this.zeebeDb = processorBuilder.getZeebeDb();
 
     processingContext =
-        context
+        processorBuilder
             .getProcessingContext()
             .eventCache(new RecordValues())
             .actor(actor)
             .abortCondition(this::isClosed);
     this.logStream = processingContext.getLogStream();
     this.partitionId = logStream.getPartitionId();
+    this.nodeId = processorBuilder.getNodeId();
+    this.actorName = actorNamePattern(nodeId, "StreamProcessor-" + partitionId);
   }
 
   public static StreamProcessorBuilder builder() {
@@ -73,7 +77,7 @@ public class StreamProcessor extends Actor {
 
   @Override
   public String getName() {
-    return "partition-" + partitionId + "-processor";
+    return actorName;
   }
 
   @Override

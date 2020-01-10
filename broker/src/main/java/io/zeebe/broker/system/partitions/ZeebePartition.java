@@ -61,7 +61,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;
-  private static final String EXPORTER_NAME = "exporter-%d";
+  private static final String EXPORTER_NAME = "Exporter-%d";
 
   private final ClusterEventService clusterEventService;
   private final BrokerCfg brokerCfg;
@@ -83,6 +83,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
   private SnapshotStorage snapshotStorage;
   private StateSnapshotController snapshotController;
   private ZeebeDb zeebeDb;
+  private final String actorName;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -113,6 +114,8 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
             "Failed to load exporter with configuration: " + exporterCfg, e);
       }
     }
+
+    this.actorName = actorNamePattern(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
   }
 
   /**
@@ -286,7 +289,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
   private StateSnapshotController createSnapshotController() {
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId)
+            ? new StateReplication(clusterEventService, partitionId, localBroker.getNodeId())
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(
@@ -359,7 +362,12 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
       final StreamProcessor streamProcessor, final DataCfg dataCfg) {
     final Duration snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
     final var asyncSnapshotDirector =
-        new AsyncSnapshotDirector(streamProcessor, snapshotController, logStream, snapshotPeriod);
+        new AsyncSnapshotDirector(
+            localBroker.getNodeId(),
+            streamProcessor,
+            snapshotController,
+            logStream,
+            snapshotPeriod);
     closeables.add(asyncSnapshotDirector);
     return scheduler.submitActor(asyncSnapshotDirector);
   }
@@ -374,7 +382,9 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
-            .name(String.format(EXPORTER_NAME, partitionId))
+            .name(
+                actorNamePattern(
+                    localBroker.getNodeId(), String.format(EXPORTER_NAME, partitionId)))
             .logStream(logStream)
             .zeebeDb(zeebeDb)
             .descriptors(exporterDescriptors);
@@ -499,7 +509,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
+    return actorName;
   }
 
   @Override

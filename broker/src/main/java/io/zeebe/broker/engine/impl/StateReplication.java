@@ -7,6 +7,8 @@
  */
 package io.zeebe.broker.engine.impl;
 
+import static io.zeebe.util.sched.Actor.actorNamePattern;
+
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.Subscription;
 import io.zeebe.engine.Loggers;
@@ -29,13 +31,16 @@ public final class StateReplication implements SnapshotReplication {
 
   private final DirectBuffer readBuffer = new UnsafeBuffer(0, 0);
   private final ClusterEventService eventService;
+  private final String threadName;
 
   private ExecutorService executorService;
   private Subscription subscription;
 
-  public StateReplication(final ClusterEventService eventService, final int partitionId) {
+  public StateReplication(
+      final ClusterEventService eventService, final int partitionId, final int nodeId) {
     this.eventService = eventService;
     this.replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId);
+    this.threadName = actorNamePattern(nodeId, "StateReplication-" + partitionId);
   }
 
   @Override
@@ -57,7 +62,7 @@ public final class StateReplication implements SnapshotReplication {
 
   @Override
   public void consume(final Consumer<SnapshotChunk> consumer) {
-    executorService = Executors.newSingleThreadExecutor((r) -> new Thread(r, replicationTopic));
+    executorService = Executors.newSingleThreadExecutor((r) -> new Thread(r, threadName));
 
     subscription =
         eventService

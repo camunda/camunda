@@ -50,6 +50,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   private LogStorageAppender appender;
   private long commitPosition;
   private Throwable closeError; // set if any error occurred during closeAsync
+  private final String actorName;
 
   public LogStreamImpl(
       final ActorScheduler actorScheduler,
@@ -62,8 +63,11 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
     this.actorScheduler = actorScheduler;
     this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
     this.logName = logName;
+
     this.partitionId = partitionId;
     this.nodeId = nodeId;
+    this.actorName = actorNamePattern(nodeId, "LogStream-" + partitionId);
+
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
     this.closeFuture = new CompletableActorFuture<>();
@@ -94,7 +98,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
   @Override
   public String getName() {
-    return actorNamePattern(nodeId, "LogStream-" + partitionId);
+    return actorName;
   }
 
   @Override

@@ -38,7 +38,6 @@ public final class AsyncSnapshotDirector extends Actor {
 
   private final SnapshotController snapshotController;
   private final LogStream logStream;
-  private final String name;
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
@@ -49,8 +48,10 @@ public final class AsyncSnapshotDirector extends Actor {
   private long lastValidSnapshotPosition;
   private boolean takingSnapshot;
   private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
+  private final String actorName;
 
   public AsyncSnapshotDirector(
+      final int nodeId,
       final StreamProcessor streamProcessor,
       final SnapshotController snapshotController,
       final LogStream logStream,
@@ -59,13 +60,13 @@ public final class AsyncSnapshotDirector extends Actor {
     this.snapshotController = snapshotController;
     this.logStream = logStream;
     this.processorName = streamProcessor.getName();
-    this.name = processorName + "-snapshot-director";
     this.snapshotRate = snapshotRate;
+    this.actorName = actorNamePattern(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
   }
 
   @Override
   public String getName() {
-    return name;
+    return actorName;
   }
 
   @Override

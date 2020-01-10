@@ -21,13 +21,13 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderForPartitions =
       new Int2ObjectHashMap<>();
-  private final BrokerInfo localBroker;
+  private final String actorName;
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
   private final Atomix atomix;
 
   public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
-    this.localBroker = localBroker;
     this.atomix = atomix;
+    this.actorName = actorNamePattern(localBroker.getNodeId(), "ManagementRequestHandler");
   }
 
   @Override
@@ -58,7 +58,7 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "ManagementRequestHandler");
+    return actorName;
   }
 
   @Override

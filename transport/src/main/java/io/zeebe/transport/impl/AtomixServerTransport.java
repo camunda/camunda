@@ -34,6 +34,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private final AtomicLong requestCount;
   private final DirectBuffer reusableRequestBuffer;
   private final MessagingService messagingService;
+  private final String actorName;
 
   public AtomixServerTransport(final int nodeId, final MessagingService messagingService) {
     this.messagingService = messagingService;
@@ -42,11 +43,12 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     this.partitionsRequestMap = new Int2ObjectHashMap<>();
     this.requestCount = new AtomicLong(0);
     this.reusableRequestBuffer = new UnsafeBuffer(0, 0);
+    this.actorName = actorNamePattern(nodeId, "ServerTransport");
   }
 
   @Override
   public String getName() {
-    return actorNamePattern(nodeId, "ServerTransport");
+    return actorName;
   }
 
   @Override
