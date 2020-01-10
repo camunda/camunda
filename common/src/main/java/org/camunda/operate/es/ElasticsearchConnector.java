@@ -90,7 +90,10 @@ public class ElasticsearchConnector {
         //TODO do we need this?
         successfullyConnected = clusterHealthResponse.getClusterName().equals(operateProperties.getElasticsearch().getClusterName());
       } catch (IOException ex) {
-        logger.warn("Unable to connect to Elasticsearch cluster [{}]. Will try again...", operateProperties.getElasticsearch().getClusterName());
+        logger.error(String.format("Error occurred while connecting to Elasticsearch: clustername [%s], %s:%s. Will be retried...",
+            operateProperties.getElasticsearch().getClusterName(),
+            operateProperties.getElasticsearch().getHost(),
+            operateProperties.getElasticsearch().getPort()), ex);
         sleepFor(3000);
       }
       attempts++;
