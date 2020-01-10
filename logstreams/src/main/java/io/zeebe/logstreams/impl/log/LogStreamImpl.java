@@ -213,11 +213,11 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
     appenderFuture = appenderOpenFuture;
     final String logName = getLogName();
 
-    final int partitionId = determineInitialPartitionId();
+    final int initialDispatcherPartitionId = determineInitialPartitionId();
     writeBuffer =
-        Dispatchers.create(logName + "-write-buffer")
+        Dispatchers.create(actorNamePattern(nodeId, "dispatcher-" + partitionId))
             .maxFragmentLength(maxFrameLength)
-            .initialPartitionId(partitionId + 1)
+            .initialPartitionId(initialDispatcherPartitionId + 1)
             .name(logName + "-write-buffer")
             .actorScheduler(actorScheduler)
             .build();
@@ -230,7 +230,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
                 appender =
                     new LogStorageAppender(
-                        logName + "-appender",
+                        actorNamePattern(nodeId, "LogAppender-" + partitionId),
                         partitionId,
                         logStorage,
                         subscription,
