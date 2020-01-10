@@ -26,15 +26,15 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final Atomix atomix;
-  private final BrokerInfo localBroker;
+  private final String actorName;
   private Map<Integer, Boolean> partitionInstallStatus;
   /* set to true when all partitions are installed. Once set to true, it is never
   changed. */
   private volatile boolean brokerStarted = false;
 
   public BrokerHealthCheckService(final BrokerInfo localBroker, final Atomix atomix) {
-    this.localBroker = localBroker;
     this.atomix = atomix;
+    this.actorName = actorNamePattern(localBroker.getNodeId(), "HealthCheckService");
     initializePartitionInstallStatus();
   }
 
@@ -81,6 +81,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "HealthCheckService");
+    return actorName;
   }
 }

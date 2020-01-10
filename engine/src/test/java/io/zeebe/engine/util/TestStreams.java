@@ -247,6 +247,7 @@ public final class TestStreams {
 
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
+            0,
             streamProcessor,
             currentSnapshotController,
             stream.getAsyncLogStream(),

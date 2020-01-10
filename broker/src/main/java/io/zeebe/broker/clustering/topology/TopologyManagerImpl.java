@@ -34,6 +34,7 @@ public final class TopologyManagerImpl extends Actor
   private final BrokerInfo localBroker;
 
   private final List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
+  private final String actorName;
 
   public TopologyManagerImpl(
       final Atomix atomix, final BrokerInfo localBroker, final ClusterCfg clusterCfg) {
@@ -43,6 +44,7 @@ public final class TopologyManagerImpl extends Actor
         .setClusterSize(clusterCfg.getClusterSize())
         .setPartitionsCount(clusterCfg.getPartitionsCount())
         .setReplicationFactor(clusterCfg.getReplicationFactor());
+    this.actorName = actorNamePattern(localBroker.getNodeId(), "TopologyManager");
   }
 
   @Override
@@ -58,7 +60,7 @@ public final class TopologyManagerImpl extends Actor
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "TopologyManager");
+    return actorName;
   }
 
   @Override
