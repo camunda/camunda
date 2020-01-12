@@ -106,7 +106,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:SNAPSHOT
+      image: camunda/zeebe:0.22.0
       env:
       volumeMounts:
         - name: zeebe-configuration
