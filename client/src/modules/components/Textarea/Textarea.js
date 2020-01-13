@@ -17,6 +17,7 @@ export default function Textarea({hasAutoSize, ...props}) {
     if (textareaAutosize.current) {
       textareaAutosize.current.scrollTop = 0;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return hasAutoSize ? (

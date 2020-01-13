@@ -29,6 +29,7 @@ function CodeEditor({contentEditable, initialValue}) {
           : initialValue
       )
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function returnCodeLine(content = '') {

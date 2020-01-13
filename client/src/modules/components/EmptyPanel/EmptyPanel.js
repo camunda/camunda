@@ -61,6 +61,7 @@ export const WithRowCount = function({rowHeight, containerRef, ...props}) {
 
     window.addEventListener('resize', recalculateHeight);
     return () => window.removeEventListener('resize', recalculateHeight);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function renderChildren() {

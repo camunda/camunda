@@ -29,6 +29,7 @@ export default function User({handleRedirect}) {
 
   useEffect(() => {
     !(firstname || lastname) && getUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getUser = async () => {

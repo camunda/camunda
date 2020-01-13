@@ -95,10 +95,12 @@ export function Provider(props) {
   useEffect(() => {
     dataManager.subscribe(subscriptions);
     return () => dataManager.unsubscribe(subscriptions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     dataManager.getWorkflowCoreStatistics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -120,6 +122,7 @@ export function Provider(props) {
         type: 'filterCount',
         payload: filterCount
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
