@@ -131,7 +131,7 @@ describe('User', () => {
 
     const node = mount(
       <ThemeProvider>
-        <User />
+        <User handleRedirect={() => {}} />
       </ThemeProvider>
     );
 

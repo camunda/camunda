@@ -45,9 +45,11 @@ describe('SelectionContext', () => {
 
   function mountNode(customProps = {}) {
     return mount(
-      <SelectionProvider {...mockProps} {...customProps}>
-        <Foo />
-      </SelectionProvider>
+      <DataManagerProvider>
+        <SelectionProvider {...mockProps} {...customProps}>
+          <Foo />
+        </SelectionProvider>
+      </DataManagerProvider>
     );
   }
 
@@ -182,9 +184,9 @@ describe('SelectionContext', () => {
   });
 
   describe('handleSelectedInstancesReset', () => {
-    it('should reset selected instances', () => {
+    it.only('should reset selected instances', async () => {
       // given
-      const node = mountNode();
+      const node = mountNode({dataManager: {}});
       let fooNode = node.find('Foo');
       const {
         onSelectedInstancesUpdate,
@@ -376,7 +378,7 @@ describe('SelectionContext', () => {
     });
   });
 
-  describe('handleAddToSelectionById', async () => {
+  describe('handleAddToSelectionById', () => {
     it('should add selected instances to target selection', async () => {
       // given
       const selectedInstances = {all: false, ids: ['foo1', 'foo2']};

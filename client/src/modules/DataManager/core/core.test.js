@@ -30,6 +30,7 @@ instancesApi.fetchWorkflowInstances = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesByIds = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn();
+instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn({});
 
 diagramApi.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 

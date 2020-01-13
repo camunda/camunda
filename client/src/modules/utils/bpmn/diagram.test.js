@@ -8,7 +8,9 @@ import {parseDiagramXML} from './bpmn';
 import bpmnJs from 'bpmn-js';
 
 jest.mock('bpmn-js', () => {
-  const createModdleMock = jest.fn();
+  const createModdleMock = jest
+    .fn()
+    .mockImplementation(() => ({fromXML: jest.fn()}));
 
   class bpmnJs {
     constructor(options) {
