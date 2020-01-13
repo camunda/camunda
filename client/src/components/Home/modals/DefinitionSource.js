@@ -37,7 +37,8 @@ export default class DefinitionSource extends React.Component {
     }
   }
 
-  updateSelectedDefinition = selectedDefinition => {
+  updateSelectedDefinition = key => {
+    const selectedDefinition = this.props.definitionsWithTenants.find(def => def.key === key);
     if (selectedDefinition.tenants.length === 1) {
       // preselect if there is only one tenant
       this.setState({selectedDefinition, selectedTenants: [selectedDefinition.tenants[0]]});
@@ -61,11 +62,15 @@ export default class DefinitionSource extends React.Component {
             <Typeahead
               disabled={definitionsWithTenants.length === 0}
               placeholder={t('common.select')}
-              values={definitionsWithTenants}
-              onSelect={this.updateSelectedDefinition}
-              formatter={formatDefintionName}
+              onChange={this.updateSelectedDefinition}
               noValuesMessage={t('common.definitionSelection.noDefinition')}
-            />
+            >
+              {definitionsWithTenants.map(def => (
+                <Typeahead.Option key={def.key} value={def.key}>
+                  {formatDefintionName(def)}
+                </Typeahead.Option>
+              ))}
+            </Typeahead>
           </Labeled>
         </Form.Group>
         {selectedDefinition && selectedDefinition.tenants.length !== 1 && (

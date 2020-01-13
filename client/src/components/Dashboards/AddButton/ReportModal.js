@@ -37,7 +37,7 @@ export default withRouter(
       });
     };
 
-    selectReport = ({id}) => {
+    selectReport = id => {
       this.setState({
         selectedReportId: id
       });
@@ -66,7 +66,8 @@ export default withRouter(
 
       const isInvalid = external ? isInvalidExternal : !selectedReportId;
 
-      const selectedReport = !loading && availableReports.find(({id}) => selectedReportId === id);
+      const selectedReport =
+        (!loading && availableReports.find(({id}) => selectedReportId === id)) || {};
 
       return (
         <Modal
@@ -91,14 +92,18 @@ export default withRouter(
                   {!loading && (
                     <Labeled label={t('dashboard.addButton.addReportLabel')}>
                       <Typeahead
-                        initialValue={selectedReport}
+                        initialValue={selectedReport.id}
                         disabled={noReports}
                         placeholder={t('dashboard.addButton.selectReportPlaceholder')}
-                        values={availableReports}
-                        onSelect={this.selectReport}
-                        formatter={({name}) => this.truncate(name, 74)}
+                        onChange={this.selectReport}
                         noValuesMessage={t('dashboard.addButton.noReports')}
-                      />
+                      >
+                        {availableReports.map(({id, name}) => (
+                          <Typeahead.Option key={id} value={id}>
+                            {this.truncate(name, 74)}
+                          </Typeahead.Option>
+                        ))}
+                      </Typeahead>
                     </Labeled>
                   )}
                   {loading && <LoadingIndicator />}

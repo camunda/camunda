@@ -43,7 +43,7 @@ export default withRouter(
 
     hasDefinition = () => this.props.definitionKey;
 
-    changeDefinition = ({key}) => {
+    changeDefinition = key => {
       if (this.props.definitionKey === key) {
         return;
       }
@@ -192,6 +192,7 @@ export default withRouter(
           </div>
         );
       }
+      const def = this.getDefinitionObject(selectedKey);
 
       return (
         <Popover className="DefinitionSelection" title={this.createTitle()}>
@@ -206,14 +207,18 @@ export default withRouter(
                 <Labeled className="entry" label={t('common.name')}>
                   <Typeahead
                     className="name"
-                    initialValue={this.getDefinitionObject(selectedKey)}
+                    initialValue={def ? def.key : null}
                     disabled={noDefinitions}
                     placeholder={t('common.select')}
-                    values={availableDefinitions}
-                    onSelect={this.changeDefinition}
-                    formatter={({name, key}) => name || key}
+                    onChange={this.changeDefinition}
                     noValuesMessage={t('common.definitionSelection.noDefinition')}
-                  />
+                  >
+                    {availableDefinitions.map(({name, key}) => (
+                      <Typeahead.Option key={key} value={key}>
+                        {name || key}
+                      </Typeahead.Option>
+                    ))}
+                  </Typeahead>
                 </Labeled>
                 <div className="version entry">
                   <Labeled label={t('common.definitionSelection.version.label')} />

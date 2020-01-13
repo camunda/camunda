@@ -47,7 +47,7 @@ it('should invoke onChange with the selected source', () => {
   node
     .find('Typeahead')
     .props()
-    .onSelect(props.definitionsWithTenants[0]);
+    .onChange(props.definitionsWithTenants[0].key);
 
   node
     .find('ItemsList')
@@ -69,7 +69,7 @@ it('should preselect the only tenant and invoke onChange', () => {
   node
     .find('Typeahead')
     .props()
-    .onSelect(props.definitionsWithTenants[1]);
+    .onChange(props.definitionsWithTenants[1].key);
 
   expect(props.onChange).toHaveBeenCalledWith([
     {

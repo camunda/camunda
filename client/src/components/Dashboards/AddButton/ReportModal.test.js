@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportModal from './ReportModal';
-import {Button} from 'components';
+import {Button, Typeahead} from 'components';
 import {loadReports} from 'services';
 
 jest.mock('react-router-dom', () => {
@@ -59,12 +59,7 @@ it('should render a Typeahead element with the available reports as options', ()
     ]
   });
 
-  const typeaheadProps = node.find('Typeahead').props();
-
-  expect(node.find('Typeahead')).toExist();
-  expect(typeaheadProps.placeholder).toBe('Select a Report');
-  expect(typeaheadProps.values[0].name).toBe('Report A');
-  expect(typeaheadProps.values[1].name).toBe('Report B');
+  expect(node.find('Typeahead')).toMatchSnapshot();
 });
 
 it('should call the callback when adding a report', () => {
@@ -117,12 +112,7 @@ it("should truncate report name if it's longer than 90 signs", () => {
     availableReports: [report]
   });
 
-  const truncatedText = node
-    .find('Typeahead')
-    .props()
-    .formatter(report);
-
-  expect(truncatedText.length).toBeLessThanOrEqual(90);
+  expect(node.find(Typeahead.Option).text().length).toBeLessThanOrEqual(90);
 });
 
 it('should contain an Add External Source field', () => {

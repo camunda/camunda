@@ -65,6 +65,11 @@ jest.mock('../service', () => ({
       reportType: 'process', // or 'decision'
       combined: false,
       entityType: 'report'
+    },
+    {
+      id: 'anotherCollection',
+      name: 'Another Collection',
+      entityType: 'collection'
     }
   ])
 }));
@@ -99,34 +104,17 @@ it('should invoke setCopy on copy switch change', async () => {
   expect(props.setMoving).toHaveBeenCalledWith(false);
 });
 
-it('should invoke setCollection on collection selection', async () => {
+it('should invoke setCollection on collection selection', () => {
   const node = shallow(<MoveCopy {...props} />);
-
-  const collection = {
-    id: 'aCollectionId',
-    name: 'aCollectionName',
-    lastModified: '2017-11-11T11:11:11.1111',
-    created: '2017-11-11T11:11:11.1111',
-    owner: 'user_id',
-    lastModifier: 'user_id',
-    entityType: 'collection',
-    currentUserRole: 'manager',
-    data: {
-      subEntityCounts: {
-        dashboard: 2,
-        report: 8
-      },
-      roleCounts: {
-        user: 5,
-        group: 2
-      }
-    }
-  };
 
   node
     .find('Typeahead')
     .props()
-    .onSelect(collection);
+    .onChange('anotherCollection');
 
-  expect(props.setCollection).toHaveBeenCalledWith(collection);
+  expect(props.setCollection).toHaveBeenCalledWith({
+    id: 'anotherCollection',
+    name: 'Another Collection',
+    entityType: 'collection'
+  });
 });

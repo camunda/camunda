@@ -1,6 +1,6 @@
 @import 'shared-styles/shared-styles.scss';
 
-.Typeahead {
+.OldTypeahead {
   width: 100%;
   position: relative;
   .Input {
@@ -24,7 +24,7 @@
     }
   }
 
-  .OptionsList {
+  .searchResultsList {
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #bbb;
@@ -40,7 +40,7 @@
       display: none;
     }
 
-    .DropdownOption {
+    .searchResult {
       height: auto;
       &.isActive {
         background-color: rgba(216, 220, 227, 0.5);
@@ -54,6 +54,22 @@
         color: #fff;
         .subText {
           color: #fff;
+        }
+      }
+
+      .subTexts {
+        display: block;
+        font-size: 14px;
+        color: grey;
+
+        .subText {
+          &:after {
+            content: ' - ';
+          }
+
+          &:last-of-type:after {
+            content: '';
+          }
         }
       }
 

@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Button, LabeledInput, Modal, Form, Typeahead, ErrorMessage} from 'components';
+import {Button, LabeledInput, Modal, Form, OldTypeahead, ErrorMessage} from 'components';
 import {searchIdentities} from './service';
 
 import {t} from 'translation';
@@ -83,7 +83,7 @@ export default class AddUserModal extends React.Component {
           <Form>
             {t('home.userTitle')}
             <Form.Group>
-              <Typeahead
+              <OldTypeahead
                 placeholder={t('common.collection.addUserModal.searchPlaceholder')}
                 values={searchIdentities}
                 onSelect={identity => this.setState({selectedIdentity: identity})}

@@ -31,6 +31,6 @@ export const confirmButton = Selector('.confirm.Button');
 export const searchField = Selector('.searchContainer input');
 export const moveCopySwitch = Selector('.moveSection .Switch');
 export const copyTargetsInput = Selector('.Modal .Typeahead .Input');
-export const copyTarget = text => Selector('.Modal .Typeahead .searchResult').withText(text);
+export const copyTarget = text => Selector('.Modal .Typeahead .OptionsList').withText(text);
 export const entityList = Selector('.EntityList');
 export const copyModal = Selector('.CopyModal');

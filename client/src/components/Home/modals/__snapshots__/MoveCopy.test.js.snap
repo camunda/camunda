@@ -15,21 +15,25 @@ exports[`should match snapshot 1`] = `
     noSpacing={true}
   >
     <Typeahead
-      formatter={[Function]}
       initialValue={null}
       noValuesMessage="No collections have been created"
-      onSelect={[MockFunction]}
+      onChange={[Function]}
+      onSearch={[Function]}
       placeholder="Please select"
-      values={
-        Array [
-          Object {
-            "entityType": "collection",
-            "id": null,
-            "name": "Home",
-          },
-        ]
-      }
-    />
+    >
+      <ForwardRef(DropdownOption)
+        key="null"
+        value={null}
+      >
+        Home
+      </ForwardRef(DropdownOption)>
+      <ForwardRef(DropdownOption)
+        key="anotherCollection"
+        value="anotherCollection"
+      >
+        Another Collection
+      </ForwardRef(DropdownOption)>
+    </Typeahead>
   </FormGroup>
   <FormGroup>
     This Dashboard contains 2 Reports. They will be copied, too.

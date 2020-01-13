@@ -187,7 +187,7 @@ export default class AlertModal extends React.Component {
     return typeof threshold.value !== 'undefined' ? threshold.value : threshold;
   };
 
-  updateReport = ({id}) => {
+  updateReport = id => {
     const reportType = this.getReportType(id);
     const currentValue = this.getThresholdValue();
 
@@ -215,6 +215,7 @@ export default class AlertModal extends React.Component {
     const {reports, onClose} = this.props;
 
     const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`;
+    const selectedReport = reports.find(report => report.id === reportId) || {};
     return (
       <Modal open onClose={onClose} className="AlertModal">
         <Modal.Header>
@@ -239,13 +240,17 @@ export default class AlertModal extends React.Component {
             <Form.Group>
               <Labeled label={t('alert.form.report')}>
                 <Typeahead
-                  initialValue={reports.find(report => report.id === reportId)}
+                  initialValue={selectedReport.id}
                   placeholder={t('alert.form.reportPlaceholder')}
-                  values={reports}
-                  onSelect={this.updateReport}
-                  formatter={({name}) => name}
+                  onChange={this.updateReport}
                   noValuesMessage={t('alert.form.noReports')}
-                />
+                >
+                  {reports.map(({id, name}) => (
+                    <Typeahead.Option key={id} value={id}>
+                      {name}
+                    </Typeahead.Option>
+                  ))}
+                </Typeahead>
               </Labeled>
               <InfoMessage>{t('alert.form.reportInfo')}</InfoMessage>
             </Form.Group>

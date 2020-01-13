@@ -30,6 +30,7 @@ export {ErrorPage} from './ErrorPage';
 export {ErrorMessage} from './ErrorMessage';
 export {InfoMessage} from './InfoMessage';
 export {Typeahead} from './Typeahead';
+export {OldTypeahead} from './OldTypeahead';
 export {Labeled} from './Labeled';
 export {LabeledInput} from './LabeledInput';
 export {TypeaheadMultipleSelection} from './TypeaheadMultipleSelection';

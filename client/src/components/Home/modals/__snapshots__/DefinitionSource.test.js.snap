@@ -8,41 +8,24 @@ exports[`should match snapshot 1`] = `
     >
       <Typeahead
         disabled={false}
-        formatter={[Function]}
         noValuesMessage="No definitions found"
-        onSelect={[Function]}
+        onChange={[Function]}
+        onSearch={[Function]}
         placeholder="Select..."
-        values={
-          Array [
-            Object {
-              "key": "hiring-demo",
-              "name": "Hiring Demo",
-              "tenants": Array [
-                Object {
-                  "id": "csm",
-                  "name": "csm",
-                },
-                Object {
-                  "id": "engineering",
-                  "name": "engineering",
-                },
-              ],
-              "type": "process",
-            },
-            Object {
-              "key": "invoiceClassification",
-              "name": "Invoice Classification",
-              "tenants": Array [
-                Object {
-                  "id": null,
-                  "name": "Not defined",
-                },
-              ],
-              "type": "decision",
-            },
-          ]
-        }
-      />
+      >
+        <ForwardRef(DropdownOption)
+          key="hiring-demo"
+          value="hiring-demo"
+        >
+          Hiring Demo (Process)
+        </ForwardRef(DropdownOption)>
+        <ForwardRef(DropdownOption)
+          key="invoiceClassification"
+          value="invoiceClassification"
+        >
+          Invoice Classification (Decision Table)
+        </ForwardRef(DropdownOption)>
+      </Typeahead>
     </Labeled>
   </FormGroup>
 </Fragment>

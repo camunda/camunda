@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render a Typeahead element with the available reports as options 1`] = `
+<Typeahead
+  disabled={false}
+  noValuesMessage="No reports have been created"
+  onChange={[Function]}
+  onSearch={[Function]}
+  placeholder="Select a Report"
+>
+  <ForwardRef(DropdownOption)
+    key="a"
+    value="a"
+  >
+    Report A
+  </ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)
+    key="b"
+    value="b"
+  >
+    Report B
+  </ForwardRef(DropdownOption)>
+</Typeahead>
+`;

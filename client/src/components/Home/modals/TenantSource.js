@@ -39,7 +39,8 @@ export default class TenantSource extends React.Component {
     }
   }
 
-  selectTenant = selectedTenant => {
+  selectTenant = id => {
+    const selectedTenant = this.props.tenantsWithDefinitions.find(ten => ten.id === id);
     this.setState({selectedTenant, selectedDefinitions: []});
   };
 
@@ -58,11 +59,15 @@ export default class TenantSource extends React.Component {
             <Typeahead
               disabled={tenantsWithDefinitions.length === 0}
               placeholder={t('common.select')}
-              values={tenantsWithDefinitions}
-              onSelect={this.selectTenant}
-              formatter={formatTenantName}
+              onChange={this.selectTenant}
               noValuesMessage={t('common.notFound')}
-            />
+            >
+              {tenantsWithDefinitions.map(tenant => (
+                <Typeahead.Option key={tenant.id} value={tenant.id}>
+                  {formatTenantName(tenant)}
+                </Typeahead.Option>
+              ))}
+            </Typeahead>
           </Labeled>
         </Form.Group>
         {selectedTenant && (

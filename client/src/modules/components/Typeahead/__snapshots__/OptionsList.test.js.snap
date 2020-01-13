@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render an empty OptionsList 1`] = `
+<div
+  className="OptionsList"
+>
+  <ForwardRef(DropdownOption)
+    className="message"
+  >
+    No results found
+  </ForwardRef(DropdownOption)>
+</div>
+`;

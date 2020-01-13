@@ -14,7 +14,7 @@ exports[`should match snapshot 1`] = `
     <Form>
       Users and User Groups
       <FormGroup>
-        <Typeahead
+        <OldTypeahead
           formatter={[Function]}
           onSelect={[Function]}
           placeholder="Search for name, email or ID ..."

@@ -47,7 +47,8 @@ export default class VariableFilter extends React.Component {
     });
   };
 
-  selectVariable = async variable => {
+  selectVariable = nameOrId => {
+    const variable = this.state.variables.find(variable => this.getId(variable) === nameOrId);
     this.setState({
       selectedVariable: variable,
       filter: this.getInputComponentForVariable(variable).defaultFilter,
@@ -78,6 +79,12 @@ export default class VariableFilter extends React.Component {
 
   changeFilterForUndefined = filterForUndefined => this.setState({filterForUndefined});
 
+  getId = variable => {
+    if (variable) {
+      return variable.id || variable.name;
+    }
+  };
+
   render() {
     const {selectedVariable, variables, filterForUndefined} = this.state;
 
@@ -93,13 +100,17 @@ export default class VariableFilter extends React.Component {
         <Modal.Content>
           <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
             <Typeahead
-              initialValue={selectedVariable}
-              values={variables}
-              onSelect={this.selectVariable}
-              formatter={this.getVariableName}
+              onChange={this.selectVariable}
+              initialValue={this.getId(selectedVariable)}
               placeholder={t('common.filter.variableModal.inputPlaceholder')}
               noValuesMessage={t('common.filter.variableModal.noVariables')}
-            />
+            >
+              {variables.map(variable => (
+                <Typeahead.Option key={this.getId(variable)} value={this.getId(variable)}>
+                  {this.getVariableName(variable)}
+                </Typeahead.Option>
+              ))}
+            </Typeahead>
           </Labeled>
           <ValueInput
             config={this.props.config}

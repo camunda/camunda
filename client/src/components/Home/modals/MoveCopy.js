@@ -53,6 +53,7 @@ export default withErrorHandling(
 
     render() {
       const {moving, collection} = this.props;
+      const {availableCollections} = this.state;
       const multicopyText = this.getMulticopyText();
 
       return (
@@ -71,10 +72,17 @@ export default withErrorHandling(
                   initialValue={collection}
                   noValuesMessage={t('home.copy.noCollections')}
                   placeholder={t('home.copy.pleaseSelect')}
-                  values={this.state.availableCollections}
-                  formatter={({name}) => name}
-                  onSelect={this.props.setCollection}
-                />
+                  onChange={id => {
+                    const collection = availableCollections.find(col => col.id === id);
+                    this.props.setCollection(collection);
+                  }}
+                >
+                  {availableCollections.map(({id, name}) => (
+                    <Typeahead.Option key={id} value={id}>
+                      {name}
+                    </Typeahead.Option>
+                  ))}
+                </Typeahead>
               </Form.Group>
               {multicopyText && <Form.Group>{multicopyText}</Form.Group>}
             </>

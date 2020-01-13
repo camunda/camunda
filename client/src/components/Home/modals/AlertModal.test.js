@@ -198,5 +198,5 @@ it('should contain a threshold input', () => {
 it('should pass the selected report as initial value to the typeahead', () => {
   const node = shallow(<AlertModal reports={reports} initialAlert={initialAlert} />);
 
-  expect(node.find('Typeahead').props().initialValue.name).toBe('Nice report');
+  expect(node.find('Typeahead').props().initialValue).toBe(initialAlert.reportId);
 });

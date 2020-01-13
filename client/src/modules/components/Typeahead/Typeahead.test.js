@@ -7,147 +7,69 @@
 import React from 'react';
 
 import Typeahead from './Typeahead';
-import {Dropdown, Input} from 'components';
+import {Input} from 'components';
 
 import {shallow} from 'enzyme';
 
-it('should display available options if dropdown is open', () => {
-  const node = shallow(<Typeahead values={['foo', 'bar']} />);
-
-  node.setState({
-    optionsVisible: true
-  });
+it('should render an empty Input', () => {
+  const node = shallow(<Typeahead />);
 
   expect(node).toMatchSnapshot();
 });
 
-it('should format the data based on the provided formatter', () => {
+it('should show/hide options list on input focus/blur', () => {
   const node = shallow(
-    <Typeahead
-      values={['foo', 'bar']}
-      formatter={v => ({text: v + v, tag: ' (User Group)', subTexts: [null, 'id']})}
-    />
+    <Typeahead initialValue="1">
+      <Typeahead.Option id="test_option" value="1">
+        Option One
+      </Typeahead.Option>
+    </Typeahead>
   );
 
-  node.setState({
-    optionsVisible: true
-  });
+  node.find(Input).simulate('focus');
 
-  expect(node).toMatchSnapshot();
-});
-
-it('should only display entries that match the typeahead value', () => {
-  const node = shallow(<Typeahead values={['varFoo', 'varBar', 'varFoobar']} />);
-
-  node.setState({
-    optionsVisible: true,
-    query: 'foo'
-  });
-
-  expect(node).toMatchSnapshot();
-});
-
-it('should only display entries that match the typeahead value, even if there is a formatter', () => {
-  const node = shallow(
-    <Typeahead values={['varFoo', 'varBar', 'varFoobar']} formatter={v => ({text: v + v})} />
-  );
-
-  node.setState({
-    optionsVisible: true,
-    query: 'foobarvar'
-  });
-
-  expect(node).toMatchSnapshot();
-});
-
-it('should call the provided onSelect method when a selection is done', () => {
-  const spy = jest.fn();
-  const node = shallow(<Typeahead values={['foo', 'bar']} onSelect={spy} />);
-
-  node.setState({
-    optionsVisible: true
-  });
-
-  node
-    .find(Dropdown.Option)
-    .at(0)
-    .simulate('click');
-
-  expect(spy).toHaveBeenCalledWith('foo');
-});
-
-it('should reset the query to the latest committed state when the input field blurs', () => {
-  const node = shallow(<Typeahead values={['foo', 'bar']} />);
-
-  node.setState({
-    optionsVisible: true,
-    lastCommittedValue: 'foo',
-    query: 'I typed something in the typeahead'
-  });
+  expect(node.find('OptionsList').prop('open')).toBe(true);
 
   node.find(Input).simulate('blur');
 
-  expect(node).toHaveState('query', 'foo');
+  expect(node.find('OptionsList').prop('open')).toBe(false);
+  expect(node.find(Input).prop('value')).toBe('Option One');
 });
 
-it('should disable the input field when disabled prop is set to true', () => {
-  const node = shallow(<Typeahead values={['foo', 'bar']} disabled={true} />);
+it('should show option list on arrow button click', () => {
+  const node = shallow(
+    <Typeahead>
+      <Typeahead.Option id="test_option" value="1">
+        Option One
+      </Typeahead.Option>
+    </Typeahead>
+  );
 
-  expect(node.find(Input)).toHaveProp('disabled', true);
+  node.instance().input = {current: {focus: () => {}}};
+
+  node.find('.optionsButton').simulate('click');
+
+  expect(node.find('OptionsList')).toExist();
 });
 
-it('should show the dropdown menu options on input focus', () => {
-  const node = shallow(<Typeahead values={['foo', 'bar']} />);
-  node.find(Input).prop('onFocus')();
+it('should select an option', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <Typeahead onChange={spy}>
+      <Typeahead.Option id="test_option" value="1">
+        Option One
+      </Typeahead.Option>
+    </Typeahead>
+  );
 
-  expect(node).toHaveState('optionsVisible', true);
-});
-
-it('should show a no results message if no values are provided', () => {
-  const node = shallow(<Typeahead values={[]} noValuesMessage="No reports have been created" />);
-
-  expect(node.find(Input)).toBeDisabled();
-  expect(node.find(Input)).toHaveValue('No reports have been created');
-});
-
-it('should show the initial value if provided on mount', () => {
-  const node = shallow(<Typeahead initialValue="foo" values={['bar']} />);
-
-  expect(node.find(Input)).toHaveValue('foo');
-});
-
-it('should show no results options if there are not results', () => {
-  const node = shallow(<Typeahead values={['a']} />);
+  node.find(Input).simulate('focus');
 
   node
-    .find(Input)
+    .find('OptionsList')
     .props()
-    .onChange({target: {value: 'not found value'}});
+    .onSelect({props: {children: 'Option One', value: '1'}});
 
-  expect(node.find('.searchResult')).toMatchSnapshot();
-});
-
-it('should show an info message if there are more result than the shown', async () => {
-  const node = shallow(<Typeahead values={() => ({result: ['a'], total: 25})} />);
-
-  await node.update();
-  node.find(Input).prop('onFocus')();
-
-  expect(node.find('.searchResult')).toMatchSnapshot();
-});
-
-it('should call getValue to filter and render the data when available', async () => {
-  const spy = jest.fn().mockReturnValue({result: ['item1', 'item2']});
-  const node = shallow(<Typeahead values={spy} />);
-
-  await node
-    .find(Input)
-    .props()
-    .onChange({target: {value: 'test'}});
-
-  node.instance().loadNewValues.flush();
-
-  expect(spy).toHaveBeenCalledWith('test');
-  await node.update();
-  expect(node).toMatchSnapshot();
+  expect(node.find(Input).prop('value')).toBe('Option One');
+  expect(node.find('OptionsList').prop('open')).toBe(false);
+  expect(spy).toHaveBeenCalledWith('1');
 });

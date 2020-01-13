@@ -50,8 +50,8 @@ export async function createNewReport(t) {
 export async function selectDefinition(t, name, version = 'Specific version') {
   await t
     .click('.Popover.DefinitionSelection')
-    .typeText('.Typeahead.name input', name, {replace: true})
-    .click(Selector('.Typeahead.name .DropdownOption').withText(name))
+    .typeText('.Typeahead input', name, {replace: true})
+    .click(Selector('.Typeahead .DropdownOption').withText(name))
     .click('.VersionPopover');
 
   if (typeof version === 'string') {

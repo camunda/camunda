@@ -11,43 +11,9 @@ import VariableFilter from './VariableFilter';
 import {DateInput} from './date';
 import {StringInput} from './string';
 
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
+import {Button} from 'components';
 
-jest.mock('components', () => {
-  const Modal = props => <div id="modal">{props.children}</div>;
-  Modal.Header = props => <div id="modal_header">{props.children}</div>;
-  Modal.Content = props => <div id="modal_content">{props.children}</div>;
-  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
-
-  return {
-    Modal,
-    Typeahead: props => <div>Typeahead {JSON.stringify(props)}</div>,
-    Button: props => <button {...props}>{props.children}</button>,
-    Form: props => <div {...props}>{props.children}</div>,
-    Labeled: props => (
-      <div>
-        <label id={props.id}>{props.label}</label>
-        {props.children}
-      </div>
-    )
-  };
-});
-
-jest.mock('./FilterForUndefined', () => {
-  return ({filterForUndefined, changeFilterForUndefined, ...props}) => (
-    <div {...props}>{props.children}</div>
-  );
-});
-
-jest.mock('./boolean', () => {
-  return {BooleanInput: () => 'BooleanInput'};
-});
-jest.mock('./number', () => {
-  return {NumberInput: () => 'NumberInput'};
-});
-jest.mock('./string', () => {
-  return {StringInput: () => 'StringInput'};
-});
 jest.mock('./date', () => {
   const DateInput = () => 'DateInput';
 
@@ -63,32 +29,30 @@ const props = {
   processDefinitionVersion: '1',
   filterType: 'variable',
   config: {
-    getVariables: jest
-      .fn()
-      .mockReturnValue([
-        {name: 'boolVar', type: 'Boolean'},
-        {name: 'numberVar', type: 'Float'},
-        {name: 'stringVar', type: 'String'}
-      ])
+    getVariables: jest.fn().mockReturnValue([
+      {name: 'boolVar', type: 'Boolean'},
+      {name: 'numberVar', type: 'Float'},
+      {name: 'stringVar', type: 'String'}
+    ])
   }
 };
 
 it('should contain a modal', () => {
-  const node = mount(<VariableFilter {...props} />);
+  const node = shallow(<VariableFilter {...props} />);
 
-  expect(node.find('#modal')).toExist();
+  expect(node.find('Modal')).toExist();
 });
 
 it('should disable add filter button if no variable is selected', () => {
-  const node = mount(<VariableFilter {...props} />);
+  const node = shallow(<VariableFilter {...props} />);
 
-  const buttons = node.find('#modal_actions button');
+  const buttons = node.find(Button);
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
   expect(buttons.at(1).prop('disabled')).toBeTruthy(); // create filter
 });
 
 it('should enable add filter button if filter for undefined is checked', async () => {
-  const node = mount(<VariableFilter {...props} />);
+  const node = shallow(<VariableFilter {...props} />);
 
   await node.setState({
     valid: true,
@@ -96,13 +60,13 @@ it('should enable add filter button if filter for undefined is checked', async (
     filterForUndefined: true
   });
 
-  const buttons = node.find('#modal_actions button');
+  const buttons = node.find(Button);
   expect(buttons.at(0).prop('disabled')).toBeFalsy();
   expect(buttons.at(1).prop('disabled')).toBeFalsy();
 });
 
 it('should disable value input if filter for undefined is checked', async () => {
-  const node = await mount(<VariableFilter {...props} />);
+  const node = await shallow(<VariableFilter {...props} />);
 
   await node.setState({
     valid: true,
@@ -127,9 +91,9 @@ it('should take filter given by properties', async () => {
     }
   };
   const spy = jest.fn();
-  const node = mount(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
+  const node = shallow(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
 
-  node.find('button[variant="primary"]').simulate('click');
+  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -146,20 +110,20 @@ it('should take filter given by properties', async () => {
 });
 
 it('should enable add filter button if variable selection is valid', async () => {
-  const node = mount(<VariableFilter {...props} />);
+  const node = shallow(<VariableFilter {...props} />);
 
   await node.setState({
     valid: true,
     selectedVariable: {type: 'String', name: 'StrVar'}
   });
-  const buttons = node.find('#modal_actions button');
+  const buttons = node.find(Button);
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
   expect(buttons.at(1).prop('disabled')).toBeFalsy(); // create filter
 });
 
 it('should create a new filter', () => {
   const spy = jest.fn();
-  const node = mount(<VariableFilter {...props} addFilter={spy} />);
+  const node = shallow(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
     selectedVariable: {name: 'foo', type: 'String'},
@@ -170,7 +134,7 @@ it('should create a new filter', () => {
     }
   });
 
-  node.find('button[variant="primary"]').simulate('click');
+  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -188,7 +152,7 @@ it('should create a new filter', () => {
 
 it('should create a new filter even if only filter for undefined is checked', () => {
   const spy = jest.fn();
-  const node = mount(<VariableFilter {...props} addFilter={spy} />);
+  const node = shallow(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
     selectedVariable: {name: 'foo', type: 'String'},
@@ -196,7 +160,7 @@ it('should create a new filter even if only filter for undefined is checked', ()
     filterForUndefined: true
   });
 
-  node.find('button[variant="primary"]').simulate('click');
+  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -223,14 +187,14 @@ it('should use custom filter parsing logic from input components', () => {
       }
     }
   };
-  mount(<VariableFilter {...props} filterData={existingFilter} />);
+  shallow(<VariableFilter {...props} filterData={existingFilter} />);
 
   expect(DateInput.parseFilter).toHaveBeenCalledWith(existingFilter);
 });
 
 it('should use custom filter adding logic from input components', () => {
   const spy = jest.fn();
-  const node = mount(<VariableFilter {...props} addFilter={spy} />);
+  const node = shallow(<VariableFilter {...props} addFilter={spy} />);
 
   const selectedVariable = {name: 'foo', type: 'Date'};
   const filter = {startDate: 'start', endDate: 'end'};
@@ -242,25 +206,25 @@ it('should use custom filter adding logic from input components', () => {
 
   DateInput.addFilter.mockClear();
 
-  node.find('button[variant="primary"]').simulate('click');
+  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
 
   expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter, false);
 });
 
 it('should load available variables', () => {
-  mount(<VariableFilter {...props} />);
+  shallow(<VariableFilter {...props} />);
 
   expect(props.config.getVariables).toHaveBeenCalled();
 });
 
 it('should contain a typeahead with the available variables', async () => {
-  const node = mount(<VariableFilter {...props} />);
+  const node = shallow(<VariableFilter {...props} />);
 
-  props.config.getVariables.mockReturnValueOnce(['varA', 'varB', 'varC']);
+  props.config.getVariables.mockReturnValueOnce([{id: 'varA'}, {id: 'varB'}, {id: 'varC'}]);
   await node.instance().componentDidMount();
 
-  expect(node).toIncludeText('Typeahead');
-  expect(node).toIncludeText('varA');
-  expect(node).toIncludeText('varB');
-  expect(node).toIncludeText('varC');
+  expect(node.find('Typeahead')).toExist();
+  expect(node.find({value: 'varA'})).toExist();
+  expect(node.find({value: 'varB'})).toExist();
+  expect(node.find({value: 'varC'})).toExist();
 });

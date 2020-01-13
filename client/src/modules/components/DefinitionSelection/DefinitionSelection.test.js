@@ -154,7 +154,7 @@ it('should update to most recent version when key is selected', async () => {
   spy.mockClear();
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  await node.instance().changeDefinition({key: 'foo'});
+  await node.instance().changeDefinition('foo');
 
   expect(spy.mock.calls[0][1]).toEqual(['3']);
 });
@@ -196,13 +196,7 @@ it('should set key and version, if process definition is already available', asy
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
-  expect(node.find('.name')).toHaveProp('initialValue', {
-    key: 'bar',
-    name: 'Bar',
-    versions: [{version: '1', versionTag: null, tenants: [{id: null, name: 'Not defined'}]}],
-    allTenants: [{id: null, name: 'Not defined'}],
-    id: 'bar'
-  });
+  expect(node.find('.name')).toHaveProp('initialValue', 'bar');
   expect(node.find(VersionPopover).prop('selected')).toEqual(['1']);
 });
 
@@ -214,7 +208,7 @@ it('should not call on change if key didnt change', async () => {
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
 
   spy.mockClear();
-  await node.instance().changeDefinition({key: 'bar'});
+  await node.instance().changeDefinition('bar');
   expect(spy).not.toHaveBeenCalled();
 });
 
@@ -294,9 +288,7 @@ it('should pass an id for every entry to the typeahead', async () => {
 
   const node = await shallow(<DefinitionSelection {...props} />);
 
-  const values = node.find('Typeahead').prop('values');
-  expect(values[0].id).toBe('foo');
-  expect(values[1].id).toBe('bar');
+  expect(node.find('Typeahead')).toMatchSnapshot();
 });
 
 it('should construct a popover title', async () => {
@@ -499,7 +491,7 @@ describe('tenants', () => {
     );
 
     spy.mockClear();
-    node.instance().changeDefinition({key: 'foo'});
+    node.instance().changeDefinition('foo');
     expect(spy).toHaveBeenCalledWith('foo', ['3'], [null, 'a', 'b']);
   });
 });

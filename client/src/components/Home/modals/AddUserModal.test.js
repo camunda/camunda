@@ -49,7 +49,7 @@ it('should format user list information correctly', () => {
 
   node.setState({selectedIdentity: {id: 'testUser', type: 'user'}, activeRole: 'editor'});
 
-  const formatter = node.find('Typeahead').props().formatter;
+  const formatter = node.find('OldTypeahead').props().formatter;
 
   expect(formatter({id: 'testUser'})).toEqual({
     subTexts: [],
