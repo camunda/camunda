@@ -35,7 +35,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.1.0</version.agrona>
+    <version.agrona>1.2.0</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.14.0</version.assertj>
     <version.atomix>3.2.0-SNAPSHOT</version.atomix>
@@ -48,7 +48,7 @@
     <version.error-prone>2.3.4</version.error-prone>
     <version.grpc>1.26.0</version.grpc>
     <version.gson>2.8.6</version.gson>
-    <version.guava>28.1-jre</version.guava>
+    <version.guava>28.2-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.4</version.httpasyncclient>
