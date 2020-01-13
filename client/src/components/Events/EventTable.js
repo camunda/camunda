@@ -47,7 +47,7 @@ export default withErrorHandling(
       this.setState({events: null});
 
       let payload = undefined;
-      if (this.state.showSuggested && selection) {
+      if (this.state.showSuggested && this.getNumberOfPotentialMappings(selection)) {
         payload = {
           targetFlowNodeId: selection.id,
           xml,
@@ -108,15 +108,17 @@ export default withErrorHandling(
 
     updateTableAfterSelectionChange = prevProps => {
       const {selection} = this.props;
+      const {showSuggested, searchQuery} = this.state;
 
-      if (
-        (selection &&
-          selection.id &&
-          (!prevProps.selection || prevProps.selection.id !== selection.id)) ||
-        (!selection && prevProps.selection)
-      ) {
-        if (this.state.showSuggested) {
-          this.loadEvents();
+      const prevSelection = prevProps.selection;
+
+      const selectionMade = !prevSelection && selection;
+      const selectionChanged = selection && prevSelection && prevSelection.id !== selection.id;
+      const selectionCleared = prevSelection && !selection;
+
+      if (selectionMade || selectionChanged || selectionCleared) {
+        if (showSuggested) {
+          this.loadEvents(searchQuery);
         } else {
           this.scrollToSelectedElement();
         }
@@ -148,7 +150,7 @@ export default withErrorHandling(
             <Switch
               checked={showSuggested}
               onChange={({target: {checked}}) =>
-                this.setState({showSuggested: checked}, this.loadEvents)
+                this.setState({showSuggested: checked}, () => this.loadEvents(searchQuery))
               }
               label={t('events.table.showSuggestions')}
             />
