@@ -103,9 +103,7 @@ function IncidentsWrapper(props) {
     setSelectedFlowNodes([]);
   }
 
-  const filteredIncidents = useMemo(() => filterIncidents(), [filterIncidents]);
-
-  function filterIncidents() {
+  const filteredIncidents = useMemo(() => {
     const hasSelectedFlowNodes = Boolean(selectedFlowNodes.length);
     const hasSelectedErrorTypes = Boolean(selectedErrorTypes.length);
 
@@ -130,7 +128,7 @@ function IncidentsWrapper(props) {
     };
 
     return [...incidents].filter(item => isSelected(item));
-  }
+  }, [incidents, selectedErrorTypes, selectedFlowNodes]);
 
   const sortedIncidents = sortData(
     filteredIncidents,
