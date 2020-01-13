@@ -17,10 +17,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/containersuite"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -29,6 +25,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/suite"
+	"github.com/zeebe-io/zeebe/clients/go/internal/containersuite"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
 
 var zbctl string
@@ -49,6 +50,12 @@ var tests = []struct {
 		cmd:        "help",
 		envVars:    []string{"HOME=/tmp"},
 		goldenFile: "testdata/help.golden",
+	},
+	{
+		name:       "print version",
+		cmd:        "version",
+		envVars:    []string{"HOME=/tmp"},
+		goldenFile: "testdata/version.golden",
 	},
 	{
 		name:       "missing insecure flag",
@@ -158,5 +165,7 @@ func buildZbctl() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	return exec.CommandContext(ctx, "./build.sh", runtime.GOOS).Run()
+	cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
+	cmd.Env = append(cmd.Env, "HOME=/tmp", "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
+	return cmd.Run()
 }
