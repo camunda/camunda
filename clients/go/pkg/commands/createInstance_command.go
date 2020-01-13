@@ -75,7 +75,7 @@ type CreateInstanceWithResultCommand struct {
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (CreateInstanceCommandStep3, error) {
-	err := cmd.Validate("variables", variables)
+	err := cmd.mixin.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (cmd *CreateInstanceCommand) VariablesFromStringer(variables fmt.Stringer) 
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (CreateInstanceCommandStep3, error) {
-	value, err := cmd.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (Cr
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (CreateInstanceCommandStep3, error) {
-	value, err := cmd.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +138,9 @@ func (cmd *CreateInstanceCommand) WithResult() CreateInstanceWithResultCommandSt
 			Request: &cmd.request,
 		},
 		Command: Command{
-			SerializerMixin: cmd.SerializerMixin,
-			gateway:         cmd.gateway,
-			retryPred:       cmd.retryPred,
+			mixin:     cmd.mixin,
+			gateway:   cmd.gateway,
+			retryPred: cmd.retryPred,
 		},
 	}
 }
@@ -173,9 +173,9 @@ func (cmd *CreateInstanceWithResultCommand) Send(ctx context.Context) (*pb.Creat
 func NewCreateInstanceCommand(gateway pb.GatewayClient, pred retryPredicate) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
 		Command: Command{
-			SerializerMixin: utils.NewJsonStringSerializer(),
-			gateway:         gateway,
-			retryPred:       pred,
+			mixin:     utils.NewJsonStringSerializer(),
+			gateway:   gateway,
+			retryPred: pred,
 		},
 	}
 }

@@ -50,7 +50,7 @@ func (cmd *SetVariablesCommand) ElementInstanceKey(elementInstanceKey int64) Set
 }
 
 func (cmd *SetVariablesCommand) VariablesFromString(variables string) (DispatchSetVariablesCommand, error) {
-	err := cmd.Validate("variables", variables)
+	err := cmd.mixin.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (cmd *SetVariablesCommand) VariablesFromStringer(variables fmt.Stringer) (D
 }
 
 func (cmd *SetVariablesCommand) VariablesFromObject(variables interface{}) (DispatchSetVariablesCommand, error) {
-	value, err := cmd.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (cmd *SetVariablesCommand) VariablesFromObject(variables interface{}) (Disp
 }
 
 func (cmd *SetVariablesCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchSetVariablesCommand, error) {
-	value, err := cmd.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -104,9 +104,9 @@ func (cmd *SetVariablesCommand) Send(ctx context.Context) (*pb.SetVariablesRespo
 func NewSetVariablesCommand(gateway pb.GatewayClient, pred retryPredicate) SetVariablesCommandStep1 {
 	return &SetVariablesCommand{
 		Command: Command{
-			SerializerMixin: utils.NewJsonStringSerializer(),
-			gateway:         gateway,
-			retryPred:       pred,
+			mixin:     utils.NewJsonStringSerializer(),
+			gateway:   gateway,
+			retryPred: pred,
 		},
 	}
 }

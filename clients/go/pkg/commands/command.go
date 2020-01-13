@@ -29,7 +29,7 @@ const (
 type retryPredicate func(context.Context, error) bool
 
 type Command struct {
-	utils.SerializerMixin
+	mixin utils.SerializerMixin
 
 	gateway   pb.GatewayClient
 	retryPred retryPredicate
