@@ -32,7 +32,7 @@ export async function login(t, userHandle = 'user1') {
 
 export function getUser(t, userHandle) {
   const {browserConnection} = t.testRun;
-  const name = browserConnection.browserInfo.browserName;
+  const name = t.browser.alias.split(':')[1];
 
   if (typeof browserConnection.userId === 'undefined') {
     browserConnection.userId = instanceCount[name]++;
