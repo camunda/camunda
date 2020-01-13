@@ -17,6 +17,7 @@ Import the Maven project in the `samples` directory into your IDE to start hacki
 * [Deploy a Workflow](/java-client-examples/workflow-deploy.html)
 * [Create a Workflow Instance](/java-client-examples/workflow-instance-create.html)
 * [Create Workflow Instances Non-Blocking](/java-client-examples/workflow-instance-create-nonblocking.html)
+* [Create a Workflow Instance and Await Result](/java-client-examples/workflow-instance-create-with-result.html)
 
 ## Job
 
