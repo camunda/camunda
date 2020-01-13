@@ -5,17 +5,17 @@ exports[`DiagramControls should render diagram controls 1`] = `
   <Styled(Styled(Component))
     onClick={[MockFunction]}
   >
-    <ReactComponent />
+    <ForwardRef(SvgDiagramReset) />
   </Styled(Styled(Component))>
   <Styled(Styled(Component))
     onClick={[MockFunction]}
   >
-    <ReactComponent />
+    <ForwardRef(SvgPlus) />
   </Styled(Styled(Component))>
   <Styled(Styled(Component))
     onClick={[MockFunction]}
   >
-    <ReactComponent />
+    <ForwardRef(SvgMinus) />
   </Styled(Styled(Component))>
 </styled.div>
 `;

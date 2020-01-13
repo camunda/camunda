@@ -13,6 +13,6 @@ exports[`StatusItems should match snapshots 2`] = `
 <Themed(styled.li)
   type="RESOLVE_INCIDENT"
 >
-  <Themed(Styled(ReactComponent)) />
+  <Themed(Styled(Component)) />
 </Themed(styled.li)>
 `;

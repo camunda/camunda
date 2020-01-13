@@ -9,7 +9,7 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
     title="First page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeftBar) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Previous page"
@@ -18,7 +18,7 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
     title="Previous page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeft) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="First page"
@@ -89,7 +89,7 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
     title="Next page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRight) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Last page"
@@ -98,7 +98,7 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
     title="Last page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRightBar) />
   </Themed(styled.button)>
 </styled.div>
 `;
@@ -112,7 +112,7 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
     title="First page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeftBar) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Previous page"
@@ -121,7 +121,7 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
     title="Previous page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeft) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="First page"
@@ -195,7 +195,7 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
     title="Next page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRight) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Last page"
@@ -204,7 +204,7 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
     title="Last page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRightBar) />
   </Themed(styled.button)>
 </styled.div>
 `;
@@ -218,7 +218,7 @@ exports[`should show the first five pages when on first page 1`] = `
     title="First page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeftBar) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Previous page"
@@ -227,7 +227,7 @@ exports[`should show the first five pages when on first page 1`] = `
     title="Previous page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeft) />
   </Themed(styled.button)>
   <Themed(styled.button)
     active={true}
@@ -291,7 +291,7 @@ exports[`should show the first five pages when on first page 1`] = `
     title="Next page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRight) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Last page"
@@ -300,7 +300,7 @@ exports[`should show the first five pages when on first page 1`] = `
     title="Last page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRightBar) />
   </Themed(styled.button)>
 </styled.div>
 `;
@@ -314,7 +314,7 @@ exports[`should show the last five pages when on last page 1`] = `
     title="First page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeftBar) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Previous page"
@@ -323,7 +323,7 @@ exports[`should show the last five pages when on last page 1`] = `
     title="Previous page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgLeft) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="First page"
@@ -387,7 +387,7 @@ exports[`should show the last five pages when on last page 1`] = `
     title="Next page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRight) />
   </Themed(styled.button)>
   <Themed(styled.button)
     aria-label="Last page"
@@ -396,7 +396,7 @@ exports[`should show the last five pages when on last page 1`] = `
     title="Last page"
     withIcon={true}
   >
-    <ReactComponent />
+    <ForwardRef(SvgRightBar) />
   </Themed(styled.button)>
 </styled.div>
 `;

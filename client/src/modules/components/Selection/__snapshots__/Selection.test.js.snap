@@ -93,7 +93,7 @@ exports[`Selection should contain Actions 1`] = `
 ",
                 ]
               }
-              label={<ForwardRef(Styled(ReactComponent)) />}
+              label={<ForwardRef(Styled(Component)) />}
               placement="bottom"
             >
               <styled.div>
@@ -245,7 +245,7 @@ exports[`Selection should contain Actions 1`] = `
                               onClick={[Function]}
                               onKeyDown={[Function]}
                             >
-                              <Styled(ReactComponent)>
+                              <Styled(Component)>
                                 <StyledComponent
                                   forwardedComponent={
                                     Object {
@@ -261,20 +261,22 @@ exports[`Selection should contain Actions 1`] = `
 ",
                                         ],
                                       },
-                                      "displayName": "Styled(ReactComponent)",
+                                      "displayName": "Styled(Component)",
                                       "foldedComponentIds": Array [],
                                       "render": [Function],
                                       "styledComponentId": "sc-hzDkRC",
-                                      "target": [Function],
+                                      "target": Object {
+                                        "$$typeof": Symbol(react.forward_ref),
+                                        "render": [Function],
+                                      },
                                       "toString": [Function],
                                       "warnTooManyClasses": [Function],
                                       "withComponent": [Function],
-                                      Symbol(Symbol.hasInstance): [Function],
                                     }
                                   }
                                   forwardedRef={null}
                                 >
-                                  <ReactComponent
+                                  <ForwardRef(SvgBatch)
                                     className="sc-hzDkRC lgWyvY"
                                   >
                                     <svg
@@ -282,14 +284,14 @@ exports[`Selection should contain Actions 1`] = `
                                     >
                                       batch.svg
                                     </svg>
-                                  </ReactComponent>
+                                  </ForwardRef(SvgBatch)>
                                 </StyledComponent>
-                              </Styled(ReactComponent)>
-                              <ReactComponent>
+                              </Styled(Component)>
+                              <ForwardRef(SvgDown)>
                                 <svg>
                                   down.svg
                                 </svg>
-                              </ReactComponent>
+                              </ForwardRef(SvgDown)>
                             </button>
                           </StyledComponent>
                         </styled.button>
@@ -378,7 +380,7 @@ exports[`Selection should contain Actions 1`] = `
             className="sc-jlyJG djeiJX"
             onClick={[MockFunction]}
           >
-            <Styled(ReactComponent)>
+            <Styled(Component)>
               <StyledComponent
                 forwardedComponent={
                   Object {
@@ -395,20 +397,22 @@ exports[`Selection should contain Actions 1`] = `
 ",
                       ],
                     },
-                    "displayName": "Styled(ReactComponent)",
+                    "displayName": "Styled(Component)",
                     "foldedComponentIds": Array [],
                     "render": [Function],
                     "styledComponentId": "sc-gipzik",
-                    "target": [Function],
+                    "target": Object {
+                      "$$typeof": Symbol(react.forward_ref),
+                      "render": [Function],
+                    },
                     "toString": [Function],
                     "warnTooManyClasses": [Function],
                     "withComponent": [Function],
-                    Symbol(Symbol.hasInstance): [Function],
                   }
                 }
                 forwardedRef={null}
               >
-                <ReactComponent
+                <ForwardRef(SvgRemoveItem)
                   className="sc-gipzik jsBKZL"
                 >
                   <svg
@@ -416,9 +420,9 @@ exports[`Selection should contain Actions 1`] = `
                   >
                     remove-item.svg
                   </svg>
-                </ReactComponent>
+                </ForwardRef(SvgRemoveItem)>
               </StyledComponent>
-            </Styled(ReactComponent)>
+            </Styled(Component)>
           </button>
         </StyledComponent>
       </styled.button>
@@ -491,7 +495,6 @@ exports[`Selection should contain Instances 1`] = `
                 "toString": [Function],
                 "warnTooManyClasses": [Function],
                 "withComponent": [Function],
-                Symbol(Symbol.hasInstance): [Function],
               }
             }
             forwardedRef={null}
@@ -660,7 +663,7 @@ exports[`Selection should contain Instances 1`] = `
                                         state="ACTIVE"
                                         theme="light"
                                       >
-                                        <Styled(ReactComponent)
+                                        <Styled(Component)
                                           theme="light"
                                         >
                                           <StyledComponent
@@ -687,21 +690,23 @@ exports[`Selection should contain Instances 1`] = `
 ",
                                                   ],
                                                 },
-                                                "displayName": "Styled(ReactComponent)",
+                                                "displayName": "Styled(Component)",
                                                 "foldedComponentIds": Array [],
                                                 "render": [Function],
                                                 "styledComponentId": "sc-bwzfXH",
-                                                "target": [Function],
+                                                "target": Object {
+                                                  "$$typeof": Symbol(react.forward_ref),
+                                                  "render": [Function],
+                                                },
                                                 "toString": [Function],
                                                 "warnTooManyClasses": [Function],
                                                 "withComponent": [Function],
-                                                Symbol(Symbol.hasInstance): [Function],
                                               }
                                             }
                                             forwardedRef={null}
                                             theme="light"
                                           >
-                                            <ReactComponent
+                                            <ForwardRef(SvgStateOk)
                                               className="sc-bwzfXH cjPJyG"
                                               theme="light"
                                             >
@@ -711,9 +716,9 @@ exports[`Selection should contain Instances 1`] = `
                                               >
                                                 state-ok.svg
                                               </svg>
-                                            </ReactComponent>
+                                            </ForwardRef(SvgStateOk)>
                                           </StyledComponent>
-                                        </Styled(ReactComponent)>
+                                        </Styled(Component)>
                                       </StateIcon>
                                     </Themed>
                                   </Themed(StateIcon)>
@@ -888,7 +893,6 @@ exports[`Selection should contain Instances 1`] = `
                                               "toString": [Function],
                                               "warnTooManyClasses": [Function],
                                               "withComponent": [Function],
-                                              Symbol(Symbol.hasInstance): [Function],
                                             },
                                             "displayName": "Themed(Styled(Spinner))",
                                             "render": [Function],
@@ -912,7 +916,6 @@ exports[`Selection should contain Instances 1`] = `
                                           "toString": [Function],
                                           "warnTooManyClasses": [Function],
                                           "withComponent": [Function],
-                                          Symbol(Symbol.hasInstance): [Function],
                                         }
                                       }
                                       forwardedRef={null}
@@ -1029,7 +1032,6 @@ exports[`Selection should contain Instances 1`] = `
                                                     "toString": [Function],
                                                     "warnTooManyClasses": [Function],
                                                     "withComponent": [Function],
-                                                    Symbol(Symbol.hasInstance): [Function],
                                                   }
                                                 }
                                                 forwardedRef={null}
