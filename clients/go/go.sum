@@ -124,6 +124,7 @@ github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJy
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/testcontainers/testcontainers-go v0.0.9 h1:mwvFz+FkuQMqQ9oLkG4cVzPsZTRmrCo2NcaerJNaptA=
 github.com/testcontainers/testcontainers-go v0.0.9/go.mod h1:0Qe9qqjNZgxHzzdHPWwmQ2D49FFO7920hLdJ4yUJXJI=
+github.com/testcontainers/testcontainers-go v0.0.10 h1:WP99DOGWmkr+RXHURyAXnvZqZO0x3VXkRYAzQ+mwtpQ=
 github.com/testcontainers/testcontainers-go v0.0.10/go.mod h1:2kePcwMHd3ix/BU3cTDuhvggUgMBAit+qcWwadeMXok=
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
