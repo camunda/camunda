@@ -32,7 +32,7 @@ export default function VariableFilterInput({
     if (checkIsNameComplete(variable)) {
       setIsNameComplete(true);
     }
-  }, [variable]);
+  }, [variable, checkIsValueValid, checkIsValueComplete, checkIsNameComplete]);
 
   async function handleChange(event) {
     const {name, value} = event.target;

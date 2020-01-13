@@ -44,13 +44,13 @@ function IncidentsWrapper(props) {
     if (didFiltersChange(prevErrorTypes, errorTypes)) {
       setSelectedErrorTypes(updateFilters(selectedErrorTypes, errorTypes));
     }
-  });
+  }, [prevErrorTypes, errorTypes, selectedErrorTypes]);
 
   useEffect(() => {
     if (didFiltersChange(prevFlowNodes, flowNodes)) {
       setSelectedFlowNodes(updateFilters(selectedFlowNodes, flowNodes));
     }
-  });
+  }, [prevFlowNodes, flowNodes, selectedFlowNodes]);
 
   function usePrevious(value) {
     const ref = useRef();
@@ -103,11 +103,7 @@ function IncidentsWrapper(props) {
     setSelectedFlowNodes([]);
   }
 
-  const filteredIncidents = useMemo(() => filterIncidents(), [
-    selectedErrorTypes,
-    selectedFlowNodes,
-    incidents
-  ]);
+  const filteredIncidents = useMemo(() => filterIncidents(), [filterIncidents]);
 
   function filterIncidents() {
     const hasSelectedFlowNodes = Boolean(selectedFlowNodes.length);
