@@ -161,4 +161,69 @@ public class ErrorEventTest {
         .containsExactly(
             JobIntent.CREATE, JobIntent.CREATED, JobIntent.THROW_ERROR, JobIntent.ERROR_THROWN);
   }
+
+  @Test
+  public void shouldCatchErrorFromChildInstance() {
+    // given
+    final var workflowChild =
+        Bpmn.createExecutableProcess("wf-child")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+            .endEvent()
+            .done();
+
+    final var workflowParent =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId("wf-child"))
+            .boundaryEvent("error", b -> b.error(ERROR_CODE).endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-child.bpmn", workflowChild)
+        .withXmlResource("wf-parent.bpmn", workflowParent)
+        .deploy();
+
+    final var parentWorkflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var childWorkflowInstanceKey =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentWorkflowInstanceKey(parentWorkflowInstanceKey)
+            .getFirst()
+            .getValue()
+            .getWorkflowInstanceKey();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(childWorkflowInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(childWorkflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(parentWorkflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
 }
