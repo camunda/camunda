@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type DispatchCompleteJobCommand interface {
-	Send() (*pb.CompleteJobResponse, error)
+	Send(context.Context) (*pb.CompleteJobResponse, error)
 }
 
 type CompleteJobCommandStep1 interface {
@@ -88,25 +87,21 @@ func (cmd *CompleteJobCommand) VariablesFromMap(variables map[string]interface{}
 	return cmd.VariablesFromObject(variables)
 }
 
-func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
+func (cmd *CompleteJobCommand) Send(ctx context.Context) (*pb.CompleteJobResponse, error) {
 	response, err := cmd.gateway.CompleteJob(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) CompleteJobCommandStep1 {
+func NewCompleteJobCommand(gateway pb.GatewayClient, pred retryPredicate) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
 		Command: Command{
 			SerializerMixin: utils.NewJsonStringSerializer(),
 			gateway:         gateway,
-			requestTimeout:  requestTimeout,
-			retryPredicate:  retryPredicate,
+			retryPred:       pred,
 		},
 	}
 }

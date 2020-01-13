@@ -36,9 +36,12 @@ func TestCompleteJobCommand(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	response, err := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := NewCompleteJobCommand(client, func(context.Context, error) bool {
 		return false
-	}).JobKey(123).Send()
+	}).JobKey(123).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -65,14 +68,17 @@ func TestCompleteJobCommandWithVariablesFromString(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewCompleteJobCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromString(variables)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -99,7 +105,7 @@ func TestCompleteJobCommandWithVariablesFromStringer(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
+	command := NewCompleteJobCommand(client, func(context.Context, error) bool {
 		return false
 	})
 
@@ -108,7 +114,10 @@ func TestCompleteJobCommandWithVariablesFromStringer(t *testing.T) {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -135,14 +144,17 @@ func TestCompleteJobCommandWithVariablesFromObject(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewCompleteJobCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -169,14 +181,17 @@ func TestCompleteJobCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewCompleteJobCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -203,14 +218,17 @@ func TestCompleteJobCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) 
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewCompleteJobCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -239,14 +257,17 @@ func TestCompleteJobCommandWithVariablesFromMap(t *testing.T) {
 
 	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewCompleteJobCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.JobKey(123).VariablesFromMap(variableMaps)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

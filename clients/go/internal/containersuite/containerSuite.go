@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package containerSuite
+package containersuite
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"google.golang.org/grpc/codes"
@@ -56,10 +57,16 @@ func (s zeebeWaitStrategy) WaitUntilReady(ctx context.Context, target wait.Strat
 		return err
 	}
 
-	res, err := zbClient.NewTopologyCommand().Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	res, err := zbClient.NewTopologyCommand().Send(ctx)
 	for (err != nil && status.Code(err) == codes.Unavailable) || !isStable(res) {
 		time.Sleep(s.waitTime)
-		res, err = zbClient.NewTopologyCommand().Send()
+
+		ctx, cancel = context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+		defer cancel()
+		res, err = zbClient.NewTopologyCommand().Send(ctx)
 	}
 
 	if err != nil {
@@ -146,7 +153,7 @@ func validateImageExists(ctx context.Context, image string) error {
 	_, _, err = dockerClient.ImageInspectWithRaw(ctx, image)
 	if err != nil {
 		if client.IsErrNotFound(err) {
-			return fmt.Errorf("a Docker image containing Zeebe must be built and named '%s'\n", image)
+			return fmt.Errorf("a Docker image containing Zeebe must be built and named '%s'", image)
 		}
 
 		return err

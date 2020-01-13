@@ -18,7 +18,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 )
 
 type DispatchUpdateJobRetriesCommand interface {
-	Send() (*pb.UpdateJobRetriesResponse, error)
+	Send(context.Context) (*pb.UpdateJobRetriesResponse, error)
 }
 
 type UpdateJobRetriesCommandStep1 interface {
@@ -54,27 +53,23 @@ func (cmd *UpdateJobRetriesCommand) Retries(retries int32) DispatchUpdateJobRetr
 	return cmd
 }
 
-func (cmd *UpdateJobRetriesCommand) Send() (*pb.UpdateJobRetriesResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
+func (cmd *UpdateJobRetriesCommand) Send(ctx context.Context) (*pb.UpdateJobRetriesResponse, error) {
 	response, err := cmd.gateway.UpdateJobRetries(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) UpdateJobRetriesCommandStep1 {
+func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, pred retryPredicate) UpdateJobRetriesCommandStep1 {
 	return &UpdateJobRetriesCommand{
 		request: pb.UpdateJobRetriesRequest{
 			Retries: DefaultJobRetries,
 		},
 		Command: Command{
-			gateway:        gateway,
-			requestTimeout: requestTimeout,
-			retryPredicate: retryPredicate,
+			gateway:   gateway,
+			retryPred: pred,
 		},
 	}
 }

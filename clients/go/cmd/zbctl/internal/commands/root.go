@@ -21,6 +21,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ const (
 	DefaultAddressHost = "127.0.0.1"
 	DefaultAddressPort = "26500"
 	AddressEnvVar      = "ZEEBE_ADDRESS"
+	defaultTimeout     = 10 * time.Second
 )
 
 var client zbc.Client

@@ -16,6 +16,7 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
@@ -118,7 +119,10 @@ func completeJob(jobClient worker.JobClient, job entities.Job, variables string)
 	} else {
 		log.Println("Handler completed job", job.Key, "with variables", variables)
 
-		_, err = request.Send()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		_, err = request.Send(ctx)
 		if err != nil {
 			log.Println("Unable to complete job", key, err)
 		}
@@ -127,7 +131,11 @@ func completeJob(jobClient worker.JobClient, job entities.Job, variables string)
 
 func failJob(jobClient worker.JobClient, job entities.Job, error string) {
 	log.Println("Command failed to handle job", job.Key, error)
-	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).Send()
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).Send(ctx)
 	if err != nil {
 		log.Println("Unable to fail job", err)
 	}
@@ -137,7 +145,9 @@ func init() {
 	createCmd.AddCommand(createWorkerCmd)
 
 	createWorkerCmd.Flags().StringVar(&createWorkerHandlerFlag, "handler", "", "Specify handler to invoke for each job")
-	createWorkerCmd.MarkFlagRequired("handler")
+	if err := createWorkerCmd.MarkFlagRequired("handler"); err != nil {
+		panic(err)
+	}
 
 	createWorkerCmd.Flags().StringVar(&createWorkerNameFlag, "name", DefaultJobWorkerName, "Specify the worker name")
 	createWorkerCmd.Flags().DurationVar(&createWorkerTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the duration no other worker should work on job activated by this worker")

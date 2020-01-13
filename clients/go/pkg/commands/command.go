@@ -21,10 +21,33 @@ import (
 	"time"
 )
 
+const (
+	longPollingOffsetPercent = 0.1
+	longPollingMaxDuration   = 10 * time.Second
+)
+
+type retryPredicate func(context.Context, error) bool
+
 type Command struct {
 	utils.SerializerMixin
 
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(context.Context, error) bool
+	gateway   pb.GatewayClient
+	retryPred retryPredicate
+}
+
+func getLongPollingMillis(ctx context.Context) int64 {
+	longPollMillis := int64(-1)
+
+	if deadline, ok := ctx.Deadline(); ok {
+		timeout := time.Until(deadline)
+		longPollOffset := time.Duration(float64(timeout) * longPollingOffsetPercent)
+
+		if longPollOffset > longPollingMaxDuration {
+			longPollOffset = longPollingMaxDuration
+		}
+
+		longPollMillis = (timeout - longPollOffset).Milliseconds()
+	}
+
+	return longPollMillis
 }

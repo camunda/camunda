@@ -19,7 +19,6 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"io/ioutil"
 	"log"
-	"time"
 )
 
 type DeployCommand struct {
@@ -40,24 +39,20 @@ func (cmd *DeployCommand) AddResource(definition []byte, name string, resourceTy
 	return cmd
 }
 
-func (cmd *DeployCommand) Send() (*pb.DeployWorkflowResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
+func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployWorkflowResponse, error) {
 	response, err := cmd.gateway.DeployWorkflow(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewDeployCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) *DeployCommand {
+func NewDeployCommand(gateway pb.GatewayClient, pred retryPredicate) *DeployCommand {
 	return &DeployCommand{
 		Command: Command{
-			gateway:        gateway,
-			requestTimeout: requestTimeout,
-			retryPredicate: retryPredicate,
+			gateway:   gateway,
+			retryPred: pred,
 		},
 	}
 }

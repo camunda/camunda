@@ -17,13 +17,11 @@ package commands
 
 import (
 	"context"
-	"time"
-
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 type DispatchResolveIncidentCommand interface {
-	Send() (*pb.ResolveIncidentResponse, error)
+	Send(context.Context) (*pb.ResolveIncidentResponse, error)
 }
 
 type ResolveIncidentCommandStep1 interface {
@@ -44,24 +42,20 @@ func (cmd *ResolveIncidentCommand) IncidentKey(incidentKey int64) ResolveInciden
 	return cmd
 }
 
-func (cmd *ResolveIncidentCommand) Send() (*pb.ResolveIncidentResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
+func (cmd *ResolveIncidentCommand) Send(ctx context.Context) (*pb.ResolveIncidentResponse, error) {
 	response, err := cmd.gateway.ResolveIncident(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewResolveIncidentCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) ResolveIncidentCommandStep1 {
+func NewResolveIncidentCommand(gateway pb.GatewayClient, pred retryPredicate) ResolveIncidentCommandStep1 {
 	return &ResolveIncidentCommand{
 		Command: Command{
-			gateway:        gateway,
-			requestTimeout: requestTimeout,
-			retryPredicate: retryPredicate,
+			gateway:   gateway,
+			retryPred: pred,
 		},
 	}
 }

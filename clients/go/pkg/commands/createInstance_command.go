@@ -19,18 +19,16 @@ import (
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 const LatestVersion = -1
-const DeadLineOffset = 10 * time.Second
 
 type DispatchCreateInstanceCommand interface {
-	Send() (*pb.CreateWorkflowInstanceResponse, error)
+	Send(context.Context) (*pb.CreateWorkflowInstanceResponse, error)
 }
 
 type DispatchCreateInstanceWithResultCommand interface {
-	Send() (*pb.CreateWorkflowInstanceWithResultResponse, error)
+	Send(context.Context) (*pb.CreateWorkflowInstanceWithResultResponse, error)
 }
 
 type CreateInstanceCommandStep1 interface {
@@ -137,14 +135,12 @@ func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommand
 func (cmd *CreateInstanceCommand) WithResult() CreateInstanceWithResultCommandStep1 {
 	return &CreateInstanceWithResultCommand{
 		request: pb.CreateWorkflowInstanceWithResultRequest{
-			Request:        &cmd.request,
-			RequestTimeout: int64(cmd.requestTimeout / time.Millisecond),
+			Request: &cmd.request,
 		},
 		Command: Command{
 			SerializerMixin: cmd.SerializerMixin,
 			gateway:         cmd.gateway,
-			requestTimeout:  cmd.requestTimeout,
-			retryPredicate:  cmd.retryPredicate,
+			retryPred:       cmd.retryPred,
 		},
 	}
 }
@@ -154,38 +150,32 @@ func (cmd *CreateInstanceWithResultCommand) FetchVariables(variableNames ...stri
 	return cmd
 }
 
-func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
+func (cmd *CreateInstanceCommand) Send(ctx context.Context) (*pb.CreateWorkflowInstanceResponse, error) {
 	response, err := cmd.gateway.CreateWorkflowInstance(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func (cmd *CreateInstanceWithResultCommand) Send() (*pb.CreateWorkflowInstanceWithResultResponse, error) {
-	// increase request by dead line offset to not close the connection before the request timeout to the broker is triggered
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout+DeadLineOffset)
-	defer cancel()
+func (cmd *CreateInstanceWithResultCommand) Send(ctx context.Context) (*pb.CreateWorkflowInstanceWithResultResponse, error) {
+	cmd.request.RequestTimeout = getLongPollingMillis(ctx)
 
 	response, err := cmd.gateway.CreateWorkflowInstanceWithResult(ctx, &cmd.request)
-	if cmd.retryPredicate(ctx, err) {
-		return cmd.Send()
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(context.Context, error) bool) CreateInstanceCommandStep1 {
+func NewCreateInstanceCommand(gateway pb.GatewayClient, pred retryPredicate) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
 		Command: Command{
 			SerializerMixin: utils.NewJsonStringSerializer(),
 			gateway:         gateway,
-			requestTimeout:  requestTimeout,
-			retryPredicate:  retryPredicate,
+			retryPred:       pred,
 		},
 	}
 }

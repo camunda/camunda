@@ -77,7 +77,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -130,7 +130,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -177,7 +177,7 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -348,7 +348,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderCachesCredenti
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.NoError(err)
@@ -403,7 +403,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.NoError(err)
@@ -414,7 +414,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	s.False(authServerCalled)
 
 	// when we do it again
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.NoError(err)
@@ -458,12 +458,15 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 		CredentialsProvider:    credsProvider,
 	})
 	s.NoError(err)
-	client.SetRequestTimeout(time.Hour)
 
 	// when
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+
 	finishCmd := make(chan struct{})
 	go func() {
-		_, err = client.NewTopologyCommand().Send()
+
+		_, err = client.NewTopologyCommand().Send(ctx)
 		finishCmd <- struct{}{}
 	}()
 

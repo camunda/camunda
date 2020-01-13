@@ -40,7 +40,6 @@ const KeepAliveEnvVar = "ZEEBE_KEEP_ALIVE"
 
 type ClientImpl struct {
 	gateway             pb.GatewayClient
-	requestTimeout      time.Duration
 	connection          *grpc.ClientConn
 	credentialsProvider CredentialsProvider
 }
@@ -50,6 +49,7 @@ type ClientConfig struct {
 	UsePlaintextConnection bool
 	CaCertificatePath      string
 	CredentialsProvider    CredentialsProvider
+
 	// KeepAlive can be used configure how often keep alive messages should be sent to the gateway. These will be sent
 	// whether or not there are active requests. Negative values will result in error and zero will result in the default
 	// of 45 seconds being used
@@ -66,60 +66,55 @@ func (e Error) Error() string {
 }
 
 func (client *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
-	return commands.NewTopologyCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewTopologyCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
-	return commands.NewDeployCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewDeployCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
-	return commands.NewPublishMessageCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewPublishMessageCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
-	return commands.NewResolveIncidentCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewResolveIncidentCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
-	return commands.NewCreateInstanceCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewCreateInstanceCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewCancelInstanceCommand() commands.CancelInstanceStep1 {
-	return commands.NewCancelInstanceCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewCancelInstanceCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
-	return commands.NewCompleteJobCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewCompleteJobCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewFailJobCommand() commands.FailJobCommandStep1 {
-	return commands.NewFailJobCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewFailJobCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1 {
-	return commands.NewUpdateJobRetriesCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewUpdateJobRetriesCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
-	return commands.NewSetVariablesCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewSetVariablesCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {
-	return commands.NewActivateJobsCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewActivateJobsCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
-	return commands.NewThrowErrorCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+	return commands.NewThrowErrorCommand(client.gateway, client.credentialsProvider.ShouldRetryRequest)
 }
 
 func (client *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
-	return worker.NewJobWorkerBuilder(client.gateway, client, client.requestTimeout)
-}
-
-func (client *ClientImpl) SetRequestTimeout(requestTimeout time.Duration) Client {
-	client.requestTimeout = requestTimeout
-	return client
+	return worker.NewJobWorkerBuilder(client.gateway, client)
 }
 
 func (client *ClientImpl) Close() error {
@@ -155,7 +150,6 @@ func NewClient(config *ClientConfig) (Client, error) {
 
 	return &ClientImpl{
 		gateway:             pb.NewGatewayClient(conn),
-		requestTimeout:      DefaultRequestTimeout,
 		connection:          conn,
 		credentialsProvider: config.CredentialsProvider,
 	}, nil

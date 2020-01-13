@@ -38,9 +38,12 @@ func TestResolveIncidentCommand(t *testing.T) {
 
 	client.EXPECT().ResolveIncident(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewResolveIncidentCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewResolveIncidentCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.IncidentKey(123).Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.IncidentKey(123).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

@@ -39,9 +39,12 @@ func TestPublishMessageCommand(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.MessageName("foo").CorrelationKey("bar").Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.MessageName("foo").CorrelationKey("bar").Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -67,9 +70,12 @@ func TestPublishMessageCommandWithMessageId(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.MessageName("foo").CorrelationKey("bar").MessageId("hello").Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.MessageName("foo").CorrelationKey("bar").MessageId("hello").Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -95,9 +101,12 @@ func TestPublishMessageCommandWithTimeToLive(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.MessageName("foo").CorrelationKey("bar").TimeToLive(time.Duration(6 * time.Minute)).Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.MessageName("foo").CorrelationKey("bar").TimeToLive(6 * time.Minute).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -125,14 +134,17 @@ func TestPublishMessageCommandWithVariablesFromString(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromString(variables)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -160,14 +172,17 @@ func TestPublishMessageCommandWithVariablesFromStringer(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -195,14 +210,17 @@ func TestPublishMessageCommandWithVariablesFromObject(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -230,14 +248,17 @@ func TestPublishMessageCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -265,14 +286,17 @@ func TestPublishMessageCommandWithVariablesFromObjectIgnoreOmitEmpty(t *testing.
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -302,14 +326,17 @@ func TestPublishMessageCommandWithVariablesFromMap(t *testing.T) {
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.MessageName("foo").CorrelationKey("bar").VariablesFromMap(variablesMap)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
