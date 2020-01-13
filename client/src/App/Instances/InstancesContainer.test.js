@@ -71,7 +71,7 @@ function getRouterProps(filter = DEFAULT_FILTER) {
   return {
     history: {push: pushMock, listen: () => listenMock, location: {search: ''}},
     location: {
-      search: filterUtils.getFilterQueryString(filter)
+      search: filterUtils.getFilterQueryString(filter, filter.workflow)
     }
   };
 }
@@ -415,7 +415,8 @@ describe('InstancesContainer', () => {
       // when componentDidUpdate & Url changed
       expect(setFilterFromUrlSpy).toHaveBeenCalledTimes(1);
       expect(setFilterFromUrlSpy).toHaveBeenCalledWith(
-        mockFullFilterWithWorkflow
+        mockFullFilterWithWorkflow,
+        'New demo process'
       );
     });
 
@@ -440,12 +441,9 @@ describe('InstancesContainer', () => {
         await flushPromises();
 
         // then
-        const encodedFilter = encodeURIComponent(
-          '{"active":true,"incidents":true}'
-        );
         expect(noFilterRouterProps.history.push).toHaveBeenCalled();
         expect(noFilterRouterProps.history.push.mock.calls[0][0].search).toBe(
-          `?filter=${encodedFilter}`
+          '?filter={"active":true,"incidents":true}'
         );
       });
 
@@ -470,9 +468,8 @@ describe('InstancesContainer', () => {
         node.update();
 
         // then
-        const encodedFilter = encodeURIComponent(
-          '{"active":true,"incidents":true}'
-        );
+        const encodedFilter = '{"active":true,"incidents":true}';
+
         expect(invalidFilterRouterProps.history.push).toHaveBeenCalled();
         expect(
           invalidFilterRouterProps.history.push.mock.calls[0][0].search
@@ -742,11 +739,14 @@ describe('InstancesContainer', () => {
       // then
       expect(pushMock).toHaveBeenCalled();
       expect(pushMock.mock.calls[0][0].search).toBe(
-        filterUtils.getFilterQueryString({
-          ...mockFullFilterWithoutWorkflow,
-          ...mockFullFilterWithWorkflow,
-          variable: ''
-        })
+        filterUtils.getFilterQueryString(
+          {
+            ...mockFullFilterWithoutWorkflow,
+            ...mockFullFilterWithWorkflow,
+            variable: ''
+          },
+          'New demo process'
+        )
       );
     });
 

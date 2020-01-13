@@ -70,24 +70,20 @@ describe('IncidentsByError', () => {
       .find('[data-test="incident-byError-0"]')
       .last();
     const firstIncidentLink = firstIncidentItem.find('a').props().href;
-    const firstEncodedFilter = encodeURIComponent(
-      `{"errorMessage":"JSON path '$.paid' has no result.","incidents":true}`
-    );
+    const firstFilter = `{"errorMessage":"JSON path '$.paid' has no result.","incidents":true}`;
 
     const secondIncidentItem = node
       .find('[data-test="incident-byError-1"]')
       .last();
     const secondIncidentLink = secondIncidentItem.find('a').props().href;
-    const secondEncodedFilter = encodeURIComponent(
-      `{"errorMessage":"No space left on device.","incidents":true}`
-    );
+    const secondFilter = `{"errorMessage":"No space left on device.","incidents":true}`;
 
-    expect(firstIncidentLink).toBe(`/instances?filter=${firstEncodedFilter}`);
+    expect(firstIncidentLink).toBe(`/instances?filter=${firstFilter}`);
     expect(firstIncidentItem.find(InstancesBar).text()).toContain(
       "JSON path '$.paid' has no result."
     );
 
-    expect(secondIncidentLink).toBe(`/instances?filter=${secondEncodedFilter}`);
+    expect(secondIncidentLink).toBe(`/instances?filter=${secondFilter}`);
     expect(secondIncidentItem.find(InstancesBar).text()).toContain(
       'No space left on device.'
     );

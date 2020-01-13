@@ -26,13 +26,23 @@ import {
   parseFilterForRequest,
   getFilterWithWorkflowIds,
   getFilterQueryString,
-  getWorkflowByVersion
+  getWorkflowByVersion,
+  parseQueryString
+  // reduceToStates
 } from 'modules/utils/filter';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 
 import Instances from './Instances';
-import {parseQueryString} from 'modules/utils/filter';
-import {decodeFields} from './service';
+
+import {
+  decodeFields,
+  hasFirstElementChanged,
+  hasSortingChanged,
+  hasWorkflowChanged,
+  hasUrlChanged,
+  hasFilterChanged
+} from './service';
+import {compactObject} from 'modules/utils';
 
 class InstancesContainer extends Component {
   static propTypes = {
@@ -107,18 +117,19 @@ class InstancesContainer extends Component {
     document.title = PAGE_TITLE.INSTANCES;
     this.props.dataManager.subscribe(this.subscriptions);
 
+    const queryParams = parseQueryString(this.props.location.search);
+
     const groupedWorkflows = formatGroupedWorkflows(
       await fetchGroupedWorkflows()
     );
 
-    const filterFromURL = parseQueryString(this.props.location.search).filter;
     const sanitizedFilterfromURL = this.sanitizeFilter(
-      filterFromURL,
+      queryParams.filter,
       groupedWorkflows
     );
 
-    if (!isEqual(sanitizedFilterfromURL, filterFromURL)) {
-      this.setFilterInURL(sanitizedFilterfromURL);
+    if (!isEqual(sanitizedFilterfromURL, queryParams.filter)) {
+      this.setFilterInURL(sanitizedFilterfromURL, queryParams.name);
     }
 
     this.fetchWorkflowInstances(sanitizedFilterfromURL, groupedWorkflows);
@@ -137,66 +148,94 @@ class InstancesContainer extends Component {
     });
   }
 
-  async componentDidUpdate(prevProps, prevState) {
-    const {filter, groupedWorkflows, diagramModel} = this.state;
+  componentDidUpdate(prevProps, prevState) {
+    // Browser has changed (via navigation or manual URL manipulation)
+    if (hasUrlChanged(prevProps.location, this.props.location)) {
+      this.handleUrlUpdate();
+    }
+    // UI change: List
+    if (
+      hasSortingChanged(prevState.sorting, this.state.sorting) ||
+      hasFirstElementChanged(prevState.firstElement, this.state.firstElement)
+    ) {
+      this.fetchWorkflowInstances(
+        this.state.filter,
+        this.state.groupedWorkflows
+      );
+    }
+    // UI change: Filter
+    if (hasFilterChanged(prevState.filter, this.state.filter)) {
+      this.handleFilterUpdate(prevState);
+    }
+  }
 
+  componentWillUnmount() {
+    this.props.dataManager.unsubscribe(this.subscriptions);
+  }
+
+  reduceToStates(filter) {
+    const {active, incidents, completed, canceled} = filter;
+    return compactObject({active, incidents, completed, canceled});
+  }
+
+  handleUrlUpdate() {
+    const {groupedWorkflows, diagramModel} = this.state;
     const filterFromURL = this.sanitizeFilter(
       parseQueryString(this.props.location.search).filter,
       groupedWorkflows,
       diagramModel
     );
 
-    const prevFilterFromURL = this.sanitizeFilter(
-      parseQueryString(prevProps.location.search).filter,
-      groupedWorkflows,
-      diagramModel
-    );
+    return this.setState({filter: filterFromURL});
+  }
 
-    const hasURLChanged = !isEqual(filterFromURL, prevFilterFromURL);
-    const hasFilterChanged = !isEqual(prevState.filter, filter);
+  handleFilterUpdate(prevState) {
+    const {filter} = this.state;
 
-    // caused by browser backwards/forward btn or manual URL manipulation
-    if (hasURLChanged) {
-      this.setFilterInURL(filterFromURL);
-      this.setState({filter: filterFromURL});
+    // handle first update when mounting, comes with empty previous filter
+    if (isEmpty(prevState.filter)) {
+      return;
     }
 
-    if (hasFilterChanged) {
-      this.props.storeStateLocally({
-        filter
-      });
-      // set filter in URL after changes in the UI
-      if (!isEqual(filter, filterFromURL)) {
-        this.setFilterInURL(filter);
-      }
-    }
+    this.fetchNewData(filter, prevState);
+
+    this.props.storeStateLocally({
+      filter
+    });
+
+    this.setFilterInURL(filter, this.getWorkflowName(filter.workflow));
+  }
+
+  fetchNewData(filter, prevState) {
+    const {groupedWorkflows, diagramModel} = this.state;
 
     // caused by interaction with version or workflow filter
-    const hasWorkflowChanged =
-      prevState.filter.workflow !== filter.workflow ||
-      prevState.filter.version !== filter.version;
+    const didWorkflowChange = hasWorkflowChanged(prevState.filter, filter);
 
-    if (hasFilterChanged && hasWorkflowChanged) {
+    if (didWorkflowChange && !isEmpty(filter.workflow)) {
       this.fetchWorkflowXML(groupedWorkflows, filter.workflow, filter.version);
     }
 
+    // remove previous diagram if new filter doesn't contain a workflow
+    if (didWorkflowChange && isEmpty(filter.workflow)) {
+      this.setState({diagramModel: {}});
+    }
+
     // caused by interaction with non version or workflow filter
-    if (hasFilterChanged && !hasWorkflowChanged && diagramModel.definitions) {
+    if (!didWorkflowChange && diagramModel.definitions) {
       this.fetchStatistics();
     }
-
-    // caused by interaction with instances list
-    const hasFirstElementChanged =
-      prevState.firstElement !== this.state.firstElement;
-    const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
-
-    if (hasFilterChanged || hasSortingChanged || hasFirstElementChanged) {
-      this.fetchWorkflowInstances(filter, groupedWorkflows);
-    }
+    // no matter which filter changed, instances are always reloaded
+    this.fetchWorkflowInstances(filter, groupedWorkflows);
   }
 
-  componentWillUnmount() {
-    this.props.dataManager.unsubscribe(this.subscriptions);
+  getWorkflowName(workflow) {
+    if (workflow) {
+      const {name, bpmnProcessId} = this.state.groupedWorkflows[workflow];
+      return name || bpmnProcessId;
+    } else {
+      return '';
+    }
   }
 
   fetchWorkflowXML(groupedWorkflows, workflow, version) {
@@ -262,15 +301,12 @@ class InstancesContainer extends Component {
     return !isFinishedInFilter && sorting.sortBy === 'endDate';
   };
 
-  setFilterInURL = filter => {
-    const {history} = this.props;
-    return (
-      history.location.search !== getFilterQueryString(filter) &&
-      history.push({
-        pathname: this.props.location.pathname,
-        search: getFilterQueryString(filter)
-      })
-    );
+  setFilterInURL = (filter, workflowName) => {
+    const {history, location} = this.props;
+    return history.push({
+      pathname: location.pathname,
+      search: getFilterQueryString(filter, workflowName)
+    });
   };
 
   handleFilterReset = async fallbackFilter => {

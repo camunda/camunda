@@ -47,16 +47,17 @@ export default class InstancesByWorkflow extends React.Component {
     return (
       <Styled.VersionList>
         {items.map(item => {
+          const name = item.name || item.bpmnProcessId;
           const totalInstancesCount =
             item.instancesWithActiveIncidentsCount + item.activeInstancesCount;
-
           return (
             <Styled.VersionLi key={item.workflowId}>
               <PanelListItem
                 to={concatUrl({
                   bpmnProcessId: item.bpmnProcessId,
                   versions: [item],
-                  hasFinishedInstances: totalInstancesCount === 0
+                  hasFinishedInstances: totalInstancesCount === 0,
+                  name
                 })}
                 title={concatTitle(
                   item.name || workflowName,
@@ -94,7 +95,8 @@ export default class InstancesByWorkflow extends React.Component {
         to={concatUrl({
           bpmnProcessId: item.bpmnProcessId,
           versions: item.workflows,
-          hasFinishedInstances: totalInstancesCount === 0
+          hasFinishedInstances: totalInstancesCount === 0,
+          name
         })}
         title={concatGroupTitle(
           name,

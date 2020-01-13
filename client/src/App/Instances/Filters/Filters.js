@@ -7,6 +7,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import {withRouter} from 'react-router';
+
 import FiltersPanel from './FiltersPanel';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Button from 'modules/components/Button';
@@ -35,10 +37,10 @@ import {
   sortAndModify,
   sanitizeFilter
 } from './service';
-
+import {parseQueryString} from 'modules/utils/filter';
 import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
 
-export default class Filters extends React.Component {
+class Filters extends React.Component {
   static propTypes = {
     filter: PropTypes.shape({
       active: PropTypes.bool.isRequired,
@@ -60,7 +62,8 @@ export default class Filters extends React.Component {
     onFilterChange: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func.isRequired,
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.object),
-    groupedWorkflows: PropTypes.object
+    groupedWorkflows: PropTypes.object,
+    location: PropTypes.object
   };
 
   state = {
@@ -81,12 +84,14 @@ export default class Filters extends React.Component {
   };
 
   componentDidMount = async () => {
-    this.setFilterFromProps();
+    const {filter, name} = parseQueryString(this.props.location.search);
+    this.setFilter(filter);
+    this.setState({previewName: name, previewVersion: filter.version});
   };
 
   componentDidUpdate = prevProps => {
     if (!isEqual(prevProps.filter, this.props.filter)) {
-      this.setFilterFromProps();
+      this.setFilter(this.props.filter);
     }
   };
 
@@ -130,7 +135,7 @@ export default class Filters extends React.Component {
     this.props.onFilterChange(sanitizeFilter(this.state.filter));
   };
 
-  setFilterFromProps = () => {
+  setFilter(filter) {
     const {
       errorMessage,
       startDate,
@@ -139,13 +144,19 @@ export default class Filters extends React.Component {
       ids,
       // fields that are evaluated immediately will be overwritten by props
       ...immediateFilter
-    } = this.props.filter;
+    } = filter;
 
-    const debouncedFilter = {errorMessage, startDate, endDate, variable, ids};
+    const debouncedFilter = {
+      errorMessage,
+      startDate,
+      endDate,
+      variable,
+      ids
+    };
+
     const sanitizedDebouncedFilter = sanitizeFilter(debouncedFilter);
-
     this.setFilterState({...immediateFilter, ...sanitizedDebouncedFilter});
-  };
+  }
 
   handleWorkflowNameChange = event => {
     const {value} = event.target;
@@ -164,7 +175,6 @@ export default class Filters extends React.Component {
     if (value === '') {
       return;
     }
-
     this.setFilterState({version: value, activityId: ''}, this.propagateFilter);
   };
 
@@ -191,14 +201,41 @@ export default class Filters extends React.Component {
     );
   };
 
+  getPlaceHolder(regular, preview) {
+    const isWorkflowDataLoaded = !isEmpty(this.props.groupedWorkflows);
+    if (preview && !isWorkflowDataLoaded) {
+      return preview;
+    } else {
+      return regular;
+    }
+  }
+
   render() {
-    const {active, incidents, canceled, completed} = this.state.filter;
+    const {
+      version,
+      active,
+      incidents,
+      canceled,
+      completed,
+      workflow,
+      variable,
+      activityId,
+      errorMessage,
+      startDate,
+      endDate,
+      ids
+    } = this.state.filter;
+
+    const {previewVersion, previewName} = this.state;
+
     const isWorkflowsDataLoaded = !isEmpty(this.props.groupedWorkflows);
+    const versionPlaceholder =
+      previewVersion === 'all' ? `All versions` : `Version ${previewVersion}`;
     const workflowVersions =
-      this.state.filter.workflow !== '' && isWorkflowsDataLoaded
+      workflow !== '' && isWorkflowsDataLoaded
         ? addAllVersionsOption(
             getOptionsForWorkflowVersion(
-              this.props.groupedWorkflows[this.state.filter.workflow].workflows
+              this.props.groupedWorkflows[workflow].workflows
             )
           )
         : [];
@@ -208,27 +245,30 @@ export default class Filters extends React.Component {
         <Styled.Filters>
           <Styled.Field>
             <Styled.Select
-              value={this.state.filter.workflow}
-              disabled={isEmpty(this.props.groupedWorkflows)}
+              value={workflow}
+              disabled={!isWorkflowsDataLoaded}
               name="workflow"
-              placeholder="Workflow"
+              placeholder={this.getPlaceHolder('Workflow', previewName)}
               options={getOptionsForWorkflowName(this.props.groupedWorkflows)}
               onChange={this.handleWorkflowNameChange}
             />
           </Styled.Field>
           <Styled.Field>
             <Styled.Select
-              value={this.state.filter.version}
-              disabled={this.state.filter.workflow === ''}
+              value={version}
+              disabled={workflow === '' || !isWorkflowsDataLoaded}
               name="version"
-              placeholder="Workflow Version"
+              placeholder={this.getPlaceHolder(
+                'Workflow Version',
+                versionPlaceholder
+              )}
               options={workflowVersions}
               onChange={this.handleWorkflowVersionChange}
             />
           </Styled.Field>
           <Styled.Field>
             <Styled.ValidationTextInput
-              value={this.state.filter.ids}
+              value={ids}
               name="ids"
               placeholder="Instance Id(s) separated by space or comma"
               onChange={this.handleControlledInputChange}
@@ -241,7 +281,7 @@ export default class Filters extends React.Component {
           </Styled.Field>
           <Styled.Field>
             <Styled.ValidationTextInput
-              value={this.state.filter.errorMessage}
+              value={errorMessage}
               name="errorMessage"
               placeholder="Error Message"
               onChange={this.handleControlledInputChange}
@@ -252,7 +292,7 @@ export default class Filters extends React.Component {
           </Styled.Field>
           <Styled.Field>
             <Styled.ValidationTextInput
-              value={this.state.filter.startDate}
+              value={startDate}
               name="startDate"
               placeholder="Start Date yyyy-mm-dd hh:mm:ss"
               onChange={this.handleControlledInputChange}
@@ -265,7 +305,7 @@ export default class Filters extends React.Component {
           </Styled.Field>
           <Styled.Field>
             <Styled.ValidationTextInput
-              value={this.state.filter.endDate}
+              value={endDate}
               name="endDate"
               placeholder="End Date yyyy-mm-dd hh:mm:ss"
               onChange={this.handleControlledInputChange}
@@ -278,13 +318,14 @@ export default class Filters extends React.Component {
           </Styled.Field>
           <Styled.Field>
             <Styled.Select
-              value={this.state.filter.activityId}
+              value={activityId}
               disabled={
-                this.state.filter.version === '' ||
-                this.state.filter.version === ALL_VERSIONS_OPTION
+                version === '' ||
+                version === ALL_VERSIONS_OPTION ||
+                !isWorkflowsDataLoaded
               }
               name="activityId"
-              placeholder="Flow Node"
+              placeholder={'Flow Node'}
               options={sortAndModify(this.props.selectableFlowNodes)}
               onChange={event =>
                 this.handleControlledInputChange(event, this.propagateFilter)
@@ -293,7 +334,7 @@ export default class Filters extends React.Component {
           </Styled.Field>
           <Styled.Field>
             <Styled.VariableFilterInput
-              variable={this.state.filter.variable}
+              variable={variable}
               onFilterChange={() => this.waitForTimer(this.propagateFilter)}
               onChange={this.handleVariableChange}
               checkIsNameComplete={checkIsVariableNameComplete}
@@ -340,3 +381,8 @@ export default class Filters extends React.Component {
     );
   }
 }
+
+const WrappedFilter = withRouter(Filters);
+WrappedFilter.WrappedComponent = Filters;
+
+export default WrappedFilter;

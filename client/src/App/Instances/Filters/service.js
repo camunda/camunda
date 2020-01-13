@@ -158,12 +158,24 @@ function sanitizeIds(ids = '') {
 export function sanitizeFilter(filter) {
   const {variable, startDate, endDate, ids} = filter;
 
+  const sanatizeFcts = {
+    ids: sanitizeIds,
+    variable: sanitizeVariable,
+    startDate: sanitizeDate,
+    endDate: sanitizeDate
+  };
+
+  // only add & sanatize filter when value available
+  const addFilter = (type, value) => {
+    return value ? {[type]: sanatizeFcts[type](value)} : null;
+  };
+
   return compactObject({
     ...filter,
-    ids: sanitizeIds(ids),
-    variable: sanitizeVariable(variable),
-    startDate: sanitizeDate(startDate),
-    endDate: sanitizeDate(endDate)
+    ...addFilter('ids', ids),
+    ...addFilter('variable', variable),
+    ...addFilter('startDate', startDate),
+    ...addFilter('endDate', endDate)
   });
 }
 

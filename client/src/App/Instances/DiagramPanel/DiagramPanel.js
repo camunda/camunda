@@ -80,6 +80,7 @@ class DiagramPanel extends React.Component {
       dataManager,
       ...paneProps
     } = this.props;
+
     return (
       <SplitPane.Pane {...paneProps}>
         <Styled.PaneHeader>

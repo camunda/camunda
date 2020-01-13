@@ -67,7 +67,7 @@ describe('InstancesByWorkflow', () => {
     const statisticsAnchor = nodeInstancesBar.parent();
 
     expect(statisticsAnchor.props().to).toBe(
-      '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true,"active":true}'
+      '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true,"active":true}&name="loanProcess"'
     );
     expect(statisticsAnchor.props().title).toBe(
       'View 138 Instances in 1 Version of Workflow loanProcess'
@@ -121,7 +121,7 @@ describe('InstancesByWorkflow', () => {
 
     // header anchor
     expect(headerNode.props().to).toBe(
-      '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true,"active":true}'
+      '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true,"active":true}&name="Order process"'
     );
     expect(headerNode.props().title).toBe(
       'View 201 Instances in 2 Versions of Workflow Order process'
@@ -180,7 +180,7 @@ describe('InstancesByWorkflow', () => {
     const statisticsAnchor = nodeInstancesBar.parent();
 
     expect(statisticsAnchor.props().to).toBe(
-      '/instances?filter={"workflow":"noIncidentsProcess","version":"1","incidents":true,"active":true}'
+      '/instances?filter={"workflow":"noIncidentsProcess","version":"1","incidents":true,"active":true}&name="Without Incidents Process"'
     );
     expect(statisticsAnchor.props().title).toBe(
       'View 23 Instances in 1 Version of Workflow Without Incidents Process'
@@ -214,7 +214,7 @@ describe('InstancesByWorkflow', () => {
     const statisticsAnchor = nodeInstancesBar.parent();
 
     expect(statisticsAnchor.props().to).toBe(
-      '/instances?filter={"workflow":"noInstancesProcess","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}'
+      '/instances?filter={"workflow":"noInstancesProcess","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}&name="Without Instances Process"'
     );
     expect(statisticsAnchor.props().title).toBe(
       'View 0 Instances in 1 Version of Workflow Without Instances Process'

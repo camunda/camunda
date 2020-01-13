@@ -15,7 +15,7 @@ export const mockFullFilterWithoutWorkflow = {
   completed: true,
   canceled: true,
   ids: '424242, 434343',
-  errorMessage: 'No%20data%20found%20for%20query%20$.foo.',
+  errorMessage: 'No data found for query $.foo.',
   startDate: '2018-12-28',
   endDate: '2018-12-28'
 };
@@ -26,7 +26,7 @@ export const mockFullFilterWithWorkflow = {
   completed: true,
   canceled: true,
   ids: '424242, 434343',
-  errorMessage: 'No%20data%20found%20for%20query%20$.foo.',
+  errorMessage: 'No data found for query $.foo.',
   startDate: '2018-12-28',
   endDate: '2018-12-28',
   workflow: 'demoProcess',
