@@ -110,6 +110,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     jobWorkers.add(progressBigProcessTaskA());
     jobWorkers.add(progressBigProcessTaskB());
 
+    //error process
+    jobWorkers.add(progressErrorTask());
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
@@ -231,6 +234,21 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         .open();
   }
 
+  private JobWorker progressErrorTask() {
+    return client.newWorker()
+        .jobType("errorTask")
+        .handler((jobClient, job) -> {
+          String errorCode = (String) job.getVariablesAsMap().getOrDefault("errorCode", "error");
+          jobClient.newThrowErrorCommand(job.getKey())
+              .errorCode(errorCode)
+              .errorMessage("Job worker throw error with error code: " + errorCode)
+              .send().join();
+        })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
   @Override
   protected void deployVersion1() {
     super.deployVersion1();
@@ -254,6 +272,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/bigProcess.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/errorProcess.bpmn");
   }
 
   @Override
@@ -275,6 +294,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
         //eventSubprocess
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "eventSubprocessWorkflow", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
+
+        // errorProcess
+        workflowInstanceKeys.add(ZeebeTestUtil
+            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"boundary\"}"));
+        workflowInstanceKeys.add(ZeebeTestUtil
+            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"subProcess\"}"));
       }
 
       if (version == 2) {
