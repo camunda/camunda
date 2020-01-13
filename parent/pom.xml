@@ -109,6 +109,7 @@
     
     <!-- version against which backwards compatibility is checked -->
     <backwards.compat.version>0.22.0</backwards.compat.version>
+    <ignored.changes.file>ignored-changes.xml</ignored.changes.file>
   </properties>
 
   <dependencyManagement>
@@ -581,6 +582,7 @@
           <version>${plugin.version.clirr}</version>
           <configuration>
             <comparisonVersion>${backwards.compat.version}</comparisonVersion>
+            <ignoredDifferencesFile>${ignored.changes.file}</ignoredDifferencesFile>
           </configuration>
           <executions>
             <execution>
