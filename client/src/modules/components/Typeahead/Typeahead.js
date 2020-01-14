@@ -133,3 +133,16 @@ export default class Typeahead extends React.Component {
 }
 
 Typeahead.Option = Dropdown.Option;
+
+Typeahead.Highlight = function Highlight(props) {
+  return props.children;
+};
+
+Typeahead.Highlight.propTypes = {
+  children: props => {
+    const option = React.Children.toArray(props.children);
+    if (option.length !== 1 || typeof option[0] !== 'string') {
+      return new Error('The Typeahed.Highlight should have only one string child element');
+    }
+  }
+};

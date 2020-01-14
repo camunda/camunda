@@ -7,6 +7,7 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {t} from 'translation';
 import {Dropdown, LoadingIndicator} from 'components';
+import {highlightText} from './service';
 
 export default function OptionsList({
   loading,
@@ -34,7 +35,8 @@ export default function OptionsList({
     React.cloneElement(option, {
       className: i === selectedOption ? 'isActive' : '',
       onClick: evt => onSelect(option),
-      onMouseDown
+      onMouseDown,
+      children: highlightText(option.props.children, filter)
     })
   );
 

@@ -17,7 +17,9 @@ exports[`should format user list information correctly 1`] = `
     label="testUser"
     value="testUser"
   >
-    testUser
+    <Highlight>
+      testUser
+    </Highlight>
     <span
       className="subTexts"
     />
@@ -27,7 +29,9 @@ exports[`should format user list information correctly 1`] = `
     label="testUser@test.com"
     value="user2"
   >
-    testUser@test.com
+    <Highlight>
+      testUser@test.com
+    </Highlight>
     <span
       className="subTexts"
     >
@@ -35,7 +39,11 @@ exports[`should format user list information correctly 1`] = `
         className="subText"
         key="0"
       >
-        user2
+        <Highlight
+          matchFromStart={true}
+        >
+          user2
+        </Highlight>
       </span>
     </span>
   </ForwardRef(DropdownOption)>
@@ -44,7 +52,9 @@ exports[`should format user list information correctly 1`] = `
     label="groupName"
     value="groupId"
   >
-    groupName
+    <Highlight>
+      groupName
+    </Highlight>
      (User Group)
     <span
       className="subTexts"
@@ -53,13 +63,21 @@ exports[`should format user list information correctly 1`] = `
         className="subText"
         key="0"
       >
-        group@test.com
+        <Highlight
+          matchFromStart={true}
+        >
+          group@test.com
+        </Highlight>
       </span>
       <span
         className="subText"
         key="1"
       >
-        groupId
+        <Highlight
+          matchFromStart={true}
+        >
+          groupId
+        </Highlight>
       </span>
     </span>
   </ForwardRef(DropdownOption)>

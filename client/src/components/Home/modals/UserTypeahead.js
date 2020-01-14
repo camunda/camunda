@@ -80,7 +80,7 @@ export default class UserTypeahead extends React.Component {
           const {text, tag, subTexts} = formatTypeaheadOption(identity);
           return (
             <Typeahead.Option key={identity.id} value={identity.id} label={text}>
-              {text}
+              <Typeahead.Highlight>{text}</Typeahead.Highlight>
               {tag}
               {subTexts && (
                 <span className="subTexts">
@@ -88,7 +88,7 @@ export default class UserTypeahead extends React.Component {
                     .filter(subText => subText)
                     .map((subText, i) => (
                       <span className="subText" key={i}>
-                        {subText}
+                        <Typeahead.Highlight matchFromStart>{subText}</Typeahead.Highlight>
                       </span>
                     ))}
                 </span>
