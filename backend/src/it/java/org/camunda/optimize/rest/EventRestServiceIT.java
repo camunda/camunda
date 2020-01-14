@@ -83,51 +83,6 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getEventCounts_usingGETendpoint() {
-    // when
-    List<EventCountDto> eventCountDtos = createGetEventCountsQueryWithRequestParameters(new EventCountRequestDto())
-      .executeAndReturnList(EventCountDto.class, 200);
-
-    // then all events are sorted using default group case-insensitive ordering
-    assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(6)
-      .containsExactly(
-        toEventCountDto(nullNullEvent, 2L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
-      );
-  }
-
-  @Test
-  public void getEventCounts_usingGETendpoint_usingSearchTermAndSortAndOrderParameters() {
-    // given
-    EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
-      .searchTerm("etch")
-      .orderBy("eventName")
-      .sortOrder(SortOrder.DESC)
-      .build();
-
-    // when
-    List<EventCountDto> eventCountDtos = createGetEventCountsQueryWithRequestParameters(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
-
-    // then matching events are returned with ordering parameters respected
-    assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(4)
-      .containsExactly(
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(nullNullEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false)
-      );
-  }
-
-  @Test
   public void getEventCounts() {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestParameters(new EventCountRequestDto())
@@ -768,11 +723,6 @@ public class EventRestServiceIT extends AbstractIT {
                                                                                             EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(eventCountRequestDto, eventCountSuggestionsRequestDto);
-  }
-
-  private OptimizeRequestExecutor createGetEventCountsQueryWithRequestParameters(EventCountRequestDto eventCountRequestDto) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetEventCountRequest(eventCountRequestDto);
   }
 
 }

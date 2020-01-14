@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 import javax.ws.rs.BeanParam;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -38,13 +37,6 @@ public class EventRestService {
   public List<EventCountDto> getEventCounts(@BeanParam EventCountRequestDto eventCountRequestDto,
                                             @Valid @RequestBody EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto) {
     return eventService.getEventCounts(new EventCountServiceDto(eventCountRequestDto, eventCountSuggestionsRequestDto));
-  }
-
-  @GET
-  @Path("/count")
-  @Produces(MediaType.APPLICATION_JSON)
-  public List<EventCountDto> getEventCounts(@BeanParam EventCountRequestDto eventCountRequestDto) {
-    return eventService.getEventCounts(new EventCountServiceDto(eventCountRequestDto, null));
   }
 
 }

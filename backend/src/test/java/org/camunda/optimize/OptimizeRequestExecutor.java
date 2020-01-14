@@ -1093,15 +1093,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetEventCountRequest(EventCountRequestDto eventCountRequestDto) {
-    this.path = "event/count";
-    this.method = GET;
-    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSearchTerm).ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getOrderBy).ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
-    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSortOrder).ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
-    return this;
-  }
-
   public OptimizeRequestExecutor buildPostEventCountRequest(EventCountRequestDto eventCountRequestDto,
                                                             EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto) {
     this.path = "event/count";
