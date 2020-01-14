@@ -102,9 +102,13 @@
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
     <plugin.version.spotbugs>3.1.12.2</plugin.version.spotbugs>
     <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
+    <plugin.version.clirr>2.8</plugin.version.clirr>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
+    
+    <!-- version against which backwards compatibility is checked -->
+    <backwards.compat.version>0.22.0</backwards.compat.version>
   </properties>
 
   <dependencyManagement>
@@ -571,6 +575,23 @@
           </configuration>
         </plugin>
 
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>clirr-maven-plugin</artifactId>
+          <version>${plugin.version.clirr}</version>
+          <configuration>
+            <comparisonVersion>${backwards.compat.version}</comparisonVersion>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <phase>verify</phase>
+            </execution>
+          </executions>
+        </plugin>
+ 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>

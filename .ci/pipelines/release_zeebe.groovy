@@ -89,6 +89,7 @@ spec:
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
                     sh '.ci/scripts/release/changelog.sh'
+                    sh '.ci/scripts/release/compat-update.sh'
                 }
             }
         }
