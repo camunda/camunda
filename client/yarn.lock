@@ -3247,15 +3247,15 @@ bpmn-js-disable-collapsed-subprocess@^0.1.1:
   dependencies:
     min-dash "^3.5.2"
 
-bpmn-js@6.1.1:
-  version "6.1.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-6.1.1.tgz#3094ae8c2d8a0c404bb2de6715b463d6609f0a5a"
-  integrity sha512-z9dhK9UPPJ2rvpOZxPiWK1VyC7ASBLgSZMZ+uDDdzErwZTKX1uCPpROkS3giyTg6EKuXgtnuYF8XjGAW9B9tXA==
+bpmn-js@6.1.2:
+  version "6.1.2"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-6.1.2.tgz#9590641b02624938037b6726695f5869c939c7d2"
+  integrity sha512-/qHC1knzDns1LbjYja3O2bHS3Tizx31jXvxWsT7zX4iPy4WUcSa9ukeQCZqK+gLsrPZRFs/Psuzk2jVKNgHd7Q==
   dependencies:
     bpmn-font "^0.9.3"
     bpmn-moddle "^6.0.0"
     css.escape "^1.5.1"
-    diagram-js "^6.2.1"
+    diagram-js "^6.2.2"
     diagram-js-direct-editing "^1.6.1"
     ids "^1.0.0"
     inherits "^2.0.1"
@@ -4835,15 +4835,7 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diagram-js-direct-editing@^1.5.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.0.tgz#8c0e220266c8234969a46a47c0f5609decfe1ee3"
-  integrity sha512-bO9FqB6lJm+kaA6tSrXO0jT+Fu++yJTHbBf/wYb+AfJYAB92zZJrxwHRPTRhZGB4Md7XMEba5LAuNL8u9bjf3w==
-  dependencies:
-    min-dash "^3.0.0"
-    min-dom "^3.0.0"
-
-diagram-js-direct-editing@^1.6.1:
+diagram-js-direct-editing@^1.5.0, diagram-js-direct-editing@^1.6.1:
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.1.tgz#c2a040f7d910631e5c8f178bbc326db3afbd1ae0"
   integrity sha512-FOW2qp7yT/L3Go/YfBOfnWrV2pc2PPoTSSRIg2nnld8pQDTnMaqKPva9GZEoCtcTJzPV4ctZX52ZdkJ3C7aWaA==
@@ -4866,10 +4858,10 @@ diagram-js@^4.0.1:
     path-intersection "^1.0.2"
     tiny-svg "^2.2.1"
 
-diagram-js@^6.2.1:
-  version "6.2.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-6.2.1.tgz#90efe2ac3ded6086710e733a23158d84818bde85"
-  integrity sha512-V9MDfvGVA6RFcqmzaG6w0sOMxr8AZTVYRU9GobsAxV01o4OfJc7UhHJyEkhFTdoKQnOep0MaMDJVnEwjeTD+jg==
+diagram-js@^6.2.2:
+  version "6.2.2"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-6.2.2.tgz#ab71e1b0bd67a23542f80f88e6dbf6fe66cb0c75"
+  integrity sha512-oPTo7U0AcgTFto79JKx5umZBJ49R3/9kBPjItCXXilJnv03fhmSSgyheSTEE8UFTkYSNE8u4e22IwIygsmebPg==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
