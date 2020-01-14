@@ -701,6 +701,12 @@
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",
       "affectedMessage": {
+        "process": {
+          "alert": "Diese Alarme werden gelöscht:",
+          "combined_report": "Die gelöschten Berichte werden aus diesen kombinierten Berichten entfernt:",
+          "dashboard": "Die gelöschten Berichte werden aus diesen Dashboards entfernt:",
+          "report": "Diese Berichte werden gelöscht:"
+        },
         "source": {
           "alert": "Diese Alarme werden gelöscht:",
           "combined_report": "Die gelöschten Berichte werden aus diesen kombinierten Berichten entfernt:",

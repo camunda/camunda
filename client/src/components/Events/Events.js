@@ -12,6 +12,7 @@ import {EntityList, Deleter, Dropdown} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
+import {checkDeleteConflict} from 'services';
 
 import {ReactComponent as ProcessIcon} from './icons/process.svg';
 
@@ -179,6 +180,7 @@ export default withErrorHandling(
               name: (deleting && deleting.name) || ''
             })}
             entity={deleting}
+            checkConflicts={({id}) => checkDeleteConflict(id, 'eventBasedProcess')}
             onDelete={this.loadList}
             onClose={() => this.setState({deleting: null})}
             deleteEntity={({id}) => removeProcess(id)}

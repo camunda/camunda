@@ -701,6 +701,12 @@
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",
       "affectedMessage": {
+        "process": {
+          "alert": "The following Alert(s) will also be deleted:",
+          "combined_report": "The deleted Report(s) will be removed from the Combined Report(s):",
+          "dashboard": "The deleted Report(s) will be removed from the Dashboard(s):",
+          "report": "The following Report(s) will be deleted:"
+        },
         "source": {
           "alert": "The following Alert(s) will also be deleted:",
           "combined_report": "The deleted Report(s) will be removed from the Combined Report(s):",
