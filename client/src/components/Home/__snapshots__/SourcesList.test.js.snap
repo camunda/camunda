@@ -85,7 +85,7 @@ Object {
     Object {
       "action": [Function],
       "icon": "delete",
-      "text": "Delete",
+      "text": "Remove",
     },
   ],
   "className": "decision",
@@ -134,7 +134,7 @@ exports[`should match snapshot 1`] = `
             Object {
               "action": [Function],
               "icon": "delete",
-              "text": "Delete",
+              "text": "Remove",
             },
           ],
           "className": "decision",

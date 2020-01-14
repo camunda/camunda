@@ -119,7 +119,7 @@ export default withErrorHandling(
                       },
                       {
                         icon: 'delete',
-                        text: t('common.delete'),
+                        text: t('common.remove'),
                         action: () => this.setState({deleting: user})
                       }
                     ]

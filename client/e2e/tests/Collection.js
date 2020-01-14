@@ -203,7 +203,7 @@ test('add, edit and delete sources', async t => {
   //delete source
   await t.hover(e.decisionItem);
   await t.click(Homepage.contextMenu(e.decisionItem));
-  await t.click(Homepage.del(e.decisionItem));
+  await t.click(e.remove(e.decisionItem));
   await t.click(e.confirmModalButton);
   await t.expect(e.decisionItem.exists).notOk();
 });

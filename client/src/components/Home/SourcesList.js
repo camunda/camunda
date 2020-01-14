@@ -126,7 +126,7 @@ export default withErrorHandling(
                   if (!hasUnauthorized(tenants)) {
                     actions.push({
                       icon: 'delete',
-                      text: t('common.delete'),
+                      text: t('common.remove'),
                       action: () => this.setState({deleting: source})
                     });
                   }
