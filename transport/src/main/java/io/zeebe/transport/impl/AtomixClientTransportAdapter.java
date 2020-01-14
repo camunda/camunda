@@ -16,7 +16,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.net.ConnectException;
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
@@ -58,7 +57,8 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
             timeout);
     actor.call(
         () -> {
-          actor.runDelayed(timeout, () -> timeoutFuture(requestContext));
+          final var scheduledTimer = actor.runDelayed(timeout, () -> timeoutFuture(requestContext));
+          requestContext.setScheduledTimer(scheduledTimer);
           tryToSend(requestContext);
         });
 
@@ -94,11 +94,10 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
-    final var currentFuture = requestContext.getCurrentFuture();
     if (errorOnRequest == null) {
       final var responseBuffer = new UnsafeBuffer(response);
       if (requestContext.verifyResponse(responseBuffer)) {
-        currentFuture.complete(responseBuffer);
+        requestContext.complete(responseBuffer);
       } else {
         // no valid response - retry in respect of the timeout
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
@@ -111,7 +110,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
         // no registered subscription yet
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
-        currentFuture.completeExceptionally(errorOnRequest);
+        requestContext.completeExceptionally(errorOnRequest);
       }
     }
   }
@@ -126,9 +125,6 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
-    final var currentFuture = requestContext.getCurrentFuture();
-    final var timeout = requestContext.getTimeout();
-    currentFuture.completeExceptionally(
-        new TimeoutException("Request timed out after " + timeout.toString()));
+    requestContext.timeout();
   }
 }
