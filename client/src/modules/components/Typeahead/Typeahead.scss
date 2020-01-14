@@ -41,6 +41,9 @@
     }
 
     .DropdownOption {
+      white-space: nowrap;
+      overflow-x: hidden;
+      text-overflow: ellipsis;
       height: auto;
       &.isActive {
         background-color: rgba(216, 220, 227, 0.5);

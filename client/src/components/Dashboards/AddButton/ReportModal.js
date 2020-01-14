@@ -100,7 +100,7 @@ export default withRouter(
                       >
                         {availableReports.map(({id, name}) => (
                           <Typeahead.Option key={id} value={id}>
-                            {this.truncate(name, 74)}
+                            {name}
                           </Typeahead.Option>
                         ))}
                       </Typeahead>
@@ -137,9 +137,5 @@ export default withRouter(
         </Modal>
       );
     }
-
-    truncate = (str, index) => {
-      return str.length > index ? str.substr(0, index - 1) + '\u2026' : str;
-    };
   }
 );

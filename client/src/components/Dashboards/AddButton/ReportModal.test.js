@@ -99,22 +99,6 @@ it('should show a loading message while loading available reports', () => {
   expect(node.find('LoadingIndicator')).toExist();
 });
 
-it("should truncate report name if it's longer than 90 signs", () => {
-  const node = shallow(<ReportModal {...props} />);
-
-  const report = {
-    id: 'a',
-    name:
-      'a super long name that should be definitely longer longer longer longer longer longer than 90 signs.'
-  };
-
-  node.setState({
-    availableReports: [report]
-  });
-
-  expect(node.find(Typeahead.Option).text().length).toBeLessThanOrEqual(90);
-});
-
 it('should contain an Add External Source field', () => {
   const node = shallow(<ReportModal {...props} />);
 
