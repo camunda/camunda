@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventProcessIT {
 
   @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type {1}")
-  @MethodSource("supportedGatewayXmlVariations")
+  @MethodSource("exclusiveAndEventBasedGatewayXmlVariations")
   public void gatewaysAreGeneratedWhenSurroundingEventsHaveOccurred(String openingGatewayType,
                                                                     String closingGatewayType,
                                                                     String bpmnXml) {
@@ -67,11 +67,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
       });
   }
 
-  @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type {1}")
-  @MethodSource("supportedGatewayXmlVariations")
-  public void gatewaysAreGeneratedForModelsWithFlowNodesWithStartAndEndMapping(String openingGatewayType,
-                                                                               String closingGatewayType,
-                                                                               String bpmnXml) {
+  @Test
+  public void parallelAreGeneratedWhenSurroundingEventsHaveOccurred() {
     // given
     ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
     ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
@@ -80,10 +77,11 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
 
     Map<String, EventMappingDto> eventMappings = new HashMap<>();
     eventMappings.put(BPMN_START_EVENT_ID, startMapping(FIRST_EVENT_NAME));
-    eventMappings.put(USER_TASK_ID_ONE, startAndEndMapping(SECOND_EVENT_NAME, THIRD_EVENT_NAME));
+    eventMappings.put(USER_TASK_ID_ONE, startMapping(SECOND_EVENT_NAME));
+    eventMappings.put(USER_TASK_ID_TWO, startMapping(THIRD_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(FOURTH_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, bpmnXml);
+    createAndPublishEventProcessMapping(eventMappings, createParallelGatewayProcessDefinitionXml());
 
     // when
     executeImportCycle();
@@ -98,16 +96,92 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
           processInstanceDto,
           Arrays.asList(
             Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
-            Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
+            Tuple.tuple(PARALLEL_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
+            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
+            Tuple.tuple(PARALLEL_GATEWAY_TYPE, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
           ));
       });
   }
 
+  @Test
+  public void eventBasedGatewaysAreGeneratedWithCorrectDurationWhenSourceEventEndDateIsNotEqualToTargetEventStartDate() {
+    // given
+    ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
+    ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
+    ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
+    ingestTestEvent(FOURTH_EVENT_NAME, FOURTH_EVENT_DATETIME);
+
+    Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(BPMN_START_EVENT_ID, startAndEndMapping(FIRST_EVENT_NAME, SECOND_EVENT_NAME));
+    eventMappings.put(USER_TASK_ID_ONE, startMapping(THIRD_EVENT_NAME));
+    eventMappings.put(BPMN_END_EVENT_ID, startMapping(FOURTH_EVENT_NAME));
+
+    createAndPublishEventProcessMapping(eventMappings, createEventBasedGatewayProcessDefinitionXml());
+
+    // when
+    executeImportCycle();
+
+    // then
+    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+        assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME);
+        assertFlowNodeEventsForProcessInstance(
+          processInstanceDto,
+          Arrays.asList(
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(EVENT_BASED_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
+            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
+            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
+            Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
+          ));
+      });
+  }
+
+  @Test
+  public void closingParallelGatewaysAreGeneratedWithCorrectDurationWhenFirstSourceEventEndDateIsNotEqualToTargetEventStartDate() {
+    // given
+    ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
+    ingestTestEvent(SECOND_EVENT_NAME, SECOND_EVENT_DATETIME);
+    ingestTestEvent(THIRD_EVENT_NAME, THIRD_EVENT_DATETIME);
+    ingestTestEvent(FOURTH_EVENT_NAME, FOURTH_EVENT_DATETIME);
+    ingestTestEvent(FIFTH_EVENT_NAME, FIFTH_EVENT_DATETIME);
+
+    Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(BPMN_START_EVENT_ID, startMapping(FIRST_EVENT_NAME));
+    eventMappings.put(USER_TASK_ID_ONE, startAndEndMapping(SECOND_EVENT_NAME, THIRD_EVENT_NAME));
+    eventMappings.put(USER_TASK_ID_TWO, startMapping(FOURTH_EVENT_NAME));
+    eventMappings.put(BPMN_END_EVENT_ID, startMapping(FIFTH_EVENT_NAME));
+
+    createAndPublishEventProcessMapping(eventMappings, createParallelGatewayProcessDefinitionXml());
+
+    // when
+    executeImportCycle();
+
+    // then
+    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+        assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FIFTH_EVENT_DATETIME);
+        assertFlowNodeEventsForProcessInstance(
+          processInstanceDto,
+          Arrays.asList(
+            Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(PARALLEL_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
+            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, FOURTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
+            Tuple.tuple(PARALLEL_GATEWAY_TYPE, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
+            Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FIFTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME)
+          ));
+      });
+  }
+
   @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type {1}")
-  @MethodSource("supportedGatewayXmlVariations")
+  @MethodSource("allSupportedGatewayXmlVariations")
   public void gatewayIsNotGeneratedIfPreviousEventHasNotYetEnded(String openingGatewayType,
                                                                  String closingGatewayType,
                                                                  String bpmnXml) {
@@ -246,7 +320,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
   }
 
   @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type {1}")
-  @MethodSource("supportedGatewayXmlVariations")
+  @MethodSource("exclusiveAndEventBasedGatewayXmlVariations")
   public void gatewaysAreGeneratedCorrectlyWhenEventsAreIngestedAcrossMultipleBatches(String openingGatewayType,
                                                                                       String closingGatewayType,
                                                                                       String bpmnXml) {
@@ -287,7 +361,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
   }
 
   @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type {1}")
-  @MethodSource("supportedGatewayXmlVariations")
+  @MethodSource("exclusiveAndEventBasedGatewayXmlVariations")
   public void gatewaysAreGeneratedCorrectlyWhenOutOfOrderEventsAreIngestedAcrossMultipleBatches(String openingGatewayType,
                                                                                                 String closingGatewayType,
                                                                                                 String bpmnXml) {
@@ -366,8 +440,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
       });
   }
 
-  @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type {1}")
-  @MethodSource("supportedGatewayXmlVariations")
+  @ParameterizedTest(name = "opening gateway type: {0}")
+  @MethodSource("exclusiveAndEventBasedGatewayXmlVariations")
   public void openingGatewaysAreNotGeneratedWhenPreviousEventIsUnmapped(String openingGatewayType,
                                                                         String closingGatewayType,
                                                                         String bpmnXml) {
@@ -400,8 +474,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
       });
   }
 
-  @ParameterizedTest(name = "opening gateway type: {0}, closing gateway type {1}")
-  @MethodSource("supportedGatewayXmlVariations")
+  @ParameterizedTest(name = "closing gateway type {1}")
+  @MethodSource("exclusiveAndEventBasedGatewayXmlVariations")
   public void closingGatewaysAreNotGeneratedWhenNextEventIsUnmapped(String openingGatewayType,
                                                                     String closingGatewayType,
                                                                     String bpmnXml) {
@@ -561,11 +635,17 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     eventProcessClient.publishEventProcessMapping(eventProcessId);
   }
 
-  private static Stream<Arguments> supportedGatewayXmlVariations() {
+  private static Stream<Arguments> allSupportedGatewayXmlVariations() {
+    return Stream.concat(
+      exclusiveAndEventBasedGatewayXmlVariations(),
+      Stream.of(Arguments.of(PARALLEL_GATEWAY_TYPE, PARALLEL_GATEWAY_TYPE, createParallelGatewayProcessDefinitionXml()))
+    );
+  }
+
+  private static Stream<Arguments> exclusiveAndEventBasedGatewayXmlVariations() {
     return Stream.of(
       Arguments.of(EXCLUSIVE_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createExclusiveGatewayProcessDefinitionXml()),
-      Arguments.of(EVENT_BASED_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createEventBasedGatewayProcessDefinitionXml()),
-      Arguments.of(PARALLEL_GATEWAY_TYPE, PARALLEL_GATEWAY_TYPE, createParallelGatewayProcessDefinitionXml())
+      Arguments.of(EVENT_BASED_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createEventBasedGatewayProcessDefinitionXml())
     );
   }
 

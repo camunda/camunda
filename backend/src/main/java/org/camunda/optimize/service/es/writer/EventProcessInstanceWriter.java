@@ -102,6 +102,8 @@ public class EventProcessInstanceWriter {
       createRemoveExistingGatewaysFunction() +
       createNewGatewayFunction() +
       createAddGatewaysForProcessInstanceFunction() +
+      addOpeningGatewayInstancesFunction() +
+      addClosingGatewayInstancesFunction() +
       "void calculateAndAssignEventDuration(def event, def formatter) {\n" +
         "if (event.startDate != null && event.endDate != null) {\n" +
         "  event.durationInMs = formatter.parse(event.endDate).getTime() - formatter.parse(event.startDate).getTime();\n" +
@@ -242,83 +244,14 @@ public class EventProcessInstanceWriter {
           "Collections.sort(existingEvents, startEndDateComparator);\n" +
           "for (def possibleGateway : gatewayLookup) {\n" +
             "int eventAddedCount = 0;\n" +
-            // To know which gateways can be added, we have to check each of the following conditions to find the first match
-
-            // Gateways with a single target flow node are closing gateways.
-            "if (possibleGateway.nextNodeIds.size() == 1) {\n" +
-              // A gateway with a single target flow node that isn't a gateway can be added for every occurrence of that flow node event
-              "if (!gatewayIdsInModel.contains(possibleGateway.nextNodeIds.get(0))) {" +
-                "for (def event : existingEvents) {\n" +
-                  "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
-                    "eventAddedCount ++;\n" +
-                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                        "event.startDate, event.startDate, eventAddedCount);\n" +
-                    "gatewayEventsToAdd.add(newGateway);\n" +
-                  "}\n" +
-                "}\n" +
-              // A gateway with target flow node as a gateway can be added if the expected source flow node event(s) have occurred
-              "} else {\n" +
-                 // Event based gateways must always have target events or it is not a valid model, so no logic required.
-                 // For exclusive gateways, this is when any one of the source flow node events have occurred
-                "if (possibleGateway.type.equals(\"exclusiveGateway\")) {\n" +
-                  "for (def event : existingEvents) {\n" +
-                    "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
-                      "eventAddedCount ++;\n" +
-                      "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                          "event.endDate, event.endDate, eventAddedCount);\n" +
-                      "gatewayEventsToAdd.add(newGateway);\n" +
-                    "}\n" +
-                  "}\n" +
-                // For parallel gateways, this is when all of the source flow node events have occurred
-                "} else if (possibleGateway.type.equals(\"parallelGateway\")) {\n" +
-                  "Map relatedEventsByActivityId = existingEvents.stream()\n" +
-                                       ".filter(event -> possibleGateway.previousNodeIds.contains(event.activityId))\n" +
-                                       ".filter(event -> event.endDate != null)\n" +
-                                       ".collect(Collectors.groupingBy(event -> event.activityId));\n" +
-                  "List mappablePreviousNodeIds = possibleGateway.previousNodeIds.stream()" +
-                    ".filter(nodeId -> !gatewayIdsInModel.contains(nodeId))\n" +
-                    ".collect(Collectors.toList());\n" +
-                  "boolean gatewaysCanBeAdded = relatedEventsByActivityId.keySet.containsAll(mappablePreviousNodeIds);\n" +
-                  "while (gatewaysCanBeAdded) {\n" +
-                    "List eventsForGateway = new ArrayList();\n" +
-                    "for (def previousNodeId : mappablePreviousNodeIds) {\n" +
-                      "eventsForGateway.add(relatedEventsByActivityId.get(previousNodeId).remove(0));\n" +
-                    "}\n" +
-                    "Collections.sort(eventsForGateway, startEndDateComparator);\n" +
-                    "def lastEventForGateway = eventsForGateway.get(eventsForGateway.size() - 1);" +
-                    "eventAddedCount ++;\n" +
-                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                          "lastEventForGateway.endDate, lastEventForGateway.endDate, eventAddedCount);\n" +
-                    "gatewayEventsToAdd.add(newGateway);\n" +
-                    "gatewaysCanBeAdded = !relatedEventsByActivityId.values().stream().anyMatch(eventsForActivity -> eventsForActivity.isEmpty());\n" +
-                  "}\n" +
-                "}\n" +
-              "}\n" +
-
             // Gateways with a single source flow node are opening gateways.
-            "} else if (possibleGateway.previousNodeIds.size() == 1) {\n" +
-              // A gateway with a single source flow node that isn't a gateway can be added for every occurrence of that flow node event
-              "if (!gatewayIdsInModel.contains(possibleGateway.previousNodeIds.get(0))) {" +
-                "for (def event : existingEvents) {\n" +
-                  "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
-                    "eventAddedCount ++;\n" +
-                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                        "event.endDate, event.endDate, eventAddedCount);\n" +
-                    "gatewayEventsToAdd.add(newGateway);\n" +
-                  "}\n" +
-                "}\n" +
-              // A gateway with source flow node as a gateway can be added if the expected target flow node event(s) have occurred
-              "} else {\n" +
-                // For any gateway type, this is when any one of it's target flow node events have occurred
-                "for (def event : existingEvents) {\n" +
-                  "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
-                    "eventAddedCount ++;\n" +
-                    "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                        "event.startDate, event.startDate, eventAddedCount);\n" +
-                    "gatewayEventsToAdd.add(newGateway);\n" +
-                  "}\n" +
-                "}\n" +
-              "}\n" +
+            "if (possibleGateway.previousNodeIds.size() == 1) {\n" +
+              "addOpeningGatewayInstances(possibleGateway, gatewayIdsInModel, existingEvents, gatewayEventsToAdd," +
+                                  "eventAddedCount, dateFormatter);\n" +
+            // Gateways with a single target flow node are closing gateways.
+            "} else if (possibleGateway.nextNodeIds.size() == 1) {\n" +
+              "addClosingGatewayInstances(possibleGateway, gatewayIdsInModel, existingEvents, gatewayEventsToAdd," +
+                                  "eventAddedCount, dateFormatter);\n" +
             "}\n" +
           "}\n" +
           "existingEvents.addAll(gatewayEventsToAdd);\n" +
@@ -326,6 +259,136 @@ public class EventProcessInstanceWriter {
           "instance.events = existingEvents;\n" +
         "}\n" +
       "}\n";
+  }
+
+  private String addOpeningGatewayInstancesFunction() {
+    // @formatter:off
+    return
+      "void addOpeningGatewayInstances(def possibleGateway, def gatewayIdsInModel, def existingEvents, def gatewayEventsToAdd," +
+                             "def eventAddedCount, def dateFormatter) {\n" +
+        // For event based gateways
+        "if (possibleGateway.type.equals(\"eventBasedGateway\")) {\n" +
+          "def previousNodeId = possibleGateway.previousNodeIds.get(0);\n" +
+          // If the source flow node is also a gateway, we create a new gateway for each occurrence of one of the target flow
+          //  node events, using the start date and end date of the target flow node event
+          "if (gatewayIdsInModel.contains(previousNodeId)) {\n" +
+            "for (def event : existingEvents) {\n" +
+              "if (possibleGateway.nextNodeIds.contains(event.activityId) && event.startDate != null) {\n" +
+                "eventAddedCount ++;\n" +
+                "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                    "event.startDate, event.startDate, eventAddedCount);\n" +
+                "gatewayEventsToAdd.add(newGateway);\n" +
+              "}\n" +
+            "}\n" +
+          // If the source flow node is not a gateway, we create a new gateway for each occurrence of one of the target flow node
+          //  events, using the end date of the source flow node event and the start date of the target flow node event
+          "} else {\n" +
+            "List targetEvents = existingEvents.stream()" +
+               ".filter(event -> possibleGateway.nextNodeIds.contains(event.activityId) && event.startDate != null)\n" +
+               ".collect(Collectors.toList());\n" +
+            "List sourceEvents = existingEvents.stream()" +
+               ".filter(event -> possibleGateway.previousNodeIds.get(0).equals(event.activityId) && event.endDate != null)\n" +
+               ".collect(Collectors.toList());\n" +
+            "boolean gatewayCanBeAdded = !sourceEvents.isEmpty() && !targetEvents.isEmpty();\n" +
+            "while (gatewayCanBeAdded) {\n" +
+              "def sourceEvent = sourceEvents.remove(0);\n" +
+              "def targetEvent = targetEvents.remove(0);\n" +
+              "eventAddedCount ++;\n" +
+              "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                  "sourceEvent.endDate, targetEvent.startDate, eventAddedCount);\n" +
+              "calculateAndAssignEventDuration(newGateway, dateFormatter);\n" +
+              "gatewayEventsToAdd.add(newGateway);\n" +
+              "gatewayCanBeAdded = !sourceEvents.isEmpty() && !targetEvents.isEmpty();\n" +
+            "}\n" +
+          "}\n" +
+
+        // For exclusive and parallel gateways
+        // A gateway with a single source flow node that isn't a gateway can be added for every occurrence of that flow node event
+        "} else if (!gatewayIdsInModel.contains(possibleGateway.previousNodeIds.get(0))) {" +
+          "for (def event : existingEvents) {\n" +
+            "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
+              "eventAddedCount ++;\n" +
+              "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                  "event.endDate, event.endDate, eventAddedCount);\n" +
+              "gatewayEventsToAdd.add(newGateway);\n" +
+            "}\n" +
+          "}\n" +
+        // A gateway with source flow node as a gateway can be added if the expected target flow node event(s) have occurred
+        "} else {\n" +
+          // For any gateway type, this is when any one of its target flow node events have occurred
+          "for (def event : existingEvents) {\n" +
+            "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
+              "eventAddedCount ++;\n" +
+              "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                  "event.startDate, event.startDate, eventAddedCount);\n" +
+              "gatewayEventsToAdd.add(newGateway);\n" +
+            "}\n" +
+          "}\n" +
+        "}\n" +
+      "}\n";
+    // @formatter:on
+  }
+
+  private String addClosingGatewayInstancesFunction() {
+    // @formatter:off
+    return
+      "void addClosingGatewayInstances(def possibleGateway, def gatewayIdsInModel, def existingEvents, def gatewayEventsToAdd," +
+                             "def eventAddedCount, def dateFormatter) {\n" +
+        // For exclusive gateways
+        "if (possibleGateway.type.equals(\"exclusiveGateway\")) {\n" +
+          // if the target flow node event is not a gateway, we can add an exclusive gateway for every
+          //  occurrence of the target flow node event
+          "if (!gatewayIdsInModel.contains(possibleGateway.nextNodeIds.get(0))) {\n" +
+            "for (def event : existingEvents) {\n" +
+              "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
+                "eventAddedCount ++;\n" +
+                "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                    "event.startDate, event.startDate, eventAddedCount);\n" +
+                "gatewayEventsToAdd.add(newGateway);\n" +
+              "}\n" +
+            "}\n" +
+          // if the target flow node event is a gateway, we can add an exclusive gateway for every occurrence
+          //  of one of the source flow node events
+          "} else {" +
+            "for (def event : existingEvents) {\n" +
+              "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
+                "eventAddedCount ++;\n" +
+                "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                    "event.endDate, event.endDate, eventAddedCount);\n" +
+                "gatewayEventsToAdd.add(newGateway);\n" +
+              "}\n" +
+            "}\n" +
+          "}\n" +
+
+        // For parallel gateways
+        "} else if (possibleGateway.type.equals(\"parallelGateway\")) {\n" +
+          "Map relatedEventsByActivityId = existingEvents.stream()\n" +
+                                 ".filter(event -> possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null)\n" +
+                                 ".collect(Collectors.groupingBy(event -> event.activityId));\n" +
+          "List mappablePreviousNodeIds = possibleGateway.previousNodeIds.stream()" +
+            ".filter(nodeId -> !gatewayIdsInModel.contains(nodeId))\n" +
+            ".collect(Collectors.toList());\n" +
+          // We add a parallel gateway for every occurrence of all mappable source flow node events
+          "boolean gatewayCanBeAdded = relatedEventsByActivityId.keySet().containsAll(mappablePreviousNodeIds);\n" +
+          "while (gatewayCanBeAdded) {\n" +
+            "List eventsForGateway = new ArrayList();\n" +
+            "for (def previousNodeId : mappablePreviousNodeIds) {\n" +
+              "eventsForGateway.add(relatedEventsByActivityId.get(previousNodeId).remove(0));\n" +
+            "}\n" +
+            "def endDateComparator = Comparator.comparing(event -> event.endDate, Comparator.nullsLast(Comparator.naturalOrder()));\n" +
+            "Collections.sort(eventsForGateway, endDateComparator);\n" +
+            "def firstEventForGateway = eventsForGateway.get(0);" +
+            "def lastEventForGateway = eventsForGateway.get(eventsForGateway.size() - 1);" +
+            "eventAddedCount ++;\n" +
+            "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
+                                  "firstEventForGateway.endDate, lastEventForGateway.endDate, eventAddedCount);\n" +
+            "calculateAndAssignEventDuration(newGateway, dateFormatter);\n" +
+            "gatewayEventsToAdd.add(newGateway);\n" +
+            "gatewayCanBeAdded = !relatedEventsByActivityId.values().stream().anyMatch(eventsForActivity -> eventsForActivity.isEmpty());\n" +
+          "}\n" +
+        "}\n" +
+      "}\n";
+    // @formatter:on
   }
 
   private String createNewGatewayFunction() {
