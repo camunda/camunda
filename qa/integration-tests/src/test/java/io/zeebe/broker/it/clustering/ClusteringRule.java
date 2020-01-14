@@ -58,6 +58,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -97,6 +98,8 @@ public final class ClusteringRule extends ExternalResource {
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final ControlledActorClock controlledClock = new ControlledActorClock();
+  private final Map<Integer, LogStream> logstreams = new ConcurrentHashMap<>();
+
   // cluster
   private ZeebeClient client;
   private Gateway gateway;
@@ -606,7 +609,11 @@ public final class ClusteringRule extends ExternalResource {
     waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
   }
 
-  private static class LeaderListener implements PartitionListener {
+  public LogStream getLogStream(int partitionId) {
+    return logstreams.get(partitionId);
+  }
+
+  private class LeaderListener implements PartitionListener {
 
     final CountDownLatch latch;
 
@@ -621,6 +628,7 @@ public final class ClusteringRule extends ExternalResource {
     @Override
     public void onBecomingLeader(
         final int partitionId, final long term, final LogStream logStream) {
+      logstreams.put(partitionId, logStream);
       latch.countDown();
     }
 
