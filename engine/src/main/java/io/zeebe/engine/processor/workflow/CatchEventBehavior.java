@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
+import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
@@ -21,15 +22,21 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
+import io.zeebe.model.bpmn.util.time.ExpressionTimer;
+import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.Timer;
+import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import io.zeebe.protocol.impl.SubscriptionUtil;
+import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,12 +88,36 @@ public final class CatchEventBehavior {
     // if all subscriptions are valid then open the subscriptions
     for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
+        final Timer timer = event.getTimer();
+        if (timer instanceof ExpressionTimer) {
+          final ExpressionTimer expressionTimer = (ExpressionTimer) timer;
+          final DirectBuffer variablesAsDocument = context
+                  .getElementInstanceState()
+                  .getVariablesState()
+                  .getVariablesAsDocument(
+                      context.getKey(),
+                      Collections.singleton(
+                          BufferUtil.wrapString(expressionTimer.getTimerExpression())));
+
+          final String interval =
+              MsgPackConverter.convertToStringMap(
+                      queryProcessor
+                          .process(
+                              new JsonPathQueryCompiler()
+                                  .compile("$." + expressionTimer.getTimerExpression()),
+                              variablesAsDocument)
+                          .getSingleResult()
+                          .getValue())
+                  .get(expressionTimer.getTimerExpression());
+          expressionTimer.setInterval(Interval.parse(interval));
+        }
+
         subscribeToTimerEvent(
             context.getKey(),
             context.getValue().getWorkflowInstanceKey(),
             context.getValue().getWorkflowKey(),
             event.getId(),
-            event.getTimer(),
+            timer,
             context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
         subscribeToMessageEvent(context, event, extractedCorrelationKeys.get(event.getId()));

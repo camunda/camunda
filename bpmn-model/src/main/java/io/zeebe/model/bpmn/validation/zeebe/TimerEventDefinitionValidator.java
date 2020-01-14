@@ -84,7 +84,11 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
   private void validateTimeDuration(
       final ValidationResultCollector validationResultCollector, final TimeDuration timeDuration) {
     try {
-      Interval.parse(timeDuration.getTextContent());
+      try {
+        Interval.parse(timeDuration.getTextContent());
+      } catch (DateTimeParseException ex) {
+        validationResultCollector.addWarning(0, "Time duration is invalid, it will be resolved from context as a variable");
+      }
     } catch (final DateTimeParseException e) {
       validationResultCollector.addError(0, "Time duration is invalid");
     }

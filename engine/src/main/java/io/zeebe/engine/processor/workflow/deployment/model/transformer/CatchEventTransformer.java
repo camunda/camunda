@@ -19,11 +19,14 @@ import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.zeebe.model.bpmn.util.time.ExpressionTimer;
 import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+
+import java.time.format.DateTimeParseException;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
   @Override
@@ -76,11 +79,15 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
   private void transformTimerEventDefinition(
       final ExecutableCatchEventElement executableElement,
       final TimerEventDefinition timerEventDefinition) {
-    final Timer timer;
+    Timer timer;
 
     if (timerEventDefinition.getTimeDuration() != null) {
       final String duration = timerEventDefinition.getTimeDuration().getTextContent();
-      timer = new RepeatingInterval(1, Interval.parse(duration));
+      try {
+        timer = new RepeatingInterval(1, Interval.parse(duration));
+      } catch (DateTimeParseException ex) {
+        timer = new ExpressionTimer(duration);
+      }
     } else if (timerEventDefinition.getTimeCycle() != null) {
       final String cycle = timerEventDefinition.getTimeCycle().getTextContent();
       timer = RepeatingInterval.parse(cycle);
@@ -88,7 +95,6 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       final String timeDate = timerEventDefinition.getTimeDate().getTextContent();
       timer = TimeDateTimer.parse(timeDate);
     }
-
     executableElement.setTimer(timer);
   }
 
