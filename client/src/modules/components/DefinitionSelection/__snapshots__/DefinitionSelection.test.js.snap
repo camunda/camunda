@@ -7,6 +7,8 @@ exports[`should pass an id for every entry to the typeahead 1`] = `
   initialValue={null}
   noValuesMessage="No definitions found"
   onChange={[Function]}
+  onClose={[Function]}
+  onOpen={[Function]}
   onSearch={[Function]}
   placeholder="Select..."
 >

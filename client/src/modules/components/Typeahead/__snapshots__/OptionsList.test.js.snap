@@ -11,3 +11,20 @@ exports[`should render an empty OptionsList 1`] = `
   </ForwardRef(DropdownOption)>
 </div>
 `;
+
+exports[`should render has more info message if specified 1`] = `
+<div
+  className="OptionsList"
+>
+  <ForwardRef(DropdownOption)
+    className="message"
+  >
+    No results found
+  </ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)
+    className="message"
+  >
+    Displaying 0 results only. Search to refine.
+  </ForwardRef(DropdownOption)>
+</div>
+`;

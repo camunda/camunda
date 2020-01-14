@@ -10,6 +10,8 @@ exports[`should match snapshot 1`] = `
         disabled={false}
         noValuesMessage="No definitions found"
         onChange={[Function]}
+        onClose={[Function]}
+        onOpen={[Function]}
         onSearch={[Function]}
         placeholder="Select..."
       >

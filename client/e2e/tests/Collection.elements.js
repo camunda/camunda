@@ -28,10 +28,8 @@ export const userTab = Selector('.Collection .header .navigation a').withText('U
 export const alertTab = Selector('.Collection .header .navigation a').withText('Alerts');
 export const sourcesTab = Selector('.Collection .header .navigation a').withText('Data Sources');
 export const addButton = Selector('.Collection .content .header .Button');
-export const optionsButton = Selector('.OldTypeahead .optionsButton');
-export const oldTypeaheadInput = Selector('.OldTypeahead input');
+export const optionsButton = Selector('.Typeahead .optionsButton');
 export const typeaheadInput = Selector('.Typeahead input');
-export const oldTypeaheadOption = text => Selector('.OldTypeahead .DropdownOption').withText(text);
 export const typeaheadOption = text => Selector('.Typeahead .DropdownOption').withText(text);
 export const checkbox = text => Selector('.Checklist .label').withText(text);
 export const confirmModalButton = Selector('.confirm.Button');

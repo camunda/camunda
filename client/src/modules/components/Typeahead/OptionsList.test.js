@@ -63,3 +63,9 @@ it('should invoke onSelect when selecting an option', () => {
 
   expect(props.onSelect.mock.calls[0][0].props.value).toBe('2');
 });
+
+it('should render has more info message if specified', () => {
+  const node = shallow(<OptionsList {...props} hasMore={true} />);
+
+  expect(node).toMatchSnapshot();
+});

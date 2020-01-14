@@ -5,6 +5,8 @@ exports[`should render a Typeahead element with the available reports as options
   disabled={false}
   noValuesMessage="No reports have been created"
   onChange={[Function]}
+  onClose={[Function]}
+  onOpen={[Function]}
   onSearch={[Function]}
   placeholder="Select a Report"
 >

@@ -6,16 +6,29 @@
 
 import React, {useState, useEffect, useCallback} from 'react';
 import {t} from 'translation';
-import {Dropdown} from 'components';
+import {Dropdown, LoadingIndicator} from 'components';
 
-export default function OptionsList({input, onSelect, filter, children, onMouseDown, ...props}) {
+export default function OptionsList({
+  loading,
+  hasMore,
+  input,
+  onSelect,
+  filter,
+  children,
+  onMouseDown,
+  async,
+  ...props
+}) {
   const [selectedOption, setSelectedOption] = useState(-1);
   const optionList = React.createRef();
   const optionsArr = React.Children.toArray(children);
+  let filteredOptions = optionsArr;
 
-  const filteredOptions = optionsArr.filter(({props: {label, children}}) =>
-    (label || children).toLowerCase().includes(filter.toLowerCase())
-  );
+  if (!async) {
+    filteredOptions = optionsArr.filter(({props: {label, children}}) =>
+      (label || children).toLowerCase().includes(filter.toLowerCase())
+    );
+  }
 
   const optionsWithProps = filteredOptions.map((option, i) =>
     React.cloneElement(option, {
@@ -63,6 +76,12 @@ export default function OptionsList({input, onSelect, filter, children, onMouseD
           selectedItem.scrollIntoView({block: 'nearest', inline: 'nearest'});
         }
       }
+
+      // scroll to end on the last element to show the has more info message
+      if (nextOption === optionsCount - 1) {
+        optionList.current.scrollTop = optionList.current.scrollHeight;
+      }
+
       setSelectedOption(nextOption);
     },
     [selectedOption, onSelect, optionsWithProps, optionList, props]
@@ -82,11 +101,16 @@ export default function OptionsList({input, onSelect, filter, children, onMouseD
     return null;
   }
 
+  const isEmpty = filteredOptions.length === 0 && !loading;
+
   return (
     <div ref={optionList} className="OptionsList">
-      {optionsWithProps}
-      {filteredOptions.length === 0 && (
-        <Dropdown.Option className="message">{t('common.notFound')}</Dropdown.Option>
+      {loading ? <LoadingIndicator /> : optionsWithProps}
+      {isEmpty && <Dropdown.Option className="message">{t('common.notFound')}</Dropdown.Option>}
+      {hasMore && (
+        <Dropdown.Option className="message">
+          {t('common.searchForMore', {count: optionsWithProps.length})}
+        </Dropdown.Option>
       )}
     </div>
   );

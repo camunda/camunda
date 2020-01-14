@@ -25,7 +25,8 @@ it('should match snapshot', () => {
 it('should call the onConfirm prop', () => {
   const node = shallow(<AddUserModal {...props} />);
 
-  node.setState({selectedIdentity: {id: 'testUser', type: 'user'}, activeRole: 'editor'});
+  node.find('UserTypeahead').prop('onChange')({id: 'testUser', type: 'user'});
+  node.setState({activeRole: 'editor'});
 
   node.find('.confirm').simulate('click');
 
@@ -40,34 +41,4 @@ it('should show an error message when trying to add a user that already exists',
   node.setState({selectedIdentity: {id: 'testUser', type: 'user'}, activeRole: 'editor'});
 
   expect(node.find('Message')).toExist();
-});
-
-it('should format user list information correctly', () => {
-  const node = shallow(
-    <AddUserModal {...props} existingUsers={[{identity: {id: 'testUser', type: 'user'}}]} />
-  );
-
-  node.setState({selectedIdentity: {id: 'testUser', type: 'user'}, activeRole: 'editor'});
-
-  const formatter = node.find('OldTypeahead').props().formatter;
-
-  expect(formatter({id: 'testUser'})).toEqual({
-    subTexts: [],
-    tag: false,
-    text: 'testUser'
-  });
-
-  expect(formatter({id: 'testUser', email: 'testUser@test.com'})).toEqual({
-    subTexts: ['testUser'],
-    tag: false,
-    text: 'testUser@test.com'
-  });
-
-  expect(
-    formatter({id: 'groupId', name: 'groupName', email: 'group@test.com', type: 'group'})
-  ).toEqual({
-    subTexts: ['group@test.com', 'groupId'],
-    tag: ' (User Group)',
-    text: 'groupName'
-  });
 });

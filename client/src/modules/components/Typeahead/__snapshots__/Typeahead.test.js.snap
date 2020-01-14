@@ -17,6 +17,7 @@ exports[`should render an empty Input 1`] = `
   />
   <ForwardRef(Button)
     className="optionsButton"
+    disabled={true}
     onClick={[Function]}
   >
     <Icon

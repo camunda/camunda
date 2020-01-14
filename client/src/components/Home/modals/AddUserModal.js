@@ -6,10 +6,10 @@
 
 import React from 'react';
 
-import {Button, LabeledInput, Modal, Form, OldTypeahead, Message} from 'components';
-import {searchIdentities} from './service';
+import {Button, LabeledInput, Modal, Form, Message} from 'components';
 
 import {t} from 'translation';
+import UserTypeahead from './UserTypeahead.js';
 
 const defaultState = {
   selectedIdentity: null,
@@ -49,23 +49,6 @@ export default class AddUserModal extends React.Component {
     );
   };
 
-  formatTypeaheadOption = ({name, email, id, type}) => {
-    const subTexts = [];
-    if (name) {
-      subTexts.push(email);
-    }
-
-    if (name || email) {
-      subTexts.push(id);
-    }
-
-    return {
-      text: name || email || id,
-      tag: type === 'group' && ' (User Group)',
-      subTexts
-    };
-  };
-
   isValid = () => this.state.selectedIdentity && !this.alreadyExists();
 
   render() {
@@ -83,12 +66,7 @@ export default class AddUserModal extends React.Component {
           <Form>
             {t('home.userTitle')}
             <Form.Group>
-              <OldTypeahead
-                placeholder={t('common.collection.addUserModal.searchPlaceholder')}
-                values={searchIdentities}
-                onSelect={identity => this.setState({selectedIdentity: identity})}
-                formatter={this.formatTypeaheadOption}
-              />
+              <UserTypeahead onChange={selectedIdentity => this.setState({selectedIdentity})} />
               {alreadyExists && selectedIdentity.type === 'user' && (
                 <Message error>{t('home.roles.existing-user-error')}</Message>
               )}

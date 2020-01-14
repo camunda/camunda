@@ -18,6 +18,8 @@ exports[`should match snapshot 1`] = `
       initialValue={null}
       noValuesMessage="No collections have been created"
       onChange={[Function]}
+      onClose={[Function]}
+      onOpen={[Function]}
       onSearch={[Function]}
       placeholder="Please select"
     >

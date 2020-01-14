@@ -9,11 +9,14 @@ import {Input, Button, Icon, Dropdown} from 'components';
 import OptionsList from './OptionsList';
 import './Typeahead.scss';
 import {t} from 'translation';
+import classnames from 'classnames';
 
 export default class Typeahead extends React.Component {
   static defaultProps = {
     onSearch: () => {},
-    onChange: () => {}
+    onChange: () => {},
+    onOpen: () => {},
+    onClose: () => {}
   };
 
   state = {
@@ -29,11 +32,6 @@ export default class Typeahead extends React.Component {
   onTextChange = evt => {
     this.setState({query: evt.target.value, open: true});
     this.props.onSearch(evt.target.value);
-  };
-
-  showOptions = () => {
-    this.setState({open: true});
-    this.input.current.focus();
   };
 
   componentDidMount() {
@@ -74,16 +72,24 @@ export default class Typeahead extends React.Component {
     return placeholder;
   };
 
-  open = () => this.setState({open: true, query: ''});
-  close = () => this.setState(({selected}) => ({open: false, query: selected || ''}));
+  open = () => {
+    this.props.onOpen();
+    this.setState({open: true, query: ''});
+  };
+
+  close = () => {
+    this.props.onClose();
+    this.setState(({selected}) => ({open: false, query: selected || ''}));
+  };
 
   render() {
-    const {children, disabled} = this.props;
+    const {children, disabled, loading, hasMore, async, className} = this.props;
     const {query, open} = this.state;
-    const isEmpty = React.Children.toArray(children).length === 0;
+    const isEmpty = !loading && !query && React.Children.toArray(children).length === 0;
+    const isInputDisabled = isEmpty || disabled;
 
     return (
-      <div className="Typeahead">
+      <div className={classnames(className, 'Typeahead')}>
         <Input
           type="text"
           className="typeaheadInput"
@@ -97,13 +103,18 @@ export default class Typeahead extends React.Component {
           onChange={this.onTextChange}
           ref={this.input}
           placeholder={this.getPlaceholderText(isEmpty)}
-          disabled={isEmpty || disabled}
+          disabled={isInputDisabled}
           onClear={this.open}
         />
-        <Button className="optionsButton" onClick={this.showOptions} disabled={disabled}>
+        <Button
+          className="optionsButton"
+          onClick={() => this.input.current.focus()}
+          disabled={isInputDisabled}
+        >
           <Icon type="down" className="downIcon" />
         </Button>
         <OptionsList
+          async={async}
           open={open}
           onClose={this.close}
           onOpen={this.open}
@@ -111,6 +122,8 @@ export default class Typeahead extends React.Component {
           onSelect={this.selectOption}
           input={this.input.current}
           onMouseDown={() => (this.optionClicked = true)}
+          loading={loading}
+          hasMore={hasMore}
         >
           {children}
         </OptionsList>
