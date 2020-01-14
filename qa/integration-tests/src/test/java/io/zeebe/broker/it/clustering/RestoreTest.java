@@ -97,6 +97,31 @@ public final class RestoreTest {
     assertThat(clientRule.createWorkflowInstance(thirdWorkflowKey)).isPositive();
   }
 
+  @Test
+  public void shouldKeepPositionsConsistent() {
+    // given
+    writeManyEventsUntilAtomixLogIsCompactable();
+
+    // when
+    clusteringRule.restartBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+
+    writeManyEventsUntilAtomixLogIsCompactable();
+
+    // then
+    final var leaderLogStream = clusteringRule.getLogStream(1);
+
+    final var reader = leaderLogStream.newLogStreamReader().join();
+    reader.seekToFirstEvent();
+    assertThat(reader.hasNext()).isTrue();
+
+    var previousPosition = -1L;
+    while (reader.hasNext()) {
+      final var position = reader.next().getPosition();
+      assertThat(position).isGreaterThan(previousPosition);
+      previousPosition = position;
+    }
+  }
+
   private Broker getLeader() {
     return clusteringRule.getBroker(
         clusteringRule.getLeaderForPartition(START_PARTITION_ID).getNodeId());
