@@ -63,9 +63,6 @@ public class ValidationTest {
 	MigrationProperties config;
 
 	@Autowired
-	OperateProperties operateProperties;
-	
-	@Autowired
 	ObjectMapper objectMapper;
 	
 	@Autowired

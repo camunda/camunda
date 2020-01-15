@@ -83,10 +83,10 @@ public class DataGenerator {
     createIncidents("task2", migrationProperties.getIncidentCount());
 
     for(int i=0;i<migrationProperties.getCountOfCancelOperation();i++) {
-      createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE,workflowInstanceKeys.size() * 3);
+      createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE,workflowInstanceKeys.size() * 10);
     }
     for(int i=0;i<migrationProperties.getCountOfResolveOperation();i++) {
-      createOperation(OperationType.RESOLVE_INCIDENT,workflowInstanceKeys.size() * 21);
+      createOperation(OperationType.RESOLVE_INCIDENT,workflowInstanceKeys.size() * 10);
     }
 
     waitTillSomeInstancesAreArchived();
@@ -101,10 +101,14 @@ public class DataGenerator {
 
   private void waitTillSomeInstancesAreArchived() {
     //cheat for archiving: move the dates 1 hour back - TODO remove after version 1.2.0 is released
-    ThreadUtil.sleepFor(60*1000L); //wait till all data is imported
+    logger.info("Wait till data are imported.");
+    ThreadUtil.sleepFor(60*1000L); 
+    
+    logger.info("Move listview date back to trigger archiving.");
     moveListViewDatesBack();
-
-    ThreadUtil.sleepFor(60 * 1000L);   //after 1 minute finished instances will be archived
+    
+    logger.info("Wait till finished instances will be archived.");
+    ThreadUtil.sleepFor(100 * 1000L);  
     int count = 0;
     while (!someInstancesAreArchived() && count < 10) {
       ThreadUtil.sleepFor(10 * 1000L);
@@ -155,6 +159,7 @@ public class DataGenerator {
   }
 
   private void createOperation(OperationType operationType,int maxAttempts) {
+    logger.info("Try to create Operation {} ( {} attempts)", operationType.name(),maxAttempts);
     boolean operationStarted = false;
     int attempts = 0;
     while (!operationStarted && attempts < maxAttempts) {
@@ -165,7 +170,7 @@ public class DataGenerator {
     if (operationStarted) {
       logger.info("Operation {} started", operationType.name());
     } else {
-      logger.info("Operation {} could not started", operationType.name());
+      throw new RuntimeException(String.format("Operation %s could not started",operationType.name()));
     }
   }
   
