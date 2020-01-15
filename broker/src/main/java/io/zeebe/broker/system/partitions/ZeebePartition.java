@@ -38,6 +38,7 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -304,7 +305,8 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
         runtimeDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
         new AtomixRecordEntrySupplierImpl(reader),
-        brokerCfg.getData().getMaxSnapshots());
+        brokerCfg.getData().getMaxSnapshots(),
+        new SnapshotMetrics(partitionId));
   }
 
   private boolean shouldReplicateSnapshots() {
