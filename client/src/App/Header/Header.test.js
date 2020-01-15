@@ -49,6 +49,10 @@ const mockCollapsablePanelProps = {
   expandFilters: jest.fn()
 };
 
+const getLinkNode = (node, selector) => {
+  return node.find(`[data-test="header-link-${selector}"]`).first();
+};
+
 const mountComponent = props => {
   const node = mount(
     <Router>
@@ -94,18 +98,14 @@ describe('Header', () => {
 
       expect(BrandLinkNode.find(NavStyled.LogoIcon)).toExist();
 
-      const DashboardLinkNode = node.find(
-        '[data-test="header-link-dashboard"]'
-      );
+      const DashboardLinkNode = getLinkNode(node, 'dashboard');
       expect(DashboardLinkNode).toExist();
 
       expect(
         DashboardLinkNode.find('[data-test="dashboard-label"]').text()
       ).toContain('Dashboard');
 
-      const InstancesLinkNode = node.find(
-        '[data-test="header-link-instances"]'
-      );
+      const InstancesLinkNode = getLinkNode(node, 'instances');
       expect(InstancesLinkNode).toExist();
       expect(InstancesLinkNode.find(NavStyled.Label)).toExist();
 
@@ -117,16 +117,14 @@ describe('Header', () => {
         'RUNNING_INSTANCES'
       );
 
-      const FiltersLinkNode = node.find('[data-test="header-link-filters"]');
+      const FiltersLinkNode = getLinkNode(node, 'filters');
       expect(FiltersLinkNode).toExist();
       expect(FiltersLinkNode.find(NavStyled.Label)).toExist();
 
       expect(FiltersLinkNode.find(NavStyled.Label).text()).toContain('Filters');
       expect(FiltersLinkNode.find(Badge).props().type).toBe('FILTERS');
 
-      const IncidentsLinkNode = node.find(
-        '[data-test="header-link-incidents"]'
-      );
+      const IncidentsLinkNode = getLinkNode(node, 'incidents');
       expect(IncidentsLinkNode).toExist();
       expect(IncidentsLinkNode.find(NavStyled.Label)).toExist();
 
@@ -147,13 +145,9 @@ describe('Header', () => {
       node = mountComponent(mockProps);
       header = node.find('Header');
       const skeletonBadge = '';
-      const InstancesLinkNode = node.find(
-        '[data-test="header-link-instances"]'
-      );
-      const FiltersLinkNode = node.find('[data-test="header-link-filters"]');
-      const IncidentsLinkNode = node.find(
-        '[data-test="header-link-incidents"]'
-      );
+      const InstancesLinkNode = getLinkNode(node, 'instances');
+      const FiltersLinkNode = getLinkNode(node, 'filters');
+      const IncidentsLinkNode = getLinkNode(node, 'incidents');
 
       expect(InstancesLinkNode.find(Badge).text()).toBe(skeletonBadge);
       expect(FiltersLinkNode.find(Badge).text()).toBe(skeletonBadge);
@@ -174,13 +168,9 @@ describe('Header', () => {
 
       header = node.find('Header');
 
-      const InstancesLinkNode = node.find(
-        '[data-test="header-link-instances"]'
-      );
-      const FiltersLinkNode = node.find('[data-test="header-link-filters"]');
-      const IncidentsLinkNode = node.find(
-        '[data-test="header-link-incidents"]'
-      );
+      const InstancesLinkNode = getLinkNode(node, 'instances');
+      const FiltersLinkNode = getLinkNode(node, 'filters');
+      const IncidentsLinkNode = getLinkNode(node, 'incidents');
 
       expect(InstancesLinkNode.find(Badge).text()).toBe(
         countStoreWithCount.running.toString()
@@ -266,7 +256,6 @@ describe('Header', () => {
 
       expect(
         node
-          .find('header')
           .find('[data-test="header-link-filters"]')
           .find(Badge)
           .props().isActive

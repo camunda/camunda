@@ -6,6 +6,6 @@
 
 import {Selector} from 'testcafe';
 
-export const filtersRunningChk = Selector('[data-test="checkbox-input"]');
-export const filtersRunningActiveChk = Selector('#active');
-export const filtersRunningIncidentsChk = Selector('#incidents');
+export const filtersRunningCheckbox = Selector('[data-test="checkbox-input"]');
+export const filtersRunningActiveCheckbox = Selector('#active');
+export const filtersRunningIncidentsCheckbox = Selector('#incidents');

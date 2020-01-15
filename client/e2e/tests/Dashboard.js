@@ -18,17 +18,17 @@ test('Instances Statistics', async t => {
 
   await t
     .click(Dashboard.activeInstancesLink)
-    .expect(Instances.filtersRunningActiveChk.checked)
+    .expect(Instances.filtersRunningActiveCheckbox.checked)
     .ok()
-    .expect(Instances.filtersRunningIncidentsChk.checked)
+    .expect(Instances.filtersRunningIncidentsCheckbox.checked)
     .notOk();
 
   await t.click(Header.dashboardLink);
 
   await t
     .click(Dashboard.incidentInstancesLink)
-    .expect(Instances.filtersRunningActiveChk.checked)
+    .expect(Instances.filtersRunningActiveCheckbox.checked)
     .notOk()
-    .expect(Instances.filtersRunningIncidentsChk.checked)
+    .expect(Instances.filtersRunningIncidentsCheckbox.checked)
     .ok();
 });
