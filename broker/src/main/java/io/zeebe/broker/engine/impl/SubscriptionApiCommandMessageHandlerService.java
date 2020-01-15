@@ -39,7 +39,13 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   @Override
   public void onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.submit(() -> leaderPartitions.remove(partitionId));
+    actor.submit(
+        () -> {
+          final var recordWriter = leaderPartitions.remove(partitionId);
+          if (recordWriter != null) {
+            recordWriter.close();
+          }
+        });
   }
 
   @Override
