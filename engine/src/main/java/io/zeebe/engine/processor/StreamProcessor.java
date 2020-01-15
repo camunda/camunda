@@ -157,6 +157,7 @@ public class StreamProcessor extends Actor {
   @Override
   protected void onActorClosing() {
     processingContext.getLogStreamReader().close();
+    processingContext.getLogStreamWriter().close();
 
     if (onCommitPositionUpdatedCondition != null) {
       logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);

@@ -71,7 +71,7 @@ public final class LogStorageAppenderTest {
     appender =
         new LogStorageAppender(
             "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);
-    writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
+    writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher, () -> {});
     reader = new LogStreamReaderImpl(logStorage);
   }
 

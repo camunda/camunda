@@ -33,7 +33,14 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
   @Override
   public void onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.submit(() -> leaderForPartitions.remove(partitionId));
+    actor.submit(
+        () -> {
+          final var recordWriter = leaderForPartitions.remove(partitionId);
+
+          if (recordWriter != null) {
+            recordWriter.close();
+          }
+        });
   }
 
   @Override
