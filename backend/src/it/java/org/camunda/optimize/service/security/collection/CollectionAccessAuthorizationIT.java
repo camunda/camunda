@@ -64,7 +64,12 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
     assertThat(collection.getCurrentUserRole(), is(accessIdentityRolePairs.roleType));
-    final List<EntityDto> entities = collectionClient.getEntitiesForCollection(collectionId);
+    final List<EntityDto> entities = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetCollectionEntitiesRequest(collectionId)
+      .executeAndReturnList(EntityDto.class, 200);
+
     assertThat(entities.size(), is(2));
     assertThat(
       entities.get(0).getCurrentUserRole(),

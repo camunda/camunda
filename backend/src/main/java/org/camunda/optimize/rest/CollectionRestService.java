@@ -23,7 +23,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.IdentityService;
-import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.collection.CollectionEntityService;
 import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
@@ -59,8 +58,6 @@ public class CollectionRestService {
   private final CollectionService collectionService;
   private final CollectionRoleService collectionRoleService;
   private final CollectionScopeService collectionScopeService;
-  private final SessionService sessionService;
-  private final ReportService reportService;
   private final IdentityService identityService;
   private final CollectionEntityService collectionEntityService;
 
