@@ -53,7 +53,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
-  private final List interceptors = new ArrayList();
+  private final List<ClientInterceptor> interceptors = new ArrayList<>();
 
   @Override
   public String getBrokerContactPoint() {
@@ -115,8 +115,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     return keepAlive;
   }
 
-  @Override
-  public List getInterceptors() {
+  public List<ClientInterceptor> getInterceptors() {
     return interceptors;
   }
 

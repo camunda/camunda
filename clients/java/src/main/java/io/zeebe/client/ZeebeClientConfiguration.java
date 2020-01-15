@@ -15,9 +15,7 @@
  */
 package io.zeebe.client;
 
-import io.grpc.ClientInterceptor;
 import java.time.Duration;
-import java.util.List;
 
 public interface ZeebeClientConfiguration {
   /** @see ZeebeClientBuilder#brokerContactPoint(String) */
@@ -55,6 +53,4 @@ public interface ZeebeClientConfiguration {
 
   /** @see ZeebeClientBuilder#keepAlive(Duration) */
   Duration getKeepAlive();
-
-  List<ClientInterceptor> getInterceptors();
 }
