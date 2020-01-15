@@ -373,5 +373,8 @@ public final class ReProcessingStateMachine {
     public long flush() {
       return 0;
     }
+
+    @Override
+    public void close() {}
   }
 }
