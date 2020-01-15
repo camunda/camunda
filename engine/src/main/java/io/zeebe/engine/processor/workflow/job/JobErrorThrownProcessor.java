@@ -67,9 +67,8 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
     if (serviceTaskInstance != null && serviceTaskInstance.isActive()) {
 
       final var errorCode = job.getErrorCodeBuffer();
-      final var workflow = getWorkflow(job.getWorkflowKey());
 
-      final var foundCatchEvent = findCatchEvent(workflow, serviceTaskInstance, errorCode);
+      final var foundCatchEvent = findCatchEvent(errorCode, serviceTaskInstance);
       if (foundCatchEvent != null) {
 
         eventHandle.triggerEvent(
@@ -104,13 +103,52 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
     return deployedWorkflow.getWorkflow();
   }
 
-  private CatchEventTuple findCatchEvent(
-      final ExecutableWorkflow workflow,
-      final ElementInstance instance,
-      final DirectBuffer errorCode) {
-
+  private CatchEventTuple findCatchEvent(final DirectBuffer errorCode, ElementInstance instance) {
     // assuming that error events are used rarely
-    // - just walk through the scope hierarchy and look for a matching boundary event
+    // - just walk through the scope hierarchy and look for a matching catch event
+
+    do {
+      final var instanceRecord = instance.getValue();
+      final var workflow = getWorkflow(instanceRecord.getWorkflowKey());
+
+      final var found = findCatchEventInWorkflow(errorCode, workflow, instance);
+      if (found != null) {
+        return found;
+      }
+
+      // find in parent workflow instance if exists
+      final var parentElementInstanceKey = instanceRecord.getParentElementInstanceKey();
+      instance = elementInstanceState.getInstance(parentElementInstanceKey);
+
+    } while (instance != null && instance.isActive());
+
+    // no matching catch event found
+    return null;
+  }
+
+  private CatchEventTuple findCatchEventInWorkflow(
+      final DirectBuffer errorCode, final ExecutableWorkflow workflow, ElementInstance instance) {
+
+    do {
+      final var found = findCatchEventInScope(errorCode, workflow, instance);
+      if (found != null) {
+        return found;
+      }
+
+      // find in parent scope if exists
+      final var instanceParentKey = instance.getParentKey();
+      instance = elementInstanceState.getInstance(instanceParentKey);
+
+    } while (instance != null && instance.isActive());
+
+    return null;
+  }
+
+  private CatchEventTuple findCatchEventInScope(
+      final DirectBuffer errorCode,
+      final ExecutableWorkflow workflow,
+      final ElementInstance instance) {
+
     final var elementId = instance.getValue().getElementIdBuffer();
     final var activity = workflow.getElementById(elementId, ExecutableActivity.class);
 
@@ -123,17 +161,6 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
       }
     }
 
-    // find catch event in parent scopes
-    final var instanceParentKey = instance.getParentKey();
-    if (instanceParentKey > 0) {
-      final var parentInstance = elementInstanceState.getInstance(instanceParentKey);
-
-      if (parentInstance != null && parentInstance.isActive()) {
-        return findCatchEvent(workflow, parentInstance, errorCode);
-      }
-    }
-
-    // no matching catch event found
     return null;
   }
 
