@@ -29,6 +29,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -144,19 +145,19 @@ public class BatchOperationWriter {
 
   /**
    * Schedule operations based of workflow instance query.
-   * @param operationRequest
+   * @param batchOperationRequest
    * @return
    * @throws PersistenceException
    */
-  public CreateOperationResponseDto scheduleBatchOperation(CreateOperationRequestDto operationRequest) {
-    logger.debug("Creating batch operation: operationRequest [{}]", operationRequest.toString());
+  public CreateOperationResponseDto scheduleBatchOperation(CreateBatchOperationRequestDto batchOperationRequest) {
+    logger.debug("Creating batch operation: operationRequest [{}]", batchOperationRequest.toString());
     try {
       //create batch operation with unique id
-      final String batchOperationId = createAndPersistBatchOperationEntity(operationRequest);
+      final String batchOperationId = createAndPersistBatchOperationEntity(batchOperationRequest.getOperationType(), batchOperationRequest.getName());
 
       //create single operations
       final int batchSize = operateProperties.getElasticsearch().getBatchSize();
-      ConstantScoreQueryBuilder query = listViewReader.createWorkflowInstancesQuery(operationRequest.getQuery());
+      ConstantScoreQueryBuilder query = listViewReader.createWorkflowInstancesQuery(batchOperationRequest.getQuery());
       final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ElasticsearchUtil.QueryType.ONLY_RUNTIME)
         .source(new SearchSourceBuilder().query(query).size(batchSize).fetchSource(false));
       AtomicInteger operationsCount = new AtomicInteger();
@@ -164,7 +165,7 @@ public class BatchOperationWriter {
           searchHits -> {
             try {
               final List<Long> workflowInstanceKeys = CollectionUtil.map(searchHits.getHits(),ElasticsearchUtil.searchHitIdToLong);
-              operationsCount.addAndGet(persistOperations(workflowInstanceKeys, batchOperationId, operationRequest));
+              operationsCount.addAndGet(persistOperations(workflowInstanceKeys, batchOperationId, batchOperationRequest.getOperationType(), null));
             } catch (PersistenceException e) {
               throw new RuntimeException(e);
             }
@@ -196,7 +197,7 @@ public class BatchOperationWriter {
     logger.debug("Creating operation: workflowInstanceKey [{}], operation type [{}]", workflowInstanceKey, operationRequest.getOperationType());
     try {
       //create batch operation with unique id
-      final String batchOperationId = createAndPersistBatchOperationEntity(operationRequest);
+      final String batchOperationId = createAndPersistBatchOperationEntity(operationRequest.getOperationType(), operationRequest.getName());
 
       //create single operations
       BulkRequest bulkRequest = new BulkRequest();
@@ -250,11 +251,11 @@ public class BatchOperationWriter {
   }
 
 
-  private String createAndPersistBatchOperationEntity(CreateOperationRequestDto operationRequest) throws PersistenceException {
+  private String createAndPersistBatchOperationEntity(OperationType operationType, String name) throws PersistenceException {
     BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
     batchOperationEntity.generateId();
-    batchOperationEntity.setType(operationRequest.getOperationType());
-    batchOperationEntity.setName(operationRequest.getName());
+    batchOperationEntity.setType(operationType);
+    batchOperationEntity.setName(name);
     batchOperationEntity.setStartDate(OffsetDateTime.now());
     batchOperationEntity.setUsername(userService.getCurrentUsername());
     try {
@@ -265,25 +266,24 @@ public class BatchOperationWriter {
     } catch (IOException e) {
       logger.error("Error persisting batch operation", e);
       throw new PersistenceException(
-          String.format("Error persisting batch operation of type [%s]", operationRequest.getOperationType()), e);
+          String.format("Error persisting batch operation of type [%s]", operationType), e);
     }
     return batchOperationEntity.getId();
   }
 
-  private int persistOperations(List<Long> workflowInstanceKeys, String batchOperationId, CreateOperationRequestDto operationRequest) throws PersistenceException {
+  private int persistOperations(List<Long> workflowInstanceKeys, String batchOperationId, OperationType operationType, String incidentId) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
-    final OperationType operationType = operationRequest.getOperationType();
     int operationsCount = 0;
 
     Map<Long, List<Long>> incidentKeys = new HashMap<>();
     //prepare map of incident ids per workflow instance id
-    if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
+    if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
       incidentKeys = incidentReader.getIncidentKeysPerWorkflowInstance(workflowInstanceKeys);
     }
 
     for (Long wiId : workflowInstanceKeys) {
       //create single operations
-      if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
+      if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
         final List<Long> allIncidentKeys = incidentKeys.get(wiId);
         if (allIncidentKeys != null && allIncidentKeys.size() != 0) {
           for (Long incidentKey: allIncidentKeys) {
@@ -292,7 +292,7 @@ public class BatchOperationWriter {
           }
         }
       } else {
-        bulkRequest.add(getIndexOperationRequest(wiId, ConversionUtils.toLongOrNull(operationRequest.getIncidentId()), batchOperationId, operationType));
+        bulkRequest.add(getIndexOperationRequest(wiId, ConversionUtils.toLongOrNull(incidentId), batchOperationId, operationType));
         operationsCount++;
       }
       //update workflow instance

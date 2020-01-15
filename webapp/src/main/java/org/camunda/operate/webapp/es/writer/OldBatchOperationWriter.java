@@ -24,7 +24,7 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.oldoperation.OldBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -92,7 +92,7 @@ public class OldBatchOperationWriter {
    * @return
    * @throws PersistenceException
    */
-  public CreateOperationResponseDto scheduleBatchOperation(BatchOperationRequestDto batchOperationRequest) {
+  public CreateOperationResponseDto scheduleBatchOperation(OldBatchOperationRequestDto batchOperationRequest) {
 
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 

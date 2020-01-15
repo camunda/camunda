@@ -17,13 +17,6 @@ public class CreateOperationRequestDto {
     this.operationType = operationType;
   }
 
-  public CreateOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
-    this.query = query;
-    this.operationType = operationType;
-  }
-
-  private ListViewQueryDto query;
-
   private OperationType operationType;
 
   /**
@@ -44,14 +37,6 @@ public class CreateOperationRequestDto {
   private String variableName;
 
   private String variableValue;
-
-  public ListViewQueryDto getQuery() {
-    return query;
-  }
-
-  public void setQuery(ListViewQueryDto query) {
-    this.query = query;
-  }
 
   public OperationType getOperationType() {
     return operationType;
@@ -110,8 +95,6 @@ public class CreateOperationRequestDto {
 
     CreateOperationRequestDto that = (CreateOperationRequestDto) o;
 
-    if (query != null ? !query.equals(that.query) : that.query != null)
-      return false;
     if (operationType != that.operationType)
       return false;
     if (name != null ? !name.equals(that.name) : that.name != null)
@@ -128,8 +111,7 @@ public class CreateOperationRequestDto {
 
   @Override
   public int hashCode() {
-    int result = query != null ? query.hashCode() : 0;
-    result = 31 * result + (operationType != null ? operationType.hashCode() : 0);
+    int result = operationType != null ? operationType.hashCode() : 0;
     result = 31 * result + (name != null ? name.hashCode() : 0);
     result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
     result = 31 * result + (variableScopeId != null ? variableScopeId.hashCode() : 0);
@@ -140,7 +122,7 @@ public class CreateOperationRequestDto {
 
   @Override
   public String toString() {
-    return "CreateOperationRequestDto{" + "query=" + query + ", operationType=" + operationType + ", name='" + name + '\'' + ", incidentId='" + incidentId + '\''
+    return "CreateOperationRequestDto{" + "operationType=" + operationType + ", name='" + name + '\'' + ", incidentId='" + incidentId + '\''
         + ", variableScopeId='" + variableScopeId + '\'' + ", variableName='" + variableName + '\'' + ", variableValue='" + variableValue + '\'' + '}';
   }
 }

@@ -20,6 +20,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ImportPositionHolder;
@@ -300,7 +301,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
-    CreateOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
+    CreateBatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
     MockHttpServletRequestBuilder postOperationRequest =
       post(POST_BATCH_OPERATION_URL)
         .content(mockMvcTestRule.json(batchOperationDto))
@@ -314,8 +315,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
 
-  protected CreateOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
-    CreateOperationRequestDto batchOperationDto = new CreateOperationRequestDto();
+  protected CreateBatchOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
+    CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
     batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);
     if (name != null) {

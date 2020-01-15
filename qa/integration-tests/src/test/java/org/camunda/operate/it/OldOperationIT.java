@@ -29,7 +29,7 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
-import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.oldoperation.OldBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
@@ -525,7 +525,7 @@ public class OldOperationIT extends OperateZeebeIntegrationTest {
 
   @Override
   protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
-    BatchOperationRequestDto batchOperationDto = createOldBatchOperationDto(operationType, query);
+    OldBatchOperationRequestDto batchOperationDto = createOldBatchOperationDto(operationType, query);
     MockHttpServletRequestBuilder postOperationRequest =
         post(WORKFLOW_INSTANCE_URL + "/operation")
             .content(mockMvcTestRule.json(batchOperationDto))
@@ -539,8 +539,8 @@ public class OldOperationIT extends OperateZeebeIntegrationTest {
     return mvcResult;
   }
 
-  private BatchOperationRequestDto createOldBatchOperationDto(OperationType operationType, ListViewQueryDto query) {
-    BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
+  private OldBatchOperationRequestDto createOldBatchOperationDto(OperationType operationType, ListViewQueryDto query) {
+    OldBatchOperationRequestDto batchOperationDto = new OldBatchOperationRequestDto();
     batchOperationDto.getQueries().add(query);
     batchOperationDto.setOperationType(operationType);
     return batchOperationDto;

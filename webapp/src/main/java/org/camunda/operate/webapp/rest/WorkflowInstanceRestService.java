@@ -28,7 +28,8 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.oldoperation.OldBatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -112,10 +113,15 @@ public class WorkflowInstanceRestService {
     return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), newRequest);
   }
 
-  private void validateBatchOperationRequest(CreateOperationRequestDto operationRequest) {
-    validateOperationRequest(operationRequest);
-    if (operationRequest.getQuery() == null) {
+  private void validateBatchOperationRequest(CreateBatchOperationRequestDto batchOperationRequest) {
+    if (batchOperationRequest.getQuery() == null) {
       throw new InvalidRequestException("List view query must be defined.");
+    }
+    if (batchOperationRequest.getOperationType() == null) {
+      throw new InvalidRequestException("Operation type must be defined.");
+    }
+    if (batchOperationRequest.getOperationType().equals(OperationType.UPDATE_VARIABLE)) {
+      throw new InvalidRequestException("For variable update use \"Create operation for one workflow instance\" endpoint.");
     }
   }
 
@@ -134,15 +140,15 @@ public class WorkflowInstanceRestService {
   @ApiOperation("DEPRECATED Perform batch operation on selection (async)")
   @PostMapping("/operation")
   public CreateOperationResponseDto batchOperation(
-      @RequestBody BatchOperationRequestDto batchOperationRequest) {
+      @RequestBody OldBatchOperationRequestDto batchOperationRequest) {
     return oldBatchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   @ApiOperation("Create batch operation based on filter")
   @PostMapping("/batch-operation")
-  public CreateOperationResponseDto createBatchOperation(@RequestBody CreateOperationRequestDto operationRequest) {
-    validateBatchOperationRequest(operationRequest);
-    return batchOperationWriter.scheduleBatchOperation(operationRequest);
+  public CreateOperationResponseDto createBatchOperation(@RequestBody CreateBatchOperationRequestDto batchOperationRequest) {
+    validateBatchOperationRequest(batchOperationRequest);
+    return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   @ApiOperation("Get workflow instance by id")

@@ -14,7 +14,7 @@ import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.security.UserService;
 import org.camunda.operate.webapp.zeebe.operation.ExecutionFinishedListener;
@@ -84,7 +84,7 @@ public class BatchOperationPerformanceTest {
   }
 
   private void createResolveIncidentOperations() {
-    CreateOperationRequestDto resolveIncidentRequest = new CreateOperationRequestDto();
+    CreateBatchOperationRequestDto resolveIncidentRequest = new CreateBatchOperationRequestDto();
     resolveIncidentRequest.setOperationType(OperationType.RESOLVE_INCIDENT);
     ListViewQueryDto queryForResolveIncident = new ListViewQueryDto();
     queryForResolveIncident.setRunning(true);
@@ -96,7 +96,7 @@ public class BatchOperationPerformanceTest {
   }
 
   private void createCancelOperations() {
-    CreateOperationRequestDto cancelRequest = new CreateOperationRequestDto();
+    CreateBatchOperationRequestDto cancelRequest = new CreateBatchOperationRequestDto();
     cancelRequest.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
     ListViewQueryDto queryForCancel = new ListViewQueryDto();
     queryForCancel.setRunning(true);

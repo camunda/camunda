@@ -28,7 +28,7 @@ import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
@@ -220,8 +220,8 @@ public class OperateTester {
     final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
 
-    CreateOperationRequestDto batchOperationDto
-        = new CreateOperationRequestDto(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
+    CreateBatchOperationRequestDto batchOperationDto
+        = new CreateBatchOperationRequestDto(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     postOperation(batchOperationDto);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -234,7 +234,7 @@ public class OperateTester {
     return this;
   }
 
-  private MvcResult postOperation(CreateOperationRequestDto operationRequest) throws Exception {
+  private MvcResult postOperation(CreateBatchOperationRequestDto operationRequest) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
       post(String.format( "/api/workflow-instances/%s/operation", workflowInstanceKey))
         .content(mockMvcTestRule.json(operationRequest))

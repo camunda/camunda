@@ -10,12 +10,12 @@ import java.util.List;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 
 @Deprecated //OPE-786
-public class BatchOperationRequestDto extends OperationRequestDto {
+public class OldBatchOperationRequestDto extends OperationRequestDto {
 
-  public BatchOperationRequestDto() {
+  public OldBatchOperationRequestDto() {
   }
 
-  public BatchOperationRequestDto(List<ListViewQueryDto> queries) {
+  public OldBatchOperationRequestDto(List<ListViewQueryDto> queries) {
     this.queries = queries;
   }
 
@@ -38,7 +38,7 @@ public class BatchOperationRequestDto extends OperationRequestDto {
     if (!super.equals(o))
       return false;
 
-    BatchOperationRequestDto that = (BatchOperationRequestDto) o;
+    OldBatchOperationRequestDto that = (OldBatchOperationRequestDto) o;
 
     return queries != null ? queries.equals(that.queries) : that.queries == null;
   }
