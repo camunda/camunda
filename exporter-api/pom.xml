@@ -22,7 +22,15 @@
   <properties>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
-
+  
+  <build>
+    <plugins>
+      <plugin> 
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
