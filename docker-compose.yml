@@ -47,7 +47,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:0.22.0
+    image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
