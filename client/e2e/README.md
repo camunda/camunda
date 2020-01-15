@@ -2,10 +2,11 @@
 
 ## Install TestCafe
 
-Ensure that Node.js and npm are installed on your computer and run the following command:
+Ensure that Node.js and yarn are installed on your computer and run the following command:
 
 ```sh
-npm install -g testcafe
+cd e2e
+yarn install
 ```
 
 ## Run Tests
@@ -20,5 +21,6 @@ cd client && yarn start
 start the E2E tests
 
 ```sh
-testcafe chrome ./client/e2e/tests/*.js
+cd e2e
+yarn test
 ```
