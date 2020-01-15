@@ -68,7 +68,7 @@ public class StreamProcessor extends Actor {
     this.logStream = processingContext.getLogStream();
     this.partitionId = logStream.getPartitionId();
     this.nodeId = processorBuilder.getNodeId();
-    this.actorName = actorNamePattern(nodeId, "StreamProcessor-" + partitionId);
+    this.actorName = buildActorName(nodeId, "StreamProcessor-" + partitionId);
   }
 
   public static StreamProcessorBuilder builder() {

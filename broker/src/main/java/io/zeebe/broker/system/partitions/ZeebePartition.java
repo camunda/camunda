@@ -115,7 +115,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
       }
     }
 
-    this.actorName = actorNamePattern(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
+    this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
   }
 
   /**
@@ -383,8 +383,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(
-                actorNamePattern(
-                    localBroker.getNodeId(), String.format(EXPORTER_NAME, partitionId)))
+                buildActorName(localBroker.getNodeId(), String.format(EXPORTER_NAME, partitionId)))
             .logStream(logStream)
             .zeebeDb(zeebeDb)
             .descriptors(exporterDescriptors);

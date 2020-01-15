@@ -66,7 +66,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
     this.partitionId = partitionId;
     this.nodeId = nodeId;
-    this.actorName = actorNamePattern(nodeId, "LogStream-" + partitionId);
+    this.actorName = buildActorName(nodeId, "LogStream-" + partitionId);
 
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
@@ -219,7 +219,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
     final int initialDispatcherPartitionId = determineInitialPartitionId();
     writeBuffer =
-        Dispatchers.create(actorNamePattern(nodeId, "dispatcher-" + partitionId))
+        Dispatchers.create(buildActorName(nodeId, "dispatcher-" + partitionId))
             .maxFragmentLength(maxFrameLength)
             .initialPartitionId(initialDispatcherPartitionId + 1)
             .name(logName + "-write-buffer")
@@ -234,7 +234,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
                 appender =
                     new LogStorageAppender(
-                        actorNamePattern(nodeId, "LogAppender-" + partitionId),
+                        buildActorName(nodeId, "LogAppender-" + partitionId),
                         partitionId,
                         logStorage,
                         subscription,
