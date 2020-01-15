@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,6 +58,12 @@ public final class LogStreamWriterTest {
   public void setUp() {
     final SynchronousLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamRecordWriter();
+  }
+
+  @After
+  public void tearDown() {
+    writer.close();
+    writer = null;
   }
 
   private LoggedEvent getWrittenEvent(final long position) {
@@ -180,6 +187,44 @@ public final class LogStreamWriterTest {
 
     // then
     assertThat(getWrittenEvent(position).getKey()).isEqualTo(123L);
+  }
+
+  @Test
+  public void shouldWriteEventsWithDifferentWriters() {
+    // given
+    final long firstPosition = writer.key(123L).value(EVENT_VALUE).tryWrite();
+
+    // when
+    writer.close();
+
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    writer = logStream.newLogStreamRecordWriter();
+    final long secondPosition = writer.key(124L).value(EVENT_VALUE).tryWrite();
+
+    // then
+    assertThat(secondPosition).isGreaterThan(firstPosition);
+    assertThat(getWrittenEvent(firstPosition).getKey()).isEqualTo(123L);
+    assertThat(getWrittenEvent(secondPosition).getKey()).isEqualTo(124L);
+  }
+
+  @Test
+  public void shouldCloseAllWritersAndWriteAgain() {
+    // given
+    final long firstPosition = writer.key(123L).value(EVENT_VALUE).tryWrite();
+    writerRule.waitForPositionToBeAppended(firstPosition);
+
+    // when
+    writer.close();
+    writerRule.closeWriter();
+
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    writer = logStream.newLogStreamRecordWriter();
+    final long secondPosition = writer.key(124L).value(EVENT_VALUE).tryWrite();
+
+    // then
+    assertThat(secondPosition).isGreaterThan(firstPosition);
+    assertThat(getWrittenEvent(firstPosition).getKey()).isEqualTo(123L);
+    assertThat(getWrittenEvent(secondPosition).getKey()).isEqualTo(124L);
   }
 
   @Test
