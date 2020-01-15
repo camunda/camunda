@@ -30,14 +30,9 @@ it('should show an error message when it is not possible to initilize the transl
 it('should render the last component in the url', async () => {
   const node = shallow(<App {...props} />);
   await node.update();
-  const routes = shallow(
-    node.find('Route').prop('render')({
-      location: {pathname: '/collection/cid/dashboard/did/report/rid'}
-    })
-  );
 
   const renderedEntity = shallow(
-    routes.find({path: '/(report|dashboard|collection|eventBasedProcess)/*'}).prop('render')({
+    node.find({path: '/(report|dashboard|collection|eventBasedProcess)/*'}).prop('render')({
       location: {pathname: '/collection/cid/dashboard/did/report/rid'}
     })
   );

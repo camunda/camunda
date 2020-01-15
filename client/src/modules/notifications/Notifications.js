@@ -64,8 +64,15 @@ export async function showError(error) {
   let text = error;
 
   if (typeof error.json === 'function') {
-    const {errorCode, errorMessage} = await error.json();
-    text = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
+    try {
+      const {errorCode, errorMessage} = await error.json();
+      text = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
+    } catch (e) {
+      // We should show an error, but cannot parse the error
+      // e.g. the server did not return the expected error object
+      console.error('Tried to parse error object, but failed', error);
+      return;
+    }
   } else if (error.message) {
     text = error.message;
   }

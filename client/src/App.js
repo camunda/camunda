@@ -17,7 +17,8 @@ import {
   Analysis,
   Events,
   Process,
-  Sharing
+  Sharing,
+  WithLicense
 } from './components';
 
 import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
@@ -82,26 +83,23 @@ class App extends React.Component {
     return (
       <Theme>
         <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
-          <Route
-            path="/"
-            render={() => (
-              <div className="Root-container">
-                <ErrorBoundary>
-                  <Switch>
-                    <PrivateRoute exact path="/" component={Home} />
-                    <PrivateRoute path="/analysis" component={Analysis} />
-                    <PrivateRoute exact path="/eventBasedProcess" component={Events} />
-                    <Route exact path="/share/:type/:id" component={Sharing} />
-                    <PrivateRoute
-                      path="/(report|dashboard|collection|eventBasedProcess)/*"
-                      render={this.renderEntity}
-                    />
-                    <PrivateRoute path="*" component={ErrorPage} />
-                  </Switch>
-                </ErrorBoundary>
-              </div>
-            )}
-          />
+          <WithLicense>
+            <div className="Root-container">
+              <ErrorBoundary>
+                <Switch>
+                  <PrivateRoute exact path="/" component={Home} />
+                  <PrivateRoute path="/analysis" component={Analysis} />
+                  <PrivateRoute exact path="/eventBasedProcess" component={Events} />
+                  <Route exact path="/share/:type/:id" component={Sharing} />
+                  <PrivateRoute
+                    path="/(report|dashboard|collection|eventBasedProcess)/*"
+                    render={this.renderEntity}
+                  />
+                  <PrivateRoute path="*" component={ErrorPage} />
+                </Switch>
+              </ErrorBoundary>
+            </div>
+          </WithLicense>
           <SaveGuard />
         </Router>
         <Notifications />

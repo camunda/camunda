@@ -36,7 +36,6 @@ jest.mock('./service', () => ({
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  name: 'Awesome App',
   location: {pathname: '/'}
 };
 

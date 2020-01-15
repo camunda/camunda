@@ -42,8 +42,10 @@ class Header extends React.Component {
   }
 
   render() {
-    const {name, location} = this.props;
+    const {location, noActions} = this.props;
     const {config, showEventBased} = this.state;
+
+    const name = t('appName');
 
     return (
       <header
@@ -55,29 +57,33 @@ class Header extends React.Component {
           <Logo src={config.logo} className="Header__logo" />
           <span>{name}</span>
         </Link>
-        <HeaderNav>
-          <HeaderNav.Item
-            name={t('navigation.homepage')}
-            linksTo="/"
-            active={['/', '/report/*', '/dashboard/*', '/collection/*']}
-            breadcrumbsEntities={['collection', 'dashboard', 'report']}
-          />
-          <HeaderNav.Item
-            name={t('navigation.analysis')}
-            linksTo="/analysis"
-            active={['/analysis/', '/analysis/*']}
-          />
-          {showEventBased && (
-            <HeaderNav.Item
-              name={t('navigation.events')}
-              linksTo="/eventBasedProcess/"
-              active={['/eventBasedProcess/', '/eventBasedProcess/*']}
-              breadcrumbsEntities={['eventBasedProcess']}
-            />
-          )}
-        </HeaderNav>
-        <ChangeLog />
-        <LogoutButton />
+        {!noActions && (
+          <>
+            <HeaderNav>
+              <HeaderNav.Item
+                name={t('navigation.homepage')}
+                linksTo="/"
+                active={['/', '/report/*', '/dashboard/*', '/collection/*']}
+                breadcrumbsEntities={['collection', 'dashboard', 'report']}
+              />
+              <HeaderNav.Item
+                name={t('navigation.analysis')}
+                linksTo="/analysis"
+                active={['/analysis/', '/analysis/*']}
+              />
+              {showEventBased && (
+                <HeaderNav.Item
+                  name={t('navigation.events')}
+                  linksTo="/eventBasedProcess/"
+                  active={['/eventBasedProcess/', '/eventBasedProcess/*']}
+                  breadcrumbsEntities={['eventBasedProcess']}
+                />
+              )}
+            </HeaderNav>
+            <ChangeLog />
+            <LogoutButton />
+          </>
+        )}
       </header>
     );
   }

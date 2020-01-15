@@ -60,7 +60,7 @@ export default class Login extends React.Component {
       <form className="Login">
         <h1>
           <Logo />
-          Camunda Optimize
+          {t('appName')}
         </h1>
         {error ? <MessageBox type="error">{error}</MessageBox> : ''}
         <div className="controls">

@@ -13,7 +13,7 @@ exports[`matches the snapshot 1`] = `
   <Link
     className="Header__link"
     replace={true}
-    title="Awesome App"
+    title="Camunda Optimize"
     to="/"
   >
     <Logo
@@ -21,7 +21,7 @@ exports[`matches the snapshot 1`] = `
       src="url"
     />
     <span>
-      Awesome App
+      Camunda Optimize
     </span>
   </Link>
   <HeaderNav>

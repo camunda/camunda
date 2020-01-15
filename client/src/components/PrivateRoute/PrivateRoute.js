@@ -56,7 +56,7 @@ export default class PrivateRoute extends React.Component {
           const {showLogin} = this.state;
           return (
             <>
-              {!showLogin && <Header name="Camunda Optimize" />}
+              {!showLogin && <Header />}
               <main>
                 <div className={classnames('PrivateRoute', {showLogin})}>
                   {this.props.render ? this.props.render(props) : <Component {...props} />}

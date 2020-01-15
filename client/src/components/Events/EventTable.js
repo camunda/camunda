@@ -261,6 +261,7 @@ export default withErrorHandling(
                     <a
                       href={`https://docs.camunda.org/optimize/${version}/technical-guide/setup/configuration/#ingestion-configuration`}
                       target="_blank"
+                      rel="noopener noreferrer"
                     >
                       {t('events.table.documentation')}
                     </a>
