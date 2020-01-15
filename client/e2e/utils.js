@@ -12,7 +12,7 @@ let instanceCount = {
   Chrome: 0,
   headless: 0,
   Firefox: 0,
-  Edge: 0
+  'Microsoft Edge': 0
 };
 
 export async function login(t, userHandle = 'user1') {
@@ -32,7 +32,7 @@ export async function login(t, userHandle = 'user1') {
 
 export function getUser(t, userHandle) {
   const {browserConnection} = t.testRun;
-  const name = t.browser.alias.split(':')[1];
+  const name = t.browser.headless ? 'headless' : t.browser.name;
 
   if (typeof browserConnection.userId === 'undefined') {
     browserConnection.userId = instanceCount[name]++;
