@@ -193,6 +193,11 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
   @Override
   public ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter() {
+    // this should be replaced after refactoring the actor control
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
+    }
+
     final var writerFuture = new CompletableActorFuture<LogStreamRecordWriter>();
     actor.run(() -> createWriter(writerFuture, LogStreamWriterImpl::new));
     return writerFuture;
@@ -200,6 +205,11 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
   @Override
   public ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter() {
+    // this should be replaced after refactoring the actor control
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
+    }
+
     final var writerFuture = new CompletableActorFuture<LogStreamBatchWriter>();
     actor.run(() -> createWriter(writerFuture, LogStreamBatchWriterImpl::new));
     return writerFuture;
