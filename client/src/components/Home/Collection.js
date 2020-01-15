@@ -13,6 +13,7 @@ import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter} from 'components';
 import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
+import {loadCollectionEntities} from './service';
 import {showError, addNotification} from 'notifications';
 import {refreshBreadcrumbs} from 'components/navigation';
 import Copier from './Copier';
@@ -42,7 +43,8 @@ export default withErrorHandling(
       editingCollection: false,
       deleting: false,
       redirect: '',
-      copying: null
+      copying: null,
+      entities: null
     };
 
     componentDidMount() {
@@ -65,6 +67,18 @@ export default withErrorHandling(
           this.setState({collection: null});
         }
       );
+      this.loadEntities();
+    };
+
+    loadEntities = () => {
+      this.props.mightFail(
+        loadCollectionEntities(this.props.match.params.id),
+        entities => this.setState({entities}),
+        error => {
+          showError(error);
+          this.setState({entities: null});
+        }
+      );
     };
 
     startEditingCollection = () => {
@@ -75,7 +89,7 @@ export default withErrorHandling(
     };
 
     render() {
-      const {collection, deleting, editingCollection, redirect, copying} = this.state;
+      const {collection, deleting, editingCollection, redirect, copying, entities} = this.state;
 
       const homeTab = this.props.match.params.viewMode === undefined;
       const userTab = this.props.match.params.viewMode === 'users';
@@ -149,10 +163,10 @@ export default withErrorHandling(
                   )
                 }
                 empty={t('home.empty')}
-                isLoading={!collection}
+                isLoading={!entities}
                 data={
-                  collection &&
-                  collection.data.entities.map(entity => {
+                  entities &&
+                  entities.map(entity => {
                     const {
                       id,
                       entityType,
@@ -215,7 +229,7 @@ export default withErrorHandling(
             )}
             {sourcesTab && collection && (
               <SourcesList
-                onChange={this.loadCollection}
+                onChange={this.loadEntities}
                 readOnly={collection.currentUserRole !== 'manager'}
                 collection={collection.id}
               />
@@ -242,7 +256,7 @@ export default withErrorHandling(
               if (deleting.entityType === 'collection') {
                 this.setState({redirect: '/'});
               } else {
-                this.loadCollection();
+                this.loadEntities();
               }
             }}
             checkConflicts={async () => {
@@ -263,7 +277,7 @@ export default withErrorHandling(
                 addNotification({type: 'success', text: t('common.collection.created', {name})});
               }
               if (!redirect && entity.entityType !== 'collection') {
-                this.loadCollection();
+                this.loadEntities();
               }
               this.setState({copying: null});
             }}

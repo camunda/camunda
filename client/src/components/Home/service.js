@@ -11,6 +11,11 @@ export async function loadEntities() {
   return await response.json();
 }
 
+export async function loadCollectionEntities(id) {
+  const response = await get(`api/collection/${id}/entities`);
+  return await response.json();
+}
+
 export async function getUsers(collection) {
   const response = await get(`api/collection/${collection}/role`);
   return await response.json();

@@ -37,40 +37,6 @@ jest.mock('services', () => {
       currentUserRole: 'manager', // or editor, viewer
       data: {
         configuration: {},
-        entities: [
-          {
-            id: 'aDashboardId',
-            name: 'aDashboard',
-            lastModified: '2017-11-11T11:11:11.1111+0200',
-            created: '2017-11-11T11:11:11.1111+0200',
-            owner: 'user_id',
-            lastModifier: 'user_id',
-            entityType: 'dashboard',
-            currentUserRole: 'editor', // or viewer
-            data: {
-              subEntityCounts: {
-                report: 8
-              },
-              roleCounts: {}
-            }
-          },
-          {
-            id: 'aReportId',
-            name: 'aReport',
-            lastModified: '2017-11-11T11:11:11.1111+0200',
-            created: '2017-11-11T11:11:11.1111+0200',
-            owner: 'user_id',
-            lastModifier: 'user_id',
-            reportType: 'process', // or "decision"
-            combined: false,
-            entityType: 'report',
-            data: {
-              subEntityCounts: {},
-              roleCounts: {}
-            },
-            currentUserRole: 'editor' // or viewer
-          }
-        ],
         roles: [
           {
             identity: {
@@ -85,6 +51,43 @@ jest.mock('services', () => {
     })
   };
 });
+
+jest.mock('./service', () => ({
+  loadCollectionEntities: jest.fn().mockReturnValue([
+    {
+      id: 'aDashboardId',
+      name: 'aDashboard',
+      lastModified: '2017-11-11T11:11:11.1111+0200',
+      created: '2017-11-11T11:11:11.1111+0200',
+      owner: 'user_id',
+      lastModifier: 'user_id',
+      entityType: 'dashboard',
+      currentUserRole: 'editor', // or viewer
+      data: {
+        subEntityCounts: {
+          report: 8
+        },
+        roleCounts: {}
+      }
+    },
+    {
+      id: 'aReportId',
+      name: 'aReport',
+      lastModified: '2017-11-11T11:11:11.1111+0200',
+      created: '2017-11-11T11:11:11.1111+0200',
+      owner: 'user_id',
+      lastModifier: 'user_id',
+      reportType: 'process', // or "decision"
+      combined: false,
+      entityType: 'report',
+      data: {
+        subEntityCounts: {},
+        roleCounts: {}
+      },
+      currentUserRole: 'editor' // or viewer
+    }
+  ])
+}));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
@@ -130,9 +133,7 @@ it('should hide edit/delete from context menu for collection items that does not
     owner: 'user_id',
     lastModifier: 'user_id',
     currentUserRole: 'editor',
-    data: {
-      entities: []
-    }
+    data: {}
   });
   const node = shallow(<Collection {...props} />);
 
@@ -168,9 +169,7 @@ it('should hide create new button if the user role is viewer', () => {
     owner: 'user_id',
     lastModifier: 'user_id',
     currentUserRole: 'viewer',
-    data: {
-      entities: []
-    }
+    data: {}
   });
   const node = shallow(<Collection {...props} />);
 
