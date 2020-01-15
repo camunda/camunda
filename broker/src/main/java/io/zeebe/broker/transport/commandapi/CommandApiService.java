@@ -37,7 +37,7 @@ public final class CommandApiService extends Actor implements PartitionListener 
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     requestHandler = new CommandApiRequestHandler();
-    this.actorName = actorNamePattern(localBroker.getNodeId(), "CommandApiService");
+    this.actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
   }
 
   @Override

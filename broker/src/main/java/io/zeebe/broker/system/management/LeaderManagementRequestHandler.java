@@ -27,7 +27,7 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
 
   public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
-    this.actorName = actorNamePattern(localBroker.getNodeId(), "ManagementRequestHandler");
+    this.actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
   }
 
   @Override

@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.engine.impl;
 
-import static io.zeebe.util.sched.Actor.actorNamePattern;
+import static io.zeebe.util.sched.Actor.buildActorName;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.Subscription;
@@ -40,7 +40,7 @@ public final class StateReplication implements SnapshotReplication {
       final ClusterEventService eventService, final int partitionId, final int nodeId) {
     this.eventService = eventService;
     this.replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId);
-    this.threadName = actorNamePattern(nodeId, "StateReplication-" + partitionId);
+    this.threadName = buildActorName(nodeId, "StateReplication-" + partitionId);
   }
 
   @Override
