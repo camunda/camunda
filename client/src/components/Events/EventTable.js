@@ -260,6 +260,7 @@ export default withErrorHandling(
                     {t('events.table.seeDocs')}
                     <a
                       href={`https://docs.camunda.org/optimize/${version}/technical-guide/setup/configuration/#ingestion-configuration`}
+                      target="_blank"
                     >
                       {t('events.table.documentation')}
                     </a>
