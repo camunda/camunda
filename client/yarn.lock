@@ -13384,10 +13384,10 @@ test-exclude@^5.2.3:
     read-pkg-up "^4.0.0"
     require-main-filename "^2.0.0"
 
-testcafe-browser-provider-browserstack@^1.9.1:
-  version "1.9.1"
-  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.9.1.tgz#1c67e55dc63a3eb251f6373f28ea82b70607ca6b"
-  integrity sha512-wqT22y9nLneYNAmiSpfBaGXO7PTMUlsb5hMiWqNFczuFEYliw/BSC8sh/pGjOYnvAotRNn18Gz5K9M9bZ8VQzQ==
+testcafe-browser-provider-browserstack@^1.11.0:
+  version "1.11.0"
+  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.11.0.tgz#21eb5ec1e88d7e4d0500df99c64d8188a891dd8d"
+  integrity sha512-4BOE4VAPyQKZComI6XoHUOfglfCMkqQihKHGx+NrnsOSarw/zbe80N5cQLRXjDmiUTyfrXgbyii9Quzrrmxj5A==
   dependencies:
     babel-runtime "^6.11.6"
     browserstack-local "^1.3.6"
@@ -13398,6 +13398,7 @@ testcafe-browser-provider-browserstack@^1.9.1:
     pinkie "^2.0.4"
     request "^2.88.0"
     request-promise "^4.2.4"
+    tmp "0.0.31"
 
 testcafe-browser-tools@2.0.5:
   version "2.0.5"
@@ -13655,6 +13656,13 @@ tmp@0.0.28:
   version "0.0.28"
   resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.0.28.tgz#172735b7f614ea7af39664fa84cf0de4e515d120"
   integrity sha1-Fyc1t/YU6nrzlmT6hM8N5OUV0SA=
+  dependencies:
+    os-tmpdir "~1.0.1"
+
+tmp@0.0.31:
+  version "0.0.31"
+  resolved "https://registry.yarnpkg.com/tmp/-/tmp-0.0.31.tgz#8f38ab9438e17315e5dbd8b3657e8bfb277ae4a7"
+  integrity sha1-jzirlDjhcxXl29izZX6L+yd65Kc=
   dependencies:
     os-tmpdir "~1.0.1"
 
