@@ -35,6 +35,7 @@ import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
@@ -57,7 +58,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.property.ElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 import static org.camunda.operate.util.ThreadUtil.*;
 
 public class ElasticsearchTestRule extends TestWatcher {
@@ -140,7 +140,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient,indexPrefix);
     }
-    operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
+    operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
   }
 
   public void refreshIndexesInElasticsearch() {

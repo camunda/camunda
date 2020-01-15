@@ -43,7 +43,7 @@ public class OperateProperties {
   private boolean enterprise = false;
 
   @NestedConfigurationProperty
-  private ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
+  private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
   @NestedConfigurationProperty
   private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
@@ -103,11 +103,11 @@ public class OperateProperties {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
 
-  public ElasticsearchProperties getElasticsearch() {
+  public OperateElasticsearchProperties getElasticsearch() {
     return elasticsearch;
   }
 
-  public void setElasticsearch(ElasticsearchProperties elasticsearch) {
+  public void setElasticsearch(OperateElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 
