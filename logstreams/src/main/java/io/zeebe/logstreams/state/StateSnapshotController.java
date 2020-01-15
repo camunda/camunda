@@ -134,7 +134,7 @@ public class StateSnapshotController implements SnapshotController {
               "Failed to open snapshot '{}'. No snapshots available to recover from. Manual action is required.",
               snapshot,
               e);
-          throw new RuntimeException("Failed to recover from snapshots", e);
+          throw new IllegalStateException("Failed to recover from snapshots", e);
         }
       }
     }
@@ -178,13 +178,18 @@ public class StateSnapshotController implements SnapshotController {
     }
   }
 
-  public boolean isDbOpened() {
+  boolean isDbOpened() {
     return db != null;
   }
 
   private void createSnapshot(final Path snapshotDir) {
+    final var start = System.currentTimeMillis();
+
     Objects.requireNonNull(db, "Cannot take snapshot of closed database");
     LOG.debug("Take temporary snapshot and write into {}.", snapshotDir);
     db.createSnapshot(snapshotDir.toFile());
+
+    final var elapsedSeconds = System.currentTimeMillis() - start;
+    storage.getMetrics().observeSnapshotOperation(elapsedSeconds);
   }
 }
