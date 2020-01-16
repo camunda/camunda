@@ -31,7 +31,6 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   private final DeploymentsState deploymentsState;
   private final DeploymentDistributor deploymentDistributor;
   private ActorControl actor;
-  private TypedStreamWriter logStreamWriter;
 
   public DeploymentDistributeProcessor(
       final DeploymentsState deploymentsState, final DeploymentDistributor deploymentDistributor) {
@@ -42,18 +41,22 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   @Override
   public void onOpen(final ReadonlyProcessingContext processingContext) {
     actor = processingContext.getActor();
-    logStreamWriter = processingContext.getLogStreamWriter();
-    actor.submit(this::reprocessPendingDeployments);
   }
 
-  private void reprocessPendingDeployments() {
+  @Override
+  public void onRecovered(ReadonlyProcessingContext context) {
+    actor.submit(() -> reprocessPendingDeployments(context.getLogStreamWriter()));
+  }
+
+  private void reprocessPendingDeployments(TypedStreamWriter logStreamWriter) {
     deploymentsState.foreachPending(
         ((pendingDeploymentDistribution, key) -> {
           final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
           final DirectBuffer deployment = pendingDeploymentDistribution.getDeployment();
           buffer.putBytes(0, deployment, 0, deployment.capacity());
 
-          distributeDeployment(key, pendingDeploymentDistribution.getSourcePosition(), buffer);
+          distributeDeployment(
+              key, pendingDeploymentDistribution.getSourcePosition(), buffer, logStreamWriter);
         }));
   }
 
@@ -74,19 +77,23 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
     final DirectBuffer bufferView = new UnsafeBuffer();
     bufferView.wrap(buffer, 0, deploymentEvent.getLength());
 
-    distributeDeployment(key, position, bufferView);
+    distributeDeployment(key, position, bufferView, streamWriter);
   }
 
   private void distributeDeployment(
-      final long key, final long position, final DirectBuffer buffer) {
+      final long key,
+      final long position,
+      final DirectBuffer buffer,
+      TypedStreamWriter logStreamWriter) {
     final ActorFuture<Void> pushDeployment =
         deploymentDistributor.pushDeployment(key, position, buffer);
 
     actor.runOnCompletion(
-        pushDeployment, (aVoid, throwable) -> writeCreatingDeploymentCommand(key));
+        pushDeployment, (aVoid, throwable) -> writeCreatingDeploymentCommand(logStreamWriter, key));
   }
 
-  private void writeCreatingDeploymentCommand(final long deploymentKey) {
+  private void writeCreatingDeploymentCommand(
+      TypedStreamWriter logStreamWriter, final long deploymentKey) {
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         deploymentDistributor.removePendingDeployment(deploymentKey);
     final DirectBuffer buffer = pendingDeploymentDistribution.getDeployment();
