@@ -9,6 +9,7 @@ package io.zeebe.logstreams.util;
 
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -30,6 +31,7 @@ public final class TestSnapshotStorage implements SnapshotStorage {
   private final Path runtimeDirectory;
   private final SortedSet<Snapshot> snapshots;
   private final Set<SnapshotDeletionListener> deletionListeners;
+  private final SnapshotMetrics metrics;
 
   public TestSnapshotStorage(final Path rootDirectory) {
     this.pendingDirectory = rootDirectory.resolve("pending");
@@ -38,6 +40,7 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
     this.snapshots = new ConcurrentSkipListSet<>();
     this.deletionListeners = new CopyOnWriteArraySet<>();
+    this.metrics = new SnapshotMetrics(0);
 
     open();
   }
@@ -124,6 +127,11 @@ public final class TestSnapshotStorage implements SnapshotStorage {
   @Override
   public void removeDeletionListener(final SnapshotDeletionListener listener) {
     deletionListeners.remove(listener);
+  }
+
+  @Override
+  public SnapshotMetrics getMetrics() {
+    return metrics;
   }
 
   private static final class SnapshotImpl implements Snapshot {

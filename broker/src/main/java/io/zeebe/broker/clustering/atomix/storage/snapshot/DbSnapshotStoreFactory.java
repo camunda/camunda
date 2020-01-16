@@ -35,7 +35,7 @@ public final class DbSnapshotStoreFactory implements SnapshotStoreFactory {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStoreFactory.class);
 
   @Override
-  public SnapshotStore createSnapshotStore(final Path root, final String prefix) {
+  public SnapshotStore createSnapshotStore(final Path root, final String partitionName) {
     final var snapshots = new ConcurrentSkipListMap<DbSnapshotId, DbSnapshot>();
     final var snapshotDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     final var pendingDirectory = root.resolve(PENDING_DIRECTORY);

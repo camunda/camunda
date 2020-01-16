@@ -159,13 +159,8 @@ public final class AsyncSnapshotDirector extends Actor {
   }
 
   private Snapshot createSnapshot(final Supplier<Snapshot> snapshotCreation) {
-    final var start = System.currentTimeMillis();
     final var snapshot = snapshotCreation.get();
-
-    final long end = System.currentTimeMillis();
-    final long snapshotCreationTime = end - start;
-
-    LOG.debug("Creation of snapshot for {} took {} ms.", processorName, snapshotCreationTime);
+    LOG.debug("Created snapshot for {}", processorName);
     return snapshot;
   }
 
