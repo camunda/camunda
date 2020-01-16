@@ -23,7 +23,18 @@ exports[`should render an option with the search as input if optionList has type
     onClick={[Function]}
     value="test"
   >
-    test
+    <span
+      key="0"
+    />
+    <span
+      className="textBold"
+      key="1"
+    >
+      test
+    </span>
+    <span
+      key="2"
+    />
   </ForwardRef(DropdownOption)>
 </div>
 `;
