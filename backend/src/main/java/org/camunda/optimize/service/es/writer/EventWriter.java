@@ -31,19 +31,6 @@ public class EventWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void upsertEvent(final EventDto eventDto) {
-    log.debug("Writing event [{}] to elasticsearch", eventDto.getId());
-    try {
-      eventDto.setIngestionTimestamp(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
-      final UpdateRequest request = createEventUpsert(eventDto);
-      esClient.update(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String errorMessage = "There were errors while writing the event.";
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
   public void upsertEvents(final List<EventDto> eventDtos) {
     log.debug("Writing [{}] events to elasticsearch", eventDtos.size());
 

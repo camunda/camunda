@@ -1,148 +1,164 @@
 [
   {
+    "specversion": "1.0",
     "id": "1edc4160-74e5-4ffc-af59-2d281cf5aca341",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceReceived",
+    "type": "InvoiceReceived",
     "traceId": "id1",
-    "timestamp": 1576589400831
+    "time": "2019-12-17T13:30:00.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "1edc4160-74e5-4ffc-af59-2d281cf5aca342",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceApprovalFinished",
+    "type": "InvoiceApprovalFinished",
     "traceId": "id1",
-    "timestamp": 1576589410831,
+    "time": "2019-12-17T13:30:10.000Z",
     "data": {
       "approved": true
     }
   },
   {
+    "specversion": "1.0",
     "id": "1edc4160-74e5-4ffc-af59-2d281cf5aca343",
     "group": "invoice",
     "source": "system",
-    "eventName": "BankTransferStart",
+    "type": "BankTransferStart",
     "traceId": "id1",
-    "timestamp": 1576589420831
+    "time": "2019-12-17T13:30:20.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "1edc4160-74e5-4ffc-af59-2d281cf5aca344",
     "group": "invoice",
     "source": "system",
-    "eventName": "BankTransferEnd",
+    "type": "BankTransferEnd",
     "traceId": "id1",
-    "timestamp": 1576589480831
+    "time": "2019-12-17T13:30:30.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "1edc4160-74e5-4ffc-af59-2d281cf5aca345",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceProcessed",
+    "type": "InvoiceProcessed",
     "traceId": "id1",
-    "timestamp": 1576589490831
+    "time": "2019-12-17T13:30:31.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "2edc4160-74e5-4ffc-af59-2d281cf5aca341",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceReceived",
+    "type": "InvoiceReceived",
     "traceId": "id2",
-    "timestamp": 1576589400831
+    "time": "2019-12-17T13:40:30.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "2edc4160-74e5-4ffc-af59-2d281cf5aca342",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceApprovalFinished",
+    "type": "InvoiceApprovalFinished",
     "traceId": "id2",
-    "timestamp": 1576589410831,
+    "time": "2019-12-17T13:40:40.000Z",
     "data": {
       "approved": false
     }
   },
   {
+    "specversion": "1.0",
     "id": "2edc4160-74e5-4ffc-af59-2d281cf5aca343",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceReviewFinished",
+    "type": "InvoiceReviewFinished",
     "traceId": "id2",
-    "timestamp": 1576589420831,
+    "time": "2019-12-17T13:40:45.000Z",
     "data": {
       "reviewSuccessful": false
     }
   },
   {
+    "specversion": "1.0",
     "id": "2edc4160-74e5-4ffc-af59-2d281cf5aca344",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceNotProcessed",
+    "type": "InvoiceNotProcessed",
     "traceId": "id2",
-    "timestamp": 1576589580831
+    "time": "2019-12-17T13:40:50.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "3edc4160-74e5-4ffc-af59-2d281cf5aca341",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceReceived",
+    "type": "InvoiceReceived",
     "traceId": "id3",
-    "timestamp": 1576589400831
+    "time": "2019-12-17T13:50:50.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "3edc4160-74e5-4ffc-af59-2d281cf5aca342",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceApprovalFinished",
+    "type": "InvoiceApprovalFinished",
     "traceId": "id3",
-    "timestamp": 1576589410831,
+    "time": "2019-12-17T13:50:52.000Z",
     "data": {
       "approved": false
     }
   },
   {
+    "specversion": "1.0",
     "id": "4edc4160-74e5-4ffc-af59-2d281cf5aca343",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceReviewFinished",
+    "type": "InvoiceReviewFinished",
     "traceId": "id3",
-    "timestamp": 1576589420831,
+    "time": "2019-12-17T13:50:55.000Z",
     "data": {
       "reviewSuccessful": true
     }
   },
   {
+    "specversion": "1.0",
     "id": "5edc4160-74e5-4ffc-af59-2d281cf5aca344",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceApprovalFinished",
+    "type": "InvoiceApprovalFinished",
     "traceId": "id3",
-    "timestamp": 1576589430831,
+    "time": "2019-12-17T13:50:58.000Z",
     "data": {
       "approved": true
     }
   },
   {
+    "specversion": "1.0",
     "id": "6edc4160-74e5-4ffc-af59-2d281cf5aca345",
     "group": "invoice",
     "source": "system",
-    "eventName": "BankTransferStart",
+    "type": "BankTransferStart",
     "traceId": "id3",
-    "timestamp": 1576589460831
+    "time": "2019-12-17T13:51:20.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "7edc4160-74e5-4ffc-af59-2d281cf5aca346",
     "group": "invoice",
     "source": "system",
-    "eventName": "BankTransferEnd",
+    "type": "BankTransferEnd",
     "traceId": "id3",
-    "timestamp": 1576589490831
+    "time": "2019-12-17T13:51:50.000Z"
   },
   {
+    "specversion": "1.0",
     "id": "8edc4160-74e5-4ffc-af59-2d281cf5aca347",
     "group": "invoice",
     "source": "system",
-    "eventName": "InvoiceProcessed",
+    "type": "InvoiceProcessed",
     "traceId": "id3",
-    "timestamp": 1576589500831
+    "time": "2019-12-17T13:51:51.000Z"
   }
 ]

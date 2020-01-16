@@ -10,11 +10,12 @@ const eventData = require('../demo-data/eventIngestionBatch.json');
 console.debug('ingesting event data');
 
 // insert event ingestion sample data
-request.put(
+request.post(
   {
     url: 'http://localhost:8090/api/ingestion/event/batch',
     headers: {
-        'X-Optimize-API-Secret': 'secret'
+        'X-Optimize-API-Secret': 'secret',
+        'Content-Type': 'application/cloudevents-batch+json'
     },
     body: eventData,
     json: true

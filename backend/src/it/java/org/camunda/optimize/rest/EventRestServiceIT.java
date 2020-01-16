@@ -14,10 +14,10 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountSuggestionsRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +28,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,24 +48,33 @@ public class EventRestServiceIT extends AbstractIT {
   private static final String FOURTH_TASK_ID = "taskID_4";
   private static final String END_EVENT_ID = "endEventID";
 
-  private EventDto backendKetchupEvent = createEventDtoWithProperties("backend", "ketchup", "signup-event");
-  private EventDto frontendMayoEvent = createEventDtoWithProperties("frontend", "mayonnaise", "registered_event");
-  private EventDto managementBbqEvent = createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
-  private EventDto ketchupMayoEvent = createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
-  private EventDto backendMayoEvent = createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
-  private EventDto nullNullEvent = createEventDtoWithProperties(null, null, "ketchupevent");
+  private CloudEventDto backendKetchupEvent = createEventDtoWithProperties("backend", "ketchup", "signup-event");
+  private CloudEventDto frontendMayoEvent = createEventDtoWithProperties("frontend", "mayonnaise", "registered_event");
+  private CloudEventDto managementBbqEvent = createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
+  private CloudEventDto ketchupMayoEvent = createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
+  private CloudEventDto backendMayoEvent = createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
+  private CloudEventDto nullSubjectEvent = createEventDtoWithProperties(null, "another", "ketchupevent");
 
-  private final List<EventDto> eventTraceOne = createTraceFromEventList(
-    "traceIdOne", Arrays.asList(backendKetchupEvent, frontendMayoEvent, managementBbqEvent,
-                                ketchupMayoEvent, backendMayoEvent, nullNullEvent));
-  private final List<EventDto> eventTraceTwo = createTraceFromEventList(
-    "traceIdTwo", Arrays.asList(backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullNullEvent));
-  private final List<EventDto> eventTraceThree = createTraceFromEventList(
-    "traceIdThree", Arrays.asList(backendKetchupEvent, backendMayoEvent));
-  private final List<EventDto> eventTraceFour = createTraceFromEventList(
-    "traceIdFour", Collections.singletonList(backendKetchupEvent));
+  private final List<CloudEventDto> eventTraceOne = createTraceFromEventList(
+    "traceIdOne",
+    Arrays.asList(
+      backendKetchupEvent, frontendMayoEvent, managementBbqEvent, ketchupMayoEvent, backendMayoEvent, nullSubjectEvent
+    )
+  );
+  private final List<CloudEventDto> eventTraceTwo = createTraceFromEventList(
+    "traceIdTwo",
+    Arrays.asList(
+      backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullSubjectEvent
+    )
+  );
+  private final List<CloudEventDto> eventTraceThree = createTraceFromEventList(
+    "traceIdThree", Arrays.asList(backendKetchupEvent, backendMayoEvent)
+  );
+  private final List<CloudEventDto> eventTraceFour = createTraceFromEventList(
+    "traceIdFour", Collections.singletonList(backendKetchupEvent)
+  );
 
-  private final List<EventDto> allEventDtos =
+  private final List<CloudEventDto> allEventDtos =
     Stream.of(eventTraceOne, eventTraceTwo, eventTraceThree, eventTraceFour)
       .flatMap(Collection::stream)
       .collect(toList());
@@ -93,7 +103,7 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(backendKetchupEvent, 4L, false),
         toEventCountDto(backendMayoEvent, 3L, false),
         toEventCountDto(frontendMayoEvent, 2L, false),
@@ -127,7 +137,7 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(backendKetchupEvent, 4L, false),
         toEventCountDto(backendMayoEvent, 3L, false),
         toEventCountDto(ketchupMayoEvent, 2L, false)
@@ -173,7 +183,7 @@ public class EventRestServiceIT extends AbstractIT {
         toEventCountDto(backendMayoEvent, 3L, false),
         toEventCountDto(backendKetchupEvent, 4L, false),
         toEventCountDto(managementBbqEvent, 1L, false),
-        toEventCountDto(nullNullEvent, 2L, false)
+        toEventCountDto(nullSubjectEvent, 2L, false)
       );
   }
 
@@ -194,7 +204,7 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(backendKetchupEvent, 4L, false),
         toEventCountDto(backendMayoEvent, 3L, false),
         toEventCountDto(frontendMayoEvent, 2L, false),
@@ -237,7 +247,7 @@ public class EventRestServiceIT extends AbstractIT {
       .containsExactly(
         toEventCountDto(backendKetchupEvent, 4L, false),
         toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(ketchupMayoEvent, 2L, false)
       );
   }
@@ -271,14 +281,14 @@ public class EventRestServiceIT extends AbstractIT {
         toEventCountDto(backendMayoEvent, 3L, true),
         toEventCountDto(frontendMayoEvent, 2L, true),
         toEventCountDto(managementBbqEvent, 1L, true),
-        toEventCountDto(nullNullEvent, 2L, false)
+        toEventCountDto(nullSubjectEvent, 2L, false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExistWithNullFields() {
     // given
-    EventTypeDto nextMappedEventWithNullProperties = eventTypeFromEvent(nullNullEvent);
+    EventTypeDto nextMappedEventWithNullProperties = eventTypeFromEvent(nullSubjectEvent);
 
     // Suggestions request for flow node with event mapped before and after
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -333,7 +343,7 @@ public class EventRestServiceIT extends AbstractIT {
       .containsExactly(
         toEventCountDto(frontendMayoEvent, 2L, true),
         toEventCountDto(managementBbqEvent, 1L, true),
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(backendKetchupEvent, 4L, false)
       );
   }
@@ -341,7 +351,7 @@ public class EventRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist_alreadyMappedEventsAreOmitted() {
     // given
-    EventTypeDto nextMappedEvent = eventTypeFromEvent(nullNullEvent);
+    EventTypeDto nextMappedEvent = eventTypeFromEvent(nullSubjectEvent);
     EventTypeDto otherMappedEvent = eventTypeFromEvent(backendMayoEvent);
 
     // Suggestions request for flow node with event mapped after
@@ -355,8 +365,8 @@ public class EventRestServiceIT extends AbstractIT {
       .build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
-      eventCountSuggestionsRequestDto)
+    List<EventCountDto> eventCountDtos =
+      createPostEventCountsQueryWithSuggestionsParameters(eventCountSuggestionsRequestDto)
       .executeAndReturnList(EventCountDto.class, 200);
 
     // then no suggestions returned as matching sequence event has already been mapped
@@ -375,7 +385,7 @@ public class EventRestServiceIT extends AbstractIT {
   public void getEventCounts_withSuggestionsForValidTargetNodeAlreadyMapped_alreadyMappedEventForTargetNotExcluded() {
     // given
     EventTypeDto mappedEvent = eventTypeFromEvent(backendMayoEvent);
-    EventTypeDto otherMappedEvent = eventTypeFromEvent(nullNullEvent);
+    EventTypeDto otherMappedEvent = eventTypeFromEvent(nullSubjectEvent);
 
     // Suggestions request for already mapped flow node and with event mapped after
     EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto = EventCountSuggestionsRequestDto.builder()
@@ -435,7 +445,7 @@ public class EventRestServiceIT extends AbstractIT {
         toEventCountDto(backendMayoEvent, 3L, true),
         toEventCountDto(ketchupMayoEvent, 2L, false),
         toEventCountDto(managementBbqEvent, 1L, false),
-        toEventCountDto(nullNullEvent, 2L, false)
+        toEventCountDto(nullSubjectEvent, 2L, false)
       );
   }
 
@@ -492,7 +502,7 @@ public class EventRestServiceIT extends AbstractIT {
       .hasSize(3)
       .containsExactly(
         toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(ketchupMayoEvent, 2L, false)
       );
   }
@@ -515,7 +525,7 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(backendKetchupEvent, 4L, false),
         toEventCountDto(backendMayoEvent, 3L, false),
         toEventCountDto(frontendMayoEvent, 2L, false),
@@ -546,7 +556,7 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(5)
       .containsExactly(
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(backendMayoEvent, 3L, false),
         toEventCountDto(frontendMayoEvent, 2L, false),
         toEventCountDto(ketchupMayoEvent, 2L, false),
@@ -578,7 +588,7 @@ public class EventRestServiceIT extends AbstractIT {
       .hasSize(4)
       .containsExactly(
         toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(nullNullEvent, 2L, false),
+        toEventCountDto(nullSubjectEvent, 2L, false),
         toEventCountDto(ketchupMayoEvent, 2L, false),
         toEventCountDto(managementBbqEvent, 1L, false)
         );
@@ -650,19 +660,19 @@ public class EventRestServiceIT extends AbstractIT {
     return Stream.of("", "   ", null);
   }
 
-  private EventTypeDto eventTypeFromEvent(EventDto event) {
+  private EventTypeDto eventTypeFromEvent(CloudEventDto event) {
     return EventTypeDto.builder()
-      .group(event.getGroup())
+      .group(event.getGroup().orElse(null))
       .source(event.getSource())
-      .eventName(event.getEventName())
+      .eventName(event.getType())
       .build();
   }
 
-  private EventCountDto toEventCountDto(EventDto event, Long count, boolean suggested) {
+  private EventCountDto toEventCountDto(CloudEventDto event, Long count, boolean suggested) {
     return EventCountDto.builder()
-      .group(event.getGroup())
+      .group(event.getGroup().orElse(null))
       .source(event.getSource())
-      .eventName(event.getEventName())
+      .eventName(event.getType())
       .count(count)
       .suggested(suggested)
       .build();
@@ -675,22 +685,22 @@ public class EventRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private List<EventDto> createTraceFromEventList(String traceId, List<EventDto> events) {
+  private List<CloudEventDto> createTraceFromEventList(String traceId, List<CloudEventDto> events) {
     AtomicInteger incrementCounter= new AtomicInteger(0);
-    long currentTimestamp = System.currentTimeMillis();
+    Instant currentTimestamp = Instant.now();
     return events.stream()
-      .map(event -> createEventDtoWithProperties(event.getGroup(), event.getSource(), event.getEventName()))
+      .map(event -> createEventDtoWithProperties(event.getGroup().orElse(null), event.getSource(), event.getType()))
       .peek(eventDto -> eventDto.setTraceId(traceId))
-      .peek(eventDto -> eventDto.setTimestamp(currentTimestamp + (1000 * incrementCounter.getAndIncrement())))
+      .peek(eventDto -> eventDto.setTime(currentTimestamp.plusSeconds(incrementCounter.getAndIncrement())))
       .collect(toList());
   }
 
-  private EventDto createEventDtoWithProperties(final String group, final String source, final String eventName) {
-    return eventClient.createEventDto()
+  private CloudEventDto createEventDtoWithProperties(final String subject, final String source, final String type) {
+    return eventClient.createCloudEventDto()
       .toBuilder()
-      .group(group)
+      .group(subject)
       .source(source)
-      .eventName(eventName)
+      .type(type)
       .build();
   }
 

@@ -42,6 +42,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +84,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String EVENT_GROUP = "test";
   protected static final String EVENT_SOURCE = "integrationTest";
   protected static final String EVENT_PROCESS_NAME = "myEventProcess";
-  
+
   protected static final String STARTED_EVENT = "startedEvent";
   protected static final String FINISHED_EVENT = "finishedEvent";
   protected static final String START_EVENT_TYPE = "startEvent";
@@ -278,16 +279,18 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   protected String ingestTestEvent(final String eventId, final String eventName, final OffsetDateTime eventTimestamp) {
     embeddedOptimizeExtension.getEventService()
-      .saveEvent(
-        EventDto.builder()
-          .id(eventId)
-          .eventName(eventName)
-          .timestamp(eventTimestamp.toInstant().toEpochMilli())
-          .traceId(MY_TRACE_ID_1)
-          .group(EVENT_GROUP)
-          .source(EVENT_SOURCE)
-          .data(ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE))
-          .build()
+      .saveEventBatch(
+        Collections.singletonList(
+          EventDto.builder()
+            .id(eventId)
+            .eventName(eventName)
+            .timestamp(eventTimestamp.toInstant().toEpochMilli())
+            .traceId(MY_TRACE_ID_1)
+            .group(EVENT_GROUP)
+            .source(EVENT_SOURCE)
+            .data(ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE))
+            .build()
+        )
       );
     return eventId;
   }

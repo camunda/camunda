@@ -21,7 +21,6 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountSuggestionsRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -39,6 +38,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequ
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -60,6 +60,9 @@ import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
+import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
+import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
+import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.OPTIMIZE_API_SECRET_HEADER;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
@@ -74,6 +77,7 @@ public class OptimizeRequestExecutor {
   private String path;
   private String method;
   private Entity body;
+  private String mediaType = MediaType.APPLICATION_JSON;
   private Map<String, Object> queryParams;
   private Map<String, String> cookies = new HashMap<>();
   private Map<String, String> requestHeaders = new HashMap<>();
@@ -1064,18 +1068,11 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildIngestSingleEvent(final EventDto eventDto, final String secret) {
-    this.path = "ingestion/event";
-    this.method = PUT;
+  public OptimizeRequestExecutor buildIngestEventBatch(final List<CloudEventDto> eventDtos, final String secret) {
+    this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
+    this.method = POST;
     addSingleHeader(OPTIMIZE_API_SECRET_HEADER, secret);
-    this.body = getBody(eventDto);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildIngestEventBatch(final List<EventDto> eventDtos, final String secret) {
-    this.path = "ingestion/event/batch";
-    this.method = PUT;
-    addSingleHeader(OPTIMIZE_API_SECRET_HEADER, secret);
+    this.mediaType = CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
     this.body = getBody(eventDtos);
     return this;
   }
@@ -1097,16 +1094,24 @@ public class OptimizeRequestExecutor {
                                                             EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto) {
     this.path = "event/count";
     this.method = POST;
-    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSearchTerm).ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getOrderBy).ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
-    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSortOrder).ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+    Optional.ofNullable(eventCountRequestDto)
+      .map(EventCountRequestDto::getSearchTerm)
+      .ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventCountRequestDto)
+      .map(EventCountRequestDto::getOrderBy)
+      .ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
+    Optional.ofNullable(eventCountRequestDto)
+      .map(EventCountRequestDto::getSortOrder)
+      .ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
     this.body = Optional.ofNullable(eventCountSuggestionsRequestDto).map(this::getBody).orElse(null);
     return this;
   }
 
   private Entity getBody(Object entity) {
     try {
-      return entity == null ? Entity.json("") : Entity.json(objectMapper.writeValueAsString(entity));
+      return entity == null
+        ? Entity.entity("", mediaType)
+        : Entity.entity(objectMapper.writeValueAsString(entity), mediaType);
     } catch (JsonProcessingException e) {
       throw new RuntimeException("Couldn't serialize request" + e.getMessage(), e);
     }

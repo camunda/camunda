@@ -11,9 +11,11 @@ import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -37,11 +39,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   @Test
   public void processSingleBatchOfEventsNewUniqueTraceIds() throws IOException {
     // given
-    EventDto eventDtoTraceOne = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceOne = createCloudEventDtoWithProperties(
       "traceOne", "eventIdOne", "backend", "ketchup", "signup-event", 100L);
-    EventDto eventDtoTraceTwo = createEventDtoWithProperties(
-      "traceTwo", "eventIdTwo", "backend", null, "register-event", 200L);
-    EventDto eventDtoTraceThree = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceTwo = createCloudEventDtoWithProperties(
+      "traceTwo", "eventIdTwo", "backend", "mayonnaise", "register-event", 200L);
+    CloudEventDto eventDtoTraceThree = createCloudEventDtoWithProperties(
       "traceThree", "eventIdThree", null, "mayonnaise", "onboard-event", 300L
     );
     eventClient.ingestEventBatch(Arrays.asList(eventDtoTraceOne, eventDtoTraceTwo, eventDtoTraceThree));
@@ -53,15 +55,15 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(
         eventDtoTraceOne.getTraceId(),
-        Collections.singletonList(TracedEventDto.fromEventDto(eventDtoTraceOne))
+        Collections.singletonList(mapToTracedEventDto(eventDtoTraceOne))
       ),
       new EventTraceStateDto(
         eventDtoTraceTwo.getTraceId(),
-        Collections.singletonList(TracedEventDto.fromEventDto(eventDtoTraceTwo))
+        Collections.singletonList(mapToTracedEventDto(eventDtoTraceTwo))
       ),
       new EventTraceStateDto(
         eventDtoTraceThree.getTraceId(),
-        Collections.singletonList(TracedEventDto.fromEventDto(eventDtoTraceThree))
+        Collections.singletonList(mapToTracedEventDto(eventDtoTraceThree))
       )
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -76,12 +78,15 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   public void processSingleBatchOfEventsIncludingSharedTraceIds() throws IOException {
     // given
     String traceId = "someTraceId";
-    EventDto eventDtoOne = createEventDtoWithProperties(
-      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
-    EventDto eventDtoTwo = createEventDtoWithProperties(
-      traceId, "eventIdTwo", "backend", null, "register-event", 200L);
-    EventDto eventDtoThree = createEventDtoWithProperties(
-      traceId, "eventIdThree", null, "mayonnaise", "onboard-event", 300L);
+    CloudEventDto eventDtoOne = createCloudEventDtoWithProperties(
+      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L
+    );
+    CloudEventDto eventDtoTwo = createCloudEventDtoWithProperties(
+      traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L
+    );
+    CloudEventDto eventDtoThree = createCloudEventDtoWithProperties(
+      traceId, "eventIdThree", null, "mayonnaise", "onboard-event", 300L
+    );
     eventClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
     // when
@@ -91,9 +96,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(eventClient.getAllStoredEventTraceStates())
       .containsExactly(
         new EventTraceStateDto(traceId, Arrays.asList(
-          TracedEventDto.fromEventDto(eventDtoOne),
-          TracedEventDto.fromEventDto(eventDtoTwo),
-          TracedEventDto.fromEventDto(eventDtoThree)
+          mapToTracedEventDto(eventDtoOne),
+          mapToTracedEventDto(eventDtoTwo),
+          mapToTracedEventDto(eventDtoThree)
         ))
       );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -110,26 +115,31 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
     String traceIdThree = "traceIdThree";
-    EventDto eventDtoTraceOneEventOne = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceOneEventOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdOne", "backend", "ketchup", "signup-event", 100L
     );
-    EventDto eventDtoTraceTwoEventOne = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceTwoEventOne = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdTwo", "backend", "ketchup", "signup-event", 200L
     );
-    EventDto eventDtoTraceThreeEventOne = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceThreeEventOne = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdThree", "backend", "ketchup", "signup-event", 300L
     );
-    EventDto eventDtoTraceOneEventTwo = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceOneEventTwo = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdFour", "backend", "ketchup", "register-event", 400L
     );
-    EventDto eventDtoTraceTwoEventTwo = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceTwoEventTwo = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdFive", "backend", "ketchup", "register-event", 500L
     );
-    EventDto eventDtoTraceThreeEventTwo = createEventDtoWithProperties(
+    CloudEventDto eventDtoTraceThreeEventTwo = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdSix", "backend", "ketchup", "onboarded-event", 600L
     );
-    eventClient.ingestEventBatch(Arrays.asList(eventDtoTraceOneEventOne, eventDtoTraceTwoEventOne, eventDtoTraceThreeEventOne,
-                                   eventDtoTraceOneEventTwo, eventDtoTraceTwoEventTwo, eventDtoTraceThreeEventTwo
+    eventClient.ingestEventBatch(Arrays.asList(
+      eventDtoTraceOneEventOne,
+      eventDtoTraceTwoEventOne,
+      eventDtoTraceThreeEventOne,
+      eventDtoTraceOneEventTwo,
+      eventDtoTraceTwoEventTwo,
+      eventDtoTraceThreeEventTwo
     ));
 
     // when
@@ -138,16 +148,16 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts are correct
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceIdOne, Arrays.asList(
-        TracedEventDto.fromEventDto(eventDtoTraceOneEventOne),
-        TracedEventDto.fromEventDto(eventDtoTraceOneEventTwo)
+        mapToTracedEventDto(eventDtoTraceOneEventOne),
+        mapToTracedEventDto(eventDtoTraceOneEventTwo)
       )),
       new EventTraceStateDto(traceIdTwo, Arrays.asList(
-        TracedEventDto.fromEventDto(eventDtoTraceTwoEventOne),
-        TracedEventDto.fromEventDto(eventDtoTraceTwoEventTwo)
+        mapToTracedEventDto(eventDtoTraceTwoEventOne),
+        mapToTracedEventDto(eventDtoTraceTwoEventTwo)
       )),
       new EventTraceStateDto(traceIdThree, Arrays.asList(
-        TracedEventDto.fromEventDto(eventDtoTraceThreeEventOne),
-        TracedEventDto.fromEventDto(eventDtoTraceThreeEventTwo)
+        mapToTracedEventDto(eventDtoTraceThreeEventOne),
+        mapToTracedEventDto(eventDtoTraceThreeEventTwo)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -165,11 +175,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
     String traceIdThree = "traceIdThree";
-    EventDto eventOneTraceOne = createEventDtoWithProperties(
+    CloudEventDto eventOneTraceOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdOne", null, "ketchup", "signup-event", 100L);
-    EventDto eventOneTraceTwo = createEventDtoWithProperties(
+    CloudEventDto eventOneTraceTwo = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdTwo", null, "ketchup", "signup-event", 200L);
-    EventDto eventOneTraceThree = createEventDtoWithProperties(
+    CloudEventDto eventOneTraceThree = createCloudEventDtoWithProperties(
       traceIdThree, "eventIdThree", null, "ketchup", "signup-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventOneTraceOne, eventOneTraceTwo, eventOneTraceThree));
 
@@ -178,9 +188,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
 
     // then trace state and sequence counts are correct after initial batch
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
-      new EventTraceStateDto(traceIdOne, Collections.singletonList(TracedEventDto.fromEventDto(eventOneTraceOne))),
-      new EventTraceStateDto(traceIdTwo, Collections.singletonList(TracedEventDto.fromEventDto(eventOneTraceTwo))),
-      new EventTraceStateDto(traceIdThree, Collections.singletonList(TracedEventDto.fromEventDto(eventOneTraceThree)))
+      new EventTraceStateDto(traceIdOne, Collections.singletonList(mapToTracedEventDto(eventOneTraceOne))),
+      new EventTraceStateDto(traceIdTwo, Collections.singletonList(mapToTracedEventDto(eventOneTraceTwo))),
+      new EventTraceStateDto(traceIdThree, Collections.singletonList(mapToTracedEventDto(eventOneTraceThree)))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventOneTraceOne, null, 3)
@@ -188,11 +198,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds further trace events
-    EventDto eventTwoTraceOne = createEventDtoWithProperties(
+    CloudEventDto eventTwoTraceOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdFour", "backend", "ketchup", "register-event", 400L);
-    EventDto eventTwoTraceTwo = createEventDtoWithProperties(
+    CloudEventDto eventTwoTraceTwo = createCloudEventDtoWithProperties(
       traceIdTwo, "eventIdFive", "backend", "ketchup", "register-event", 500L);
-    EventDto eventThreeTraceOne = createEventDtoWithProperties(
+    CloudEventDto eventThreeTraceOne = createCloudEventDtoWithProperties(
       traceIdOne, "eventIdSix", "backend", "ketchup", "onboard-event", 600L);
     eventClient.ingestEventBatch(Arrays.asList(eventTwoTraceOne, eventTwoTraceTwo, eventThreeTraceOne));
     eventClient.processEventTracesAndStates();
@@ -200,18 +210,18 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts are correct after processing
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceIdOne, Arrays.asList(
-        TracedEventDto.fromEventDto(eventOneTraceOne),
-        TracedEventDto.fromEventDto(eventTwoTraceOne),
-        TracedEventDto.fromEventDto(eventThreeTraceOne)
+        mapToTracedEventDto(eventOneTraceOne),
+        mapToTracedEventDto(eventTwoTraceOne),
+        mapToTracedEventDto(eventThreeTraceOne)
       )),
       new EventTraceStateDto(
         traceIdTwo,
         Arrays.asList(
-          TracedEventDto.fromEventDto(eventOneTraceTwo),
-          TracedEventDto.fromEventDto(eventTwoTraceTwo)
+          mapToTracedEventDto(eventOneTraceTwo),
+          mapToTracedEventDto(eventTwoTraceTwo)
         )
       ),
-      new EventTraceStateDto(traceIdThree, Collections.singletonList(TracedEventDto.fromEventDto(eventOneTraceThree)))
+      new EventTraceStateDto(traceIdThree, Collections.singletonList(mapToTracedEventDto(eventOneTraceThree)))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventOneTraceOne, eventTwoTraceOne, 2),
@@ -228,11 +238,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     throws IOException {
     // given
     String traceId = "traceId";
-    EventDto eventDtoOne = createEventDtoWithProperties(
-      traceId, "eventIdOne", "backend", null, "signup-event", 100L);
-    EventDto eventDtoTwo = createEventDtoWithProperties(
+    CloudEventDto eventDtoOne = createCloudEventDtoWithProperties(
+      traceId, "eventIdOne", "backend", "ketchup", "signup-event", 100L);
+    CloudEventDto eventDtoTwo = createCloudEventDtoWithProperties(
       traceId, "eventIdTwo", null, "ketchup", "register-event", 200L);
-    EventDto eventDtoThree = createEventDtoWithProperties(
+    CloudEventDto eventDtoThree = createCloudEventDtoWithProperties(
       traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventDtoOne, eventDtoTwo, eventDtoThree));
 
@@ -242,9 +252,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts are correct after initial batch
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
-        TracedEventDto.fromEventDto(eventDtoOne),
-        TracedEventDto.fromEventDto(eventDtoTwo),
-        TracedEventDto.fromEventDto(eventDtoThree)
+        mapToTracedEventDto(eventDtoOne),
+        mapToTracedEventDto(eventDtoTwo),
+        mapToTracedEventDto(eventDtoThree)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -255,12 +265,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch includes already ingested event with a new timestamp (a modification)
-    EventDto eventDtoThreeModified = createEventDtoWithProperties(
+    CloudEventDto eventDtoThreeModified = createCloudEventDtoWithProperties(
       traceId,
       eventDtoThree.getId(),
-      eventDtoThree.getGroup(),
+      eventDtoThree.getGroup().orElse(null),
       eventDtoThree.getSource(),
-      eventDtoThree.getEventName(),
+      eventDtoThree.getType(),
       150L
     );
 
@@ -270,9 +280,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts are correct after modification
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
-        TracedEventDto.fromEventDto(eventDtoOne),
-        TracedEventDto.fromEventDto(eventDtoThreeModified),
-        TracedEventDto.fromEventDto(eventDtoTwo)
+        mapToTracedEventDto(eventDtoOne),
+        mapToTracedEventDto(eventDtoThreeModified),
+        mapToTracedEventDto(eventDtoTwo)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -290,12 +300,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   public void processMultipleBatchesOfEventsWithSingleTraceDuplicateEventsAcrossBatches() throws IOException {
     // given
     String traceId = "traceIdOne";
-    EventDto eventOne = createEventDtoWithProperties(
+    CloudEventDto eventOne = createCloudEventDtoWithProperties(
       traceId, "eventIdOne", null, "ketchup", "signup-event", 100L);
-    EventDto eventTwo = createEventDtoWithProperties(
+    CloudEventDto eventTwo = createCloudEventDtoWithProperties(
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
-    EventDto eventThree = createEventDtoWithProperties
-      (traceId, "eventIdThree", "backend", null, "onboarded-event", 300L);
+    CloudEventDto eventThree = createCloudEventDtoWithProperties
+      (traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventOne, eventTwo, eventThree));
 
     // when
@@ -304,9 +314,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts are correct after initial batch
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
-        TracedEventDto.fromEventDto(eventOne),
-        TracedEventDto.fromEventDto(eventTwo),
-        TracedEventDto.fromEventDto(eventThree)
+        mapToTracedEventDto(eventOne),
+        mapToTracedEventDto(eventTwo),
+        mapToTracedEventDto(eventThree)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -317,8 +327,8 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds repeated event trace already processes
-    EventDto eventTwoRepeated = createEventDtoWithProperties(
-      traceId, eventTwo.getId(), eventTwo.getGroup(), eventTwo.getSource(), eventTwo.getEventName(), 200L);
+    CloudEventDto eventTwoRepeated = createCloudEventDtoWithProperties(
+      traceId, eventTwo.getId(), eventTwo.getGroup().orElse(null), eventTwo.getSource(), eventTwo.getType(), 200L);
 
     eventClient.ingestEventBatch(Collections.singletonList(eventTwoRepeated));
     eventClient.processEventTracesAndStates();
@@ -326,9 +336,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts remain correct after processing
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
-        TracedEventDto.fromEventDto(eventOne),
-        TracedEventDto.fromEventDto(eventTwo),
-        TracedEventDto.fromEventDto(eventThree)
+        mapToTracedEventDto(eventOne),
+        mapToTracedEventDto(eventTwo),
+        mapToTracedEventDto(eventThree)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -340,15 +350,16 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   }
 
   @Test
-  public void processMultipleBatchesOfEventsWithSingleTraceAndMultipleOccurringEventsWithDifferentIds() throws IOException {
+  public void processMultipleBatchesOfEventsWithSingleTraceAndMultipleOccurringEventsWithDifferentIds()
+    throws IOException {
     // given
     String traceId = "traceIdOne";
-    EventDto eventTaskA = createEventDtoWithProperties(
+    CloudEventDto eventTaskA = createCloudEventDtoWithProperties(
       traceId, "eventIdOne", null, "ketchup", "signup-event", 100L);
-    EventDto eventTaskB = createEventDtoWithProperties(
+    CloudEventDto eventTaskB = createCloudEventDtoWithProperties(
       traceId, "eventIdTwo", "backend", "ketchup", "register-event", 200L);
-    EventDto eventTaskC = createEventDtoWithProperties(
-      traceId, "eventIdThree", "backend", null, "onboarded-event", 300L);
+    CloudEventDto eventTaskC = createCloudEventDtoWithProperties(
+      traceId, "eventIdThree", "backend", "ketchup", "onboarded-event", 300L);
     eventClient.ingestEventBatch(Arrays.asList(eventTaskA, eventTaskB, eventTaskC));
 
     // when
@@ -357,9 +368,9 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts are correct after initial batch
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
-        TracedEventDto.fromEventDto(eventTaskA),
-        TracedEventDto.fromEventDto(eventTaskB),
-        TracedEventDto.fromEventDto(eventTaskC)
+        mapToTracedEventDto(eventTaskA),
+        mapToTracedEventDto(eventTaskB),
+        mapToTracedEventDto(eventTaskC)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -371,10 +382,10 @@ public class EventStateProcessingServiceIT extends AbstractIT {
 
     // when second batch adds the second occurrence of an event with a new event ID, reflecting a loop in the
     // BPMN model
-    EventDto eventTaskD = createEventDtoWithProperties(
+    CloudEventDto eventTaskD = createCloudEventDtoWithProperties(
       traceId, "eventIdFour", "backend", "ketchup", "complained-event", 400L);
-    EventDto eventTaskBSecondOccurrence = createEventDtoWithProperties(
-      traceId, "eventIdFive", eventTaskB.getGroup(), eventTaskB.getSource(), eventTaskB.getEventName(), 500L
+    CloudEventDto eventTaskBSecondOccurrence = createCloudEventDtoWithProperties(
+      traceId, "eventIdFive", eventTaskB.getGroup().orElse(null), eventTaskB.getSource(), eventTaskB.getType(), 500L
     );
 
     eventClient.ingestEventBatch(Arrays.asList(eventTaskD, eventTaskBSecondOccurrence));
@@ -383,11 +394,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts remain correct after processing and loop is correctly traced
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
-        TracedEventDto.fromEventDto(eventTaskA),
-        TracedEventDto.fromEventDto(eventTaskB),
-        TracedEventDto.fromEventDto(eventTaskC),
-        TracedEventDto.fromEventDto(eventTaskD),
-        TracedEventDto.fromEventDto(eventTaskBSecondOccurrence)
+        mapToTracedEventDto(eventTaskA),
+        mapToTracedEventDto(eventTaskB),
+        mapToTracedEventDto(eventTaskC),
+        mapToTracedEventDto(eventTaskD),
+        mapToTracedEventDto(eventTaskBSecondOccurrence)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -402,30 +413,35 @@ public class EventStateProcessingServiceIT extends AbstractIT {
 
     // when third batch adds further occurrences of events with new IDs, reflecting further loops and events beyond
     // the loop in the BPMN model
-    EventDto eventTaskCSecondOccurrence = createEventDtoWithProperties(
-      traceId, "eventIdSix", eventTaskC.getGroup(), eventTaskC.getSource(), eventTaskC.getEventName(), 600L);
-    EventDto eventTaskDSecondOccurrence = createEventDtoWithProperties(
-      traceId, "eventIdSeven", eventTaskD.getGroup(), eventTaskD.getSource(), eventTaskD.getEventName(), 700L);
-    EventDto eventTaskBThirdOccurrence = createEventDtoWithProperties(
-      traceId, "eventIdEight", eventTaskB.getGroup(), eventTaskB.getSource(), eventTaskB.getEventName(), 800L);
-    EventDto eventTaskE = createEventDtoWithProperties
+    CloudEventDto eventTaskCSecondOccurrence = createCloudEventDtoWithProperties(
+      traceId, "eventIdSix", eventTaskC.getGroup().orElse(null), eventTaskC.getSource(), eventTaskC.getType(), 600L);
+    CloudEventDto eventTaskDSecondOccurrence = createCloudEventDtoWithProperties(
+      traceId, "eventIdSeven", eventTaskD.getGroup().orElse(null), eventTaskD.getSource(), eventTaskD.getType(), 700L);
+    CloudEventDto eventTaskBThirdOccurrence = createCloudEventDtoWithProperties(
+      traceId, "eventIdEight", eventTaskB.getGroup().orElse(null), eventTaskB.getSource(), eventTaskB.getType(), 800L);
+    CloudEventDto eventTaskE = createCloudEventDtoWithProperties
       (traceId, "eventIdNine", "backend", "ketchup", "helped-event", 900L);
 
-    eventClient.ingestEventBatch(Arrays.asList(eventTaskCSecondOccurrence, eventTaskDSecondOccurrence, eventTaskBThirdOccurrence, eventTaskE));
+    eventClient.ingestEventBatch(Arrays.asList(
+      eventTaskCSecondOccurrence,
+      eventTaskDSecondOccurrence,
+      eventTaskBThirdOccurrence,
+      eventTaskE
+    ));
     eventClient.processEventTracesAndStates();
 
     // then trace state and sequence counts remain correct after processing and loop is correct traced
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
-        TracedEventDto.fromEventDto(eventTaskA),
-        TracedEventDto.fromEventDto(eventTaskB),
-        TracedEventDto.fromEventDto(eventTaskC),
-        TracedEventDto.fromEventDto(eventTaskD),
-        TracedEventDto.fromEventDto(eventTaskBSecondOccurrence),
-        TracedEventDto.fromEventDto(eventTaskCSecondOccurrence),
-        TracedEventDto.fromEventDto(eventTaskDSecondOccurrence),
-        TracedEventDto.fromEventDto(eventTaskBThirdOccurrence),
-        TracedEventDto.fromEventDto(eventTaskE)
+        mapToTracedEventDto(eventTaskA),
+        mapToTracedEventDto(eventTaskB),
+        mapToTracedEventDto(eventTaskC),
+        mapToTracedEventDto(eventTaskD),
+        mapToTracedEventDto(eventTaskBSecondOccurrence),
+        mapToTracedEventDto(eventTaskCSecondOccurrence),
+        mapToTracedEventDto(eventTaskDSecondOccurrence),
+        mapToTracedEventDto(eventTaskBThirdOccurrence),
+        mapToTracedEventDto(eventTaskE)
       ))
     );
     assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -441,6 +457,10 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
+  private TracedEventDto mapToTracedEventDto(final CloudEventDto cloudEventDto) {
+    return TracedEventDto.fromEventDto(mapToEventDto(cloudEventDto));
+  }
+
   private Long getLastProcessedEntityTimestampFromElasticsearch() throws IOException {
     return elasticSearchIntegrationTestExtension.getLastProcessedEventTimestamp().toInstant().toEpochMilli();
   }
@@ -451,25 +471,42 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       .mapToLong(e -> e).max().getAsLong();
   }
 
-  private EventDto createEventDtoWithProperties(String traceId, String eventId, String group,
-                                                String source, String eventName, Long timestamp) {
-    return eventClient.createEventDto()
+  private CloudEventDto createCloudEventDtoWithProperties(String traceId, String eventId, String group,
+                                                          String source, String eventName, Long timestamp) {
+    return eventClient.createCloudEventDto()
       .toBuilder()
       .id(eventId)
       .traceId(traceId)
       .group(group)
       .source(source)
-      .eventName(eventName)
-      .timestamp(timestamp)
+      .type(eventName)
+      .time(Instant.ofEpochMilli(timestamp))
       .build();
   }
 
-  private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(EventDto sourceEventDto, EventDto targetEventDto, long count) {
+  private EventDto mapToEventDto(final CloudEventDto cloudEventDto) {
+    return EventDto.builder()
+      .id(cloudEventDto.getId())
+      .eventName(cloudEventDto.getType())
+      .timestamp(
+        cloudEventDto.getTime()
+          .map(Instant::toEpochMilli)
+          .orElse(Instant.now().toEpochMilli())
+      )
+      .traceId(cloudEventDto.getTraceId())
+      .group(cloudEventDto.getGroup().orElse(null))
+      .source(cloudEventDto.getSource())
+      .data(cloudEventDto.getData())
+      .build();
+  }
+
+  private EventSequenceCountDto createSequenceFromSourceAndTargetEvents(CloudEventDto sourceEventDto,
+                                                                        CloudEventDto targetEventDto, long count) {
     EventTypeDto sourceEvent = Optional.ofNullable(sourceEventDto)
-      .map(source -> new EventTypeDto(source.getGroup(), source.getSource(), source.getEventName()))
+      .map(source -> new EventTypeDto(source.getGroup().orElse(null), source.getSource(), source.getType()))
       .orElse(null);
     EventTypeDto targetEvent = Optional.ofNullable(targetEventDto)
-      .map(target -> new EventTypeDto(target.getGroup(), target.getSource(), target.getEventName()))
+      .map(target -> new EventTypeDto(target.getGroup().orElse(null), target.getSource(), target.getType()))
       .orElse(null);
     EventSequenceCountDto eventSequenceCountDto = EventSequenceCountDto.builder()
       .sourceEvent(sourceEvent)

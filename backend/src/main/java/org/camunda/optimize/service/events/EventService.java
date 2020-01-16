@@ -55,10 +55,6 @@ public class EventService {
       .thenComparing(EventCountDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER))
       .thenComparing(EventCountDto::getEventName, nullsFirst(String.CASE_INSENSITIVE_ORDER)));
 
-  public void saveEvent(final EventDto eventDto) {
-    eventWriter.upsertEvent(eventDto);
-  }
-
   public void saveEventBatch(final List<EventDto> eventDtos) {
     eventWriter.upsertEvents(eventDtos);
   }

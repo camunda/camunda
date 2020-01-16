@@ -14,26 +14,31 @@ import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.RequestTargetHost;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
+import org.camunda.optimize.jetty.MaxRequestSizeFilter;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
-import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.eventName;
-import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.id;
-import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.timestamp;
-import static org.camunda.optimize.dto.optimize.query.event.EventDto.Fields.traceId;
-import static org.camunda.optimize.jetty.MaxRequestSizeFilter.MESSAGE_NO_CONTENT_LENGTH;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.id;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.source;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.specversion;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.traceId;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.type;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.OPTIMIZE_API_SECRET_HEADER;
@@ -41,144 +46,16 @@ import static org.camunda.optimize.rest.providers.BeanConstraintViolationExcepti
 
 public class EventIngestionRestIT extends AbstractIT {
 
-  @Test
-  public void ingestSingleEvent() {
-    // given
-    final EventDto eventDto = eventClient.createEventDto();
-
-    // when
-    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestSingleEvent(eventDto, getApiSecret())
-      .execute();
-
-    // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
-
-    assertEventDtosArePersisted(Collections.singletonList(eventDto));
-  }
-
-  @Test
-  public void ingestSingleEventWithNoGroupOrSource() {
-    // given
-    final EventDto eventDto = eventClient.createEventDto();
-    eventDto.setGroup(null);
-    eventDto.setSource(null);
-
-    // when
-    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestSingleEvent(eventDto, getApiSecret())
-      .execute();
-
-    // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
-
-    assertEventDtosArePersisted(Collections.singletonList(eventDto));
-  }
-
-  @Test
-  public void ingestSingleEvent_rejectMandatoryPropertiesNull() {
-    // given
-    final EventDto eventDto = eventClient.createEventDto();
-    eventDto.setId(null);
-    eventDto.setEventName(null);
-    eventDto.setTimestamp(null);
-    eventDto.setTraceId(null);
-
-    // when
-    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestSingleEvent(eventDto, getApiSecret())
-      .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
-
-    // then
-    assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
-    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(4);
-    assertThat(
-      ingestErrorResponse.getValidationErrors()
-        .stream()
-        .map(ValidationErrorResponseDto.ValidationError::getProperty)
-        .collect(toList()))
-      .contains(id, eventName, timestamp, traceId);
-    assertThat(
-      ingestErrorResponse.getValidationErrors()
-        .stream()
-        .map(ValidationErrorResponseDto.ValidationError::getErrorMessage)
-        .collect(toList())).doesNotContainNull();
-
-    assertEventDtosArePersisted(Collections.emptyList());
-  }
-
-  @Test
-  public void ingestSingleEvent_rejectInvalidPropertyValues() {
-    // given
-    final EventDto eventDto = eventClient.createEventDto();
-    eventDto.setId("  ");
-    eventDto.setEventName("");
-    eventDto.setTimestamp(-500L);
-    eventDto.setTraceId("");
-
-    // when
-    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestSingleEvent(eventDto, getApiSecret())
-      .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
-
-    // then
-    assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
-    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(4);
-    assertThat(
-      ingestErrorResponse.getValidationErrors()
-        .stream()
-        .map(ValidationErrorResponseDto.ValidationError::getProperty)
-        .collect(toList()))
-      .contains(id, eventName, timestamp, traceId);
-    assertThat(
-      ingestErrorResponse.getValidationErrors()
-        .stream()
-        .map(ValidationErrorResponseDto.ValidationError::getErrorMessage)
-        .collect(toList())).doesNotContainNull();
-
-    assertEventDtosArePersisted(Collections.emptyList());
-  }
-
-  @Test
-  public void ingestSingleEvent_notAuthorized() {
-    // given
-    final EventDto eventDto = eventClient.createEventDto();
-
-    // when
-    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestSingleEvent(eventDto, null)
-      .execute();
-
-    // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
-
-    assertEventDtosArePersisted(Collections.emptyList());
-  }
-
-  @Test
-  public void ingestSingleEvent_customSecret() {
-    // given
-    final EventDto eventDto = eventClient.createEventDto();
-
-    final String customSecret = "mySecret";
-    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setApiSecret(customSecret);
-
-    // when
-    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestSingleEvent(eventDto, customSecret)
-      .execute();
-
-    // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
-
-    assertEventDtosArePersisted(Collections.singletonList(eventDto));
+  @BeforeEach
+  public void before() {
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now());
   }
 
   @Test
   public void ingestEventBatch() {
     // given
-    final List<EventDto> eventDtos = IntStream.range(0, 10)
-      .mapToObj(operand -> eventClient.createEventDto())
+    final List<CloudEventDto> eventDtos = IntStream.range(0, 10)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
     // when
@@ -193,10 +70,29 @@ public class EventIngestionRestIT extends AbstractIT {
   }
 
   @Test
+  public void ingestEventBatch_customSecret() {
+    // given
+    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+
+    final String customSecret = "mySecret";
+    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setApiSecret(customSecret);
+
+    // when
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatch(Collections.singletonList(eventDto), customSecret)
+      .execute();
+
+    // then
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+
+    assertEventDtosArePersisted(Collections.singletonList(eventDto));
+  }
+
+  @Test
   public void ingestEventBatch_notAuthorized() {
     // given
-    final List<EventDto> eventDtos = IntStream.range(0, 2)
-      .mapToObj(operand -> eventClient.createEventDto())
+    final List<CloudEventDto> eventDtos = IntStream.range(0, 2)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
     // when
@@ -215,14 +111,14 @@ public class EventIngestionRestIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setMaxBatchRequestBytes(1L);
 
-    final List<EventDto> eventDtos = IntStream.range(0, 2)
-      .mapToObj(operand -> eventClient.createEventDto())
+    final List<CloudEventDto> eventDtos = IntStream.range(0, 2)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
     // when
     final ErrorResponseDto ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getApiSecret())
-      .execute(ErrorResponseDto.class, SC_REQUEST_ENTITY_TOO_LARGE);
+      .execute(ErrorResponseDto.class, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
 
     // then
     assertThat(ingestResponse.getErrorMessage()).contains("Request too large");
@@ -247,27 +143,116 @@ public class EventIngestionRestIT extends AbstractIT {
       final ErrorResponseDto errorResponseDto = embeddedOptimizeExtension.getObjectMapper()
         .readValue(response.getEntity().getContent(), ErrorResponseDto.class);
 
-      assertThat(errorResponseDto.getErrorMessage()).isEqualTo(MESSAGE_NO_CONTENT_LENGTH);
+      assertThat(errorResponseDto.getErrorMessage()).isEqualTo(MaxRequestSizeFilter.MESSAGE_NO_CONTENT_LENGTH);
 
       assertEventDtosArePersisted(Collections.emptyList());
     }
   }
 
   @Test
+  public void ingestEventBatch_omitOptionalProperties() {
+    // given
+    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    eventDto.setGroup(null);
+    eventDto.setData(null);
+    // time will get dynamically assigned of not present
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now());
+    eventDto.setTime(null);
+
+    // when
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatch(Collections.singletonList(eventDto), getApiSecret())
+      .execute();
+
+    // then
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+
+    assertEventDtosArePersisted(Collections.singletonList(eventDto));
+  }
+
+  @Test
+  public void ingestEventBatch_rejectMandatoryPropertiesNull() {
+    // given
+    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    eventDto.setSpecversion(null);
+    eventDto.setId(null);
+    eventDto.setType(null);
+    eventDto.setSource(null);
+    eventDto.setTraceId(null);
+
+    // when
+    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatch(Collections.singletonList(eventDto), getApiSecret())
+      .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+
+    // then
+    assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
+    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(5);
+    assertThat(
+      ingestErrorResponse.getValidationErrors()
+        .stream()
+        .map(ValidationErrorResponseDto.ValidationError::getProperty)
+        .map(property -> property.split("\\.")[1])
+        .collect(toList()))
+      .contains(specversion, id, type, source, traceId);
+    assertThat(
+      ingestErrorResponse.getValidationErrors()
+        .stream()
+        .map(ValidationErrorResponseDto.ValidationError::getErrorMessage)
+        .collect(toList())).doesNotContainNull();
+
+    assertEventDtosArePersisted(Collections.emptyList());
+  }
+
+  @Test
   public void ingestEventBatch_rejectInvalidPropertyValues() {
     // given
-    final List<EventDto> eventDtos = IntStream.range(0, 2)
-      .mapToObj(operand -> eventClient.createEventDto())
+    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+    eventDto.setId("  ");
+    eventDto.setSpecversion("0");
+    eventDto.setType("");
+    eventDto.setSource("");
+    eventDto.setTraceId("");
+
+    // when
+    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatch(Collections.singletonList(eventDto), getApiSecret())
+      .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+
+    // then
+    assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
+    assertThat(ingestErrorResponse.getValidationErrors().size()).isEqualTo(5);
+    assertThat(
+      ingestErrorResponse.getValidationErrors()
+        .stream()
+        .map(ValidationErrorResponseDto.ValidationError::getProperty)
+        .map(property -> property.split("\\.")[1])
+        .collect(toList()))
+      .contains(id, specversion, type, source, traceId);
+    assertThat(
+      ingestErrorResponse.getValidationErrors()
+        .stream()
+        .map(ValidationErrorResponseDto.ValidationError::getErrorMessage)
+        .collect(toList())).doesNotContainNull();
+
+    assertEventDtosArePersisted(Collections.emptyList());
+  }
+
+  @Test
+  public void ingestEventBatch_rejectInvalidPropertyValueOfSpecificEntry() {
+    // given
+    final List<CloudEventDto> eventDtos = IntStream.range(0, 2)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
-    final EventDto invalidEventDto1 = eventClient.createEventDto();
+    final CloudEventDto invalidEventDto1 = eventClient.createCloudEventDto();
     invalidEventDto1.setId(null);
     eventDtos.add(invalidEventDto1);
 
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getApiSecret())
-      .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
+      .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
@@ -287,11 +272,27 @@ public class EventIngestionRestIT extends AbstractIT {
     assertEventDtosArePersisted(Collections.emptyList());
   }
 
-  private void assertEventDtosArePersisted(final List<EventDto> eventDtos) {
+  private void assertEventDtosArePersisted(final List<CloudEventDto> cloudEventDtos) {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    List<EventDto> indexedEventDtos = eventClient.getAllStoredEvents();
-    assertThat(indexedEventDtos).usingElementComparatorIgnoringFields(EventDto.Fields.ingestionTimestamp)
-      .containsExactlyInAnyOrderElementsOf(eventDtos);
+    final List<EventDto> expectedEventDtos = cloudEventDtos.stream()
+      .map(cloudEventDto -> EventDto.builder()
+        .id(cloudEventDto.getId())
+        .eventName(cloudEventDto.getType())
+        .timestamp(
+          cloudEventDto.getTime()
+            .orElse(LocalDateUtil.getCurrentDateTime().toInstant())
+            .toEpochMilli()
+        )
+        .traceId(cloudEventDto.getTraceId())
+        .group(cloudEventDto.getGroup().orElse(null))
+        .source(cloudEventDto.getSource())
+        .data(cloudEventDto.getData().orElse(null))
+        .ingestionTimestamp(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli())
+        .build()
+      )
+      .collect(Collectors.toList());
+    final List<EventDto> indexedEventDtos = eventClient.getAllStoredEvents();
+    assertThat(indexedEventDtos).containsExactlyInAnyOrderElementsOf(expectedEventDtos);
   }
 
   private String getApiSecret() {

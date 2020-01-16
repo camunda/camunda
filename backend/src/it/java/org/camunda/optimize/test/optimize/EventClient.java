@@ -11,11 +11,13 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.elasticsearch.action.search.SearchResponse;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 
@@ -32,7 +34,7 @@ public class EventClient {
   private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
   private final ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension;
 
-  public void ingestEventBatch(final List<EventDto> eventDtos) {
+  public void ingestEventBatch(final List<CloudEventDto> eventDtos) {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(
         eventDtos,
@@ -64,21 +66,23 @@ public class EventClient {
     return mapHits(response.getHits(), dtoClass, embeddedOptimizeExtension.getObjectMapper());
   }
 
-  public EventDto createEventDto() {
-    return EventDto.builder()
+  public CloudEventDto createCloudEventDto() {
+    return CloudEventDto.builder()
       .id(IdGenerator.getNextId())
-      .traceId(RandomStringUtils.randomAlphabetic(10))
-      .timestamp(System.currentTimeMillis())
-      .group(RandomStringUtils.randomAlphabetic(10))
       .source(RandomStringUtils.randomAlphabetic(10))
-      .eventName(RandomStringUtils.randomAlphabetic(10))
+      .specversion("1.0")
+      .type(RandomStringUtils.randomAlphabetic(10))
+      .time(Instant.now())
+      .group(RandomStringUtils.randomAlphabetic(10))
       .data(
         ImmutableMap.of(
           RandomStringUtils.randomAlphabetic(5), RANDOM.nextInt(),
           RandomStringUtils.randomAlphabetic(5), RANDOM.nextBoolean(),
           RandomStringUtils.randomAlphabetic(5), RandomStringUtils.randomAlphabetic(5)
         )
-      ).build();
-  }
 
+      )
+      .traceId(RandomStringUtils.randomAlphabetic(10))
+      .build();
+  }
 }

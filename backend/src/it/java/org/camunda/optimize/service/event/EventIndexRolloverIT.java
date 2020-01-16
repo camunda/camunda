@@ -7,7 +7,7 @@ package org.camunda.optimize.service.event;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.util.configuration.EventIndexRolloverConfiguration;
@@ -150,8 +150,8 @@ public class EventIndexRolloverIT extends AbstractIT {
   }
 
   private void addEvents() {
-    final List<EventDto> eventDtos = IntStream.range(0, EXPECTED_NUMBER_OF_EVENTS)
-      .mapToObj(operand -> eventClient.createEventDto())
+    final List<CloudEventDto> eventDtos = IntStream.range(0, EXPECTED_NUMBER_OF_EVENTS)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
       .collect(toList());
 
     embeddedOptimizeExtension.getRequestExecutor()
