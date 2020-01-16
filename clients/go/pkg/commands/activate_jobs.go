@@ -83,7 +83,7 @@ func (cmd *ActivateJobsCommand) Send(ctx context.Context) ([]entities.Job, error
 
 	stream, err := cmd.gateway.ActivateJobs(ctx, &cmd.request)
 	if err != nil {
-		if cmd.retryPred(ctx, err) {
+		if cmd.shouldRetry(ctx, err) {
 			return cmd.Send(ctx)
 		}
 		return nil, err
@@ -114,8 +114,8 @@ func NewActivateJobsCommand(gateway pb.GatewayClient, pred retryPredicate) Activ
 			Worker:  DefaultJobWorkerName,
 		},
 		Command: Command{
-			gateway:   gateway,
-			retryPred: pred,
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

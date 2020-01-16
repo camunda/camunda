@@ -118,7 +118,7 @@ func (cmd *PublishMessageCommand) MessageName(name string) PublishMessageCommand
 
 func (cmd *PublishMessageCommand) Send(ctx context.Context) (*pb.PublishMessageResponse, error) {
 	response, err := cmd.gateway.PublishMessage(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 	return response, err
@@ -127,9 +127,9 @@ func (cmd *PublishMessageCommand) Send(ctx context.Context) (*pb.PublishMessageR
 func NewPublishMessageCommand(gateway pb.GatewayClient, pred retryPredicate) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
 		Command: Command{
-			mixin:     utils.NewJsonStringSerializer(),
-			gateway:   gateway,
-			retryPred: pred,
+			mixin:       utils.NewJsonStringSerializer(),
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

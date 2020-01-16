@@ -44,7 +44,7 @@ func (cmd *ResolveIncidentCommand) IncidentKey(incidentKey int64) ResolveInciden
 
 func (cmd *ResolveIncidentCommand) Send(ctx context.Context) (*pb.ResolveIncidentResponse, error) {
 	response, err := cmd.gateway.ResolveIncident(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -54,8 +54,8 @@ func (cmd *ResolveIncidentCommand) Send(ctx context.Context) (*pb.ResolveInciden
 func NewResolveIncidentCommand(gateway pb.GatewayClient, pred retryPredicate) ResolveIncidentCommandStep1 {
 	return &ResolveIncidentCommand{
 		Command: Command{
-			gateway:   gateway,
-			retryPred: pred,
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

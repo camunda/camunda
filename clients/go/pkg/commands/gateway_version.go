@@ -32,7 +32,7 @@ func (c *gatewayVersionCmd) Send(ctx context.Context) (string, error) {
 	resp, err := c.gateway.GatewayVersion(ctx, c.req)
 
 	if err != nil {
-		if c.retryPred(ctx, err) {
+		if c.shouldRetry(ctx, err) {
 			return c.Send(ctx)
 		}
 
@@ -45,8 +45,8 @@ func (c *gatewayVersionCmd) Send(ctx context.Context) (string, error) {
 func NewGatewayVersionCommand(client pb.GatewayClient, retryPred retryPredicate) GatewayVersionCommand {
 	return &gatewayVersionCmd{
 		Command: Command{
-			gateway:   client,
-			retryPred: retryPred,
+			gateway:     client,
+			shouldRetry: retryPred,
 		},
 		req: &pb.GatewayVersionRequest{},
 	}

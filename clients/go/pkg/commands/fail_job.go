@@ -59,7 +59,7 @@ func (cmd *FailJobCommand) ErrorMessage(errorMessage string) FailJobCommandStep3
 
 func (cmd *FailJobCommand) Send(ctx context.Context) (*pb.FailJobResponse, error) {
 	response, err := cmd.gateway.FailJob(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -69,7 +69,7 @@ func (cmd *FailJobCommand) Send(ctx context.Context) (*pb.FailJobResponse, error
 func NewFailJobCommand(gateway pb.GatewayClient, pred retryPredicate) FailJobCommandStep1 {
 	return &FailJobCommand{
 		Command: Command{gateway: gateway,
-			retryPred: pred,
+			shouldRetry: pred,
 		},
 	}
 }
