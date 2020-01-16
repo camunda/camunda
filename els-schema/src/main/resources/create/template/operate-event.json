@@ -66,9 +66,6 @@
 			"activityId": {
 				"type": "keyword"
 			},
-			"payload": {
-				"type": "text"
-			},
 			"flowNodeInstanceKey": {
 				"type": "long"
 			},
@@ -90,7 +87,6 @@
 		}
 	},
 	"aliases": {
-		"operate-event-${schema.version}_alias": {
-		}
+		"operate-event-${schema.version}_alias": {}
 	}
 }
