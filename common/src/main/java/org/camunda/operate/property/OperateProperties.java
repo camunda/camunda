@@ -18,7 +18,7 @@ public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 10000L;
-  private static final String DEFAULT_VERSION = "1.2.0-SNAPSHOT";
+  private static final String DEFAULT_VERSION = "1.3.0-SNAPSHOT";
 
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
