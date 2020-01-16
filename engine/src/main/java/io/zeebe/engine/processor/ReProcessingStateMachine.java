@@ -109,6 +109,7 @@ public final class ReProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
+  private final TypedStreamWriter logStreamWriterOnlyToReset;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
     this.actor = context.getActor();
@@ -120,6 +121,7 @@ public final class ReProcessingStateMachine {
     this.zeebeState = context.getZeebeState();
     this.abortCondition = context.getAbortCondition();
     this.typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
+    this.logStreamWriterOnlyToReset = context.getLogStreamWriter();
 
     this.updateStateRetryStrategy = new EndlessRetryStrategy(actor);
     this.processRetryStrategy = new EndlessRetryStrategy(actor);
@@ -307,6 +309,9 @@ public final class ReProcessingStateMachine {
   }
 
   private void onRecordReprocessed(final LoggedEvent currentEvent) {
+    // we should always reset the writer, since internally we append to the batch writer records
+    logStreamWriterOnlyToReset.reset();
+
     if (currentEvent.getPosition() == lastSourceEventPosition) {
       LOG.info(LOG_STMT_REPROCESSING_FINISHED, currentEvent.getPosition());
       onRecovered();
