@@ -64,7 +64,7 @@ func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageComm
 }
 
 func (cmd *PublishMessageCommand) VariablesFromObject(variables interface{}) (PublishMessageCommandStep3, error) {
-	value, err := cmd.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (cmd *PublishMessageCommand) VariablesFromObject(variables interface{}) (Pu
 }
 
 func (cmd *PublishMessageCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (PublishMessageCommandStep3, error) {
-	value, err := cmd.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (cmd *PublishMessageCommand) VariablesFromMap(variables map[string]interfac
 }
 
 func (cmd *PublishMessageCommand) VariablesFromString(variables string) (PublishMessageCommandStep3, error) {
-	err := cmd.Validate("variables", variables)
+	err := cmd.mixin.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
@@ -127,9 +127,9 @@ func (cmd *PublishMessageCommand) Send(ctx context.Context) (*pb.PublishMessageR
 func NewPublishMessageCommand(gateway pb.GatewayClient, pred retryPredicate) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
 		Command: Command{
-			SerializerMixin: utils.NewJsonStringSerializer(),
-			gateway:         gateway,
-			retryPred:       pred,
+			mixin:     utils.NewJsonStringSerializer(),
+			gateway:   gateway,
+			retryPred: pred,
 		},
 	}
 }

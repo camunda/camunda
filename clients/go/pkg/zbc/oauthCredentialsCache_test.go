@@ -122,7 +122,7 @@ func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironm
 }
 
 func copyCredentialsCacheGoldenFileToTempFile() string {
-	cache, err := ioutil.ReadFile("../../test/testdata/credentialsCache.yml")
+	cache, err := ioutil.ReadFile("testdata/credentialsCache.yml")
 	if err != nil {
 		panic(err)
 	}

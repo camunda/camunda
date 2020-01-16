@@ -52,7 +52,7 @@ func (s *clientTestSuite) TestClientWithTls() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../../test/testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/ca.cert.pem",
 	})
 
 	s.NoError(err)
@@ -81,7 +81,7 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	// when
 	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../../test/testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/ca.cert.pem",
 	}
 	env.set(InsecureEnvVar, "true")
 
@@ -106,15 +106,15 @@ func (s *clientTestSuite) TestCaCertificateEnvVar() {
 	// when
 	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../../test/testdata/wrong.cert",
+		CaCertificatePath: "testdata/wrong.cert",
 	}
-	env.set(CaCertificatePath, "../../test/testdata/ca.cert.pem")
+	env.set(CaCertificatePath, "testdata/ca.cert.pem")
 
 	_, err := NewClient(config)
 
 	// then
 	s.NoError(err)
-	s.EqualValues("../../test/testdata/ca.cert.pem", config.CaCertificatePath)
+	s.EqualValues("testdata/ca.cert.pem", config.CaCertificatePath)
 }
 
 func (s *clientTestSuite) TestClientWithoutTls() {
@@ -131,7 +131,7 @@ func (s *clientTestSuite) TestClientWithoutTls() {
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
-		CaCertificatePath:      "../../test/testdata/ca.cert.pem",
+		CaCertificatePath:      "testdata/ca.cert.pem",
 	})
 
 	s.NoError(err)
@@ -341,7 +341,7 @@ func (s *clientTestSuite) TestCommandExpireWithContext() {
 }
 
 func createSecureServer() (net.Listener, *grpc.Server) {
-	creds, _ := credentials.NewServerTLSFromFile("../../test/testdata/chain.cert.pem", "../../test/testdata/private.key.pem")
+	creds, _ := credentials.NewServerTLSFromFile("testdata/chain.cert.pem", "testdata/private.key.pem")
 	return createServer(grpc.Creds(creds))
 }
 
