@@ -1,3 +1,16 @@
+<a name="0.22.1"></a>
+## 0.22.1 (2020-01-16)
+
+
+#### Bug Fixes
+
+* **logstreams:**
+  *  fix LogAppender partitionId ([1a0ac62b](https://github.com/zeebe-io/zeebe/commit/1a0ac62b797613e0f4dbec4885b1b76537ac6f48))
+  *  introduce reference counting for log stream writers ([2882c52a](https://github.com/zeebe-io/zeebe/commit/2882c52a77397a698653aa75fd8c0a769e104063))
+* **transport:**  cancel timer after response ([634faeca](https://github.com/zeebe-io/zeebe/commit/634faecadd8ba9df4916ded6372f02a1acd8ecd1))
+
+
+
 <a name="0.22.0"></a>
 ## 0.22.0 (2020-01-10)
 
