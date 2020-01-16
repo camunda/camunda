@@ -59,6 +59,15 @@ export default class UserTypeahead extends React.Component {
     }
   };
 
+  selectIdentity = id => {
+    const selectedIdentity = this.state.identities.find(identity => identity.id === id);
+    if (selectedIdentity) {
+      this.props.onChange(selectedIdentity);
+    } else {
+      this.props.onChange({id, type: 'user'});
+    }
+  };
+
   render() {
     const {loading, hasMore, identities} = this.state;
     return (
@@ -70,11 +79,9 @@ export default class UserTypeahead extends React.Component {
         onClose={this.handleClose}
         onOpen={() => this.loadNewValues('')}
         placeholder={t('common.collection.addUserModal.searchPlaceholder')}
-        onChange={id => {
-          const selectedIdentity = identities.find(identity => identity.id === id);
-          this.props.onChange(selectedIdentity);
-        }}
+        onChange={this.selectIdentity}
         async
+        typedOption
       >
         {identities.map(identity => {
           const {text, tag, subTexts} = formatTypeaheadOption(identity);

@@ -83,9 +83,9 @@ export default class Typeahead extends React.Component {
   };
 
   render() {
-    const {children, disabled, loading, hasMore, async, className} = this.props;
+    const {children, disabled, loading, hasMore, async, typedOption, className} = this.props;
     const {query, open} = this.state;
-    const isEmpty = !loading && !query && React.Children.toArray(children).length === 0;
+    const isEmpty = !loading && !query && React.Children.count(children) === 0;
     const isInputDisabled = isEmpty || disabled;
 
     return (
@@ -124,6 +124,7 @@ export default class Typeahead extends React.Component {
           onMouseDown={() => (this.optionClicked = true)}
           loading={loading}
           hasMore={hasMore}
+          typedOption={typedOption}
         >
           {children}
         </OptionsList>

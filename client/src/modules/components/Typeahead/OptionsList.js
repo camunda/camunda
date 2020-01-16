@@ -18,6 +18,7 @@ export default function OptionsList({
   children,
   onMouseDown,
   async,
+  typedOption,
   ...props
 }) {
   const [selectedOption, setSelectedOption] = useState(-1);
@@ -28,6 +29,14 @@ export default function OptionsList({
   if (!async) {
     filteredOptions = optionsArr.filter(({props: {label, children}}) =>
       (label || children).toLowerCase().includes(filter.toLowerCase())
+    );
+  }
+
+  if (filter && typedOption && filteredOptions.length === 0) {
+    filteredOptions.unshift(
+      <Dropdown.Option key={filter} value={filter} label={filter}>
+        {filter}
+      </Dropdown.Option>
     );
   }
 
@@ -103,7 +112,7 @@ export default function OptionsList({
     return null;
   }
 
-  const isEmpty = filteredOptions.length === 0 && !loading;
+  const isEmpty = filteredOptions.length === 0 && !loading && !typedOption;
 
   return (
     <div ref={optionList} className="OptionsList">

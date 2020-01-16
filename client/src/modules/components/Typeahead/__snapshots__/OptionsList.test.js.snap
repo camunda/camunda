@@ -12,6 +12,22 @@ exports[`should render an empty OptionsList 1`] = `
 </div>
 `;
 
+exports[`should render an option with the search as input if optionList has typedOption prop and empty 1`] = `
+<div
+  className="OptionsList"
+>
+  <ForwardRef(DropdownOption)
+    className=""
+    key="test"
+    label="test"
+    onClick={[Function]}
+    value="test"
+  >
+    test
+  </ForwardRef(DropdownOption)>
+</div>
+`;
+
 exports[`should render has more info message if specified 1`] = `
 <div
   className="OptionsList"

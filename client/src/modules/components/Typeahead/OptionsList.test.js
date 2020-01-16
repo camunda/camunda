@@ -69,3 +69,9 @@ it('should render has more info message if specified', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should render an option with the search as input if optionList has typedOption prop and empty', () => {
+  const node = shallow(<OptionsList {...props} filter="test" typedOption />);
+
+  expect(node).toMatchSnapshot();
+});

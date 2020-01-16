@@ -11,6 +11,7 @@ exports[`should format user list information correctly 1`] = `
   onOpen={[Function]}
   onSearch={[Function]}
   placeholder="Search for name, email or ID ..."
+  typedOption={true}
 >
   <ForwardRef(DropdownOption)
     key="testUser"
