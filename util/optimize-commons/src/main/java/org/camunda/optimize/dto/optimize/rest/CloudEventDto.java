@@ -42,6 +42,8 @@ public class CloudEventDto {
   @Pattern(regexp = "1\\.0")
   @EqualsAndHashCode.Include
   @ToString.Include
+  // Note: it's intended to not use camelCase names here to comply with CloudEvents naming conventions
+  // https://github.com/cloudevents/spec/blob/v1.0/spec.md#attribute-naming-convention
   private String specversion;
   @NotBlank
   @EqualsAndHashCode.Include
@@ -57,7 +59,9 @@ public class CloudEventDto {
   // custom/extension properties
   @NotBlank
   @ToString.Include
-  private String traceId;
+  // Note: it's intended to not use camelCase names here to comply with CloudEvents naming conventions
+  // https://github.com/cloudevents/spec/blob/v1.0/spec.md#attribute-naming-convention
+  private String traceid;
   @ToString.Include
   private String group;
 

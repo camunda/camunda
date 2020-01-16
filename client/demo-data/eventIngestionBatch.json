@@ -5,7 +5,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceReceived",
-    "traceId": "id1",
+    "traceid": "id1",
     "time": "2019-12-17T13:30:00.000Z"
   },
   {
@@ -14,7 +14,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceApprovalFinished",
-    "traceId": "id1",
+    "traceid": "id1",
     "time": "2019-12-17T13:30:10.000Z",
     "data": {
       "approved": true
@@ -26,7 +26,7 @@
     "group": "invoice",
     "source": "system",
     "type": "BankTransferStart",
-    "traceId": "id1",
+    "traceid": "id1",
     "time": "2019-12-17T13:30:20.000Z"
   },
   {
@@ -35,7 +35,7 @@
     "group": "invoice",
     "source": "system",
     "type": "BankTransferEnd",
-    "traceId": "id1",
+    "traceid": "id1",
     "time": "2019-12-17T13:30:30.000Z"
   },
   {
@@ -44,7 +44,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceProcessed",
-    "traceId": "id1",
+    "traceid": "id1",
     "time": "2019-12-17T13:30:31.000Z"
   },
   {
@@ -53,7 +53,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceReceived",
-    "traceId": "id2",
+    "traceid": "id2",
     "time": "2019-12-17T13:40:30.000Z"
   },
   {
@@ -62,7 +62,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceApprovalFinished",
-    "traceId": "id2",
+    "traceid": "id2",
     "time": "2019-12-17T13:40:40.000Z",
     "data": {
       "approved": false
@@ -74,7 +74,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceReviewFinished",
-    "traceId": "id2",
+    "traceid": "id2",
     "time": "2019-12-17T13:40:45.000Z",
     "data": {
       "reviewSuccessful": false
@@ -86,7 +86,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceNotProcessed",
-    "traceId": "id2",
+    "traceid": "id2",
     "time": "2019-12-17T13:40:50.000Z"
   },
   {
@@ -95,7 +95,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceReceived",
-    "traceId": "id3",
+    "traceid": "id3",
     "time": "2019-12-17T13:50:50.000Z"
   },
   {
@@ -104,7 +104,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceApprovalFinished",
-    "traceId": "id3",
+    "traceid": "id3",
     "time": "2019-12-17T13:50:52.000Z",
     "data": {
       "approved": false
@@ -116,7 +116,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceReviewFinished",
-    "traceId": "id3",
+    "traceid": "id3",
     "time": "2019-12-17T13:50:55.000Z",
     "data": {
       "reviewSuccessful": true
@@ -128,7 +128,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceApprovalFinished",
-    "traceId": "id3",
+    "traceid": "id3",
     "time": "2019-12-17T13:50:58.000Z",
     "data": {
       "approved": true
@@ -140,7 +140,7 @@
     "group": "invoice",
     "source": "system",
     "type": "BankTransferStart",
-    "traceId": "id3",
+    "traceid": "id3",
     "time": "2019-12-17T13:51:20.000Z"
   },
   {
@@ -149,7 +149,7 @@
     "group": "invoice",
     "source": "system",
     "type": "BankTransferEnd",
-    "traceId": "id3",
+    "traceid": "id3",
     "time": "2019-12-17T13:51:50.000Z"
   },
   {
@@ -158,7 +158,7 @@
     "group": "invoice",
     "source": "system",
     "type": "InvoiceProcessed",
-    "traceId": "id3",
+    "traceid": "id3",
     "time": "2019-12-17T13:51:51.000Z"
   }
 ]

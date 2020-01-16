@@ -54,15 +54,15 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace states are stored and sequence counts reflect traces
     assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(
-        eventDtoTraceOne.getTraceId(),
+        eventDtoTraceOne.getTraceid(),
         Collections.singletonList(mapToTracedEventDto(eventDtoTraceOne))
       ),
       new EventTraceStateDto(
-        eventDtoTraceTwo.getTraceId(),
+        eventDtoTraceTwo.getTraceid(),
         Collections.singletonList(mapToTracedEventDto(eventDtoTraceTwo))
       ),
       new EventTraceStateDto(
-        eventDtoTraceThree.getTraceId(),
+        eventDtoTraceThree.getTraceid(),
         Collections.singletonList(mapToTracedEventDto(eventDtoTraceThree))
       )
     );
@@ -476,7 +476,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     return eventClient.createCloudEventDto()
       .toBuilder()
       .id(eventId)
-      .traceId(traceId)
+      .traceid(traceId)
       .group(group)
       .source(source)
       .type(eventName)
@@ -493,7 +493,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
           .map(Instant::toEpochMilli)
           .orElse(Instant.now().toEpochMilli())
       )
-      .traceId(cloudEventDto.getTraceId())
+      .traceId(cloudEventDto.getTraceid())
       .group(cloudEventDto.getGroup().orElse(null))
       .source(cloudEventDto.getSource())
       .data(cloudEventDto.getData())

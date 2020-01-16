@@ -690,7 +690,7 @@ public class EventRestServiceIT extends AbstractIT {
     Instant currentTimestamp = Instant.now();
     return events.stream()
       .map(event -> createEventDtoWithProperties(event.getGroup().orElse(null), event.getSource(), event.getType()))
-      .peek(eventDto -> eventDto.setTraceId(traceId))
+      .peek(eventDto -> eventDto.setTraceid(traceId))
       .peek(eventDto -> eventDto.setTime(currentTimestamp.plusSeconds(incrementCounter.getAndIncrement())))
       .collect(toList());
   }

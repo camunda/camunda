@@ -66,7 +66,7 @@ public class IngestionRestService {
             .orElse(LocalDateUtil.getCurrentDateTime().toInstant())
             .toEpochMilli()
         )
-        .traceId(cloudEventDto.getTraceId())
+        .traceId(cloudEventDto.getTraceid())
         .group(cloudEventDto.getGroup().orElse(null))
         .source(cloudEventDto.getSource())
         .data(cloudEventDto.getData())

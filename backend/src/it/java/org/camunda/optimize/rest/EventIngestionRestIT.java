@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.id;
 import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.source;
 import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.specversion;
-import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.traceId;
+import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.traceid;
 import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.type;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
@@ -178,7 +178,7 @@ public class EventIngestionRestIT extends AbstractIT {
     eventDto.setId(null);
     eventDto.setType(null);
     eventDto.setSource(null);
-    eventDto.setTraceId(null);
+    eventDto.setTraceid(null);
 
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -194,7 +194,7 @@ public class EventIngestionRestIT extends AbstractIT {
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
         .map(property -> property.split("\\.")[1])
         .collect(toList()))
-      .contains(specversion, id, type, source, traceId);
+      .contains(specversion, id, type, source, traceid);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
@@ -212,7 +212,7 @@ public class EventIngestionRestIT extends AbstractIT {
     eventDto.setSpecversion("0");
     eventDto.setType("");
     eventDto.setSource("");
-    eventDto.setTraceId("");
+    eventDto.setTraceid("");
 
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -228,7 +228,7 @@ public class EventIngestionRestIT extends AbstractIT {
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
         .map(property -> property.split("\\.")[1])
         .collect(toList()))
-      .contains(id, specversion, type, source, traceId);
+      .contains(id, specversion, type, source, traceid);
     assertThat(
       ingestErrorResponse.getValidationErrors()
         .stream()
@@ -283,7 +283,7 @@ public class EventIngestionRestIT extends AbstractIT {
             .orElse(LocalDateUtil.getCurrentDateTime().toInstant())
             .toEpochMilli()
         )
-        .traceId(cloudEventDto.getTraceId())
+        .traceId(cloudEventDto.getTraceid())
         .group(cloudEventDto.getGroup().orElse(null))
         .source(cloudEventDto.getSource())
         .data(cloudEventDto.getData().orElse(null))

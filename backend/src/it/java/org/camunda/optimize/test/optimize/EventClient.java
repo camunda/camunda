@@ -82,7 +82,7 @@ public class EventClient {
         )
 
       )
-      .traceId(RandomStringUtils.randomAlphabetic(10))
+      .traceid(RandomStringUtils.randomAlphabetic(10))
       .build();
   }
 }
