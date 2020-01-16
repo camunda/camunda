@@ -16,6 +16,8 @@ import java.util.function.Consumer;
 /** Things that any actor can write to a partition. */
 public interface TypedCommandWriter extends CloseableSilently {
 
+  void setDisabled(boolean disabled);
+
   void appendNewCommand(Intent intent, UnpackedObject value);
 
   void appendFollowUpCommand(long key, Intent intent, UnpackedObject value);
