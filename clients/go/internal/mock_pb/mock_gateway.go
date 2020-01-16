@@ -161,6 +161,24 @@ func (_mr *MockGatewayClientMockRecorder) FailJob(arg0, arg1 interface{}, arg2 .
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "FailJob", reflect.TypeOf((*MockGatewayClient)(nil).FailJob), _s...)
 }
 
+// GatewayVersion mocks base method
+func (_m *MockGatewayClient) GatewayVersion(_param0 context.Context, _param1 *pb.GatewayVersionRequest, _param2 ...grpc.CallOption) (*pb.GatewayVersionResponse, error) {
+	_s := []interface{}{_param0, _param1}
+	for _, _x := range _param2 {
+		_s = append(_s, _x)
+	}
+	ret := _m.ctrl.Call(_m, "GatewayVersion", _s...)
+	ret0, _ := ret[0].(*pb.GatewayVersionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GatewayVersion indicates an expected call of GatewayVersion
+func (_mr *MockGatewayClientMockRecorder) GatewayVersion(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	_s := append([]interface{}{arg0, arg1}, arg2...)
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "GatewayVersion", reflect.TypeOf((*MockGatewayClient)(nil).GatewayVersion), _s...)
+}
+
 // PublishMessage mocks base method
 func (_m *MockGatewayClient) PublishMessage(_param0 context.Context, _param1 *pb.PublishMessageRequest, _param2 ...grpc.CallOption) (*pb.PublishMessageResponse, error) {
 	_s := []interface{}{_param0, _param1}

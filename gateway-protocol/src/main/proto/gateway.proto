@@ -307,6 +307,14 @@ message SetVariablesResponse {
   int64 key = 1;
 }
 
+message GatewayVersionRequest {
+}
+
+message GatewayVersionResponse {
+  // version of the gateway
+  string version = 1;
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -477,5 +485,11 @@ service Gateway {
         - retries is not greater than 0
    */
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
+  }
+
+  /* 
+    Returns the version of the gateway.
+  */
+  rpc GatewayVersion (GatewayVersionRequest) returns (GatewayVersionResponse) {
   }
 }
