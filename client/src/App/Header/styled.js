@@ -8,7 +8,6 @@ import styled, {css} from 'styled-components';
 import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import ComboBadgeComponent from 'modules/components/ComboBadge';
 import {ReactComponent as Logo} from 'modules/components/Icon/logo.svg';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
@@ -76,13 +75,6 @@ export const ListLink = themed(styled(
   & span {
     ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
   }
-`);
-
-export const SelectionBadgeLeft = themed(styled(ComboBadgeComponent.Left)`
-  border-color: ${themeStyle({
-    dark: Colors.uiDark01,
-    light: Colors.uiLight01
-  })};
 `);
 
 export const Detail = themed(styled.span`

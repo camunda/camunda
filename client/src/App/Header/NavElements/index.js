@@ -4,9 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {
-  NavElement,
-  DoubleBadgeNavElement,
-  BrandNavElement,
-  LinkElement
-} from './NavElements';
+export {NavElement, BrandNavElement, LinkElement} from './NavElements';

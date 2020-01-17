@@ -11,7 +11,6 @@ import {withData} from 'modules/DataManager';
 import {withCountStore} from 'modules/contexts/CountContext';
 import {withRouter} from 'react-router';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
-import {withSelection} from 'modules/contexts/SelectionContext';
 
 import {wrapWithContexts} from 'modules/contexts/contextHelpers';
 import withSharedState from 'modules/components/withSharedState';
@@ -19,7 +18,6 @@ import {getFilterQueryString, parseQueryString} from 'modules/utils/filter';
 import {
   FILTER_SELECTION,
   BADGE_TYPE,
-  COMBO_BADGE_TYPE,
   LOADING_STATE,
   DEFAULT_FILTER
 } from 'modules/constants';
@@ -29,12 +27,7 @@ import {labels, createTitle, PATHNAME} from './constants';
 
 import User from './User';
 import InstanceDetail from './InstanceDetail';
-import {
-  DoubleBadgeNavElement,
-  NavElement,
-  BrandNavElement,
-  LinkElement
-} from './NavElements';
+import {NavElement, BrandNavElement, LinkElement} from './NavElements';
 import * as Styled from './styled.js';
 
 class Header extends React.Component {
@@ -198,13 +191,7 @@ class Header extends React.Component {
   }
 
   selectCount(type) {
-    const {
-      running,
-      withIncidents,
-      instancesInSelectionsCount,
-      selectionCount,
-      filterCount
-    } = this.props.countStore;
+    const {running, withIncidents, filterCount} = this.props.countStore;
 
     if (!this.state.isLoaded) {
       return '';
@@ -213,8 +200,7 @@ class Header extends React.Component {
     const conditions = {
       instances: running,
       filters: filterCount === null ? running : filterCount,
-      incidents: withIncidents,
-      selections: {instancesInSelectionsCount, selectionCount}
+      incidents: withIncidents
     };
 
     return conditions[type];
@@ -250,14 +236,11 @@ class Header extends React.Component {
       return <Redirect to="/login" />;
     }
 
-    const {filter} = this.state;
-
     const brand = this.getLinkProperties('brand');
     const dashboard = this.getLinkProperties('dashboard');
     const instances = this.getLinkProperties('instances');
     const incidents = this.getLinkProperties('incidents');
     const filters = this.getLinkProperties('filters');
-    const selections = this.getLinkProperties('selections');
 
     return (
       <Styled.Header role="banner">
@@ -302,19 +285,6 @@ class Header extends React.Component {
             linkProps={incidents.linkProps}
             type={BADGE_TYPE.INCIDENTS}
           />
-          <DoubleBadgeNavElement
-            to={`/instances${filter ? getFilterQueryString(filter) : ''}`}
-            dataTest={selections.dataTest}
-            title={selections.title}
-            label={labels['selections']}
-            isActive={selections.isActive}
-            expandSelections={this.props.expandSelections}
-            selectionCount={selections.count.selectionCount}
-            instancesInSelectionsCount={
-              selections.count.instancesInSelectionsCount
-            }
-            type={COMBO_BADGE_TYPE.SELECTIONS}
-          />
         </Styled.Menu>
         {this.currentView().isInstance() && (
           <Styled.Detail>{this.renderInstanceDetails()}</Styled.Detail>
@@ -328,7 +298,6 @@ class Header extends React.Component {
 const contexts = [
   withCountStore,
   withData,
-  withSelection,
   withCollapsablePanel,
   withSharedState,
   withRouter,

@@ -7,7 +7,6 @@
 import React, {memo} from 'react';
 import PropTypes from 'prop-types';
 import Badge from 'modules/components/Badge';
-import ComboBadge from 'modules/components/ComboBadge';
 import * as Styled from '../styled.js';
 
 // export default React.memo(function Skeleton(props) {
@@ -70,38 +69,4 @@ NavElement.propTypes = {
   type: PropTypes.string,
   label: PropTypes.string,
   count: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-};
-
-export const DoubleBadgeNavElement = memo(props => (
-  <li data-test={props.dataTest}>
-    <Styled.ListLink
-      to={props.to}
-      title={props.title}
-      isActive={props.isActive}
-      onClick={props.expandSelections}
-    >
-      <span>{props.label}</span>
-      <ComboBadge type={props.type} isActive={props.isActive}>
-        <Styled.SelectionBadgeLeft>
-          {props.selectionCount}
-        </Styled.SelectionBadgeLeft>
-        <ComboBadge.Right>{props.instancesInSelectionsCount}</ComboBadge.Right>
-      </ComboBadge>
-    </Styled.ListLink>
-  </li>
-));
-
-DoubleBadgeNavElement.propTypes = {
-  dataTest: PropTypes.string,
-  to: PropTypes.string,
-  title: PropTypes.string,
-  isActive: PropTypes.bool,
-  type: PropTypes.string,
-  label: PropTypes.string,
-  selectionCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  instancesInSelectionsCount: PropTypes.oneOfType([
-    PropTypes.number,
-    PropTypes.string
-  ]),
-  expandSelections: PropTypes.func
 };

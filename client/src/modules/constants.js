@@ -224,10 +224,6 @@ export const BADGE_TYPE = {
   SELECTIONS: 'SELECTIONS'
 };
 
-export const COMBO_BADGE_TYPE = {
-  SELECTIONS: 'SELECTIONS'
-};
-
 export const OPERATION_STATE = {
   SCHEDULED: 'SCHEDULED',
   LOCKED: 'LOCKED',

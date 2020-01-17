@@ -8,23 +8,18 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Badge from 'modules/components/Badge';
-import ComboBadge from 'modules/components/ComboBadge';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 import {withCountStore} from 'modules/contexts/CountContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
 
-import {DIRECTION, BADGE_TYPE, COMBO_BADGE_TYPE} from 'modules/constants';
+import {DIRECTION, BADGE_TYPE} from 'modules/constants';
 
 import SelectionList from './SelectionList';
 
 import * as Styled from './styled';
 
 function Selections(props) {
-  const {
-    isLoaded,
-    selectionCount,
-    instancesInSelectionsCount
-  } = props.countStore;
+  const {isLoaded, selectionCount} = props.countStore;
   function renderCount() {
     return isLoaded ? selectionCount : '';
   }
@@ -49,15 +44,6 @@ function Selections(props) {
               />
             }
           >
-            <Styled.SelectionHeader>
-              <span>Selections</span>
-              <ComboBadge type={COMBO_BADGE_TYPE.SELECTIONS}>
-                <ComboBadge.Left>{selectionCount}</ComboBadge.Left>
-                <ComboBadge.Right>
-                  {instancesInSelectionsCount}
-                </ComboBadge.Right>
-              </ComboBadge>
-            </Styled.SelectionHeader>
             <Styled.SelectionBody>
               <SelectionList />
             </Styled.SelectionBody>
