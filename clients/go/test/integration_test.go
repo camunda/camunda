@@ -17,6 +17,7 @@ import (
 	"context"
 	"github.com/stretchr/testify/suite"
 	"github.com/zeebe-io/zeebe/clients/go/internal/containersuite"
+	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"testing"
 	"time"
@@ -210,5 +211,19 @@ func (s *integrationTestSuite) TestFailJob() {
 		if failedJob == nil {
 			s.T().Fatal("Empty fail job response")
 		}
+	}
+}
+
+func (s *integrationTestSuite) TestGatewayVersion() {
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	resp, err := s.client.NewGatewayVersionCommand().Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	if resp == "" {
+		s.T().Fatal("gateway version is empty")
 	}
 }
