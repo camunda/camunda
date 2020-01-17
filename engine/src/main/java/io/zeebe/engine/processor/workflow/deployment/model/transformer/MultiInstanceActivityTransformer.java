@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableLoopCharacteristics;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -71,8 +72,13 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
       // attach boundary events to the multi-instance body
       innerActivity.getBoundaryEvents().forEach(multiInstanceBody::attach);
+      innerActivity.getEventSubprocesses().forEach(multiInstanceBody::attach);
 
       innerActivity.getEvents().removeAll(innerActivity.getBoundaryEvents());
+      innerActivity.getEventSubprocesses().stream()
+          .map(ExecutableFlowElementContainer::getStartEvents)
+          .forEach(innerActivity.getEvents()::remove);
+
       innerActivity.getInterruptingElementIds().clear();
 
       // attach incoming and outgoing sequence flows to the multi-instance body
