@@ -111,7 +111,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
             '-Xmx1g',
             '-XX:MetaspaceSize=256m',
             '-XX:MaxMetaspaceSize=256m',
-            '-DOPTIMIZE_EVENT_INGESTION_API_SECRET=secret',
+            '-DOPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret',
             '-DOPTIMIZE_EVENT_BASED_PROCESSES_ENABLED=true',
             `-DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}]`,
             'org.camunda.optimize.Main'

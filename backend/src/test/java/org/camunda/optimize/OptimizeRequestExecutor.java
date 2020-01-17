@@ -47,6 +47,7 @@ import org.camunda.optimize.service.security.AuthCookieService;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -63,7 +64,6 @@ import static javax.ws.rs.HttpMethod.PUT;
 import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.rest.IngestionRestService.OPTIMIZE_API_SECRET_HEADER;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1071,7 +1071,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildIngestEventBatch(final List<CloudEventDto> eventDtos, final String secret) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
-    addSingleHeader(OPTIMIZE_API_SECRET_HEADER, secret);
+    addSingleHeader(HttpHeaders.AUTHORIZATION, secret);
     this.mediaType = CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
     this.body = getBody(eventDtos);
     return this;

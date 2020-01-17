@@ -26,7 +26,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,8 +42,7 @@ public class IngestionRestService {
   public static final String EVENT_BATCH_SUB_PATH = "/event/batch";
 
   public static final String CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH = "application/cloudevents-batch+json";
-
-  public static String OPTIMIZE_API_SECRET_HEADER = "X-Optimize-API-Secret";
+  public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
   private final ConfigurationService configurationService;
   private final EventService eventService;
@@ -52,7 +53,7 @@ public class IngestionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
                                 final @NotNull @Valid @RequestBody ValidList<CloudEventDto> cloudEventDtos) {
-    validateApiSecret(requestContext);
+    validateAccessToken(requestContext);
     eventService.saveEventBatch(mapToEventDto(cloudEventDtos));
   }
 
@@ -74,14 +75,19 @@ public class IngestionRestService {
       .collect(Collectors.toList());
   }
 
-  private void validateApiSecret(final ContainerRequestContext requestContext) {
-    if (!getApiSecret().equals(requestContext.getHeaderString(OPTIMIZE_API_SECRET_HEADER))) {
+  private void validateAccessToken(final ContainerRequestContext requestContext) {
+    final MultivaluedMap<String, String> queryParameters = requestContext.getUriInfo().getQueryParameters();
+    final String queryParameterAccessToken = queryParameters.getFirst(QUERY_PARAMETER_ACCESS_TOKEN);
+
+    final String expectedAccessToken = getAccessToken();
+    if (!expectedAccessToken.equals(requestContext.getHeaderString(HttpHeaders.AUTHORIZATION))
+      && !expectedAccessToken.equals(queryParameterAccessToken)) {
       throw new NotAuthorizedException("Invalid or no ingestion api secret provided.");
     }
   }
 
-  private String getApiSecret() {
-    return configurationService.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret();
+  private String getAccessToken() {
+    return configurationService.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken();
   }
 
   @Data

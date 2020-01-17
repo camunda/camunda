@@ -38,7 +38,7 @@ public class EventClient {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(
         eventDtos,
-        embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret()
+        embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken()
       )
       .execute();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

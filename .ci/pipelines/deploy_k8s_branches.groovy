@@ -178,8 +178,8 @@ pipeline {
               done
               curl -X PUT \
                 http://localhost:8090/api/ingestion/event/batch \
-                -H 'Content-Type: application/json' \
-                -H 'X-Optimize-API-Secret: secret' \
+                -H 'Content-Type: 'application/cloudevents-batch+json' \
+                -H 'Authorization: secret' \
                 --data "@${WORKSPACE}/optimize/client/demo-data/eventIngestionBatch.json"
             """)
           }

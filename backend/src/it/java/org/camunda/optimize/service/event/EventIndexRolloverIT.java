@@ -145,8 +145,8 @@ public class EventIndexRolloverIT extends AbstractIT {
     return embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration();
   }
 
-  private String getApiSecret() {
-    return embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret();
+  private String getAccessToken() {
+    return embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken();
   }
 
   private void addEvents() {
@@ -155,7 +155,7 @@ public class EventIndexRolloverIT extends AbstractIT {
       .collect(toList());
 
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(eventDtos, getApiSecret())
+      .buildIngestEventBatch(eventDtos, getAccessToken())
       .execute();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

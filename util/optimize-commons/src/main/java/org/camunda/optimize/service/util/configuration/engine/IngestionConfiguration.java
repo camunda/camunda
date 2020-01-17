@@ -19,13 +19,13 @@ import java.util.Optional;
 @Slf4j
 @FieldNameConstants(asEnum = true)
 public class IngestionConfiguration {
-  private String apiSecret;
+  private String accessToken;
   private long maxBatchRequestBytes;
 
   @JsonCreator
-  public IngestionConfiguration(@JsonProperty("apiSecret") final String apiSecret,
+  public IngestionConfiguration(@JsonProperty("accessToken") final String accessToken,
                                 @JsonProperty("maxBatchRequestLength") final long maxBatchRequestBytes) {
-    this.apiSecret = Optional.ofNullable(apiSecret).orElseGet(() -> {
+    this.accessToken = Optional.ofNullable(accessToken).orElseGet(() -> {
       final String generatedSecret = RandomStringUtils.random(
         16, 0, 0, true, true, null, new SecureRandom()
       );

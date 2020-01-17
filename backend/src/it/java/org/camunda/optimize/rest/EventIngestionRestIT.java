@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -41,7 +42,7 @@ import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.tracei
 import static org.camunda.optimize.dto.optimize.rest.CloudEventDto.Fields.type;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.rest.IngestionRestService.OPTIMIZE_API_SECRET_HEADER;
+import static org.camunda.optimize.rest.IngestionRestService.QUERY_PARAMETER_ACCESS_TOKEN;
 import static org.camunda.optimize.rest.providers.BeanConstraintViolationExceptionHandler.THE_REQUEST_BODY_WAS_INVALID;
 
 public class EventIngestionRestIT extends AbstractIT {
@@ -60,7 +61,26 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(eventDtos, getApiSecret())
+      .buildIngestEventBatch(eventDtos, getAccessToken())
+      .execute();
+
+    // then
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+
+    assertEventDtosArePersisted(eventDtos);
+  }
+
+  @Test
+  public void ingestEventBatch_accessTokenAsQueryParameter() {
+    // given
+    final List<CloudEventDto> eventDtos = IntStream.range(0, 1)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
+      .collect(toList());
+
+    // when
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatch(eventDtos, null)
+      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
       .execute();
 
     // then
@@ -75,7 +95,7 @@ public class EventIngestionRestIT extends AbstractIT {
     final CloudEventDto eventDto = eventClient.createCloudEventDto();
 
     final String customSecret = "mySecret";
-    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setApiSecret(customSecret);
+    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setAccessToken(customSecret);
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -117,7 +137,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     final ErrorResponseDto ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(eventDtos, getApiSecret())
+      .buildIngestEventBatch(eventDtos, getAccessToken())
       .execute(ErrorResponseDto.class, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
 
     // then
@@ -135,7 +155,7 @@ public class EventIngestionRestIT extends AbstractIT {
       final HttpPut httpPut = new HttpPut(
         IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint() + INGESTION_PATH + EVENT_BATCH_SUB_PATH
       );
-      httpPut.addHeader(OPTIMIZE_API_SECRET_HEADER, getApiSecret());
+      httpPut.addHeader(HttpHeaders.AUTHORIZATION, getAccessToken());
       final CloseableHttpResponse response = httpClient.execute(httpPut);
 
       // then
@@ -161,7 +181,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(Collections.singletonList(eventDto), getApiSecret())
+      .buildIngestEventBatch(Collections.singletonList(eventDto), getAccessToken())
       .execute();
 
     // then
@@ -182,7 +202,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(Collections.singletonList(eventDto), getApiSecret())
+      .buildIngestEventBatch(Collections.singletonList(eventDto), getAccessToken())
       .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
 
     // then
@@ -216,7 +236,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(Collections.singletonList(eventDto), getApiSecret())
+      .buildIngestEventBatch(Collections.singletonList(eventDto), getAccessToken())
       .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
 
     // then
@@ -251,7 +271,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(eventDtos, getApiSecret())
+      .buildIngestEventBatch(eventDtos, getAccessToken())
       .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
 
     // then
@@ -295,8 +315,8 @@ public class EventIngestionRestIT extends AbstractIT {
     assertThat(indexedEventDtos).containsExactlyInAnyOrderElementsOf(expectedEventDtos);
   }
 
-  private String getApiSecret() {
-    return embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret();
+  private String getAccessToken() {
+    return embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken();
   }
 
 }

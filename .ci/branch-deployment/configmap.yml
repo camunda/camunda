@@ -98,7 +98,7 @@ data:
       enabled: true
       authorizedUserIds: ['demo']
       eventIngestion:
-        apiSecret: secret
+        accessToken: secret
 
 ######################## CAM BPM ########################
   configure-and-run.sh: |

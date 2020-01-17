@@ -42,7 +42,7 @@ plugin:
 
 eventBasedProcess:
   eventIngestion:
-    apiSecret: ${SECRET:Null}
+    accessToken: ${SECRET:Null}
 
 container:
   accessUrl: ${ACCESS_URL:null}

@@ -358,12 +358,12 @@ public class ConfigurationServiceTest {
     );
     // by default a secret will get generated, so it should neither be the custom secret value
     assertThat(
-      underTest.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret(),
+      underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken(),
       is(not(SECRET))
     );
     // nor should it be null
     assertThat(
-      underTest.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret(),
+      underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken(),
       is(not(nullValue()))
     );
     assertThat(
@@ -401,7 +401,7 @@ public class ConfigurationServiceTest {
       is(ImmutableList.of("demo", "kermit"))
     );
     assertThat(
-      underTest.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret(),
+      underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken(),
       is(SECRET)
     );
     assertThat(

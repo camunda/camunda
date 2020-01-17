@@ -368,9 +368,9 @@ eventBasedProcess:
     importIntervalInSec: 5
     maxPageSize: 10000
   eventIngestion:
-    # Secret to be provided on the Ingestion REST API when ingesting data.
-    # If set `null` a random secret will be generated with each startup of Optimize and logged.
-    apiSecret: ${OPTIMIZE_EVENT_INGESTION_API_SECRET:null}
+    # Secret token to be provided on the Ingestion REST API when ingesting data.
+    # If set `null` a random token will be generated with each startup of Optimize and logged.
+    accessToken: ${OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN:null}
     # Content length limit for an ingestion REST API Bulk request in bytes.
     # Requests will be rejected when exceeding that limit.
     # Defaults to 10MB.

@@ -14,7 +14,7 @@ request.post(
   {
     url: 'http://localhost:8090/api/ingestion/event/batch',
     headers: {
-        'X-Optimize-API-Secret': 'secret',
+        'Authorization': 'secret',
         'Content-Type': 'application/cloudevents-batch+json'
     },
     body: eventData,

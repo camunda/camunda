@@ -240,6 +240,6 @@ ui:
 
 eventBasedProcess:
   eventIngestion:
-    # Secret to be provided on the Ingestion REST API when ingesting data.
-    # If set `null` a random secret will be generated with each startup of Optimize and logged.
-    apiSecret: null
+    # Secret token to be provided on the Ingestion REST API when ingesting data.
+    # If set `null` a random token will be generated with each startup of Optimize and logged.
+    accessToken: null
