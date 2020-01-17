@@ -100,18 +100,14 @@ public class DataGenerator {
   }
 
   private void waitTillSomeInstancesAreArchived() {
-    //cheat for archiving: move the dates 1 hour back - TODO remove after version 1.2.0 is released
     logger.info("Wait till data are imported.");
-    ThreadUtil.sleepFor(60*1000L); 
-    
-    logger.info("Move listview date back to trigger archiving.");
-    moveListViewDatesBack();
-    
+    ThreadUtil.sleepFor(60 * 1000L);
+
     logger.info("Wait till finished instances will be archived.");
-    ThreadUtil.sleepFor(100 * 1000L);  
+    ThreadUtil.sleepFor(100 * 1000L);
     int count = 0;
     while (!someInstancesAreArchived() && count < 10) {
-      ThreadUtil.sleepFor(10 * 1000L);
+      ThreadUtil.sleepFor(20 * 1000L);
       count++;
     }
     if (count == 10 && !someInstancesAreArchived()) {
@@ -120,33 +116,34 @@ public class DataGenerator {
     }
   }
 
-  private void moveListViewDatesBack() {
-    String script =
-        "def sf = new SimpleDateFormat(\"yyyy-MM-dd'T'HH:mm:ss.SSSZZ\");"
-            + "if (ctx._source.startDate != null) {"
-            + "   def dt = sf.parse(ctx._source.startDate);"
-            + "   def calendar = sf.getCalendar();"
-            + "   calendar.setTime(dt);"
-            + "   calendar.add(Calendar.HOUR, -1);"
-            + "   ctx._source.startDate = calendar.getTime();}"
-            + "if (ctx._source.endDate != null) {"
-            + "   def dt2 = sf.parse(ctx._source.endDate);"
-            + "   def calendar2 = sf.getCalendar();"
-            + "   calendar2.setTime(dt2);"
-            + "   calendar2.add(Calendar.HOUR, -1);"
-            + "   ctx._source.endDate = calendar2.getTime(); }";
-    UpdateByQueryRequest request = new UpdateByQueryRequest("operate-list-view*")
-        .setQuery(matchAllQuery())
-        .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, new HashMap<>()))
-        .setAbortOnVersionConflict(false)
-        .setRefresh(true);
-    ;
-    try {
-      esClient.updateByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new RuntimeException("Exception occurred while moving dates back: " + e.getMessage(), e);
-    }
-  }
+//this method may be still needed to create archived data before v.1.2.0
+//  private void moveListViewDatesBack() {
+//    String script =
+//        "def sf = new SimpleDateFormat(\"yyyy-MM-dd'T'HH:mm:ss.SSSZZ\");"
+//            + "if (ctx._source.startDate != null) {"
+//            + "   def dt = sf.parse(ctx._source.startDate);"
+//            + "   def calendar = sf.getCalendar();"
+//            + "   calendar.setTime(dt);"
+//            + "   calendar.add(Calendar.HOUR, -1);"
+//            + "   ctx._source.startDate = calendar.getTime();}"
+//            + "if (ctx._source.endDate != null) {"
+//            + "   def dt2 = sf.parse(ctx._source.endDate);"
+//            + "   def calendar2 = sf.getCalendar();"
+//            + "   calendar2.setTime(dt2);"
+//            + "   calendar2.add(Calendar.HOUR, -1);"
+//            + "   ctx._source.endDate = calendar2.getTime(); }";
+//    UpdateByQueryRequest request = new UpdateByQueryRequest("operate-list-view*")
+//        .setQuery(matchAllQuery())
+//        .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, new HashMap<>()))
+//        .setAbortOnVersionConflict(false)
+//        .setRefresh(true);
+//    ;
+//    try {
+//      esClient.updateByQuery(request, RequestOptions.DEFAULT);
+//    } catch (IOException e) {
+//      throw new RuntimeException("Exception occurred while moving dates back: " + e.getMessage(), e);
+//    }
+//  }
 
   private boolean someInstancesAreArchived() {
     try {
