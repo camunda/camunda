@@ -11,7 +11,6 @@ import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
 import {ThemeProvider} from 'modules/theme';
-import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
@@ -79,10 +78,7 @@ describe('ListPanel', () => {
   describe('messages', () => {
     it('should display a message for empty list when filter has no state', async () => {
       const node = shallow(
-        <List.WrappedComponent
-          {...emptyList}
-          filter={{error: 'mock error message'}}
-        />
+        <List {...emptyList} filter={{error: 'mock error message'}} />
       );
 
       expect(
@@ -92,7 +88,7 @@ describe('ListPanel', () => {
 
     it('should display a empty list message when filter has at least one state', async () => {
       const node = shallow(
-        <List.WrappedComponent
+        <List
           {...emptyList}
           filter={{error: 'mock error message', active: true}}
         />
@@ -109,7 +105,7 @@ describe('ListPanel', () => {
       // given
       const node = shallow(ComponentBeforeDataLoaded);
 
-      const TBodyNode = node.find(List.Item.Skeleton);
+      const TBodyNode = node.find(List.Skeleton);
       expect(TBodyNode).toHaveLength(1);
     });
 
@@ -127,7 +123,7 @@ describe('ListPanel', () => {
         }
       });
       // TBody
-      const TBodyNode = node.find(List.Item.Body);
+      const TBodyNode = node.find(List.Body);
       expect(TBodyNode).toHaveLength(1);
     });
 
@@ -159,19 +155,12 @@ describe('ListPanel', () => {
           <ThemeProvider>
             <DataManagerProvider>
               <CollapsablePanelProvider>
-                <SelectionProvider
-                  groupedWorkflows={formatGroupedWorkflows(
-                    groupedWorkflowsMock
-                  )}
-                  filter={FILTER_SELECTION.incidents}
-                >
-                  <InstancesPollProvider>
-                    <ListPanel.WrappedComponent
-                      {...mockPropsWithNoOperation}
-                      {...{dataManager}}
-                    />
-                  </InstancesPollProvider>
-                </SelectionProvider>
+                <InstancesPollProvider>
+                  <ListPanel.WrappedComponent
+                    {...mockPropsWithNoOperation}
+                    {...{dataManager}}
+                  />
+                </InstancesPollProvider>
               </CollapsablePanelProvider>
             </DataManagerProvider>
           </ThemeProvider>
@@ -221,19 +210,12 @@ describe('ListPanel', () => {
           <ThemeProvider>
             <DataManagerProvider>
               <CollapsablePanelProvider>
-                <SelectionProvider
-                  groupedWorkflows={formatGroupedWorkflows(
-                    groupedWorkflowsMock
-                  )}
-                  filter={FILTER_SELECTION.incidents}
-                >
-                  <InstancesPollProvider>
-                    <ListPanel.WrappedComponent
-                      {...mockPropsWithNoOperation}
-                      {...{dataManager}}
-                    />
-                  </InstancesPollProvider>
-                </SelectionProvider>
+                <InstancesPollProvider>
+                  <ListPanel.WrappedComponent
+                    {...mockPropsWithNoOperation}
+                    {...{dataManager}}
+                  />
+                </InstancesPollProvider>
               </CollapsablePanelProvider>
             </DataManagerProvider>
           </ThemeProvider>
@@ -276,19 +258,12 @@ describe('ListPanel', () => {
           <DataManagerProvider>
             <ThemeProvider>
               <CollapsablePanelProvider>
-                <SelectionProvider
-                  groupedWorkflows={formatGroupedWorkflows(
-                    groupedWorkflowsMock
-                  )}
-                  filter={FILTER_SELECTION.incidents}
-                >
-                  <InstancesPollProvider>
-                    <ListPanel.WrappedComponent
-                      {...mockPropsWithPoll}
-                      {...{dataManager}}
-                    />
-                  </InstancesPollProvider>
-                </SelectionProvider>
+                <InstancesPollProvider>
+                  <ListPanel.WrappedComponent
+                    {...mockPropsWithPoll}
+                    {...{dataManager}}
+                  />
+                </InstancesPollProvider>
               </CollapsablePanelProvider>
             </ThemeProvider>
           </DataManagerProvider>

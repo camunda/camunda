@@ -11,7 +11,6 @@ import PropTypes from 'prop-types';
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {flushPromises} from 'modules/testUtils';
@@ -21,7 +20,6 @@ import {DataManagerProvider} from 'modules/DataManager';
 
 import Filters from './Filters';
 import ListPanel from './ListPanel';
-import Selections from './Selections';
 
 import Instances from './Instances';
 
@@ -38,14 +36,6 @@ jest.mock(
   './Filters',
   () =>
     function Filters(props) {
-      return <div />;
-    }
-);
-
-jest.mock(
-  './Selections',
-  () =>
-    function Selections(props) {
       return <div />;
     }
 );
@@ -262,37 +252,6 @@ describe('Instances', () => {
     });
   });
 
-  describe('Selections', () => {
-    it('should render the Selections', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // then
-      expect(node.find(Selections)).toExist();
-    });
-
-    it('should render the SelectionsProvider', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // then
-      const SelectionProviderNode = node.find(SelectionProvider);
-      expect(SelectionProviderNode).toExist();
-      expect(SelectionProviderNode.prop('filter')).toBe(mockProps.filter);
-      expect(SelectionProviderNode.prop('groupedWorkflows')).toBe(
-        mockProps.groupedWorkflows
-      );
-    });
-  });
-
   describe('SplitPane', () => {
     it('should render a SplitPane', () => {
       // given
@@ -322,9 +281,6 @@ describe('Instances', () => {
 
       expect(InstancesPollProviderNode.props().visibleIdsInListPanel).toEqual(
         mockProps.workflowInstances.map(x => x.id)
-      );
-      expect(InstancesPollProviderNode.props().visibleIdsInSelections).toEqual(
-        []
       );
     });
   });
