@@ -42,7 +42,6 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.SocketAddress;
-import io.zeebe.util.FileUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -65,25 +64,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public final class ClusteringRule extends ExternalResource {
 
-  public static final int TOPOLOGY_RETRIES = 250;
+  private static final int TOPOLOGY_RETRIES = 250;
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH = AtomixFactory.GROUP_NAME + "/partitions/1";
 
-  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+  private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  protected final AutoCloseableRule closeables = new AutoCloseableRule();
+  private final AutoCloseableRule closeables = new AutoCloseableRule();
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   // configuration
   private final int partitionCount;
@@ -94,7 +93,6 @@ public final class ClusteringRule extends ExternalResource {
   private final Consumer<ZeebeClientBuilder> clientConfigurator;
   private final Map<Integer, Broker> brokers;
   private final Map<Integer, BrokerCfg> brokerCfgs;
-  private final Map<Integer, File> brokerBases;
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final ControlledActorClock controlledClock = new ControlledActorClock();
@@ -103,7 +101,6 @@ public final class ClusteringRule extends ExternalResource {
   // cluster
   private ZeebeClient client;
   private Gateway gateway;
-  private AtomixCluster atomixCluster;
   private LeaderListener leaderListener;
 
   public ClusteringRule() {
@@ -149,7 +146,6 @@ public final class ClusteringRule extends ExternalResource {
 
     brokers = new HashMap<>();
     brokerCfgs = new HashMap<>();
-    brokerBases = new HashMap<>();
     this.partitionIds =
         IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionCount)
             .boxed()
@@ -174,7 +170,7 @@ public final class ClusteringRule extends ExternalResource {
   public Statement apply(final Statement base, final Description description) {
     Statement statement = recordingExporterTestWatcher.apply(base, description);
     statement = closeables.apply(statement, description);
-    return super.apply(statement, description);
+    return temporaryFolder.apply(super.apply(statement, description), description);
   }
 
   @Override
@@ -201,23 +197,20 @@ public final class ClusteringRule extends ExternalResource {
 
     } catch (final Exception e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
-      closeables.after();
+      after();
       throw new UncheckedExecutionException("Cluster start failed", e);
     }
   }
 
   @Override
   protected void after() {
-
+    LOG.debug("Closing ClusteringRule...");
     brokers.values().parallelStream().forEach(Broker::close);
-
-    closeables.after();
-    brokerBases.clear();
-    brokerCfgs.clear();
     brokers.clear();
+    brokerCfgs.clear();
   }
 
-  public Broker getBroker(final int nodeId) {
+  Broker getBroker(final int nodeId) {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
 
@@ -276,12 +269,11 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private File getBrokerBase(final int nodeId) {
-    return brokerBases.computeIfAbsent(nodeId, this::createBrokerBase);
-  }
+    final var base = new File(temporaryFolder.getRoot(), String.valueOf(nodeId));
+    if (!base.exists()) {
+      base.mkdir();
+    }
 
-  private File createBrokerBase(final int nodeId) {
-    final File base = Files.newTemporaryFolder();
-    closeables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
     return base;
   }
 
@@ -302,7 +294,7 @@ public final class ClusteringRule extends ExternalResource {
     final ClusterCfg clusterCfg = gatewayCfg.getCluster();
 
     // copied from StandaloneGateway
-    atomixCluster =
+    final AtomixCluster atomixCluster =
         Atomix.builder()
             .withMemberId(clusterCfg.getMemberId())
             .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
@@ -500,7 +492,7 @@ public final class ClusteringRule extends ExternalResource {
   public long getPartitionLeaderCount() {
     return client.newTopologyRequest().send().join().getBrokers().stream()
         .flatMap(broker -> broker.getPartitions().stream())
-        .filter(p -> p.isLeader())
+        .filter(PartitionInfo::isLeader)
         .count();
   }
 
@@ -541,9 +533,9 @@ public final class ClusteringRule extends ExternalResource {
                 .containsAll(partitions));
   }
 
-  public void waitForTopology(final Function<List<BrokerInfo>, Boolean> topologyPredicate) {
+  public void waitForTopology(final Predicate<List<BrokerInfo>> topologyPredicate) {
     waitUntil(
-        () -> topologyPredicate.apply(getTopologyFromClient().getBrokers()),
+        () -> topologyPredicate.test(getTopologyFromClient().getBrokers()),
         TOPOLOGY_RETRIES,
         "Failed to wait for topology %s",
         getTopologyFromClient());
@@ -609,7 +601,7 @@ public final class ClusteringRule extends ExternalResource {
     waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
   }
 
-  public LogStream getLogStream(int partitionId) {
+  public LogStream getLogStream(final int partitionId) {
     return logstreams.get(partitionId);
   }
 

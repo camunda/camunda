@@ -28,24 +28,21 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public final class ClusteredDataDeletionTest {
   private static final int SNAPSHOT_PERIOD_SECONDS = 30;
   private static final int MAX_SNAPSHOTS = 1;
-  @Parameter public Consumer<BrokerCfg> configurator;
+  @Rule public final ClusteringRule clusteringRule;
 
-  @Parameter(1)
-  public String name;
-
-  private ClusteringRule clusteringRule;
+  public ClusteredDataDeletionTest(final Consumer<BrokerCfg> configurator, final String name) {
+    this.clusteringRule = new ClusteringRule(1, 3, 3, configurator);
+  }
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] configurators() {
@@ -60,17 +57,6 @@ public final class ClusteredDataDeletionTest {
     };
   }
 
-  @Before
-  public void setup() throws IOException {
-    clusteringRule = new ClusteringRule(1, 3, 3, configurator);
-    clusteringRule.before();
-  }
-
-  @After
-  public void tearDown() {
-    clusteringRule.after();
-  }
-
   private static void configureNoExporters(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setMaxSnapshots(MAX_SNAPSHOTS);
@@ -78,10 +64,10 @@ public final class ClusteredDataDeletionTest {
     data.setLogSegmentSize("8k");
     brokerCfg.getNetwork().setMaxMessageSize("8K");
 
-    brokerCfg.setExporters(Collections.EMPTY_LIST);
+    brokerCfg.setExporters(Collections.emptyList());
   }
 
-  public static void configureCustomExporter(final BrokerCfg brokerCfg) {
+  private static void configureCustomExporter(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
