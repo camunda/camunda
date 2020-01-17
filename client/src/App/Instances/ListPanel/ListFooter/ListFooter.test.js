@@ -9,7 +9,6 @@ import {shallow} from 'enzyme';
 
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
-import AddSelection from './AddSelection';
 import {Copyright} from './styled';
 
 jest.mock('modules/utils/bpmn');
@@ -45,7 +44,6 @@ describe('ListFooter', () => {
   it('should render button if no selection exists', () => {
     const node = renderFooter();
     node.setProps({selections: []});
-    expect(node.find(AddSelection).exists()).toBe(true);
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
@@ -53,7 +51,6 @@ describe('ListFooter', () => {
     const node = renderFooter({hasContent: false});
 
     expect(node.find(Paginator).exists()).toBe(false);
-    expect(node.find(AddSelection).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });
 });

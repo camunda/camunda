@@ -8,7 +8,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Paginator from './Paginator';
-import AddSelection from './AddSelection';
 import {getMaxPage} from './service';
 import * as Styled from './styled';
 
@@ -39,9 +38,7 @@ export default class ListFooter extends React.Component {
       <Styled.Footer>
         {hasContent && (
           <>
-            <Styled.SelectionContainer>
-              <AddSelection />
-            </Styled.SelectionContainer>
+            <Styled.OperationButtonContainer />
             <div>
               {this.isPaginationRequired(maxPage, filterCount) ? (
                 <Paginator

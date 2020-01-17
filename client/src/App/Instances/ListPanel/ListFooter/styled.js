@@ -26,7 +26,7 @@ export const Copyright = styled(BasicCopyright)`
   text-align: right;
 `;
 
-export const SelectionContainer = styled.div`
+export const OperationButtonContainer = styled.div`
   height: 100%;
   padding: 5px 0 6px 0;
 `;
