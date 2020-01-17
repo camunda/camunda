@@ -55,7 +55,7 @@ func (cmd *UpdateJobRetriesCommand) Retries(retries int32) DispatchUpdateJobRetr
 
 func (cmd *UpdateJobRetriesCommand) Send(ctx context.Context) (*pb.UpdateJobRetriesResponse, error) {
 	response, err := cmd.gateway.UpdateJobRetries(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -68,8 +68,8 @@ func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, pred retryPredicate) U
 			Retries: DefaultJobRetries,
 		},
 		Command: Command{
-			gateway:   gateway,
-			retryPred: pred,
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

@@ -35,4 +35,4 @@ After making changes to the Go client, you can vendor the new dependencies with:
 go mod vendor
 ```
 
-This command will also remove or download dependencies as needed. To do that without vendoring them you can run `go mod tidy`.
+This command will also remove or download dependencies as needed. To do that without vendoring them, you can run `go mod tidy`.

@@ -94,7 +94,7 @@ func (cmd *SetVariablesCommand) Local(local bool) DispatchSetVariablesCommand {
 
 func (cmd *SetVariablesCommand) Send(ctx context.Context) (*pb.SetVariablesResponse, error) {
 	response, err := cmd.gateway.SetVariables(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -104,9 +104,9 @@ func (cmd *SetVariablesCommand) Send(ctx context.Context) (*pb.SetVariablesRespo
 func NewSetVariablesCommand(gateway pb.GatewayClient, pred retryPredicate) SetVariablesCommandStep1 {
 	return &SetVariablesCommand{
 		Command: Command{
-			mixin:     utils.NewJsonStringSerializer(),
-			gateway:   gateway,
-			retryPred: pred,
+			mixin:       utils.NewJsonStringSerializer(),
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

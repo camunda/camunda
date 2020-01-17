@@ -55,7 +55,7 @@ func (c *ThrowErrorCommand) ErrorMessage(errorMsg string) DispatchThrowErrorComm
 
 func (c *ThrowErrorCommand) Send(ctx context.Context) (*pb.ThrowErrorResponse, error) {
 	response, err := c.gateway.ThrowError(ctx, &c.request)
-	if c.retryPred(ctx, err) {
+	if c.shouldRetry(ctx, err) {
 		return c.Send(ctx)
 	}
 
@@ -65,8 +65,8 @@ func (c *ThrowErrorCommand) Send(ctx context.Context) (*pb.ThrowErrorResponse, e
 func NewThrowErrorCommand(gateway pb.GatewayClient, pred retryPredicate) ThrowErrorCommandStep1 {
 	return &ThrowErrorCommand{
 		Command: Command{
-			gateway:   gateway,
-			retryPred: pred,
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 

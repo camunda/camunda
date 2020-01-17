@@ -89,7 +89,7 @@ func (cmd *CompleteJobCommand) VariablesFromMap(variables map[string]interface{}
 
 func (cmd *CompleteJobCommand) Send(ctx context.Context) (*pb.CompleteJobResponse, error) {
 	response, err := cmd.gateway.CompleteJob(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -99,9 +99,9 @@ func (cmd *CompleteJobCommand) Send(ctx context.Context) (*pb.CompleteJobRespons
 func NewCompleteJobCommand(gateway pb.GatewayClient, pred retryPredicate) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
 		Command: Command{
-			mixin:     utils.NewJsonStringSerializer(),
-			gateway:   gateway,
-			retryPred: pred,
+			mixin:       utils.NewJsonStringSerializer(),
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

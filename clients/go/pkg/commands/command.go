@@ -31,8 +31,8 @@ type retryPredicate func(context.Context, error) bool
 type Command struct {
 	mixin utils.SerializerMixin
 
-	gateway   pb.GatewayClient
-	retryPred retryPredicate
+	gateway     pb.GatewayClient
+	shouldRetry retryPredicate
 }
 
 func getLongPollingMillis(ctx context.Context) int64 {

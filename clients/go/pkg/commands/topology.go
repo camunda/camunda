@@ -26,7 +26,7 @@ type TopologyCommand struct {
 
 func (cmd *TopologyCommand) Send(ctx context.Context) (*pb.TopologyResponse, error) {
 	response, err := cmd.gateway.Topology(ctx, &pb.TopologyRequest{})
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -36,8 +36,8 @@ func (cmd *TopologyCommand) Send(ctx context.Context) (*pb.TopologyResponse, err
 func NewTopologyCommand(gateway pb.GatewayClient, pred retryPredicate) *TopologyCommand {
 	return &TopologyCommand{
 		Command{
-			gateway:   gateway,
-			retryPred: pred,
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

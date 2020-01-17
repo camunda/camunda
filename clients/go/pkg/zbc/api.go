@@ -39,5 +39,7 @@ type Client interface {
 
 	NewJobWorker() worker.JobWorkerBuilderStep1
 
+	NewGatewayVersionCommand() commands.GatewayVersionCommand
+
 	Close() error
 }

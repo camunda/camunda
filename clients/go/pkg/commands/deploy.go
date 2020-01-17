@@ -41,7 +41,7 @@ func (cmd *DeployCommand) AddResource(definition []byte, name string, resourceTy
 
 func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployWorkflowResponse, error) {
 	response, err := cmd.gateway.DeployWorkflow(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -51,8 +51,8 @@ func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployWorkflowResponse,
 func NewDeployCommand(gateway pb.GatewayClient, pred retryPredicate) *DeployCommand {
 	return &DeployCommand{
 		Command: Command{
-			gateway:   gateway,
-			retryPred: pred,
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }

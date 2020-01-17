@@ -138,9 +138,9 @@ func (cmd *CreateInstanceCommand) WithResult() CreateInstanceWithResultCommandSt
 			Request: &cmd.request,
 		},
 		Command: Command{
-			mixin:     cmd.mixin,
-			gateway:   cmd.gateway,
-			retryPred: cmd.retryPred,
+			mixin:       cmd.mixin,
+			gateway:     cmd.gateway,
+			shouldRetry: cmd.shouldRetry,
 		},
 	}
 }
@@ -152,7 +152,7 @@ func (cmd *CreateInstanceWithResultCommand) FetchVariables(variableNames ...stri
 
 func (cmd *CreateInstanceCommand) Send(ctx context.Context) (*pb.CreateWorkflowInstanceResponse, error) {
 	response, err := cmd.gateway.CreateWorkflowInstance(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -163,7 +163,7 @@ func (cmd *CreateInstanceWithResultCommand) Send(ctx context.Context) (*pb.Creat
 	cmd.request.RequestTimeout = getLongPollingMillis(ctx)
 
 	response, err := cmd.gateway.CreateWorkflowInstanceWithResult(ctx, &cmd.request)
-	if cmd.retryPred(ctx, err) {
+	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
 
@@ -173,9 +173,9 @@ func (cmd *CreateInstanceWithResultCommand) Send(ctx context.Context) (*pb.Creat
 func NewCreateInstanceCommand(gateway pb.GatewayClient, pred retryPredicate) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
 		Command: Command{
-			mixin:     utils.NewJsonStringSerializer(),
-			gateway:   gateway,
-			retryPred: pred,
+			mixin:       utils.NewJsonStringSerializer(),
+			gateway:     gateway,
+			shouldRetry: pred,
 		},
 	}
 }
