@@ -42,9 +42,12 @@ public class StartupBean {
   @Autowired
   private OperationExecutor operationExecutor;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   @PostConstruct
   public void initApplication() {
-    logger.info("Operate Version: "+OperateProperties.getSchemaVersion());
+    logger.info("Operate Version: " + operateProperties.getSchemaVersion());
     if (elasticsearchUserDetailsService != null) {
       logger.info("INIT: Create users in elasticsearch if not exists ...");
       elasticsearchUserDetailsService.initializeUsers();

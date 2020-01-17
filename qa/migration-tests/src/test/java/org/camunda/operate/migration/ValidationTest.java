@@ -5,18 +5,8 @@
  */
 package org.camunda.operate.migration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.CollectionUtil.map;
-import static org.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import java.io.IOException;
 import java.util.List;
-
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.IncidentEntity;
@@ -46,10 +36,17 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.camunda.operate.util.CollectionUtil.chooseOne;
+import static org.camunda.operate.util.CollectionUtil.map;
+import static org.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @ContextConfiguration(
 	classes = { 
@@ -60,13 +57,16 @@ import static org.camunda.operate.util.CollectionUtil.chooseOne;
 public class ValidationTest {
 
 	@Autowired
-	MigrationProperties config;
+	private MigrationProperties config;
 
 	@Autowired
-	ObjectMapper objectMapper;
+	private ObjectMapper objectMapper;
 	
 	@Autowired
-	RestHighLevelClient esClient;
+	private RestHighLevelClient esClient;
+
+	@Autowired
+	private OperateProperties operateProperties;
 	
 	@Before
 	public void setUp() {
@@ -225,7 +225,7 @@ public class ValidationTest {
 	}
 	
 	protected String getAliasFor(String index) {
-		return getAliasFor(index, OperateProperties.getSchemaVersion());
+		return getAliasFor(index, operateProperties.getSchemaVersion());
 	}
 	
 	protected String getAliasFor(String index, String version) {

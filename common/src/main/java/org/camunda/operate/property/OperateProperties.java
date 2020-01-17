@@ -5,20 +5,24 @@
  */
 package org.camunda.operate.property;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /**
  * This class contains all project configuration parameters.
  */
 @Component
+@Configuration
 @ConfigurationProperties(OperateProperties.PREFIX)
+@PropertySource("classpath:version.properties")
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 10000L;
-  private static final String DEFAULT_VERSION = "1.3.0-SNAPSHOT";
 
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
@@ -41,6 +45,9 @@ public class OperateProperties {
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   private boolean enterprise = false;
+
+  @Value("${camunda.operate.internal.schema.version}")
+  private String schemaVersion;
 
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
@@ -182,9 +189,18 @@ public class OperateProperties {
     this.enterprise = enterprise;
   }
 
-  public static String getSchemaVersion() {
-    String versionFromManifest = OperateProperties.class.getPackage().getImplementationVersion();
-    String version = versionFromManifest==null?DEFAULT_VERSION:versionFromManifest;
-    return version.toLowerCase(); // elasticsearch accepts only lowercase index/template names 
+  public String getSchemaVersion() {
+    return schemaVersion.toLowerCase();
   }
+
+  public void setSchemaVersion(String schemaVersion) {
+    this.schemaVersion = schemaVersion;
+  }
+
+  //
+//  public static String getSchemaVersion() {
+//    String versionFromManifest = OperateProperties.class.getPackage().getImplementationVersion();
+//    String version = versionFromManifest==null?DEFAULT_VERSION:versionFromManifest;
+//    return version.toLowerCase(); // elasticsearch accepts only lowercase index/template names
+//  }
 }
