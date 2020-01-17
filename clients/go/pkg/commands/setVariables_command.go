@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type DispatchSetVariablesCommand interface {
 	Local(bool) DispatchSetVariablesCommand
-	Send() (*pb.SetVariablesResponse, error)
+	Send(context.Context) (*pb.SetVariablesResponse, error)
 }
 
 type SetVariablesCommandStep1 interface {
@@ -41,12 +40,8 @@ type SetVariablesCommandStep2 interface {
 }
 
 type SetVariablesCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.SetVariablesRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.SetVariablesRequest
 }
 
 func (cmd *SetVariablesCommand) ElementInstanceKey(elementInstanceKey int64) SetVariablesCommandStep2 {
@@ -55,7 +50,7 @@ func (cmd *SetVariablesCommand) ElementInstanceKey(elementInstanceKey int64) Set
 }
 
 func (cmd *SetVariablesCommand) VariablesFromString(variables string) (DispatchSetVariablesCommand, error) {
-	err := cmd.Validate("variables", variables)
+	err := cmd.mixin.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +64,7 @@ func (cmd *SetVariablesCommand) VariablesFromStringer(variables fmt.Stringer) (D
 }
 
 func (cmd *SetVariablesCommand) VariablesFromObject(variables interface{}) (DispatchSetVariablesCommand, error) {
-	value, err := cmd.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +74,7 @@ func (cmd *SetVariablesCommand) VariablesFromObject(variables interface{}) (Disp
 }
 
 func (cmd *SetVariablesCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchSetVariablesCommand, error) {
-	value, err := cmd.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -97,24 +92,21 @@ func (cmd *SetVariablesCommand) Local(local bool) DispatchSetVariablesCommand {
 	return cmd
 }
 
-func (cmd *SetVariablesCommand) Send() (*pb.SetVariablesResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	response, err := cmd.gateway.SetVariables(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
+func (cmd *SetVariablesCommand) Send(ctx context.Context) (*pb.SetVariablesResponse, error) {
+	response, err := cmd.gateway.SetVariables(ctx, &cmd.request)
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewSetVariablesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) SetVariablesCommandStep1 {
+func NewSetVariablesCommand(gateway pb.GatewayClient, pred retryPredicate) SetVariablesCommandStep1 {
 	return &SetVariablesCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.SetVariablesRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			mixin:     utils.NewJsonStringSerializer(),
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

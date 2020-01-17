@@ -13,7 +13,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceWithResu
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 
-public class CreateWorkflowInstanceWithResultStub
+public final class CreateWorkflowInstanceWithResultStub
     implements RequestStub<
         BrokerCreateWorkflowInstanceWithResultRequest,
         BrokerResponse<WorkflowInstanceResultRecord>> {
@@ -24,7 +24,7 @@ public class CreateWorkflowInstanceWithResultStub
   public static final long WORKFLOW_KEY = 456;
 
   @Override
-  public void registerWith(StubbedBrokerClient brokerClient) {
+  public void registerWith(final StubbedBrokerClient brokerClient) {
     brokerClient.registerHandler(BrokerCreateWorkflowInstanceWithResultRequest.class, this);
   }
 
@@ -46,7 +46,7 @@ public class CreateWorkflowInstanceWithResultStub
 
   @Override
   public BrokerResponse<WorkflowInstanceResultRecord> handle(
-      BrokerCreateWorkflowInstanceWithResultRequest request) throws Exception {
+      final BrokerCreateWorkflowInstanceWithResultRequest request) throws Exception {
     final WorkflowInstanceResultRecord response = new WorkflowInstanceResultRecord();
     response.setBpmnProcessId(PROCESS_ID);
     response.setVariables(request.getRequestWriter().getVariablesBuffer());

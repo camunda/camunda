@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.Test;
 
-public class DbCompositeKeyTest {
+public final class DbCompositeKeyTest {
 
   @Test
   public void shouldWriteLongLongCompositeKey() {

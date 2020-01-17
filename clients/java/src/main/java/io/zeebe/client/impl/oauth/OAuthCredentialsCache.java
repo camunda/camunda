@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
-public class OAuthCredentialsCache {
+public final class OAuthCredentialsCache {
   private static final String KEY_AUTH = "auth";
   private static final String KEY_CREDENTIALS = "credentials";
   private static final TypeReference<Map<String, OAuthCachedCredentials>> TYPE_REFERENCE =

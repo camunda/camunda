@@ -12,16 +12,16 @@ import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class UnpackedObjectValue implements DbValue {
+public final class UnpackedObjectValue implements DbValue {
 
   private UnpackedObject value;
 
-  public void wrapObject(UnpackedObject value) {
+  public void wrapObject(final UnpackedObject value) {
     this.value = value;
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     value.wrap(buffer, offset, length);
   }
 
@@ -31,7 +31,7 @@ public class UnpackedObjectValue implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     value.write(buffer, offset);
   }
 

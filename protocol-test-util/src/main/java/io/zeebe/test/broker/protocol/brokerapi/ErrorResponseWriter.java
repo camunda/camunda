@@ -14,7 +14,7 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import java.nio.charset.StandardCharsets;
 import org.agrona.MutableDirectBuffer;
 
-public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
+public final class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final ErrorResponseEncoder bodyEncoder = new ErrorResponseEncoder();
   protected final MsgPackHelper msgPackHelper;
@@ -22,7 +22,7 @@ public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
   protected ErrorCode errorCode;
   protected byte[] errorData;
 
-  public ErrorResponseWriter(MsgPackHelper msgPackHelper) {
+  public ErrorResponseWriter(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
   }
 
@@ -35,7 +35,7 @@ public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     // protocol header
     headerEncoder
         .wrap(buffer, offset)
@@ -54,13 +54,13 @@ public class ErrorResponseWriter<R> extends AbstractMessageBuilder<R> {
   }
 
   @Override
-  public void initializeFrom(R context) {}
+  public void initializeFrom(final R context) {}
 
-  public void setErrorCode(ErrorCode errorCode) {
+  public void setErrorCode(final ErrorCode errorCode) {
     this.errorCode = errorCode;
   }
 
-  public void setErrorData(String errorData) {
+  public void setErrorData(final String errorData) {
     this.errorData = errorData.getBytes(StandardCharsets.UTF_8);
   }
 }

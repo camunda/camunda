@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.engine.impl;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
-
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
@@ -19,31 +17,39 @@ import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class SubscriptionApiCommandMessageHandlerService extends Actor
+public final class SubscriptionApiCommandMessageHandlerService extends Actor
     implements PartitionListener {
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions =
       new Int2ObjectHashMap<>();
   private final Atomix atomix;
-  private final BrokerInfo localBroker;
+  private final String actorName;
 
-  public SubscriptionApiCommandMessageHandlerService(BrokerInfo localBroker, Atomix atomix) {
-    this.localBroker = localBroker;
+  public SubscriptionApiCommandMessageHandlerService(
+      final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
+    this.actorName = buildActorName(localBroker.getNodeId(), "SubscriptionApi");
   }
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "SubscriptionApi");
+    return actorName;
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
-    actor.submit(() -> leaderPartitions.remove(partitionId));
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
+    actor.submit(
+        () -> {
+          final var recordWriter = leaderPartitions.remove(partitionId);
+          if (recordWriter != null) {
+            recordWriter.close();
+          }
+        });
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     actor.submit(
         () -> {
           logStream

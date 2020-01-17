@@ -7,7 +7,7 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
-public class ConfigurationDefaults {
+public final class ConfigurationDefaults {
 
   public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_PORT = 26500;

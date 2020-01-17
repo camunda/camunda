@@ -23,7 +23,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ExecuteCommandRequest implements BufferReader, BufferWriter {
+public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -54,7 +54,7 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return partitionId;
   }
 
-  public ExecuteCommandRequest setPartitionId(int partitionId) {
+  public ExecuteCommandRequest setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
@@ -63,7 +63,7 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return key;
   }
 
-  public ExecuteCommandRequest setKey(long key) {
+  public ExecuteCommandRequest setKey(final long key) {
     this.key = key;
     this.partitionId = Protocol.decodePartitionId(key);
 
@@ -74,7 +74,7 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return valueType;
   }
 
-  public ExecuteCommandRequest setValueType(ValueType valueType) {
+  public ExecuteCommandRequest setValueType(final ValueType valueType) {
     this.valueType = valueType;
     return this;
   }
@@ -83,7 +83,7 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return intent;
   }
 
-  public ExecuteCommandRequest setIntent(Intent intent) {
+  public ExecuteCommandRequest setIntent(final Intent intent) {
     this.intent = intent;
     return this;
   }
@@ -92,13 +92,14 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
     return value;
   }
 
-  public ExecuteCommandRequest setValue(DirectBuffer buffer, int offset, int length) {
+  public ExecuteCommandRequest setValue(
+      final DirectBuffer buffer, final int offset, final int length) {
     this.value.wrap(buffer, offset, length);
     return this;
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
 
     final int frameEnd = offset + length;
@@ -141,7 +142,7 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(bodyEncoder.sbeBlockLength())

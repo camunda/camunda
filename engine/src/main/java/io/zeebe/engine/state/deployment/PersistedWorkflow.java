@@ -19,14 +19,15 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedWorkflow implements DbValue {
+public final class PersistedWorkflow implements DbValue {
   final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resourceName = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resource = new UnsafeBuffer(0, 0);
   int version = -1;
   long key = -1;
 
-  public void wrap(DeploymentResource resource, Workflow workflow, long workflowKey) {
+  public void wrap(
+      final DeploymentResource resource, final Workflow workflow, final long workflowKey) {
     this.resource.wrap(resource.getResourceBuffer());
     this.resourceName.wrap(resource.getResourceNameBuffer());
     this.bpmnProcessId.wrap(workflow.getBpmnProcessIdBuffer());
@@ -56,7 +57,7 @@ public class PersistedWorkflow implements DbValue {
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     int valueOffset = offset;
     version = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     valueOffset += Integer.BYTES;
@@ -78,7 +79,7 @@ public class PersistedWorkflow implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     int valueOffset = offset;
     buffer.putInt(offset, version, ZB_DB_BYTE_ORDER);
     valueOffset += Integer.BYTES;

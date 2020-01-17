@@ -16,7 +16,7 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
-public class EmbeddedBrokerConfigurator {
+public final class EmbeddedBrokerConfigurator {
 
   public static final Consumer<BrokerCfg> DEBUG_EXPORTER =
       cfg -> cfg.getExporters().add(DebugLogExporter.defaultConfig(false));

@@ -22,18 +22,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class BpmnYamlParser {
+public final class BpmnYamlParser {
 
   private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
   private final Map<String, YamlTask> tasksById = new HashMap<>();
   private final List<String> createdTasks = new ArrayList<>();
   private YamlDefinitionImpl definition;
 
-  public BpmnModelInstance readFromStream(InputStream inputStream) {
+  public BpmnModelInstance readFromStream(final InputStream inputStream) {
     final YamlDefinitionImpl definition;
     try {
       definition = mapper.readValue(inputStream, YamlDefinitionImpl.class);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Unexpected error trying to read BPMN YAML model", e);
     }
 
@@ -46,7 +46,7 @@ public class BpmnYamlParser {
     createdTasks.clear();
 
     tasksById.clear();
-    for (YamlTask task : definition.getTasks()) {
+    for (final YamlTask task : definition.getTasks()) {
       tasksById.put(task.getId(), task);
     }
 
@@ -85,7 +85,7 @@ public class BpmnYamlParser {
 
       final ExclusiveGatewayBuilder gatewayBuilder = builder.exclusiveGateway(gatewayId);
 
-      for (YamlCase flow : task.getCases()) {
+      for (final YamlCase flow : task.getCases()) {
         if (flow.getDefaultCase() != null) {
 
           gatewayBuilder.defaultFlow();
@@ -110,7 +110,7 @@ public class BpmnYamlParser {
     }
   }
 
-  private YamlTask getNextTask(YamlTask task) {
+  private YamlTask getNextTask(final YamlTask task) {
     final List<YamlTask> tasks = definition.getTasks();
     final int index = tasks.indexOf(task);
 
@@ -122,7 +122,7 @@ public class BpmnYamlParser {
   }
 
   private ServiceTaskBuilder addServiceTask(
-      final AbstractFlowNodeBuilder<?, ?> builder, YamlTask task) {
+      final AbstractFlowNodeBuilder<?, ?> builder, final YamlTask task) {
     final String id = task.getId();
     final String taskType = task.getType();
     final int taskRetries = task.getRetries();
@@ -130,7 +130,7 @@ public class BpmnYamlParser {
     final ServiceTaskBuilder serviceTaskBuilder =
         builder.serviceTask(id).zeebeTaskType(taskType).zeebeTaskRetries(taskRetries);
 
-    for (Entry<String, String> header : task.getHeaders().entrySet()) {
+    for (final Entry<String, String> header : task.getHeaders().entrySet()) {
       serviceTaskBuilder.zeebeTaskHeader(header.getKey(), header.getValue());
     }
 
@@ -139,12 +139,13 @@ public class BpmnYamlParser {
     return serviceTaskBuilder;
   }
 
-  private void addInputOutputMappingToTask(YamlTask task, ServiceTaskBuilder serviceTaskBuilder) {
-    for (YamlMapping inputMapping : task.getInputs()) {
+  private void addInputOutputMappingToTask(
+      final YamlTask task, final ServiceTaskBuilder serviceTaskBuilder) {
+    for (final YamlMapping inputMapping : task.getInputs()) {
       serviceTaskBuilder.zeebeInput(inputMapping.getSource(), inputMapping.getTarget());
     }
 
-    for (YamlMapping outputMapping : task.getOutputs()) {
+    for (final YamlMapping outputMapping : task.getOutputs()) {
       serviceTaskBuilder.zeebeOutput(outputMapping.getSource(), outputMapping.getTarget());
     }
   }

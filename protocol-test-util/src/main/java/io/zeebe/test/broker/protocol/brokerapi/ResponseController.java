@@ -9,9 +9,9 @@ package io.zeebe.test.broker.protocol.brokerapi;
 
 import java.util.concurrent.CyclicBarrier;
 
-public class ResponseController {
+public final class ResponseController {
 
-  protected CyclicBarrier barrier =
+  protected final CyclicBarrier barrier =
       new CyclicBarrier(2); // two parties: broker thread responding and test thread signalling
 
   /**
@@ -25,7 +25,7 @@ public class ResponseController {
   protected void waitForNextJoin() {
     try {
       barrier.await();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }

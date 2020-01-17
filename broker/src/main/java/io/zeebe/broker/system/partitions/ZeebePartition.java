@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
-
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.protocols.raft.RaftCommitListener;
 import io.atomix.protocols.raft.RaftServer.Role;
@@ -38,12 +36,13 @@ import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.DurationUtil;
@@ -59,11 +58,11 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public class ZeebePartition extends Actor implements RaftCommitListener, Consumer<Role> {
+public final class ZeebePartition extends Actor implements RaftCommitListener, Consumer<Role> {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;
-  private static final String EXPORTER_NAME = "exporter-%d";
+  private static final String EXPORTER_NAME = "Exporter-%d";
 
   private final ClusterEventService clusterEventService;
   private final BrokerCfg brokerCfg;
@@ -85,11 +84,12 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
   private SnapshotStorage snapshotStorage;
   private StateSnapshotController snapshotController;
   private ZeebeDb zeebeDb;
+  private final String actorName;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
       final RaftPartition atomixRaftPartition,
-      List<PartitionListener> partitionListeners,
+      final List<PartitionListener> partitionListeners,
       final ClusterEventService clusterEventService,
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
@@ -110,11 +110,13 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
     for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
       try {
         exporterRepository.load(exporterCfg);
-      } catch (ExporterLoadException | ExporterJarLoadException e) {
+      } catch (final ExporterLoadException | ExporterJarLoadException e) {
         throw new IllegalStateException(
             "Failed to load exporter with configuration: " + exporterCfg, e);
       }
     }
+
+    this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
   }
 
   /**
@@ -123,11 +125,11 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
    * @param newRole the new role of the raft partition
    */
   @Override
-  public void accept(Role newRole) {
+  public void accept(final Role newRole) {
     actor.run(() -> onRoleChange(newRole));
   }
 
-  private void onRoleChange(Role newRole) {
+  private void onRoleChange(final Role newRole) {
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
@@ -179,7 +181,8 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
             });
   }
 
-  private ActorFuture<Void> onTransitionTo(Consumer<CompletableActorFuture<Void>> roleTransition) {
+  private ActorFuture<Void> onTransitionTo(
+      final Consumer<CompletableActorFuture<Void>> roleTransition) {
     final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
     if (transitionFuture != null && !transitionFuture.isDone()) {
       // wait until previous transition is complete
@@ -287,7 +290,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
   private StateSnapshotController createSnapshotController() {
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId)
+            ? new StateReplication(clusterEventService, partitionId, localBroker.getNodeId())
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(
@@ -302,22 +305,22 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
         runtimeDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
         new AtomixRecordEntrySupplierImpl(reader),
-        brokerCfg.getData().getMaxSnapshots());
+        brokerCfg.getData().getMaxSnapshots(),
+        new SnapshotMetrics(partitionId));
   }
 
   private boolean shouldReplicateSnapshots() {
     return brokerCfg.getCluster().getReplicationFactor() > 1;
   }
 
-  private void installProcessingPartition(CompletableActorFuture<Void> installFuture) {
+  private void installProcessingPartition(final CompletableActorFuture<Void> installFuture) {
     final StreamProcessor streamProcessor = createStreamProcessor(zeebeDb);
+    closeables.add(streamProcessor);
     streamProcessor
         .openAsync()
         .onComplete(
             (value, processorFail) -> {
               if (processorFail == null) {
-                closeables.add(streamProcessor);
-
                 final DataCfg dataCfg = brokerCfg.getData();
                 installSnapshotDirector(streamProcessor, dataCfg)
                     .onComplete(
@@ -340,7 +343,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
             });
   }
 
-  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb) {
+  private StreamProcessor createStreamProcessor(final ZeebeDb zeebeDb) {
     return StreamProcessor.builder()
         .logStream(logStream)
         .actorScheduler(scheduler)
@@ -358,22 +361,34 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
   }
 
   private ActorFuture<Void> installSnapshotDirector(
-      StreamProcessor streamProcessor, DataCfg dataCfg) {
+      final StreamProcessor streamProcessor, final DataCfg dataCfg) {
     final Duration snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
     final var asyncSnapshotDirector =
-        new AsyncSnapshotDirector(streamProcessor, snapshotController, logStream, snapshotPeriod);
+        new AsyncSnapshotDirector(
+            localBroker.getNodeId(),
+            streamProcessor,
+            snapshotController,
+            logStream,
+            snapshotPeriod);
     closeables.add(asyncSnapshotDirector);
     return scheduler.submitActor(asyncSnapshotDirector);
   }
 
-  private ActorFuture<Void> installExporter(ZeebeDb zeebeDb) {
+  private ActorFuture<Void> installExporter(final ZeebeDb zeebeDb) {
+    final var exporterDescriptors = exporterRepository.getExporters().values();
+
+    if (exporterDescriptors.isEmpty()) {
+      return CompletableActorFuture.completed(null);
+    }
+
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
-            .name(String.format(EXPORTER_NAME, partitionId))
+            .name(
+                buildActorName(localBroker.getNodeId(), String.format(EXPORTER_NAME, partitionId)))
             .logStream(logStream)
             .zeebeDb(zeebeDb)
-            .descriptors(exporterRepository.getExporters().values());
+            .descriptors(exporterDescriptors);
 
     final var exporterDirector = new ExporterDirector(context);
     closeables.add(exporterDirector);
@@ -464,7 +479,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
   }
 
   private void stepByStepClosing(
-      final CompletableActorFuture<Void> closingFuture, List<Actor> actorsToClose) {
+      final CompletableActorFuture<Void> closingFuture, final List<Actor> actorsToClose) {
     if (actorsToClose.isEmpty()) {
       closingFuture.complete(null);
       return;
@@ -495,13 +510,17 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "ZeebePartition-" + partitionId);
+    return actorName;
   }
 
   @Override
   public void onActorStarting() {
+    final var storage = AtomixLogStorage.ofPartition(atomixRaftPartition);
 
-    LogStreams.createAtomixLogStream(atomixRaftPartition)
+    LogStream.builder()
+        .withLogStorage(storage)
+        .withLogName(atomixRaftPartition.name())
+        .withPartitionId(atomixRaftPartition.id().id())
         .withMaxFragmentSize(maxFragmentSize)
         .withActorScheduler(scheduler)
         .buildAsync()

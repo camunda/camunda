@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public abstract class Actor implements CloseableSilently {
+
+  private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
 
   public String getName() {
@@ -39,7 +41,7 @@ public abstract class Actor implements CloseableSilently {
     // notification that timers, conditions, etc. will no longer trigger from now on
   }
 
-  public static Actor wrap(Consumer<ActorControl> r) {
+  public static Actor wrap(final Consumer<ActorControl> r) {
     return new Actor() {
       @Override
       public String getName() {
@@ -55,10 +57,14 @@ public abstract class Actor implements CloseableSilently {
 
   @Override
   public void close() {
-    actor.close().join(30, TimeUnit.SECONDS);
+    actor.close().join(MAX_CLOSE_TIMEOUT, TimeUnit.SECONDS);
   }
 
   public ActorFuture<Void> closeAsync() {
     return actor.close();
+  }
+
+  public static String buildActorName(final int nodeId, final String name) {
+    return String.format("Broker-%d-%s", nodeId, name);
   }
 }

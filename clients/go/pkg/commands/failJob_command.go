@@ -18,11 +18,10 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type DispatchFailJobCommand interface {
-	Send() (*pb.FailJobResponse, error)
+	Send(context.Context) (*pb.FailJobResponse, error)
 }
 
 type FailJobCommandStep1 interface {
@@ -39,10 +38,8 @@ type FailJobCommandStep3 interface {
 }
 
 type FailJobCommand struct {
-	request        *pb.FailJobRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.FailJobRequest
 }
 
 func (cmd *FailJobCommand) JobKey(jobKey int64) FailJobCommandStep2 {
@@ -60,18 +57,19 @@ func (cmd *FailJobCommand) ErrorMessage(errorMessage string) FailJobCommandStep3
 	return cmd
 }
 
-func (cmd *FailJobCommand) Send() (*pb.FailJobResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
+func (cmd *FailJobCommand) Send(ctx context.Context) (*pb.FailJobResponse, error) {
+	response, err := cmd.gateway.FailJob(ctx, &cmd.request)
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
+	}
 
-	return cmd.gateway.FailJob(ctx, cmd.request)
+	return response, err
 }
 
-func NewFailJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) FailJobCommandStep1 {
+func NewFailJobCommand(gateway pb.GatewayClient, pred retryPredicate) FailJobCommandStep1 {
 	return &FailJobCommand{
-		request:        &pb.FailJobRequest{},
-		gateway:        gateway,
-		requestTimeout: requestTimeout,
-		retryPredicate: retryPredicate,
+		Command: Command{gateway: gateway,
+			retryPred: pred,
+		},
 	}
 }

@@ -62,14 +62,17 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-public class BpmnStepHandlers {
+public final class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler<?>> stepHandlers = new EnumMap<>(BpmnStep.class);
 
   BpmnStepHandlers(final ZeebeState state, final CatchEventBehavior catchEventBehavior) {
     final IncidentResolver incidentResolver = new IncidentResolver(state.getIncidentState());
     final CatchEventSubscriber catchEventSubscriber = new CatchEventSubscriber(catchEventBehavior);
     final BufferedMessageToStartEventCorrelator messageStartEventCorrelator =
-        new BufferedMessageToStartEventCorrelator(state.getKeyGenerator(), state.getMessageState());
+        new BufferedMessageToStartEventCorrelator(
+            state.getKeyGenerator(),
+            state.getMessageState(),
+            state.getWorkflowState().getEventScopeInstanceState());
 
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATED, new ElementActivatedHandler<>());

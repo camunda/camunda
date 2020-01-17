@@ -26,7 +26,7 @@ import org.junit.runners.Parameterized.Parameters;
 import org.msgpack.core.MessagePacker;
 
 @RunWith(Parameterized.class)
-public class MsgPackQueryValueFormatsTest {
+public final class MsgPackQueryValueFormatsTest {
 
   @Parameter public CheckedConsumer<MessagePacker> valueWriter;
 
@@ -54,11 +54,12 @@ public class MsgPackQueryValueFormatsTest {
   }
 
   // helping the compiler with recognizing lamdas
-  protected static CheckedConsumer<MessagePacker> function(CheckedConsumer<MessagePacker> arg) {
+  protected static CheckedConsumer<MessagePacker> function(
+      final CheckedConsumer<MessagePacker> arg) {
     return arg;
   }
 
-  protected static long longOfLength(int bits) {
+  protected static long longOfLength(final int bits) {
     return 1L << (bits - 1);
   }
 

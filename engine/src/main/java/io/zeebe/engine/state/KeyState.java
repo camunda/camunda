@@ -12,7 +12,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.protocol.Protocol;
 
-public class KeyState implements KeyGenerator {
+public final class KeyState implements KeyGenerator {
 
   private static final long INITIAL_VALUE = 0;
 
@@ -28,7 +28,7 @@ public class KeyState implements KeyGenerator {
    * @param partitionId the partition to determine the key start value
    * @param dbContext
    */
-  public KeyState(int partitionId, ZeebeDb zeebeDb, DbContext dbContext) {
+  public KeyState(final int partitionId, final ZeebeDb zeebeDb, final DbContext dbContext) {
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
     nextValueManager =
         new NextValueManager(keyStartValue, zeebeDb, dbContext, ZbColumnFamilies.KEY);

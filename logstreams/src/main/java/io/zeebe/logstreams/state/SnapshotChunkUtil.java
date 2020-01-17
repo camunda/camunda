@@ -12,16 +12,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.zip.CRC32;
 
-public class SnapshotChunkUtil {
+public final class SnapshotChunkUtil {
 
-  public static long createChecksum(byte[] content) {
+  public static long createChecksum(final byte[] content) {
     final CRC32 crc32 = new CRC32();
     crc32.update(content);
     return crc32.getValue();
   }
 
   public static SnapshotChunk createSnapshotChunkFromFile(
-      File snapshotChunkFile, String snapshotId, int totalCount) throws IOException {
+      final File snapshotChunkFile, final String snapshotId, final int totalCount)
+      throws IOException {
     final byte[] content;
     content = Files.readAllBytes(snapshotChunkFile.toPath());
     final long checksum = createChecksum(content);
@@ -37,7 +38,11 @@ public class SnapshotChunkUtil {
     private final long checksum;
 
     SnapshotChunkImpl(
-        String snapshotId, int totalCount, String chunkName, long checksum, byte[] content) {
+        final String snapshotId,
+        final int totalCount,
+        final String chunkName,
+        final long checksum,
+        final byte[] content) {
       this.snapshotId = snapshotId;
       this.totalCount = totalCount;
       this.chunkName = chunkName;

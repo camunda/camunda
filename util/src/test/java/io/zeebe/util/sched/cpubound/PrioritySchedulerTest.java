@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 @SuppressWarnings("unchecked")
-public class PrioritySchedulerTest {
+public final class PrioritySchedulerTest {
 
   @Test
   public void testRequestsTasksAccordingToPriorityQuotas() {

@@ -49,11 +49,11 @@ public abstract class FlowNodeImpl extends FlowElementImpl implements FlowNode {
   protected static ElementReferenceCollection<SequenceFlow, Incoming> incomingCollection;
   protected static ElementReferenceCollection<SequenceFlow, Outgoing> outgoingCollection;
 
-  public FlowNodeImpl(ModelTypeInstanceContext context) {
+  public FlowNodeImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(FlowNode.class, BPMN_ELEMENT_FLOW_NODE)

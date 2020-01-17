@@ -41,11 +41,11 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
   protected static Attribute<String> textFormatAttribute;
   protected static ChildElement<Text> textChild;
 
-  public TextAnnotationImpl(ModelTypeInstanceContext context) {
+  public TextAnnotationImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TextAnnotation.class, BPMN_ELEMENT_TEXT_ANNOTATION)
@@ -54,7 +54,7 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
             .instanceProvider(
                 new ModelTypeInstanceProvider<TextAnnotation>() {
                   @Override
-                  public TextAnnotation newInstance(ModelTypeInstanceContext context) {
+                  public TextAnnotation newInstance(final ModelTypeInstanceContext context) {
                     return new TextAnnotationImpl(context);
                   }
                 });
@@ -75,7 +75,7 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
   }
 
   @Override
-  public void setTextFormat(String textFormat) {
+  public void setTextFormat(final String textFormat) {
     textFormatAttribute.setValue(this, textFormat);
   }
 
@@ -85,7 +85,7 @@ public class TextAnnotationImpl extends ArtifactImpl implements TextAnnotation {
   }
 
   @Override
-  public void setText(Text text) {
+  public void setText(final Text text) {
     textChild.setChild(this, text);
   }
 }

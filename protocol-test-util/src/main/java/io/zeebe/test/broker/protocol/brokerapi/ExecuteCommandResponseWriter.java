@@ -21,7 +21,8 @@ import java.util.function.Function;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<ExecuteCommandRequest> {
+public final class ExecuteCommandResponseWriter
+    extends AbstractMessageBuilder<ExecuteCommandRequest> {
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final ExecuteCommandResponseEncoder bodyEncoder = new ExecuteCommandResponseEncoder();
   protected final MsgPackHelper msgPackHelper;
@@ -39,12 +40,12 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
   private RejectionType rejectionType = RejectionType.NULL_VAL;
   private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
-  public ExecuteCommandResponseWriter(MsgPackHelper msgPackHelper) {
+  public ExecuteCommandResponseWriter(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
   }
 
   @Override
-  public void initializeFrom(ExecuteCommandRequest request) {
+  public void initializeFrom(final ExecuteCommandRequest request) {
     key = keyFunction.apply(request);
     partitionId = partitionIdFunction.apply(request);
     final Map<String, Object> deserializedEvent = eventFunction.apply(request);
@@ -53,31 +54,33 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     this.intent = intentFunction.apply(request);
   }
 
-  public void setPartitionIdFunction(Function<ExecuteCommandRequest, Integer> partitionIdFunction) {
+  public void setPartitionIdFunction(
+      final Function<ExecuteCommandRequest, Integer> partitionIdFunction) {
     this.partitionIdFunction = partitionIdFunction;
   }
 
-  public void setEventFunction(Function<ExecuteCommandRequest, Map<String, Object>> eventFunction) {
+  public void setEventFunction(
+      final Function<ExecuteCommandRequest, Map<String, Object>> eventFunction) {
     this.eventFunction = eventFunction;
   }
 
-  public void setRecordType(RecordType recordType) {
+  public void setRecordType(final RecordType recordType) {
     this.recordType = recordType;
   }
 
-  public void setKeyFunction(Function<ExecuteCommandRequest, Long> keyFunction) {
+  public void setKeyFunction(final Function<ExecuteCommandRequest, Long> keyFunction) {
     this.keyFunction = keyFunction;
   }
 
-  public void setIntentFunction(Function<ExecuteCommandRequest, Intent> intentFunction) {
+  public void setIntentFunction(final Function<ExecuteCommandRequest, Intent> intentFunction) {
     this.intentFunction = intentFunction;
   }
 
-  public void setRejectionType(RejectionType rejectionType) {
+  public void setRejectionType(final RejectionType rejectionType) {
     this.rejectionType = rejectionType;
   }
 
-  public void setRejectionReason(String rejectionReason) {
+  public void setRejectionReason(final String rejectionReason) {
     final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
     this.rejectionReason = new UnsafeBuffer(bytes);
   }
@@ -93,7 +96,7 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     EnsureUtil.ensureNotNull("recordType", recordType);
     EnsureUtil.ensureNotNull("valueType", valueType);
     EnsureUtil.ensureNotNull("intent", intent);

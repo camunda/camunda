@@ -12,20 +12,20 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 
-public class StartProcess {
+public final class StartProcess {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final List<StartStep> startSteps;
   private final CloseProcess closeProcess;
   private final String name;
 
-  public StartProcess(String name) {
+  public StartProcess(final String name) {
     this.name = name;
     this.startSteps = new ArrayList<>();
     this.closeProcess = new CloseProcess(name);
   }
 
-  public void addStep(String name, CheckedRunnable runnable) {
+  public void addStep(final String name, final CheckedRunnable runnable) {
     startSteps.add(
         new StartStep(
             name,
@@ -35,7 +35,7 @@ public class StartProcess {
             }));
   }
 
-  public void addStep(String name, StartFunction startFunction) {
+  public void addStep(final String name, final StartFunction startFunction) {
     startSteps.add(new StartStep(name, startFunction));
   }
 
@@ -51,7 +51,7 @@ public class StartProcess {
 
   private void startStepByStep() throws Exception {
     int index = 1;
-    for (StartStep step : startSteps) {
+    for (final StartStep step : startSteps) {
       LOG.info("Bootstrap {} [{}/{}]: {}", name, index, startSteps.size(), step.getName());
       try {
         final long durationStepStarting =
@@ -67,7 +67,7 @@ public class StartProcess {
             startSteps.size(),
             step.getName(),
             durationStepStarting);
-      } catch (Exception startException) {
+      } catch (final Exception startException) {
         LOG.info(
             "Bootstrap {} [{}/{}]: {} failed with unexpected exception.",
             name,
@@ -83,7 +83,7 @@ public class StartProcess {
     }
   }
 
-  static long takeDuration(CheckedRunnable runner) throws Exception {
+  static long takeDuration(final CheckedRunnable runner) throws Exception {
     final long startTime = System.currentTimeMillis();
     runner.run();
     final long endTime = System.currentTimeMillis();
@@ -95,7 +95,7 @@ public class StartProcess {
     private final String name;
     private final StartFunction startFunction;
 
-    StartStep(String name, StartFunction startFunction) {
+    StartStep(final String name, final StartFunction startFunction) {
       this.name = name;
       this.startFunction = startFunction;
     }

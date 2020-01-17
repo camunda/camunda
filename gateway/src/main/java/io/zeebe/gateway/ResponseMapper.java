@@ -21,6 +21,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -35,10 +36,10 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResu
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
-public class ResponseMapper {
+public final class ResponseMapper {
 
   public static DeployWorkflowResponse toDeployWorkflowResponse(
-      long key, DeploymentRecord brokerResponse) {
+      final long key, final DeploymentRecord brokerResponse) {
     final DeployWorkflowResponse.Builder responseBuilder =
         DeployWorkflowResponse.newBuilder().setKey(key);
 
@@ -56,25 +57,32 @@ public class ResponseMapper {
     return responseBuilder.build();
   }
 
-  public static PublishMessageResponse toPublishMessageResponse(long key, Object brokerResponse) {
+  public static PublishMessageResponse toPublishMessageResponse(
+      final long key, final Object brokerResponse) {
     return PublishMessageResponse.getDefaultInstance();
   }
 
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(
-      long key, JobRecord brokerResponse) {
+      final long key, final JobRecord brokerResponse) {
     return UpdateJobRetriesResponse.getDefaultInstance();
   }
 
-  public static FailJobResponse toFailJobResponse(long key, JobRecord brokerResponse) {
+  public static FailJobResponse toFailJobResponse(final long key, final JobRecord brokerResponse) {
     return FailJobResponse.getDefaultInstance();
   }
 
-  public static CompleteJobResponse toCompleteJobResponse(long key, JobRecord brokerResponse) {
+  public static ThrowErrorResponse toThrowErrorResponse(
+      final long key, final JobRecord brokerResponse) {
+    return ThrowErrorResponse.getDefaultInstance();
+  }
+
+  public static CompleteJobResponse toCompleteJobResponse(
+      final long key, final JobRecord brokerResponse) {
     return CompleteJobResponse.getDefaultInstance();
   }
 
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
-      long key, WorkflowInstanceCreationRecord brokerResponse) {
+      final long key, final WorkflowInstanceCreationRecord brokerResponse) {
     return CreateWorkflowInstanceResponse.newBuilder()
         .setWorkflowKey(brokerResponse.getWorkflowKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
@@ -84,7 +92,7 @@ public class ResponseMapper {
   }
 
   public static CreateWorkflowInstanceWithResultResponse toCreateWorkflowInstanceWithResultResponse(
-      long key, WorkflowInstanceResultRecord brokerResponse) {
+      final long key, final WorkflowInstanceResultRecord brokerResponse) {
     return CreateWorkflowInstanceWithResultResponse.newBuilder()
         .setWorkflowKey(brokerResponse.getWorkflowKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
@@ -95,17 +103,17 @@ public class ResponseMapper {
   }
 
   public static CancelWorkflowInstanceResponse toCancelWorkflowInstanceResponse(
-      long key, WorkflowInstanceRecord brokerResponse) {
+      final long key, final WorkflowInstanceRecord brokerResponse) {
     return CancelWorkflowInstanceResponse.getDefaultInstance();
   }
 
   public static SetVariablesResponse toSetVariablesResponse(
-      long key, VariableDocumentRecord brokerResponse) {
+      final long key, final VariableDocumentRecord brokerResponse) {
     return SetVariablesResponse.newBuilder().setKey(key).build();
   }
 
   public static ActivateJobsResponse toActivateJobsResponse(
-      long key, JobBatchRecord brokerResponse) {
+      final long key, final JobBatchRecord brokerResponse) {
     final ActivateJobsResponse.Builder responseBuilder = ActivateJobsResponse.newBuilder();
 
     final Iterator<LongValue> jobKeys = brokerResponse.jobKeys().iterator();
@@ -138,11 +146,11 @@ public class ResponseMapper {
   }
 
   public static ResolveIncidentResponse toResolveIncidentResponse(
-      long key, IncidentRecord incident) {
+      final long key, final IncidentRecord incident) {
     return ResolveIncidentResponse.getDefaultInstance();
   }
 
-  private static String bufferAsJson(DirectBuffer customHeaders) {
+  private static String bufferAsJson(final DirectBuffer customHeaders) {
     return MsgPackConverter.convertToJson(bufferAsArray(customHeaders));
   }
 

@@ -17,6 +17,9 @@ package utils
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
 )
 
@@ -33,6 +36,26 @@ func (r *RpcTestMsg) Matches(msg interface{}) bool {
 	if !ok {
 		return false
 	}
+
+	// the long-polling timeout is not controllable so we can only assert it's not higher than expected
+	{
+		gotActivReq, okGot := msg.(*pb.ActivateJobsRequest)
+		wantActivReq, okWant := r.Msg.(*pb.ActivateJobsRequest)
+		if okGot && okWant {
+			return cmp.Equal(gotActivReq, r.Msg, cmpopts.IgnoreFields(pb.ActivateJobsRequest{}, "RequestTimeout")) &&
+				gotActivReq.RequestTimeout <= wantActivReq.RequestTimeout
+		}
+	}
+	{
+		gotCreateReq, okGot := msg.(*pb.CreateWorkflowInstanceWithResultRequest)
+		wantCreateReq, okWant := r.Msg.(*pb.CreateWorkflowInstanceWithResultRequest)
+		if okGot && okWant {
+			return cmp.Equal(gotCreateReq, r.Msg, cmpopts.IgnoreFields(pb.CreateWorkflowInstanceWithResultRequest{}, "RequestTimeout")) &&
+				gotCreateReq.RequestTimeout <= wantCreateReq.RequestTimeout
+		}
+
+	}
+
 	return proto.Equal(m, r.Msg)
 }
 

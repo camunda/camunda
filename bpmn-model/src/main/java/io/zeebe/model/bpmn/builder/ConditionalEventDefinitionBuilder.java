@@ -22,7 +22,7 @@ public class ConditionalEventDefinitionBuilder
     extends AbstractConditionalEventDefinitionBuilder<ConditionalEventDefinitionBuilder> {
 
   public ConditionalEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, ConditionalEventDefinition element) {
+      final BpmnModelInstance modelInstance, final ConditionalEventDefinition element) {
     super(modelInstance, element, ConditionalEventDefinitionBuilder.class);
   }
 }

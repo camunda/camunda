@@ -20,15 +20,15 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
 
   private final WorkflowState workflowState;
 
-  public JobCreatedProcessor(WorkflowState scopeInstances) {
+  public JobCreatedProcessor(final WorkflowState scopeInstances) {
     this.workflowState = scopeInstances;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<JobRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<JobRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final long elementInstanceKey = record.getValue().getElementInstanceKey();
     if (elementInstanceKey > 0) {

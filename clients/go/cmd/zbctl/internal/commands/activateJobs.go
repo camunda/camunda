@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"log"
@@ -39,8 +40,23 @@ var activateJobsCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		timeout := defaultTimeout
+
+		if activateJobsRequestTimeoutFlag != 0 {
+			timeout = activateJobsRequestTimeoutFlag
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
 		jobType := args[0]
-		jobs, err := client.NewActivateJobsCommand().JobType(jobType).MaxJobsToActivate(maxJobsToActivateFlag).WorkerName(activateJobsWorkerFlag).Timeout(activateJobsTimeoutFlag).FetchVariables(activateJobsFetchVariablesFlag...).RequestTimeout(activateJobsRequestTimeoutFlag).Send()
+		jobs, err := client.NewActivateJobsCommand().
+			JobType(jobType).
+			MaxJobsToActivate(maxJobsToActivateFlag).
+			WorkerName(activateJobsWorkerFlag).
+			Timeout(activateJobsTimeoutFlag).
+			FetchVariables(activateJobsFetchVariablesFlag...).
+			Send(ctx)
 		if err != nil {
 			return err
 		}
@@ -50,7 +66,9 @@ var activateJobsCmd = &cobra.Command{
 			log.Println("Activated", jobsCount, "for type", jobType)
 			for index, job := range jobs {
 				log.Println("Job", index+1, "/", jobsCount)
-				printJson(job)
+				if err := printJson(job); err != nil {
+					return err
+				}
 			}
 		} else {
 			log.Println("No jobs found to activate for type", jobType)

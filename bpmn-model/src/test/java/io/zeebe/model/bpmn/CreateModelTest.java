@@ -46,14 +46,15 @@ public class CreateModelTest {
   }
 
   protected <T extends BpmnModelElementInstance> T createElement(
-      BpmnModelElementInstance parentElement, String id, Class<T> elementClass) {
+      final BpmnModelElementInstance parentElement, final String id, final Class<T> elementClass) {
     final T element = modelInstance.newInstance(elementClass);
     element.setAttributeValue("id", id, true);
     parentElement.addChildElement(element);
     return element;
   }
 
-  public SequenceFlow createSequenceFlow(Process process, FlowNode from, FlowNode to) {
+  public SequenceFlow createSequenceFlow(
+      final Process process, final FlowNode from, final FlowNode to) {
     final SequenceFlow sequenceFlow =
         createElement(process, from.getId() + "-" + to.getId(), SequenceFlow.class);
     process.addChildElement(sequenceFlow);

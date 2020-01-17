@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamDeleteTest {
+public final class LogStreamDeleteTest {
 
   private long firstPosition;
   private long secondPosition;

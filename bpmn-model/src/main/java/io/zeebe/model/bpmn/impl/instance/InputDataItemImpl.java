@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class InputDataItemImpl extends DataInputImpl implements InputDataItem {
 
-  public InputDataItemImpl(ModelTypeInstanceContext instanceContext) {
+  public InputDataItemImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InputDataItem.class, BPMN_ELEMENT_INPUT_DATA_ITEM)
@@ -45,7 +45,7 @@ public class InputDataItemImpl extends DataInputImpl implements InputDataItem {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<InputDataItem>() {
                   @Override
-                  public InputDataItem newInstance(ModelTypeInstanceContext instanceContext) {
+                  public InputDataItem newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new InputDataItemImpl(instanceContext);
                   }
                 });

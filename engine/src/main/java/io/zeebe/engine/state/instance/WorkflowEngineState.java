@@ -17,18 +17,18 @@ import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class WorkflowEngineState implements StreamProcessorLifecycleAware {
+public final class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
   private ElementInstanceState elementInstanceState;
   private WorkflowEngineMetrics metrics;
 
-  public WorkflowEngineState(WorkflowState workflowState) {
+  public WorkflowEngineState(final WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
   @Override
-  public void onOpen(ReadonlyProcessingContext processingContext) {
+  public void onOpen(final ReadonlyProcessingContext processingContext) {
     this.elementInstanceState = workflowState.getElementInstanceState();
 
     this.metrics = new WorkflowEngineMetrics(processingContext.getLogStream().getPartitionId());
@@ -40,7 +40,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   }
 
   public void onEventProduced(
-      long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+      final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
 
     if (WorkflowInstanceLifecycle.isElementInstanceState(state)) {
       onElementInstanceEventProduced(key, state, value);
@@ -48,16 +48,19 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   }
 
   public void deferRecord(
-      long key, long scopeKey, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
+      final long key,
+      final long scopeKey,
+      final WorkflowInstanceRecord value,
+      final WorkflowInstanceIntent state) {
     elementInstanceState.storeRecord(key, scopeKey, value, state, Purpose.DEFERRED);
   }
 
-  public void removeStoredRecord(long scopeKey, long key, Purpose purpose) {
+  public void removeStoredRecord(final long scopeKey, final long key, final Purpose purpose) {
     elementInstanceState.removeStoredRecord(scopeKey, key, purpose);
   }
 
   private void onElementInstanceEventProduced(
-      long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+      final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
 
     // only instances that have a multi-state lifecycle are represented in the index
     if (WorkflowInstanceLifecycle.isInitialState(state)) {
@@ -70,7 +73,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   }
 
   private void updateElementInstance(
-      long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+      final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
     final ElementInstance scopeInstance = elementInstanceState.getInstance(key);
 
     scopeInstance.setState(state);
@@ -79,7 +82,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   }
 
   private void createNewElementInstance(
-      long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+      final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
     final long flowScopeKey = value.getFlowScopeKey();
 
     if (flowScopeKey >= 0) {
@@ -90,7 +93,8 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     }
   }
 
-  private void recordMetrics(WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+  private void recordMetrics(
+      final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
     switch (state) {
       case ELEMENT_ACTIVATED:
         metrics.elementInstanceActivated(value.getBpmnElementType());
@@ -115,7 +119,9 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   }
 
   public void storeFailedRecord(
-      long key, WorkflowInstanceRecord recordValue, WorkflowInstanceIntent intent) {
+      final long key,
+      final WorkflowInstanceRecord recordValue,
+      final WorkflowInstanceIntent intent) {
     final long scopeKey = recordValue.getFlowScopeKey();
     elementInstanceState.storeRecord(key, scopeKey, recordValue, intent, Purpose.FAILED);
   }

@@ -49,36 +49,36 @@ public final class MsgPackCodes {
   public static final byte NEGFIXINT_PREFIX = (byte) 0xe0;
   public static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
-  public static boolean isFixInt(byte b) {
+  public static boolean isFixInt(final byte b) {
     final int v = b & 0xFF;
     return v <= 0x7f || v >= 0xe0;
   }
 
-  public static boolean isPosFixInt(byte b) {
+  public static boolean isPosFixInt(final byte b) {
     return (b & POSFIXINT_MASK) == 0;
   }
 
-  public static boolean isNegFixInt(byte b) {
+  public static boolean isNegFixInt(final byte b) {
     return (b & NEGFIXINT_PREFIX) == NEGFIXINT_PREFIX;
   }
 
-  public static boolean isFixStr(byte b) {
+  public static boolean isFixStr(final byte b) {
     return (b & (byte) 0xe0) == FIXSTR_PREFIX;
   }
 
-  public static boolean isFixedArray(byte b) {
+  public static boolean isFixedArray(final byte b) {
     return (b & (byte) 0xf0) == FIXARRAY_PREFIX;
   }
 
-  public static boolean isFixedMap(byte b) {
+  public static boolean isFixedMap(final byte b) {
     return (b & (byte) 0xf0) == FIXMAP_PREFIX;
   }
 
-  public static boolean isFixedRaw(byte b) {
+  public static boolean isFixedRaw(final byte b) {
     return (b & (byte) 0xe0) == FIXSTR_PREFIX;
   }
 
-  public static boolean isMap(byte b) {
+  public static boolean isMap(final byte b) {
     return isFixedMap(b) || b == MAP16 || b == MAP32;
   }
 }

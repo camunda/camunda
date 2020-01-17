@@ -51,11 +51,11 @@ public class CallableElementImpl extends RootElementImpl implements CallableElem
   protected static ChildElement<IoSpecification> ioSpecificationChild;
   protected static ChildElementCollection<IoBinding> ioBindingCollection;
 
-  public CallableElementImpl(ModelTypeInstanceContext instanceContext) {
+  public CallableElementImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder bpmnModelBuilder) {
+  public static void registerType(final ModelBuilder bpmnModelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         bpmnModelBuilder
             .defineType(CallableElement.class, BPMN_ELEMENT_CALLABLE_ELEMENT)
@@ -65,7 +65,7 @@ public class CallableElementImpl extends RootElementImpl implements CallableElem
                 new ModelTypeInstanceProvider<ModelElementInstance>() {
                   @Override
                   public ModelElementInstance newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CallableElementImpl(instanceContext);
                   }
                 });
@@ -93,7 +93,7 @@ public class CallableElementImpl extends RootElementImpl implements CallableElem
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -108,7 +108,7 @@ public class CallableElementImpl extends RootElementImpl implements CallableElem
   }
 
   @Override
-  public void setIoSpecification(IoSpecification ioSpecification) {
+  public void setIoSpecification(final IoSpecification ioSpecification) {
     ioSpecificationChild.setChild(this, ioSpecification);
   }
 

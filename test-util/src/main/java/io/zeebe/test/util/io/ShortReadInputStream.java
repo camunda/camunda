@@ -15,7 +15,7 @@ import java.io.InputStream;
  * returns on every read {@link ShortReadInputStream#END_OF_STREAM} if {@code throwException} is
  * false, or an {@link IOException} otherwise.
  */
-public class ShortReadInputStream extends InputStream {
+public final class ShortReadInputStream extends InputStream {
 
   public static final int END_OF_STREAM = -1;
 

@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class ClaimedFragmentBatchTest {
+public final class ClaimedFragmentBatchTest {
   private static final Runnable DO_NOTHING = () -> {};
 
   private static final int PARTITION_ID = 1;
@@ -39,7 +39,7 @@ public class ClaimedFragmentBatchTest {
 
   private static final byte[] MESSAGE = "message".getBytes();
   private static final int MESSAGE_LENGTH = MESSAGE.length;
-  @Rule public ExpectedException thrown = ExpectedException.none();
+  @Rule public final ExpectedException thrown = ExpectedException.none();
   private UnsafeBuffer underlyingBuffer;
   private ClaimedFragmentBatch claimedBatch;
 

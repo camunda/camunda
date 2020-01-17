@@ -13,8 +13,10 @@ import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.util.ZbLogger;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -24,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 
-public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
+public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
   private static final Logger LOGGER = new ZbLogger(AtomixSnapshotStorage.class);
 
   private final Path runtimeDirectory;
@@ -32,19 +34,24 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   private final SnapshotStore store;
   private final int maxSnapshotCount;
   private final Set<SnapshotDeletionListener> deletionListeners;
+  private final SnapshotMetrics metrics;
 
   public AtomixSnapshotStorage(
       final Path runtimeDirectory,
       final SnapshotStore store,
       final AtomixRecordEntrySupplier entrySupplier,
-      final int maxSnapshotCount) {
+      final int maxSnapshotCount,
+      final SnapshotMetrics metrics) {
     this.runtimeDirectory = runtimeDirectory;
     this.entrySupplier = entrySupplier;
     this.store = store;
     this.maxSnapshotCount = maxSnapshotCount;
+    this.metrics = metrics;
 
     this.deletionListeners = new CopyOnWriteArraySet<>();
     this.store.addListener(this);
+
+    observeExistingSnapshots();
   }
 
   @Override
@@ -85,7 +92,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   @Override
   public boolean commitSnapshot(final Path snapshotPath) {
     // in the case of DbSnapshot instances, we expect the path to always contain all the metadata
-    try (var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
+    try (final var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
       return created != null;
     }
   }
@@ -132,10 +139,18 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   }
 
   @Override
+  public SnapshotMetrics getMetrics() {
+    return metrics;
+  }
+
+  @Override
   public void onNewSnapshot(
       final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
       final SnapshotStore store) {
     final var snapshots = store.getSnapshots();
+    metrics.incrementSnapshotCount();
+    observeSnapshotSize(snapshot);
+
     if (snapshots.size() >= maxSnapshotCount) {
       // by the condition it's guaranteed there be a snapshot after skipping maxSnapshotCount - 1
       @SuppressWarnings("squid:S3655")
@@ -160,6 +175,14 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
     }
   }
 
+  @Override
+  public void onSnapshotDeletion(
+      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
+      final SnapshotStore store) {
+    metrics.decrementSnapshotCount();
+    LOGGER.debug("Snapshot {} removed from store {}", snapshot, store);
+  }
+
   private Path getPendingDirectoryFor(
       final long index, final long term, final WallClockTimestamp timestamp, final long position) {
     final var pending = store.newPendingSnapshot(index, term, timestamp);
@@ -170,5 +193,34 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   private Optional<Snapshot> toSnapshot(final Path path) {
     return DbSnapshotMetadata.ofPath(path)
         .map(metadata -> new SnapshotImpl(metadata.getPosition(), path));
+  }
+
+  private void observeExistingSnapshots() {
+    final var snapshots = store.getSnapshots();
+
+    for (final var snapshot : snapshots) {
+      observeSnapshotSize(snapshot);
+    }
+
+    metrics.setSnapshotCount(snapshots.size());
+  }
+
+  private void observeSnapshotSize(
+      final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot) {
+    try (final var contents = Files.newDirectoryStream(snapshot.getPath())) {
+      var totalSize = 0L;
+
+      for (final var path : contents) {
+        if (Files.isRegularFile(path)) {
+          final var size = Files.size(path);
+          metrics.observeSnapshotFileSize(size);
+          totalSize += size;
+        }
+      }
+
+      metrics.observeSnapshotSize(totalSize);
+    } catch (IOException e) {
+      LOGGER.warn("Failed to observe size for snapshot {}", snapshot, e);
+    }
   }
 }

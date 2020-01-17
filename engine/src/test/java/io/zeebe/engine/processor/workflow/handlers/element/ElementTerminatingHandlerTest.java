@@ -18,8 +18,9 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class ElementTerminatingHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
-  private final IncidentState incidentState = zeebeStateRule.getZeebeState().getIncidentState();
+public final class ElementTerminatingHandlerTest
+    extends ElementHandlerTestCase<ExecutableFlowNode> {
+  private final IncidentState incidentState = ZEEBE_STATE_RULE.getZeebeState().getIncidentState();
   private ElementTerminatingHandler<ExecutableFlowNode> handler;
 
   @Override

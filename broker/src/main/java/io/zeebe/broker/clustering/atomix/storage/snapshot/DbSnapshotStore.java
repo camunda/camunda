@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 
-public class DbSnapshotStore implements SnapshotStore {
+public final class DbSnapshotStore implements SnapshotStore {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStore.class);
 
   // if thread-safe is a must, then switch to ConcurrentNavigableMap
@@ -46,7 +46,7 @@ public class DbSnapshotStore implements SnapshotStore {
   private final ReusableSnapshotId lowerBoundId;
   private final ReusableSnapshotId upperBoundId;
 
-  public DbSnapshotStore(
+  DbSnapshotStore(
       final Path snapshotsDirectory,
       final Path pendingDirectory,
       final ConcurrentNavigableMap<DbSnapshotId, DbSnapshot> snapshots) {
@@ -97,6 +97,9 @@ public class DbSnapshotStore implements SnapshotStore {
 
   @Override
   public void delete() {
+    // currently only called by Atomix when permanently leaving a cluster - it should be safe here
+    // to not update the metrics, as they will simply disappear as time moves on. Once we have a
+    // single store/replication mechanism, we can consider updating the metrics here
     snapshots.clear();
 
     try {
@@ -220,13 +223,14 @@ public class DbSnapshotStore implements SnapshotStore {
     LOGGER.debug("Deleting snapshot {}", snapshot);
     snapshot.delete();
     snapshots.remove(snapshot.getMetadata());
+    listeners.forEach(l -> l.onSnapshotDeletion(snapshot, this));
     LOGGER.trace("Snapshots count: {}", snapshots.size());
   }
 
   private void cleanUpTemporarySnapshots(final DbSnapshotId cutoffId) throws IOException {
     LOGGER.debug("Search for orphaned snapshots below oldest valid snapshot {}", cutoffId);
 
-    try (var files = Files.newDirectoryStream(pendingDirectory)) {
+    try (final var files = Files.newDirectoryStream(pendingDirectory)) {
       for (final var file : files) {
         final var name = file.getFileName().toString();
         final var parts = name.split("-", 3);

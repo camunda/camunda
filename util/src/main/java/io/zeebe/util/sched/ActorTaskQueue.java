@@ -13,7 +13,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
 @SuppressWarnings("restriction")
-public class ActorTaskQueue extends ActorTaskQueueHead {
+public final class ActorTaskQueue extends ActorTaskQueueHead {
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
@@ -140,17 +140,17 @@ class ActorTaskQueueNode {
   long stateCount;
   ActorTask task;
 
-  void nextOrdered(ActorTaskQueueNode t) {
+  void nextOrdered(final ActorTaskQueueNode t) {
     assert t != this;
     UNSAFE.putOrderedObject(this, NEXT_OFFSET, t);
   }
 
-  void prevOrdered(ActorTaskQueueNode t) {
+  void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
     UNSAFE.putObjectVolatile(this, PREV_OFFSET, t);
   }
 
-  public void setTask(ActorTask task) {
+  public void setTask(final ActorTask task) {
     this.task = task;
   }
 }

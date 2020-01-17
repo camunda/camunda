@@ -13,24 +13,24 @@ import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import org.agrona.DirectBuffer;
 
-public class UpdateVariableStreamWriter implements VariableListener {
+public final class UpdateVariableStreamWriter implements VariableListener {
 
   private final VariableRecord record = new VariableRecord();
 
   private final TypedStreamWriter streamWriter;
 
-  public UpdateVariableStreamWriter(TypedStreamWriter streamWriter) {
+  public UpdateVariableStreamWriter(final TypedStreamWriter streamWriter) {
     this.streamWriter = streamWriter;
   }
 
   @Override
   public void onCreate(
-      long key,
-      long workflowKey,
-      DirectBuffer name,
-      DirectBuffer value,
-      long variableScopeKey,
-      long rootScopeKey) {
+      final long key,
+      final long workflowKey,
+      final DirectBuffer name,
+      final DirectBuffer value,
+      final long variableScopeKey,
+      final long rootScopeKey) {
     record
         .setName(name)
         .setValue(value)
@@ -43,12 +43,12 @@ public class UpdateVariableStreamWriter implements VariableListener {
 
   @Override
   public void onUpdate(
-      long key,
-      long workflowKey,
-      DirectBuffer name,
-      DirectBuffer value,
-      long variableScopeKey,
-      long rootScopeKey) {
+      final long key,
+      final long workflowKey,
+      final DirectBuffer name,
+      final DirectBuffer value,
+      final long variableScopeKey,
+      final long rootScopeKey) {
     record
         .setName(name)
         .setValue(value)

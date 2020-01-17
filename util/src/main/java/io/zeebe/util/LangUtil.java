@@ -7,7 +7,7 @@
  */
 package io.zeebe.util;
 
-public class LangUtil {
+public final class LangUtil {
 
   public static void rethrowUnchecked(final Throwable ex) {
     LangUtil.<RuntimeException>rethrow(ex);

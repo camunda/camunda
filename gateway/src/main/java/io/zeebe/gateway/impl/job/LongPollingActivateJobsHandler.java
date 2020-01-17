@@ -43,10 +43,10 @@ public final class LongPollingActivateJobsHandler extends Actor {
   private final LongPollingMetrics metrics;
 
   private LongPollingActivateJobsHandler(
-      BrokerClient brokerClient,
-      long longPollingTimeout,
-      long probeTimeoutMillis,
-      int emptyResponseThreshold) {
+      final BrokerClient brokerClient,
+      final long longPollingTimeout,
+      final long probeTimeoutMillis,
+      final int emptyResponseThreshold) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = new ActivateJobsHandler(brokerClient);
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
@@ -55,14 +55,20 @@ public final class LongPollingActivateJobsHandler extends Actor {
     metrics = new LongPollingMetrics();
   }
 
+  @Override
+  public String getName() {
+    return "GatewayLongPollingJobHandler";
+  }
+
   public void activateJobs(
-      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ActivateJobsRequest request,
+      final StreamObserver<ActivateJobsResponse> responseObserver) {
     final LongPollingActivateJobsRequest longPollingRequest =
         new LongPollingActivateJobsRequest(request, responseObserver);
     activateJobs(longPollingRequest);
   }
 
-  public void activateJobs(LongPollingActivateJobsRequest request) {
+  public void activateJobs(final LongPollingActivateJobsRequest request) {
     actor.run(
         () -> {
           final JobTypeAvailabilityState state = jobTypeState.get(request.getType());
@@ -76,7 +82,7 @@ public final class LongPollingActivateJobsHandler extends Actor {
         });
   }
 
-  private void activateJobsUnchecked(LongPollingActivateJobsRequest request) {
+  private void activateJobsUnchecked(final LongPollingActivateJobsRequest request) {
     final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
     if (topology != null) {
       final int partitionsCount = topology.getPartitionsCount();
@@ -96,12 +102,13 @@ public final class LongPollingActivateJobsHandler extends Actor {
     actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
   }
 
-  private void onNotification(String jobType) {
+  private void onNotification(final String jobType) {
     LOG.trace("Received jobs available notification for type {}.", jobType);
     actor.call(() -> jobsAvailable(jobType));
   }
 
-  private void onCompleted(LongPollingActivateJobsRequest request, Integer remainingAmount) {
+  private void onCompleted(
+      final LongPollingActivateJobsRequest request, final Integer remainingAmount) {
     if (remainingAmount == request.getMaxJobsToActivate()) {
       actor.submit(() -> jobsNotAvailable(request));
     } else {
@@ -110,7 +117,8 @@ public final class LongPollingActivateJobsHandler extends Actor {
   }
 
   private void onResponse(
-      LongPollingActivateJobsRequest request, ActivateJobsResponse activateJobsResponse) {
+      final LongPollingActivateJobsRequest request,
+      final ActivateJobsResponse activateJobsResponse) {
     actor.submit(
         () -> {
           request.onResponse(activateJobsResponse);
@@ -118,7 +126,7 @@ public final class LongPollingActivateJobsHandler extends Actor {
         });
   }
 
-  private void jobsNotAvailable(LongPollingActivateJobsRequest request) {
+  private void jobsNotAvailable(final LongPollingActivateJobsRequest request) {
     final JobTypeAvailabilityState state =
         jobTypeState.computeIfAbsent(
             request.getType(), type -> new JobTypeAvailabilityState(type, metrics));
@@ -126,14 +134,14 @@ public final class LongPollingActivateJobsHandler extends Actor {
     block(state, request);
   }
 
-  private void jobsAvailable(String jobType) {
+  private void jobsAvailable(final String jobType) {
     final JobTypeAvailabilityState removedState = jobTypeState.remove(jobType);
     if (removedState != null) {
       unblockRequests(removedState);
     }
   }
 
-  private void unblockRequests(JobTypeAvailabilityState state) {
+  private void unblockRequests(final JobTypeAvailabilityState state) {
     final Queue<LongPollingActivateJobsRequest> requests = state.getBlockedRequests();
     if (requests == null) {
       return;
@@ -148,7 +156,8 @@ public final class LongPollingActivateJobsHandler extends Actor {
     state.clearBlockedRequests();
   }
 
-  private void block(JobTypeAvailabilityState state, LongPollingActivateJobsRequest request) {
+  private void block(
+      final JobTypeAvailabilityState state, final LongPollingActivateJobsRequest request) {
     if (request.isLongPollingDisabled()) {
       request.complete();
       return;
@@ -165,7 +174,8 @@ public final class LongPollingActivateJobsHandler extends Actor {
     }
   }
 
-  private void addTimeOut(JobTypeAvailabilityState state, LongPollingActivateJobsRequest request) {
+  private void addTimeOut(
+      final JobTypeAvailabilityState state, final LongPollingActivateJobsRequest request) {
     ActorClock.currentTimeMillis();
     final Duration requestTimeout = request.getLongPollingTimeout(longPollingTimeout);
     final ScheduledTimer timeout =
@@ -219,22 +229,22 @@ public final class LongPollingActivateJobsHandler extends Actor {
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
     private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
 
-    public Builder setBrokerClient(BrokerClient brokerClient) {
+    public Builder setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
       return this;
     }
 
-    public Builder setLongPollingTimeout(long longPollingTimeout) {
+    public Builder setLongPollingTimeout(final long longPollingTimeout) {
       this.longPollingTimeout = longPollingTimeout;
       return this;
     }
 
-    public Builder setProbeTimeoutMillis(long probeTimeoutMillis) {
+    public Builder setProbeTimeoutMillis(final long probeTimeoutMillis) {
       this.probeTimeoutMillis = probeTimeoutMillis;
       return this;
     }
 
-    public Builder setMinEmptyResponses(int minEmptyResponses) {
+    public Builder setMinEmptyResponses(final int minEmptyResponses) {
       this.minEmptyResponses = minEmptyResponses;
       return this;
     }

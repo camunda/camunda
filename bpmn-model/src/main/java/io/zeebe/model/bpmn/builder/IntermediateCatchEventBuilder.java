@@ -24,7 +24,7 @@ public class IntermediateCatchEventBuilder
     extends AbstractIntermediateCatchEventBuilder<IntermediateCatchEventBuilder> {
 
   public IntermediateCatchEventBuilder(
-      BpmnModelInstance modelInstance, IntermediateCatchEvent element) {
+      final BpmnModelInstance modelInstance, final IntermediateCatchEvent element) {
     super(modelInstance, element, IntermediateCatchEventBuilder.class);
   }
 }

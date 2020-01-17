@@ -42,7 +42,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class FlowElementInstantiationTransformer implements ModelElementTransformer<FlowElement> {
+public final class FlowElementInstantiationTransformer
+    implements ModelElementTransformer<FlowElement> {
 
   private static final Map<Class<?>, Function<String, AbstractFlowElement>> ELEMENT_FACTORIES;
 
@@ -70,7 +71,7 @@ public class FlowElementInstantiationTransformer implements ModelElementTransfor
   }
 
   @Override
-  public void transform(FlowElement element, TransformContext context) {
+  public void transform(final FlowElement element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final Class<?> elementType = element.getElementType().getInstanceType();
 

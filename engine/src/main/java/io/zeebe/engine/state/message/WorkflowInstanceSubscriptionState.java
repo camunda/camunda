@@ -17,7 +17,7 @@ import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceSubscriptionState {
+public final class WorkflowInstanceSubscriptionState {
 
   private final DbContext dbContext;
 
@@ -35,7 +35,8 @@ public class WorkflowInstanceSubscriptionState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
       sentTimeColumnFamily;
 
-  public WorkflowInstanceSubscriptionState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public WorkflowInstanceSubscriptionState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     this.dbContext = dbContext;
 
     elementInstanceKey = new DbLong();
@@ -70,14 +71,14 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public WorkflowInstanceSubscription getSubscription(
-      long elementInstanceKey, DirectBuffer messageName) {
+      final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
     return subscriptionColumnFamily.get(elementKeyAndMessageName);
   }
 
   public void visitElementSubscriptions(
-      long elementInstanceKey, WorkflowInstanceSubscriptionVisitor visitor) {
+      final long elementInstanceKey, final WorkflowInstanceSubscriptionVisitor visitor) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
 
     subscriptionColumnFamily.whileEqualPrefix(
@@ -88,7 +89,7 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void visitSubscriptionBefore(
-      final long deadline, WorkflowInstanceSubscriptionVisitor visitor) {
+      final long deadline, final WorkflowInstanceSubscriptionVisitor visitor) {
 
     sentTimeColumnFamily.whileTrue(
         (compositeKey, nil) -> {
@@ -104,23 +105,24 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void updateToOpenedState(
-      final WorkflowInstanceSubscription subscription, int subscriptionPartitionId) {
+      final WorkflowInstanceSubscription subscription, final int subscriptionPartitionId) {
     subscription.setOpened();
     subscription.setSubscriptionPartitionId(subscriptionPartitionId);
     updateSentTime(subscription, 0);
   }
 
-  public void updateToClosingState(final WorkflowInstanceSubscription subscription, long sentTime) {
+  public void updateToClosingState(
+      final WorkflowInstanceSubscription subscription, final long sentTime) {
     subscription.setClosing();
     updateSentTime(subscription, sentTime);
   }
 
   public void updateSentTimeInTransaction(
-      final WorkflowInstanceSubscription subscription, long sentTime) {
+      final WorkflowInstanceSubscription subscription, final long sentTime) {
     dbContext.runInTransaction(() -> updateSentTime(subscription, sentTime));
   }
 
-  public void updateSentTime(final WorkflowInstanceSubscription subscription, long sentTime) {
+  public void updateSentTime(final WorkflowInstanceSubscription subscription, final long sentTime) {
     wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
     if (subscription.getCommandSentTime() > 0) {
@@ -138,13 +140,13 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public boolean existSubscriptionForElementInstance(
-      long elementInstanceKey, DirectBuffer messageName) {
+      final long elementInstanceKey, final DirectBuffer messageName) {
     wrapSubscriptionKeys(elementInstanceKey, messageName);
 
     return subscriptionColumnFamily.exists(elementKeyAndMessageName);
   }
 
-  public boolean remove(long elementInstanceKey, DirectBuffer messageName) {
+  public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
     final WorkflowInstanceSubscription subscription =
         getSubscription(elementInstanceKey, messageName);
     final boolean found = subscription != null;
@@ -163,7 +165,7 @@ public class WorkflowInstanceSubscriptionState {
     sentTimeColumnFamily.delete(sentTimeCompositeKey);
   }
 
-  private void wrapSubscriptionKeys(long elementInstanceKey, DirectBuffer messageName) {
+  private void wrapSubscriptionKeys(final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
   }

@@ -10,12 +10,12 @@ package io.zeebe.util;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-public class DurationUtil {
+public final class DurationUtil {
   /**
    * Input format expected to be [value][unit], where: - value is a number {@link
    * java.lang.Float#parseFloat} - unit is one of: 'ms', 's', 'm', 'h'
    */
-  public static Duration parse(String durationString) {
+  public static Duration parse(final String durationString) {
     final String matchedUnit = extractUnit(durationString);
     final String matchedValue =
         durationString.substring(0, durationString.length() - matchedUnit.length());
@@ -55,7 +55,7 @@ public class DurationUtil {
     return Duration.of(value, unit);
   }
 
-  private static String extractUnit(CharSequence humanReadable) {
+  private static String extractUnit(final CharSequence humanReadable) {
     final StringBuilder unitBuilder = new StringBuilder();
     for (int i = humanReadable.length() - 1; i >= 0; i--) {
       final char current = humanReadable.charAt(i);

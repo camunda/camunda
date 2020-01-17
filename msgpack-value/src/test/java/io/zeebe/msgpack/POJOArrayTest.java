@@ -22,8 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class POJOArrayTest {
-  @Rule public ExpectedException exception = ExpectedException.none();
+public final class POJOArrayTest {
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldSerializePOJO() {
@@ -412,7 +412,7 @@ public class POJOArrayTest {
     assertThat(iterator.hasNext()).isFalse();
   }
 
-  protected void encodeSimpleArrayProp(MsgPackWriter writer) {
+  protected void encodeSimpleArrayProp(final MsgPackWriter writer) {
     writer.writeString(wrapString("simpleArray"));
     writer.writeArrayHeader(5);
 

@@ -25,7 +25,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithRes
 import java.time.Duration;
 import org.junit.Test;
 
-public class CreateWorkflowInstanceWithResultTest extends ClientTest {
+public final class CreateWorkflowInstanceWithResultTest extends ClientTest {
 
   @Test
   public void shouldCreateWorkflowInstanceByWorkflowInstanceKey() {
@@ -124,7 +124,7 @@ public class CreateWorkflowInstanceWithResultTest extends ClientTest {
       return key;
     }
 
-    public VariablesPojo setKey(String key) {
+    public VariablesPojo setKey(final String key) {
       this.key = key;
       return this;
     }

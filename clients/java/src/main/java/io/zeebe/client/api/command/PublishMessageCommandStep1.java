@@ -31,9 +31,12 @@ public interface PublishMessageCommandStep1 {
 
   interface PublishMessageCommandStep2 {
     /**
-     * Set the correlation-key of the message.
+     * Set the value of the correlation key of the message.
      *
-     * @param correlationKey the correlation-key of the message
+     * <p>This value will be used together with the message name to find matching message
+     * subscriptions.
+     *
+     * @param correlationKey the correlation key value of the message
      * @return the builder for this command
      */
     PublishMessageCommandStep3 correlationKey(String correlationKey);

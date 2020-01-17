@@ -7,6 +7,7 @@
  */
 package io.zeebe.logstreams.log;
 
+import io.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
 
@@ -18,6 +19,11 @@ import io.zeebe.util.sched.future.ActorFuture;
  * <p>To read events, the {@link LogStream#newLogStreamReader()} ()} can be used.
  */
 public interface LogStream extends AutoCloseable {
+
+  /** @return a new default LogStream builder */
+  static LogStreamBuilder builder() {
+    return new LogStreamBuilderImpl();
+  }
 
   /** @return the partition id of the log stream */
   int getPartitionId();

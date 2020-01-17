@@ -7,23 +7,26 @@
  */
 package io.zeebe.msgpack.spec;
 
-public class MsgpackWriterException extends MsgpackException {
+public final class MsgpackWriterException extends MsgpackException {
   private static final long serialVersionUID = 6432471139267928246L;
 
-  public MsgpackWriterException(String message) {
+  public MsgpackWriterException(final String message) {
     super(message);
   }
 
-  public MsgpackWriterException(String message, Throwable cause) {
+  public MsgpackWriterException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public MsgpackWriterException(Throwable cause) {
+  public MsgpackWriterException(final Throwable cause) {
     super(cause);
   }
 
   public MsgpackWriterException(
-      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+      final String message,
+      final Throwable cause,
+      final boolean enableSuppression,
+      final boolean writableStackTrace) {
     super(message, cause, enableSuppression, writableStackTrace);
   }
 }

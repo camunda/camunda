@@ -39,11 +39,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 public class ExtensionElementsImpl extends BpmnModelElementInstanceImpl
     implements ExtensionElements {
 
-  public ExtensionElementsImpl(ModelTypeInstanceContext context) {
+  public ExtensionElementsImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -52,7 +52,8 @@ public class ExtensionElementsImpl extends BpmnModelElementInstanceImpl
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<ExtensionElements>() {
                   @Override
-                  public ExtensionElements newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ExtensionElements newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ExtensionElementsImpl(instanceContext);
                   }
                 });
@@ -71,7 +72,8 @@ public class ExtensionElementsImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public ModelElementInstance addExtensionElement(String namespaceUri, String localName) {
+  public ModelElementInstance addExtensionElement(
+      final String namespaceUri, final String localName) {
     final ModelElementType extensionElementType =
         modelInstance.registerGenericType(namespaceUri, localName);
     final ModelElementInstance extensionElement = extensionElementType.newInstance(modelInstance);
@@ -80,14 +82,15 @@ public class ExtensionElementsImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public <T extends ModelElementInstance> T addExtensionElement(Class<T> extensionElementClass) {
+  public <T extends ModelElementInstance> T addExtensionElement(
+      final Class<T> extensionElementClass) {
     final ModelElementInstance extensionElement = modelInstance.newInstance(extensionElementClass);
     addChildElement(extensionElement);
     return extensionElementClass.cast(extensionElement);
   }
 
   @Override
-  public void addChildElement(ModelElementInstance extensionElement) {
+  public void addChildElement(final ModelElementInstance extensionElement) {
     getDomElement().appendChild(extensionElement.getDomElement());
   }
 }

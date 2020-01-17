@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class RestoreTest {
+public final class RestoreTest {
   private static final int ATOMIX_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(2).toBytes();
   private static final int LARGE_PAYLOAD_BYTESIZE = (int) ByteValue.ofKilobytes(32).toBytes();
   private static final String LARGE_PAYLOAD =
@@ -95,6 +95,31 @@ public class RestoreTest {
     assertThat(clientRule.createWorkflowInstance(firstWorkflowKey)).isPositive();
     assertThat(clientRule.createWorkflowInstance(secondWorkflowKey)).isPositive();
     assertThat(clientRule.createWorkflowInstance(thirdWorkflowKey)).isPositive();
+  }
+
+  @Test
+  public void shouldKeepPositionsConsistent() {
+    // given
+    writeManyEventsUntilAtomixLogIsCompactable();
+
+    // when
+    clusteringRule.restartBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+
+    writeManyEventsUntilAtomixLogIsCompactable();
+
+    // then
+    final var leaderLogStream = clusteringRule.getLogStream(1);
+
+    final var reader = leaderLogStream.newLogStreamReader().join();
+    reader.seekToFirstEvent();
+    assertThat(reader.hasNext()).isTrue();
+
+    var previousPosition = -1L;
+    while (reader.hasNext()) {
+      final var position = reader.next().getPosition();
+      assertThat(position).isGreaterThan(previousPosition);
+      previousPosition = position;
+    }
   }
 
   private Broker getLeader() {

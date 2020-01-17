@@ -13,16 +13,16 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DbBuffer implements DbValue {
+public final class DbBuffer implements DbValue {
 
   private final ExpandableArrayBuffer value = new ExpandableArrayBuffer();
   private final DirectBuffer view = new UnsafeBuffer(0, 0);
 
-  public void wrapBuffer(DirectBuffer buffer, int offset, int length) {
+  public void wrapBuffer(final DirectBuffer buffer, final int offset, final int length) {
     view.wrap(buffer, offset, length);
   }
 
-  public void wrapBuffer(DirectBuffer buffer) {
+  public void wrapBuffer(final DirectBuffer buffer) {
     view.wrap(buffer);
   }
 
@@ -36,12 +36,12 @@ public class DbBuffer implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putBytes(offset, view, 0, view.capacity());
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     value.putBytes(0, buffer, offset, length);
     view.wrap(value, 0, length);
   }

@@ -27,7 +27,7 @@ public class ControlledTestExporter implements Exporter {
   private Context context;
   private Controller controller;
 
-  public ControlledTestExporter shouldAutoUpdatePosition(boolean shouldAutoUpdate) {
+  public ControlledTestExporter shouldAutoUpdatePosition(final boolean shouldAutoUpdate) {
     this.shouldAutoUpdatePosition = shouldAutoUpdate;
     return this;
   }

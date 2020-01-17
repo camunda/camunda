@@ -11,7 +11,7 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
 
-public class ExclusiveGatewayElementCompletedHandler<T extends ExecutableExclusiveGateway>
+public final class ExclusiveGatewayElementCompletedHandler<T extends ExecutableExclusiveGateway>
     extends ElementCompletedHandler<T> {
 
   public ExclusiveGatewayElementCompletedHandler() {
@@ -19,7 +19,7 @@ public class ExclusiveGatewayElementCompletedHandler<T extends ExecutableExclusi
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     publishDeferredRecords(context);
     return super.handleState(context);
   }

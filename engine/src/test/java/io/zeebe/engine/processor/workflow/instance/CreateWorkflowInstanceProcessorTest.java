@@ -51,7 +51,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 @SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class CreateWorkflowInstanceProcessorTest
+public final class CreateWorkflowInstanceProcessorTest
     extends CommandProcessorTestCase<WorkflowInstanceCreationRecord> {
 
   private static final BpmnModelInstance VALID_WORKFLOW =
@@ -68,12 +68,12 @@ public class CreateWorkflowInstanceProcessorTest
   @BeforeClass
   public static void init() {
     transformer =
-        new DeploymentTransformer(CommandProcessorTestCase.zeebeStateRule.getZeebeState());
+        new DeploymentTransformer(CommandProcessorTestCase.ZEEBE_STATE_RULE.getZeebeState());
   }
 
   @Before
   public void setUp() {
-    state = CommandProcessorTestCase.zeebeStateRule.getZeebeState();
+    state = CommandProcessorTestCase.ZEEBE_STATE_RULE.getZeebeState();
     keyGenerator = state.getKeyGenerator();
     workflowState = state.getWorkflowState();
     elementInstanceState = workflowState.getElementInstanceState();
@@ -285,7 +285,7 @@ public class CreateWorkflowInstanceProcessorTest
   }
 
   private WorkflowInstanceRecord newExpectedElementActivatingRecord(
-      DeployedWorkflow workflow, long instanceKey) {
+      final DeployedWorkflow workflow, final long instanceKey) {
     return new WorkflowInstanceRecord()
         .setElementId(workflow.getBpmnProcessId())
         .setBpmnElementType(BpmnElementType.PROCESS)
@@ -296,7 +296,8 @@ public class CreateWorkflowInstanceProcessorTest
         .setBpmnProcessId(workflow.getBpmnProcessId());
   }
 
-  private void verifyElementActivatingPublished(long instanceKey, ElementInstance instance) {
+  private void verifyElementActivatingPublished(
+      final long instanceKey, final ElementInstance instance) {
     verify(streamWriter, times(1))
         .appendFollowUpEvent(
             eq(instanceKey),
@@ -308,7 +309,7 @@ public class CreateWorkflowInstanceProcessorTest
     return deployNewWorkflow(VALID_WORKFLOW);
   }
 
-  private DeployedWorkflow deployNewWorkflow(BpmnModelInstance model) {
+  private DeployedWorkflow deployNewWorkflow(final BpmnModelInstance model) {
     final long key = keyGenerator.nextKey();
     final DeploymentRecord deployment = newDeployment(model);
     final Workflow workflow = deployment.workflows().iterator().next();
@@ -317,7 +318,7 @@ public class CreateWorkflowInstanceProcessorTest
     return workflowState.getLatestWorkflowVersionByProcessId(workflow.getBpmnProcessIdBuffer());
   }
 
-  private DeploymentRecord newDeployment(BpmnModelInstance model) {
+  private DeploymentRecord newDeployment(final BpmnModelInstance model) {
     final ByteArrayOutputStream output = new ByteArrayOutputStream();
     final DeploymentRecord record = new DeploymentRecord();
     Bpmn.writeModelToStream(output, model);

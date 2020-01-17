@@ -37,7 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SubscriptionPeekBlockTest {
+public final class SubscriptionPeekBlockTest {
   static final int A_PARTITION_LENGTH = 1024;
   static final int A_MSG_PAYLOAD_LENGTH = 10;
   static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
@@ -117,8 +117,7 @@ public class SubscriptionPeekBlockTest {
             fragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            nextFragmentOffset(fragOffset),
-            1);
+            nextFragmentOffset(fragOffset));
     // and the position was not increased
     verifyNoMoreInteractions(subscriberPositionMock);
   }
@@ -231,8 +230,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             2 * A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            nextFragOffset,
-            2);
+            nextFragOffset);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
   }
@@ -278,8 +276,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            secondFragOffset,
-            1);
+            secondFragOffset);
     // and the position was increased by the fragment length of the one fragment
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
   }
@@ -323,8 +320,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            secondFragOffset,
-            2);
+            secondFragOffset);
   }
 
   @Test
@@ -367,8 +363,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             2 * A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            nextFragOffset,
-            2);
+            nextFragOffset);
   }
 
   @Test
@@ -440,8 +435,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             A_FRAGMENT_LENGTH,
             nextPartionId,
-            nextFragOffset,
-            1);
+            nextFragOffset);
     // and the position was rolled over to the next partition
     verify(subscriberPositionMock)
         .proposeMaxOrdered(position(nextPartionId, nextFragOffset)); // is secondFragOffset somehow
@@ -515,8 +509,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            nextFragOffset,
-            1);
+            nextFragOffset);
     // and the position was rolled over to the next fragement after the padding
     verify(subscriberPositionMock)
         .proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset)); // is secondFragOffset somehow
@@ -592,8 +585,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             2 * A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            nextFragOffset,
-            2);
+            nextFragOffset);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, nextFragOffset));
   }
@@ -679,8 +671,7 @@ public class SubscriptionPeekBlockTest {
             firstFragOffset + A_PARTITION_DATA_SECTION_OFFSET,
             A_FRAGMENT_LENGTH,
             A_PARTITION_ID,
-            secondFragOffset,
-            2);
+            secondFragOffset);
     // and the position was increased by the fragment length of the two fragments
     verify(subscriberPositionMock).proposeMaxOrdered(position(A_PARTITION_ID, secondFragOffset));
   }

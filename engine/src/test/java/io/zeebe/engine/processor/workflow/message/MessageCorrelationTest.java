@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MessageCorrelationTest {
+public final class MessageCorrelationTest {
 
   private static final String PROCESS_ID = "process";
 
@@ -81,7 +81,7 @@ public class MessageCorrelationTest {
           .endEvent("taskEnd")
           .done();
 
-  @Rule public EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Test
   public void shouldCorrelateMessageIfEnteredBefore() {

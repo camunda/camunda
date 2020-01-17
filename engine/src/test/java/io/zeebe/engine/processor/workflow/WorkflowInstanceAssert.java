@@ -20,31 +20,31 @@ import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
 
-public class WorkflowInstanceAssert
+public final class WorkflowInstanceAssert
     extends AbstractListAssert<
         WorkflowInstanceAssert,
         List<Record<WorkflowInstanceRecord>>,
         Record<WorkflowInstanceRecord>,
         ObjectAssert<Record<WorkflowInstanceRecord>>> {
 
-  public WorkflowInstanceAssert(List<Record<WorkflowInstanceRecord>> actual) {
+  public WorkflowInstanceAssert(final List<Record<WorkflowInstanceRecord>> actual) {
     super(actual, WorkflowInstanceAssert.class);
   }
 
   @Override
   protected ObjectAssert<Record<WorkflowInstanceRecord>> toAssert(
-      Record<WorkflowInstanceRecord> value, String description) {
+      final Record<WorkflowInstanceRecord> value, final String description) {
     return new ObjectAssert<>(value).describedAs(description);
   }
 
   @Override
   protected WorkflowInstanceAssert newAbstractIterableAssert(
-      Iterable<? extends Record<WorkflowInstanceRecord>> iterable) {
+      final Iterable<? extends Record<WorkflowInstanceRecord>> iterable) {
     return new WorkflowInstanceAssert(Lists.newArrayList(iterable));
   }
 
   public static WorkflowInstanceAssert assertThat(
-      List<Record<WorkflowInstanceRecord>> workflowInstanceEvents) {
+      final List<Record<WorkflowInstanceRecord>> workflowInstanceEvents) {
     return new WorkflowInstanceAssert(workflowInstanceEvents);
   }
 
@@ -52,7 +52,7 @@ public class WorkflowInstanceAssert
    * Asserts that once an element is in state terminating, no flow-related events in its scope are
    * evaluated anymore
    */
-  public WorkflowInstanceAssert doesNotEvaluateFlowAfterTerminatingElement(String elementId) {
+  public WorkflowInstanceAssert doesNotEvaluateFlowAfterTerminatingElement(final String elementId) {
     final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
     final Optional<Record<WorkflowInstanceRecord>> terminatingRecordOptional =
@@ -98,7 +98,7 @@ public class WorkflowInstanceAssert
     return this;
   }
 
-  private static boolean isFlowEvaluatingState(Intent state) {
+  private static boolean isFlowEvaluatingState(final Intent state) {
     return state == WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN
         || state == WorkflowInstanceIntent.ELEMENT_COMPLETED
         || state == WorkflowInstanceIntent.ELEMENT_ACTIVATING;

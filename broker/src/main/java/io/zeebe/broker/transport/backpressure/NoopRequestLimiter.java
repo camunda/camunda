@@ -7,18 +7,18 @@
  */
 package io.zeebe.broker.transport.backpressure;
 
-public class NoopRequestLimiter<ContextT> implements RequestLimiter<ContextT> {
+public final class NoopRequestLimiter<ContextT> implements RequestLimiter<ContextT> {
 
   @Override
-  public boolean tryAcquire(int streamId, long requestId, ContextT context) {
+  public boolean tryAcquire(final int streamId, final long requestId, final ContextT context) {
     return true;
   }
 
   @Override
-  public void onResponse(int streamId, long requestId) {}
+  public void onResponse(final int streamId, final long requestId) {}
 
   @Override
-  public void onIgnore(int streamId, long requestId) {}
+  public void onIgnore(final int streamId, final long requestId) {}
 
   @Override
   public int getLimit() {

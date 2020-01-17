@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.SubProcess;
 /** @author Sebastian Menski */
 public class SubProcessBuilder extends AbstractSubProcessBuilder<SubProcessBuilder> {
 
-  public SubProcessBuilder(BpmnModelInstance modelInstance, SubProcess element) {
+  public SubProcessBuilder(final BpmnModelInstance modelInstance, final SubProcess element) {
     super(modelInstance, element, SubProcessBuilder.class);
   }
 }

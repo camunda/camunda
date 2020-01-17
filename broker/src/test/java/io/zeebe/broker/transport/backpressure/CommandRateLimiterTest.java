@@ -16,7 +16,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
-public class CommandRateLimiterTest {
+public final class CommandRateLimiterTest {
 
   private static final int INITIAL_LIMIT = 5;
   private final SettableLimit limit = new SettableLimit(INITIAL_LIMIT);

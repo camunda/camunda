@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import java.util.function.Function;
 
-public class MultiInstanceBodyEventOccurredHandler extends AbstractMultiInstanceBodyHandler {
+public final class MultiInstanceBodyEventOccurredHandler extends AbstractMultiInstanceBodyHandler {
 
   private final BpmnStepHandler eventHandler;
 

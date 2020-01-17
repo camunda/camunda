@@ -7,36 +7,27 @@
  */
 package io.zeebe.util.sched;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
+import java.util.concurrent.atomic.AtomicLong;
 
 @SuppressWarnings("restriction")
-public class ActorConditionImpl implements ActorCondition, ActorSubscription {
-  private static final long TRIGGER_COUNT_OFFSET;
-
-  static {
-    try {
-      TRIGGER_COUNT_OFFSET =
-          UNSAFE.objectFieldOffset(ActorConditionImpl.class.getDeclaredField("triggerCount"));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
+public final class ActorConditionImpl implements ActorCondition, ActorSubscription {
 
   private final ActorJob job;
   private final String conditionName;
   private final ActorTask task;
-  private volatile long triggerCount = 0;
+  private final AtomicLong triggerCount;
   private long runCount = 0;
 
-  public ActorConditionImpl(String conditionName, ActorJob job) {
+  public ActorConditionImpl(final String conditionName, final ActorJob job) {
     this.conditionName = conditionName;
     this.job = job;
     this.task = job.getTask();
+    this.triggerCount = new AtomicLong(0);
   }
 
   @Override
   public void signal() {
-    UNSAFE.getAndAddInt(this, TRIGGER_COUNT_OFFSET, 1);
+    triggerCount.getAndIncrement();
     task.tryWakeup();
   }
 
@@ -47,7 +38,7 @@ public class ActorConditionImpl implements ActorCondition, ActorSubscription {
 
   @Override
   public boolean poll() {
-    return triggerCount > runCount;
+    return triggerCount.get() > runCount;
   }
 
   @Override

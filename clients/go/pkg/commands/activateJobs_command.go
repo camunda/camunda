@@ -23,14 +23,13 @@ import (
 )
 
 const (
-	DefaultJobTimeout     = time.Duration(5 * time.Minute)
+	DefaultJobTimeout     = 5 * time.Minute
 	DefaultJobTimeoutInMs = int64(DefaultJobTimeout / time.Millisecond)
 	DefaultJobWorkerName  = "default"
-	RequestTimeoutOffset  = 10 * time.Second
 )
 
 type DispatchActivateJobsCommand interface {
-	Send() ([]entities.Job, error)
+	Send(ctx context.Context) ([]entities.Job, error)
 }
 
 type ActivateJobsCommandStep1 interface {
@@ -47,14 +46,11 @@ type ActivateJobsCommandStep3 interface {
 	Timeout(time.Duration) ActivateJobsCommandStep3
 	WorkerName(string) ActivateJobsCommandStep3
 	FetchVariables(...string) ActivateJobsCommandStep3
-	RequestTimeout(time.Duration) ActivateJobsCommandStep3
 }
 
 type ActivateJobsCommand struct {
-	request        *pb.ActivateJobsRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.ActivateJobsRequest
 }
 
 func (cmd *ActivateJobsCommand) JobType(jobType string) ActivateJobsCommandStep2 {
@@ -82,20 +78,13 @@ func (cmd *ActivateJobsCommand) FetchVariables(fetchVariables ...string) Activat
 	return cmd
 }
 
-func (cmd *ActivateJobsCommand) RequestTimeout(timeout time.Duration) ActivateJobsCommandStep3 {
-	cmd.request.RequestTimeout = int64(timeout / time.Millisecond)
-	cmd.requestTimeout = timeout + RequestTimeoutOffset
-	return cmd
-}
+func (cmd *ActivateJobsCommand) Send(ctx context.Context) ([]entities.Job, error) {
+	cmd.request.RequestTimeout = getLongPollingMillis(ctx)
 
-func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	stream, err := cmd.gateway.ActivateJobs(ctx, cmd.request)
+	stream, err := cmd.gateway.ActivateJobs(ctx, &cmd.request)
 	if err != nil {
-		if cmd.retryPredicate(err) {
-			return cmd.Send()
+		if cmd.retryPred(ctx, err) {
+			return cmd.Send(ctx)
 		}
 		return nil, err
 	}
@@ -118,15 +107,15 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 	return activatedJobs, nil
 }
 
-func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ActivateJobsCommandStep1 {
+func NewActivateJobsCommand(gateway pb.GatewayClient, pred retryPredicate) ActivateJobsCommandStep1 {
 	return &ActivateJobsCommand{
-		request: &pb.ActivateJobsRequest{
-			Timeout:        DefaultJobTimeoutInMs,
-			Worker:         DefaultJobWorkerName,
-			RequestTimeout: int64(requestTimeout / time.Millisecond),
+		request: pb.ActivateJobsRequest{
+			Timeout: DefaultJobTimeoutInMs,
+			Worker:  DefaultJobWorkerName,
 		},
-		gateway:        gateway,
-		requestTimeout: requestTimeout + RequestTimeoutOffset,
-		retryPredicate: retryPredicate,
+		Command: Command{
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

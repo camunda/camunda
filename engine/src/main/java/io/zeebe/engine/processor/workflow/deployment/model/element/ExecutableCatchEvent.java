@@ -10,12 +10,15 @@ package io.zeebe.engine.processor.workflow.deployment.model.element;
 import io.zeebe.model.bpmn.util.time.Timer;
 
 public interface ExecutableCatchEvent extends ExecutableFlowElement {
+
   boolean isTimer();
 
   boolean isMessage();
 
+  boolean isError();
+
   default boolean isNone() {
-    return !isTimer() && !isMessage();
+    return !isTimer() && !isMessage() && !isError();
   }
 
   ExecutableMessage getMessage();
@@ -25,4 +28,6 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
   }
 
   Timer getTimer();
+
+  ExecutableError getError();
 }

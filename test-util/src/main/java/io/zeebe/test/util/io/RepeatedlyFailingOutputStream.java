@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /** */
-public class RepeatedlyFailingOutputStream extends OutputStream {
+public final class RepeatedlyFailingOutputStream extends OutputStream {
   public static final long DEFAULT_FAILURE_FREQUENCY = 8;
 
   private final OutputStream underlyingOutputStream;
@@ -36,7 +36,7 @@ public class RepeatedlyFailingOutputStream extends OutputStream {
   }
 
   @Override
-  public void write(int b) throws IOException {
+  public void write(final int b) throws IOException {
     writeCount++;
 
     if (writeCount % failureFrequency == 0) {

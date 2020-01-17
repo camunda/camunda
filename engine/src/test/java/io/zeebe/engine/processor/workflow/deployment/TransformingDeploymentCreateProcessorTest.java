@@ -37,9 +37,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
-public class TransformingDeploymentCreateProcessorTest {
+public final class TransformingDeploymentCreateProcessorTest {
 
-  @Rule public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION);
+  @Rule
+  public final StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION);
 
   private WorkflowState workflowState;
   private SubscriptionCommandSender mockSubscriptionCommandSender;

@@ -36,7 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
 
-public class GatewayCfgTest {
+public final class GatewayCfgTest {
 
   private static final String DEFAULT_CFG_FILENAME = "/configuration/gateway.default.toml";
   private static final GatewayCfg DEFAULT_CFG = new GatewayCfg();
@@ -52,7 +52,6 @@ public class GatewayCfgTest {
         .getCluster()
         .setContactPoint("foobar:1234")
         .setMaxMessageSize("4K")
-        .setMaxMessageCount(13)
         .setRequestTimeout("123h")
         .setClusterName("testCluster")
         .setMemberId("testMember")
@@ -128,7 +127,6 @@ public class GatewayCfgTest {
         .getCluster()
         .setContactPoint("broker:432")
         .setMaxMessageSize("1G")
-        .setMaxMessageCount(123)
         .setRequestTimeout("43m")
         .setClusterName("envCluster")
         .setMemberId("envMember")
@@ -168,7 +166,7 @@ public class GatewayCfgTest {
   }
 
   private GatewayCfg readConfig(final String filename) {
-    try (InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
+    try (final InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         final GatewayCfg gatewayCfg = TomlConfigurationReader.read(inputStream, GatewayCfg.class);
         gatewayCfg.init(new Environment(environment));

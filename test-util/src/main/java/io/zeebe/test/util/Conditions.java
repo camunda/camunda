@@ -10,9 +10,9 @@ package io.zeebe.test.util;
 import org.assertj.core.api.Condition;
 
 /** useful assertj conditions */
-public class Conditions {
+public final class Conditions {
 
-  public static Condition<Object> isLowerThan(long i) {
+  public static Condition<Object> isLowerThan(final long i) {
     return new Condition<>(
         v -> {
           return (long) v < i;

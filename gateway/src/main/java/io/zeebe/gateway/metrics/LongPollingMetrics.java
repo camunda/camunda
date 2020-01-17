@@ -9,7 +9,7 @@ package io.zeebe.gateway.metrics;
 
 import io.prometheus.client.Gauge;
 
-public class LongPollingMetrics {
+public final class LongPollingMetrics {
   private static final Gauge REQUESTS_QUEUED_CURRENT =
       Gauge.build()
           .namespace("zeebe")
@@ -18,7 +18,7 @@ public class LongPollingMetrics {
           .labelNames("type")
           .register();
 
-  public void setBlockedRequestsCount(String type, int count) {
+  public void setBlockedRequestsCount(final String type, final int count) {
     REQUESTS_QUEUED_CURRENT.labels(type).set(count);
   }
 }

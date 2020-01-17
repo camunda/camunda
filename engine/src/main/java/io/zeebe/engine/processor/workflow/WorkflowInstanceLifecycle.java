@@ -52,35 +52,36 @@ public final class WorkflowInstanceLifecycle {
 
   private WorkflowInstanceLifecycle() {}
 
-  public static boolean canTransition(WorkflowInstanceIntent from, WorkflowInstanceIntent to) {
+  public static boolean canTransition(
+      final WorkflowInstanceIntent from, final WorkflowInstanceIntent to) {
     return TRANSITION_RULES.get(from).contains(to);
   }
 
-  public static boolean isFinalState(WorkflowInstanceIntent state) {
+  public static boolean isFinalState(final WorkflowInstanceIntent state) {
     return FINAL_ELEMENT_INSTANCE_STATES.contains(state);
   }
 
-  public static boolean isInitialState(WorkflowInstanceIntent state) {
+  public static boolean isInitialState(final WorkflowInstanceIntent state) {
     return state == ELEMENT_ACTIVATING;
   }
 
-  public static boolean isElementInstanceState(WorkflowInstanceIntent state) {
+  public static boolean isElementInstanceState(final WorkflowInstanceIntent state) {
     return ELEMENT_INSTANCE_STATES.contains(state);
   }
 
-  public static boolean isTokenState(WorkflowInstanceIntent state) {
+  public static boolean isTokenState(final WorkflowInstanceIntent state) {
     return !isElementInstanceState(state);
   }
 
-  public static boolean canTerminate(WorkflowInstanceIntent currentState) {
+  public static boolean canTerminate(final WorkflowInstanceIntent currentState) {
     return TERMINATABLE_STATES.contains(currentState);
   }
 
-  public static boolean isActive(WorkflowInstanceIntent currentState) {
+  public static boolean isActive(final WorkflowInstanceIntent currentState) {
     return currentState == ELEMENT_ACTIVATED;
   }
 
-  public static boolean isTerminating(WorkflowInstanceIntent currentState) {
+  public static boolean isTerminating(final WorkflowInstanceIntent currentState) {
     return currentState == ELEMENT_TERMINATING;
   }
 }

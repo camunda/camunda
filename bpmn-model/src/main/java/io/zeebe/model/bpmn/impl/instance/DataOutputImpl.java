@@ -35,11 +35,11 @@ public class DataOutputImpl extends ItemAwareElementImpl implements DataOutput {
   protected static Attribute<String> nameAttribute;
   protected static Attribute<Boolean> isCollectionAttribute;
 
-  public DataOutputImpl(ModelTypeInstanceContext instanceContext) {
+  public DataOutputImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataOutput.class, BpmnModelConstants.BPMN_ELEMENT_DATA_OUTPUT)
@@ -48,7 +48,7 @@ public class DataOutputImpl extends ItemAwareElementImpl implements DataOutput {
             .instanceProvider(
                 new ModelTypeInstanceProvider<DataOutput>() {
                   @Override
-                  public DataOutput newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataOutput newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new DataOutputImpl(instanceContext);
                   }
                 });
@@ -67,7 +67,7 @@ public class DataOutputImpl extends ItemAwareElementImpl implements DataOutput {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -77,7 +77,7 @@ public class DataOutputImpl extends ItemAwareElementImpl implements DataOutput {
   }
 
   @Override
-  public void setCollection(boolean isCollection) {
+  public void setCollection(final boolean isCollection) {
     isCollectionAttribute.setValue(this, isCollection);
   }
 }

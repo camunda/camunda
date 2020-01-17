@@ -15,17 +15,18 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public abstract class AbstractDynamicContext {
 
-  protected CompactList context;
-  protected UnsafeBuffer cursorView = new UnsafeBuffer(0, 0);
-  protected UnsafeBuffer dynamicContextView = new UnsafeBuffer(0, 0);
+  protected final CompactList context;
+  protected final UnsafeBuffer cursorView = new UnsafeBuffer(0, 0);
+  protected final UnsafeBuffer dynamicContextView = new UnsafeBuffer(0, 0);
 
-  protected int dynamicContextSize;
-  protected int elementSize;
-  protected int staticElementSize;
+  protected final int dynamicContextSize;
+  protected final int elementSize;
+  protected final int staticElementSize;
 
-  protected DirectBuffer emptyElement;
+  protected final DirectBuffer emptyElement;
 
-  public AbstractDynamicContext(int capacity, int staticElementSize, int dynamicContextSize) {
+  public AbstractDynamicContext(
+      final int capacity, final int staticElementSize, final int dynamicContextSize) {
     this.staticElementSize = staticElementSize;
     this.dynamicContextSize = dynamicContextSize;
     this.elementSize = staticElementSize + dynamicContextSize;
@@ -43,7 +44,7 @@ public abstract class AbstractDynamicContext {
 
   // cursor operations
 
-  public void moveTo(int element) {
+  public void moveTo(final int element) {
     context.wrap(element, cursorView);
   }
 

@@ -21,7 +21,7 @@ import io.zeebe.msgpack.mapping.MappingBuilder;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 
-public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
+public final class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
 
   private final MappingBuilder mappingBuilder = new MappingBuilder();
 
@@ -31,7 +31,7 @@ public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
   }
 
   @Override
-  public void transform(FlowNode flowNode, TransformContext context) {
+  public void transform(final FlowNode flowNode, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableFlowNode element =
         workflow.getElementById(flowNode.getId(), ExecutableFlowNode.class);
@@ -40,7 +40,7 @@ public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
     bindLifecycle(element);
   }
 
-  private void bindLifecycle(ExecutableFlowNode element) {
+  private void bindLifecycle(final ExecutableFlowNode element) {
     element.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ELEMENT_ACTIVATING);
     element.bindLifecycleState(
@@ -56,7 +56,7 @@ public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ELEMENT_TERMINATED);
   }
 
-  private void transformIoMappings(FlowNode element, final ExecutableFlowNode flowNode) {
+  private void transformIoMappings(final FlowNode element, final ExecutableFlowNode flowNode) {
     final ZeebeIoMapping ioMapping = element.getSingleExtensionElement(ZeebeIoMapping.class);
 
     if (ioMapping != null) {

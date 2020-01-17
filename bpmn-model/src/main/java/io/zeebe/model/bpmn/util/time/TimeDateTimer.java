@@ -23,11 +23,11 @@ public class TimeDateTimer implements Timer {
 
   private final Interval interval;
 
-  public TimeDateTimer(Interval interval) {
+  public TimeDateTimer(final Interval interval) {
     this.interval = interval;
   }
 
-  public static TimeDateTimer parse(String timeDate) {
+  public static TimeDateTimer parse(final String timeDate) {
     final ZonedDateTime dateTime = ZonedDateTime.parse(timeDate);
     final Interval interval =
         new Interval(Period.ZERO, Duration.ofMillis(dateTime.toInstant().toEpochMilli()));
@@ -52,7 +52,7 @@ public class TimeDateTimer implements Timer {
    * @return the timeDate as milliseconds since the epoch
    */
   @Override
-  public long getDueDate(long fromEpochMillis) {
+  public long getDueDate(final long fromEpochMillis) {
     return getInterval().toEpochMilli(0);
   }
 }

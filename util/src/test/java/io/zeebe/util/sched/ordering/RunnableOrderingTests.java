@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class RunnableOrderingTests {
+public final class RunnableOrderingTests {
   private static final String ONE = "one";
   private static final String TWO = "two";
   private static final String THREE = "three";

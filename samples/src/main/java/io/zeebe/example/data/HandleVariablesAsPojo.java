@@ -14,14 +14,14 @@ import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobHandler;
 import java.util.Scanner;
 
-public class HandleVariablesAsPojo {
+public final class HandleVariablesAsPojo {
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";
 
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
-    try (ZeebeClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
       final Order order = new Order();
       order.setOrderId(31243);
 
@@ -41,7 +41,7 @@ public class HandleVariablesAsPojo {
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (Scanner scanner = new Scanner(System.in)) {
+    try (final Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

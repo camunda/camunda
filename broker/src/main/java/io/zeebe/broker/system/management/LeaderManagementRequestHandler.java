@@ -7,8 +7,6 @@
  */
 package io.zeebe.broker.system.management;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
-
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
@@ -19,26 +17,34 @@ import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
-public class LeaderManagementRequestHandler extends Actor implements PartitionListener {
+public final class LeaderManagementRequestHandler extends Actor implements PartitionListener {
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderForPartitions =
       new Int2ObjectHashMap<>();
-  private final BrokerInfo localBroker;
+  private final String actorName;
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
   private final Atomix atomix;
 
-  public LeaderManagementRequestHandler(BrokerInfo localBroker, Atomix atomix) {
-    this.localBroker = localBroker;
+  public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
+    this.actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
-    actor.submit(() -> leaderForPartitions.remove(partitionId));
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
+    actor.submit(
+        () -> {
+          final var recordWriter = leaderForPartitions.remove(partitionId);
+
+          if (recordWriter != null) {
+            recordWriter.close();
+          }
+        });
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     actor.submit(
         () ->
             logStream
@@ -59,7 +65,7 @@ public class LeaderManagementRequestHandler extends Actor implements PartitionLi
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "ManagementRequestHandler");
+    return actorName;
   }
 
   @Override

@@ -15,7 +15,7 @@ import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
-public class MessageObserver implements StreamProcessorLifecycleAware {
+public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
 
@@ -27,16 +27,16 @@ public class MessageObserver implements StreamProcessorLifecycleAware {
   private final MessageSubscriptionState subscriptionState;
 
   public MessageObserver(
-      MessageState messageState,
-      MessageSubscriptionState subscriptionState,
-      SubscriptionCommandSender subscriptionCommandSender) {
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender subscriptionCommandSender) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
   }
 
   @Override
-  public void onOpen(ReadonlyProcessingContext processingContext) {
+  public void onOpen(final ReadonlyProcessingContext processingContext) {
 
     final ActorControl actor = processingContext.getActor();
 

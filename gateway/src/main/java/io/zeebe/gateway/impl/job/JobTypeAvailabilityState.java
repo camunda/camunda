@@ -11,7 +11,7 @@ import io.zeebe.gateway.metrics.LongPollingMetrics;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class JobTypeAvailabilityState {
+public final class JobTypeAvailabilityState {
 
   private final String jobType;
   private final LongPollingMetrics metrics;
@@ -19,17 +19,17 @@ public class JobTypeAvailabilityState {
   private int emptyResponses;
   private long lastUpdatedTime;
 
-  public JobTypeAvailabilityState(String jobType, LongPollingMetrics metrics) {
+  public JobTypeAvailabilityState(final String jobType, final LongPollingMetrics metrics) {
     this.jobType = jobType;
     this.metrics = metrics;
   }
 
-  public void incrementEmptyResponses(long lastUpdatedTime) {
+  public void incrementEmptyResponses(final long lastUpdatedTime) {
     emptyResponses++;
     this.lastUpdatedTime = lastUpdatedTime;
   }
 
-  public void resetEmptyResponses(int value) {
+  public void resetEmptyResponses(final int value) {
     this.emptyResponses = value;
   }
 
@@ -41,7 +41,7 @@ public class JobTypeAvailabilityState {
     return lastUpdatedTime;
   }
 
-  public void blockRequest(LongPollingActivateJobsRequest request) {
+  public void blockRequest(final LongPollingActivateJobsRequest request) {
     blockedRequests.offer(request);
     metrics.setBlockedRequestsCount(jobType, blockedRequests.size());
   }
@@ -56,7 +56,7 @@ public class JobTypeAvailabilityState {
     metrics.setBlockedRequestsCount(jobType, blockedRequests.size());
   }
 
-  public void removeBlockedRequest(LongPollingActivateJobsRequest request) {
+  public void removeBlockedRequest(final LongPollingActivateJobsRequest request) {
     blockedRequests.remove(request);
     metrics.setBlockedRequestsCount(jobType, blockedRequests.size());
   }

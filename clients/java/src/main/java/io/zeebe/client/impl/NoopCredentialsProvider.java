@@ -18,15 +18,15 @@ package io.zeebe.client.impl;
 import io.grpc.Metadata;
 import io.zeebe.client.CredentialsProvider;
 
-public class NoopCredentialsProvider implements CredentialsProvider {
+public final class NoopCredentialsProvider implements CredentialsProvider {
 
   @Override
-  public void applyCredentials(Metadata headers) {
+  public void applyCredentials(final Metadata headers) {
     // Noop
   }
 
   @Override
-  public boolean shouldRetryRequest(Throwable throwable) {
+  public boolean shouldRetryRequest(final Throwable throwable) {
     return false;
   }
 }

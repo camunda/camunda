@@ -40,7 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-public class SubscriptionPollFragmentsTest {
+public final class SubscriptionPollFragmentsTest {
   static final int A_PARTITION_LENGTH = 1024;
   static final int A_MSG_PAYLOAD_LENGTH = 10;
   static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);

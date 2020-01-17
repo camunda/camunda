@@ -14,30 +14,31 @@ import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class EventBasedGatewayElementActivatingHandler<T extends ExecutableEventBasedGateway>
+public final class EventBasedGatewayElementActivatingHandler<T extends ExecutableEventBasedGateway>
     extends ElementActivatingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 
-  public EventBasedGatewayElementActivatingHandler(CatchEventSubscriber catchEventSubscriber) {
+  public EventBasedGatewayElementActivatingHandler(
+      final CatchEventSubscriber catchEventSubscriber) {
     this(WorkflowInstanceIntent.ELEMENT_ACTIVATED, catchEventSubscriber);
   }
 
   public EventBasedGatewayElementActivatingHandler(
-      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
     super(nextState);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public EventBasedGatewayElementActivatingHandler(
-      WorkflowInstanceIntent nextState,
-      IOMappingHelper ioMappingHelper,
-      CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState,
+      final IOMappingHelper ioMappingHelper,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     return super.handleState(context) && catchEventSubscriber.subscribeToEvents(context);
   }
 }

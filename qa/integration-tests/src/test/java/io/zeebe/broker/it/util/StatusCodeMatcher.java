@@ -12,31 +12,31 @@ import io.zeebe.client.api.command.ClientStatusException;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 
-public class StatusCodeMatcher extends TypeSafeMatcher<ClientStatusException> {
+public final class StatusCodeMatcher extends TypeSafeMatcher<ClientStatusException> {
 
   private final Code expectedCode;
 
-  public StatusCodeMatcher(Code expectedCode) {
+  public StatusCodeMatcher(final Code expectedCode) {
     this.expectedCode = expectedCode;
   }
 
-  public static StatusCodeMatcher hasStatusCode(Code expectedCode) {
+  public static StatusCodeMatcher hasStatusCode(final Code expectedCode) {
     return new StatusCodeMatcher(expectedCode);
   }
 
   @Override
-  protected boolean matchesSafely(ClientStatusException item) {
+  protected boolean matchesSafely(final ClientStatusException item) {
     return item.getStatusCode().equals(expectedCode);
   }
 
   @Override
   protected void describeMismatchSafely(
-      ClientStatusException item, Description mismatchDescription) {
+      final ClientStatusException item, final Description mismatchDescription) {
     mismatchDescription.appendText("was ").appendValue(item.getStatusCode());
   }
 
   @Override
-  public void describeTo(Description description) {
+  public void describeTo(final Description description) {
     description.appendText("status code to be ").appendValue(expectedCode);
   }
 }

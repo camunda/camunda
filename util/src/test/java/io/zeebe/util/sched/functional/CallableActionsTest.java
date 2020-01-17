@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CallableActionsTest {
+public final class CallableActionsTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
@@ -82,9 +82,9 @@ public class CallableActionsTest {
   }
 
   protected static class ExceptionActor extends Actor {
-    protected AtomicInteger invocations = new AtomicInteger(0);
+    protected final AtomicInteger invocations = new AtomicInteger(0);
 
-    public Future<Void> failWith(Exception e) {
+    public Future<Void> failWith(final Exception e) {
       return actor.call(
           () -> {
             invocations.incrementAndGet();

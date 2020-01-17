@@ -11,16 +11,16 @@ import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class BrokerError {
+public final class BrokerError {
 
   private final ErrorCode code;
   private final String message;
 
-  public BrokerError(ErrorResponse errorResponse) {
+  public BrokerError(final ErrorResponse errorResponse) {
     this(errorResponse.getErrorCode(), BufferUtil.bufferAsString(errorResponse.getErrorData()));
   }
 
-  public BrokerError(ErrorCode code, String message) {
+  public BrokerError(final ErrorCode code, final String message) {
     this.code = code;
     this.message = message;
   }

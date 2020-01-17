@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.system.monitoring;
 
-import static io.zeebe.broker.Broker.actorNamePattern;
 import static io.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
 
 import io.atomix.cluster.MemberId;
@@ -23,19 +22,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class BrokerHealthCheckService extends Actor implements PartitionListener {
+public final class BrokerHealthCheckService extends Actor implements PartitionListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final Atomix atomix;
-  private final BrokerInfo localMember;
+  private final String actorName;
   private Map<Integer, Boolean> partitionInstallStatus;
   /* set to true when all partitions are installed. Once set to true, it is never
   changed. */
   private volatile boolean brokerStarted = false;
 
-  public BrokerHealthCheckService(BrokerInfo localMember, Atomix atomix) {
-    this.localMember = localMember;
+  public BrokerHealthCheckService(final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
+    this.actorName = buildActorName(localBroker.getNodeId(), "HealthCheckService");
     initializePartitionInstallStatus();
   }
 
@@ -44,16 +43,17 @@ public class BrokerHealthCheckService extends Actor implements PartitionListener
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
     updateBrokerReadyStatus(partitionId);
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     updateBrokerReadyStatus(partitionId);
   }
 
-  private void updateBrokerReadyStatus(int partitionId) {
+  private void updateBrokerReadyStatus(final int partitionId) {
     actor.call(
         () -> {
           if (!brokerStarted) {
@@ -81,6 +81,6 @@ public class BrokerHealthCheckService extends Actor implements PartitionListener
 
   @Override
   public String getName() {
-    return actorNamePattern(localMember, "HealthCheckService");
+    return actorName;
   }
 }

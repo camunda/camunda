@@ -15,7 +15,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.Test;
 
-public class DbBufferTest {
+public final class DbBufferTest {
 
   private final DbBuffer zbBuffer = new DbBuffer();
 

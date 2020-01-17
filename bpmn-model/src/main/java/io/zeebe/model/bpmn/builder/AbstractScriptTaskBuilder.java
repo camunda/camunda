@@ -25,7 +25,7 @@ public abstract class AbstractScriptTaskBuilder<B extends AbstractScriptTaskBuil
     extends AbstractTaskBuilder<B, ScriptTask> {
 
   protected AbstractScriptTaskBuilder(
-      BpmnModelInstance modelInstance, ScriptTask element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final ScriptTask element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -35,7 +35,7 @@ public abstract class AbstractScriptTaskBuilder<B extends AbstractScriptTaskBuil
    * @param scriptFormat the script format to set
    * @return the builder object
    */
-  public B scriptFormat(String scriptFormat) {
+  public B scriptFormat(final String scriptFormat) {
     element.setScriptFormat(scriptFormat);
     return myself;
   }
@@ -46,12 +46,12 @@ public abstract class AbstractScriptTaskBuilder<B extends AbstractScriptTaskBuil
    * @param script the script to set
    * @return the builder object
    */
-  public B script(Script script) {
+  public B script(final Script script) {
     element.setScript(script);
     return myself;
   }
 
-  public B scriptText(String scriptText) {
+  public B scriptText(final String scriptText) {
     final Script script = createChild(Script.class);
     script.setTextContent(scriptText);
     return myself;

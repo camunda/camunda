@@ -37,7 +37,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class DeploymentDistributorImpl implements DeploymentDistributor {
+public final class DeploymentDistributorImpl implements DeploymentDistributor {
 
   public static final Duration PUSH_REQUEST_TIMEOUT = Duration.ofSeconds(15);
   public static final Duration RETRY_DELAY = Duration.ofMillis(100);
@@ -125,7 +125,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
   }
 
   private void prepareToDistribute(
-      IntArrayList partitionsToDistributeTo, final PushDeploymentRequest pushRequest) {
+      final IntArrayList partitionsToDistributeTo, final PushDeploymentRequest pushRequest) {
     actor.runDelayed(
         PUSH_REQUEST_TIMEOUT,
         () -> {
@@ -247,7 +247,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     }
   }
 
-  private void handleResponse(byte[] response, final long deploymentKey, String topic) {
+  private void handleResponse(final byte[] response, final long deploymentKey, final String topic) {
     final DirectBuffer responseBuffer = new UnsafeBuffer(response);
 
     if (pushDeploymentResponse.tryWrap(responseBuffer)) {
@@ -268,7 +268,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
   }
 
   private void handleRetry(
-      int partitionLeaderId, int partition, final PushDeploymentRequest pushRequest) {
+      final int partitionLeaderId, final int partition, final PushDeploymentRequest pushRequest) {
     LOG.trace("Retry deployment push to partition {} after {}", partition, RETRY_DELAY);
 
     actor.runDelayed(

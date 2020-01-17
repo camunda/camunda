@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class CreateDeploymentTest {
+public final class CreateDeploymentTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
@@ -31,7 +31,7 @@ public class CreateDeploymentTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldDeployWorkflowModel() {

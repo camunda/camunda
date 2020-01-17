@@ -13,15 +13,15 @@ package io.zeebe.util.exception;
  */
 public class RecoverableException extends RuntimeException {
 
-  public RecoverableException(String message) {
+  public RecoverableException(final String message) {
     super(message);
   }
 
-  public RecoverableException(String message, Throwable cause) {
+  public RecoverableException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public RecoverableException(Throwable cause) {
+  public RecoverableException(final Throwable cause) {
     super(cause);
   }
 }

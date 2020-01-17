@@ -7,7 +7,7 @@
  */
 package io.zeebe.util.sched;
 
-public class SchedulingHints {
+public final class SchedulingHints {
 
   public static int ioBound() {
     int hints = 0;
@@ -17,7 +17,7 @@ public class SchedulingHints {
     return hints;
   }
 
-  public static int cpuBound(ActorPriority priority) {
+  public static int cpuBound(final ActorPriority priority) {
     int hints = 0;
 
     hints = setCpuBound(hints);
@@ -26,27 +26,27 @@ public class SchedulingHints {
     return hints;
   }
 
-  public static int setCpuBound(int hints) {
+  public static int setCpuBound(final int hints) {
     return hints & ~1;
   }
 
-  public static int setIoBound(int hints) {
+  public static int setIoBound(final int hints) {
     return hints | 1;
   }
 
-  public static boolean isCpuBound(int hints) {
+  public static boolean isCpuBound(final int hints) {
     return (hints & ~1) == hints;
   }
 
-  public static boolean isIoBound(int hints) {
+  public static boolean isIoBound(final int hints) {
     return (hints & 1) == hints;
   }
 
-  public static int setPriority(short priority, int hints) {
+  public static int setPriority(final short priority, final int hints) {
     return hints | (priority << 1);
   }
 
-  public static short getPriority(int hints) {
+  public static short getPriority(final int hints) {
     return (short) (hints >> 1);
   }
 }

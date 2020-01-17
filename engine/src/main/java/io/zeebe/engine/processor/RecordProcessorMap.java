@@ -13,7 +13,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import java.util.Iterator;
 
 @SuppressWarnings({"rawtypes"})
-public class RecordProcessorMap {
+public final class RecordProcessorMap {
   private final TypedRecordProcessor[] elements;
 
   private final int valueTypeCardinality;
@@ -30,7 +30,7 @@ public class RecordProcessorMap {
     this.elements = new TypedRecordProcessor[cardinality];
   }
 
-  public TypedRecordProcessor get(RecordType key1, ValueType key2, int key3) {
+  public TypedRecordProcessor get(final RecordType key1, final ValueType key2, final int key3) {
     final int index = mapToIndex(key1, key2, key3);
 
     if (index >= 0) {
@@ -40,7 +40,11 @@ public class RecordProcessorMap {
     }
   }
 
-  public void put(RecordType key1, ValueType key2, int key3, TypedRecordProcessor value) {
+  public void put(
+      final RecordType key1,
+      final ValueType key2,
+      final int key3,
+      final TypedRecordProcessor value) {
     final int index = mapToIndex(key1, key2, key3);
 
     if (index < 0) {
@@ -62,7 +66,7 @@ public class RecordProcessorMap {
     elements[index] = value;
   }
 
-  private int mapToIndex(RecordType key1, ValueType key2, int key3) {
+  private int mapToIndex(final RecordType key1, final ValueType key2, final int key3) {
     if (key3 >= intentCardinality) {
       return -1;
     }

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.Test;
 
-public class DbByteTest {
+public final class DbByteTest {
 
   private final DbByte zbByte = new DbByte();
 

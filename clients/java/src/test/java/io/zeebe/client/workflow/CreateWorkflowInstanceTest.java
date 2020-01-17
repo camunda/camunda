@@ -32,7 +32,7 @@ import java.time.Duration;
 import java.util.Collections;
 import org.junit.Test;
 
-public class CreateWorkflowInstanceTest extends ClientTest {
+public final class CreateWorkflowInstanceTest extends ClientTest {
 
   @Test
   public void shouldCreateWorkflowInstanceByWorkflowInstanceKey() {

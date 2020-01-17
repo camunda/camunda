@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class RecordStream extends ExporterRecordStream<RecordValue, RecordStream> {
+public final class RecordStream extends ExporterRecordStream<RecordValue, RecordStream> {
   public RecordStream(final Stream<Record<RecordValue>> wrappedStream) {
     super(wrappedStream);
   }
@@ -70,5 +70,10 @@ public class RecordStream extends ExporterRecordStream<RecordValue, RecordStream
   public VariableRecordStream variableRecords() {
     return new VariableRecordStream(
         filter(r -> r.getValueType() == ValueType.VARIABLE).map(Record.class::cast));
+  }
+
+  public JobRecordStream jobRecords() {
+    return new JobRecordStream(
+        filter(r -> r.getValueType() == ValueType.JOB).map(Record.class::cast));
   }
 }

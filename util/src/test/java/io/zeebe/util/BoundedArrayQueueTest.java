@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 
-public class BoundedArrayQueueTest {
+public final class BoundedArrayQueueTest {
 
   @Test
   public void shouldRetrieveAddedElements() {

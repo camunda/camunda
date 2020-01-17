@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ZeebeRaftStateMachine implements RaftStateMachine {
+public final class ZeebeRaftStateMachine implements RaftStateMachine {
   private final RaftContext raft;
   private final ThreadContext threadContext;
   private final ThreadContextFactory threadContextFactory;
@@ -138,7 +138,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     }
   }
 
-  private void safeApplyAll(final long index, CompletableFuture<?> future) {
+  private void safeApplyAll(final long index, final CompletableFuture<?> future) {
     threadContext.checkThread();
 
     lastEnqueued = Math.max(lastEnqueued, raft.getSnapshotStore().getCurrentSnapshotIndex());

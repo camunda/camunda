@@ -17,14 +17,14 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 
-public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
+public final class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
 
   private final long timestamp;
   private long key;
   private RecordMetadata metadata;
   private T value;
 
-  public MockTypedRecord(long key, RecordMetadata metadata, T value) {
+  public MockTypedRecord(final long key, final RecordMetadata metadata, final T value) {
     this.key = key;
     this.metadata = metadata;
     this.value = value;
@@ -36,7 +36,7 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
     return key;
   }
 
-  public void setKey(long key) {
+  public void setKey(final long key) {
     this.key = key;
   }
 
@@ -60,11 +60,11 @@ public class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecor
     return metadata.getLength() + value.getLength();
   }
 
-  public void setValue(T value) {
+  public void setValue(final T value) {
     this.value = value;
   }
 
-  public void setMetadata(RecordMetadata metadata) {
+  public void setMetadata(final RecordMetadata metadata) {
     this.metadata = metadata;
   }
 

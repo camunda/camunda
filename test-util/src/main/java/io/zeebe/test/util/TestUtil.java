@@ -15,16 +15,16 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
-public class TestUtil {
+public final class TestUtil {
 
   public static final int MAX_RETRIES = 100;
   private static final Logger LOG = new ZbLogger(TestUtil.class);
 
-  public static <T> Invocation<T> doRepeatedly(Callable<T> callable) {
+  public static <T> Invocation<T> doRepeatedly(final Callable<T> callable) {
     return new Invocation<>(callable);
   }
 
-  public static Invocation<Void> doRepeatedly(Runnable runnable) {
+  public static Invocation<Void> doRepeatedly(final Runnable runnable) {
     return new Invocation<>(
         () -> {
           runnable.run();
@@ -54,27 +54,27 @@ public class TestUtil {
   }
 
   public static class Invocation<T> {
-    protected Callable<T> callable;
+    protected final Callable<T> callable;
 
-    public Invocation(Callable<T> callable) {
+    public Invocation(final Callable<T> callable) {
       this.callable = callable;
     }
 
-    public T until(Function<T, Boolean> resultCondition) {
+    public T until(final Function<T, Boolean> resultCondition) {
       return until(resultCondition, (e) -> false);
     }
 
     public T until(
-        Function<T, Boolean> resultCondition, final String message, final Object... args) {
+        final Function<T, Boolean> resultCondition, final String message, final Object... args) {
       return until(resultCondition, (e) -> false, message, args);
     }
 
-    public T until(Function<T, Boolean> resultCondition, final int retries) {
+    public T until(final Function<T, Boolean> resultCondition, final int retries) {
       return until(resultCondition, (e) -> false, retries);
     }
 
     public T until(
-        Function<T, Boolean> resultCondition,
+        final Function<T, Boolean> resultCondition,
         final int retries,
         final String message,
         final Object... args) {
@@ -83,7 +83,7 @@ public class TestUtil {
 
     public T until(
         final Function<T, Boolean> resultCondition,
-        Function<Exception, Boolean> exceptionCondition) {
+        final Function<Exception, Boolean> exceptionCondition) {
       final T result =
           whileConditionHolds(
               (t) -> !resultCondition.apply(t), (e) -> !exceptionCondition.apply(e));
@@ -95,7 +95,7 @@ public class TestUtil {
 
     public T until(
         final Function<T, Boolean> resultCondition,
-        Function<Exception, Boolean> exceptionCondition,
+        final Function<Exception, Boolean> exceptionCondition,
         final String message,
         final Object... args) {
       final T result =
@@ -109,7 +109,7 @@ public class TestUtil {
 
     public T until(
         final Function<T, Boolean> resultCondition,
-        Function<Exception, Boolean> exceptionCondition,
+        final Function<Exception, Boolean> exceptionCondition,
         final int retries) {
       final T result =
           whileConditionHolds(
@@ -122,7 +122,7 @@ public class TestUtil {
 
     public T until(
         final Function<T, Boolean> resultCondition,
-        Function<Exception, Boolean> exceptionCondition,
+        final Function<Exception, Boolean> exceptionCondition,
         final int retries,
         final String message,
         final Object... args) {
@@ -135,22 +135,23 @@ public class TestUtil {
       return result;
     }
 
-    public T whileConditionHolds(Function<T, Boolean> resultCondition) {
+    public T whileConditionHolds(final Function<T, Boolean> resultCondition) {
       return whileConditionHolds(resultCondition, (e) -> true);
     }
 
-    public T whileConditionHolds(Function<T, Boolean> resultCondition, final int retires) {
+    public T whileConditionHolds(final Function<T, Boolean> resultCondition, final int retires) {
       return whileConditionHolds(resultCondition, (e) -> true, retires);
     }
 
     public T whileConditionHolds(
-        Function<T, Boolean> resultCondition, Function<Exception, Boolean> exceptionCondition) {
+        final Function<T, Boolean> resultCondition,
+        final Function<Exception, Boolean> exceptionCondition) {
       return whileConditionHolds(resultCondition, exceptionCondition, MAX_RETRIES);
     }
 
     public T whileConditionHolds(
-        Function<T, Boolean> resultCondition,
-        Function<Exception, Boolean> exceptionCondition,
+        final Function<T, Boolean> resultCondition,
+        final Function<Exception, Boolean> exceptionCondition,
         final int retries) {
       int numTries = 0;
 
@@ -165,7 +166,7 @@ public class TestUtil {
           }
 
           result = callable.call();
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
           if (!exceptionCondition.apply(e)) {
             throw new RuntimeException("Unexpected exception while checking condition", e);

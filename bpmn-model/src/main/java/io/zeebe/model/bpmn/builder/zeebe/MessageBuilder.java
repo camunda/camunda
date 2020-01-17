@@ -22,16 +22,16 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 
 public class MessageBuilder extends AbstractBaseElementBuilder<MessageBuilder, Message> {
 
-  public MessageBuilder(BpmnModelInstance modelInstance, Message element) {
+  public MessageBuilder(final BpmnModelInstance modelInstance, final Message element) {
     super(modelInstance, element, MessageBuilder.class);
   }
 
-  public MessageBuilder name(String name) {
+  public MessageBuilder name(final String name) {
     element.setName(name);
     return this;
   }
 
-  public MessageBuilder zeebeCorrelationKey(String zeebeCorrelationKey) {
+  public MessageBuilder zeebeCorrelationKey(final String zeebeCorrelationKey) {
 
     final ZeebeSubscription subscription = getCreateSingleExtensionElement(ZeebeSubscription.class);
     subscription.setCorrelationKey(zeebeCorrelationKey);

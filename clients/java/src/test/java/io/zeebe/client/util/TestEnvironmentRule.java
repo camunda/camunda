@@ -32,7 +32,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class TestEnvironmentRule extends ExternalResource {
+public final class TestEnvironmentRule extends ExternalResource {
 
   private final GrpcServerRule serverRule = new GrpcServerRule();
   private final Consumer<ZeebeClientBuilder> clientConfigurator;
@@ -50,7 +50,7 @@ public class TestEnvironmentRule extends ExternalResource {
   }
 
   @Override
-  public Statement apply(Statement base, Description description) {
+  public Statement apply(final Statement base, final Description description) {
     final Statement statement = super.apply(base, description);
     return serverRule.apply(statement, description);
   }
@@ -91,7 +91,7 @@ public class TestEnvironmentRule extends ExternalResource {
     verifyRequestTimeout(client.getConfiguration().getDefaultRequestTimeout());
   }
 
-  public void verifyRequestTimeout(Duration requestTimeout) {
+  public void verifyRequestTimeout(final Duration requestTimeout) {
     verify(gatewayStub).withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
   }
 }

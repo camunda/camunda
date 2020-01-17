@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class ObjectMappingTest {
+public final class ObjectMappingTest {
   public static final DirectBuffer BUF1 = wrapString("foo");
   public static final DirectBuffer BUF2 = wrapString("bar");
   public static final MutableDirectBuffer MSGPACK_BUF1;
@@ -56,7 +56,7 @@ public class ObjectMappingTest {
             });
   }
 
-  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldSerializePOJO() {

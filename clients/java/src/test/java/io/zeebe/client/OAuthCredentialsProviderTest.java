@@ -60,7 +60,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public class OAuthCredentialsProviderTest {
+public final class OAuthCredentialsProviderTest {
 
   private static final Key<String> AUTH_KEY =
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);

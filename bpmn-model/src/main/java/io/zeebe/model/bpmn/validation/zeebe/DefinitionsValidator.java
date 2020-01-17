@@ -29,7 +29,8 @@ public class DefinitionsValidator implements ModelElementValidator<Definitions> 
   }
 
   @Override
-  public void validate(Definitions element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final Definitions element, final ValidationResultCollector validationResultCollector) {
     final Collection<Process> processes = element.getChildElementsByType(Process.class);
 
     if (!processes.stream().anyMatch(p -> p.isExecutable())) {

@@ -34,7 +34,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamBatchWriterTest {
+public final class LogStreamBatchWriterTest {
   private static final DirectBuffer EVENT_VALUE_1 = wrapString("foo");
   private static final DirectBuffer EVENT_VALUE_2 = wrapString("bar");
   private static final DirectBuffer EVENT_METADATA_1 = wrapString("foobar");
@@ -46,10 +46,10 @@ public class LogStreamBatchWriterTest {
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
-  public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
-  public LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
+  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  public final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
+  public final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
+  public final LogStreamWriterRule writerRule = new LogStreamWriterRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -110,7 +110,7 @@ public class LogStreamBatchWriterTest {
     return new UnsafeBuffer(buffer, offset, length);
   }
 
-  private long write(Consumer<LogStreamBatchWriter> consumer) {
+  private long write(final Consumer<LogStreamBatchWriter> consumer) {
     consumer.accept(writer);
     return TestUtil.doRepeatedly(() -> writer.tryWrite()).until(pos -> pos > 0);
   }

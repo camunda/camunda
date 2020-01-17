@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CorrelateWorkflowInstanceSubscriptionCommand
+public final class CorrelateWorkflowInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
         CorrelateWorkflowInstanceSubscriptionEncoder,
         CorrelateWorkflowInstanceSubscriptionDecoder> {
@@ -24,6 +24,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer variables = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
@@ -51,6 +52,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     messageName.wrap(0, 0);
     variables.wrap(0, 0);
     bpmnProcessId.wrap(0, 0);
+    correlationKey.wrap(0, 0);
   }
 
   @Override
@@ -61,7 +63,9 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
         + CorrelateWorkflowInstanceSubscriptionDecoder.variablesHeaderLength()
         + variables.capacity()
         + CorrelateWorkflowInstanceSubscriptionDecoder.bpmnProcessIdHeaderLength()
-        + bpmnProcessId.capacity();
+        + bpmnProcessId.capacity()
+        + CorrelateWorkflowInstanceSubscriptionDecoder.correlationKeyHeaderLength()
+        + correlationKey.capacity();
   }
 
   @Override
@@ -75,7 +79,8 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
         .messageKey(messageKey)
         .putMessageName(messageName, 0, messageName.capacity())
         .putVariables(variables, 0, variables.capacity())
-        .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
+        .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity())
+        .putCorrelationKey(correlationKey, 0, correlationKey.capacity());
   }
 
   @Override
@@ -105,6 +110,12 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     final int bpmnProcessIdLength = decoder.bpmnProcessIdLength();
     bpmnProcessId.wrap(buffer, offset, bpmnProcessIdLength);
     offset += bpmnProcessIdLength;
+    decoder.limit(offset);
+
+    offset += CorrelateWorkflowInstanceSubscriptionDecoder.correlationKeyHeaderLength();
+    final int correlationKeyLength = decoder.correlationKeyLength();
+    correlationKey.wrap(buffer, offset, correlationKeyLength);
+    offset += correlationKeyLength;
     decoder.limit(offset);
   }
 
@@ -150,5 +161,9 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
 
   public DirectBuffer getBpmnProcessId() {
     return bpmnProcessId;
+  }
+
+  public DirectBuffer getCorrelationKey() {
+    return correlationKey;
   }
 }

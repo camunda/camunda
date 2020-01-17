@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.CallActivity;
 /** @author Sebastian Menski */
 public class CallActivityBuilder extends AbstractCallActivityBuilder<CallActivityBuilder> {
 
-  public CallActivityBuilder(BpmnModelInstance modelInstance, CallActivity element) {
+  public CallActivityBuilder(final BpmnModelInstance modelInstance, final CallActivity element) {
     super(modelInstance, element, CallActivityBuilder.class);
   }
 }

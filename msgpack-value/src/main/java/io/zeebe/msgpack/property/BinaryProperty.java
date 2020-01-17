@@ -10,12 +10,12 @@ package io.zeebe.msgpack.property;
 import io.zeebe.msgpack.value.BinaryValue;
 import org.agrona.DirectBuffer;
 
-public class BinaryProperty extends BaseProperty<BinaryValue> {
-  public BinaryProperty(String keyString) {
+public final class BinaryProperty extends BaseProperty<BinaryValue> {
+  public BinaryProperty(final String keyString) {
     super(keyString, new BinaryValue());
   }
 
-  public BinaryProperty(String keyString, DirectBuffer defaultValue) {
+  public BinaryProperty(final String keyString, final DirectBuffer defaultValue) {
     super(keyString, new BinaryValue(), new BinaryValue(defaultValue, 0, defaultValue.capacity()));
   }
 
@@ -23,11 +23,11 @@ public class BinaryProperty extends BaseProperty<BinaryValue> {
     return resolveValue().getValue();
   }
 
-  public void setValue(DirectBuffer data) {
+  public void setValue(final DirectBuffer data) {
     setValue(data, 0, data.capacity());
   }
 
-  public void setValue(DirectBuffer data, int offset, int length) {
+  public void setValue(final DirectBuffer data, final int offset, final int length) {
     this.value.wrap(data, offset, length);
     this.isSet = true;
   }

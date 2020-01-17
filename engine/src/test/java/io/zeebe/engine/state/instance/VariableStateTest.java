@@ -34,9 +34,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class VariableStateTest {
+public final class VariableStateTest {
 
-  @ClassRule public static ZeebeStateRule stateRule = new ZeebeStateRule();
+  @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
   private static final long WORKFLOW_KEY = 123;
   private static final AtomicLong PARENT_KEY = new AtomicLong(0);
   private static final AtomicLong CHILD_KEY = new AtomicLong(1);
@@ -50,7 +50,7 @@ public class VariableStateTest {
 
   @BeforeClass
   public static void setUp() {
-    final ZeebeState zeebeState = stateRule.getZeebeState();
+    final ZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
     elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
     variablesState = elementInstanceState.getVariablesState();
 
@@ -657,15 +657,15 @@ public class VariableStateTest {
     assertThat(listener.updated.get(0).key).isEqualTo(variableKey);
   }
 
-  private byte[] stringToMsgpack(String value) {
+  private byte[] stringToMsgpack(final String value) {
     return MsgPackUtil.encodeMsgPack(b -> b.packString(value)).byteArray();
   }
 
-  private void declareScope(long key) {
+  private void declareScope(final long key) {
     declareScope(-1, key);
   }
 
-  private void declareScope(long parentKey, long key) {
+  private void declareScope(final long parentKey, final long key) {
     final ElementInstance parent = elementInstanceState.getInstance(parentKey);
 
     final TypedRecord<WorkflowInstanceRecord> record = mockTypedRecord(key, parentKey);
@@ -673,7 +673,8 @@ public class VariableStateTest {
         parent, key, record.getValue(), WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 
-  private TypedRecord<WorkflowInstanceRecord> mockTypedRecord(long key, long parentKey) {
+  private TypedRecord<WorkflowInstanceRecord> mockTypedRecord(
+      final long key, final long parentKey) {
     final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord(parentKey);
 
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mock(TypedRecord.class);
@@ -683,7 +684,7 @@ public class VariableStateTest {
     return typedRecord;
   }
 
-  private WorkflowInstanceRecord createWorkflowInstanceRecord(long parentKey) {
+  private WorkflowInstanceRecord createWorkflowInstanceRecord(final long parentKey) {
     final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
 
     if (parentKey >= 0) {
@@ -693,15 +694,16 @@ public class VariableStateTest {
     return workflowInstanceRecord;
   }
 
-  private void setVariablesFromDocument(long scope, DirectBuffer document) {
+  private void setVariablesFromDocument(final long scope, final DirectBuffer document) {
     variablesState.setVariablesFromDocument(scope, WORKFLOW_KEY, document);
   }
 
-  private void setVariablesLocalFromDocument(long scope, DirectBuffer document) {
+  private void setVariablesLocalFromDocument(final long scope, final DirectBuffer document) {
     variablesState.setVariablesLocalFromDocument(scope, WORKFLOW_KEY, document);
   }
 
-  public void setVariableLocal(long scopeKey, DirectBuffer name, DirectBuffer value) {
+  public void setVariableLocal(
+      final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
     variablesState.setVariableLocal(
         scopeKey, WORKFLOW_KEY, name, 0, name.capacity(), value, 0, value.capacity());
   }
@@ -713,12 +715,12 @@ public class VariableStateTest {
 
     @Override
     public void onCreate(
-        long key,
-        long workflowKey,
-        DirectBuffer name,
-        DirectBuffer value,
-        long variableScopeKey,
-        long rootScopeKey) {
+        final long key,
+        final long workflowKey,
+        final DirectBuffer name,
+        final DirectBuffer value,
+        final long variableScopeKey,
+        final long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
               key,
@@ -731,12 +733,12 @@ public class VariableStateTest {
 
     @Override
     public void onUpdate(
-        long key,
-        long workflowKey,
-        DirectBuffer name,
-        DirectBuffer value,
-        long variableScopeKey,
-        long rootScopeKey) {
+        final long key,
+        final long workflowKey,
+        final DirectBuffer name,
+        final DirectBuffer value,
+        final long variableScopeKey,
+        final long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
               key,
@@ -760,7 +762,11 @@ public class VariableStateTest {
       private final long rootScopeKey;
 
       VariableChange(
-          long key, String name, byte[] value, long variableScopeKey, long rootScopeKey) {
+          final long key,
+          final String name,
+          final byte[] value,
+          final long variableScopeKey,
+          final long rootScopeKey) {
         this.key = key;
         this.name = name;
         this.value = value;

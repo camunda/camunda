@@ -25,11 +25,11 @@ public enum IncidentIntent implements WorkflowInstanceRelatedIntent {
   private final short value;
   private final boolean shouldBlacklist;
 
-  IncidentIntent(short value) {
+  IncidentIntent(final short value) {
     this(value, true);
   }
 
-  IncidentIntent(short value, boolean shouldBlacklist) {
+  IncidentIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -38,7 +38,7 @@ public enum IncidentIntent implements WorkflowInstanceRelatedIntent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return CREATE;

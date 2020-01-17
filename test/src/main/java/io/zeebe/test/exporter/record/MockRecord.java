@@ -26,12 +26,12 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   public MockRecord() {}
 
   public MockRecord(
-      long position,
-      long sourceRecordPosition,
-      long key,
-      long timestamp,
-      MockRecordMetadata metadata,
-      MockRecordValueWithVariables value) {
+      final long position,
+      final long sourceRecordPosition,
+      final long key,
+      final long timestamp,
+      final MockRecordMetadata metadata,
+      final MockRecordValueWithVariables value) {
     this.position = position;
     this.sourceRecordPosition = sourceRecordPosition;
     this.key = key;
@@ -45,7 +45,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return position;
   }
 
-  public MockRecord setPosition(long position) {
+  public MockRecord setPosition(final long position) {
     this.position = position;
     return this;
   }
@@ -55,7 +55,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return sourceRecordPosition;
   }
 
-  public MockRecord setSourceRecordPosition(long sourceRecordPosition) {
+  public MockRecord setSourceRecordPosition(final long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
     return this;
   }
@@ -65,7 +65,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return key;
   }
 
-  public MockRecord setKey(long key) {
+  public MockRecord setKey(final long key) {
     this.key = key;
     return this;
   }
@@ -110,12 +110,12 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return value;
   }
 
-  public MockRecord setValue(MockRecordValueWithVariables value) {
+  public MockRecord setValue(final MockRecordValueWithVariables value) {
     this.value = value;
     return this;
   }
 
-  public MockRecord setTimestamp(long timestamp) {
+  public MockRecord setTimestamp(final long timestamp) {
     this.timestamp = timestamp;
     return this;
   }
@@ -124,7 +124,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
     return metadata;
   }
 
-  public MockRecord setMetadata(MockRecordMetadata metadata) {
+  public MockRecord setMetadata(final MockRecordMetadata metadata) {
     this.metadata = metadata;
     return this;
   }
@@ -141,7 +141,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -164,7 +164,7 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
       final MockRecord cloned = (MockRecord) super.clone();
       cloned.metadata = (MockRecordMetadata) metadata.clone();
       return cloned;
-    } catch (CloneNotSupportedException e) {
+    } catch (final CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
   }

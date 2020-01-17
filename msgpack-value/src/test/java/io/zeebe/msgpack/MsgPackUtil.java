@@ -20,37 +20,39 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackUtil {
+public final class MsgPackUtil {
 
-  public static MutableDirectBuffer encodeMsgPack(Consumer<MsgPackWriter> arg) {
+  public static MutableDirectBuffer encodeMsgPack(final Consumer<MsgPackWriter> arg) {
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 4]);
     encodeMsgPack(buffer, arg);
     return buffer;
   }
 
-  private static void encodeMsgPack(MutableDirectBuffer buffer, Consumer<MsgPackWriter> arg) {
+  private static void encodeMsgPack(
+      final MutableDirectBuffer buffer, final Consumer<MsgPackWriter> arg) {
     final MsgPackWriter writer = new MsgPackWriter();
     writer.wrap(buffer, 0);
     arg.accept(writer);
     buffer.wrap(buffer, 0, writer.getOffset());
   }
 
-  public static Map<String, Object> asMap(byte[] array) {
+  public static Map<String, Object> asMap(final byte[] array) {
     return asMap(wrapArray(array));
   }
 
-  public static Map<String, Object> asMap(DirectBuffer buffer) {
+  public static Map<String, Object> asMap(final DirectBuffer buffer) {
     return asMap(buffer, 0, buffer.capacity());
   }
 
   @SuppressWarnings("unchecked")
-  public static Map<String, Object> asMap(DirectBuffer buffer, int offset, int length) {
+  public static Map<String, Object> asMap(
+      final DirectBuffer buffer, final int offset, final int length) {
     final MsgPackReader reader = new MsgPackReader();
     reader.wrap(buffer, offset, length);
     return (Map<String, Object>) deserializeElement(reader);
   }
 
-  private static Object deserializeElement(MsgPackReader reader) {
+  private static Object deserializeElement(final MsgPackReader reader) {
 
     final MsgPackToken token = reader.readToken();
     switch (token.getType()) {
@@ -88,7 +90,7 @@ public class MsgPackUtil {
     }
   }
 
-  private static String toString(Object[] arr) {
+  private static String toString(final Object[] arr) {
     final StringBuilder buf = new StringBuilder("[");
 
     if (arr.length > 0) {

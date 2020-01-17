@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class SnapshotChunkImpl
+public final class SnapshotChunkImpl
     extends SbeBufferWriterReader<SnapshotChunkEncoder, SnapshotChunkDecoder>
     implements SnapshotChunk {
 
@@ -30,7 +30,7 @@ public class SnapshotChunkImpl
 
   public SnapshotChunkImpl() {}
 
-  public SnapshotChunkImpl(SnapshotChunk chunk) {
+  public SnapshotChunkImpl(final SnapshotChunk chunk) {
     snapshotId = chunk.getSnapshotId();
     totalCount = chunk.getTotalCount();
     chunkName = chunk.getChunkName();
@@ -72,7 +72,7 @@ public class SnapshotChunkImpl
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     super.write(buffer, offset);
 
     encoder
@@ -84,7 +84,7 @@ public class SnapshotChunkImpl
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     super.wrap(buffer, offset, length);
 
     totalCount = decoder.totalCount();

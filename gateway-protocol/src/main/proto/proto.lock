@@ -379,6 +379,29 @@
             "name": "FailJobResponse"
           },
           {
+            "name": "ThrowErrorRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "jobKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "errorCode",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "errorMessage",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "ThrowErrorResponse"
+          },
+          {
             "name": "PublishMessageRequest",
             "fields": [
               {
@@ -582,6 +605,11 @@
                 "name": "FailJob",
                 "in_type": "FailJobRequest",
                 "out_type": "FailJobResponse"
+              },
+              {
+                "name": "ThrowError",
+                "in_type": "ThrowErrorRequest",
+                "out_type": "ThrowErrorResponse"
               },
               {
                 "name": "PublishMessage",

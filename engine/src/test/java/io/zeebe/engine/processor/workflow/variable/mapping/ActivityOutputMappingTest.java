@@ -33,7 +33,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class ActivityOutputMappingTest {
+public final class ActivityOutputMappingTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
@@ -133,11 +133,11 @@ public class ActivityOutputMappingTest {
   }
 
   private static Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mapping(
-      Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mappingBuilder) {
+      final Consumer<ZeebeVariablesMappingBuilder<SubProcessBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 
-  private static List<Tuple> scopeVariables(Tuple... variables) {
+  private static List<Tuple> scopeVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 }

@@ -10,73 +10,78 @@ package io.zeebe.util;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
 
-public class EnsureUtil {
+public final class EnsureUtil {
 
-  public static void ensureNotNull(String property, Object o) {
+  public static void ensureNotNull(final String property, final Object o) {
     if (o == null) {
       throw new RuntimeException(property + " must not be null");
     }
   }
 
-  public static void ensureNotEmpty(String property, String value) {
+  public static void ensureNotEmpty(final String property, final String value) {
     if (value.isEmpty()) {
       throw new RuntimeException(property + " must not be empty");
     }
   }
 
-  public static void ensureGreaterThan(String property, long testValue, long comparisonValue) {
+  public static void ensureGreaterThan(
+      final String property, final long testValue, final long comparisonValue) {
     if (testValue <= comparisonValue) {
       throw new RuntimeException(property + " must be greater than " + comparisonValue);
     }
   }
 
   public static void ensureGreaterThanOrEqual(
-      String property, long testValue, long comparisonValue) {
+      final String property, final long testValue, final long comparisonValue) {
     if (testValue < comparisonValue) {
       throw new RuntimeException(property + " must be greater than or equal to " + comparisonValue);
     }
   }
 
-  public static void ensureLessThan(String property, long testValue, long comparisonValue) {
-    if (testValue >= comparisonValue) {
-      throw new RuntimeException(property + " must be less than " + comparisonValue);
-    }
-  }
-
-  public static void ensureLessThanOrEqual(String property, long testValue, long comparisonValue) {
-    if (testValue > comparisonValue) {
-      throw new RuntimeException(property + " must be less than or equal to " + comparisonValue);
-    }
-  }
-
-  public static void ensureGreaterThan(String property, double testValue, double comparisonValue) {
-    if (testValue <= comparisonValue) {
-      throw new RuntimeException(property + " must be greater than " + comparisonValue);
-    }
-  }
-
-  public static void ensureGreaterThanOrEqual(
-      String property, double testValue, double comparisonValue) {
-    if (testValue < comparisonValue) {
-      throw new RuntimeException(property + " must be greater than or equal to " + comparisonValue);
-    }
-  }
-
-  public static void ensureLessThan(String property, double testValue, double comparisonValue) {
+  public static void ensureLessThan(
+      final String property, final long testValue, final long comparisonValue) {
     if (testValue >= comparisonValue) {
       throw new RuntimeException(property + " must be less than " + comparisonValue);
     }
   }
 
   public static void ensureLessThanOrEqual(
-      String property, double testValue, double comparisonValue) {
+      final String property, final long testValue, final long comparisonValue) {
+    if (testValue > comparisonValue) {
+      throw new RuntimeException(property + " must be less than or equal to " + comparisonValue);
+    }
+  }
+
+  public static void ensureGreaterThan(
+      final String property, final double testValue, final double comparisonValue) {
+    if (testValue <= comparisonValue) {
+      throw new RuntimeException(property + " must be greater than " + comparisonValue);
+    }
+  }
+
+  public static void ensureGreaterThanOrEqual(
+      final String property, final double testValue, final double comparisonValue) {
+    if (testValue < comparisonValue) {
+      throw new RuntimeException(property + " must be greater than or equal to " + comparisonValue);
+    }
+  }
+
+  public static void ensureLessThan(
+      final String property, final double testValue, final double comparisonValue) {
+    if (testValue >= comparisonValue) {
+      throw new RuntimeException(property + " must be less than " + comparisonValue);
+    }
+  }
+
+  public static void ensureLessThanOrEqual(
+      final String property, final double testValue, final double comparisonValue) {
     if (testValue > comparisonValue) {
       throw new RuntimeException(property + " must be less than or equal to " + comparisonValue);
     }
   }
 
   public static void ensureNotNullOrGreaterThan(
-      String property, Duration testValue, Duration comparisonValue) {
+      final String property, final Duration testValue, final Duration comparisonValue) {
     ensureNotNull(property, testValue);
 
     if (testValue.compareTo(comparisonValue) <= 0) {
@@ -85,7 +90,7 @@ public class EnsureUtil {
   }
 
   public static void ensureNotNullOrGreaterThanOrEqual(
-      String property, Duration testValue, Duration comparisonValue) {
+      final String property, final Duration testValue, final Duration comparisonValue) {
     ensureNotNull(property, testValue);
 
     if (testValue.compareTo(comparisonValue) < 0) {
@@ -93,7 +98,7 @@ public class EnsureUtil {
     }
   }
 
-  public static void ensureNotNullOrEmpty(String property, String testValue) {
+  public static void ensureNotNullOrEmpty(final String property, final String testValue) {
     ensureNotNull(property, testValue);
 
     if (testValue.isEmpty()) {
@@ -101,7 +106,7 @@ public class EnsureUtil {
     }
   }
 
-  public static void ensureNotNullOrEmpty(String property, byte[] testValue) {
+  public static void ensureNotNullOrEmpty(final String property, final byte[] testValue) {
     ensureNotNull(property, testValue);
 
     if (testValue.length == 0) {
@@ -109,7 +114,7 @@ public class EnsureUtil {
     }
   }
 
-  public static void ensureNotNullOrEmpty(String property, DirectBuffer testValue) {
+  public static void ensureNotNullOrEmpty(final String property, final DirectBuffer testValue) {
     ensureNotNull(property, testValue);
 
     if (testValue.capacity() == 0) {
@@ -117,7 +122,7 @@ public class EnsureUtil {
     }
   }
 
-  public static void ensureAtLeastOneNotNull(String property, Object... values) {
+  public static void ensureAtLeastOneNotNull(final String property, final Object... values) {
     for (int i = 0; i < values.length; i++) {
       if (values[i] != null) {
         return;
@@ -127,7 +132,7 @@ public class EnsureUtil {
     throw new RuntimeException(property + " must have at least one non-null value");
   }
 
-  public static void ensureFalse(String property, boolean value) {
+  public static void ensureFalse(final String property, final boolean value) {
     if (value) {
       throw new RuntimeException(property + " must be false");
     }

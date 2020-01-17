@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<DeploymentRecord> {
+public final class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<DeploymentRecord> {
 
   private final DeploymentRecord requestDto = new DeploymentRecord();
 
@@ -27,7 +27,7 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
   }
 
   public BrokerDeployWorkflowRequest addResource(
-      final byte[] resource, final String resourceName, ResourceType resourceType) {
+      final byte[] resource, final String resourceName, final ResourceType resourceType) {
     requestDto
         .resources()
         .add()
@@ -39,7 +39,7 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
   }
 
   private io.zeebe.protocol.record.value.deployment.ResourceType determineResourceType(
-      String resourceName, ResourceType resourceType) {
+      final String resourceName, final ResourceType resourceType) {
     switch (resourceType) {
       case BPMN:
         return io.zeebe.protocol.record.value.deployment.ResourceType.BPMN_XML;
@@ -48,7 +48,7 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
       default:
         try {
           return getResourceType(resourceName);
-        } catch (RuntimeException e) {
+        } catch (final RuntimeException e) {
           throw new InvalidBrokerRequestArgumentException(
               "name", "a string ending with either .bpmn or .yaml", resourceName, e);
         }
@@ -61,7 +61,7 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
   }
 
   @Override
-  protected DeploymentRecord toResponseDto(DirectBuffer buffer) {
+  protected DeploymentRecord toResponseDto(final DirectBuffer buffer) {
     final DeploymentRecord responseDto = new DeploymentRecord();
     responseDto.wrap(buffer);
     return responseDto;

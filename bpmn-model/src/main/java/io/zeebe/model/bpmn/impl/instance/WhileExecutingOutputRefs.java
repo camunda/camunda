@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class WhileExecutingOutputRefs extends BpmnModelElementInstanceImpl {
 
-  public WhileExecutingOutputRefs(ModelTypeInstanceContext instanceContext) {
+  public WhileExecutingOutputRefs(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(WhileExecutingOutputRefs.class, BPMN_ELEMENT_WHILE_EXECUTING_OUTPUT_REFS)
@@ -44,7 +44,7 @@ public class WhileExecutingOutputRefs extends BpmnModelElementInstanceImpl {
                 new ModelTypeInstanceProvider<WhileExecutingOutputRefs>() {
                   @Override
                   public WhileExecutingOutputRefs newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new WhileExecutingOutputRefs(instanceContext);
                   }
                 });

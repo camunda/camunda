@@ -22,7 +22,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import java.time.Duration;
 import org.junit.Test;
 
-public class ResolveIncidentTest extends ClientTest {
+public final class ResolveIncidentTest extends ClientTest {
 
   @Test
   public void shouldSendCommand() {

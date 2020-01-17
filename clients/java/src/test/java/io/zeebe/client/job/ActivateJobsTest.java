@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 
-public class ActivateJobsTest extends ClientTest {
+public final class ActivateJobsTest extends ClientTest {
 
   @Test
   public void shouldActivateJobs() {
@@ -254,7 +254,7 @@ public class ActivateJobsTest extends ClientTest {
       return a;
     }
 
-    public VariablesPojo setA(int a) {
+    public VariablesPojo setA(final int a) {
       this.a = a;
       return this;
     }

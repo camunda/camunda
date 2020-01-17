@@ -30,7 +30,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
-public class LogStorageAppender extends Actor {
+public final class LogStorageAppender extends Actor {
 
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final Map<String, AlgorithmCfg> ALGORITHM_CFG =

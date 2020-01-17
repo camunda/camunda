@@ -44,11 +44,11 @@ public class UserTaskImpl extends TaskImpl implements UserTask {
   protected static Attribute<String> implementationAttribute;
   protected static ChildElementCollection<Rendering> renderingCollection;
 
-  public UserTaskImpl(ModelTypeInstanceContext context) {
+  public UserTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(UserTask.class, BPMN_ELEMENT_USER_TASK)
@@ -57,7 +57,7 @@ public class UserTaskImpl extends TaskImpl implements UserTask {
             .instanceProvider(
                 new ModelTypeInstanceProvider<UserTask>() {
                   @Override
-                  public UserTask newInstance(ModelTypeInstanceContext instanceContext) {
+                  public UserTask newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new UserTaskImpl(instanceContext);
                   }
                 });
@@ -86,7 +86,7 @@ public class UserTaskImpl extends TaskImpl implements UserTask {
   }
 
   @Override
-  public void setImplementation(String implementation) {
+  public void setImplementation(final String implementation) {
     implementationAttribute.setValue(this, implementation);
   }
 

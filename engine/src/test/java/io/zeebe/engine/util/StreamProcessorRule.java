@@ -43,7 +43,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
-public class StreamProcessorRule implements TestRule {
+public final class StreamProcessorRule implements TestRule {
 
   private static final Logger LOG = new ZbLogger("io.zeebe.broker.test");
 
@@ -277,7 +277,10 @@ public class StreamProcessorRule implements TestRule {
   }
 
   public long writeCommand(
-      int requestStreamId, long requestId, final Intent intent, final UnpackedObject value) {
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnpackedObject value) {
     return streams
         .newRecord(getLogName(startPartitionId))
         .recordType(RecordType.COMMAND)
@@ -337,7 +340,7 @@ public class StreamProcessorRule implements TestRule {
     private File root;
     private final Supplier<File> rootSupplier;
 
-    CleanUpRule(Supplier<File> rootSupplier) {
+    CleanUpRule(final Supplier<File> rootSupplier) {
       this.rootSupplier = rootSupplier;
     }
 
@@ -358,7 +361,7 @@ public class StreamProcessorRule implements TestRule {
               "There are still allocated direct buffers of a total size of {}kB.",
               allocatedMemoryInKb);
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         LOG.error("Error on deleting root test folder", e);
       }
     }

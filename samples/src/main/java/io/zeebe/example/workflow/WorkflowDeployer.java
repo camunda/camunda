@@ -11,7 +11,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.DeploymentEvent;
 
-public class WorkflowDeployer {
+public final class WorkflowDeployer {
 
   public static void main(final String[] args) {
     final String broker = "localhost:26500";
@@ -19,7 +19,7 @@ public class WorkflowDeployer {
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
-    try (ZeebeClient client = clientBuilder.build()) {
+    try (final ZeebeClient client = clientBuilder.build()) {
 
       final DeploymentEvent deploymentEvent =
           client.newDeployCommand().addResourceFromClasspath("demoProcess.bpmn").send().join();

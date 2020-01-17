@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MessageCatchElementTest {
+public final class MessageCatchElementTest {
 
   private static final int PARTITION_COUNT = 3;
 
@@ -153,7 +153,7 @@ public class MessageCatchElementTest {
     deploy(NON_INT_BOUNDARY_EVENT_WORKFLOW);
   }
 
-  private static void deploy(BpmnModelInstance modelInstance) {
+  private static void deploy(final BpmnModelInstance modelInstance) {
     ENGINE_RULE.deployment().withXmlResource(modelInstance).deploy();
   }
 
@@ -337,7 +337,8 @@ public class MessageCatchElementTest {
         .isTrue();
   }
 
-  private Record<WorkflowInstanceRecordValue> getFirstElementRecord(WorkflowInstanceIntent intent) {
+  private Record<WorkflowInstanceRecordValue> getFirstElementRecord(
+      final WorkflowInstanceIntent intent) {
     return RecordingExporter.workflowInstanceRecords(intent)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .withElementId(ELEMENT_ID)
@@ -345,7 +346,7 @@ public class MessageCatchElementTest {
   }
 
   private Record<MessageSubscriptionRecordValue> getFirstMessageSubscriptionRecord(
-      MessageSubscriptionIntent intent) {
+      final MessageSubscriptionIntent intent) {
     return RecordingExporter.messageSubscriptionRecords(intent)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .withMessageName(MESSAGE_NAME)
@@ -353,7 +354,7 @@ public class MessageCatchElementTest {
   }
 
   private Record<WorkflowInstanceSubscriptionRecordValue>
-      getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent intent) {
+      getFirstWorkflowInstanceSubscriptionRecord(final WorkflowInstanceSubscriptionIntent intent) {
     return RecordingExporter.workflowInstanceSubscriptionRecords(intent)
         .withWorkflowInstanceKey(workflowInstanceKey)
         .withMessageName(MESSAGE_NAME)

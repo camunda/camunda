@@ -95,7 +95,7 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     msgPackTree = new MsgPackTree();
   }
 
-  public MsgPackTree index(DirectBuffer document) {
+  public MsgPackTree index(final DirectBuffer document) {
     clear();
 
     if (isEmptyOrNil(document)) {
@@ -113,12 +113,12 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     return msgPackTree;
   }
 
-  private static boolean isEmptyOrNil(DirectBuffer document) {
+  private static boolean isEmptyOrNil(final DirectBuffer document) {
     return document.capacity() == 0 || MsgPackCodes.NIL == document.getByte(0);
   }
 
   @Override
-  public void visitElement(int position, MsgPackToken currentValue) {
+  public void visitElement(final int position, final MsgPackToken currentValue) {
 
     final TokenParseContext tokenContext = parsingContextStack.peek();
     tokenContext.consumeRepetition();
@@ -158,7 +158,10 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
   }
 
   private void parseValue(
-      TokenParseContext tokenContext, String key, int valuePosition, MsgPackToken value) {
+      final TokenParseContext tokenContext,
+      final String key,
+      final int valuePosition,
+      final MsgPackToken value) {
 
     switch (value.getType()) {
       case MAP:
@@ -174,12 +177,16 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
   }
 
   private void parsePrimitiveValue(
-      TokenParseContext tokenContext, String key, int valuePosition, MsgPackToken value) {
+      final TokenParseContext tokenContext,
+      final String key,
+      final int valuePosition,
+      final MsgPackToken value) {
     msgPackTree.addValueNode(
         tokenContext.parentNodeId, key, documentId, valuePosition, value.getTotalLength());
   }
 
-  private void parseArrayValue(TokenParseContext tokenContext, String key, MsgPackToken value) {
+  private void parseArrayValue(
+      final TokenParseContext tokenContext, final String key, final MsgPackToken value) {
     final String arrayNodeId = msgPackTree.addArrayNode(tokenContext.parentNodeId, key);
     final int arrayElements = value.getSize();
 
@@ -189,7 +196,8 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     }
   }
 
-  private void parseMapValue(TokenParseContext tokenContext, String key, MsgPackToken value) {
+  private void parseMapValue(
+      final TokenParseContext tokenContext, final String key, final MsgPackToken value) {
     final String nodeId = msgPackTree.addMapNode(tokenContext.parentNodeId, key);
     final int mapElements = value.getSize();
 
@@ -199,7 +207,7 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     }
   }
 
-  private String parseMapKey(MsgPackToken currentValue) {
+  private String parseMapKey(final MsgPackToken currentValue) {
     final DirectBuffer valueBuffer = currentValue.getValueBuffer();
 
     return valueBuffer.getStringWithoutLengthUtf8(0, valueBuffer.capacity());
@@ -223,7 +231,8 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
 
     int remainingRepetitions;
 
-    TokenParseContext(ParsingMode parsingMode, String parentNodeId, int repetitions) {
+    TokenParseContext(
+        final ParsingMode parsingMode, final String parentNodeId, final int repetitions) {
       this.parsingMode = parsingMode;
       this.parentNodeId = parentNodeId;
       this.repetitions = repetitions;

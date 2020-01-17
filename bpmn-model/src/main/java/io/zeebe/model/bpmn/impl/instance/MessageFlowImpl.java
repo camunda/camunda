@@ -47,11 +47,11 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
   protected static AttributeReference<InteractionNode> targetRefAttribute;
   protected static AttributeReference<Message> messageRefAttribute;
 
-  public MessageFlowImpl(ModelTypeInstanceContext instanceContext) {
+  public MessageFlowImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(MessageFlow.class, BPMN_ELEMENT_MESSAGE_FLOW)
@@ -60,7 +60,7 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
             .instanceProvider(
                 new ModelTypeInstanceProvider<MessageFlow>() {
                   @Override
-                  public MessageFlow newInstance(ModelTypeInstanceContext instanceContext) {
+                  public MessageFlow newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new MessageFlowImpl(instanceContext);
                   }
                 });
@@ -96,7 +96,7 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -106,7 +106,7 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
   }
 
   @Override
-  public void setSource(InteractionNode source) {
+  public void setSource(final InteractionNode source) {
     sourceRefAttribute.setReferenceTargetElement(this, source);
   }
 
@@ -116,7 +116,7 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
   }
 
   @Override
-  public void setTarget(InteractionNode target) {
+  public void setTarget(final InteractionNode target) {
     targetRefAttribute.setReferenceTargetElement(this, target);
   }
 
@@ -126,7 +126,7 @@ public class MessageFlowImpl extends BaseElementImpl implements MessageFlow {
   }
 
   @Override
-  public void setMessage(Message message) {
+  public void setMessage(final Message message) {
     messageRefAttribute.setReferenceTargetElement(this, message);
   }
 

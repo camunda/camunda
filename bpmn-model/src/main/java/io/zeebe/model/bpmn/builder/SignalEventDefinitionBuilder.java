@@ -22,7 +22,7 @@ public class SignalEventDefinitionBuilder
     extends AbstractSignalEventDefinitionBuilder<SignalEventDefinitionBuilder> {
 
   public SignalEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, SignalEventDefinition element) {
+      final BpmnModelInstance modelInstance, final SignalEventDefinition element) {
     super(modelInstance, element, SignalEventDefinitionBuilder.class);
   }
 }

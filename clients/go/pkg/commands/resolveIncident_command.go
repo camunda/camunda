@@ -17,14 +17,11 @@ package commands
 
 import (
 	"context"
-	"time"
-
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 type DispatchResolveIncidentCommand interface {
-	Send() (*pb.ResolveIncidentResponse, error)
+	Send(context.Context) (*pb.ResolveIncidentResponse, error)
 }
 
 type ResolveIncidentCommandStep1 interface {
@@ -36,12 +33,8 @@ type ResolveIncidentCommandStep2 interface {
 }
 
 type ResolveIncidentCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.ResolveIncidentRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.ResolveIncidentRequest
 }
 
 func (cmd *ResolveIncidentCommand) IncidentKey(incidentKey int64) ResolveIncidentCommandStep2 {
@@ -49,24 +42,20 @@ func (cmd *ResolveIncidentCommand) IncidentKey(incidentKey int64) ResolveInciden
 	return cmd
 }
 
-func (cmd *ResolveIncidentCommand) Send() (*pb.ResolveIncidentResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	response, err := cmd.gateway.ResolveIncident(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
+func (cmd *ResolveIncidentCommand) Send(ctx context.Context) (*pb.ResolveIncidentResponse, error) {
+	response, err := cmd.gateway.ResolveIncident(ctx, &cmd.request)
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewResolveIncidentCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ResolveIncidentCommandStep1 {
+func NewResolveIncidentCommand(gateway pb.GatewayClient, pred retryPredicate) ResolveIncidentCommandStep1 {
 	return &ResolveIncidentCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.ResolveIncidentRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

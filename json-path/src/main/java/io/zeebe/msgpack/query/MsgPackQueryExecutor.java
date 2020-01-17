@@ -17,34 +17,34 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
+public final class MsgPackQueryExecutor implements MsgPackTokenVisitor {
 
-  protected static final int MAX_TRAVERSAL_DEPTH = 30;
-  protected static final int MAX_RESULTS = 1000;
+  private static final int MAX_TRAVERSAL_DEPTH = 30;
+  private static final int MAX_RESULTS = 1000;
 
-  protected static final int RESULT_SIZE = BitUtil.SIZE_OF_INT * 2;
-  protected static final int RESULT_POSITION_OFFSET = 0;
-  protected static final int RESULT_LENGTH_OFFSET = BitUtil.SIZE_OF_INT;
+  private static final int RESULT_SIZE = BitUtil.SIZE_OF_INT * 2;
+  private static final int RESULT_POSITION_OFFSET = 0;
+  private static final int RESULT_LENGTH_OFFSET = BitUtil.SIZE_OF_INT;
 
-  protected MsgPackFilter[] filters;
-  protected MsgPackFilterContext filterInstances;
-  protected int numFilterInstances;
+  private MsgPackFilter[] filters;
+  private MsgPackFilterContext filterInstances;
+  private int numFilterInstances;
 
-  protected CompactList matchingPositions;
-  protected UnsafeBuffer currentResultView = new UnsafeBuffer(0, 0);
-  protected UnsafeBuffer resultWriteBuffer = new UnsafeBuffer(new byte[RESULT_SIZE]);
+  private final CompactList matchingPositions;
+  private final UnsafeBuffer currentResultView = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer resultWriteBuffer = new UnsafeBuffer(new byte[RESULT_SIZE]);
 
-  protected int matchingContainer = -1;
-  protected int matchingContainerStartPosition;
+  private int matchingContainer = -1;
+  private int matchingContainerStartPosition;
 
-  protected MsgPackTraversalContext context =
+  private final MsgPackTraversalContext context =
       new MsgPackTraversalContext(MAX_TRAVERSAL_DEPTH, BitUtil.SIZE_OF_INT);
 
   public MsgPackQueryExecutor() {
     this.matchingPositions = new CompactList(RESULT_SIZE, MAX_RESULTS, new HeapBufferAllocator());
   }
 
-  public void init(MsgPackFilter[] filters, MsgPackFilterContext filterInstances) {
+  public void init(final MsgPackFilter[] filters, final MsgPackFilterContext filterInstances) {
     this.filters = filters;
     this.filterInstances = filterInstances;
     this.numFilterInstances = filterInstances.size();
@@ -52,7 +52,7 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
   }
 
   @Override
-  public void visitElement(int position, MsgPackToken currentValue) {
+  public void visitElement(final int position, final MsgPackToken currentValue) {
     // count current element
     int currentFilter = 0;
 
@@ -111,7 +111,7 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
     }
   }
 
-  protected boolean isLastFilter(int filterIndex) {
+  private boolean isLastFilter(final int filterIndex) {
     return filterIndex + 1 == numFilterInstances;
   }
 
@@ -119,7 +119,7 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
     return matchingPositions.size();
   }
 
-  public void moveToResult(int index) {
+  public void moveToResult(final int index) {
     matchingPositions.wrap(index, currentResultView);
   }
 
@@ -131,12 +131,12 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
     return currentResultView.getInt(RESULT_LENGTH_OFFSET);
   }
 
-  public boolean isCurrentResultAMap(DirectBuffer document) {
+  public boolean isCurrentResultAMap(final DirectBuffer document) {
     final byte headerByte = document.getByte(currentResultPosition());
     return MsgPackCodes.isMap(headerByte);
   }
 
-  protected void addResult(int position, int length) {
+  private void addResult(final int position, final int length) {
     resultWriteBuffer.putInt(RESULT_POSITION_OFFSET, position);
     resultWriteBuffer.putInt(RESULT_LENGTH_OFFSET, length);
     matchingPositions.add(resultWriteBuffer);

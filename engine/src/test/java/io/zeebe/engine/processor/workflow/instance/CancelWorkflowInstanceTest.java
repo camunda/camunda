@@ -34,7 +34,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CancelWorkflowInstanceTest {
+public final class CancelWorkflowInstanceTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance WORKFLOW =

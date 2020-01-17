@@ -7,7 +7,7 @@
  */
 package io.zeebe.test.util.stream;
 
-public class StreamWrapperException extends RuntimeException {
+public final class StreamWrapperException extends RuntimeException {
 
   public StreamWrapperException() {
     super("No event found matching the criteria");

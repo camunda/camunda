@@ -14,7 +14,7 @@ import io.atomix.storage.journal.JournalReader.Mode;
 public interface AtomixReaderFactory {
   RaftLogReader create(long index, Mode mode);
 
-  default RaftLogReader create(long index) {
+  default RaftLogReader create(final long index) {
     return create(index, Mode.COMMITS);
   }
 

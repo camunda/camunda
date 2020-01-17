@@ -32,7 +32,7 @@ import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 public abstract class BpmnModelElementInstanceImpl extends ModelElementInstanceImpl
     implements BpmnModelElementInstance {
 
-  public BpmnModelElementInstanceImpl(ModelTypeInstanceContext instanceContext) {
+  public BpmnModelElementInstanceImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 

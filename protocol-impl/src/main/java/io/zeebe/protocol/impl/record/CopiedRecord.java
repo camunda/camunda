@@ -16,9 +16,9 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.StringUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
+public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
 
-  protected ValueType valueType;
+  private final ValueType valueType;
   private final T recordValue;
   private final long key;
   private final long position;
@@ -31,13 +31,13 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
   private final String rejectionReason;
 
   public CopiedRecord(
-      T recordValue,
-      RecordMetadata metadata,
-      long key,
-      int partitionId,
-      long position,
-      long sourcePosition,
-      long timestamp) {
+      final T recordValue,
+      final RecordMetadata metadata,
+      final long key,
+      final int partitionId,
+      final long position,
+      final long sourcePosition,
+      final long timestamp) {
     this.recordValue = recordValue;
     this.key = key;
     this.position = position;
@@ -52,7 +52,7 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
     valueType = metadata.getValueType();
   }
 
-  private CopiedRecord(CopiedRecord<T> copiedRecord) {
+  private CopiedRecord(final CopiedRecord<T> copiedRecord) {
     final UnifiedRecordValue value = copiedRecord.getValue();
     final byte[] bytes = new byte[value.getLength()];
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
@@ -63,7 +63,7 @@ public class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
       final T recordValue = (T) recordValueClass.newInstance();
       recordValue.wrap(buffer);
       this.recordValue = recordValue;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(
           String.format(
               "Expected to instantiate %s, but has no default ctor.", recordValueClass.getName()),

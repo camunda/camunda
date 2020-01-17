@@ -16,7 +16,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
+public final class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a workflow instance with key '%d', but ";
@@ -29,7 +29,7 @@ public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHan
           + "it is created by a parent workflow instance. Cancel the root workflow instance '%d' instead.";
 
   @Override
-  public void handle(WorkflowInstanceCommandContext commandContext) {
+  public void handle(final WorkflowInstanceCommandContext commandContext) {
 
     final TypedRecord<WorkflowInstanceRecord> command = commandContext.getRecord();
     final ElementInstance elementInstance = commandContext.getElementInstance();
@@ -50,9 +50,9 @@ public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHan
   }
 
   private boolean validateCommand(
-      WorkflowInstanceCommandContext commandContext,
-      TypedRecord<WorkflowInstanceRecord> command,
-      ElementInstance elementInstance) {
+      final WorkflowInstanceCommandContext commandContext,
+      final TypedRecord<WorkflowInstanceRecord> command,
+      final ElementInstance elementInstance) {
 
     if (elementInstance == null
         || !elementInstance.canTerminate()
@@ -78,7 +78,7 @@ public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHan
   }
 
   private long getRootWorkflowInstanceKey(
-      WorkflowInstanceCommandContext context, long instanceKey) {
+      final WorkflowInstanceCommandContext context, final long instanceKey) {
 
     final var instance = context.getElementInstanceState().getInstance(instanceKey);
     if (instance != null) {

@@ -16,7 +16,7 @@ import io.zeebe.client.api.worker.JobWorker;
 import java.time.Duration;
 import java.util.Scanner;
 
-public class JobWorkerCreator {
+public final class JobWorkerCreator {
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";
 
@@ -25,7 +25,7 @@ public class JobWorkerCreator {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
-    try (ZeebeClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
 
       System.out.println("Opening job worker.");
 
@@ -47,7 +47,7 @@ public class JobWorkerCreator {
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (Scanner scanner = new Scanner(System.in)) {
+    try (final Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

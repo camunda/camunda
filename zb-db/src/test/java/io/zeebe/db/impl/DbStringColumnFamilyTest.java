@@ -21,9 +21,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class DbStringColumnFamilyTest {
+public final class DbStringColumnFamilyTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
@@ -225,7 +225,7 @@ public class DbStringColumnFamilyTest {
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }
 
-  private void putKeyValuePair(String key, String value) {
+  private void putKeyValuePair(final String key, final String value) {
     this.key.wrapString(key);
     this.value.wrapString(value);
     columnFamily.put(this.key, this.value);

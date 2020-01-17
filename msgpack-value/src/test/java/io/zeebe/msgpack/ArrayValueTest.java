@@ -32,7 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class ArrayValueTest {
+public final class ArrayValueTest {
 
   @Rule public final ExpectedException exception = ExpectedException.none();
   private final MsgPackWriter writer = new MsgPackWriter();

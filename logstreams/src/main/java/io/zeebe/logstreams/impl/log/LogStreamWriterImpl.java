@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
-public class LogStreamWriterImpl implements LogStreamRecordWriter {
+public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
   private final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
   private final ClaimedFragment claimedFragment = new ClaimedFragment();
@@ -39,10 +39,13 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   private long sourceRecordPosition = -1L;
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
+  private final Runnable closeCallback;
 
-  LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
+  LogStreamWriterImpl(
+      final int partitionId, final Dispatcher logWriteBuffer, final Runnable closeCallback) {
     this.logWriteBuffer = logWriteBuffer;
     this.partitionId = partitionId;
+    this.closeCallback = closeCallback;
 
     reset();
   }
@@ -167,5 +170,10 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
     return claimedPosition - DataFrameDescriptor.alignedFramedLength(framedLength);
+  }
+
+  @Override
+  public void close() {
+    closeCallback.run();
   }
 }

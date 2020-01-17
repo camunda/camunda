@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class DataOutputRefs extends BpmnModelElementInstanceImpl {
 
-  public DataOutputRefs(ModelTypeInstanceContext instanceContext) {
+  public DataOutputRefs(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataOutputRefs.class, BPMN_ELEMENT_DATA_OUTPUT_REFS)
@@ -43,7 +43,8 @@ public class DataOutputRefs extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<DataOutputRefs>() {
                   @Override
-                  public DataOutputRefs newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataOutputRefs newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new DataOutputRefs(instanceContext);
                   }
                 });

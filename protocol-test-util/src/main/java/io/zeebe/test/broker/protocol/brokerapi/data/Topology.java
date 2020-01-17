@@ -10,13 +10,13 @@ package io.zeebe.test.broker.protocol.brokerapi.data;
 import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
 
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Topology {
+public final class Topology {
 
   protected Map<Integer, TopologyBroker> brokers = new HashMap<>();
 

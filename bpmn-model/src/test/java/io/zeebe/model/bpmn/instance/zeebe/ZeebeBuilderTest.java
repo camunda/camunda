@@ -153,22 +153,22 @@ public class ZeebeBuilderTest {
 
   @SuppressWarnings("unchecked")
   private <T extends BpmnModelElementInstance> T getExtensionElement(
-      BaseElement element, Class<T> typeClass) {
+      final BaseElement element, final Class<T> typeClass) {
     final T extensionElement =
         (T) element.getExtensionElements().getUniqueChildElementByType(typeClass);
     assertThat(element).isNotNull();
     return extensionElement;
   }
 
-  private static Predicate<ZeebeHeader> header(String key, String value) {
+  private static Predicate<ZeebeHeader> header(final String key, final String value) {
     return h -> key.equals(h.getKey()) && value.equals(h.getValue());
   }
 
-  private static Predicate<ZeebeInput> input(String source, String target) {
+  private static Predicate<ZeebeInput> input(final String source, final String target) {
     return h -> source.equals(h.getSource()) && target.equals(h.getTarget());
   }
 
-  private static Predicate<ZeebeOutput> output(String source, String target) {
+  private static Predicate<ZeebeOutput> output(final String source, final String target) {
     return h -> source.equals(h.getSource()) && target.equals(h.getTarget());
   }
 }

@@ -24,7 +24,9 @@ public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusiness
     extends AbstractTaskBuilder<B, BusinessRuleTask> {
 
   protected AbstractBusinessRuleTaskBuilder(
-      BpmnModelInstance modelInstance, BusinessRuleTask element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final BusinessRuleTask element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -34,7 +36,7 @@ public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusiness
    * @param implementation the implementation to set
    * @return the builder object
    */
-  public B implementation(String implementation) {
+  public B implementation(final String implementation) {
     element.setImplementation(implementation);
     return myself;
   }

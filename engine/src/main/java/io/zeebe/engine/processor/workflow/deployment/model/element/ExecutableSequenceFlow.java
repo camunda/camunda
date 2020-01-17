@@ -15,7 +15,7 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
   private ExecutableFlowNode target;
   private CompiledJsonCondition condition;
 
-  public ExecutableSequenceFlow(String id) {
+  public ExecutableSequenceFlow(final String id) {
     super(id);
   }
 
@@ -23,7 +23,7 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
     return target;
   }
 
-  public void setTarget(ExecutableFlowNode target) {
+  public void setTarget(final ExecutableFlowNode target) {
     this.target = target;
   }
 
@@ -31,7 +31,7 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
     return source;
   }
 
-  public void setSource(ExecutableFlowNode source) {
+  public void setSource(final ExecutableFlowNode source) {
     this.source = source;
   }
 
@@ -39,7 +39,7 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
     return condition;
   }
 
-  public void setCondition(CompiledJsonCondition condition) {
+  public void setCondition(final CompiledJsonCondition condition) {
     this.condition = condition;
   }
 }

@@ -16,10 +16,7 @@
 package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.Activity;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.util.ModelUtil;
-import java.util.List;
-import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -30,18 +27,10 @@ public class ActivityValidator implements ModelElementValidator<Activity> {
   }
 
   @Override
-  public void validate(Activity element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final Activity element, final ValidationResultCollector validationResultCollector) {
 
-    final Stream<MessageEventDefinition> boundaryEvents =
-        ModelUtil.getActivityMessageBoundaryEvents(element);
-    final List<String> duplicateMessageNames = ModelUtil.getDuplicateMessageNames(boundaryEvents);
-
-    duplicateMessageNames.forEach(
-        name ->
-            validationResultCollector.addError(
-                0,
-                String.format(
-                    "Multiple message boundary events with the same name '%s' are not allowed.",
-                    name)));
+    ModelUtil.verifyNoDuplicatedBoundaryEvents(
+        element, error -> validationResultCollector.addError(0, error));
   }
 }

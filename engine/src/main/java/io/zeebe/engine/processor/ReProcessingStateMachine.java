@@ -110,7 +110,7 @@ public final class ReProcessingStateMachine {
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
 
-  public ReProcessingStateMachine(ProcessingContext context) {
+  public ReProcessingStateMachine(final ProcessingContext context) {
     this.actor = context.getActor();
     this.eventFilter = context.getEventFilter();
     this.logStreamReader = context.getLogStreamReader();
@@ -237,7 +237,7 @@ public final class ReProcessingStateMachine {
     processUntilDone(currentEvent.getPosition(), typedEvent);
   }
 
-  private void processUntilDone(long position, TypedRecord<?> currentEvent) {
+  private void processUntilDone(final long position, final TypedRecord<?> currentEvent) {
     final TransactionOperation operationOnProcessing =
         chooseOperationForEvent(position, currentEvent);
 
@@ -263,7 +263,8 @@ public final class ReProcessingStateMachine {
         });
   }
 
-  private TransactionOperation chooseOperationForEvent(long position, TypedRecord<?> currentEvent) {
+  private TransactionOperation chooseOperationForEvent(
+      final long position, final TypedRecord<?> currentEvent) {
     final TransactionOperation operationOnProcessing;
     if (failedEventPositions.contains(position)) {
       LOG.info(LOG_STMT_FAILED_ON_PROCESSING, currentEvent);
@@ -323,37 +324,47 @@ public final class ReProcessingStateMachine {
 
     @Override
     public void appendRejection(
-        TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason) {}
+        final TypedRecord<? extends UnpackedObject> command,
+        final RejectionType type,
+        final String reason) {}
 
     @Override
     public void appendRejection(
-        TypedRecord<? extends UnpackedObject> command,
-        RejectionType type,
-        String reason,
-        Consumer<RecordMetadata> metadata) {}
+        final TypedRecord<? extends UnpackedObject> command,
+        final RejectionType type,
+        final String reason,
+        final Consumer<RecordMetadata> metadata) {}
 
     @Override
-    public void appendNewEvent(long key, Intent intent, UnpackedObject value) {}
-
-    @Override
-    public void appendFollowUpEvent(long key, Intent intent, UnpackedObject value) {}
+    public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {}
 
     @Override
     public void appendFollowUpEvent(
-        long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata) {}
+        final long key, final Intent intent, final UnpackedObject value) {}
 
     @Override
-    public void configureSourceContext(long sourceRecordPosition) {}
+    public void appendFollowUpEvent(
+        final long key,
+        final Intent intent,
+        final UnpackedObject value,
+        final Consumer<RecordMetadata> metadata) {}
 
     @Override
-    public void appendNewCommand(Intent intent, UnpackedObject value) {}
+    public void configureSourceContext(final long sourceRecordPosition) {}
 
     @Override
-    public void appendFollowUpCommand(long key, Intent intent, UnpackedObject value) {}
+    public void appendNewCommand(final Intent intent, final UnpackedObject value) {}
 
     @Override
     public void appendFollowUpCommand(
-        long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata) {}
+        final long key, final Intent intent, final UnpackedObject value) {}
+
+    @Override
+    public void appendFollowUpCommand(
+        final long key,
+        final Intent intent,
+        final UnpackedObject value,
+        final Consumer<RecordMetadata> metadata) {}
 
     @Override
     public void reset() {}
@@ -362,5 +373,8 @@ public final class ReProcessingStateMachine {
     public long flush() {
       return 0;
     }
+
+    @Override
+    public void close() {}
   }
 }

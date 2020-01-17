@@ -21,7 +21,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MsgPackReadingTest {
+public final class MsgPackReadingTest {
 
   @Parameter(0)
   public String name;
@@ -215,11 +215,11 @@ public class MsgPackReadingTest {
     assertThat(reader.getOffset()).isEqualTo(givenBytes.length);
   }
 
-  protected static Consumer<ByteArrayBuilder> given(Consumer<ByteArrayBuilder> arg) {
+  protected static Consumer<ByteArrayBuilder> given(final Consumer<ByteArrayBuilder> arg) {
     return arg;
   }
 
-  protected static Consumer<MsgPackReader> doAssert(Consumer<MsgPackReader> arg) {
+  protected static Consumer<MsgPackReader> doAssert(final Consumer<MsgPackReader> arg) {
     return arg;
   }
 }

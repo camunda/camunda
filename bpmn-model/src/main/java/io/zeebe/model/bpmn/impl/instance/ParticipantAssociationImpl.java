@@ -39,11 +39,11 @@ public class ParticipantAssociationImpl extends BaseElementImpl implements Parti
   protected static ElementReference<Participant, InnerParticipantRef> innerParticipantRefChild;
   protected static ElementReference<Participant, OuterParticipantRef> outerParticipantRefChild;
 
-  public ParticipantAssociationImpl(ModelTypeInstanceContext instanceContext) {
+  public ParticipantAssociationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ParticipantAssociation.class, BPMN_ELEMENT_PARTICIPANT_ASSOCIATION)
@@ -53,7 +53,7 @@ public class ParticipantAssociationImpl extends BaseElementImpl implements Parti
                 new ModelTypeInstanceProvider<ParticipantAssociation>() {
                   @Override
                   public ParticipantAssociation newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ParticipantAssociationImpl(instanceContext);
                   }
                 });
@@ -83,7 +83,7 @@ public class ParticipantAssociationImpl extends BaseElementImpl implements Parti
   }
 
   @Override
-  public void setInnerParticipant(Participant innerParticipant) {
+  public void setInnerParticipant(final Participant innerParticipant) {
     innerParticipantRefChild.setReferenceTargetElement(this, innerParticipant);
   }
 
@@ -93,7 +93,7 @@ public class ParticipantAssociationImpl extends BaseElementImpl implements Parti
   }
 
   @Override
-  public void setOuterParticipant(Participant outerParticipant) {
+  public void setOuterParticipant(final Participant outerParticipant) {
     outerParticipantRefChild.setReferenceTargetElement(this, outerParticipant);
   }
 }

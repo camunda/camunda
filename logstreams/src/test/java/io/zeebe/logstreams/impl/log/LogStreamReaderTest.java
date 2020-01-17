@@ -9,15 +9,9 @@ package io.zeebe.logstreams.impl.log;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
@@ -32,26 +26,28 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStreamReaderTest {
+public final class LogStreamReaderTest {
   private static final UnsafeBuffer EVENT_VALUE = new UnsafeBuffer(getBytes("test"));
   private static final int LOG_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(4).toBytes();
-  private static final UnsafeBuffer BIG_EVENT_VALUE =
-      new UnsafeBuffer(new byte[BufferedLogStreamReader.DEFAULT_INITIAL_BUFFER_CAPACITY * 2]);
-  @Rule public ExpectedException expectedException = ExpectedException.none();
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public LogStreamRule logStreamRule =
+  private static final UnsafeBuffer BIG_EVENT_VALUE = new UnsafeBuffer(new byte[64 * 1024]);
+
+  @Rule public final ExpectedException expectedException = ExpectedException.none();
+
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final LogStreamRule logStreamRule =
       LogStreamRule.startByDefault(
           temporaryFolder,
           builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE),
           builder -> builder.withMaxEntrySize(LOG_SEGMENT_SIZE));
-  public LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
-  public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
+  private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
+  private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
   @Rule
-  public RuleChain ruleChain =
+  public final RuleChain ruleChain =
       RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(readerRule).around(writer);
 
   private final Random random = new Random();
+
   private LogStreamReader reader;
   private long eventKey;
 
@@ -59,6 +55,35 @@ public class LogStreamReaderTest {
   public void setUp() {
     eventKey = random.nextLong();
     reader = readerRule.getLogStreamReader();
+  }
+
+  @Test
+  public void shouldThrowExceptionIfReaderClosed() {
+    // given
+    final LogStreamReader reader = logStreamRule.getLogStreamReader();
+    reader.close();
+
+    // expect
+    expectedException.expectMessage(LogStreamReaderImpl.ERROR_CLOSED);
+    expectedException.expect(IllegalStateException.class);
+
+    // when
+    reader.hasNext();
+  }
+
+  @Test
+  public void shouldThrowExceptionIfReaderClosedOnNext() {
+    // given
+    final LogStreamReader reader = logStreamRule.getLogStreamReader();
+    reader.close();
+
+    // expect
+    expectedException.expectMessage(LogStreamReaderImpl.ERROR_CLOSED);
+    expectedException.expect(IllegalStateException.class);
+
+    // when
+    // then
+    reader.next();
   }
 
   @Test
@@ -108,20 +133,6 @@ public class LogStreamReaderTest {
 
     // then
     assertThat(reader.getPosition()).isEqualTo(-1);
-  }
-
-  @Test
-  public void shouldThrowIteratorNotInitializedIfReaderWasClosedAndHasNextIsCalled() {
-    // given
-    reader.close();
-    writer.writeEvent(EVENT_VALUE);
-
-    // expect
-    expectedException.expect(IllegalStateException.class);
-    expectedException.expectMessage("Iterator not initialized");
-
-    // when
-    reader.hasNext();
   }
 
   @Test
@@ -243,7 +254,7 @@ public class LogStreamReaderTest {
   }
 
   @Test
-  public void shouldSeekToLastBigLoggedEvents() {
+  public void shouldSeekToEnd() {
     // given
     final int eventCount = 1000;
     final long lastPosition = writer.writeEvents(eventCount, BIG_EVENT_VALUE);
@@ -302,40 +313,6 @@ public class LogStreamReaderTest {
   }
 
   @Test
-  public void shouldLimitAllocate() {
-    // mock logStorage to always return insufficient capacity to increase buffer til max
-    final LogStorage logStorage = mock(LogStorage.class);
-    final LogStorageReader logStorageReader = mock(LogStorageReader.class);
-    when(logStorageReader.read(any(), anyLong(), any()))
-        .thenReturn(LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
-    when(logStorage.newReader()).thenReturn(logStorageReader);
-
-    // then
-    expectedException.expect(RuntimeException.class);
-    expectedException.expectMessage(
-        "Next fragment requires more space then the maximal buffer capacity of "
-            + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
-
-    // when
-    new BufferedLogStreamReader(logStorage);
-  }
-
-  @Test
-  public void shouldSeekToEventsWhenMoreThanOneSegment() {
-    // given
-    final int numEventsToFillSegment = LOG_SEGMENT_SIZE / BIG_EVENT_VALUE.capacity();
-    final long position = writer.writeEvents(2 * numEventsToFillSegment, BIG_EVENT_VALUE);
-    writer.writeEvents(numEventsToFillSegment, BIG_EVENT_VALUE);
-
-    // when
-    reader.seek(position);
-
-    // then
-    assertThat(reader.hasNext()).isTrue();
-    assertThat(reader.next().getPosition()).isEqualTo(position);
-  }
-
-  @Test
   public void shouldSeekToFirstEvent() {
     // given
     final long firstPosition = writer.writeEvent(EVENT_VALUE);
@@ -373,5 +350,17 @@ public class LogStreamReaderTest {
 
     // then
     assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  public void shouldReturnNegativeOnSeekToEndOfEmptyLog() {
+    // given
+    final var reader = logStreamRule.getLogStreamReader();
+
+    // when
+    final var result = reader.seekToEnd();
+
+    // then
+    assertThat(result).isLessThan(0);
   }
 }

@@ -9,6 +9,7 @@ package io.zeebe.logstreams.util;
 
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,13 +24,14 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Stream;
 import org.agrona.IoUtil;
 
-public class TestSnapshotStorage implements SnapshotStorage {
+public final class TestSnapshotStorage implements SnapshotStorage {
 
   private final Path pendingDirectory;
   private final Path snapshotsDirectory;
   private final Path runtimeDirectory;
   private final SortedSet<Snapshot> snapshots;
   private final Set<SnapshotDeletionListener> deletionListeners;
+  private final SnapshotMetrics metrics;
 
   public TestSnapshotStorage(final Path rootDirectory) {
     this.pendingDirectory = rootDirectory.resolve("pending");
@@ -38,6 +40,7 @@ public class TestSnapshotStorage implements SnapshotStorage {
 
     this.snapshots = new ConcurrentSkipListSet<>();
     this.deletionListeners = new CopyOnWriteArraySet<>();
+    this.metrics = new SnapshotMetrics(0);
 
     open();
   }
@@ -48,7 +51,7 @@ public class TestSnapshotStorage implements SnapshotStorage {
 
     try {
       Files.list(snapshotsDirectory).map(SnapshotImpl::new).forEach(this::commitSnapshot);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
@@ -73,7 +76,7 @@ public class TestSnapshotStorage implements SnapshotStorage {
     final var destination = snapshotsDirectory.resolve(snapshotPath.getFileName());
     try {
       Files.move(snapshotPath, destination);
-    } catch (FileAlreadyExistsException ignored) {
+    } catch (final FileAlreadyExistsException ignored) {
       // safe to ignore
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
@@ -124,6 +127,11 @@ public class TestSnapshotStorage implements SnapshotStorage {
   @Override
   public void removeDeletionListener(final SnapshotDeletionListener listener) {
     deletionListeners.remove(listener);
+  }
+
+  @Override
+  public SnapshotMetrics getMetrics() {
+    return metrics;
   }
 
   private static final class SnapshotImpl implements Snapshot {

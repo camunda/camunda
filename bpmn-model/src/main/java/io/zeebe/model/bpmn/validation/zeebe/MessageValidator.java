@@ -23,6 +23,7 @@ import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -39,26 +40,38 @@ public class MessageValidator implements ModelElementValidator<Message> {
   }
 
   @Override
-  public void validate(Message element, ValidationResultCollector validationResultCollector) {
-    if (isReferedByCatchEvent(element) || isReferedByReceiveTask(element)) {
-      if (element.getName() == null || element.getName().isEmpty()) {
-        validationResultCollector.addError(0, "Name must be present and not empty");
-      }
-
-      final ExtensionElements extensionElements = element.getExtensionElements();
-
-      if (extensionElements == null
-          || extensionElements.getChildElementsByType(ZeebeSubscription.class).size() != 1) {
-        validationResultCollector.addError(
-            0, "Must have exactly one zeebe:subscription extension element");
-      }
+  public void validate(
+      final Message element, final ValidationResultCollector validationResultCollector) {
+    if (isReferredByCatchEvent(element)
+        || isReferredByReceiveTask(element)
+        || isReferredByEventSubProcessStartEvent(element)) {
+      validateName(element, validationResultCollector);
+      validateSubscription(element, validationResultCollector);
     } else {
       validateIfReferredByStartEvent(element, validationResultCollector);
     }
   }
 
+  private void validateName(
+      final Message element, final ValidationResultCollector validationResultCollector) {
+    if (element.getName() == null || element.getName().isEmpty()) {
+      validationResultCollector.addError(0, "Name must be present and not empty");
+    }
+  }
+
+  private void validateSubscription(
+      final Message element, final ValidationResultCollector validationResultCollector) {
+    final ExtensionElements extensionElements = element.getExtensionElements();
+
+    if (extensionElements == null
+        || extensionElements.getChildElementsByType(ZeebeSubscription.class).size() != 1) {
+      validationResultCollector.addError(
+          0, "Must have exactly one zeebe:subscription extension element");
+    }
+  }
+
   private void validateIfReferredByStartEvent(
-      Message element, ValidationResultCollector validationResultCollector) {
+      final Message element, final ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> startEvents =
         element.getParentElement().getChildElementsByType(Process.class).stream()
             .flatMap(p -> p.getChildElementsByType(StartEvent.class).stream())
@@ -76,13 +89,11 @@ public class MessageValidator implements ModelElementValidator<Message> {
       validationResultCollector.addError(
           0, "A message cannot be referred by more than one start event");
     } else if (numReferredStartEvents == 1) {
-      if (element.getName() == null || element.getName().isEmpty()) {
-        validationResultCollector.addError(0, "Name must be present and not empty");
-      }
+      validateName(element, validationResultCollector);
     }
   }
 
-  private boolean isReferedByCatchEvent(Message element) {
+  private boolean isReferredByCatchEvent(final Message element) {
     final Collection<IntermediateCatchEvent> intermediateCatchEvents =
         getAllElementsByType(element, IntermediateCatchEvent.class);
 
@@ -97,14 +108,31 @@ public class MessageValidator implements ModelElementValidator<Message> {
                     && ((MessageEventDefinition) e).getMessage() == element);
   }
 
-  private boolean isReferedByReceiveTask(Message element) {
+  private boolean isReferredByReceiveTask(final Message element) {
     final Collection<ReceiveTask> receiveTasks = getAllElementsByType(element, ReceiveTask.class);
 
     return receiveTasks.stream().anyMatch(r -> r.getMessage() == element);
   }
 
+  private boolean isReferredByEventSubProcessStartEvent(final Message element) {
+    final Collection<StartEvent> startEvents =
+        element.getParentElement().getChildElementsByType(Process.class).stream()
+            .flatMap(p -> p.getChildElementsByType(SubProcess.class).stream())
+            .flatMap(p -> p.getChildElementsByType(StartEvent.class).stream())
+            .collect(Collectors.toList());
+    final long numReferredSubProcessStartEvents =
+        startEvents.stream()
+            .flatMap(i -> i.getEventDefinitions().stream())
+            .filter(
+                e ->
+                    e instanceof MessageEventDefinition
+                        && ((MessageEventDefinition) e).getMessage() == element)
+            .count();
+    return numReferredSubProcessStartEvents == 1;
+  }
+
   private <T extends ModelElementInstance> Collection<T> getAllElementsByType(
-      Message element, Class<T> type) {
+      final Message element, final Class<T> type) {
     return element.getParentElement().getChildElementsByType(Process.class).stream()
         .flatMap(p -> p.getChildElementsByType(type).stream())
         .collect(Collectors.toList());

@@ -22,14 +22,14 @@ import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.zeebe.model.bpmn.instance.dc.Bounds;
+import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public class EmbeddedSubProcessBuilder
     extends AbstractEmbeddedSubProcessBuilder<
         EmbeddedSubProcessBuilder, AbstractSubProcessBuilder<?>> {
 
-  @SuppressWarnings("rawtypes")
-  protected EmbeddedSubProcessBuilder(AbstractSubProcessBuilder subProcessBuilder) {
+  protected EmbeddedSubProcessBuilder(final AbstractSubProcessBuilder subProcessBuilder) {
     super(subProcessBuilder, EmbeddedSubProcessBuilder.class);
   }
 
@@ -37,7 +37,7 @@ public class EmbeddedSubProcessBuilder
     return startEvent(null);
   }
 
-  public StartEventBuilder startEvent(String id) {
+  public StartEventBuilder startEvent(final String id) {
     final StartEvent start = subProcessBuilder.createChild(StartEvent.class, id);
 
     final BpmnShape startShape = subProcessBuilder.createBpmnShape(start);
@@ -64,7 +64,7 @@ public class EmbeddedSubProcessBuilder
     return eventSubProcess(null);
   }
 
-  public EventSubProcessBuilder eventSubProcess(String id) {
+  public EventSubProcessBuilder eventSubProcess(final String id) {
     // Create a subprocess, triggered by an event, and add it to modelInstance
     final SubProcess subProcess = subProcessBuilder.createChild(SubProcess.class, id);
     subProcess.setTriggeredByEvent(true);
@@ -83,7 +83,14 @@ public class EmbeddedSubProcessBuilder
     return eventSubProcessBuilder;
   }
 
-  protected void setCoordinates(BpmnShape targetBpmnShape) {
+  public EmbeddedSubProcessBuilder eventSubProcess(
+      final String id, final Consumer<EventSubProcessBuilder> consumer) {
+    final EventSubProcessBuilder builder = eventSubProcess(id);
+    consumer.accept(builder);
+    return this;
+  }
+
+  protected void setCoordinates(final BpmnShape targetBpmnShape) {
 
     final SubProcess eventSubProcess = (SubProcess) targetBpmnShape.getBpmnElement();
     final SubProcess parentSubProcess = (SubProcess) eventSubProcess.getParentElement();

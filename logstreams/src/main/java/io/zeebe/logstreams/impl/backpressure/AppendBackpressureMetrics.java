@@ -10,7 +10,7 @@ package io.zeebe.logstreams.impl.backpressure;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
-public class AppendBackpressureMetrics {
+public final class AppendBackpressureMetrics {
 
   private static final Counter TOTAL_DEFERRED_APPEND_COUNT =
       Counter.build()
@@ -46,7 +46,7 @@ public class AppendBackpressureMetrics {
 
   private final int partitionId;
 
-  public AppendBackpressureMetrics(int partitionId) {
+  public AppendBackpressureMetrics(final int partitionId) {
     this.partitionId = partitionId;
   }
 
@@ -66,11 +66,11 @@ public class AppendBackpressureMetrics {
     CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).dec();
   }
 
-  public void setNewLimit(int newLimit) {
+  public void setNewLimit(final int newLimit) {
     CURRENT_LIMIT.labels(String.valueOf(partitionId)).set(newLimit);
   }
 
-  public void setInflight(int count) {
+  public void setInflight(final int count) {
     CURRENT_INFLIGHT.labels(String.valueOf(partitionId)).set(0);
   }
 }

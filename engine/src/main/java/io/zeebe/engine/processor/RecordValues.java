@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class RecordValues {
+public final class RecordValues {
 
   private final Map<ValueType, UnifiedRecordValue> eventCache;
 
@@ -28,7 +28,7 @@ public class RecordValues {
     eventCache = Collections.unmodifiableMap(cache);
   }
 
-  public UnifiedRecordValue readRecordValue(LoggedEvent event, ValueType valueType) {
+  public UnifiedRecordValue readRecordValue(final LoggedEvent event, final ValueType valueType) {
     final UnifiedRecordValue value = eventCache.get(valueType);
     if (value != null) {
       value.reset();

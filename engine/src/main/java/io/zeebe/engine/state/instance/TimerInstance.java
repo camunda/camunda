@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TimerInstance implements DbValue {
+public final class TimerInstance implements DbValue {
 
   public static final int NO_ELEMENT_INSTANCE = -1;
 
@@ -32,7 +32,7 @@ public class TimerInstance implements DbValue {
     return elementInstanceKey;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
@@ -40,7 +40,7 @@ public class TimerInstance implements DbValue {
     return dueDate;
   }
 
-  public void setDueDate(long dueDate) {
+  public void setDueDate(final long dueDate) {
     this.dueDate = dueDate;
   }
 
@@ -48,7 +48,7 @@ public class TimerInstance implements DbValue {
     return key;
   }
 
-  public void setKey(long key) {
+  public void setKey(final long key) {
     this.key = key;
   }
 
@@ -56,7 +56,7 @@ public class TimerInstance implements DbValue {
     return handlerNodeId;
   }
 
-  public void setHandlerNodeId(DirectBuffer handlerNodeId) {
+  public void setHandlerNodeId(final DirectBuffer handlerNodeId) {
     this.handlerNodeId.wrap(handlerNodeId);
   }
 
@@ -64,7 +64,7 @@ public class TimerInstance implements DbValue {
     return repetitions;
   }
 
-  public void setRepetitions(int repetitions) {
+  public void setRepetitions(final int repetitions) {
     this.repetitions = repetitions;
   }
 
@@ -72,7 +72,7 @@ public class TimerInstance implements DbValue {
     return this.workflowKey;
   }
 
-  public void setWorkflowKey(long workflowKey) {
+  public void setWorkflowKey(final long workflowKey) {
     this.workflowKey = workflowKey;
   }
 
@@ -80,7 +80,7 @@ public class TimerInstance implements DbValue {
     return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
@@ -90,7 +90,7 @@ public class TimerInstance implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     buffer.putLong(offset, elementInstanceKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
@@ -114,7 +114,7 @@ public class TimerInstance implements DbValue {
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 

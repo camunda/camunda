@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class TimerRecord extends UnifiedRecordValue
+public final class TimerRecord extends UnifiedRecordValue
     implements WorkflowInstanceRelated, TimerRecordValue {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
@@ -45,7 +45,7 @@ public class TimerRecord extends UnifiedRecordValue
     return workflowInstanceKeyProp.getValue();
   }
 
-  public TimerRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+  public TimerRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
@@ -75,27 +75,27 @@ public class TimerRecord extends UnifiedRecordValue
     return repetitionsProp.getValue();
   }
 
-  public TimerRecord setRepetitions(int repetitions) {
+  public TimerRecord setRepetitions(final int repetitions) {
     this.repetitionsProp.setValue(repetitions);
     return this;
   }
 
-  public TimerRecord setTargetElementId(DirectBuffer targetElementId) {
+  public TimerRecord setTargetElementId(final DirectBuffer targetElementId) {
     this.targetElementId.setValue(targetElementId);
     return this;
   }
 
-  public TimerRecord setDueDate(long dueDate) {
+  public TimerRecord setDueDate(final long dueDate) {
     this.dueDateProp.setValue(dueDate);
     return this;
   }
 
-  public TimerRecord setElementInstanceKey(long key) {
+  public TimerRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public TimerRecord setWorkflowKey(long workflowKey) {
+  public TimerRecord setWorkflowKey(final long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
   }

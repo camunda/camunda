@@ -18,7 +18,7 @@ public class ExecutableEventBasedGateway extends ExecutableFlowNode
   private List<ExecutableCatchEvent> events;
   private List<DirectBuffer> eventIds;
 
-  public ExecutableEventBasedGateway(String id) {
+  public ExecutableEventBasedGateway(final String id) {
     super(id);
   }
 
@@ -27,7 +27,7 @@ public class ExecutableEventBasedGateway extends ExecutableFlowNode
     return events;
   }
 
-  public void setEvents(List<ExecutableCatchEvent> events) {
+  public void setEvents(final List<ExecutableCatchEvent> events) {
     this.events = events;
     this.eventIds = new ArrayList<>(events.size());
 

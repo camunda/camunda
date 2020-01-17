@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class To extends ExpressionImpl {
 
-  public To(ModelTypeInstanceContext instanceContext) {
+  public To(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(To.class, BPMN_ELEMENT_TO)
@@ -45,7 +45,7 @@ public class To extends ExpressionImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<To>() {
                   @Override
-                  public To newInstance(ModelTypeInstanceContext instanceContext) {
+                  public To newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new To(instanceContext);
                   }
                 });

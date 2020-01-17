@@ -23,26 +23,26 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.slf4j.Logger;
 
-public class JobRunnableFactory {
+public final class JobRunnableFactory {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
 
   private final JobClient jobClient;
   private final JobHandler handler;
 
-  public JobRunnableFactory(JobClient jobClient, JobHandler handler) {
+  public JobRunnableFactory(final JobClient jobClient, final JobHandler handler) {
     this.jobClient = jobClient;
     this.handler = handler;
   }
 
-  public Runnable create(ActivatedJob job, Runnable doneCallback) {
+  public Runnable create(final ActivatedJob job, final Runnable doneCallback) {
     return () -> executeJob(job, doneCallback);
   }
 
-  private void executeJob(ActivatedJob job, Runnable doneCallback) {
+  private void executeJob(final ActivatedJob job, final Runnable doneCallback) {
     try {
       handler.handle(jobClient, job);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.warn(
           "Worker {} failed to handle job with key {} of type {}, sending fail command to broker",
           job.getWorker(),

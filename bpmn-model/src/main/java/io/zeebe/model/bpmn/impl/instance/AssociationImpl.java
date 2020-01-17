@@ -41,11 +41,11 @@ public class AssociationImpl extends ArtifactImpl implements Association {
   protected static AttributeReference<BaseElement> targetRefAttribute;
   protected static Attribute<AssociationDirection> associationDirectionAttribute;
 
-  public AssociationImpl(ModelTypeInstanceContext instanceContext) {
+  public AssociationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Association.class, BPMN_ELEMENT_ASSOCIATION)
@@ -54,7 +54,7 @@ public class AssociationImpl extends ArtifactImpl implements Association {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Association>() {
                   @Override
-                  public Association newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Association newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new AssociationImpl(instanceContext);
                   }
                 });
@@ -88,7 +88,7 @@ public class AssociationImpl extends ArtifactImpl implements Association {
   }
 
   @Override
-  public void setSource(BaseElement source) {
+  public void setSource(final BaseElement source) {
     sourceRefAttribute.setReferenceTargetElement(this, source);
   }
 
@@ -98,7 +98,7 @@ public class AssociationImpl extends ArtifactImpl implements Association {
   }
 
   @Override
-  public void setTarget(BaseElement target) {
+  public void setTarget(final BaseElement target) {
     targetRefAttribute.setReferenceTargetElement(this, target);
   }
 
@@ -108,7 +108,7 @@ public class AssociationImpl extends ArtifactImpl implements Association {
   }
 
   @Override
-  public void setAssociationDirection(AssociationDirection associationDirection) {
+  public void setAssociationDirection(final AssociationDirection associationDirection) {
     associationDirectionAttribute.setValue(this, associationDirection);
   }
 

@@ -16,6 +16,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -37,9 +38,12 @@ func TestFailJobCommand(t *testing.T) {
 
 	client.EXPECT().FailJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewFailJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.JobKey(123).Retries(12).Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.JobKey(123).Retries(12).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -67,9 +71,12 @@ func TestFailJobCommand_ErrorMessage(t *testing.T) {
 
 	client.EXPECT().FailJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewFailJobCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
 
-	response, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

@@ -40,12 +40,12 @@ import static org.agrona.BitUtil.SIZE_OF_SHORT;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MsgPackReader {
-  protected MsgPackToken token = new MsgPackToken();
+public final class MsgPackReader {
+  private final MsgPackToken token = new MsgPackToken();
   private final DirectBuffer buffer = new UnsafeBuffer(0, 0);
   private int offset;
 
-  public MsgPackReader wrap(DirectBuffer buffer, int offset, int length) {
+  public MsgPackReader wrap(final DirectBuffer buffer, final int offset, final int length) {
     this.buffer.wrap(buffer, offset, length);
     this.offset = 0;
     return this;
@@ -460,7 +460,7 @@ public class MsgPackReader {
     }
   }
 
-  public void skipBytes(int stringLength) {
+  public void skipBytes(final int stringLength) {
     offset += stringLength;
   }
 
@@ -468,7 +468,7 @@ public class MsgPackReader {
     return offset < buffer.capacity();
   }
 
-  protected MsgpackReaderException exceptionOnUnknownHeader(
+  private MsgpackReaderException exceptionOnUnknownHeader(
       final String name, final byte headerByte) {
     return new MsgpackReaderException(
         String.format(
@@ -476,10 +476,10 @@ public class MsgPackReader {
             name, headerByte, offset - 1));
   }
 
-  private long ensurePositive(long size) {
+  private long ensurePositive(final long size) {
     try {
       return MsgPackHelper.ensurePositive(size);
-    } catch (MsgpackException e) {
+    } catch (final MsgpackException e) {
       throw new MsgpackReaderException(e);
     }
   }

@@ -18,7 +18,7 @@ public abstract class AbstractMessageBuilder<T> implements MessageBuilder<T> {
     }
   }
 
-  public void beforeResponse(Runnable beforeResponse) {
+  public void beforeResponse(final Runnable beforeResponse) {
     this.beforeResponse = beforeResponse;
   }
 }

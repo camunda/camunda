@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class EndPointRef extends BpmnModelElementInstanceImpl {
 
-  public EndPointRef(ModelTypeInstanceContext instanceContext) {
+  public EndPointRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(EndPointRef.class, BPMN_ELEMENT_END_POINT_REF)
@@ -43,7 +43,7 @@ public class EndPointRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<EndPointRef>() {
                   @Override
-                  public EndPointRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public EndPointRef newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new EndPointRef(instanceContext);
                   }
                 });

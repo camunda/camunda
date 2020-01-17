@@ -18,14 +18,14 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PartitionCommandSenderImpl implements PartitionCommandSender {
+public final class PartitionCommandSenderImpl implements PartitionCommandSender {
 
   private final Atomix atomix;
 
   private final TopologyPartitionListenerImpl partitionListener;
 
   public PartitionCommandSenderImpl(
-      Atomix atomix, final TopologyManager topologyManager, final ActorControl actor) {
+      final Atomix atomix, final TopologyManager topologyManager, final ActorControl actor) {
     this.atomix = atomix;
     this.partitionListener = new TopologyPartitionListenerImpl(actor);
     topologyManager.addTopologyPartitionListener(partitionListener);

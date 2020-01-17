@@ -48,11 +48,11 @@ public class DataAssociationImpl extends BaseElementImpl implements DataAssociat
   protected static ChildElement<Transformation> transformationChild;
   protected static ChildElementCollection<Assignment> assignmentCollection;
 
-  public DataAssociationImpl(ModelTypeInstanceContext instanceContext) {
+  public DataAssociationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataAssociation.class, BPMN_ELEMENT_DATA_ASSOCIATION)
@@ -61,7 +61,8 @@ public class DataAssociationImpl extends BaseElementImpl implements DataAssociat
             .instanceProvider(
                 new ModelTypeInstanceProvider<DataAssociation>() {
                   @Override
-                  public DataAssociation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataAssociation newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new DataAssociationImpl(instanceContext);
                   }
                 });
@@ -99,7 +100,7 @@ public class DataAssociationImpl extends BaseElementImpl implements DataAssociat
   }
 
   @Override
-  public void setTarget(ItemAwareElement target) {
+  public void setTarget(final ItemAwareElement target) {
     targetRefChild.setReferenceTargetElement(this, target);
   }
 
@@ -109,7 +110,7 @@ public class DataAssociationImpl extends BaseElementImpl implements DataAssociat
   }
 
   @Override
-  public void setTransformation(Transformation transformation) {
+  public void setTransformation(final Transformation transformation) {
     transformationChild.setChild(this, transformation);
   }
 

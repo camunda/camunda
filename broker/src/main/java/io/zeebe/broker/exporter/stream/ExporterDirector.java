@@ -43,7 +43,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ExporterDirector extends Actor {
+public final class ExporterDirector extends Actor {
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
@@ -67,7 +67,7 @@ public class ExporterDirector extends Actor {
   private ActorCondition onCommitPositionUpdatedCondition;
   private boolean inExportingPhase;
 
-  public ExporterDirector(ExporterDirectorContext context) {
+  public ExporterDirector(final ExporterDirectorContext context) {
     this.name = context.getName();
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
@@ -83,7 +83,7 @@ public class ExporterDirector extends Actor {
     this.metrics = new ExporterMetrics(partitionId);
   }
 
-  public ActorFuture<Void> startAsync(ActorScheduler actorScheduler) {
+  public ActorFuture<Void> startAsync(final ActorScheduler actorScheduler) {
     return actorScheduler.submitActor(this, SchedulingHints.ioBound());
   }
 
@@ -182,7 +182,7 @@ public class ExporterDirector extends Actor {
         snapshotPosition);
   }
 
-  private ExporterEventFilter createEventFilter(List<ExporterContainer> containers) {
+  private ExporterEventFilter createEventFilter(final List<ExporterContainer> containers) {
 
     final List<Context.RecordFilter> recordFilters =
         containers.stream().map(c -> c.context.getFilter()).collect(Collectors.toList());
@@ -230,7 +230,7 @@ public class ExporterDirector extends Actor {
     actor.submit(this::readNextEvent);
   }
 
-  private void skipRecord(LoggedEvent currentEvent) {
+  private void skipRecord(final LoggedEvent currentEvent) {
     final RecordMetadata metadata = new RecordMetadata();
     currentEvent.readMetadata(metadata);
     metrics.eventSkipped(metadata.getValueType());
@@ -314,12 +314,12 @@ public class ExporterDirector extends Actor {
     private boolean shouldExport;
     private int exporterIndex;
 
-    RecordExporter(List<ExporterContainer> containers, int partitionId) {
+    RecordExporter(final List<ExporterContainer> containers, final int partitionId) {
       this.containers = containers;
       typedEvent = new TypedEventImpl(partitionId);
     }
 
-    void wrap(LoggedEvent rawEvent) {
+    void wrap(final LoggedEvent rawEvent) {
       rawEvent.readMetadata(rawMetadata);
 
       final UnifiedRecordValue recordValue =
@@ -375,13 +375,14 @@ public class ExporterDirector extends Actor {
     private final Map<ValueType, Boolean> acceptValueTypes;
 
     ExporterEventFilter(
-        Map<RecordType, Boolean> acceptRecordTypes, Map<ValueType, Boolean> acceptValueTypes) {
+        final Map<RecordType, Boolean> acceptRecordTypes,
+        final Map<ValueType, Boolean> acceptValueTypes) {
       this.acceptRecordTypes = acceptRecordTypes;
       this.acceptValueTypes = acceptValueTypes;
     }
 
     @Override
-    public boolean applies(LoggedEvent event) {
+    public boolean applies(final LoggedEvent event) {
       event.readMetadata(metadata);
 
       final RecordType recordType = metadata.getRecordType();
@@ -406,7 +407,7 @@ public class ExporterDirector extends Actor {
     private final Exporter exporter;
     private long position;
 
-    ExporterContainer(ExporterDescriptor descriptor) {
+    ExporterContainer(final ExporterDescriptor descriptor) {
       context =
           new ExporterContext(
               Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
@@ -432,7 +433,7 @@ public class ExporterDirector extends Actor {
       return context.getConfiguration().getId();
     }
 
-    private boolean acceptRecord(RecordMetadata metadata) {
+    private boolean acceptRecord(final RecordMetadata metadata) {
       final Context.RecordFilter filter = context.getFilter();
       return filter.acceptType(metadata.getRecordType())
           && filter.acceptValue(metadata.getValueType());

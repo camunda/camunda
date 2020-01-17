@@ -12,13 +12,13 @@ import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.db.ZeebeDb;
 import org.slf4j.Logger;
 
-public class ExporterClearStateService {
+public final class ExporterClearStateService {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
   private final ZeebeDb zeebeDb;
 
-  public ExporterClearStateService(ZeebeDb zeebeDb) {
+  public ExporterClearStateService(final ZeebeDb zeebeDb) {
     this.zeebeDb = zeebeDb;
   }
 
@@ -39,7 +39,7 @@ public class ExporterClearStateService {
                 "The exporter '{}' is not configured anymore. Its position is removed from the state.",
                 exporterId);
           });
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.error("Failed to remove exporters from state", e);
     }
   }

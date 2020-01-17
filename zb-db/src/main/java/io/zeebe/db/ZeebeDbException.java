@@ -10,13 +10,13 @@ package io.zeebe.db;
 import io.zeebe.util.exception.RecoverableException;
 
 /** Wraps the exceptions which are thrown by the database implementation. */
-public class ZeebeDbException extends RecoverableException {
+public final class ZeebeDbException extends RecoverableException {
 
-  public ZeebeDbException(Throwable cause) {
+  public ZeebeDbException(final Throwable cause) {
     super(cause);
   }
 
-  public ZeebeDbException(String message, Throwable cause) {
+  public ZeebeDbException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

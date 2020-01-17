@@ -50,7 +50,8 @@ public class ElasticsearchClient {
   private BulkRequest bulkRequest;
   private ElasticsearchMetrics metrics;
 
-  public ElasticsearchClient(final ElasticsearchExporterConfiguration configuration, Logger log) {
+  public ElasticsearchClient(
+      final ElasticsearchExporterConfiguration configuration, final Logger log) {
     this.configuration = configuration;
     this.log = log;
     this.client = createClient();
@@ -87,7 +88,7 @@ public class ElasticsearchClient {
         metrics.recordBulkSize(bulkSize);
         final BulkResponse responses = exportBulk();
         success = checkBulkResponses(responses);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new ElasticsearchExporterException("Failed to flush bulk", e);
       }
 
@@ -101,13 +102,13 @@ public class ElasticsearchClient {
   }
 
   private BulkResponse exportBulk() throws IOException {
-    try (Histogram.Timer timer = metrics.measureFlushDuration()) {
+    try (final Histogram.Timer timer = metrics.measureFlushDuration()) {
       return client.bulk(bulkRequest, RequestOptions.DEFAULT);
     }
   }
 
   private boolean checkBulkResponses(final BulkResponse responses) {
-    for (BulkItemResponse response : responses) {
+    for (final BulkItemResponse response : responses) {
       if (response.isFailed()) {
         log.warn("Failed to flush at least one bulk request {}", response.getFailureMessage());
         return false;
@@ -132,14 +133,15 @@ public class ElasticsearchClient {
   public boolean putIndexTemplate(
       final String templateName, final String filename, final String indexDelimiter) {
     final Map<String, Object> template;
-    try (InputStream inputStream = ElasticsearchExporter.class.getResourceAsStream(filename)) {
+    try (final InputStream inputStream =
+        ElasticsearchExporter.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         template = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
       } else {
         throw new ElasticsearchExporterException(
             "Failed to find index template in classpath " + filename);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           "Failed to load index template from classpath " + filename, e);
     }
@@ -163,7 +165,7 @@ public class ElasticsearchClient {
           .indices()
           .putTemplate(putIndexTemplateRequest, RequestOptions.DEFAULT)
           .isAcknowledged();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put index template", e);
     }
   }
@@ -178,7 +180,7 @@ public class ElasticsearchClient {
     return new RestHighLevelClient(builder);
   }
 
-  private HttpAsyncClientBuilder setHttpClientConfigCallback(HttpAsyncClientBuilder builder) {
+  private HttpAsyncClientBuilder setHttpClientConfigCallback(final HttpAsyncClientBuilder builder) {
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 
     if (configuration.authentication.isPresent()) {
@@ -188,7 +190,7 @@ public class ElasticsearchClient {
     return builder;
   }
 
-  private void setupBasicAuthentication(HttpAsyncClientBuilder builder) {
+  private void setupBasicAuthentication(final HttpAsyncClientBuilder builder) {
     final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         AuthScope.ANY,
@@ -202,7 +204,7 @@ public class ElasticsearchClient {
     final URI uri;
     try {
       uri = new URI(url);
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new ElasticsearchExporterException("Failed to parse url " + url, e);
     }
 

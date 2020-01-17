@@ -40,7 +40,7 @@ import static org.agrona.BitUtil.align;
  *   <li>E: End Batch
  *   <li>F: Failed (e.g. set by a prior subscriber)
  */
-public class DataFrameDescriptor {
+public final class DataFrameDescriptor {
 
   public static final int FRAME_ALIGNMENT = 8;
 
@@ -86,67 +86,67 @@ public class DataFrameDescriptor {
     HEADER_LENGTH = offset;
   }
 
-  public static int lengthOffset(int offset) {
+  public static int lengthOffset(final int offset) {
     return offset + FRAME_LENGTH_OFFSET;
   }
 
-  public static int versionOffset(int offset) {
+  public static int versionOffset(final int offset) {
     return offset + VERSION_OFFSET;
   }
 
-  public static int flagsOffset(int offset) {
+  public static int flagsOffset(final int offset) {
     return offset + FLAGS_OFFSET;
   }
 
-  public static int typeOffset(int offset) {
+  public static int typeOffset(final int offset) {
     return offset + TYPE_OFFSET;
   }
 
-  public static int streamIdOffset(int offset) {
+  public static int streamIdOffset(final int offset) {
     return offset + STREAM_ID_OFFSET;
   }
 
-  public static int messageOffset(int offset) {
+  public static int messageOffset(final int offset) {
     return offset + HEADER_LENGTH;
   }
 
-  public static int alignedFramedLength(int msgLength) {
+  public static int alignedFramedLength(final int msgLength) {
     return alignedLength(framedLength(msgLength));
   }
 
-  public static int alignedLength(int msgLength) {
+  public static int alignedLength(final int msgLength) {
     return align(msgLength, FRAME_ALIGNMENT);
   }
 
-  public static int framedLength(int msgLength) {
+  public static int framedLength(final int msgLength) {
     return msgLength + HEADER_LENGTH;
   }
 
-  public static int messageLength(int framedLength) {
+  public static int messageLength(final int framedLength) {
     return framedLength - HEADER_LENGTH;
   }
 
-  public static boolean flagFailed(byte flags) {
+  public static boolean flagFailed(final byte flags) {
     return (flags & FLAG_FAILED_BITMASK) != 0;
   }
 
-  public static byte enableFlagFailed(byte flags) {
+  public static byte enableFlagFailed(final byte flags) {
     return (byte) (flags | FLAG_FAILED_BITMASK);
   }
 
-  public static boolean flagBatchBegin(byte flags) {
+  public static boolean flagBatchBegin(final byte flags) {
     return (flags & FLAG_BATCH_BEGIN_BITMASK) != 0;
   }
 
-  public static byte enableFlagBatchBegin(byte flags) {
+  public static byte enableFlagBatchBegin(final byte flags) {
     return (byte) (flags | FLAG_BATCH_BEGIN_BITMASK);
   }
 
-  public static boolean flagBatchEnd(byte flags) {
+  public static boolean flagBatchEnd(final byte flags) {
     return (flags & FLAG_BATCH_END_BITMASK) != 0;
   }
 
-  public static byte enableFlagBatchEnd(byte flags) {
+  public static byte enableFlagBatchEnd(final byte flags) {
     return (byte) (flags | FLAG_BATCH_END_BITMASK);
   }
 }

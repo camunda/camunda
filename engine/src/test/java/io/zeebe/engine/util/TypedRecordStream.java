@@ -14,15 +14,15 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
-public class TypedRecordStream<T extends UnifiedRecordValue>
+public final class TypedRecordStream<T extends UnifiedRecordValue>
     extends StreamWrapper<Record<T>, TypedRecordStream<T>> {
 
-  public TypedRecordStream(Stream<Record<T>> wrappedStream) {
+  public TypedRecordStream(final Stream<Record<T>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected TypedRecordStream<T> supply(Stream<Record<T>> wrappedStream) {
+  protected TypedRecordStream<T> supply(final Stream<Record<T>> wrappedStream) {
     return new TypedRecordStream<>(wrappedStream);
   }
 
@@ -38,7 +38,7 @@ public class TypedRecordStream<T extends UnifiedRecordValue>
     return new TypedRecordStream<>(filter(r -> r.getRecordType() == RecordType.COMMAND_REJECTION));
   }
 
-  public TypedRecordStream<T> withIntent(Intent intent) {
+  public TypedRecordStream<T> withIntent(final Intent intent) {
     return new TypedRecordStream<>(filter(r -> r.getIntent() == intent));
   }
 }

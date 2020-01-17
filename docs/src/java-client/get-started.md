@@ -73,7 +73,7 @@ import io.zeebe.client.ZeebeClient;
 
 public class App
 {
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         final ZeebeClient client = ZeebeClient.newClientBuilder()
             // change the contact point if needed
@@ -166,7 +166,7 @@ import io.zeebe.client.api.response.DeploymentEvent;
 
 public class Application
 {
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         // after the client is connected
 
@@ -204,7 +204,7 @@ import io.zeebe.client.api.response.WorkflowInstanceEvent;
 
 public class Application
 {
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         // after the workflow is deployed
 
@@ -269,7 +269,7 @@ import io.zeebe.client.api.worker.JobWorker;
 
 public class App
 {
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         // after the workflow instance is created
 
@@ -329,7 +329,7 @@ package io.zeebe;
 
 public class App
 {
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         // after the workflow is deployed
 

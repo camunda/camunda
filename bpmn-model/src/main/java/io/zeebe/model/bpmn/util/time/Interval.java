@@ -37,7 +37,7 @@ public class Interval implements TemporalAmount {
   private final Period period;
   private final Duration duration;
 
-  public Interval(Period period, Duration duration) {
+  public Interval(final Period period, final Duration duration) {
     this.period = period;
     this.duration = duration;
     this.units = new ArrayList<>();
@@ -54,7 +54,7 @@ public class Interval implements TemporalAmount {
     return duration;
   }
 
-  public long toEpochMilli(long fromEpochMilli) {
+  public long toEpochMilli(final long fromEpochMilli) {
     if (!isCalendarBased()) {
       return fromEpochMilli + getDuration().toMillis();
     }
@@ -74,7 +74,7 @@ public class Interval implements TemporalAmount {
    * @throws UnsupportedTemporalTypeException if the unit is not supported
    */
   @Override
-  public long get(TemporalUnit unit) {
+  public long get(final TemporalUnit unit) {
     if (unit == ChronoUnit.SECONDS || unit == ChronoUnit.NANOS) {
       return duration.get(unit);
     }
@@ -88,12 +88,12 @@ public class Interval implements TemporalAmount {
   }
 
   @Override
-  public Temporal addTo(Temporal temporal) {
+  public Temporal addTo(final Temporal temporal) {
     return temporal.plus(period).plus(duration);
   }
 
   @Override
-  public Temporal subtractFrom(Temporal temporal) {
+  public Temporal subtractFrom(final Temporal temporal) {
     return temporal.minus(period).minus(duration);
   }
 
@@ -103,7 +103,7 @@ public class Interval implements TemporalAmount {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -140,7 +140,7 @@ public class Interval implements TemporalAmount {
    * @param text ISO8601 conforming interval expression
    * @return parsed interval
    */
-  public static Interval parse(String text) {
+  public static Interval parse(final String text) {
     String sign = "";
     int startOffset = 0;
 

@@ -43,11 +43,11 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
   protected static Attribute<Double> widthAttribute;
   protected static Attribute<Double> heightAttribute;
 
-  public BoundsImpl(ModelTypeInstanceContext instanceContext) {
+  public BoundsImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Bounds.class, DC_ELEMENT_BOUNDS)
@@ -55,7 +55,7 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Bounds>() {
                   @Override
-                  public Bounds newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Bounds newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new BoundsImpl(instanceContext);
                   }
                 });
@@ -77,7 +77,7 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
   }
 
   @Override
-  public void setX(double x) {
+  public void setX(final double x) {
     xAttribute.setValue(this, x);
   }
 
@@ -87,7 +87,7 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
   }
 
   @Override
-  public void setY(double y) {
+  public void setY(final double y) {
     yAttribute.setValue(this, y);
   }
 
@@ -97,7 +97,7 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
   }
 
   @Override
-  public void setWidth(double width) {
+  public void setWidth(final double width) {
     widthAttribute.setValue(this, width);
   }
 
@@ -107,7 +107,7 @@ public class BoundsImpl extends BpmnModelElementInstanceImpl implements Bounds {
   }
 
   @Override
-  public void setHeight(double height) {
+  public void setHeight(final double height) {
     heightAttribute.setValue(this, height);
   }
 }

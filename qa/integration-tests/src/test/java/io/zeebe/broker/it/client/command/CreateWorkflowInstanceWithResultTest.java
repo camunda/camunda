@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class CreateWorkflowInstanceWithResultTest {
+public final class CreateWorkflowInstanceWithResultTest {
 
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
@@ -39,7 +39,7 @@ public class CreateWorkflowInstanceWithResultTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String processId;
   private long workflowKey;
@@ -163,7 +163,7 @@ public class CreateWorkflowInstanceWithResultTest {
   }
 
   private ZeebeFuture<WorkflowInstanceResult> createWorkflowInstanceWithVariables(
-      Map<String, Object> variables) {
+      final Map<String, Object> variables) {
     return CLIENT_RULE
         .getClient()
         .newCreateInstanceCommand()
@@ -188,7 +188,7 @@ public class CreateWorkflowInstanceWithResultTest {
                 .done());
   }
 
-  private void completeJobWithVariables(Map<String, Object> variables) {
+  private void completeJobWithVariables(final Map<String, Object> variables) {
     waitUntil(() -> RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists());
 
     final ActivateJobsResponse response =

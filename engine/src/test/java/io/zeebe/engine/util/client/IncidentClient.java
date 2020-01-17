@@ -15,15 +15,15 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 
-public class IncidentClient {
+public final class IncidentClient {
 
   private final StreamProcessorRule environmentRule;
 
-  public IncidentClient(StreamProcessorRule environmentRule) {
+  public IncidentClient(final StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
   }
 
-  public ResolveIncidentClient ofInstance(long workflowInstanceKey) {
+  public ResolveIncidentClient ofInstance(final long workflowInstanceKey) {
     return new ResolveIncidentClient(environmentRule, workflowInstanceKey);
   }
 
@@ -36,13 +36,14 @@ public class IncidentClient {
 
     private long incidentKey = DEFAULT_KEY;
 
-    public ResolveIncidentClient(StreamProcessorRule environmentRule, long workflowInstanceKey) {
+    public ResolveIncidentClient(
+        final StreamProcessorRule environmentRule, final long workflowInstanceKey) {
       this.environmentRule = environmentRule;
       this.workflowInstanceKey = workflowInstanceKey;
       incidentRecord = new IncidentRecord();
     }
 
-    public ResolveIncidentClient withKey(long incidentKey) {
+    public ResolveIncidentClient withKey(final long incidentKey) {
       this.incidentKey = incidentKey;
       return this;
     }

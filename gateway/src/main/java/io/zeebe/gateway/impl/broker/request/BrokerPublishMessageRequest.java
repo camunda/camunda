@@ -12,11 +12,11 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
+public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
 
   private final MessageRecord requestDto = new MessageRecord();
 
-  public BrokerPublishMessageRequest(String messageName, String correlationKey) {
+  public BrokerPublishMessageRequest(final String messageName, final String correlationKey) {
     super(ValueType.MESSAGE, MessageIntent.PUBLISH);
     requestDto.setName(messageName).setCorrelationKey(correlationKey);
   }
@@ -25,17 +25,17 @@ public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
     return requestDto.getCorrelationKeyBuffer();
   }
 
-  public BrokerPublishMessageRequest setMessageId(String messageId) {
+  public BrokerPublishMessageRequest setMessageId(final String messageId) {
     requestDto.setMessageId(messageId);
     return this;
   }
 
-  public BrokerPublishMessageRequest setTimeToLive(long timeToLive) {
+  public BrokerPublishMessageRequest setTimeToLive(final long timeToLive) {
     requestDto.setTimeToLive(timeToLive);
     return this;
   }
 
-  public BrokerPublishMessageRequest setVariables(DirectBuffer variables) {
+  public BrokerPublishMessageRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;
   }
@@ -46,7 +46,7 @@ public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
   }
 
   @Override
-  protected Void toResponseDto(DirectBuffer buffer) {
+  protected Void toResponseDto(final DirectBuffer buffer) {
     return null;
   }
 }

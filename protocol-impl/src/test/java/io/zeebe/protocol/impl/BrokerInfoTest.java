@@ -19,7 +19,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class BrokerInfoTest {
+public final class BrokerInfoTest {
 
   @Test
   public void shouldEncodeDecodeBrokerInfo() {
@@ -103,7 +103,7 @@ public class BrokerInfoTest {
     assertThat(brokerInfo.getPartitionRoles()).isEmpty();
   }
 
-  private void encodeDecode(BrokerInfo brokerInfo) {
+  private void encodeDecode(final BrokerInfo brokerInfo) {
     // encode
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[brokerInfo.getLength()]);
     brokerInfo.write(buffer, 0);

@@ -21,17 +21,17 @@ import io.zeebe.client.impl.ZeebeObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActivateJobsResponseImpl implements ActivateJobsResponse {
+public final class ActivateJobsResponseImpl implements ActivateJobsResponse {
 
   private final ZeebeObjectMapper objectMapper;
   private final List<ActivatedJob> jobs = new ArrayList<>();
 
-  public ActivateJobsResponseImpl(ZeebeObjectMapper objectMapper) {
+  public ActivateJobsResponseImpl(final ZeebeObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
   public void addResponse(
-      io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse activateJobsResponse) {
+      final io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse activateJobsResponse) {
     activateJobsResponse.getJobsList().stream()
         .map(r -> new ActivatedJobImpl(objectMapper, r))
         .forEach(jobs::add);

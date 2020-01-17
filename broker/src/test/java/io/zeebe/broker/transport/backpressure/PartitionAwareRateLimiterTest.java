@@ -18,7 +18,7 @@ import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PartitionAwareRateLimiterTest {
+public final class PartitionAwareRateLimiterTest {
   private static final Supplier<Limit> LIMIT_SUPPLIER = () -> new SettableLimit(1);
   private static final int PARTITIONS = 3;
   private final Intent context = WorkflowInstanceCreationIntent.CREATE;

@@ -17,7 +17,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class EventScopeInstance extends UnpackedObject implements DbValue {
+public final class EventScopeInstance extends UnpackedObject implements DbValue {
 
   private final BooleanProperty acceptingProp = new BooleanProperty("accepting");
   private final ArrayProperty<StringValue> interruptingProp =
@@ -27,7 +27,7 @@ public class EventScopeInstance extends UnpackedObject implements DbValue {
     this.declareProperty(acceptingProp).declareProperty(interruptingProp);
   }
 
-  public EventScopeInstance(EventScopeInstance other) {
+  public EventScopeInstance(final EventScopeInstance other) {
     this();
 
     final int length = other.getLength();
@@ -40,18 +40,18 @@ public class EventScopeInstance extends UnpackedObject implements DbValue {
     return acceptingProp.getValue();
   }
 
-  public EventScopeInstance setAccepting(boolean accepting) {
+  public EventScopeInstance setAccepting(final boolean accepting) {
     this.acceptingProp.setValue(accepting);
     return this;
   }
 
-  public EventScopeInstance addInterrupting(DirectBuffer elementId) {
+  public EventScopeInstance addInterrupting(final DirectBuffer elementId) {
     this.interruptingProp.add().wrap(elementId);
     return this;
   }
 
-  public boolean isInterrupting(DirectBuffer elementId) {
-    for (StringValue stringValue : interruptingProp) {
+  public boolean isInterrupting(final DirectBuffer elementId) {
+    for (final StringValue stringValue : interruptingProp) {
       if (stringValue.getValue().equals(elementId)) {
         return true;
       }
@@ -66,7 +66,7 @@ public class EventScopeInstance extends UnpackedObject implements DbValue {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

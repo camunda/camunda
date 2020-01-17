@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class JobWorkerWithMultiplePartitionsTest {
+public final class JobWorkerWithMultiplePartitionsTest {
 
   private static final int PARTITION_COUNT = 3;
 
@@ -34,7 +34,7 @@ public class JobWorkerWithMultiplePartitionsTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(CLUSTERING_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldReceiveJobsFromMultiplePartitions() {

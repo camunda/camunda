@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 import io.zeebe.logstreams.log.LoggedEvent;
 import org.junit.Test;
 
-public class EventFilterTest {
+public final class EventFilterTest {
 
   @Test
   public void testConjunction() {

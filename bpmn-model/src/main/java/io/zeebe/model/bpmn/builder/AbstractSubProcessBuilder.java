@@ -24,7 +24,7 @@ public class AbstractSubProcessBuilder<B extends AbstractSubProcessBuilder<B>>
     extends AbstractActivityBuilder<B, SubProcess> {
 
   protected AbstractSubProcessBuilder(
-      BpmnModelInstance modelInstance, SubProcess element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final SubProcess element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 

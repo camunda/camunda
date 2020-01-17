@@ -9,7 +9,7 @@ package io.zeebe.test.broker.protocol.brokerapi.data;
 
 import java.util.Objects;
 
-public class BrokerPartitionState {
+public final class BrokerPartitionState {
   public static final String LEADER_STATE = "LEADER";
   public static final String FOLLOWER_STATE = "FOLLOWER";
 
@@ -17,7 +17,8 @@ public class BrokerPartitionState {
   private final int partitionId;
   private final int replicationFactor;
 
-  public BrokerPartitionState(final String state, final int partitionId, int replicationFactor) {
+  public BrokerPartitionState(
+      final String state, final int partitionId, final int replicationFactor) {
     this.state = state;
     this.partitionId = partitionId;
     this.replicationFactor = replicationFactor;
@@ -41,7 +42,7 @@ public class BrokerPartitionState {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

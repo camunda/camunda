@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
 /** Compact, off-heap list datastructure */
-public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSilently {
+public final class CompactList implements Iterable<MutableDirectBuffer>, CloseableSilently {
   protected final AllocatedBuffer allocatedBuffer;
   protected final UnsafeBuffer listBuffer;
   protected final UnsafeBuffer elementBuffer = new UnsafeBuffer(0, 0);
@@ -37,14 +37,16 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
 
   protected final CompactListIterator iterator;
 
-  public CompactList(int elementMaxLength, int capacity, BufferAllocator bufferAllocator) {
+  public CompactList(
+      final int elementMaxLength, final int capacity, final BufferAllocator bufferAllocator) {
     this(
         bufferAllocator.allocate(requiredBufferCapacity(framedLength(elementMaxLength), capacity)),
         elementMaxLength,
         capacity);
   }
 
-  public CompactList(AllocatedBuffer allocatedBuffer, int elementMaxLength, int capacity) {
+  public CompactList(
+      final AllocatedBuffer allocatedBuffer, final int elementMaxLength, final int capacity) {
     this.allocatedBuffer = allocatedBuffer;
 
     framedElementLength = framedLength(elementMaxLength);
@@ -85,7 +87,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    *
    * @param srcBuffer from which the element bytes will be copied.
    */
-  public void add(DirectBuffer srcBuffer) {
+  public void add(final DirectBuffer srcBuffer) {
     add(srcBuffer, 0, srcBuffer.capacity());
   }
 
@@ -96,7 +98,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    * @param offset at which the element begins.
    * @param length of the element.
    */
-  public void add(DirectBuffer srcBuffer, int offset, int length) {
+  public void add(final DirectBuffer srcBuffer, final int offset, final int length) {
     add(srcBuffer, offset, length, max(size(), 0));
   }
 
@@ -109,7 +111,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    * @param length of the element.
    * @param idx at which the specified element is to be inserted.
    */
-  public void add(DirectBuffer srcBuffer, int offset, int length, int idx) {
+  public void add(final DirectBuffer srcBuffer, final int offset, final int length, final int idx) {
     final int size = size();
     final int capacity = capacity();
 
@@ -141,7 +143,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    * @param idx of the element to replace
    * @param srcBuffer from which the element bytes will be copied.
    */
-  public void set(int idx, DirectBuffer srcBuffer) {
+  public void set(final int idx, final DirectBuffer srcBuffer) {
     set(idx, srcBuffer, 0, srcBuffer.capacity());
   }
 
@@ -153,7 +155,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    * @param offset at which the element begins.
    * @param length of the element.
    */
-  public void set(int idx, DirectBuffer srcBuffer, int offset, int length) {
+  public void set(final int idx, final DirectBuffer srcBuffer, final int offset, final int length) {
     final int size = size();
 
     elementLengthCheck(length);
@@ -168,7 +170,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    *
    * @param idx of the element to be removed.
    */
-  public void remove(int idx) {
+  public void remove(final int idx) {
     final int size = size();
 
     boundsCheckIncludingSize(idx, size);
@@ -226,7 +228,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    * @param offset of the supplied buffer to use.
    * @return the length of the supplied element.
    */
-  public int get(int idx, MutableDirectBuffer dstBuffer, int offset) {
+  public int get(final int idx, final MutableDirectBuffer dstBuffer, final int offset) {
     final int size = size();
 
     boundsCheckIncludingSize(idx, size);
@@ -246,7 +248,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    * @param dstBuffer to which the view of the element is attached.
    * @return the length of the attached element.
    */
-  public int wrap(int idx, MutableDirectBuffer dstBuffer) {
+  public int wrap(final int idx, final MutableDirectBuffer dstBuffer) {
     final int size = size();
 
     boundsCheckIncludingSize(idx, size);
@@ -310,7 +312,7 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
    * @param offset of the supplied buffer to use.
    * @return the length of the supplied copy of the underlying buffer.
    */
-  public int copyInto(MutableDirectBuffer dstBuffer, int offset) {
+  public int copyInto(final MutableDirectBuffer dstBuffer, final int offset) {
     final int length = listBuffer.capacity();
     dstBuffer.putBytes(offset, listBuffer, 0, length);
 
@@ -358,18 +360,24 @@ public class CompactList implements Iterable<MutableDirectBuffer>, CloseableSile
     listBuffer.putInt(sizeOffset(), size);
   }
 
-  protected void setValue(DirectBuffer buffer, int offset, int length, int idx) {
+  protected void setValue(
+      final DirectBuffer buffer, final int offset, final int length, final int idx) {
     final int elementOffset = elementOffset(framedElementLength, idx);
     setValue(buffer, offset, length, idx, elementOffset);
   }
 
-  protected void setValue(DirectBuffer buffer, int offset, int length, int idx, int elementOffset) {
+  protected void setValue(
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final int idx,
+      final int elementOffset) {
     setMemory(elementOffset, framedElementLength, (byte) 0);
     listBuffer.putInt(elementLengthOffset(elementOffset), length);
     listBuffer.putBytes(elementDataOffset(elementOffset), buffer, offset, length);
   }
 
-  protected void setMemory(final int idx, final int length, byte value) {
+  protected void setMemory(final int idx, final int length, final byte value) {
     listBuffer.setMemory(idx, length, value);
   }
 

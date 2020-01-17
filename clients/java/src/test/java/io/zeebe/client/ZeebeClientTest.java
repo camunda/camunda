@@ -33,7 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class ZeebeClientTest extends ClientTest {
+public final class ZeebeClientTest extends ClientTest {
   @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -46,7 +46,7 @@ public class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldHaveDefaultValues() {
     // given
-    try (ZeebeClient client = ZeebeClient.newClient()) {
+    try (final ZeebeClient client = ZeebeClient.newClient()) {
       // when
       final ZeebeClientConfiguration configuration = client.getConfiguration();
 

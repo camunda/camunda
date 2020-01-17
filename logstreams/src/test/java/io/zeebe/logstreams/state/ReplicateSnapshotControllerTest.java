@@ -25,13 +25,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class ReplicateSnapshotControllerTest {
+public final class ReplicateSnapshotControllerTest {
 
   private static final int VALUE = 0xCAFE;
   private static final String KEY = "test";
 
-  @Rule public TemporaryFolder tempFolderRule = new TemporaryFolder();
-  @Rule public AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
+  @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
+  @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
 
   private StateSnapshotController replicatorSnapshotController;
   private StateSnapshotController receiverSnapshotController;

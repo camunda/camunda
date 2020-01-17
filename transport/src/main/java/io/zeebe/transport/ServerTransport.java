@@ -7,55 +7,23 @@
  */
 package io.zeebe.transport;
 
-import io.zeebe.transport.impl.ServerSocketBinding;
-import io.zeebe.transport.impl.TransportContext;
-import io.zeebe.transport.impl.actor.ActorContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class ServerTransport implements AutoCloseable {
-  protected final ServerOutput output;
-  protected final ActorContext transportActorContext;
-  protected final TransportContext transportContext;
-  protected final ServerSocketBinding serverSocketBinding;
-
-  public ServerTransport(ActorContext transportActorContext, TransportContext transportContext) {
-    this.transportActorContext = transportActorContext;
-    this.transportContext = transportContext;
-    this.output = transportContext.getServerOutput();
-    this.serverSocketBinding = transportContext.getServerSocketBinding();
-  }
-
-  /** @return interface to stage outbound data */
-  public ServerOutput getOutput() {
-    return output;
-  }
+public interface ServerTransport extends ServerOutput, AutoCloseable {
 
   /**
-   * Registers a listener with callbacks for whenever a connection to a remote gets established or
-   * closed.
+   * Subscribes to the given partition and call's the given handler on each new request.
+   *
+   * @param partitionId the partition, for which should be subscribed
+   * @param requestHandler the handler which should be called.
    */
-  public ActorFuture<Void> registerChannelListener(TransportListener channelListener) {
-    return transportActorContext.registerListener(channelListener);
-  }
+  ActorFuture<Void> subscribe(int partitionId, RequestHandler requestHandler);
 
-  public void removeChannelListener(TransportListener listener) {
-    transportActorContext.removeListener(listener);
-  }
-
-  public ActorFuture<Void> closeAsync() {
-    return transportActorContext.onClose();
-  }
-
-  public ActorFuture<Void> interruptAllChannels() {
-    return transportActorContext.interruptAllChannels();
-  }
-
-  @Override
-  public void close() {
-    closeAsync().join();
-  }
-
-  public void releaseResources() {
-    transportActorContext.getConductor().close();
-  }
+  /**
+   * Unsubscribe from the given partition, the registered handler will no longer be called on new
+   * requests.
+   *
+   * @param partitionId the partition, from which we should unsubscribe
+   */
+  ActorFuture<Void> unsubscribe(int partitionId);
 }

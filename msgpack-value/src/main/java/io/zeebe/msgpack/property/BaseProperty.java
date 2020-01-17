@@ -16,20 +16,20 @@ import io.zeebe.msgpack.value.StringValue;
 import java.util.Objects;
 
 public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
-  protected StringValue key;
-  protected T value;
-  protected T defaultValue;
+  protected final StringValue key;
+  protected final T value;
+  protected final T defaultValue;
   protected boolean isSet;
 
-  public BaseProperty(T value) {
+  public BaseProperty(final T value) {
     this(StringValue.EMPTY_STRING, value);
   }
 
-  public BaseProperty(String keyString, T value) {
+  public BaseProperty(final String keyString, final T value) {
     this(keyString, value, null);
   }
 
-  public BaseProperty(String keyString, T value, T defaultValue) {
+  public BaseProperty(final String keyString, final T value, final T defaultValue) {
     Objects.requireNonNull(keyString);
     Objects.requireNonNull(value);
 
@@ -71,12 +71,12 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     return key.getEncodedLength() + resolveValue().getEncodedLength();
   }
 
-  public void read(MsgPackReader reader) {
+  public void read(final MsgPackReader reader) {
     value.read(reader);
     set();
   }
 
-  public void write(MsgPackWriter writer) {
+  public void write(final MsgPackWriter writer) {
     T valueToWrite = value;
     if (!isSet) {
       valueToWrite = defaultValue;
@@ -91,7 +91,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     valueToWrite.write(writer);
   }
 
-  public void writeJSON(StringBuilder sb) {
+  public void writeJSON(final StringBuilder sb) {
     key.writeJSON(sb);
     sb.append(":");
     if (hasValue()) {
@@ -107,7 +107,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

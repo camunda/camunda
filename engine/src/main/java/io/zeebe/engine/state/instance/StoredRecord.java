@@ -12,7 +12,7 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class StoredRecord implements DbValue {
+public final class StoredRecord implements DbValue {
 
   private static final int PURPOSE_OFFSET = 0;
   private static final int PURPOSE_LENGTH = BitUtil.SIZE_OF_BYTE;
@@ -21,7 +21,7 @@ public class StoredRecord implements DbValue {
   private final IndexedRecord record;
   private Purpose purpose;
 
-  public StoredRecord(IndexedRecord record, Purpose purpose) {
+  public StoredRecord(final IndexedRecord record, final Purpose purpose) {
     this.record = record;
     this.purpose = purpose;
   }
@@ -49,13 +49,13 @@ public class StoredRecord implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putByte(PURPOSE_OFFSET, (byte) purpose.ordinal());
     record.write(buffer, RECORD_OFFSET);
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     final int purposeOrdinal = buffer.getByte(offset + PURPOSE_OFFSET);
     purpose = Purpose.values()[purposeOrdinal];
     record.wrap(buffer, offset + RECORD_OFFSET, length - PURPOSE_LENGTH);

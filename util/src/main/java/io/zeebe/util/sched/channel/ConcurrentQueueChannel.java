@@ -14,12 +14,12 @@ import java.util.Queue;
 import java.util.function.Consumer;
 
 /** Wraps a {@link Queue} as {@link ConsumableChannel}. */
-public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
+public final class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   private final ActorConditions actorConditions = new ActorConditions();
 
   private final Queue<E> wrapped;
 
-  public ConcurrentQueueChannel(Queue<E> wrapped) {
+  public ConcurrentQueueChannel(final Queue<E> wrapped) {
     this.wrapped = wrapped;
   }
 
@@ -29,17 +29,17 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   }
 
   @Override
-  public void registerConsumer(ActorCondition onDataAvailable) {
+  public void registerConsumer(final ActorCondition onDataAvailable) {
     actorConditions.registerConsumer(onDataAvailable);
   }
 
   @Override
-  public void removeConsumer(ActorCondition onDataAvailable) {
+  public void removeConsumer(final ActorCondition onDataAvailable) {
     actorConditions.removeConsumer(onDataAvailable);
   }
 
   @Override
-  public boolean add(E e) {
+  public boolean add(final E e) {
     if (wrapped.add(e)) {
       actorConditions.signalConsumers();
       return true;
@@ -48,7 +48,7 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   }
 
   @Override
-  public boolean offer(E e) {
+  public boolean offer(final E e) {
     if (wrapped.offer(e)) {
       actorConditions.signalConsumers();
       return true;
@@ -87,7 +87,7 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   }
 
   @Override
-  public boolean contains(Object o) {
+  public boolean contains(final Object o) {
     return wrapped.contains(o);
   }
 
@@ -102,32 +102,32 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   }
 
   @Override
-  public <T> T[] toArray(T[] a) {
+  public <T> T[] toArray(final T[] a) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean remove(Object o) {
+  public boolean remove(final Object o) {
     return wrapped.remove(o);
   }
 
   @Override
-  public boolean containsAll(Collection<?> c) {
+  public boolean containsAll(final Collection<?> c) {
     return wrapped.containsAll(c);
   }
 
   @Override
-  public boolean addAll(Collection<? extends E> c) {
+  public boolean addAll(final Collection<? extends E> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean removeAll(Collection<?> c) {
+  public boolean removeAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean retainAll(Collection<?> c) {
+  public boolean retainAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
@@ -137,7 +137,7 @@ public class ConcurrentQueueChannel<E> implements Queue<E>, ConsumableChannel {
   }
 
   @Override
-  public void forEach(Consumer<? super E> action) {
+  public void forEach(final Consumer<? super E> action) {
     throw new UnsupportedOperationException();
   }
 }

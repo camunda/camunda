@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.StartEvent;
 /** @author Sebastian Menski */
 public class StartEventBuilder extends AbstractStartEventBuilder<StartEventBuilder> {
 
-  public StartEventBuilder(BpmnModelInstance modelInstance, StartEvent element) {
+  public StartEventBuilder(final BpmnModelInstance modelInstance, final StartEvent element) {
     super(modelInstance, element, StartEventBuilder.class);
   }
 }

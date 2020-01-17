@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 
-public class EventScopeInstanceState {
+public final class EventScopeInstanceState {
 
   private final DbLong eventScopeKey;
   private final EventScopeInstance eventScopeInstance;
@@ -29,7 +29,8 @@ public class EventScopeInstanceState {
   private final EventTrigger eventTrigger;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
-  public EventScopeInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public EventScopeInstanceState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     eventScopeKey = new DbLong();
     eventScopeInstance = new EventScopeInstance();
     eventScopeInstanceColumnFamily =
@@ -50,7 +51,7 @@ public class EventScopeInstanceState {
    *
    * @param eventScopeKey the event scope key
    */
-  public void shutdownInstance(long eventScopeKey) {
+  public void shutdownInstance(final long eventScopeKey) {
     final EventScopeInstance instance = getInstance(eventScopeKey);
     if (instance != null) {
       this.eventScopeKey.wrapLong(eventScopeKey);
@@ -66,7 +67,8 @@ public class EventScopeInstanceState {
    * @param interruptingIds list of element IDs which should set accepting to false
    * @return whether the scope was created or not
    */
-  public boolean createIfNotExists(long eventScopeKey, Collection<DirectBuffer> interruptingIds) {
+  public boolean createIfNotExists(
+      final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     boolean wasCreated = false;
 
@@ -84,12 +86,13 @@ public class EventScopeInstanceState {
    * @param eventScopeKey the event scope key
    * @param interruptingIds list of element IDs which should set accepting to false
    */
-  public void createInstance(long eventScopeKey, Collection<DirectBuffer> interruptingIds) {
+  public void createInstance(
+      final long eventScopeKey, final Collection<DirectBuffer> interruptingIds) {
     eventScopeInstance.reset();
 
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstance.setAccepting(true);
-    for (DirectBuffer interruptingId : interruptingIds) {
+    for (final DirectBuffer interruptingId : interruptingIds) {
       eventScopeInstance.addInterrupting(interruptingId);
     }
 
@@ -102,7 +105,7 @@ public class EventScopeInstanceState {
    * @param eventScopeKey the key of the event scope
    * @return the event scope instance or null
    */
-  public EventScopeInstance getInstance(long eventScopeKey) {
+  public EventScopeInstance getInstance(final long eventScopeKey) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
     return instance != null ? new EventScopeInstance(instance) : null;
@@ -113,7 +116,7 @@ public class EventScopeInstanceState {
    *
    * @param eventScopeKey the key of the event scope to delete
    */
-  public void deleteInstance(long eventScopeKey) {
+  public void deleteInstance(final long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
 
     eventTriggerColumnFamily.whileEqualPrefix(
@@ -133,7 +136,10 @@ public class EventScopeInstanceState {
    * @return true if the event was accepted by the event scope, false otherwise
    */
   public boolean triggerEvent(
-      long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables) {
+      final long eventScopeKey,
+      final long eventKey,
+      final DirectBuffer elementId,
+      final DirectBuffer variables) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
@@ -152,7 +158,10 @@ public class EventScopeInstanceState {
   }
 
   private void createTrigger(
-      long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables) {
+      final long eventScopeKey,
+      final long eventKey,
+      final DirectBuffer elementId,
+      final DirectBuffer variables) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     eventTriggerEventKey.wrapLong(eventKey);
 
@@ -168,7 +177,7 @@ public class EventScopeInstanceState {
    * @param eventScopeKey the key of the event scope
    * @return the next event trigger or null if none exist
    */
-  public EventTrigger peekEventTrigger(long eventScopeKey) {
+  public EventTrigger peekEventTrigger(final long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     final EventTrigger[] next = new EventTrigger[1];
     eventTriggerColumnFamily.whileEqualPrefix(
@@ -188,7 +197,7 @@ public class EventScopeInstanceState {
    * @param eventScopeKey the key of the event scope
    * @return the next event trigger or null if none exist
    */
-  public EventTrigger pollEventTrigger(long eventScopeKey) {
+  public EventTrigger pollEventTrigger(final long eventScopeKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     final EventTrigger[] next = new EventTrigger[1];
     eventTriggerColumnFamily.whileEqualPrefix(
@@ -208,13 +217,13 @@ public class EventScopeInstanceState {
    * @param eventScopeKey the key of the event scope
    * @param eventKey the key of the event trigger
    */
-  public void deleteTrigger(long eventScopeKey, long eventKey) {
+  public void deleteTrigger(final long eventScopeKey, final long eventKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     eventTriggerEventKey.wrapLong(eventKey);
     deleteTrigger(eventTriggerKey);
   }
 
-  private void deleteTrigger(DbCompositeKey<DbLong, DbLong> triggerKey) {
+  private void deleteTrigger(final DbCompositeKey<DbLong, DbLong> triggerKey) {
     eventTriggerColumnFamily.delete(triggerKey);
   }
 }

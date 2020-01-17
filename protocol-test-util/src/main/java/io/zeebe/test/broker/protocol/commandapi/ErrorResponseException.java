@@ -9,11 +9,11 @@ package io.zeebe.test.broker.protocol.commandapi;
 
 import io.zeebe.protocol.record.ErrorCode;
 
-public class ErrorResponseException extends RuntimeException {
+public final class ErrorResponseException extends RuntimeException {
 
   private final ErrorResponse errorResponse;
 
-  public ErrorResponseException(ErrorResponse errorResponse) {
+  public ErrorResponseException(final ErrorResponse errorResponse) {
     super(
         String.format(
             "Unexpected error from broker (code: '%s'): %s",

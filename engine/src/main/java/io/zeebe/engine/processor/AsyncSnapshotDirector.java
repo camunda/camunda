@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
-public class AsyncSnapshotDirector extends Actor {
+public final class AsyncSnapshotDirector extends Actor {
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
   private static final String LOG_MSG_WAIT_UNTIL_COMMITTED =
@@ -38,7 +38,6 @@ public class AsyncSnapshotDirector extends Actor {
 
   private final SnapshotController snapshotController;
   private final LogStream logStream;
-  private final String name;
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
@@ -49,8 +48,10 @@ public class AsyncSnapshotDirector extends Actor {
   private long lastValidSnapshotPosition;
   private boolean takingSnapshot;
   private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
+  private final String actorName;
 
   public AsyncSnapshotDirector(
+      final int nodeId,
       final StreamProcessor streamProcessor,
       final SnapshotController snapshotController,
       final LogStream logStream,
@@ -59,13 +60,13 @@ public class AsyncSnapshotDirector extends Actor {
     this.snapshotController = snapshotController;
     this.logStream = logStream;
     this.processorName = streamProcessor.getName();
-    this.name = processorName + "-snapshot-director";
     this.snapshotRate = snapshotRate;
+    this.actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
   }
 
   @Override
   public String getName() {
-    return name;
+    return actorName;
   }
 
   @Override
@@ -158,13 +159,8 @@ public class AsyncSnapshotDirector extends Actor {
   }
 
   private Snapshot createSnapshot(final Supplier<Snapshot> snapshotCreation) {
-    final var start = System.currentTimeMillis();
     final var snapshot = snapshotCreation.get();
-
-    final long end = System.currentTimeMillis();
-    final long snapshotCreationTime = end - start;
-
-    LOG.debug("Creation of snapshot for {} took {} ms.", processorName, snapshotCreationTime);
+    LOG.debug("Created snapshot for {}", processorName);
     return snapshot;
   }
 
@@ -192,7 +188,7 @@ public class AsyncSnapshotDirector extends Actor {
             });
   }
 
-  protected void enforceSnapshotCreation(
+  void enforceSnapshotCreation(
       final long commitPosition, final long lastWrittenPosition, final long lastProcessedPosition) {
     if (commitPosition >= lastWrittenPosition
         && lastProcessedPosition > lastValidSnapshotPosition) {

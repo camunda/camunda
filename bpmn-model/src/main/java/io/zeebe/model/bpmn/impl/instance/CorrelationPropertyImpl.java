@@ -47,11 +47,11 @@ public class CorrelationPropertyImpl extends RootElementImpl implements Correlat
   protected static ChildElementCollection<CorrelationPropertyRetrievalExpression>
       correlationPropertyRetrievalExpressionCollection;
 
-  public CorrelationPropertyImpl(ModelTypeInstanceContext context) {
+  public CorrelationPropertyImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder;
     typeBuilder =
         modelBuilder
@@ -61,7 +61,8 @@ public class CorrelationPropertyImpl extends RootElementImpl implements Correlat
             .instanceProvider(
                 new ModelTypeInstanceProvider<CorrelationProperty>() {
                   @Override
-                  public CorrelationProperty newInstance(ModelTypeInstanceContext instanceContext) {
+                  public CorrelationProperty newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CorrelationPropertyImpl(instanceContext);
                   }
                 });
@@ -91,7 +92,7 @@ public class CorrelationPropertyImpl extends RootElementImpl implements Correlat
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -101,7 +102,7 @@ public class CorrelationPropertyImpl extends RootElementImpl implements Correlat
   }
 
   @Override
-  public void setType(ItemDefinition type) {
+  public void setType(final ItemDefinition type) {
     typeAttribute.setReferenceTargetElement(this, type);
   }
 

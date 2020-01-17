@@ -20,7 +20,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
 /** obviously not thread safe, strictly for testing */
-public class JarCreatorRule extends ExternalResource {
+public final class JarCreatorRule extends ExternalResource {
   private static final Manifest DEFAULT_MANIFEST;
 
   static {
@@ -34,23 +34,23 @@ public class JarCreatorRule extends ExternalResource {
     this.temporaryFolder = temporaryFolder;
   }
 
-  public File create(final String path, final Manifest manifest, Class compiledClass)
+  public File create(final String path, final Manifest manifest, final Class compiledClass)
       throws IOException {
     final byte[] buffer = new byte[1024];
     final File jarFile = new File(temporaryFolder.getRoot(), path);
 
-    try (JarOutputStream out = new JarOutputStream(new FileOutputStream(jarFile), manifest)) {
+    try (final JarOutputStream out = new JarOutputStream(new FileOutputStream(jarFile), manifest)) {
       add(out, compiledClass, buffer);
     }
 
     return jarFile;
   }
 
-  public File create(final String path, Class compiledClass) throws IOException {
+  public File create(final String path, final Class compiledClass) throws IOException {
     return create(path, DEFAULT_MANIFEST, compiledClass);
   }
 
-  public File create(Class compiledClass) throws IOException {
+  public File create(final Class compiledClass) throws IOException {
     final File tempFile = File.createTempFile("exporter-", ".jar");
     tempFile.renameTo(new File(temporaryFolder.getRoot(), tempFile.getName()));
     return create(tempFile.getName(), compiledClass);
@@ -66,12 +66,13 @@ public class JarCreatorRule extends ExternalResource {
     writeClassFile(out, buffer, name, path);
   }
 
-  private void writeClassFile(JarOutputStream out, byte[] buffer, String name, String path)
+  private void writeClassFile(
+      final JarOutputStream out, final byte[] buffer, final String name, final String path)
       throws IOException {
     out.putNextEntry(new JarEntry(name));
     final File classFile = new File(path);
 
-    try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(classFile))) {
+    try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(classFile))) {
       int bytesRead = -1;
 
       while ((bytesRead = in.read(buffer)) != -1) {
@@ -80,7 +81,8 @@ public class JarCreatorRule extends ExternalResource {
     }
   }
 
-  private void preparePackage(JarOutputStream out, String[] folders) throws IOException {
+  private void preparePackage(final JarOutputStream out, final String[] folders)
+      throws IOException {
     String entryName = "";
     for (int i = 0; i < folders.length - 1; i++) {
       entryName += folders[i] + "/";

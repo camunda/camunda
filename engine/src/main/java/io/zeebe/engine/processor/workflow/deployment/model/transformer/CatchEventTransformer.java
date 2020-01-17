@@ -14,6 +14,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWor
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.CatchEvent;
+import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
@@ -24,14 +25,14 @@ import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
+public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
   @Override
   public Class<CatchEvent> getType() {
     return CatchEvent.class;
   }
 
   @Override
-  public void transform(CatchEvent element, TransformContext context) {
+  public void transform(final CatchEvent element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableCatchEventElement executableElement =
         workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
@@ -45,18 +46,25 @@ public class CatchEventTransformer implements ModelElementTransformer<CatchEvent
   }
 
   private void transformEventDefinition(
-      CatchEvent element, TransformContext context, ExecutableCatchEventElement executableElement) {
+      final CatchEvent element,
+      final TransformContext context,
+      final ExecutableCatchEventElement executableElement) {
     final EventDefinition eventDefinition = element.getEventDefinitions().iterator().next();
     if (eventDefinition instanceof MessageEventDefinition) {
       transformMessageEventDefinition(
           context, executableElement, (MessageEventDefinition) eventDefinition);
+
     } else if (eventDefinition instanceof TimerEventDefinition) {
       transformTimerEventDefinition(executableElement, (TimerEventDefinition) eventDefinition);
+
+    } else if (eventDefinition instanceof ErrorEventDefinition) {
+      transformErrorEventDefinition(
+          context, executableElement, (ErrorEventDefinition) eventDefinition);
     }
   }
 
   private void transformMessageEventDefinition(
-      TransformContext context,
+      final TransformContext context,
       final ExecutableCatchEventElement executableElement,
       final MessageEventDefinition messageEventDefinition) {
 
@@ -82,5 +90,15 @@ public class CatchEventTransformer implements ModelElementTransformer<CatchEvent
     }
 
     executableElement.setTimer(timer);
+  }
+
+  private void transformErrorEventDefinition(
+      final TransformContext context,
+      final ExecutableCatchEventElement executableElement,
+      final ErrorEventDefinition errorEventDefinition) {
+
+    final var error = errorEventDefinition.getError();
+    final var executableError = context.getError(error.getId());
+    executableElement.setError(executableError);
   }
 }

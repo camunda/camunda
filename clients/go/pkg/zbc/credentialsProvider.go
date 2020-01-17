@@ -14,12 +14,14 @@
 
 package zbc
 
+import "context"
+
 // CredentialsProvider is responsible for adding credentials to each gRPC call's headers.
 type CredentialsProvider interface {
 	// Takes a map of gRPC headers as defined in credentials.PerRPCCredentials and adds credentials to them.
-	ApplyCredentials(headers map[string]string)
+	ApplyCredentials(ctx context.Context, headers map[string]string)
 	// Returns true if the request should be retried, false otherwise.
-	ShouldRetryRequest(err error) bool
+	ShouldRetryRequest(ctx context.Context, err error) bool
 }
 
 // NoopCredentialsProvider implements the CredentialsProvider interface but doesn't modify the authorization headers and
@@ -27,11 +29,11 @@ type CredentialsProvider interface {
 type NoopCredentialsProvider struct{}
 
 // ApplyCredentials does nothing.
-func (NoopCredentialsProvider) ApplyCredentials(headers map[string]string) {
+func (NoopCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) {
 	// Noop
 }
 
 // ShouldRetryRequest always returns false.
-func (NoopCredentialsProvider) ShouldRetryRequest(err error) bool {
+func (NoopCredentialsProvider) ShouldRetryRequest(ctx context.Context, err error) bool {
 	return false
 }

@@ -17,39 +17,40 @@ import java.nio.file.StandardOpenOption;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
-public class FileSnapshotConsumer implements SnapshotConsumer {
+public final class FileSnapshotConsumer implements SnapshotConsumer {
 
   private final SnapshotStorage storage;
   private final Logger logger;
 
-  public FileSnapshotConsumer(SnapshotStorage storage, Logger logger) {
+  public FileSnapshotConsumer(final SnapshotStorage storage, final Logger logger) {
     this.storage = storage;
     this.logger = logger;
   }
 
   @Override
-  public boolean consumeSnapshotChunk(SnapshotChunk chunk) {
+  public boolean consumeSnapshotChunk(final SnapshotChunk chunk) {
     return writeChunkToDisk(chunk, storage);
   }
 
   @Override
-  public boolean completeSnapshot(String snapshotId) {
+  public boolean completeSnapshot(final String snapshotId) {
     return storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotId));
   }
 
   @Override
-  public void invalidateSnapshot(String snapshotId) {
+  public void invalidateSnapshot(final String snapshotId) {
     final var pendingDirectory = storage.getPendingDirectoryFor(snapshotId);
     try {
       if (Files.exists(pendingDirectory)) {
         FileUtil.deleteFolder(pendingDirectory);
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       logger.debug("Could not delete temporary snapshot directory {}", pendingDirectory, e);
     }
   }
 
-  private boolean writeChunkToDisk(SnapshotChunk snapshotChunk, SnapshotStorage storage) {
+  private boolean writeChunkToDisk(
+      final SnapshotChunk snapshotChunk, final SnapshotStorage storage) {
     final String snapshotId = snapshotChunk.getSnapshotId();
     final String chunkName = snapshotChunk.getChunkName();
 
@@ -85,12 +86,13 @@ public class FileSnapshotConsumer implements SnapshotConsumer {
     return writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
   }
 
-  private boolean writeReceivedSnapshotChunk(SnapshotChunk snapshotChunk, Path snapshotFile) {
+  private boolean writeReceivedSnapshotChunk(
+      final SnapshotChunk snapshotChunk, final Path snapshotFile) {
     try {
       Files.write(snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
       logger.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
       return true;
-    } catch (IOException ioe) {
+    } catch (final IOException ioe) {
       logger.error(
           "Unexpected error occurred on writing snapshot chunk to '{}'.", snapshotFile, ioe);
       return false;

@@ -14,7 +14,7 @@ import io.zeebe.util.Environment;
 import java.util.Map;
 import org.junit.Test;
 
-public class AppendVegasLimiterTest {
+public final class AppendVegasLimiterTest {
 
   @Test
   public void shouldUseDefaultValues() {

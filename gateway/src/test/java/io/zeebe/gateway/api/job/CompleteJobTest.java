@@ -21,7 +21,7 @@ import io.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
 import org.junit.Test;
 
-public class CompleteJobTest extends GatewayTest {
+public final class CompleteJobTest extends GatewayTest {
 
   @Test
   public void shouldMapRequestAndResponse() {

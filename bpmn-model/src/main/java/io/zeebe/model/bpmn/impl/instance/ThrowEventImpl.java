@@ -48,11 +48,11 @@ public abstract class ThrowEventImpl extends EventImpl implements ThrowEvent {
   protected static ElementReferenceCollection<EventDefinition, EventDefinitionRef>
       eventDefinitionRefCollection;
 
-  public ThrowEventImpl(ModelTypeInstanceContext context) {
+  public ThrowEventImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ThrowEvent.class, BPMN_ELEMENT_THROW_EVENT)
@@ -96,7 +96,7 @@ public abstract class ThrowEventImpl extends EventImpl implements ThrowEvent {
   }
 
   @Override
-  public void setInputSet(InputSet inputSet) {
+  public void setInputSet(final InputSet inputSet) {
     inputSetChild.setChild(this, inputSet);
   }
 

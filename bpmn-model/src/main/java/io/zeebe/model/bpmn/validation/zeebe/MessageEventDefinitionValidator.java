@@ -29,7 +29,8 @@ public class MessageEventDefinitionValidator
 
   @Override
   public void validate(
-      MessageEventDefinition element, ValidationResultCollector validationResultCollector) {
+      final MessageEventDefinition element,
+      final ValidationResultCollector validationResultCollector) {
     if (element.getMessage() == null) {
       validationResultCollector.addError(0, "Must reference a message");
     }

@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -37,7 +38,10 @@ var setVariablesCmd = &cobra.Command{
 		}
 
 		request.Local(setVariablesLocalFlag)
-		response, err := request.Send()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		response, err := request.Send(ctx)
 		if err == nil {
 			log.Println("Set the variables of element instance with key", setVariablesKey, "to", setVariablesVariablesFlag, "with command", response.GetKey())
 		}
@@ -50,7 +54,9 @@ func init() {
 	setCmd.AddCommand(setVariablesCmd)
 
 	setVariablesCmd.Flags().StringVar(&setVariablesVariablesFlag, "variables", "{}", "Specify the variables as JSON object string")
-	setVariablesCmd.MarkFlagRequired("variables")
+	if err := setVariablesCmd.MarkFlagRequired("variables"); err != nil {
+		panic(err)
+	}
 
 	setVariablesCmd.Flags().BoolVar(&setVariablesLocalFlag, "local", false, "Specify local or propagating update semantics")
 }

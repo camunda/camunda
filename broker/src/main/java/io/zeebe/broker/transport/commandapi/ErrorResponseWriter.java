@@ -15,15 +15,14 @@ import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.ErrorResponseEncoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.impl.ServerResponseImpl;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-public class ErrorResponseWriter implements BufferWriter {
+public final class ErrorResponseWriter implements BufferWriter {
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private static final String UNSUPPORTED_MESSAGE_FORMAT =
@@ -42,38 +41,40 @@ public class ErrorResponseWriter implements BufferWriter {
       "Expected to get workflow with %s, but no such workflow found";
   private static final String RESOURCE_EXHAUSTED = "Reached maximum capacity of requests handled";
 
-  protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-  protected final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
-  protected final ServerOutput output;
-  protected final ServerResponse response = new ServerResponse();
-  protected ErrorCode errorCode;
-  protected byte[] errorMessage;
+  private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+  private final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
+  private final ServerOutput output;
+  private final ServerResponseImpl response = new ServerResponseImpl();
+  private ErrorCode errorCode;
+  private byte[] errorMessage;
 
   public ErrorResponseWriter() {
     this(null);
   }
 
-  public ErrorResponseWriter(ServerOutput output) {
+  public ErrorResponseWriter(final ServerOutput output) {
     this.output = output;
   }
 
-  public <T> ErrorResponseWriter unsupportedMessage(String actualType, T... expectedTypes) {
+  public <T> ErrorResponseWriter unsupportedMessage(
+      final String actualType, final T... expectedTypes) {
     return this.errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
         .errorMessage(
             String.format(UNSUPPORTED_MESSAGE_FORMAT, Arrays.toString(expectedTypes), actualType));
   }
 
-  public ErrorResponseWriter partitionLeaderMismatch(int partitionId) {
+  public ErrorResponseWriter partitionLeaderMismatch(final int partitionId) {
     return errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
         .errorMessage(String.format(PARTITION_LEADER_MISMATCH_FORMAT, partitionId));
   }
 
-  public ErrorResponseWriter invalidClientVersion(int maximumVersion, int clientVersion) {
+  public ErrorResponseWriter invalidClientVersion(
+      final int maximumVersion, final int clientVersion) {
     return errorCode(ErrorCode.INVALID_CLIENT_VERSION)
         .errorMessage(String.format(INVALID_CLIENT_VERSION_FORMAT, maximumVersion, clientVersion));
   }
 
-  public ErrorResponseWriter internalError(String message, Object... args) {
+  public ErrorResponseWriter internalError(final String message, final Object... args) {
     return errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(String.format(message, args));
   }
 
@@ -94,36 +95,36 @@ public class ErrorResponseWriter implements BufferWriter {
   }
 
   public ErrorResponseWriter invalidMessageTemplate(
-      int actualTemplateId, int... expectedTemplates) {
+      final int actualTemplateId, final int... expectedTemplates) {
     return errorCode(ErrorCode.INVALID_MESSAGE_TEMPLATE)
         .errorMessage(
             INVALID_MESSAGE_TEMPLATE_FORMAT, Arrays.toString(expectedTemplates), actualTemplateId);
   }
 
   public ErrorResponseWriter invalidDeploymentPartition(
-      int expectedPartitionId, int actualPartitionId) {
+      final int expectedPartitionId, final int actualPartitionId) {
     return errorCode(ErrorCode.INVALID_DEPLOYMENT_PARTITION)
         .errorMessage(
             String.format(
                 INVALID_DEPLOYMENT_PARTITION_FORMAT, expectedPartitionId, actualPartitionId));
   }
 
-  public ErrorResponseWriter workflowNotFound(String workflowIdentifier) {
+  public ErrorResponseWriter workflowNotFound(final String workflowIdentifier) {
     return errorCode(ErrorCode.WORKFLOW_NOT_FOUND)
         .errorMessage(String.format(WORKFLOW_NOT_FOUND_FORMAT, workflowIdentifier));
   }
 
-  public ErrorResponseWriter errorCode(ErrorCode errorCode) {
+  public ErrorResponseWriter errorCode(final ErrorCode errorCode) {
     this.errorCode = errorCode;
     return this;
   }
 
-  public ErrorResponseWriter errorMessage(String errorMessage) {
+  public ErrorResponseWriter errorMessage(final String errorMessage) {
     this.errorMessage = getBytes(errorMessage);
     return this;
   }
 
-  public ErrorResponseWriter errorMessage(String errorMessage, Object... args) {
+  public ErrorResponseWriter errorMessage(final String errorMessage, final Object... args) {
     this.errorMessage = getBytes(format(errorMessage, args));
     return this;
   }
@@ -136,38 +137,31 @@ public class ErrorResponseWriter implements BufferWriter {
     return errorMessage;
   }
 
-  public boolean tryWriteResponseOrLogFailure(ServerOutput output, int streamId, long requestId) {
-    final boolean isWritten = tryWriteResponse(output, streamId, requestId);
-
-    if (!isWritten) {
-      LOG.error(
-          "Failed to write error response. Error code: '{}', error message: '{}'",
-          errorCode != null ? errorCode.name() : ErrorCode.NULL_VAL.name(),
-          new String(errorMessage, StandardCharsets.UTF_8));
-    }
-
-    return isWritten;
+  public void tryWriteResponseOrLogFailure(
+      final ServerOutput output, final int streamId, final long requestId) {
+    tryWriteResponse(output, streamId, requestId);
   }
 
-  public boolean tryWriteResponseOrLogFailure(int streamId, long requestId) {
-    return tryWriteResponseOrLogFailure(this.output, streamId, requestId);
+  public void tryWriteResponseOrLogFailure(final int streamId, final long requestId) {
+    tryWriteResponseOrLogFailure(this.output, streamId, requestId);
   }
 
-  public boolean tryWriteResponse(ServerOutput output, int streamId, long requestId) {
+  public void tryWriteResponse(
+      final ServerOutput output, final int streamId, final long requestId) {
     EnsureUtil.ensureNotNull("error code", errorCode);
     EnsureUtil.ensureNotNull("error message", errorMessage);
 
     try {
-      response.reset().remoteStreamId(streamId).writer(this).requestId(requestId);
+      response.reset().setPartitionId(streamId).writer(this).setRequestId(requestId);
 
-      return output.sendResponse(response);
+      output.sendResponse(response);
     } finally {
       reset();
     }
   }
 
-  public boolean tryWriteResponse(int streamId, long requestId) {
-    return tryWriteResponse(this.output, streamId, requestId);
+  public void tryWriteResponse(final int streamId, final long requestId) {
+    tryWriteResponse(this.output, streamId, requestId);
   }
 
   @Override
@@ -179,7 +173,7 @@ public class ErrorResponseWriter implements BufferWriter {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     // protocol header
     messageHeaderEncoder.wrap(buffer, offset);
 

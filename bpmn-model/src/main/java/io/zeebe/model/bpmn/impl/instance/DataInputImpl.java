@@ -39,11 +39,11 @@ public class DataInputImpl extends ItemAwareElementImpl implements DataInput {
   protected static Attribute<String> nameAttribute;
   protected static Attribute<Boolean> isCollectionAttribute;
 
-  public DataInputImpl(ModelTypeInstanceContext instanceContext) {
+  public DataInputImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataInput.class, BPMN_ELEMENT_DATA_INPUT)
@@ -52,7 +52,7 @@ public class DataInputImpl extends ItemAwareElementImpl implements DataInput {
             .instanceProvider(
                 new ModelTypeInstanceProvider<DataInput>() {
                   @Override
-                  public DataInput newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataInput newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new DataInputImpl(instanceContext);
                   }
                 });
@@ -71,7 +71,7 @@ public class DataInputImpl extends ItemAwareElementImpl implements DataInput {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -81,7 +81,7 @@ public class DataInputImpl extends ItemAwareElementImpl implements DataInput {
   }
 
   @Override
-  public void setCollection(boolean isCollection) {
+  public void setCollection(final boolean isCollection) {
     isCollectionAttribute.setValue(this, isCollection);
   }
 }

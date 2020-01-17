@@ -37,7 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class LogStorageAppenderTest {
+public final class LogStorageAppenderTest {
 
   private static final int MAX_FRAGMENT_SIZE = 1024;
   private static final int PARTITION_ID = 0;
@@ -52,7 +52,7 @@ public class LogStorageAppenderTest {
   private LogStorage logStorage;
   private LogStorageAppender appender;
   private LogStreamWriterImpl writer;
-  private BufferedLogStreamReader reader;
+  private LogStreamReaderImpl reader;
 
   @Before
   public void setUp() throws Exception {
@@ -71,8 +71,8 @@ public class LogStorageAppenderTest {
     appender =
         new LogStorageAppender(
             "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);
-    writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
-    reader = new BufferedLogStreamReader(logStorage);
+    writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher, () -> {});
+    reader = new LogStreamReaderImpl(logStorage);
   }
 
   @After

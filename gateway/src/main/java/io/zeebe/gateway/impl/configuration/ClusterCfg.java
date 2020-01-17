@@ -13,7 +13,6 @@ import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_PORT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
-import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MAX_MESSAGE_COUNT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
@@ -21,7 +20,6 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_COUNT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_SIZE;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 
@@ -31,10 +29,9 @@ import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.Objects;
 
-public class ClusterCfg {
+public final class ClusterCfg {
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
   private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
-  private int maxMessageCount = DEFAULT_MAX_MESSAGE_COUNT;
   private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
@@ -52,7 +49,6 @@ public class ClusterCfg {
     environment.get(ENV_GATEWAY_CLUSTER_HOST).ifPresent(this::setHost);
     environment.getInt(ENV_GATEWAY_CLUSTER_PORT).ifPresent(this::setPort);
     environment.get(ENV_GATEWAY_MAX_MESSAGE_SIZE).ifPresent(this::setMaxMessageSize);
-    environment.getInt(ENV_GATEWAY_MAX_MESSAGE_COUNT).ifPresent(this::setMaxMessageCount);
   }
 
   public String getMemberId() {
@@ -118,26 +114,10 @@ public class ClusterCfg {
     return this;
   }
 
-  public int getMaxMessageCount() {
-    return maxMessageCount;
-  }
-
-  public ClusterCfg setMaxMessageCount(int maxMessageCount) {
-    this.maxMessageCount = maxMessageCount;
-    return this;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hash(
-        contactPoint,
-        maxMessageSize,
-        maxMessageCount,
-        requestTimeout,
-        clusterName,
-        memberId,
-        host,
-        port);
+        contactPoint, maxMessageSize, requestTimeout, clusterName, memberId, host, port);
   }
 
   @Override
@@ -152,7 +132,6 @@ public class ClusterCfg {
     return port == that.port
         && Objects.equals(contactPoint, that.contactPoint)
         && Objects.equals(maxMessageSize, that.maxMessageSize)
-        && maxMessageCount == that.maxMessageCount
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(clusterName, that.clusterName)
         && Objects.equals(memberId, that.memberId)
@@ -168,8 +147,6 @@ public class ClusterCfg {
         + ", maxMessageSize='"
         + maxMessageSize
         + '\''
-        + ", maxMessageCount="
-        + maxMessageCount
         + ", requestTimeout='"
         + requestTimeout
         + '\''

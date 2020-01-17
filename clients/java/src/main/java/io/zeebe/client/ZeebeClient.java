@@ -211,7 +211,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Example JobHandler implementation:
    *
    * <pre>
-   * public class PaymentHandler implements JobHandler
+   * public final class PaymentHandler implements JobHandler
    * {
    *   &#64;Override
    *   public void handle(JobClient client, JobEvent jobEvent)

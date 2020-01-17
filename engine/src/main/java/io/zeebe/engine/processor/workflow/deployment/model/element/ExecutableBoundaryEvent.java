@@ -9,7 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.element;
 
 public class ExecutableBoundaryEvent extends ExecutableCatchEventElement {
 
-  public ExecutableBoundaryEvent(String id) {
+  public ExecutableBoundaryEvent(final String id) {
     super(id);
   }
 

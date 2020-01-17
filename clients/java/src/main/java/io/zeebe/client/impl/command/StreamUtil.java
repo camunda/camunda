@@ -19,13 +19,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class StreamUtil {
+public final class StreamUtil {
 
   public static byte[] readInputStream(final InputStream input) throws IOException {
     final byte[] byteBuffer = new byte[4 * 1024];
     int readBytes;
 
-    try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+    try (final ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
       while ((readBytes = input.read(byteBuffer, 0, byteBuffer.length)) != -1) {
         buffer.write(byteBuffer, 0, readBytes);
       }

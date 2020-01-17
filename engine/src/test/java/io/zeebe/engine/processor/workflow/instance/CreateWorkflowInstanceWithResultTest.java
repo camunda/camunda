@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
-public class CreateWorkflowInstanceWithResultTest {
+public final class CreateWorkflowInstanceWithResultTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final BpmnModelInstance WORKFLOW =
@@ -159,7 +159,7 @@ public class CreateWorkflowInstanceWithResultTest {
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1)).tryWriteResponse(3, 3);
   }
 
-  private void interceptResponseWriter(CommandResponseWriter mockCommandResponseWriter) {
+  private void interceptResponseWriter(final CommandResponseWriter mockCommandResponseWriter) {
     doAnswer(
             (Answer<CommandResponseWriter>)
                 (invocation -> {

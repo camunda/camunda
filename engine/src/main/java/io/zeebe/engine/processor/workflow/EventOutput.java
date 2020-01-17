@@ -83,7 +83,9 @@ public class EventOutput {
   }
 
   public long deferRecord(
-      long scopeKey, WorkflowInstanceRecord value, WorkflowInstanceIntent intent) {
+      final long scopeKey,
+      final WorkflowInstanceRecord value,
+      final WorkflowInstanceIntent intent) {
     final long elementInstanceKey = keyGenerator.nextKey();
     materializedState.deferRecord(elementInstanceKey, scopeKey, value, intent);
 
@@ -103,7 +105,9 @@ public class EventOutput {
   }
 
   public void storeFailedRecord(
-      long key, WorkflowInstanceRecord recordValue, WorkflowInstanceIntent intent) {
+      final long key,
+      final WorkflowInstanceRecord recordValue,
+      final WorkflowInstanceIntent intent) {
     materializedState.storeFailedRecord(key, recordValue, intent);
   }
 
@@ -111,7 +115,7 @@ public class EventOutput {
     return responseWriter;
   }
 
-  public void setResponseWriter(TypedResponseWriter responseWriter) {
+  public void setResponseWriter(final TypedResponseWriter responseWriter) {
     this.responseWriter = responseWriter;
   }
 }

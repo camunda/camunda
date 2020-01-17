@@ -13,28 +13,23 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import org.agrona.collections.IntObjConsumer;
 import org.slf4j.Logger;
 
-public class BrokerTopologyManagerImpl extends Actor
+public final class BrokerTopologyManagerImpl extends Actor
     implements BrokerTopologyManager, ClusterMembershipEventListener {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  protected final IntObjConsumer<SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
   private final Supplier<Set<Member>> membersSupplier;
 
-  public BrokerTopologyManagerImpl(
-      Supplier<Set<Member>> membersSupplier, final IntObjConsumer<SocketAddress> registerEndpoint) {
+  public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
     this.membersSupplier = membersSupplier;
-    this.registerEndpoint = registerEndpoint;
     this.topology = new AtomicReference<>(null);
   }
 
@@ -51,7 +46,7 @@ public class BrokerTopologyManagerImpl extends Actor
     }
 
     final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
-    for (Member member : members) {
+    for (final Member member : members) {
       final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
       if (brokerInfo != null) {
         newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
@@ -67,7 +62,7 @@ public class BrokerTopologyManagerImpl extends Actor
     actor.runAtFixedRate(Duration.ofSeconds(5), this::checkForMissingEvents);
   }
 
-  public void setTopology(BrokerClusterStateImpl topology) {
+  public void setTopology(final BrokerClusterStateImpl topology) {
     this.topology.set(topology);
   }
 
@@ -77,7 +72,7 @@ public class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public void event(ClusterMembershipEvent event) {
+  public void event(final ClusterMembershipEvent event) {
     final Member subject = event.subject();
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
@@ -123,7 +118,7 @@ public class BrokerTopologyManagerImpl extends Actor
 
   // Update topology information based on the distributed event
   private void processProperties(
-      BrokerInfo distributedBrokerInfo, BrokerClusterStateImpl newTopology) {
+      final BrokerInfo distributedBrokerInfo, final BrokerClusterStateImpl newTopology) {
 
     newTopology.setClusterSize(distributedBrokerInfo.getClusterSize());
     newTopology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
@@ -140,7 +135,6 @@ public class BrokerTopologyManagerImpl extends Actor
     final String clientAddress = distributedBrokerInfo.getCommandApiAddress();
     if (clientAddress != null) {
       newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
-      registerEndpoint.accept(nodeId, SocketAddress.from(clientAddress));
     }
   }
 }

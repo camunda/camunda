@@ -48,11 +48,11 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
   protected static ChildElementCollection<FlowElement> flowElementCollection;
   protected static ChildElementCollection<Artifact> artifactCollection;
 
-  public SubProcessImpl(ModelTypeInstanceContext context) {
+  public SubProcessImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SubProcess.class, BPMN_ELEMENT_SUB_PROCESS)
@@ -61,7 +61,7 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
             .instanceProvider(
                 new ModelTypeInstanceProvider<SubProcess>() {
                   @Override
-                  public SubProcess newInstance(ModelTypeInstanceContext instanceContext) {
+                  public SubProcess newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new SubProcessImpl(instanceContext);
                   }
                 });
@@ -91,7 +91,7 @@ public class SubProcessImpl extends ActivityImpl implements SubProcess {
   }
 
   @Override
-  public void setTriggeredByEvent(boolean triggeredByEvent) {
+  public void setTriggeredByEvent(final boolean triggeredByEvent) {
     triggeredByEventAttribute.setValue(this, triggeredByEvent);
   }
 

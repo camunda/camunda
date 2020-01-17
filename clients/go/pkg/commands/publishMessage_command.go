@@ -50,16 +50,12 @@ type PublishMessageCommandStep3 interface {
 }
 
 type DispatchPublishMessageCommand interface {
-	Send() (*pb.PublishMessageResponse, error)
+	Send(context.Context) (*pb.PublishMessageResponse, error)
 }
 
 type PublishMessageCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.PublishMessageRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.PublishMessageRequest
 }
 
 func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageCommandStep3 {
@@ -68,7 +64,7 @@ func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageComm
 }
 
 func (cmd *PublishMessageCommand) VariablesFromObject(variables interface{}) (PublishMessageCommandStep3, error) {
-	value, err := cmd.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +74,7 @@ func (cmd *PublishMessageCommand) VariablesFromObject(variables interface{}) (Pu
 }
 
 func (cmd *PublishMessageCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (PublishMessageCommandStep3, error) {
-	value, err := cmd.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +88,7 @@ func (cmd *PublishMessageCommand) VariablesFromMap(variables map[string]interfac
 }
 
 func (cmd *PublishMessageCommand) VariablesFromString(variables string) (PublishMessageCommandStep3, error) {
-	err := cmd.Validate("variables", variables)
+	err := cmd.mixin.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
@@ -120,23 +116,20 @@ func (cmd *PublishMessageCommand) MessageName(name string) PublishMessageCommand
 	return cmd
 }
 
-func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	response, err := cmd.gateway.PublishMessage(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
+func (cmd *PublishMessageCommand) Send(ctx context.Context) (*pb.PublishMessageResponse, error) {
+	response, err := cmd.gateway.PublishMessage(ctx, &cmd.request)
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 	return response, err
 }
 
-func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) PublishMessageCommandStep1 {
+func NewPublishMessageCommand(gateway pb.GatewayClient, pred retryPredicate) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.PublishMessageRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			mixin:     utils.NewJsonStringSerializer(),
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

@@ -38,7 +38,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class JobFailIncidentTest {
+public final class JobFailIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String JOB_TYPE = "test";

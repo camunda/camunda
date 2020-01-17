@@ -28,7 +28,8 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
   }
 
   @Override
-  public void validate(SequenceFlow element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final SequenceFlow element, final ValidationResultCollector validationResultCollector) {
 
     if (element.getSource() instanceof ExclusiveGateway) {
       final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();

@@ -19,8 +19,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class SecurityTest {
-  @Rule public ExpectedException thrown = ExpectedException.none();
+public final class SecurityTest {
+  @Rule public final ExpectedException thrown = ExpectedException.none();
   private Gateway gateway;
 
   @After

@@ -11,7 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 /** For testcases */
-public class ControlledActorClock implements ActorClock {
+public final class ControlledActorClock implements ActorClock {
   private volatile long currentTime;
   private volatile long currentOffset;
 
@@ -23,7 +23,7 @@ public class ControlledActorClock implements ActorClock {
     setCurrentTime(getCurrentTime());
   }
 
-  public void addTime(Duration durationToAdd) {
+  public void addTime(final Duration durationToAdd) {
     if (usesPointInTime()) {
       currentTime += durationToAdd.toMillis();
     } else {
@@ -40,11 +40,11 @@ public class ControlledActorClock implements ActorClock {
     return Instant.ofEpochMilli(getTimeMillis());
   }
 
-  public void setCurrentTime(long currentTime) {
+  public void setCurrentTime(final long currentTime) {
     this.currentTime = currentTime;
   }
 
-  public void setCurrentTime(Instant currentTime) {
+  public void setCurrentTime(final Instant currentTime) {
     this.currentTime = currentTime.toEpochMilli();
   }
 

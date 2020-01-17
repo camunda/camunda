@@ -43,11 +43,11 @@ type customCredentialsProvider struct {
 	retryPredicate func(error) bool
 }
 
-func (t customCredentialsProvider) ApplyCredentials(headers map[string]string) {
+func (t customCredentialsProvider) ApplyCredentials(_ context.Context, headers map[string]string) {
 	headers["Authorization"] = t.customToken
 }
 
-func (t customCredentialsProvider) ShouldRetryRequest(err error) bool {
+func (t customCredentialsProvider) ShouldRetryRequest(_ context.Context, err error) bool {
 	if t.retryPredicate != nil {
 		return t.retryPredicate(err)
 	}
@@ -78,7 +78,7 @@ func TestCustomCredentialsProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	require.Error(t, err)
@@ -120,7 +120,7 @@ func TestRetryMoreThanOnce(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	require.Error(t, err)
@@ -153,7 +153,7 @@ func TestNoRetryWithoutProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	require.Error(t, err)

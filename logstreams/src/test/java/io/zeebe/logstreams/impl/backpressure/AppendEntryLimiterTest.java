@@ -19,7 +19,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AppendEntryLimiterTest {
+public final class AppendEntryLimiterTest {
 
   @Parameter public Limit limit;
   private AppendLimiter limiter;

@@ -18,40 +18,47 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class StreamProcessorBuilder {
+public final class StreamProcessorBuilder {
 
   private final ProcessingContext processingContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
+  private int nodeId;
 
   public StreamProcessorBuilder() {
     processingContext = new ProcessingContext();
   }
 
   public StreamProcessorBuilder streamProcessorFactory(
-      TypedRecordProcessorFactory typedRecordProcessorFactory) {
+      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     return this;
   }
 
-  public StreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler) {
+  public StreamProcessorBuilder actorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
     return this;
   }
 
-  public StreamProcessorBuilder logStream(LogStream stream) {
+  public StreamProcessorBuilder nodeId(int nodeId) {
+    this.nodeId = nodeId;
+    return this;
+  }
+
+  public StreamProcessorBuilder logStream(final LogStream stream) {
     processingContext.logStream(stream);
     return this;
   }
 
-  public StreamProcessorBuilder commandResponseWriter(CommandResponseWriter commandResponseWriter) {
+  public StreamProcessorBuilder commandResponseWriter(
+      final CommandResponseWriter commandResponseWriter) {
     processingContext.commandResponseWriter(commandResponseWriter);
     return this;
   }
 
-  public StreamProcessorBuilder onProcessedListener(Consumer<TypedRecord> onProcessed) {
+  public StreamProcessorBuilder onProcessedListener(final Consumer<TypedRecord> onProcessed) {
     processingContext.onProcessedListener(onProcessed);
     return this;
   }
@@ -81,6 +88,10 @@ public class StreamProcessorBuilder {
     return zeebeDb;
   }
 
+  public int getNodeId() {
+    return nodeId;
+  }
+
   public StreamProcessor build() {
     validate();
 
@@ -105,12 +116,12 @@ public class StreamProcessorBuilder {
     protected final RecordMetadata metadata = new RecordMetadata();
     protected final MetadataFilter metadataFilter;
 
-    MetadataEventFilter(MetadataFilter metadataFilter) {
+    MetadataEventFilter(final MetadataFilter metadataFilter) {
       this.metadataFilter = metadataFilter;
     }
 
     @Override
-    public boolean applies(LoggedEvent event) {
+    public boolean applies(final LoggedEvent event) {
       event.readMetadata(metadata);
       return metadataFilter.applies(metadata);
     }
@@ -118,7 +129,7 @@ public class StreamProcessorBuilder {
 
   private final class VersionFilter implements MetadataFilter {
     @Override
-    public boolean applies(RecordMetadata m) {
+    public boolean applies(final RecordMetadata m) {
       if (m.getProtocolVersion() > Protocol.PROTOCOL_VERSION) {
         throw new RuntimeException(
             String.format(

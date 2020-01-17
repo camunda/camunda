@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ElementInstance implements DbValue {
+public final class ElementInstance implements DbValue {
 
   private final IndexedRecord elementRecord;
 
@@ -149,7 +149,7 @@ public class ElementInstance implements DbValue {
     return calledChildInstanceKey;
   }
 
-  public void setCalledChildInstanceKey(long calledChildInstanceKey) {
+  public void setCalledChildInstanceKey(final long calledChildInstanceKey) {
     this.calledChildInstanceKey = calledChildInstanceKey;
   }
 
@@ -157,7 +157,7 @@ public class ElementInstance implements DbValue {
     return interruptingEventKey;
   }
 
-  public void setInterruptingEventKey(long key) {
+  public void setInterruptingEventKey(final long key) {
     this.interruptingEventKey = key;
   }
 

@@ -28,7 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-public class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstanceCommandStep1 {
+public final class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstanceCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder builder;
@@ -36,10 +36,10 @@ public class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstance
   private Duration requestTimeout;
 
   public CancelWorkflowInstanceCommandImpl(
-      GatewayStub asyncStub,
-      long workflowInstanceKey,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final long workflowInstanceKey,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
@@ -48,7 +48,7 @@ public class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstance
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -66,8 +66,8 @@ public class CancelWorkflowInstanceCommandImpl implements CancelWorkflowInstance
   }
 
   private void send(
-      CancelWorkflowInstanceRequest request,
-      StreamObserver<CancelWorkflowInstanceResponse> future) {
+      final CancelWorkflowInstanceRequest request,
+      final StreamObserver<CancelWorkflowInstanceResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .cancelWorkflowInstance(request, future);

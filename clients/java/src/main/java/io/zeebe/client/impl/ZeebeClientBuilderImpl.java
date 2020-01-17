@@ -21,6 +21,7 @@ import static io.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.zeebe.client.ClientProperties.KEEP_ALIVE;
 import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 
+import io.grpc.ClientInterceptor;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
@@ -29,16 +30,17 @@ import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.zeebe.client.util.Environment;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
-public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
+public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
-
   private static final String ILLEGAL_KEEP_ALIVE_FMT =
       "Keep alive must be expressed as a positive integer followed by either s (seconds), m (minutes) or h (hours) but got instead '%s' instead.";
-
   private String brokerContactPoint = "0.0.0.0:26500";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
@@ -51,6 +53,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
+  private final List interceptors = new ArrayList();
 
   @Override
   public String getBrokerContactPoint() {
@@ -113,6 +116,11 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
+  public List getInterceptors() {
+    return interceptors;
+  }
+
+  @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
     if (properties.containsKey(ClientProperties.BROKER_CONTACTPOINT)) {
       brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
@@ -157,7 +165,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     if (properties.containsKey(KEEP_ALIVE)) {
       keepAlive(properties.getProperty(KEEP_ALIVE));
     }
-
     return this;
   }
 
@@ -234,6 +241,12 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     }
 
     this.keepAlive = keepAlive;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder withInterceptors(final ClientInterceptor... interceptors) {
+    this.interceptors.addAll(Arrays.asList(interceptors));
     return this;
   }
 

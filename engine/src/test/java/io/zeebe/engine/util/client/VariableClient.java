@@ -18,28 +18,28 @@ import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class VariableClient {
+public final class VariableClient {
 
   private final VariableDocumentRecord variableDocumentRecord;
   private final StreamProcessorRule environmentRule;
 
-  public VariableClient(StreamProcessorRule environmentRule) {
+  public VariableClient(final StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
     variableDocumentRecord = new VariableDocumentRecord();
   }
 
-  public VariableClient ofScope(long scopeKey) {
+  public VariableClient ofScope(final long scopeKey) {
     variableDocumentRecord.setScopeKey(scopeKey);
     return this;
   }
 
-  public VariableClient withDocument(Map<String, Object> variables) {
+  public VariableClient withDocument(final Map<String, Object> variables) {
     variableDocumentRecord.setVariables(
         new UnsafeBuffer(MsgPackUtil.asMsgPack(variables).byteArray()));
     return this;
   }
 
-  public VariableClient withUpdateSemantic(VariableDocumentUpdateSemantic semantic) {
+  public VariableClient withUpdateSemantic(final VariableDocumentUpdateSemantic semantic) {
     variableDocumentRecord.setUpdateSemantics(semantic);
     return this;
   }

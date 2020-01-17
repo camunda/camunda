@@ -10,15 +10,15 @@ package io.zeebe.gateway.cmd;
 public class BrokerResponseException extends BrokerException {
   private static final long serialVersionUID = 4563550916179626168L;
 
-  public BrokerResponseException(String message) {
+  public BrokerResponseException(final String message) {
     super(message);
   }
 
-  public BrokerResponseException(String message, Throwable cause) {
+  public BrokerResponseException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public BrokerResponseException(Throwable cause) {
+  public BrokerResponseException(final Throwable cause) {
     super(cause);
   }
 }

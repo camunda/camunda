@@ -28,7 +28,7 @@ public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBu
     extends AbstractTaskBuilder<B, ReceiveTask> {
 
   protected AbstractReceiveTaskBuilder(
-      BpmnModelInstance modelInstance, ReceiveTask element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final ReceiveTask element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -38,7 +38,7 @@ public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBu
    * @param implementation the implementation to set
    * @return the builder object
    */
-  public B implementation(String implementation) {
+  public B implementation(final String implementation) {
     element.setImplementation(implementation);
     return myself;
   }
@@ -59,7 +59,7 @@ public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBu
    * @param message the message to set
    * @return the builder object
    */
-  public B message(Message message) {
+  public B message(final Message message) {
     element.setMessage(message);
     return myself;
   }
@@ -71,12 +71,12 @@ public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBu
    * @param messageName the name of the message
    * @return the builder object
    */
-  public B message(String messageName) {
+  public B message(final String messageName) {
     final Message message = findMessageForName(messageName);
     return message(message);
   }
 
-  public B message(Consumer<MessageBuilder> messageBuilderConsumer) {
+  public B message(final Consumer<MessageBuilder> messageBuilderConsumer) {
     final Message message = createMessage();
     final MessageBuilder builder = new MessageBuilder(modelInstance, message);
 
@@ -93,7 +93,7 @@ public abstract class AbstractReceiveTaskBuilder<B extends AbstractReceiveTaskBu
    * @param operation the operation to set
    * @return the builder object
    */
-  public B operation(Operation operation) {
+  public B operation(final Operation operation) {
     element.setOperation(operation);
     return myself;
   }

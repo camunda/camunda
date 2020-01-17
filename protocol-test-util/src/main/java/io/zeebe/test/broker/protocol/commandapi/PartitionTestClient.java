@@ -73,7 +73,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
-public class PartitionTestClient {
+public final class PartitionTestClient {
   // workflow related properties
 
   public static final String PROP_WORKFLOW_RESOURCES = "resources";
@@ -146,7 +146,7 @@ public class PartitionTestClient {
     return commandResponse;
   }
 
-  public Workflow deployWorkflow(BpmnModelInstance workflow) {
+  public Workflow deployWorkflow(final BpmnModelInstance workflow) {
     final DeploymentRecord request = new DeploymentRecord();
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, workflow);
@@ -165,11 +165,11 @@ public class PartitionTestClient {
     return iterator.next();
   }
 
-  public DeploymentRecord deploy(Function<DeploymentRecord, DeploymentRecord> transformer) {
+  public DeploymentRecord deploy(final Function<DeploymentRecord, DeploymentRecord> transformer) {
     return deploy(transformer.apply(new DeploymentRecord()));
   }
 
-  public DeploymentRecord deploy(DeploymentRecord request) {
+  public DeploymentRecord deploy(final DeploymentRecord request) {
     final ExecuteCommandResponse response =
         executeCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, request);
 
@@ -180,12 +180,12 @@ public class PartitionTestClient {
   }
 
   public WorkflowInstanceCreationRecord createWorkflowInstance(
-      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> mapper) {
+      final Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> mapper) {
     return createWorkflowInstance(mapper.apply(new WorkflowInstanceCreationRecord()));
   }
 
   public WorkflowInstanceCreationRecord createWorkflowInstance(
-      WorkflowInstanceCreationRecord record) {
+      final WorkflowInstanceCreationRecord record) {
     final ExecuteCommandResponse response =
         executeCommandRequest(
             ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE, record);
@@ -197,12 +197,12 @@ public class PartitionTestClient {
   }
 
   public ExecuteCommandResponse executeCommandRequest(
-      ValueType valueType, Intent intent, BufferWriter command) {
+      final ValueType valueType, final Intent intent, final BufferWriter command) {
     return executeCommandRequest(valueType, intent, command, -1);
   }
 
   public ExecuteCommandResponse executeCommandRequest(
-      ValueType valueType, Intent intent, BufferWriter command, long key) {
+      final ValueType valueType, final Intent intent, final BufferWriter command, final long key) {
     return apiRule
         .createCmdRequest()
         .partitionId(partitionId)
@@ -223,12 +223,14 @@ public class PartitionTestClient {
         .sendAndAwait();
   }
 
-  public void updateVariables(long scopeKey, Map<String, Object> document) {
+  public void updateVariables(final long scopeKey, final Map<String, Object> document) {
     updateVariables(scopeKey, VariableDocumentUpdateSemantic.PROPAGATE, document);
   }
 
   public void updateVariables(
-      long scopeKey, VariableDocumentUpdateSemantic updateSemantics, Map<String, Object> document) {
+      final long scopeKey,
+      final VariableDocumentUpdateSemantic updateSemantics,
+      final Map<String, Object> document) {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
@@ -249,7 +251,7 @@ public class PartitionTestClient {
   }
 
   public long createJob(
-      final String type, Consumer<ServiceTaskBuilder> consumer, String variables) {
+      final String type, final Consumer<ServiceTaskBuilder> consumer, final String variables) {
     deploy(
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -273,12 +275,14 @@ public class PartitionTestClient {
         .getKey();
   }
 
-  public JobRecord activateAndCompleteFirstJob(String jobType, Predicate<JobRecord> filter) {
+  public JobRecord activateAndCompleteFirstJob(
+      final String jobType, final Predicate<JobRecord> filter) {
     final Tuple<Long, JobRecord> pair = activateJob(jobType, filter);
     return completeJob(pair.getLeft(), pair.getRight());
   }
 
-  public Tuple<Long, JobRecord> activateJob(String jobType, Predicate<JobRecord> filter) {
+  public Tuple<Long, JobRecord> activateJob(
+      final String jobType, final Predicate<JobRecord> filter) {
     final JobBatchRecord request =
         new JobBatchRecord()
             .setType(jobType)
@@ -301,11 +305,12 @@ public class PartitionTestClient {
         .until(Objects::nonNull);
   }
 
-  public JobRecord completeJob(long jobKey, Function<JobRecord, JobRecord> transformer) {
+  public JobRecord completeJob(
+      final long jobKey, final Function<JobRecord, JobRecord> transformer) {
     return completeJob(jobKey, transformer.apply(new JobRecord()));
   }
 
-  public JobRecord completeJob(long jobKey, JobRecord request) {
+  public JobRecord completeJob(final long jobKey, final JobRecord request) {
     final ExecuteCommandResponse response =
         executeCommandRequest(ValueType.JOB, JobIntent.COMPLETE, request, jobKey);
 
@@ -314,11 +319,12 @@ public class PartitionTestClient {
     return response.readInto(new JobRecord());
   }
 
-  public JobBatchRecord activateJobBatch(Function<JobBatchRecord, JobBatchRecord> transformer) {
+  public JobBatchRecord activateJobBatch(
+      final Function<JobBatchRecord, JobBatchRecord> transformer) {
     return activateJobBatch(transformer.apply(new JobBatchRecord()));
   }
 
-  public JobBatchRecord activateJobBatch(JobBatchRecord request) {
+  public JobBatchRecord activateJobBatch(final JobBatchRecord request) {
     final ExecuteCommandResponse response =
         executeCommandRequest(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE, request);
 
@@ -327,7 +333,7 @@ public class PartitionTestClient {
     return response.readInto(new JobBatchRecord());
   }
 
-  public void completeJobOfType(long workflowInstanceKey, String jobType) {
+  public void completeJobOfType(final long workflowInstanceKey, final String jobType) {
     completeJob(
         jobType,
         MsgPackUtil.asMsgPackReturnArray("{}"),
@@ -346,11 +352,11 @@ public class PartitionTestClient {
     completeJob(jobType, MsgPackUtil.asMsgPackReturnArray(jsonVariables), e -> true);
   }
 
-  public ExecuteCommandResponse completeJob(long key, String variables) {
+  public ExecuteCommandResponse completeJob(final long key, final String variables) {
     return completeJob(key, MsgPackUtil.asMsgPackReturnArray(variables));
   }
 
-  public ExecuteCommandResponse completeJob(long key, byte[] variables) {
+  public ExecuteCommandResponse completeJob(final long key, final byte[] variables) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.COMPLETE)
@@ -381,7 +387,7 @@ public class PartitionTestClient {
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
   }
 
-  public ExecuteCommandResponse failJob(long key, int retries) {
+  public ExecuteCommandResponse failJob(final long key, final int retries) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.FAIL)
@@ -392,7 +398,8 @@ public class PartitionTestClient {
         .sendAndAwait();
   }
 
-  public ExecuteCommandResponse failJobWithMessage(long key, int retries, String errorMessage) {
+  public ExecuteCommandResponse failJobWithMessage(
+      final long key, final int retries, final String errorMessage) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.FAIL)
@@ -405,11 +412,11 @@ public class PartitionTestClient {
   }
 
   public ExecuteCommandResponse createJobIncidentWithJobErrorMessage(
-      long key, String errorMessage) {
+      final long key, final String errorMessage) {
     return failJobWithMessage(key, 0, errorMessage);
   }
 
-  public ExecuteCommandResponse updateJobRetries(long key, int retries) {
+  public ExecuteCommandResponse updateJobRetries(final long key, final int retries) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.UPDATE_RETRIES)
@@ -420,11 +427,11 @@ public class PartitionTestClient {
         .sendAndAwait();
   }
 
-  public MessageRecord publishMessage(Function<MessageRecord, MessageRecord> transformer) {
+  public MessageRecord publishMessage(final Function<MessageRecord, MessageRecord> transformer) {
     return publishMessage(transformer.apply(new MessageRecord()));
   }
 
-  public MessageRecord publishMessage(MessageRecord request) {
+  public MessageRecord publishMessage(final MessageRecord request) {
     final ExecuteCommandResponse response =
         executeCommandRequest(ValueType.MESSAGE, MessageIntent.PUBLISH, request);
 
@@ -500,7 +507,7 @@ public class PartitionTestClient {
     return receiveIncidents().withIntent(intent).onlyCommands().getFirst();
   }
 
-  public ExecuteCommandResponse resolveIncident(long incidentKey) {
+  public ExecuteCommandResponse resolveIncident(final long incidentKey) {
 
     return apiRule
         .createCmdRequest()
@@ -566,7 +573,7 @@ public class PartitionTestClient {
   }
 
   public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
-      final long wfInstanceKey, final Intent intent, BpmnElementType elementType) {
+      final long wfInstanceKey, final Intent intent, final BpmnElementType elementType) {
     return receiveWorkflowInstances()
         .withIntent(intent)
         .withWorkflowInstanceKey(wfInstanceKey)
@@ -585,7 +592,7 @@ public class PartitionTestClient {
   }
 
   public List<Record<WorkflowInstanceRecordValue>> receiveElementInstancesInState(
-      Intent intent, int expectedNumber) {
+      final Intent intent, final int expectedNumber) {
     return receiveWorkflowInstances()
         .withIntent(intent)
         .limit(expectedNumber)
@@ -593,7 +600,7 @@ public class PartitionTestClient {
   }
 
   public List<Record<WorkflowInstanceRecordValue>> receiveElementInstancesInState(
-      Intent intent, BpmnElementType elementType, int expectedNumber) {
+      final Intent intent, final BpmnElementType elementType, final int expectedNumber) {
     return receiveWorkflowInstances()
         .withIntent(intent)
         .withElementType(elementType)
@@ -665,12 +672,13 @@ public class PartitionTestClient {
     return RecordingExporter.timerRecords().withPartitionId(partitionId);
   }
 
-  public Record<TimerRecordValue> receiveTimerRecord(String handlerNodeId, TimerIntent intent) {
+  public Record<TimerRecordValue> receiveTimerRecord(
+      final String handlerNodeId, final TimerIntent intent) {
     return receiveTimerRecords().withIntent(intent).withHandlerNodeId(handlerNodeId).getFirst();
   }
 
   public Record<TimerRecordValue> receiveTimerRecord(
-      DirectBuffer handlerNodeId, TimerIntent intent) {
+      final DirectBuffer handlerNodeId, final TimerIntent intent) {
     return receiveTimerRecord(bufferAsString(handlerNodeId), intent);
   }
 }

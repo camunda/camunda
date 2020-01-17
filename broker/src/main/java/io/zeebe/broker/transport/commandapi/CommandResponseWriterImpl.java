@@ -20,18 +20,18 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerResponse;
+import io.zeebe.transport.impl.ServerResponseImpl;
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CommandResponseWriterImpl implements CommandResponseWriter, BufferWriter {
+public final class CommandResponseWriterImpl implements CommandResponseWriter, BufferWriter {
 
   private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
   private final ExecuteCommandResponseEncoder responseEncoder = new ExecuteCommandResponseEncoder();
-  private final ServerResponse response = new ServerResponse();
+  private final ServerResponseImpl response = new ServerResponseImpl();
   private final ServerOutput output;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private int partitionId = partitionIdNullValue();
@@ -99,12 +99,13 @@ public class CommandResponseWriterImpl implements CommandResponseWriter, BufferW
     Objects.requireNonNull(valueWriter);
 
     try {
-      response.reset().remoteStreamId(remoteStreamId).requestId(requestId).writer(this);
+      response.reset().setPartitionId(remoteStreamId).setRequestId(requestId).writer(this);
 
-      return output.sendResponse(response);
+      output.sendResponse(response);
     } finally {
       reset();
     }
+    return true;
   }
 
   @Override

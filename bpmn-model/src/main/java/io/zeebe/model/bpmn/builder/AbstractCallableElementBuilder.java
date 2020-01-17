@@ -25,7 +25,7 @@ public abstract class AbstractCallableElementBuilder<
     extends AbstractRootElementBuilder<B, E> {
 
   protected AbstractCallableElementBuilder(
-      BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -35,7 +35,7 @@ public abstract class AbstractCallableElementBuilder<
    * @param name the name to set
    * @return the builder object
    */
-  public B name(String name) {
+  public B name(final String name) {
     element.setName(name);
     return myself;
   }

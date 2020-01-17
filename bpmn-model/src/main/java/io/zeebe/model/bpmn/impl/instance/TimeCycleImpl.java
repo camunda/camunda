@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class TimeCycleImpl extends ExpressionImpl implements TimeCycle {
 
-  public TimeCycleImpl(ModelTypeInstanceContext instanceContext) {
+  public TimeCycleImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TimeCycle.class, BPMN_ELEMENT_TIME_CYCLE)
@@ -46,7 +46,7 @@ public class TimeCycleImpl extends ExpressionImpl implements TimeCycle {
             .instanceProvider(
                 new ModelTypeInstanceProvider<TimeCycle>() {
                   @Override
-                  public TimeCycle newInstance(ModelTypeInstanceContext instanceContext) {
+                  public TimeCycle newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new TimeCycleImpl(instanceContext);
                   }
                 });

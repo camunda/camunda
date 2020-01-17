@@ -42,11 +42,11 @@ public class TimerEventDefinitionImpl extends EventDefinitionImpl implements Tim
   protected static ChildElement<TimeDuration> timeDurationChild;
   protected static ChildElement<TimeCycle> timeCycleChild;
 
-  public TimerEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public TimerEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TimerEventDefinition.class, BPMN_ELEMENT_TIMER_EVENT_DEFINITION)
@@ -56,7 +56,7 @@ public class TimerEventDefinitionImpl extends EventDefinitionImpl implements Tim
                 new ModelTypeInstanceProvider<TimerEventDefinition>() {
                   @Override
                   public TimerEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new TimerEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -78,7 +78,7 @@ public class TimerEventDefinitionImpl extends EventDefinitionImpl implements Tim
   }
 
   @Override
-  public void setTimeDate(TimeDate timeDate) {
+  public void setTimeDate(final TimeDate timeDate) {
     timeDateChild.setChild(this, timeDate);
   }
 
@@ -88,7 +88,7 @@ public class TimerEventDefinitionImpl extends EventDefinitionImpl implements Tim
   }
 
   @Override
-  public void setTimeDuration(TimeDuration timeDuration) {
+  public void setTimeDuration(final TimeDuration timeDuration) {
     timeDurationChild.setChild(this, timeDuration);
   }
 
@@ -98,7 +98,7 @@ public class TimerEventDefinitionImpl extends EventDefinitionImpl implements Tim
   }
 
   @Override
-  public void setTimeCycle(TimeCycle timeCycle) {
+  public void setTimeCycle(final TimeCycle timeCycle) {
     timeCycleChild.setChild(this, timeCycle);
   }
 }

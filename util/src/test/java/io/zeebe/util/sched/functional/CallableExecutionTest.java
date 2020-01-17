@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CallableExecutionTest {
+public final class CallableExecutionTest {
   @Rule public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule(3);
 
   @Test
@@ -35,7 +35,7 @@ public class CallableExecutionTest {
             try {
               barrier.await(); // signal arrival at barrier
               barrier.await(); // wait for continuation
-            } catch (InterruptedException | BrokenBarrierException e) {
+            } catch (final InterruptedException | BrokenBarrierException e) {
               throw new RuntimeException(e);
             }
           }

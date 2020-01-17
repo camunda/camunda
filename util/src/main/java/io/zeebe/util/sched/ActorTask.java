@@ -7,8 +7,6 @@
  */
 package io.zeebe.util.sched;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -16,6 +14,8 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /**
@@ -24,25 +24,13 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
  */
 @SuppressWarnings("restriction")
 public class ActorTask {
-  private static final long STATE_COUNT_OFFSET;
-  private static final long SCHEDULING_STATE_OFFSET;
-
-  static {
-    try {
-      STATE_COUNT_OFFSET = UNSAFE.objectFieldOffset(ActorTask.class.getDeclaredField("stateCount"));
-      SCHEDULING_STATE_OFFSET =
-          UNSAFE.objectFieldOffset(ActorTask.class.getDeclaredField("schedulingState"));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
 
   public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   final Actor actor;
   ActorJob currentJob;
   boolean shouldYield;
-  volatile TaskSchedulingState schedulingState = null;
-  volatile long stateCount = 0;
+  final AtomicReference<TaskSchedulingState> schedulingState = new AtomicReference<>();
+  final AtomicLong stateCount = new AtomicLong(0);
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
@@ -61,13 +49,13 @@ public class ActorTask {
    */
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
-  public ActorTask(Actor actor) {
+  public ActorTask(final Actor actor) {
     this.actor = actor;
   }
 
   /** called when the task is initially scheduled. */
   public ActorFuture<Void> onTaskScheduled(
-      ActorExecutor actorExecutor, ActorThreadGroup actorThreadGroup) {
+      final ActorExecutor actorExecutor, final ActorThreadGroup actorThreadGroup) {
     this.actorExecutor = actorExecutor;
     this.actorThreadGroup = actorThreadGroup;
     // reset previous state to allow re-scheduling
@@ -99,7 +87,7 @@ public class ActorTask {
   }
 
   /** Used to externally submit a job. */
-  public void submit(ActorJob job) {
+  public void submit(final ActorJob job) {
     // get reference to jobs queue
     final Queue<ActorJob> submittedJobs = this.submittedJobs;
 
@@ -119,8 +107,8 @@ public class ActorTask {
     }
   }
 
-  public boolean execute(ActorThread runner) {
-    schedulingState = TaskSchedulingState.ACTIVE;
+  public boolean execute(final ActorThread runner) {
+    schedulingState.set(TaskSchedulingState.ACTIVE);
 
     boolean resubmit = false;
     while (!resubmit && (currentJob != null || poll())) {
@@ -248,7 +236,7 @@ public class ActorTask {
   }
 
   private void onClosed() {
-    schedulingState = TaskSchedulingState.NOT_SCHEDULED;
+    schedulingState.set(TaskSchedulingState.NOT_SCHEDULED);
 
     for (int i = 0; i < subscriptions.length; i++) {
       subscriptions[i].cancel();
@@ -267,10 +255,10 @@ public class ActorTask {
     }
   }
 
-  private void failJob(ActorJob job) {
+  private void failJob(final ActorJob job) {
     try {
       job.failFuture("Actor is closed");
-    } catch (IllegalStateException e) {
+    } catch (final IllegalStateException e) {
       // job is already completed or failed, ignore
     }
   }
@@ -285,7 +273,7 @@ public class ActorTask {
     }
   }
 
-  public void onFailure(Throwable failure) {
+  public void onFailure(final Throwable failure) {
     switch (lifecyclePhase) {
       case STARTING:
         Loggers.ACTOR_LOGGER.error(
@@ -321,15 +309,15 @@ public class ActorTask {
     }
   }
 
-  boolean casStateCount(long expectedCount) {
-    return UNSAFE.compareAndSwapLong(this, STATE_COUNT_OFFSET, expectedCount, expectedCount + 1);
+  boolean casStateCount(final long expectedCount) {
+    return stateCount.compareAndSet(expectedCount, expectedCount + 1);
   }
 
-  boolean casState(TaskSchedulingState expectedState, TaskSchedulingState newState) {
-    return UNSAFE.compareAndSwapObject(this, SCHEDULING_STATE_OFFSET, expectedState, newState);
+  boolean casState(final TaskSchedulingState expectedState, final TaskSchedulingState newState) {
+    return schedulingState.compareAndSet(expectedState, newState);
   }
 
-  public boolean claim(long stateCount) {
+  public boolean claim(final long stateCount) {
     if (casStateCount(stateCount)) {
       return true;
     }
@@ -348,7 +336,7 @@ public class ActorTask {
     final ActorSubscription[] subscriptionsCopy = this.subscriptions;
 
     // first set state to waiting
-    schedulingState = TaskSchedulingState.WAITING;
+    schedulingState.set(TaskSchedulingState.WAITING);
 
     /*
      * Accounts for the situation where a job is appended while in state active.
@@ -413,7 +401,7 @@ public class ActorTask {
     return subscription.triggersInPhase(lifecyclePhase) && subscription.poll();
   }
 
-  private boolean pollSubscriptionsWithoutAddingJobs(ActorSubscription[] subscriptions) {
+  private boolean pollSubscriptionsWithoutAddingJobs(final ActorSubscription[] subscriptions) {
     boolean result = false;
 
     for (int i = 0; i < subscriptions.length && !result; i++) {
@@ -454,12 +442,12 @@ public class ActorTask {
   }
 
   public TaskSchedulingState getState() {
-    return schedulingState;
+    return schedulingState.get();
   }
 
   @Override
   public String toString() {
-    return actor.getName() + " " + schedulingState + " phase: " + lifecyclePhase;
+    return actor.getName() + " " + schedulingState.get() + " phase: " + lifecyclePhase;
   }
 
   public void yield() {
@@ -467,7 +455,7 @@ public class ActorTask {
   }
 
   public long getStateCount() {
-    return stateCount;
+    return stateCount.get();
   }
 
   public ActorThreadGroup getActorThreadGroup() {
@@ -490,7 +478,7 @@ public class ActorTask {
     return priority;
   }
 
-  public void setPriority(int priority) {
+  public void setPriority(final int priority) {
     this.priority = priority;
   }
 
@@ -506,13 +494,13 @@ public class ActorTask {
     return startingFuture;
   }
 
-  public void addSubscription(ActorSubscription subscription) {
+  public void addSubscription(final ActorSubscription subscription) {
     final ActorSubscription[] arrayCopy = Arrays.copyOf(subscriptions, subscriptions.length + 1);
     arrayCopy[arrayCopy.length - 1] = subscription;
     subscriptions = arrayCopy;
   }
 
-  private void removeSubscription(ActorSubscription subscription) {
+  private void removeSubscription(final ActorSubscription subscription) {
     final int length = subscriptions.length;
 
     int index = -1;
@@ -535,13 +523,13 @@ public class ActorTask {
 
   // subscription helpers
 
-  public void onSubscriptionCancelled(ActorSubscription subscription) {
+  public void onSubscriptionCancelled(final ActorSubscription subscription) {
     if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {
       removeSubscription(subscription);
     }
   }
 
-  public void setUpdatedSchedulingHints(int hints) {
+  public void setUpdatedSchedulingHints(final int hints) {
     if (SchedulingHints.isCpuBound(hints)) {
       priority = SchedulingHints.getPriority(hints);
       actorThreadGroup = actorExecutor.getCpuBoundThreads();
@@ -554,7 +542,7 @@ public class ActorTask {
     actorThreadGroup.submit(this);
   }
 
-  public void insertJob(ActorJob job) {
+  public void insertJob(final ActorJob job) {
     fastLaneJobs.addFirst(job);
   }
 
@@ -579,7 +567,7 @@ public class ActorTask {
 
     private final int value;
 
-    ActorLifecyclePhase(int value) {
+    ActorLifecyclePhase(final int value) {
       this.value = value;
     }
 

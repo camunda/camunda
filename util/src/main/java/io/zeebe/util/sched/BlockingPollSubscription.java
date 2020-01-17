@@ -7,19 +7,19 @@
  */
 package io.zeebe.util.sched;
 
-public class BlockingPollSubscription implements ActorSubscription, Runnable {
+public final class BlockingPollSubscription implements ActorSubscription, Runnable {
   private final ActorJob subscriptionJob;
   private final Runnable blockingAction;
   private final ActorExecutor actorTaskExecutor;
 
   private volatile boolean isDone;
-  private boolean isRecurring;
+  private final boolean isRecurring;
 
   public BlockingPollSubscription(
-      ActorJob subscriptionJob,
-      Runnable blockingAction,
-      ActorExecutor actorTaskExecutor,
-      boolean isRecurring) {
+      final ActorJob subscriptionJob,
+      final Runnable blockingAction,
+      final ActorExecutor actorTaskExecutor,
+      final boolean isRecurring) {
     this.subscriptionJob = subscriptionJob;
     this.blockingAction = blockingAction;
     this.actorTaskExecutor = actorTaskExecutor;
@@ -53,7 +53,7 @@ public class BlockingPollSubscription implements ActorSubscription, Runnable {
   public void run() {
     try {
       blockingAction.run();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       // TODO: what now?
     } finally {

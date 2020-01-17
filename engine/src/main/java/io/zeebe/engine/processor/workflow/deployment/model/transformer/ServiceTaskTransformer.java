@@ -29,7 +29,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTask> {
+public final class ServiceTaskTransformer implements ModelElementTransformer<ServiceTask> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
@@ -43,7 +43,7 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
   }
 
   @Override
-  public void transform(ServiceTask element, TransformContext context) {
+  public void transform(final ServiceTask element, final TransformContext context) {
 
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableServiceTask serviceTask =
@@ -64,7 +64,7 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
   }
 
   private void transformTaskDefinition(
-      ServiceTask element, final ExecutableServiceTask serviceTask) {
+      final ServiceTask element, final ExecutableServiceTask serviceTask) {
     final ZeebeTaskDefinition taskDefinition =
         element.getSingleExtensionElement(ZeebeTaskDefinition.class);
 
@@ -72,7 +72,8 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
     serviceTask.setRetries(taskDefinition.getRetries());
   }
 
-  private void transformTaskHeaders(ServiceTask element, final ExecutableServiceTask serviceTask) {
+  private void transformTaskHeaders(
+      final ServiceTask element, final ExecutableServiceTask serviceTask) {
     final ZeebeTaskHeaders taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
 
     if (taskHeaders != null) {
@@ -94,7 +95,7 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
     }
   }
 
-  private DirectBuffer encode(List<ZeebeHeader> taskHeaders) {
+  private DirectBuffer encode(final List<ZeebeHeader> taskHeaders) {
     final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
 
     final ExpandableArrayBuffer expandableBuffer =
@@ -119,7 +120,7 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
     return buffer;
   }
 
-  private boolean isValidHeader(ZeebeHeader header) {
+  private boolean isValidHeader(final ZeebeHeader header) {
     return header != null
         && header.getValue() != null
         && !header.getValue().isEmpty()

@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class DeploymentResource extends UnpackedObject
+public final class DeploymentResource extends UnpackedObject
     implements io.zeebe.protocol.record.value.deployment.DeploymentResource {
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
   private final EnumProperty<ResourceType> resourceTypeProp =
@@ -65,26 +65,26 @@ public class DeploymentResource extends UnpackedObject
     return BufferUtil.bufferAsString(resourceNameProp.getValue());
   }
 
-  public DeploymentResource setResourceName(String resourceName) {
+  public DeploymentResource setResourceName(final String resourceName) {
     this.resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public DeploymentResource setResourceName(DirectBuffer resourceName) {
+  public DeploymentResource setResourceName(final DirectBuffer resourceName) {
     this.resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public DeploymentResource setResourceType(ResourceType resourceType) {
+  public DeploymentResource setResourceType(final ResourceType resourceType) {
     this.resourceTypeProp.setValue(resourceType);
     return this;
   }
 
-  public DeploymentResource setResource(byte[] resource) {
+  public DeploymentResource setResource(final byte[] resource) {
     return setResource(wrapArray(resource));
   }
 
-  public DeploymentResource setResource(DirectBuffer resource) {
+  public DeploymentResource setResource(final DirectBuffer resource) {
     return setResource(resource, 0, resource.capacity());
   }
 
@@ -110,7 +110,8 @@ public class DeploymentResource extends UnpackedObject
     return super.getEncodedLength();
   }
 
-  public DeploymentResource setResource(DirectBuffer resource, int offset, int length) {
+  public DeploymentResource setResource(
+      final DirectBuffer resource, final int offset, final int length) {
     this.resourceProp.setValue(resource, offset, length);
     return this;
   }

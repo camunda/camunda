@@ -20,9 +20,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class DbCompositeKeyColumnFamilyTest {
+public final class DbCompositeKeyColumnFamilyTest {
 
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
       DefaultZeebeDbFactory.getDefaultFactory(DefaultColumnFamily.class);
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
@@ -373,7 +373,7 @@ public class DbCompositeKeyColumnFamilyTest {
     assertThat(secondKeyParts).containsExactly(34L, 37426L, 923113L, 255L);
   }
 
-  private void putKeyValuePair(String firstKey, long secondKey, String value) {
+  private void putKeyValuePair(final String firstKey, final long secondKey, final String value) {
     this.firstKey.wrapString(firstKey);
     this.secondKey.wrapLong(secondKey);
 

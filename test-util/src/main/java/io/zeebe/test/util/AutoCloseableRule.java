@@ -18,11 +18,11 @@ import org.junit.rules.ExternalResource;
  *
  * @author Lindhauer
  */
-public class AutoCloseableRule extends ExternalResource {
+public final class AutoCloseableRule extends ExternalResource {
 
-  List<AutoCloseable> thingsToClose = new ArrayList<>();
+  final List<AutoCloseable> thingsToClose = new ArrayList<>();
 
-  public void manage(AutoCloseable closeable) {
+  public void manage(final AutoCloseable closeable) {
     thingsToClose.add(closeable);
   }
 
@@ -32,7 +32,7 @@ public class AutoCloseableRule extends ExternalResource {
     for (int i = size - 1; i >= 0; i--) {
       try {
         thingsToClose.remove(i).close();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new RuntimeException(e);
       }
     }

@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class Workflow extends UnpackedObject implements DeployedWorkflow {
+public final class Workflow extends UnpackedObject implements DeployedWorkflow {
   private final StringProperty bpmnProcessIdProp =
       new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID);
   private final IntegerProperty versionProp = new IntegerProperty(PROP_WORKFLOW_VERSION);
@@ -53,27 +53,27 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
     return BufferUtil.bufferAsString(resourceNameProp.getValue());
   }
 
-  public Workflow setResourceName(String resourceName) {
+  public Workflow setResourceName(final String resourceName) {
     this.resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public Workflow setResourceName(DirectBuffer resourceName) {
+  public Workflow setResourceName(final DirectBuffer resourceName) {
     this.resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public Workflow setVersion(int version) {
+  public Workflow setVersion(final int version) {
     this.versionProp.setValue(version);
     return this;
   }
 
-  public Workflow setBpmnProcessId(String bpmnProcessId) {
+  public Workflow setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId) {
+  public Workflow setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     this.bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
@@ -83,7 +83,7 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
     return keyProp.getValue();
   }
 
-  public Workflow setKey(long key) {
+  public Workflow setKey(final long key) {
     this.keyProp.setValue(key);
     return this;
   }
@@ -110,7 +110,8 @@ public class Workflow extends UnpackedObject implements DeployedWorkflow {
     return resourceNameProp.getValue();
   }
 
-  public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length) {
+  public Workflow setBpmnProcessId(
+      final DirectBuffer bpmnProcessId, final int offset, final int length) {
     this.bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
     return this;
   }

@@ -17,7 +17,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type CancelInstanceStep1 interface {
@@ -25,37 +24,33 @@ type CancelInstanceStep1 interface {
 }
 
 type DispatchCancelWorkflowInstanceCommand interface {
-	Send() (*pb.CancelWorkflowInstanceResponse, error)
+	Send(context.Context) (*pb.CancelWorkflowInstanceResponse, error)
 }
 
 type CancelWorkflowInstanceCommand struct {
-	request        *pb.CancelWorkflowInstanceRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.CancelWorkflowInstanceRequest
 }
 
-func (cmd CancelWorkflowInstanceCommand) Send() (*pb.CancelWorkflowInstanceResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	response, err := cmd.gateway.CancelWorkflowInstance(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
+func (cmd CancelWorkflowInstanceCommand) Send(ctx context.Context) (*pb.CancelWorkflowInstanceResponse, error) {
+	response, err := cmd.gateway.CancelWorkflowInstance(ctx, &cmd.request)
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
 func (cmd CancelWorkflowInstanceCommand) WorkflowInstanceKey(key int64) DispatchCancelWorkflowInstanceCommand {
-	cmd.request = &pb.CancelWorkflowInstanceRequest{WorkflowInstanceKey: key}
+	cmd.request = pb.CancelWorkflowInstanceRequest{WorkflowInstanceKey: key}
 	return cmd
 }
 
-func NewCancelInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CancelInstanceStep1 {
+func NewCancelInstanceCommand(gateway pb.GatewayClient, pred retryPredicate) CancelInstanceStep1 {
 	return &CancelWorkflowInstanceCommand{
-		gateway:        gateway,
-		requestTimeout: requestTimeout,
-		retryPredicate: retryPredicate,
+		Command: Command{
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

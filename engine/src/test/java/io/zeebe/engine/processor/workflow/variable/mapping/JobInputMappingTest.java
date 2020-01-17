@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JobInputMappingTest {
+public final class JobInputMappingTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
@@ -106,7 +106,8 @@ public class JobInputMappingTest {
         .isEqualTo(JsonUtil.fromJsonAsMap(expectedVariables));
   }
 
-  private static Consumer<ServiceTaskBuilder> mapping(Consumer<ServiceTaskBuilder> mappingBuilder) {
+  private static Consumer<ServiceTaskBuilder> mapping(
+      final Consumer<ServiceTaskBuilder> mappingBuilder) {
     return mappingBuilder;
   }
 }

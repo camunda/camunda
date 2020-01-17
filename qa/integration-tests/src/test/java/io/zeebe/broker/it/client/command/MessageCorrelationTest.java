@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class MessageCorrelationTest {
+public final class MessageCorrelationTest {
 
   private static final String CORRELATION_KEY_VARIABLE = "orderId";
   private static final String CATCH_EVENT_ELEMENT_ID = "catch-event";
@@ -43,7 +43,7 @@ public class MessageCorrelationTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private long workflowKey;
   private String correlationValue;

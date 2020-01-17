@@ -10,11 +10,11 @@ package io.zeebe.util.allocation;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class DirectBufferAllocator implements BufferAllocator {
+public final class DirectBufferAllocator implements BufferAllocator {
   private static final AtomicLong ALLOCATED_MEMORY = new AtomicLong();
 
   @Override
-  public AllocatedBuffer allocate(int capacity) {
+  public AllocatedBuffer allocate(final int capacity) {
     final AllocatedDirectBuffer buffer =
         new AllocatedDirectBuffer(
             ByteBuffer.allocateDirect(capacity), DirectBufferAllocator::onFree);
@@ -24,7 +24,7 @@ public class DirectBufferAllocator implements BufferAllocator {
     return buffer;
   }
 
-  private static void onFree(AllocatedDirectBuffer buffer) {
+  private static void onFree(final AllocatedDirectBuffer buffer) {
     ALLOCATED_MEMORY.addAndGet(-buffer.capacity());
   }
 

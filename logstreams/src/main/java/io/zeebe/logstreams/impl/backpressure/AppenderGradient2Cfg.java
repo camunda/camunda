@@ -23,7 +23,7 @@ import io.zeebe.util.Environment;
  * currently we are not able to access the BrokerCfg, this is the reason why the configuration is
  * only based on environment variables.
  */
-public class AppenderGradient2Cfg implements AlgorithmCfg {
+public final class AppenderGradient2Cfg implements AlgorithmCfg {
 
   private int initialLimit = 1024;
   private int maxConcurrency = 1024 * 32;
@@ -48,7 +48,7 @@ public class AppenderGradient2Cfg implements AlgorithmCfg {
     return initialLimit;
   }
 
-  public AppenderGradient2Cfg setInitialLimit(int initialLimit) {
+  public AppenderGradient2Cfg setInitialLimit(final int initialLimit) {
     this.initialLimit = initialLimit;
     return this;
   }
@@ -57,7 +57,7 @@ public class AppenderGradient2Cfg implements AlgorithmCfg {
     return maxConcurrency;
   }
 
-  public AppenderGradient2Cfg setMaxConcurrency(int maxConcurrency) {
+  public AppenderGradient2Cfg setMaxConcurrency(final int maxConcurrency) {
     this.maxConcurrency = maxConcurrency;
     return this;
   }
@@ -66,7 +66,7 @@ public class AppenderGradient2Cfg implements AlgorithmCfg {
     return queueSize;
   }
 
-  public AppenderGradient2Cfg setQueueSize(int queueSize) {
+  public AppenderGradient2Cfg setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
     return this;
   }
@@ -75,7 +75,7 @@ public class AppenderGradient2Cfg implements AlgorithmCfg {
     return minLimit;
   }
 
-  public AppenderGradient2Cfg setMinLimit(int minLimit) {
+  public AppenderGradient2Cfg setMinLimit(final int minLimit) {
     this.minLimit = minLimit;
     return this;
   }
@@ -84,7 +84,7 @@ public class AppenderGradient2Cfg implements AlgorithmCfg {
     return longWindow;
   }
 
-  public AppenderGradient2Cfg setLongWindow(int longWindow) {
+  public AppenderGradient2Cfg setLongWindow(final int longWindow) {
     this.longWindow = longWindow;
     return this;
   }
@@ -93,7 +93,7 @@ public class AppenderGradient2Cfg implements AlgorithmCfg {
     return rttTolerance;
   }
 
-  public AppenderGradient2Cfg setRttTolerance(double rttTolerance) {
+  public AppenderGradient2Cfg setRttTolerance(final double rttTolerance) {
     this.rttTolerance = rttTolerance;
     return this;
   }

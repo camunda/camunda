@@ -28,7 +28,8 @@ public class FlowNodeValidator implements ModelElementValidator<FlowNode> {
   }
 
   @Override
-  public void validate(FlowNode element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final FlowNode element, final ValidationResultCollector validationResultCollector) {
     if (!(element instanceof ExclusiveGateway)) {
       final boolean hasAnyConditionalFlow =
           element.getOutgoing().stream()

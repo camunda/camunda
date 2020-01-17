@@ -45,11 +45,11 @@ public class CorrelationSubscriptionImpl extends BaseElementImpl
   protected static ChildElementCollection<CorrelationPropertyBinding>
       correlationPropertyBindingCollection;
 
-  public CorrelationSubscriptionImpl(ModelTypeInstanceContext instanceContext) {
+  public CorrelationSubscriptionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CorrelationSubscription.class, BPMN_ELEMENT_CORRELATION_SUBSCRIPTION)
@@ -59,7 +59,7 @@ public class CorrelationSubscriptionImpl extends BaseElementImpl
                 new ModelTypeInstanceProvider<CorrelationSubscription>() {
                   @Override
                   public CorrelationSubscription newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CorrelationSubscriptionImpl(instanceContext);
                   }
                 });
@@ -85,7 +85,7 @@ public class CorrelationSubscriptionImpl extends BaseElementImpl
   }
 
   @Override
-  public void setCorrelationKey(CorrelationKey correlationKey) {
+  public void setCorrelationKey(final CorrelationKey correlationKey) {
     correlationKeyAttribute.setReferenceTargetElement(this, correlationKey);
   }
 

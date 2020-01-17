@@ -30,6 +30,13 @@
 
 # ----------------------------------------------------
 
+# Sets the timeout for each start and closing step.
+#
+# Broker bootstrap and closing is divided in several individual steps.
+# Each step should take at max the defined stepTimeout, otherwise the bootstrap is aborted.
+#
+# This setting can also be overridden using the environment variable ENV_STEP_TIMEOUT.
+# stepTimeout = 5m
 
 [gateway]
 # Enable the embedded gateway to start on broker startup.
@@ -50,8 +57,8 @@
 # port = 26500
 
 # Sets the minimum keep alive interval
-# This setting specifies the minimum accepted interval between keep alive pings. This value must be specified as a positive integer followed by 's' for seconds, 'm' for minutes or 'h' for hours. 
-# This setting can also be overriden using the environment variable ZEEBE_GATEWAY_KEEP_ALIVE_INTERVAL.
+# This setting specifies the minimum accepted interval between keep alive pings. This value must be specified as a positive integer followed by 's' for seconds, 'm' for minutes or 'h' for hours.
+# This setting can also be overwritten using the environment variable ZEEBE_GATEWAY_KEEP_ALIVE_INTERVAL.
 # minKeepAliveInterval = "30s"
 
 [gateway.cluster]

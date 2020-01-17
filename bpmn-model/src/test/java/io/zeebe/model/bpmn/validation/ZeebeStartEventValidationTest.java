@@ -16,7 +16,6 @@
 package io.zeebe.model.bpmn.validation;
 
 import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
@@ -66,14 +65,12 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
         singletonList(expect(Process.class, "Multiple none start events are not allowed"))
       },
       {
-        cycleTimerStartEventSubprocess(false), emptyList(),
+        cycleTimerStartEventSubprocess(false), valid(),
       },
       {
         cycleTimerStartEventSubprocess(true),
         Collections.singletonList(
-            expect(
-                SubProcess.class,
-                "Interrupting timer start events in event subprocesses can't have time cycles")),
+            expect(SubProcess.class, "Interrupting timer event with time cycle is not allowed.")),
       },
       {processWithNoneStartEventAndMultipleOtherStartEvents(), valid()},
     };
@@ -85,7 +82,7 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
     return process.startEvent().endEvent().done();
   }
 
-  private static BpmnModelInstance cycleTimerStartEventSubprocess(boolean interrupting) {
+  private static BpmnModelInstance cycleTimerStartEventSubprocess(final boolean interrupting) {
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess();
     processBuilder.startEvent().serviceTask("task", b -> b.zeebeTaskType("type")).endEvent();
     return processBuilder

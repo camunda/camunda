@@ -18,9 +18,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MessageSubscriptionStateTest {
+public final class MessageSubscriptionStateTest {
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MessageSubscriptionState state;
 
@@ -329,12 +329,12 @@ public class MessageSubscriptionStateTest {
     assertThat(keys).hasSize(1).contains(1L);
   }
 
-  private MessageSubscription subscriptionWithElementInstanceKey(long elementInstanceKey) {
+  private MessageSubscription subscriptionWithElementInstanceKey(final long elementInstanceKey) {
     return subscription("messageName", "correlationKey", elementInstanceKey);
   }
 
   private MessageSubscription subscription(
-      String name, String correlationKey, long elementInstanceKey) {
+      final String name, final String correlationKey, final long elementInstanceKey) {
     return new MessageSubscription(
         1L,
         elementInstanceKey,

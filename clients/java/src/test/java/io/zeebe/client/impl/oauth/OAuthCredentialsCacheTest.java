@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class OAuthCredentialsCacheTest {
+public final class OAuthCredentialsCacheTest {
   private static final String WOMBAT_ENDPOINT = "wombat.cloud.camunda.io";
   private static final String AARDVARK_ENDPOINT = "aardvark.cloud.camunda.io";
   private static final String GOLDEN_FILE = "/oauth/credentialsCache.yml";
@@ -42,7 +42,7 @@ public class OAuthCredentialsCacheTest {
   @Before
   public void setUp() throws IOException {
     cacheFile = new File(temporaryFolder.getRoot(), ".credsCache.yml");
-    try (InputStream input = getClass().getResourceAsStream(GOLDEN_FILE)) {
+    try (final InputStream input = getClass().getResourceAsStream(GOLDEN_FILE)) {
       Files.copy(input, cacheFile.toPath());
     }
   }

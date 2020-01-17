@@ -9,15 +9,15 @@ package io.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 
-public class LongPollingJobNotification {
+public final class LongPollingJobNotification {
   private static final String TOPIC = "jobsAvailable";
   private final ClusterEventService eventService;
 
-  public LongPollingJobNotification(ClusterEventService eventService) {
+  public LongPollingJobNotification(final ClusterEventService eventService) {
     this.eventService = eventService;
   }
 
-  public void onJobsAvailable(String jobType) {
+  public void onJobsAvailable(final String jobType) {
     eventService.broadcast(TOPIC, jobType);
   }
 }

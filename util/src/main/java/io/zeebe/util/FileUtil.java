@@ -27,11 +27,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
-public class FileUtil {
+public final class FileUtil {
 
   public static final Logger LOG = Loggers.FILE_LOGGER;
 
-  public static void deleteFolder(String path) throws IOException {
+  public static void deleteFolder(final String path) throws IOException {
     final Path directory = Paths.get(path);
 
     deleteFolder(directory);
@@ -42,14 +42,15 @@ public class FileUtil {
         directory,
         new SimpleFileVisitor<Path>() {
           @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+          public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
               throws IOException {
             Files.delete(file);
             return CONTINUE;
           }
 
           @Override
-          public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+          public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
+              throws IOException {
             Files.delete(dir);
             return CONTINUE;
           }
@@ -57,7 +58,7 @@ public class FileUtil {
   }
 
   @SuppressWarnings("resource")
-  public static FileChannel openChannel(String filename, boolean create) {
+  public static FileChannel openChannel(final String filename, final boolean create) {
     FileChannel fileChannel = null;
     try {
       final File file = new File(filename);
@@ -72,7 +73,7 @@ public class FileUtil {
 
       final RandomAccessFile raf = new RandomAccessFile(file, "rw");
       fileChannel = raf.getChannel();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
     }
 
@@ -87,7 +88,7 @@ public class FileUtil {
    * @param dest file to overwrite (if existing)
    * @throws IOException see {@link Files#move(Path, Path, CopyOption...)}
    */
-  public static void replace(Path src, Path dest) throws IOException {
+  public static void replace(final Path src, final Path dest) throws IOException {
     try {
       Files.move(src, dest, ATOMIC_MOVE);
     } catch (final Exception e) {
@@ -96,13 +97,14 @@ public class FileUtil {
     }
   }
 
-  public static void deleteFile(File file) {
+  public static void deleteFile(final File file) {
     if (file.exists() && !file.delete()) {
       LOG.warn("Failed to delete file '{}'", file);
     }
   }
 
-  public static void copySnapshot(Path runtimeDirectory, Path snapshotDirectory) throws Exception {
+  public static void copySnapshot(final Path runtimeDirectory, final Path snapshotDirectory)
+      throws Exception {
     Files.walkFileTree(snapshotDirectory, new SnapshotCopier(snapshotDirectory, runtimeDirectory));
   }
 
@@ -111,18 +113,18 @@ public class FileUtil {
     private final Path targetPath;
     private final Path sourcePath;
 
-    SnapshotCopier(Path sourcePath, Path targetPath) {
+    SnapshotCopier(final Path sourcePath, final Path targetPath) {
       this.sourcePath = sourcePath;
       this.targetPath = targetPath;
     }
 
     @Override
-    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+    public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
         throws IOException {
       final Path newDirectory = targetPath.resolve(sourcePath.relativize(dir));
       try {
         Files.copy(dir, newDirectory);
-      } catch (FileAlreadyExistsException ioException) {
+      } catch (final FileAlreadyExistsException ioException) {
         LOG.error("Problem on copying snapshot to runtime.", ioException);
         return SKIP_SUBTREE; // skip processing
       }
@@ -131,12 +133,12 @@ public class FileUtil {
     }
 
     @Override
-    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) {
       final Path newFile = targetPath.resolve(sourcePath.relativize(file));
 
       try {
         Files.copy(file, newFile);
-      } catch (IOException ioException) {
+      } catch (final IOException ioException) {
         LOG.error("Problem on copying {} to {}.", file, newFile, ioException);
       }
 
@@ -144,13 +146,13 @@ public class FileUtil {
     }
 
     @Override
-    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+    public FileVisitResult visitFileFailed(final Path file, final IOException exc) {
       LOG.error("Problem on copying snapshot to runtime.", exc);
       return CONTINUE;
     }
 
     @Override
-    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+    public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) {
       return CONTINUE;
     }
   }

@@ -10,9 +10,9 @@ package io.zeebe.test.util.collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Maps {
+public final class Maps {
   @SuppressWarnings("unchecked")
-  public static <K, V> Map<K, V> of(Map.Entry... entries) {
+  public static <K, V> Map<K, V> of(final Map.Entry... entries) {
     final Map<K, V> map = new HashMap<>();
 
     for (final Map.Entry entry : entries) {

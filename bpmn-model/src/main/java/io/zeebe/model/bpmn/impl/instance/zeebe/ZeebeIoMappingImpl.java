@@ -32,7 +32,7 @@ public class ZeebeIoMappingImpl extends BpmnModelElementInstanceImpl implements 
   protected static ChildElementCollection<ZeebeInput> inputCollection;
   protected static ChildElementCollection<ZeebeOutput> outputCollection;
 
-  public ZeebeIoMappingImpl(ModelTypeInstanceContext instanceContext) {
+  public ZeebeIoMappingImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
@@ -46,7 +46,7 @@ public class ZeebeIoMappingImpl extends BpmnModelElementInstanceImpl implements 
     return outputCollection.get(this);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ZeebeIoMapping.class, ZeebeConstants.ELEMENT_IO_MAPPING)

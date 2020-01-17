@@ -32,7 +32,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class PushDeploymentRequestHandler
+public final class PushDeploymentRequestHandler
     implements Function<byte[], CompletableFuture<byte[]>>, DeploymentResponder {
 
   private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
@@ -55,7 +55,7 @@ public class PushDeploymentRequestHandler
   }
 
   @Override
-  public CompletableFuture<byte[]> apply(byte[] bytes) {
+  public CompletableFuture<byte[]> apply(final byte[] bytes) {
     final CompletableFuture<byte[]> responseFuture = new CompletableFuture<>();
 
     actor.call(
@@ -100,7 +100,10 @@ public class PushDeploymentRequestHandler
   }
 
   private void handleValidRequest(
-      CompletableFuture<byte[]> responseFuture, DirectBuffer buffer, int offset, int length) {
+      final CompletableFuture<byte[]> responseFuture,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
     final PushDeploymentRequest pushDeploymentRequest = new PushDeploymentRequest();
     pushDeploymentRequest.wrap(buffer, offset, length);
     final long deploymentKey = pushDeploymentRequest.deploymentKey();
@@ -165,7 +168,7 @@ public class PushDeploymentRequestHandler
   }
 
   private void sendNotLeaderRejection(
-      final CompletableFuture<byte[]> responseFuture, int partitionId) {
+      final CompletableFuture<byte[]> responseFuture, final int partitionId) {
     final ErrorResponse notLeaderResponse = new ErrorResponse();
     notLeaderResponse
         .setErrorCode(ErrorCode.PARTITION_LEADER_MISMATCH)

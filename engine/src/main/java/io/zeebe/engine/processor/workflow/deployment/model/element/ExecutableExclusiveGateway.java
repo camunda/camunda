@@ -15,7 +15,7 @@ public class ExecutableExclusiveGateway extends ExecutableFlowNode {
   private final List<ExecutableSequenceFlow> outgoingWithCondition = new ArrayList<>();
   private ExecutableSequenceFlow defaultFlow;
 
-  public ExecutableExclusiveGateway(String id) {
+  public ExecutableExclusiveGateway(final String id) {
     super(id);
   }
 
@@ -23,12 +23,12 @@ public class ExecutableExclusiveGateway extends ExecutableFlowNode {
     return defaultFlow;
   }
 
-  public void setDefaultFlow(ExecutableSequenceFlow defaultFlow) {
+  public void setDefaultFlow(final ExecutableSequenceFlow defaultFlow) {
     this.defaultFlow = defaultFlow;
   }
 
   @Override
-  public void addOutgoing(ExecutableSequenceFlow flow) {
+  public void addOutgoing(final ExecutableSequenceFlow flow) {
     super.addOutgoing(flow);
     if (flow.getCondition() != null) {
       outgoingWithCondition.add(flow);

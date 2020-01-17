@@ -13,7 +13,7 @@ import io.zeebe.msgpack.el.JsonConditionFactory;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class SequenceFlowValidator implements ModelElementValidator<ConditionExpression> {
+public final class SequenceFlowValidator implements ModelElementValidator<ConditionExpression> {
 
   @Override
   public Class<ConditionExpression> getElementType() {
@@ -22,7 +22,8 @@ public class SequenceFlowValidator implements ModelElementValidator<ConditionExp
 
   @Override
   public void validate(
-      ConditionExpression element, ValidationResultCollector validationResultCollector) {
+      final ConditionExpression element,
+      final ValidationResultCollector validationResultCollector) {
 
     final String expression = element.getTextContent();
     final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);

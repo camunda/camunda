@@ -21,7 +21,7 @@ import org.junit.Rule;
 
 public abstract class ClientTest {
 
-  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
+  @Rule public final TestEnvironmentRule rule = new TestEnvironmentRule();
 
   public RecordingGatewayService gatewayService;
   public ZeebeClient client;

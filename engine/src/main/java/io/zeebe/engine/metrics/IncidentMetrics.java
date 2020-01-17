@@ -10,7 +10,7 @@ package io.zeebe.engine.metrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
-public class IncidentMetrics {
+public final class IncidentMetrics {
 
   private static final Counter INCIDENT_EVENTS =
       Counter.build()
@@ -30,11 +30,11 @@ public class IncidentMetrics {
 
   private final String partitionIdLabel;
 
-  public IncidentMetrics(int partitionId) {
+  public IncidentMetrics(final int partitionId) {
     this.partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void incidentEvent(String action) {
+  private void incidentEvent(final String action) {
     INCIDENT_EVENTS.labels(action, partitionIdLabel).inc();
   }
 

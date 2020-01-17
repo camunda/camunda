@@ -30,10 +30,8 @@ import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
-public class Gateway {
-  public static final String VERSION;
-  private static final String ILLEGAL_KEEP_ALIVE_FMT =
-      "Keep alive must be expressed as a positive integer followed by either s (seconds), m (minutes) or h (hours) but got instead '%s' instead.";
+public final class Gateway {
+  private static final String VERSION;
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
       cfg -> setNetworkConfig(cfg.getNetwork());
@@ -52,7 +50,9 @@ public class Gateway {
   private BrokerClient brokerClient;
 
   public Gateway(
-      GatewayCfg gatewayCfg, AtomixCluster atomixCluster, ActorScheduler actorScheduler) {
+      final GatewayCfg gatewayCfg,
+      final AtomixCluster atomixCluster,
+      final ActorScheduler actorScheduler) {
     this(
         gatewayCfg,
         cfg -> new BrokerClientImpl(cfg, atomixCluster),
@@ -61,17 +61,17 @@ public class Gateway {
   }
 
   public Gateway(
-      GatewayCfg gatewayCfg,
-      Function<GatewayCfg, BrokerClient> brokerClientFactory,
-      ActorScheduler actorScheduler) {
+      final GatewayCfg gatewayCfg,
+      final Function<GatewayCfg, BrokerClient> brokerClientFactory,
+      final ActorScheduler actorScheduler) {
     this(gatewayCfg, brokerClientFactory, DEFAULT_SERVER_BUILDER_FACTORY, actorScheduler);
   }
 
   public Gateway(
-      GatewayCfg gatewayCfg,
-      Function<GatewayCfg, BrokerClient> brokerClientFactory,
-      Function<GatewayCfg, ServerBuilder> serverBuilderFactory,
-      ActorScheduler actorScheduler) {
+      final GatewayCfg gatewayCfg,
+      final Function<GatewayCfg, BrokerClient> brokerClientFactory,
+      final Function<GatewayCfg, ServerBuilder> serverBuilderFactory,
+      final ActorScheduler actorScheduler) {
     this.gatewayCfg = gatewayCfg;
     this.brokerClientFactory = brokerClientFactory;
     this.serverBuilderFactory = serverBuilderFactory;
@@ -87,8 +87,10 @@ public class Gateway {
   }
 
   public void start() throws IOException {
-    LOG.info("Version: {}", VERSION);
-    LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Version: {}", VERSION);
+      LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
+    }
 
     brokerClient = buildBrokerClient();
 
@@ -163,11 +165,11 @@ public class Gateway {
     serverBuilder.useTransportSecurity(certChain, privateKey);
   }
 
-  protected BrokerClient buildBrokerClient() {
+  private BrokerClient buildBrokerClient() {
     return brokerClientFactory.apply(gatewayCfg);
   }
 
-  protected LongPollingActivateJobsHandler buildLongPollingHandler(BrokerClient brokerClient) {
+  private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
     return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 
@@ -181,8 +183,9 @@ public class Gateway {
       server.shutdownNow();
       try {
         server.awaitTermination();
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         LOG.error("Failed to await termination of gateway", e);
+        Thread.currentThread().interrupt();
       } finally {
         server = null;
       }

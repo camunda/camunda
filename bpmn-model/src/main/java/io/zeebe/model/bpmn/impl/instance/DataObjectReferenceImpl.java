@@ -40,11 +40,11 @@ public class DataObjectReferenceImpl extends FlowElementImpl implements DataObje
   protected static AttributeReference<DataObject> dataObjectRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
-  public DataObjectReferenceImpl(ModelTypeInstanceContext instanceContext) {
+  public DataObjectReferenceImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataObjectReference.class, BPMN_ELEMENT_DATA_OBJECT_REFERENCE)
@@ -53,7 +53,8 @@ public class DataObjectReferenceImpl extends FlowElementImpl implements DataObje
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<DataObjectReference>() {
                   @Override
-                  public DataObjectReference newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataObjectReference newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new DataObjectReferenceImpl(instanceContext);
                   }
                 });
@@ -83,7 +84,7 @@ public class DataObjectReferenceImpl extends FlowElementImpl implements DataObje
   }
 
   @Override
-  public void setItemSubject(ItemDefinition itemSubject) {
+  public void setItemSubject(final ItemDefinition itemSubject) {
     itemSubjectRefAttribute.setReferenceTargetElement(this, itemSubject);
   }
 
@@ -93,7 +94,7 @@ public class DataObjectReferenceImpl extends FlowElementImpl implements DataObje
   }
 
   @Override
-  public void setDataState(DataState dataState) {
+  public void setDataState(final DataState dataState) {
     dataStateChild.setChild(this, dataState);
   }
 
@@ -103,7 +104,7 @@ public class DataObjectReferenceImpl extends FlowElementImpl implements DataObje
   }
 
   @Override
-  public void setDataObject(DataObject dataObject) {
+  public void setDataObject(final DataObject dataObject) {
     dataObjectRefAttribute.setReferenceTargetElement(this, dataObject);
   }
 }

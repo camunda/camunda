@@ -48,11 +48,11 @@ public class OperationImpl extends BaseElementImpl implements Operation {
   protected static ElementReference<Message, OutMessageRef> outMessageRefChild;
   protected static ElementReferenceCollection<Error, ErrorRef> errorRefCollection;
 
-  public OperationImpl(ModelTypeInstanceContext instanceContext) {
+  public OperationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Operation.class, BPMN_ELEMENT_OPERATION)
@@ -61,7 +61,7 @@ public class OperationImpl extends BaseElementImpl implements Operation {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Operation>() {
                   @Override
-                  public Operation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Operation newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new OperationImpl(instanceContext);
                   }
                 });
@@ -98,7 +98,7 @@ public class OperationImpl extends BaseElementImpl implements Operation {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -108,7 +108,7 @@ public class OperationImpl extends BaseElementImpl implements Operation {
   }
 
   @Override
-  public void setImplementationRef(String implementationRef) {
+  public void setImplementationRef(final String implementationRef) {
     implementationRefAttribute.setValue(this, implementationRef);
   }
 
@@ -118,7 +118,7 @@ public class OperationImpl extends BaseElementImpl implements Operation {
   }
 
   @Override
-  public void setInMessage(Message message) {
+  public void setInMessage(final Message message) {
     inMessageRefChild.setReferenceTargetElement(this, message);
   }
 
@@ -128,7 +128,7 @@ public class OperationImpl extends BaseElementImpl implements Operation {
   }
 
   @Override
-  public void setOutMessage(Message message) {
+  public void setOutMessage(final Message message) {
     outMessageRefChild.setReferenceTargetElement(this, message);
   }
 

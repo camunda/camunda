@@ -29,7 +29,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -48,11 +48,11 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
-public class EmbeddedBrokerRule extends ExternalResource {
+public final class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
-  public static final int INSTALL_TIMEOUT = 15;
-  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.SECONDS;
+  public static final int INSTALL_TIMEOUT = 5;
+  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final boolean ENABLE_HTTP_EXPORTER = false;
@@ -64,19 +64,19 @@ public class EmbeddedBrokerRule extends ExternalResource {
   protected final Consumer<BrokerCfg>[] configurators;
   protected BrokerCfg brokerCfg;
   protected Broker broker;
-  protected ControlledActorClock controlledActorClock = new ControlledActorClock();
+  protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected long startTime;
   private File newTemporaryFolder;
   private List<String> dataDirectories;
 
   @SafeVarargs
-  public EmbeddedBrokerRule(Consumer<BrokerCfg>... configurators) {
+  public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
     this(DEFAULT_CONFIG_FILE, configurators);
   }
 
   @SafeVarargs
   public EmbeddedBrokerRule(
-      final String configFileClasspathLocation, Consumer<BrokerCfg>... configurators) {
+      final String configFileClasspathLocation, final Consumer<BrokerCfg>... configurators) {
     this(
         () ->
             EmbeddedBrokerRule.class
@@ -173,9 +173,9 @@ public class EmbeddedBrokerRule extends ExternalResource {
     return controlledActorClock;
   }
 
-  public void restartBroker() {
+  public void restartBroker(final PartitionListener... listeners) {
     stopBroker();
-    startBroker();
+    startBroker(listeners);
   }
 
   public void stopBroker() {
@@ -186,9 +186,9 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
-  public void startBroker() {
+  public void startBroker(final PartitionListener... listeners) {
     if (brokerCfg == null) {
-      try (InputStream configStream = configSupplier.get()) {
+      try (final InputStream configStream = configSupplier.get()) {
         if (configStream == null) {
           brokerCfg = new BrokerCfg();
         } else {
@@ -204,11 +204,15 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
     broker.addPartitionListener(new LeaderPartitionListener(latch));
+    for (final PartitionListener listener : listeners) {
+      broker.addPartitionListener(listener);
+    }
+
     broker.start().join();
 
     try {
       latch.await(INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       LOG.info("Broker was not started in 15 seconds", e);
       Thread.currentThread().interrupt();
     }
@@ -241,7 +245,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     TEST_RECORDER.accept(brokerCfg);
 
     // custom configurators
-    for (Consumer<BrokerCfg> configurator : configurators) {
+    for (final Consumer<BrokerCfg> configurator : configurators) {
       configurator.accept(brokerCfg);
     }
 
@@ -269,15 +273,17 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
     private final CountDownLatch latch;
 
-    LeaderPartitionListener(CountDownLatch latch) {
+    LeaderPartitionListener(final CountDownLatch latch) {
       this.latch = latch;
     }
 
     @Override
-    public void onBecomingFollower(int partitionId, long term, LogStream logStream) {}
+    public void onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {}
 
     @Override
-    public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+    public void onBecomingLeader(
+        final int partitionId, final long term, final LogStream logStream) {
       latch.countDown();
     }
   }

@@ -29,7 +29,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
 
   private final String attributeName;
 
-  protected AttributeAssert(Attribute<?> actual) {
+  protected AttributeAssert(final Attribute<?> actual) {
     super(actual, AttributeAssert.class);
     attributeName = actual.getAttributeName();
   }
@@ -74,7 +74,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasDefaultValue(Object defaultValue) {
+  public AttributeAssert hasDefaultValue(final Object defaultValue) {
     isNotNull();
 
     final Object actualDefaultValue = actual.getDefaultValue();
@@ -102,7 +102,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasOwningElementType(ModelElementType owningElementType) {
+  public AttributeAssert hasOwningElementType(final ModelElementType owningElementType) {
     isNotNull();
 
     final ModelElementType actualOwningElementType = actual.getOwningElementType();
@@ -116,7 +116,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasValue(ModelElementInstance modelElementInstance) {
+  public AttributeAssert hasValue(final ModelElementInstance modelElementInstance) {
     isNotNull();
 
     final Object actualValue = actual.getValue(modelElementInstance);
@@ -128,7 +128,8 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasValue(ModelElementInstance modelElementInstance, Object value) {
+  public AttributeAssert hasValue(
+      final ModelElementInstance modelElementInstance, final Object value) {
     isNotNull();
 
     final Object actualValue = actual.getValue(modelElementInstance);
@@ -142,7 +143,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasNoValue(ModelElementInstance modelElementInstance) {
+  public AttributeAssert hasNoValue(final ModelElementInstance modelElementInstance) {
     isNotNull();
 
     final Object actualValue = actual.getValue(modelElementInstance);
@@ -155,7 +156,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasAttributeName(String attributeName) {
+  public AttributeAssert hasAttributeName(final String attributeName) {
     isNotNull();
 
     if (!attributeName.equals(this.attributeName)) {
@@ -167,7 +168,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasNamespaceUri(String namespaceUri) {
+  public AttributeAssert hasNamespaceUri(final String namespaceUri) {
     isNotNull();
 
     final String actualNamespaceUri1 = actual.getNamespaceUri();
@@ -208,7 +209,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasIncomingReferences(Reference<?>... references) {
+  public AttributeAssert hasIncomingReferences(final Reference<?>... references) {
     isNotNull();
 
     final List<Reference<?>> incomingReferences = Arrays.asList(references);
@@ -250,7 +251,7 @@ public class AttributeAssert extends AbstractAssert<AttributeAssert, Attribute<?
     return this;
   }
 
-  public AttributeAssert hasOutgoingReferences(Reference<?>... references) {
+  public AttributeAssert hasOutgoingReferences(final Reference<?>... references) {
     isNotNull();
 
     final List<Reference<?>> outgoingReferences = Arrays.asList(references);

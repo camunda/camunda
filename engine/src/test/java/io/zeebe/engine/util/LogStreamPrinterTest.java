@@ -10,9 +10,9 @@ package io.zeebe.engine.util;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class LogStreamPrinterTest {
+public final class LogStreamPrinterTest {
 
-  @Rule public StreamProcessorRule rule = new StreamProcessorRule();
+  @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 
   /**
    * This tests just assures that we do not remove this utility as unused code, as it's only purpose

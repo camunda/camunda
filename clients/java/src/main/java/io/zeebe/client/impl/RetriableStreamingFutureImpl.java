@@ -20,16 +20,16 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class RetriableStreamingFutureImpl<C, B> extends ZeebeStreamingClientFutureImpl<C, B> {
+public final class RetriableStreamingFutureImpl<C, B> extends ZeebeStreamingClientFutureImpl<C, B> {
 
   private final Predicate<Throwable> retryPredicate;
   private final Consumer<StreamObserver<B>> retryAction;
 
   public RetriableStreamingFutureImpl(
-      C clientResponse,
-      Consumer<B> collector,
-      Predicate<Throwable> retryPredicate,
-      Consumer<StreamObserver<B>> retryAction) {
+      final C clientResponse,
+      final Consumer<B> collector,
+      final Predicate<Throwable> retryPredicate,
+      final Consumer<StreamObserver<B>> retryAction) {
     super(clientResponse, collector);
 
     Objects.requireNonNull(retryPredicate, "Expected to have non-null retry predicate.");
@@ -39,7 +39,7 @@ public class RetriableStreamingFutureImpl<C, B> extends ZeebeStreamingClientFutu
   }
 
   @Override
-  public void onError(Throwable throwable) {
+  public void onError(final Throwable throwable) {
     if (retryPredicate.test(throwable)) {
       retryAction.accept(this);
     } else {

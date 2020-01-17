@@ -13,9 +13,9 @@ import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.msgpack.value.ValueArray;
 import java.util.Iterator;
 
-public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>>
+public final class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<T>>
     implements ValueArray<T> {
-  public ArrayProperty(String keyString, T innerValue) {
+  public ArrayProperty(final String keyString, final T innerValue) {
     super(keyString, new ArrayValue<>(innerValue));
     isSet = true;
   }
@@ -35,7 +35,7 @@ public class ArrayProperty<T extends BaseValue> extends BaseProperty<ArrayValue<
   public T add() {
     try {
       return value.add();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new MsgpackPropertyException(getKey(), e);
     }
   }

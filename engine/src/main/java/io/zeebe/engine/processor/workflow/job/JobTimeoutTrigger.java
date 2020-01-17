@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 
-public class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
+public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(30);
   private final JobState state;
 

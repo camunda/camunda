@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class TypedEventRegistry {
+public final class TypedEventRegistry {
 
   public static final Map<ValueType, Class<? extends UnifiedRecordValue>> EVENT_REGISTRY;
 

@@ -28,7 +28,7 @@ import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Status;
 
-public class DefaultDbContext implements DbContext {
+public final class DefaultDbContext implements DbContext {
   private static final byte[] ZERO_SIZE_ARRAY = new byte[0];
 
   private final ZeebeTransaction transaction;
@@ -42,7 +42,7 @@ public class DefaultDbContext implements DbContext {
 
   private final Queue<ExpandableArrayBuffer> prefixKeyBuffers;
 
-  DefaultDbContext(ZeebeTransaction transaction) {
+  DefaultDbContext(final ZeebeTransaction transaction) {
     this.transaction = transaction;
     prefixKeyBuffers = new ArrayDeque<>();
     prefixKeyBuffers.add(new ExpandableArrayBuffer());
@@ -50,7 +50,7 @@ public class DefaultDbContext implements DbContext {
   }
 
   @Override
-  public void writeKey(DbKey key) {
+  public void writeKey(final DbKey key) {
     key.write(keyBuffer, 0);
   }
 
@@ -60,7 +60,7 @@ public class DefaultDbContext implements DbContext {
   }
 
   @Override
-  public void writeValue(DbValue value) {
+  public void writeValue(final DbValue value) {
     value.write(valueBuffer, 0);
   }
 
@@ -70,7 +70,7 @@ public class DefaultDbContext implements DbContext {
   }
 
   @Override
-  public void wrapKeyView(byte[] key) {
+  public void wrapKeyView(final byte[] key) {
     if (key != null) {
       keyViewBuffer.wrap(key);
     } else {
@@ -89,7 +89,7 @@ public class DefaultDbContext implements DbContext {
   }
 
   @Override
-  public void wrapValueView(byte[] value) {
+  public void wrapValueView(final byte[] value) {
     if (value != null) {
       valueViewBuffer.wrap(value);
     } else {
@@ -108,7 +108,7 @@ public class DefaultDbContext implements DbContext {
   }
 
   @Override
-  public void withPrefixKeyBuffer(Consumer<ExpandableArrayBuffer> prefixKeyBufferConsumer) {
+  public void withPrefixKeyBuffer(final Consumer<ExpandableArrayBuffer> prefixKeyBufferConsumer) {
     if (prefixKeyBuffers.peek() == null) {
       throw new IllegalStateException(
           "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
@@ -122,28 +122,28 @@ public class DefaultDbContext implements DbContext {
   }
 
   @Override
-  public RocksIterator newIterator(ReadOptions options, ColumnFamilyHandle handle) {
+  public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
     return transaction.newIterator(options, handle);
   }
 
   @Override
-  public void runInTransaction(TransactionOperation operations) {
+  public void runInTransaction(final TransactionOperation operations) {
     try {
       if (transaction.isInCurrentTransaction()) {
         operations.run();
       } else {
         runInNewTransaction(operations);
       }
-    } catch (RecoverableException recoverableException) {
+    } catch (final RecoverableException recoverableException) {
       throw recoverableException;
-    } catch (RocksDBException rdbex) {
+    } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);
       } else {
         throw new RuntimeException(errorMessage, rdbex);
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new RuntimeException(
           "Unexpected error occurred during zeebe db transaction operation.", ex);
     }
@@ -157,7 +157,7 @@ public class DefaultDbContext implements DbContext {
     return transaction;
   }
 
-  private void runInNewTransaction(TransactionOperation operations) throws Exception {
+  private void runInNewTransaction(final TransactionOperation operations) throws Exception {
     try {
       transaction.resetTransaction();
       operations.run();
@@ -167,7 +167,7 @@ public class DefaultDbContext implements DbContext {
     }
   }
 
-  private boolean isRocksDbExceptionRecoverable(RocksDBException rdbex) {
+  private boolean isRocksDbExceptionRecoverable(final RocksDBException rdbex) {
     final Status status = rdbex.getStatus();
     return RECOVERABLE_ERROR_CODES.contains(status.getCode());
   }

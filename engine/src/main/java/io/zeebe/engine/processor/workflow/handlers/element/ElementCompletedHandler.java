@@ -27,14 +27,14 @@ public class ElementCompletedHandler<T extends ExecutableFlowNode>
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return super.shouldHandleState(context)
         && isStateSameAsElementState(context)
         && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (isLastActiveExecutionPathInScope(context)) {
       completeFlowScope(context);
     }
@@ -42,7 +42,7 @@ public class ElementCompletedHandler<T extends ExecutableFlowNode>
     return super.handleState(context);
   }
 
-  protected void completeFlowScope(BpmnStepContext<T> context) {
+  protected void completeFlowScope(final BpmnStepContext<T> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
     final WorkflowInstanceRecord flowScopeInstanceValue = flowScopeInstance.getValue();
 

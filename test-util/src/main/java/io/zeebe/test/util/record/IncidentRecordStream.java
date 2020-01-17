@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.value.ErrorType;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.stream.Stream;
 
-public class IncidentRecordStream
+public final class IncidentRecordStream
     extends ExporterRecordStream<IncidentRecordValue, IncidentRecordStream> {
 
   public IncidentRecordStream(final Stream<Record<IncidentRecordValue>> wrappedStream) {

@@ -15,17 +15,17 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResult;
 import org.camunda.bpm.model.xml.validation.ValidationResultFormatter;
 
-public class ValidationErrorFormatter implements ValidationResultFormatter {
+public final class ValidationErrorFormatter implements ValidationResultFormatter {
 
   @Override
-  public void formatElement(StringWriter writer, ModelElementInstance element) {
+  public void formatElement(final StringWriter writer, final ModelElementInstance element) {
     writer.append("- Element: ");
     writer.append(createElementIdentifier(element));
     writer.append("\n");
   }
 
   @Override
-  public void formatResult(StringWriter writer, ValidationResult result) {
+  public void formatResult(final StringWriter writer, final ValidationResult result) {
     writer.append("    - ");
     writer.append(result.getType().toString());
     writer.append(": ");
@@ -39,7 +39,7 @@ public class ValidationErrorFormatter implements ValidationResultFormatter {
    * <p>E.g. a service task has a task definition with a validation error, then the identifier
    * should be: <code>taskId > extensionElements > taskDefinition</code>
    */
-  private String createElementIdentifier(ModelElementInstance element) {
+  private String createElementIdentifier(final ModelElementInstance element) {
     final List<ModelElementInstance> identifiableElementChain = new ArrayList<>();
 
     ModelElementInstance current = element;

@@ -31,7 +31,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class MultiInstanceInputCollectionTest {
+public final class MultiInstanceInputCollectionTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

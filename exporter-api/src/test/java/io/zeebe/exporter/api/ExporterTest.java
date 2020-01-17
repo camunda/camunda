@@ -22,7 +22,7 @@ import io.zeebe.protocol.record.Record;
 import java.io.IOException;
 import org.junit.Test;
 
-public class ExporterTest {
+public final class ExporterTest {
 
   @Test
   public void shouldAllowExporterToThrowCheckedExceptions() {
@@ -32,12 +32,12 @@ public class ExporterTest {
     final Exporter exporter =
         new Exporter() {
           @Override
-          public void configure(Context context) throws Exception {
+          public void configure(final Context context) throws Exception {
             throw expectedException;
           }
 
           @Override
-          public void export(Record record) {}
+          public void export(final Record record) {}
         };
 
     // then

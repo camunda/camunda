@@ -30,10 +30,10 @@ public class ClaimedFragment {
   }
 
   public void wrap(
-      UnsafeBuffer underlyingbuffer,
-      int fragmentOffset,
-      int fragmentLength,
-      Runnable onCompleteHandler) {
+      final UnsafeBuffer underlyingbuffer,
+      final int fragmentOffset,
+      final int fragmentLength,
+      final Runnable onCompleteHandler) {
     this.onCompleteHandler = onCompleteHandler;
     buffer.wrap(underlyingbuffer, fragmentOffset, fragmentLength);
   }

@@ -8,17 +8,17 @@
 package io.zeebe.dispatcher.impl;
 
 /** Utility for composing the position */
-public class PositionUtil {
+public final class PositionUtil {
 
-  public static long position(int partitionId, int partitionOffset) {
+  public static long position(final int partitionId, final int partitionOffset) {
     return ((long) partitionId) << 32 | partitionOffset & 0xFFFFFFFFL;
   }
 
-  public static int partitionId(long position) {
+  public static int partitionId(final long position) {
     return (int) (position >> 32);
   }
 
-  public static int partitionOffset(long position) {
+  public static int partitionOffset(final long position) {
     return (int) (position & 0xFFFFFFFFL);
   }
 }

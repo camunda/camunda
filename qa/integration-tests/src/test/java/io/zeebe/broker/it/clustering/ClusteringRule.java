@@ -41,7 +41,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
@@ -58,6 +58,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +73,7 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class ClusteringRule extends ExternalResource {
+public final class ClusteringRule extends ExternalResource {
 
   public static final int TOPOLOGY_RETRIES = 250;
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
@@ -97,6 +98,8 @@ public class ClusteringRule extends ExternalResource {
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final ControlledActorClock controlledClock = new ControlledActorClock();
+  private final Map<Integer, LogStream> logstreams = new ConcurrentHashMap<>();
+
   // cluster
   private ZeebeClient client;
   private Gateway gateway;
@@ -107,7 +110,7 @@ public class ClusteringRule extends ExternalResource {
     this(3);
   }
 
-  public ClusteringRule(int clusterSize) {
+  public ClusteringRule(final int clusterSize) {
     this(clusterSize, clusterSize, clusterSize);
   }
 
@@ -196,7 +199,7 @@ public class ClusteringRule extends ExternalResource {
       waitUntilBrokersInTopology();
       LOG.info("All brokers in topology {}", getTopologyFromClient());
 
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
       closeables.after();
       throw new UncheckedExecutionException("Cluster start failed", e);
@@ -227,7 +230,7 @@ public class ClusteringRule extends ExternalResource {
     leaderListener.awaitLeaders();
   }
 
-  private Broker createBroker(int nodeId) {
+  private Broker createBroker(final int nodeId) {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
@@ -236,11 +239,11 @@ public class ClusteringRule extends ExternalResource {
     return broker;
   }
 
-  private BrokerCfg getBrokerCfg(int nodeId) {
+  private BrokerCfg getBrokerCfg(final int nodeId) {
     return brokerCfgs.computeIfAbsent(nodeId, this::createBrokerCfg);
   }
 
-  private BrokerCfg createBrokerCfg(int nodeId) {
+  private BrokerCfg createBrokerCfg(final int nodeId) {
     final BrokerCfg brokerCfg = new BrokerCfg();
 
     // build-in exporters
@@ -272,11 +275,11 @@ public class ClusteringRule extends ExternalResource {
     return brokerCfg;
   }
 
-  private File getBrokerBase(int nodeId) {
+  private File getBrokerBase(final int nodeId) {
     return brokerBases.computeIfAbsent(nodeId, this::createBrokerBase);
   }
 
-  private File createBrokerBase(int nodeId) {
+  private File createBrokerBase(final int nodeId) {
     final File base = Files.newTemporaryFolder();
     closeables.manage(() -> FileUtil.deleteFolder(base.getAbsolutePath()));
     return base;
@@ -546,7 +549,7 @@ public class ClusteringRule extends ExternalResource {
         getTopologyFromClient());
   }
 
-  public long createWorkflowInstanceOnPartition(int partitionId, String bpmnProcessId) {
+  public long createWorkflowInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
     final BrokerCreateWorkflowInstanceRequest request =
         new BrokerCreateWorkflowInstanceRequest().setBpmnProcessId(bpmnProcessId);
 
@@ -584,19 +587,19 @@ public class ClusteringRule extends ExternalResource {
     return partitionIds;
   }
 
-  public List<Broker> getOtherBrokerObjects(int leaderNodeId) {
+  public List<Broker> getOtherBrokerObjects(final int leaderNodeId) {
     return brokers.keySet().stream()
         .filter(id -> id != leaderNodeId)
         .map(brokers::get)
         .collect(Collectors.toList());
   }
 
-  public Path getSegmentsDirectory(Broker broker) {
+  public Path getSegmentsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
     return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
   }
 
-  public File getSnapshotsDirectory(Broker broker) {
+  public File getSnapshotsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
     return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
   }
@@ -606,19 +609,26 @@ public class ClusteringRule extends ExternalResource {
     waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
   }
 
-  private static class LeaderListener implements PartitionListener {
+  public LogStream getLogStream(int partitionId) {
+    return logstreams.get(partitionId);
+  }
+
+  private class LeaderListener implements PartitionListener {
 
     final CountDownLatch latch;
 
-    LeaderListener(int partitionCount) {
+    LeaderListener(final int partitionCount) {
       this.latch = new CountDownLatch(partitionCount);
     }
 
     @Override
-    public void onBecomingFollower(int partitionId, long term, LogStream logStream) {}
+    public void onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {}
 
     @Override
-    public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+    public void onBecomingLeader(
+        final int partitionId, final long term, final LogStream logStream) {
+      logstreams.put(partitionId, logStream);
       latch.countDown();
     }
 

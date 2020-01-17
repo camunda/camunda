@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclusiveGateway>
+public final class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclusiveGateway>
     extends ElementActivatingHandler<T> {
   private static final String NO_OUTGOING_FLOW_CHOSEN_ERROR =
       "Expected at least one condition to evaluate to true, or to have a default flow";
@@ -34,13 +34,13 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
     this(new JsonConditionInterpreter());
   }
 
-  public ExclusiveGatewayElementActivatingHandler(JsonConditionInterpreter interpreter) {
+  public ExclusiveGatewayElementActivatingHandler(final JsonConditionInterpreter interpreter) {
     super();
     this.interpreter = interpreter;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (!super.handleState(context)) {
       return false;
     }
@@ -53,7 +53,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
       final DirectBuffer variables = determineVariables(context, exclusiveGateway);
 
       sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway, variables);
-    } catch (JsonConditionException e) {
+    } catch (final JsonConditionException e) {
       context.raiseIncident(ErrorType.CONDITION_ERROR, e.getMessage());
       return false;
     }
@@ -68,7 +68,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
   }
 
   private DirectBuffer determineVariables(
-      BpmnStepContext<T> context, ExecutableExclusiveGateway exclusiveGateway) {
+      final BpmnStepContext<T> context, final ExecutableExclusiveGateway exclusiveGateway) {
     final List<ExecutableSequenceFlow> sequenceFlows = exclusiveGateway.getOutgoingWithCondition();
 
     final Set<DirectBuffer> actualNeededVariables = new HashSet<>();
@@ -85,9 +85,9 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
   }
 
   private void deferSequenceFlowTaken(
-      BpmnStepContext<T> context,
-      WorkflowInstanceRecord value,
-      ExecutableSequenceFlow sequenceFlow) {
+      final BpmnStepContext<T> context,
+      final WorkflowInstanceRecord value,
+      final ExecutableSequenceFlow sequenceFlow) {
     record.wrap(value);
     record.setElementId(sequenceFlow.getId());
     record.setBpmnElementType(BpmnElementType.SEQUENCE_FLOW);
@@ -98,7 +98,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
   }
 
   private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(
-      ExecutableExclusiveGateway exclusiveGateway, DirectBuffer variables) {
+      final ExecutableExclusiveGateway exclusiveGateway, final DirectBuffer variables) {
     final List<ExecutableSequenceFlow> sequenceFlows = exclusiveGateway.getOutgoingWithCondition();
 
     for (final ExecutableSequenceFlow sequenceFlow : sequenceFlows) {

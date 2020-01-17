@@ -70,7 +70,7 @@ public class ZeebeTestRule extends ExternalResource {
     brokerRule.after();
   }
 
-  public static WorkflowInstanceAssert assertThat(WorkflowInstanceEvent workflowInstance) {
+  public static WorkflowInstanceAssert assertThat(final WorkflowInstanceEvent workflowInstance) {
     return WorkflowInstanceAssert.assertThat(workflowInstance);
   }
 

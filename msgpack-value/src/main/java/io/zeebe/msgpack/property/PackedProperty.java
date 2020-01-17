@@ -11,11 +11,11 @@ import io.zeebe.msgpack.value.PackedValue;
 import org.agrona.DirectBuffer;
 
 public class PackedProperty extends BaseProperty<PackedValue> {
-  public PackedProperty(String key) {
+  public PackedProperty(final String key) {
     super(key, new PackedValue());
   }
 
-  public PackedProperty(String key, DirectBuffer defaultValue) {
+  public PackedProperty(final String key, final DirectBuffer defaultValue) {
     super(key, new PackedValue(), new PackedValue(defaultValue, 0, defaultValue.capacity()));
   }
 
@@ -23,7 +23,7 @@ public class PackedProperty extends BaseProperty<PackedValue> {
     return resolveValue().getValue();
   }
 
-  public void setValue(DirectBuffer buffer, int offset, int length) {
+  public void setValue(final DirectBuffer buffer, final int offset, final int length) {
     value.wrap(buffer, offset, length);
     this.isSet = true;
   }

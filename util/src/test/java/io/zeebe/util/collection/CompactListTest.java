@@ -27,11 +27,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class CompactListTest {
-  @Rule public ExpectedException expectedExceptionRule = ExpectedException.none();
-  CompactList list;
-  UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
-  UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
+public final class CompactListTest {
+  @Rule public final ExpectedException expectedExceptionRule = ExpectedException.none();
+  private CompactList list;
+  private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
 
   @Before
   public void setup() {
@@ -49,7 +49,7 @@ public class CompactListTest {
     expectedExceptionRule.expect(IllegalArgumentException.class);
 
     // when
-    try (CompactList list = new CompactList(allocatedBuffer, 16, 10)) {}
+    try (final CompactList list = new CompactList(allocatedBuffer, 16, 10)) {}
   }
 
   @Test
@@ -445,7 +445,7 @@ public class CompactListTest {
             keyBuffer,
             new Comparator<DirectBuffer>() {
               @Override
-              public int compare(DirectBuffer o1, DirectBuffer o2) {
+              public int compare(final DirectBuffer o1, final DirectBuffer o2) {
                 return Integer.compare(o1.getInt(0), o2.getInt(0));
               }
             });
@@ -484,7 +484,7 @@ public class CompactListTest {
             keyBuffer,
             new Comparator<DirectBuffer>() {
               @Override
-              public int compare(DirectBuffer o1, DirectBuffer o2) {
+              public int compare(final DirectBuffer o1, final DirectBuffer o2) {
                 return Integer.compare(o1.getInt(0), o2.getInt(0));
               }
             });

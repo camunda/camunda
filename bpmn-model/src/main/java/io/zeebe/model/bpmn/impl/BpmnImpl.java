@@ -29,7 +29,7 @@ public class BpmnImpl extends Bpmn {
     getBpmnModel().getTypes().forEach(typeHierarchy::registerType);
   }
 
-  public List<ModelElementType> getHierarchy(ModelElementType type) {
+  public List<ModelElementType> getHierarchy(final ModelElementType type) {
     return typeHierarchy.getHierarchy(type);
   }
 }

@@ -7,19 +7,19 @@
  */
 package io.zeebe.gateway.cmd;
 
-public class IllegalBrokerResponseException extends BrokerResponseException {
+public final class IllegalBrokerResponseException extends BrokerResponseException {
 
   private static final long serialVersionUID = -5363931482936307555L;
 
-  public IllegalBrokerResponseException(String message) {
+  public IllegalBrokerResponseException(final String message) {
     super(message);
   }
 
-  public IllegalBrokerResponseException(String message, Throwable cause) {
+  public IllegalBrokerResponseException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public IllegalBrokerResponseException(Throwable cause) {
+  public IllegalBrokerResponseException(final Throwable cause) {
     super(cause);
   }
 }

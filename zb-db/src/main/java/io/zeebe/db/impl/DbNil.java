@@ -20,7 +20,7 @@ public final class DbNil implements DbValue {
   private DbNil() {}
 
   @Override
-  public void wrap(DirectBuffer directBuffer, int offset, int length) {
+  public void wrap(final DirectBuffer directBuffer, final int offset, final int length) {
     // nothing to do
   }
 
@@ -30,7 +30,7 @@ public final class DbNil implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer mutableDirectBuffer, int offset) {
+  public void write(final MutableDirectBuffer mutableDirectBuffer, final int offset) {
     mutableDirectBuffer.putByte(offset, EXISTENCE_BYTE);
   }
 }

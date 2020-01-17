@@ -13,7 +13,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class ActorJob {
+public final class ActorJob {
   TaskSchedulingState schedulingState;
 
   Actor actor;
@@ -27,13 +27,13 @@ public class ActorJob {
   private ActorFuture resultFuture;
   private ActorSubscription subscription;
 
-  public void onJobAddedToTask(ActorTask task) {
+  public void onJobAddedToTask(final ActorTask task) {
     this.actor = task.actor;
     this.task = task;
     this.schedulingState = TaskSchedulingState.QUEUED;
   }
 
-  void execute(ActorThread runner) {
+  void execute(final ActorThread runner) {
     this.actorThread = runner;
     try {
       invoke();
@@ -43,7 +43,7 @@ public class ActorJob {
         resultFuture = null;
       }
 
-    } catch (Throwable e) {
+    } catch (final Throwable e) {
       task.onFailure(e);
     } finally {
       this.actorThread = null;
@@ -78,11 +78,11 @@ public class ActorJob {
     }
   }
 
-  public void setRunnable(Runnable runnable) {
+  public void setRunnable(final Runnable runnable) {
     this.runnable = runnable;
   }
 
-  public ActorFuture setCallable(Callable<?> callable) {
+  public ActorFuture setCallable(final Callable<?> callable) {
     this.callable = callable;
     setResultFuture(new CompletableActorFuture<>());
     return resultFuture;
@@ -116,7 +116,7 @@ public class ActorJob {
     isDoneCalled = true;
   }
 
-  public void setAutoCompleting(boolean isAutoCompleting) {
+  public void setAutoCompleting(final boolean isAutoCompleting) {
     this.isAutoCompleting = isAutoCompleting;
   }
 
@@ -144,7 +144,7 @@ public class ActorJob {
     return subscription;
   }
 
-  public void setSubscription(ActorSubscription subscription) {
+  public void setSubscription(final ActorSubscription subscription) {
     this.subscription = subscription;
     task.addSubscription(subscription);
   }
@@ -157,16 +157,16 @@ public class ActorJob {
     return actor;
   }
 
-  public void setResultFuture(ActorFuture resultFuture) {
+  public void setResultFuture(final ActorFuture resultFuture) {
     assert !resultFuture.isDone();
     this.resultFuture = resultFuture;
   }
 
-  public void failFuture(String reason) {
+  public void failFuture(final String reason) {
     failFuture(new RuntimeException(reason));
   }
 
-  public void failFuture(Throwable cause) {
+  public void failFuture(final Throwable cause) {
     if (this.resultFuture != null) {
       resultFuture.completeExceptionally(cause);
     }

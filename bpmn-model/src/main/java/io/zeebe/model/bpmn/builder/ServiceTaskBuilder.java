@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.ServiceTask;
 /** @author Sebastian Menski */
 public class ServiceTaskBuilder extends AbstractServiceTaskBuilder<ServiceTaskBuilder> {
 
-  public ServiceTaskBuilder(BpmnModelInstance modelInstance, ServiceTask element) {
+  public ServiceTaskBuilder(final BpmnModelInstance modelInstance, final ServiceTask element) {
     super(modelInstance, element, ServiceTaskBuilder.class);
   }
 }

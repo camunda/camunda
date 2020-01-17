@@ -39,11 +39,11 @@ import org.agrona.collections.Object2IntHashMap;
  * extract document. For this distinction the {@link MsgPackNodeType#EXISTING_LEAF_NODE} and {@link
  * MsgPackNodeType#EXTRACTED_LEAF_NODE} are used.
  */
-public class MsgPackTree implements MsgPackDiff {
-  protected final Map<String, MsgPackNodeType> nodeTypeMap; // Bytes2LongHashIndex nodeTypeMap;
-  protected final Map<String, Set<String>> nodeChildsMap;
-  protected final Map<String, Long> leafMap; // Bytes2LongHashIndex leafMap;
-  protected final Object2IntHashMap<String> leafDocumentSources;
+public final class MsgPackTree implements MsgPackDiff {
+  private final Map<String, MsgPackNodeType> nodeTypeMap; // Bytes2LongHashIndex nodeTypeMap;
+  private final Map<String, Set<String>> nodeChildsMap;
+  private final Map<String, Long> leafMap; // Bytes2LongHashIndex leafMap;
+  private final Object2IntHashMap<String> leafDocumentSources;
 
   private DirectBuffer[] documents = new DirectBuffer[0];
 
@@ -67,40 +67,40 @@ public class MsgPackTree implements MsgPackDiff {
   }
 
   /** @return the names (not IDs) of the child nodes */
-  public Set<String> getChildren(String nodeId) {
+  public Set<String> getChildren(final String nodeId) {
     return nodeChildsMap.get(nodeId);
   }
 
-  public int addDocument(DirectBuffer document) {
+  public int addDocument(final DirectBuffer document) {
     documents = Arrays.copyOf(documents, documents.length + 1);
     documents[documents.length - 1] = document;
     return documents.length - 1;
   }
 
-  private void addContainerNode(String nodeId, MsgPackNodeType nodeType) {
+  private void addContainerNode(final String nodeId, final MsgPackNodeType nodeType) {
     nodeTypeMap.put(nodeId, nodeType);
     nodeChildsMap.put(nodeId, new LinkedHashSet<>());
   }
 
-  private void addChildToNode(String parentId, String childName) {
+  private void addChildToNode(final String parentId, final String childName) {
     if (!parentId.isEmpty()) {
       nodeChildsMap.get(parentId).add(childName);
     }
   }
 
-  public boolean isValueNode(String nodeId) {
+  public boolean isValueNode(final String nodeId) {
     return nodeTypeMap.get(nodeId) == MsgPackNodeType.VALUE;
   }
 
-  public boolean isArrayNode(String nodeId) {
+  public boolean isArrayNode(final String nodeId) {
     return nodeTypeMap.get(nodeId) == MsgPackNodeType.ARRAY;
   }
 
-  public boolean isMapNode(String nodeId) {
+  public boolean isMapNode(final String nodeId) {
     return nodeTypeMap.get(nodeId) == MsgPackNodeType.MAP;
   }
 
-  public void writeValueNode(MsgPackWriter writer, String nodeId) {
+  public void writeValueNode(final MsgPackWriter writer, final String nodeId) {
     final long mapping = leafMap.get(nodeId);
     final int position = (int) (mapping >> 32);
     final int length = (int) mapping;
@@ -113,7 +113,7 @@ public class MsgPackTree implements MsgPackDiff {
 
   /** Always replaces containers (object/array), unless it is the root object */
   @Override
-  public void mergeInto(MsgPackTree other) {
+  public void mergeInto(final MsgPackTree other) {
     /*
      * This method is critical for the performance of document merging
      * and extraction, so optimizations should be made here.
@@ -122,11 +122,11 @@ public class MsgPackTree implements MsgPackDiff {
     final int newDocumentOffset =
         other.documents.length; // => so we can map other document ids to this document id
 
-    for (DirectBuffer ourDocument : documents) {
+    for (final DirectBuffer ourDocument : documents) {
       other.addDocument(ourDocument);
     }
 
-    for (Map.Entry<String, MsgPackNodeType> leafMapEntry : nodeTypeMap.entrySet()) {
+    for (final Map.Entry<String, MsgPackNodeType> leafMapEntry : nodeTypeMap.entrySet()) {
       final String key = leafMapEntry.getKey();
       final MsgPackNodeType nodeType = leafMapEntry.getValue();
 
@@ -148,7 +148,7 @@ public class MsgPackTree implements MsgPackDiff {
     }
     other.leafMap.putAll(leafMap);
 
-    for (Map.Entry<String, Set<String>> nodeChildsEntry : nodeChildsMap.entrySet()) {
+    for (final Map.Entry<String, Set<String>> nodeChildsEntry : nodeChildsMap.entrySet()) {
       final String key = nodeChildsEntry.getKey();
 
       // if we change the following condition to if (nodeChildsMap.containsKey(key))
@@ -165,16 +165,16 @@ public class MsgPackTree implements MsgPackDiff {
   }
 
   /** Keeps any children, e.g. when converting MAP to ARRAY */
-  public void convertToArrayNode(String nodeId) {
+  public void convertToArrayNode(final String nodeId) {
     concertToContainer(nodeId, MsgPackNodeType.ARRAY);
   }
 
   /** Keeps any children, e.g. when converting ARRAY to MAP */
-  public void convertToMapNode(String nodeId) {
+  public void convertToMapNode(final String nodeId) {
     concertToContainer(nodeId, MsgPackNodeType.MAP);
   }
 
-  private void concertToContainer(String nodeId, MsgPackNodeType containerType) {
+  private void concertToContainer(final String nodeId, final MsgPackNodeType containerType) {
     final MsgPackNodeType priorType = nodeTypeMap.get(nodeId);
 
     if (priorType == MsgPackNodeType.VALUE) {
@@ -190,7 +190,11 @@ public class MsgPackTree implements MsgPackDiff {
    * Replaces a previously existing non-array node completely.
    */
   public String appendToArray(
-      String parentId, String arrayNodeName, int documentId, int elementOffset, int elementLength) {
+      final String parentId,
+      final String arrayNodeName,
+      final int documentId,
+      final int elementOffset,
+      final int elementLength) {
 
     final String arrayNodeId = construct(parentId, arrayNodeName);
 
@@ -209,7 +213,7 @@ public class MsgPackTree implements MsgPackDiff {
     return addValueNode(arrayNodeId, nodeName, documentId, elementOffset, elementLength);
   }
 
-  public String addArrayNode(String parentId, String arrayNodeName) {
+  public String addArrayNode(final String parentId, final String arrayNodeName) {
     final String nodeId = construct(parentId, arrayNodeName);
 
     addContainerNode(nodeId, MsgPackNodeType.ARRAY);
@@ -219,7 +223,11 @@ public class MsgPackTree implements MsgPackDiff {
   }
 
   public String addValueNode(
-      String parentId, String nodeName, int documentId, int valueOffset, int valueLength) {
+      final String parentId,
+      final String nodeName,
+      final int documentId,
+      final int valueOffset,
+      final int valueLength) {
     final String nodeId = construct(parentId, nodeName);
 
     leafMap.put(nodeId, ((long) valueOffset << 32) | valueLength);
@@ -231,7 +239,7 @@ public class MsgPackTree implements MsgPackDiff {
     return nodeId;
   }
 
-  public String addMapNode(String parentId, String nodeName) {
+  public String addMapNode(final String parentId, final String nodeName) {
     final String nodeId = construct(parentId, nodeName);
 
     addContainerNode(nodeId, MsgPackNodeType.MAP);
@@ -240,16 +248,16 @@ public class MsgPackTree implements MsgPackDiff {
     return nodeId;
   }
 
-  private boolean isContainerNode(String nodeId) {
+  private boolean isContainerNode(final String nodeId) {
     final MsgPackNodeType nodeType = nodeTypeMap.get(nodeId);
     return nodeType == MsgPackNodeType.ARRAY || nodeType == MsgPackNodeType.MAP;
   }
 
-  public boolean hasNode(String id) {
+  public boolean hasNode(final String id) {
     return nodeTypeMap.containsKey(id);
   }
 
-  public void clearChildren(String nodeId) {
+  public void clearChildren(final String nodeId) {
     if (isContainerNode(nodeId)) {
       nodeChildsMap.get(nodeId).clear();
     }

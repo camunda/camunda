@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WorkflowInstanceCommandHandlers {
+public final class WorkflowInstanceCommandHandlers {
 
   private final Map<WorkflowInstanceIntent, WorkflowInstanceCommandHandler> handlers =
       new HashMap<>();
@@ -21,7 +21,7 @@ public class WorkflowInstanceCommandHandlers {
     handlers.put(WorkflowInstanceIntent.CANCEL, new CancelWorkflowInstanceHandler());
   }
 
-  public void handle(WorkflowInstanceCommandContext context) {
+  public void handle(final WorkflowInstanceCommandContext context) {
     final WorkflowInstanceCommandHandler handler = handlers.get(context.getCommand());
     if (handler != null) {
       handler.handle(context);

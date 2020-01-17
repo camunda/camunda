@@ -47,7 +47,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class ExporterDirectorTest {
+public final class ExporterDirectorTest {
 
   private static final int PARTITION_ID = 1;
 
@@ -55,7 +55,7 @@ public class ExporterDirectorTest {
   private static final String EXPORTER_ID_2 = "exporter-2";
 
   private static final VerificationWithTimeout TIMEOUT = timeout(5_000);
-  @Rule public ExporterRule rule = new ExporterRule(PARTITION_ID);
+  @Rule public final ExporterRule rule = new ExporterRule(PARTITION_ID);
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
   private ExportersState state;
@@ -80,7 +80,7 @@ public class ExporterDirectorTest {
     exporterDescriptors.add(descriptor);
   }
 
-  private void startExporterDirector(List<ExporterDescriptor> exporterDescriptors) {
+  private void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
     rule.startExporterDirector(exporterDescriptors);
   }
 
@@ -379,17 +379,18 @@ public class ExporterDirectorTest {
     return rule.writeEvent(DeploymentIntent.CREATED, event);
   }
 
-  private Consumer<Context> withFilter(List<RecordType> acceptedTypes, List<ValueType> valueTypes) {
+  private Consumer<Context> withFilter(
+      final List<RecordType> acceptedTypes, final List<ValueType> valueTypes) {
     return context -> {
       context.setFilter(
           new Context.RecordFilter() {
             @Override
-            public boolean acceptType(RecordType recordType) {
+            public boolean acceptType(final RecordType recordType) {
               return acceptedTypes.contains(recordType);
             }
 
             @Override
-            public boolean acceptValue(ValueType valueType) {
+            public boolean acceptValue(final ValueType valueType) {
               return valueTypes.contains(valueType);
             }
           });

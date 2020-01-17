@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -40,14 +41,17 @@ func TestSetVariablesCommandWithVariablesFromString(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromString(variables)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -76,14 +80,17 @@ func TestSetVariablesCommandWithVariablesFromStringer(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromStringer(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -112,14 +119,17 @@ func TestSetVariablesCommandWithVariablesFromObject(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromObject(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -148,14 +158,17 @@ func TestSetVariablesCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromObject(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -184,14 +197,17 @@ func TestSetVariablesCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T)
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -222,14 +238,17 @@ func TestSetVariablesCommandWithVariablesFromMap(t *testing.T) {
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewSetVariablesCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
 	variablesCommand, err := command.ElementInstanceKey(123).VariablesFromMap(variablesMap)
 	if err != nil {
 		t.Error("Failed to set variables: ", err)
 	}
 
-	response, err := variablesCommand.Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

@@ -27,7 +27,7 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
     extends AbstractTaskBuilder<B, ServiceTask> {
 
   protected AbstractServiceTaskBuilder(
-      BpmnModelInstance modelInstance, ServiceTask element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final ServiceTask element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -37,26 +37,26 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
    * @param implementation the implementation to set
    * @return the builder object
    */
-  public B implementation(String implementation) {
+  public B implementation(final String implementation) {
     element.setImplementation(implementation);
     return myself;
   }
 
-  public B zeebeTaskType(String type) {
+  public B zeebeTaskType(final String type) {
     final ZeebeTaskDefinition taskDefinition =
         getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
     taskDefinition.setType(type);
     return myself;
   }
 
-  public B zeebeTaskRetries(int retries) {
+  public B zeebeTaskRetries(final int retries) {
     final ZeebeTaskDefinition taskDefinition =
         getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
     taskDefinition.setRetries(retries);
     return myself;
   }
 
-  public B zeebeTaskHeader(String key, String value) {
+  public B zeebeTaskHeader(final String key, final String value) {
     final ZeebeTaskHeaders taskHeaders = getCreateSingleExtensionElement(ZeebeTaskHeaders.class);
     final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);
     header.setKey(key);

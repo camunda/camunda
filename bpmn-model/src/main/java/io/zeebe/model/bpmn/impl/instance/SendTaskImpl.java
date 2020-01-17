@@ -46,11 +46,11 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
   protected static AttributeReference<Message> messageRefAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
 
-  public SendTaskImpl(ModelTypeInstanceContext context) {
+  public SendTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SendTask.class, BPMN_ELEMENT_SEND_TASK)
@@ -59,7 +59,7 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
             .instanceProvider(
                 new ModelTypeInstanceProvider<SendTask>() {
                   @Override
-                  public SendTask newInstance(ModelTypeInstanceContext instanceContext) {
+                  public SendTask newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new SendTaskImpl(instanceContext);
                   }
                 });
@@ -96,7 +96,7 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
   }
 
   @Override
-  public void setImplementation(String implementation) {
+  public void setImplementation(final String implementation) {
     implementationAttribute.setValue(this, implementation);
   }
 
@@ -106,7 +106,7 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
   }
 
   @Override
-  public void setMessage(Message message) {
+  public void setMessage(final Message message) {
     messageRefAttribute.setReferenceTargetElement(this, message);
   }
 
@@ -116,7 +116,7 @@ public class SendTaskImpl extends TaskImpl implements SendTask {
   }
 
   @Override
-  public void setOperation(Operation operation) {
+  public void setOperation(final Operation operation) {
     operationRefAttribute.setReferenceTargetElement(this, operation);
   }
 }

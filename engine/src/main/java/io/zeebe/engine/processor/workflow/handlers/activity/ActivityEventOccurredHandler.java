@@ -24,12 +24,12 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
     this(null);
   }
 
-  public ActivityEventOccurredHandler(WorkflowInstanceIntent nextState) {
+  public ActivityEventOccurredHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     final EventTrigger event = getTriggeredEvent(context, context.getKey());
     final ExecutableBoundaryEvent boundaryEvent = getBoundaryEvent(context, event);
     if (boundaryEvent == null) {
@@ -52,7 +52,8 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
     return true;
   }
 
-  private ExecutableBoundaryEvent getBoundaryEvent(BpmnStepContext<T> context, EventTrigger event) {
+  private ExecutableBoundaryEvent getBoundaryEvent(
+      final BpmnStepContext<T> context, final EventTrigger event) {
     final List<ExecutableBoundaryEvent> boundaryEvents = context.getElement().getBoundaryEvents();
     for (final ExecutableBoundaryEvent boundaryEvent : boundaryEvents) {
       if (event.getElementId().equals(boundaryEvent.getId())) {

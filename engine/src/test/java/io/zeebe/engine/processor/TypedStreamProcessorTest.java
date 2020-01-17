@@ -39,7 +39,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.MockitoAnnotations;
 
-public class TypedStreamProcessorTest {
+public final class TypedStreamProcessorTest {
   private static final String STREAM_NAME = "foo";
   protected SynchronousLogStream stream;
   private final TemporaryFolder tempFolder = new TemporaryFolder();

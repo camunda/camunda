@@ -18,33 +18,26 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type TopologyCommand struct {
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
 }
 
-func (cmd *TopologyCommand) Send() (*pb.TopologyResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	request := &pb.TopologyRequest{}
-	response, err := cmd.gateway.Topology(ctx, request)
-
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
+func (cmd *TopologyCommand) Send(ctx context.Context) (*pb.TopologyResponse, error) {
+	response, err := cmd.gateway.Topology(ctx, &pb.TopologyRequest{})
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewTopologyCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) *TopologyCommand {
+func NewTopologyCommand(gateway pb.GatewayClient, pred retryPredicate) *TopologyCommand {
 	return &TopologyCommand{
-		gateway:        gateway,
-		requestTimeout: requestTimeout,
-		retryPredicate: retryPredicate,
+		Command{
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

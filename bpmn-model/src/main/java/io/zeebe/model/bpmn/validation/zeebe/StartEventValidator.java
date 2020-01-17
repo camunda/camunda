@@ -28,7 +28,8 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
   }
 
   @Override
-  public void validate(StartEvent element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final StartEvent element, final ValidationResultCollector validationResultCollector) {
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
     if (eventDefinitions.size() > 1) {
       validationResultCollector.addError(0, "Start event can't have more than one type");

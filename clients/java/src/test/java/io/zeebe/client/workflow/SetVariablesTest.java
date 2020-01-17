@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
 
-public class SetVariablesTest extends ClientTest {
+public final class SetVariablesTest extends ClientTest {
 
   @Test
   public void shouldCommandWithVariablesAsString() {
@@ -120,9 +120,9 @@ public class SetVariablesTest extends ClientTest {
   }
 
   static class Document {
-    public String key;
+    public final String key;
 
-    Document(String key) {
+    Document(final String key) {
       this.key = key;
     }
   }

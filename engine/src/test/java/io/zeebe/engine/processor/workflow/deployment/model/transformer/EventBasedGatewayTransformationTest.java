@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import org.junit.Test;
 
-public class EventBasedGatewayTransformationTest {
+public final class EventBasedGatewayTransformationTest {
   @Test
   public void shouldTransformEventBasedGatewayCorrectly() {
     // given
@@ -41,7 +41,7 @@ public class EventBasedGatewayTransformationTest {
     assertThat(eventGateway.getEvents()).allMatch(this::assertLifecycle);
   }
 
-  private boolean assertLifecycle(ExecutableCatchEvent event) {
+  private boolean assertLifecycle(final ExecutableCatchEvent event) {
     return event.getStep(WorkflowInstanceIntent.ELEMENT_ACTIVATING) == BpmnStep.ELEMENT_ACTIVATING
         && event.getStep(WorkflowInstanceIntent.ELEMENT_ACTIVATED) == BpmnStep.ELEMENT_ACTIVATED
         && event.getStep(WorkflowInstanceIntent.EVENT_OCCURRED) == BpmnStep.EVENT_OCCURRED

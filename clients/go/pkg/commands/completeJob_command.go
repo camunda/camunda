@@ -19,11 +19,10 @@ import (
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 type DispatchCompleteJobCommand interface {
-	Send() (*pb.CompleteJobResponse, error)
+	Send(context.Context) (*pb.CompleteJobResponse, error)
 }
 
 type CompleteJobCommandStep1 interface {
@@ -41,12 +40,8 @@ type CompleteJobCommandStep2 interface {
 }
 
 type CompleteJobCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.CompleteJobRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.CompleteJobRequest
 }
 
 func (cmd *CompleteJobCommand) JobKey(jobKey int64) CompleteJobCommandStep2 {
@@ -55,7 +50,7 @@ func (cmd *CompleteJobCommand) JobKey(jobKey int64) CompleteJobCommandStep2 {
 }
 
 func (cmd *CompleteJobCommand) VariablesFromString(variables string) (DispatchCompleteJobCommand, error) {
-	err := cmd.Validate("variables", variables)
+	err := cmd.mixin.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +64,7 @@ func (cmd *CompleteJobCommand) VariablesFromStringer(variables fmt.Stringer) (Di
 }
 
 func (cmd *CompleteJobCommand) VariablesFromObject(variables interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +74,7 @@ func (cmd *CompleteJobCommand) VariablesFromObject(variables interface{}) (Dispa
 }
 
 func (cmd *CompleteJobCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -92,24 +87,21 @@ func (cmd *CompleteJobCommand) VariablesFromMap(variables map[string]interface{}
 	return cmd.VariablesFromObject(variables)
 }
 
-func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	response, err := cmd.gateway.CompleteJob(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
+func (cmd *CompleteJobCommand) Send(ctx context.Context) (*pb.CompleteJobResponse, error) {
+	response, err := cmd.gateway.CompleteJob(ctx, &cmd.request)
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CompleteJobCommandStep1 {
+func NewCompleteJobCommand(gateway pb.GatewayClient, pred retryPredicate) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.CompleteJobRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			mixin:     utils.NewJsonStringSerializer(),
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

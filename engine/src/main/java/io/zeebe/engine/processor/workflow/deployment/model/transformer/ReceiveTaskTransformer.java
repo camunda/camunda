@@ -17,7 +17,7 @@ import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTask> {
+public final class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTask> {
 
   @Override
   public Class<ReceiveTask> getType() {
@@ -25,7 +25,7 @@ public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTa
   }
 
   @Override
-  public void transform(ReceiveTask element, TransformContext context) {
+  public void transform(final ReceiveTask element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableReceiveTask executableElement =
         workflow.getElementById(element.getId(), ExecutableReceiveTask.class);

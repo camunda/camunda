@@ -10,11 +10,11 @@ package io.zeebe.db.impl;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 
-public class DefaultZeebeDbFactory {
+public final class DefaultZeebeDbFactory {
 
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
-          Class<ColumnFamilyType> columnFamilyTypeClass) {
+          final Class<ColumnFamilyType> columnFamilyTypeClass) {
     return ZeebeRocksDbFactory.newFactory(columnFamilyTypeClass);
   }
 }

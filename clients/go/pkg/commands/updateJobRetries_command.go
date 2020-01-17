@@ -18,7 +18,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"time"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 )
 
 type DispatchUpdateJobRetriesCommand interface {
-	Send() (*pb.UpdateJobRetriesResponse, error)
+	Send(context.Context) (*pb.UpdateJobRetriesResponse, error)
 }
 
 type UpdateJobRetriesCommandStep1 interface {
@@ -40,14 +39,8 @@ type UpdateJobRetriesCommandStep2 interface {
 }
 
 type UpdateJobRetriesCommand struct {
-	request        *pb.UpdateJobRetriesRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
-}
-
-func (cmd *UpdateJobRetriesCommand) GetRequest() *pb.UpdateJobRetriesRequest {
-	return cmd.request
+	Command
+	request pb.UpdateJobRetriesRequest
 }
 
 func (cmd *UpdateJobRetriesCommand) JobKey(jobKey int64) UpdateJobRetriesCommandStep2 {
@@ -60,25 +53,23 @@ func (cmd *UpdateJobRetriesCommand) Retries(retries int32) DispatchUpdateJobRetr
 	return cmd
 }
 
-func (cmd *UpdateJobRetriesCommand) Send() (*pb.UpdateJobRetriesResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	response, err := cmd.gateway.UpdateJobRetries(ctx, cmd.request)
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
+func (cmd *UpdateJobRetriesCommand) Send(ctx context.Context) (*pb.UpdateJobRetriesResponse, error) {
+	response, err := cmd.gateway.UpdateJobRetries(ctx, &cmd.request)
+	if cmd.retryPred(ctx, err) {
+		return cmd.Send(ctx)
 	}
 
 	return response, err
 }
 
-func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) UpdateJobRetriesCommandStep1 {
+func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, pred retryPredicate) UpdateJobRetriesCommandStep1 {
 	return &UpdateJobRetriesCommand{
-		request: &pb.UpdateJobRetriesRequest{
+		request: pb.UpdateJobRetriesRequest{
 			Retries: DefaultJobRetries,
 		},
-		gateway:        gateway,
-		requestTimeout: requestTimeout,
-		retryPredicate: retryPredicate,
+		Command: Command{
+			gateway:   gateway,
+			retryPred: pred,
+		},
 	}
 }

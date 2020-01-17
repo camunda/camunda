@@ -15,9 +15,10 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
 
-public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements TypedStreamWriter {
+public final class TypedStreamWriterImpl extends TypedCommandWriterImpl
+    implements TypedStreamWriter {
 
-  public TypedStreamWriterImpl(LogStreamBatchWriter batchWriter) {
+  public TypedStreamWriterImpl(final LogStreamBatchWriter batchWriter) {
     super(batchWriter);
   }
 

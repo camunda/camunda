@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-public class ZeebeObjectMapper extends ObjectMapper {
+public final class ZeebeObjectMapper extends ObjectMapper {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};
@@ -36,46 +36,46 @@ public class ZeebeObjectMapper extends ObjectMapper {
     this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
 
-  public <T> T fromJson(String json, Class<T> typeClass) {
+  public <T> T fromJson(final String json, final Class<T> typeClass) {
     try {
       return readValue(json, typeClass);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new InternalClientException(
           String.format("Failed to deserialize json '%s' to class '%s'", json, typeClass), e);
     }
   }
 
-  public Map<String, Object> fromJsonAsMap(String json) {
+  public Map<String, Object> fromJsonAsMap(final String json) {
     try {
       return readValue(json, MAP_TYPE_REFERENCE);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new InternalClientException(
           String.format("Failed to deserialize json '%s' to 'Map<String, Object>'", json), e);
     }
   }
 
-  public Map<String, String> fromJsonAsStringMap(String json) {
+  public Map<String, String> fromJsonAsStringMap(final String json) {
     try {
       return readValue(json, STRING_MAP_TYPE_REFERENCE);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new InternalClientException(
           String.format("Failed to deserialize json '%s' to 'Map<String, String>'", json), e);
     }
   }
 
-  public String toJson(Object value) {
+  public String toJson(final Object value) {
     try {
       return writeValueAsString(value);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new InternalClientException(
           String.format("Failed to serialize object '%s' to json", value), e);
     }
   }
 
-  public String validateJson(String propertyName, String jsonInput) {
+  public String validateJson(final String propertyName, final String jsonInput) {
     try {
       return readTree(jsonInput).toString();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new InternalClientException(
           String.format(
               "Failed to validate json input '%s' for property '%s'", jsonInput, propertyName),
@@ -83,10 +83,10 @@ public class ZeebeObjectMapper extends ObjectMapper {
     }
   }
 
-  public String validateJson(String propertyName, InputStream jsonInput) {
+  public String validateJson(final String propertyName, final InputStream jsonInput) {
     try {
       return readTree(jsonInput).toString();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new InternalClientException(
           String.format("Failed to validate json input stream for property '%s'", propertyName), e);
     }

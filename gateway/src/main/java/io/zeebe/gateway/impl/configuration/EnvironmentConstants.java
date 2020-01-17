@@ -7,7 +7,7 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
-public class EnvironmentConstants {
+public final class EnvironmentConstants {
 
   public static final String ENV_GATEWAY_HOST = "ZEEBE_GATEWAY_HOST";
   public static final String ENV_GATEWAY_PORT = "ZEEBE_GATEWAY_PORT";

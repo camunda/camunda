@@ -12,7 +12,7 @@ import io.atomix.protocols.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 
-public class AtomixAppendListenerAdapter implements AppendListener {
+public final class AtomixAppendListenerAdapter implements AppendListener {
   private final LogStorage.AppendListener delegate;
 
   public AtomixAppendListenerAdapter(final LogStorage.AppendListener delegate) {

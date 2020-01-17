@@ -9,9 +9,9 @@ package io.zeebe.util.allocation;
 
 import java.nio.ByteBuffer;
 
-public class ExternallyAllocatedBuffer extends AllocatedBuffer {
+public final class ExternallyAllocatedBuffer extends AllocatedBuffer {
 
-  public ExternallyAllocatedBuffer(ByteBuffer buffer) {
+  public ExternallyAllocatedBuffer(final ByteBuffer buffer) {
     super(buffer);
   }
 }

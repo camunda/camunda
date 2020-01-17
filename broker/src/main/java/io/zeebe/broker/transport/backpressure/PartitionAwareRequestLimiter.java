@@ -20,7 +20,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /** A request limiter that manages the limits for each partition independently. */
-public class PartitionAwareRequestLimiter {
+public final class PartitionAwareRequestLimiter {
 
   private final Map<Integer, RequestLimiter<Intent>> partitionLimiters = new ConcurrentHashMap<>();
 
@@ -39,7 +39,7 @@ public class PartitionAwareRequestLimiter {
   }
 
   public static PartitionAwareRequestLimiter newLimiter(
-      LimitAlgorithm algorithm, boolean useWindowed) {
+      final LimitAlgorithm algorithm, final boolean useWindowed) {
     final Supplier<Limit> limit;
     if (algorithm == LimitAlgorithm.GRADIENT) {
       limit = GradientLimit::newDefault;
@@ -56,31 +56,32 @@ public class PartitionAwareRequestLimiter {
     }
   }
 
-  public boolean tryAcquire(int partitionId, int streamId, long requestId, Intent context) {
+  public boolean tryAcquire(
+      final int partitionId, final int streamId, final long requestId, final Intent context) {
     final RequestLimiter<Intent> limiter = getLimiter(partitionId);
     return limiter.tryAcquire(streamId, requestId, context);
   }
 
-  public void onResponse(int partitionId, int streamId, long requestId) {
+  public void onResponse(final int partitionId, final int streamId, final long requestId) {
     final RequestLimiter limiter = partitionLimiters.get(partitionId);
     if (limiter != null) {
       limiter.onResponse(streamId, requestId);
     }
   }
 
-  public void addPartition(int partitionId) {
+  public void addPartition(final int partitionId) {
     getOrCreateLimiter(partitionId);
   }
 
-  public void removePartition(int partitionId) {
+  public void removePartition(final int partitionId) {
     partitionLimiters.remove(partitionId);
   }
 
-  public RequestLimiter<Intent> getLimiter(int partitionId) {
+  public RequestLimiter<Intent> getLimiter(final int partitionId) {
     return getOrCreateLimiter(partitionId);
   }
 
-  private RequestLimiter<Intent> getOrCreateLimiter(int partitionId) {
+  private RequestLimiter<Intent> getOrCreateLimiter(final int partitionId) {
     return partitionLimiters.computeIfAbsent(partitionId, limiterSupplier::apply);
   }
 }

@@ -21,7 +21,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LogStreamPrinter {
+public final class LogStreamPrinter {
 
   private static final String HEADER_INDENTATION = "\t\t\t";
   private static final String ENTRY_INDENTATION = HEADER_INDENTATION + "\t";
@@ -37,7 +37,7 @@ public class LogStreamPrinter {
     final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
     EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
 
-    try (LogStreamReader streamReader = logStream.newLogStreamReader()) {
+    try (final LogStreamReader streamReader = logStream.newLogStreamReader()) {
       streamReader.seekToFirstEvent();
 
       while (streamReader.hasNext()) {

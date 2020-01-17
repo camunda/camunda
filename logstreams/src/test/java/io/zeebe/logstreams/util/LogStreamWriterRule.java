@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
-public class LogStreamWriterRule extends ExternalResource {
+public final class LogStreamWriterRule extends ExternalResource {
   private final LogStreamRule logStreamRule;
 
   private SynchronousLogStream logStream;
@@ -31,8 +31,15 @@ public class LogStreamWriterRule extends ExternalResource {
 
   @Override
   protected void after() {
-    logStreamWriter = null;
+    closeWriter();
     logStream = null;
+  }
+
+  public void closeWriter() {
+    if (logStreamWriter != null) {
+      logStreamWriter.close();
+      logStreamWriter = null;
+    }
   }
 
   public long writeEvents(final int count, final DirectBuffer event) {

@@ -16,7 +16,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
  * <p>This makes it possible to map a part of a message pack document into a new/existing document.
  * With the mapping it is possible to replace/rename objects.
  */
-public class Mapping {
+public final class Mapping {
   public static final String JSON_ROOT_PATH = "$";
   public static final String MAPPING_STRING = "%s -> %s";
 
@@ -24,7 +24,8 @@ public class Mapping {
   private final JsonPathPointer targetPointer;
   private final Type type;
 
-  public Mapping(JsonPathQuery source, JsonPathPointer targetPointer, Mapping.Type type) {
+  public Mapping(
+      final JsonPathQuery source, final JsonPathPointer targetPointer, final Mapping.Type type) {
     this.source = source;
     this.targetPointer = targetPointer;
     this.type = type;

@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class OuterParticipantRef extends BpmnModelElementInstanceImpl {
 
-  public OuterParticipantRef(ModelTypeInstanceContext instanceContext) {
+  public OuterParticipantRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(OuterParticipantRef.class, BPMN_ELEMENT_OUTER_PARTICIPANT_REF)
@@ -43,7 +43,8 @@ public class OuterParticipantRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<OuterParticipantRef>() {
                   @Override
-                  public OuterParticipantRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public OuterParticipantRef newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new OuterParticipantRef(instanceContext);
                   }
                 });

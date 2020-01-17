@@ -29,7 +29,9 @@ public final class ExtensionElementsValidator<T extends BaseElement, E extends M
   private final String extensionElementName;
 
   private ExtensionElementsValidator(
-      Class<T> elementType, Class<E> extensionElement, String extensionElementName) {
+      final Class<T> elementType,
+      final Class<E> extensionElement,
+      final String extensionElementName) {
     this.elementType = elementType;
     this.extensionElement = extensionElement;
     this.extensionElementName = extensionElementName;
@@ -41,7 +43,7 @@ public final class ExtensionElementsValidator<T extends BaseElement, E extends M
   }
 
   @Override
-  public void validate(T element, ValidationResultCollector validationResultCollector) {
+  public void validate(final T element, final ValidationResultCollector validationResultCollector) {
 
     final ExtensionElements extensionElements = element.getExtensionElements();
 
@@ -55,7 +57,7 @@ public final class ExtensionElementsValidator<T extends BaseElement, E extends M
     }
   }
 
-  public static <T extends BaseElement> Builder<T> verifyThat(Class<T> elementType) {
+  public static <T extends BaseElement> Builder<T> verifyThat(final Class<T> elementType) {
     return new Builder<>(elementType);
   }
 
@@ -63,13 +65,13 @@ public final class ExtensionElementsValidator<T extends BaseElement, E extends M
 
     private final Class<T> elementType;
 
-    public Builder(Class<T> elementType) {
+    public Builder(final Class<T> elementType) {
       this.elementType = elementType;
     }
 
     public <E extends ModelElementInstance>
         ExtensionElementsValidator<T, E> hasSingleExtensionElement(
-            Class<E> extensionElement, String name) {
+            final Class<E> extensionElement, final String name) {
 
       return new ExtensionElementsValidator<>(elementType, extensionElement, name);
     }

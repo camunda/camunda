@@ -46,11 +46,11 @@ public abstract class ConversationNodeImpl extends BaseElementImpl implements Co
   protected static ElementReferenceCollection<MessageFlow, MessageFlowRef> messageFlowRefCollection;
   protected static ChildElementCollection<CorrelationKey> correlationKeyCollection;
 
-  public ConversationNodeImpl(ModelTypeInstanceContext instanceContext) {
+  public ConversationNodeImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ConversationNode.class, BPMN_ELEMENT_CONVERSATION_NODE)
@@ -85,7 +85,7 @@ public abstract class ConversationNodeImpl extends BaseElementImpl implements Co
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 

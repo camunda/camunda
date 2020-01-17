@@ -22,7 +22,7 @@ public class CompensateEventDefinitionBuilder
     extends AbstractCompensateEventDefinitionBuilder<CompensateEventDefinitionBuilder> {
 
   public CompensateEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, CompensateEventDefinition element) {
+      final BpmnModelInstance modelInstance, final CompensateEventDefinition element) {
     super(modelInstance, element, CompensateEventDefinitionBuilder.class);
   }
 }

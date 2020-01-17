@@ -13,17 +13,17 @@ import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 
-public class CompleteJobStub extends JobRequestStub
+public final class CompleteJobStub extends JobRequestStub
     implements RequestStub<BrokerCompleteJobRequest, BrokerResponse<JobRecord>> {
 
   @Override
-  public BrokerResponse<JobRecord> handle(BrokerCompleteJobRequest request) throws Exception {
+  public BrokerResponse<JobRecord> handle(final BrokerCompleteJobRequest request) throws Exception {
     final JobRecord responseValue = buildDefaultValue();
     return new BrokerResponse<>(responseValue, 0, request.getKey());
   }
 
   @Override
-  public void registerWith(StubbedBrokerClient gateway) {
+  public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerCompleteJobRequest.class, this);
   }
 }

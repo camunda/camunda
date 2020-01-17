@@ -15,13 +15,20 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import java.util.Arrays;
+import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class EventDefinitionValidator implements ModelElementValidator<EventDefinition> {
+
+  private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENT_DEFINITIONS =
+      Arrays.asList(
+          MessageEventDefinition.class, TimerEventDefinition.class, ErrorEventDefinition.class);
 
   @Override
   public Class<EventDefinition> getElementType() {
@@ -30,8 +37,10 @@ public class EventDefinitionValidator implements ModelElementValidator<EventDefi
 
   @Override
   public void validate(
-      EventDefinition element, ValidationResultCollector validationResultCollector) {
-    if (!(element instanceof MessageEventDefinition || element instanceof TimerEventDefinition)) {
+      final EventDefinition element, final ValidationResultCollector validationResultCollector) {
+
+    final Class<?> elementType = element.getElementType().getInstanceType();
+    if (!SUPPORTED_EVENT_DEFINITIONS.contains(elementType)) {
       validationResultCollector.addError(0, "Event definition of this type is not supported");
     }
   }

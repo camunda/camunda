@@ -27,7 +27,7 @@ public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuil
     extends AbstractCatchEventBuilder<B, StartEvent> {
 
   protected AbstractStartEventBuilder(
-      BpmnModelInstance modelInstance, StartEvent element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final StartEvent element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -52,7 +52,7 @@ public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuil
    * @param errorCode the code of the error
    * @return the builder object
    */
-  public B error(String errorCode) {
+  public B error(final String errorCode) {
     final ErrorEventDefinition errorEventDefinition = createErrorEventDefinition(errorCode);
     element.getEventDefinitions().add(errorEventDefinition);
 
@@ -65,7 +65,7 @@ public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuil
    *
    * @return the error event definition builder object
    */
-  public ErrorEventDefinitionBuilder errorEventDefinition(String id) {
+  public ErrorEventDefinitionBuilder errorEventDefinition(final String id) {
     final ErrorEventDefinition errorEventDefinition = createEmptyErrorEventDefinition();
     if (id != null) {
       errorEventDefinition.setId(id);
@@ -106,7 +106,7 @@ public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuil
    * @param escalationCode the code of the escalation
    * @return the builder object
    */
-  public B escalation(String escalationCode) {
+  public B escalation(final String escalationCode) {
     final EscalationEventDefinition escalationEventDefinition =
         createEscalationEventDefinition(escalationCode);
     element.getEventDefinitions().add(escalationEventDefinition);
@@ -127,7 +127,7 @@ public abstract class AbstractStartEventBuilder<B extends AbstractStartEventBuil
   }
 
   /** Sets whether the start event is interrupting or not. */
-  public B interrupting(boolean interrupting) {
+  public B interrupting(final boolean interrupting) {
     element.setInterrupting(interrupting);
 
     return myself;

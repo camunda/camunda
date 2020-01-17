@@ -25,11 +25,11 @@ public class AbstractTransactionBuilder<B extends AbstractTransactionBuilder<B>>
     extends AbstractSubProcessBuilder<B> {
 
   protected AbstractTransactionBuilder(
-      BpmnModelInstance modelInstance, Transaction element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final Transaction element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
-  public B method(TransactionMethod method) {
+  public B method(final TransactionMethod method) {
     ((Transaction) element).setMethod(method);
     return myself;
   }

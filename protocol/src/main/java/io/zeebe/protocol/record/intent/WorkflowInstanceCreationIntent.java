@@ -23,11 +23,11 @@ public enum WorkflowInstanceCreationIntent implements Intent, WorkflowInstanceRe
   private final short value;
   private final boolean shouldBlacklist;
 
-  WorkflowInstanceCreationIntent(int value, boolean shouldBlacklist) {
+  WorkflowInstanceCreationIntent(final int value, final boolean shouldBlacklist) {
     this((short) value, shouldBlacklist);
   }
 
-  WorkflowInstanceCreationIntent(short value, boolean shouldBlacklist) {
+  WorkflowInstanceCreationIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -37,7 +37,7 @@ public enum WorkflowInstanceCreationIntent implements Intent, WorkflowInstanceRe
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return CREATE;

@@ -16,11 +16,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/containerSuite"
+	"github.com/zeebe-io/zeebe/clients/go/internal/containersuite"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"io/ioutil"
 	"os"
@@ -35,7 +34,7 @@ import (
 var zbctl string
 
 type integrationTestSuite struct {
-	*containerSuite.ContainerSuite
+	*containersuite.ContainerSuite
 }
 
 var tests = []struct {
@@ -97,7 +96,7 @@ func TestZbctlWithInsecureGateway(t *testing.T) {
 
 	suite.Run(t,
 		&integrationTestSuite{
-			ContainerSuite: &containerSuite.ContainerSuite{
+			ContainerSuite: &containersuite.ContainerSuite{
 				WaitTime:       time.Second,
 				ContainerImage: "camunda/zeebe:current-test",
 			},
@@ -114,7 +113,6 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			}
 
 			cmdOut, _ := s.runCommand(test.cmd, test.envVars...)
-
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
 			if err != nil {
 				t.Fatal(err)
@@ -130,10 +128,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 }
 
 func compareStrIgnoreNumbers(x, y string) bool {
-	reg, err := regexp.Compile(`\d`)
-	if err != nil {
-		panic(err)
-	}
+	reg := regexp.MustCompile(`\d`)
 
 	newX := reg.ReplaceAllString(x, "")
 	newY := reg.ReplaceAllString(y, "")
@@ -160,25 +155,8 @@ func buildZbctl() error {
 		return fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
 
-	files, err := ioutil.ReadDir("dist")
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-
-	var alreadyBuilt bool
-	for _, file := range files {
-		alreadyBuilt = file.Name() == zbctl
-		if alreadyBuilt {
-			break
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if !alreadyBuilt {
-		return exec.CommandContext(ctx, "./build.sh", runtime.GOOS).Run()
-	}
-
-	return nil
+	return exec.CommandContext(ctx, "./build.sh", runtime.GOOS).Run()
 }

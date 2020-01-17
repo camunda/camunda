@@ -23,7 +23,8 @@ import io.zeebe.model.bpmn.instance.InclusiveGateway;
 public class InclusiveGatewayBuilder
     extends AbstractInclusiveGatewayBuilder<InclusiveGatewayBuilder> {
 
-  public InclusiveGatewayBuilder(BpmnModelInstance modelInstance, InclusiveGateway element) {
+  public InclusiveGatewayBuilder(
+      final BpmnModelInstance modelInstance, final InclusiveGateway element) {
     super(modelInstance, element, InclusiveGatewayBuilder.class);
   }
 }

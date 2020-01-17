@@ -26,7 +26,7 @@ import java.util.function.BiConsumer;
  * Records the headers of the last intercepted call. Additionally, also allows the specification of
  * an action to be taken (e.g., modify headers, fail call, etc).
  */
-public class RecordingInterceptor implements ServerInterceptor {
+public final class RecordingInterceptor implements ServerInterceptor {
   private Metadata capturedHeaders;
   private BiConsumer<ServerCall, Metadata> interceptAction;
 
@@ -64,7 +64,7 @@ public class RecordingInterceptor implements ServerInterceptor {
    *
    * @param interceptAction
    */
-  void setInterceptAction(BiConsumer<ServerCall, Metadata> interceptAction) {
+  void setInterceptAction(final BiConsumer<ServerCall, Metadata> interceptAction) {
     this.interceptAction = interceptAction;
   }
 }

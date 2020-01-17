@@ -19,7 +19,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
 
-public class JsonPathQueryCompilerTest {
+public final class JsonPathQueryCompilerTest {
 
   @Test
   public void testQueryCompiler() {
@@ -70,7 +70,7 @@ public class JsonPathQueryCompilerTest {
   }
 
   protected static void assertFilterAtPosition(
-      MsgPackFilterContext filterInstances, int position, int expectedFilterId) {
+      final MsgPackFilterContext filterInstances, final int position, final int expectedFilterId) {
     filterInstances.moveTo(position);
     assertThat(filterInstances.filterId()).isEqualTo(expectedFilterId);
   }

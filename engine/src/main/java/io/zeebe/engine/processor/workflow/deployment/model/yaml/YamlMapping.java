@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.yaml;
 
-public class YamlMapping {
+public final class YamlMapping {
   private static final String DEFAULT_MAPPING = "$";
 
   private String source = DEFAULT_MAPPING;
@@ -17,7 +17,7 @@ public class YamlMapping {
     return source;
   }
 
-  public void setSource(String source) {
+  public void setSource(final String source) {
     this.source = source;
   }
 
@@ -25,7 +25,7 @@ public class YamlMapping {
     return target;
   }
 
-  public void setTarget(String target) {
+  public void setTarget(final String target) {
     this.target = target;
   }
 }

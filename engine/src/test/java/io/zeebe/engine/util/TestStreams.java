@@ -27,7 +27,6 @@ import io.zeebe.engine.processor.TypedEventRegistry;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
-import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -64,7 +63,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
 
-public class TestStreams {
+public final class TestStreams {
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
 
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
@@ -133,14 +132,12 @@ public class TestStreams {
                 .withMaxEntrySize(4 * 1024 * 1024)
                 .withMaxSegmentSize(128 * 1024 * 1024));
     final var logStream =
-        spy(
-            new SyncLogStream(
-                LogStreams.createLogStream()
-                    .withLogName(name)
-                    .withLogStorage(logStorageRule.getStorage())
-                    .withPartitionId(partitionId)
-                    .withActorScheduler(actorScheduler)
-                    .build()));
+        SyncLogStream.builder()
+            .withLogName(name)
+            .withLogStorage(logStorageRule.getStorage())
+            .withPartitionId(partitionId)
+            .withActorScheduler(actorScheduler)
+            .build();
     logStorageRule.setPositionListener(logStream::setCommitPosition);
 
     final LogContext logContext = LogContext.createLogContext(logStream, logStorageRule);
@@ -250,6 +247,7 @@ public class TestStreams {
 
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
+            0,
             streamProcessor,
             currentSnapshotController,
             stream.getAsyncLogStream(),
@@ -294,9 +292,9 @@ public class TestStreams {
 
   public static class FluentLogWriter {
 
-    protected RecordMetadata metadata = new RecordMetadata();
+    protected final RecordMetadata metadata = new RecordMetadata();
     protected UnpackedObject value;
-    protected LogStreamRecordWriter writer;
+    protected final LogStreamRecordWriter writer;
     protected long key = -1;
     private long sourceRecordPosition = -1;
 
@@ -391,6 +389,7 @@ public class TestStreams {
 
     @Override
     public void close() {
+      logStreamWriter.close();
       logStream.close();
       logStorageRule.close();
     }

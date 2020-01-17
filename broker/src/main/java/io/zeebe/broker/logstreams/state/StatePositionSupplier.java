@@ -29,7 +29,7 @@ public class StatePositionSupplier {
     long processedPosition = -1;
     long exportedPosition = -1;
 
-    try (var db = open(directory)) {
+    try (final var db = open(directory)) {
       processedPosition = getLastProcessedPosition(db);
       exportedPosition = getMinimumExportedPosition(db);
     } catch (final Exception e) {

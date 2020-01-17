@@ -17,6 +17,7 @@ package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.util.ModelUtil;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -29,7 +30,9 @@ public class ProcessValidator implements ModelElementValidator<Process> {
   }
 
   @Override
-  public void validate(Process element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final Process element, final ValidationResultCollector validationResultCollector) {
+
     final Collection<StartEvent> topLevelStartEvents =
         element.getChildElementsByType(StartEvent.class);
     if (topLevelStartEvents.isEmpty()) {
@@ -37,9 +40,12 @@ public class ProcessValidator implements ModelElementValidator<Process> {
     } else if (topLevelStartEvents.stream().filter(this::isNoneEvent).count() > 1) {
       validationResultCollector.addError(0, "Multiple none start events are not allowed");
     }
+
+    ModelUtil.verifyNoDuplicatedEventSubprocesses(
+        element, error -> validationResultCollector.addError(0, error));
   }
 
-  private boolean isNoneEvent(StartEvent startEvent) {
+  private boolean isNoneEvent(final StartEvent startEvent) {
     return startEvent.getEventDefinitions().isEmpty();
   }
 }

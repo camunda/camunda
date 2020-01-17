@@ -14,7 +14,7 @@ import io.atomix.storage.journal.JournalReader.Mode;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-public class AtomixRaftServer
+public final class AtomixRaftServer
     implements AtomixLogCompactor, AtomixReaderFactory, AtomixAppenderSupplier {
   private final RaftPartitionServer server;
 

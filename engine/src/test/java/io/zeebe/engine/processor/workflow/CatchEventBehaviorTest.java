@@ -29,7 +29,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-public class CatchEventBehaviorTest {
+public final class CatchEventBehaviorTest {
   private static final String TIME_DATE = "1990-01-01T00:00:00Z";
   private final Random random = new Random();
   @Mock private ZeebeState zeebeState;

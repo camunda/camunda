@@ -26,7 +26,7 @@ import org.slf4j.Logger;
  * Represents a pending snapshot, that is a snapshot in the process of being written and has not yet
  * been committed to the store.
  */
-public class DbPendingSnapshot implements PendingSnapshot {
+public final class DbPendingSnapshot implements PendingSnapshot {
   private static final Logger LOGGER = new ZbLogger(DbPendingSnapshot.class);
 
   private final long index;
@@ -45,7 +45,7 @@ public class DbPendingSnapshot implements PendingSnapshot {
    * @param directory the snapshot's working directory (i.e. where we should write chunks)
    * @param snapshotStore the store which will be called when the snapshot is to be committed
    */
-  public DbPendingSnapshot(
+  DbPendingSnapshot(
       final long index,
       final long term,
       final WallClockTimestamp timestamp,
@@ -94,7 +94,7 @@ public class DbPendingSnapshot implements PendingSnapshot {
 
     IoUtil.ensureDirectoryExists(directory.toFile(), "Pending snapshot directory");
 
-    try (var channel =
+    try (final var channel =
         Files.newByteChannel(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
       channel.write(chunkData);
     } catch (final FileAlreadyExistsException e) {

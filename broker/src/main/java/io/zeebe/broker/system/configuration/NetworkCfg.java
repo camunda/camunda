@@ -18,22 +18,20 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.Environment;
 import java.util.Optional;
 
-public class NetworkCfg implements ConfigurationEntry {
+public final class NetworkCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final int DEFAULT_MONITORING_API_PORT = 9600;
   public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
-  public static final int DEFAULT_MAX_MESSAGE_COUNT = 16;
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
   private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
-  private int maxMessageCount = DEFAULT_MAX_MESSAGE_COUNT;
   private String advertisedHost;
 
-  private CommandApiCfg commandApi = new CommandApiCfg();
+  private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
   private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
@@ -84,15 +82,6 @@ public class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
-  public int getMaxMessageCount() {
-    return maxMessageCount;
-  }
-
-  public NetworkCfg setMaxMessageCount(int maxMessageCount) {
-    this.maxMessageCount = maxMessageCount;
-    return this;
-  }
-
   public CommandApiCfg getCommandApi() {
     return commandApi;
   }
@@ -124,8 +113,6 @@ public class NetworkCfg implements ConfigurationEntry {
         + '\''
         + ", maxMessageSize="
         + maxMessageSize
-        + ", maxMessageCount="
-        + maxMessageCount
         + ", commandApi="
         + commandApi
         + ", internalApi="

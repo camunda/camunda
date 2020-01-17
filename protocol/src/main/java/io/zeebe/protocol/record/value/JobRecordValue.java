@@ -46,8 +46,17 @@ public interface JobRecordValue extends RecordValueWithVariables, WorkflowInstan
    */
   long getDeadline();
 
-  /** @return the job worker error message if the job is failed */
+  /**
+   * @return the message that contains additional context of the failure/error. It is set by the job
+   *     worker then the processing fails because of a technical failure or a non-technical error.
+   */
   String getErrorMessage();
+
+  /**
+   * @return the error code to identify the business error. It is set by the job worker then the
+   *     processing fails because of a non-technical error that should be handled by the workflow.
+   */
+  String getErrorCode();
 
   /** @return the element id of the corresponding service task */
   String getElementId();

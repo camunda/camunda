@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
@@ -24,6 +25,10 @@ import (
 	"reflect"
 	"testing"
 	"time"
+)
+
+const (
+	longPollMillis = int64(float64(utils.DefaultTestTimeoutInMs) * (1.0 - longPollingOffsetPercent))
 )
 
 func TestActivateJobsCommand(t *testing.T) {
@@ -38,7 +43,7 @@ func TestActivateJobsCommand(t *testing.T) {
 		MaxJobsToActivate: 5,
 		Timeout:           DefaultJobTimeoutInMs,
 		Worker:            DefaultJobWorkerName,
-		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		RequestTimeout:    longPollMillis,
 	}
 
 	response1 := &pb.ActivateJobsResponse{
@@ -112,7 +117,12 @@ func TestActivateJobsCommand(t *testing.T) {
 
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -141,13 +151,18 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 		MaxJobsToActivate: 5,
 		Timeout:           60 * 1000,
 		Worker:            DefaultJobWorkerName,
-		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		RequestTimeout:    longPollMillis,
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).Timeout(1 * time.Minute).Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).Timeout(1 * time.Minute).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -170,13 +185,18 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 		MaxJobsToActivate: 5,
 		Timeout:           DefaultJobTimeoutInMs,
 		Worker:            "bar",
-		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		RequestTimeout:    longPollMillis,
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).WorkerName("bar").Send()
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).WorkerName("bar").Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -202,13 +222,18 @@ func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
 		Worker:            DefaultJobWorkerName,
 		Timeout:           DefaultJobTimeoutInMs,
 		FetchVariable:     fetchVariables,
-		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		RequestTimeout:    longPollMillis,
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout, func(error) bool { return false }).JobType("foo").MaxJobsToActivate(5).FetchVariables(fetchVariables...).Send()
+	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).FetchVariables(fetchVariables...).Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

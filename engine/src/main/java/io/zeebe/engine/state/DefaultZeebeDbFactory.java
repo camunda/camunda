@@ -28,7 +28,7 @@ public final class DefaultZeebeDbFactory {
    */
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeDbFactory<ColumnFamilyNames> defaultFactory(
-          Class<ColumnFamilyNames> columnFamilyNamesClass) {
+          final Class<ColumnFamilyNames> columnFamilyNamesClass) {
     // one place to replace the zeebe database implementation
     return ZeebeRocksDbFactory.newFactory(columnFamilyNamesClass);
   }

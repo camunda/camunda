@@ -24,7 +24,7 @@ public class IntermediateThrowEventBuilder
     extends AbstractIntermediateThrowEventBuilder<IntermediateThrowEventBuilder> {
 
   public IntermediateThrowEventBuilder(
-      BpmnModelInstance modelInstance, IntermediateThrowEvent element) {
+      final BpmnModelInstance modelInstance, final IntermediateThrowEvent element) {
     super(modelInstance, element, IntermediateThrowEventBuilder.class);
   }
 }

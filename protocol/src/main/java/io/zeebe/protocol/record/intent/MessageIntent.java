@@ -24,7 +24,7 @@ public enum MessageIntent implements Intent {
 
   private final short value;
 
-  MessageIntent(short value) {
+  MessageIntent(final short value) {
     this.value = value;
   }
 
@@ -33,7 +33,7 @@ public enum MessageIntent implements Intent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return PUBLISH;

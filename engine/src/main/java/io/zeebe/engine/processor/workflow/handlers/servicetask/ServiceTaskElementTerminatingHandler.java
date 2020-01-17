@@ -20,30 +20,32 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTask>
+public final class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTask>
     extends ActivityElementTerminatingHandler<T> {
   private final IncidentState incidentState;
   private final JobState jobState;
 
   public ServiceTaskElementTerminatingHandler(
-      IncidentState incidentState, CatchEventSubscriber catchEventSubscriber, JobState jobState) {
+      final IncidentState incidentState,
+      final CatchEventSubscriber catchEventSubscriber,
+      final JobState jobState) {
     super(catchEventSubscriber);
     this.incidentState = incidentState;
     this.jobState = jobState;
   }
 
   public ServiceTaskElementTerminatingHandler(
-      WorkflowInstanceIntent nextState,
-      IncidentState incidentState,
-      CatchEventSubscriber catchEventSubscriber,
-      JobState jobState) {
+      final WorkflowInstanceIntent nextState,
+      final IncidentState incidentState,
+      final CatchEventSubscriber catchEventSubscriber,
+      final JobState jobState) {
     super(nextState, catchEventSubscriber);
     this.incidentState = incidentState;
     this.jobState = jobState;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (!super.handleState(context)) {
       return false;
     }
@@ -66,7 +68,7 @@ public class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTas
     return true;
   }
 
-  private void resolveExistingJobIncident(long jobKey, BpmnStepContext<T> context) {
+  private void resolveExistingJobIncident(final long jobKey, final BpmnStepContext<T> context) {
     final long jobIncidentKey = incidentState.getJobIncidentKey(jobKey);
     final boolean hasIncident = jobIncidentKey != IncidentState.MISSING_INCIDENT;
 

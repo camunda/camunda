@@ -35,7 +35,7 @@ import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
-public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
+public final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
   private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
 
   private final ClaimedFragmentBatch claimedBatch = new ClaimedFragmentBatch();
@@ -60,10 +60,13 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
+  private final Runnable closeCallback;
 
-  LogStreamBatchWriterImpl(int partitionId, Dispatcher dispatcher) {
+  LogStreamBatchWriterImpl(
+      final int partitionId, final Dispatcher dispatcher, final Runnable closeCallback) {
     this.logWriteBuffer = dispatcher;
     this.logId = partitionId;
+    this.closeCallback = closeCallback;
 
     reset();
   }
@@ -106,7 +109,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     return this;
   }
 
-  public LogEntryBuilder sourceIndex(int index) {
+  public LogEntryBuilder sourceIndex(final int index) {
     sourceIndex = index;
     return this;
   }
@@ -290,5 +293,10 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
     bufferWriterInstance.reset();
     metadataWriterInstance.reset();
+  }
+
+  @Override
+  public void close() {
+    closeCallback.run();
   }
 }

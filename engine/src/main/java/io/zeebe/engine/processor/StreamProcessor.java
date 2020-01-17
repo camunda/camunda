@@ -41,6 +41,7 @@ public class StreamProcessor extends Actor {
   // processing
   private final ProcessingContext processingContext;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private final int nodeId;
   private LogStreamReader logStreamReader;
   private ActorCondition onCommitPositionUpdatedCondition;
   private long snapshotPosition = -1L;
@@ -49,22 +50,25 @@ public class StreamProcessor extends Actor {
   private Phase phase = Phase.REPROCESSING;
   private CompletableActorFuture<Void> openFuture;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
+  private final String actorName;
 
-  protected StreamProcessor(final StreamProcessorBuilder context) {
-    this.actorScheduler = context.getActorScheduler();
-    this.lifecycleAwareListeners = context.getLifecycleListeners();
+  protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
+    this.actorScheduler = processorBuilder.getActorScheduler();
+    this.lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
 
-    this.typedRecordProcessorFactory = context.getTypedRecordProcessorFactory();
-    this.zeebeDb = context.getZeebeDb();
+    this.typedRecordProcessorFactory = processorBuilder.getTypedRecordProcessorFactory();
+    this.zeebeDb = processorBuilder.getZeebeDb();
 
     processingContext =
-        context
+        processorBuilder
             .getProcessingContext()
             .eventCache(new RecordValues())
             .actor(actor)
             .abortCondition(this::isClosed);
     this.logStream = processingContext.getLogStream();
     this.partitionId = logStream.getPartitionId();
+    this.nodeId = processorBuilder.getNodeId();
+    this.actorName = buildActorName(nodeId, "StreamProcessor-" + partitionId);
   }
 
   public static StreamProcessorBuilder builder() {
@@ -73,7 +77,7 @@ public class StreamProcessor extends Actor {
 
   @Override
   public String getName() {
-    return "partition-" + partitionId + "-processor";
+    return actorName;
   }
 
   @Override
@@ -83,7 +87,7 @@ public class StreamProcessor extends Actor {
   }
 
   private void onRetrievingWriter(
-      LogStreamBatchWriter batchWriter, Throwable errorOnReceivingWriter) {
+      final LogStreamBatchWriter batchWriter, final Throwable errorOnReceivingWriter) {
 
     if (errorOnReceivingWriter == null) {
       processingContext
@@ -99,7 +103,8 @@ public class StreamProcessor extends Actor {
     }
   }
 
-  private void onRetrievingReader(LogStreamReader reader, Throwable errorOnReceivingReader) {
+  private void onRetrievingReader(
+      final LogStreamReader reader, final Throwable errorOnReceivingReader) {
     if (errorOnReceivingReader == null) {
       this.logStreamReader = reader;
       processingContext.logStreamReader(reader);
@@ -152,6 +157,7 @@ public class StreamProcessor extends Actor {
   @Override
   protected void onActorClosing() {
     processingContext.getLogStreamReader().close();
+    processingContext.getLogStreamWriter().close();
 
     if (onCommitPositionUpdatedCondition != null) {
       logStream.removeOnCommitPositionUpdatedCondition(onCommitPositionUpdatedCondition);
@@ -238,7 +244,7 @@ public class StreamProcessor extends Actor {
     return closeFuture;
   }
 
-  private void onFailure(Throwable throwable) {
+  private void onFailure(final Throwable throwable) {
     phase = Phase.FAILED;
     openFuture.completeExceptionally(throwable);
     closeFuture = new CompletableActorFuture<>();
