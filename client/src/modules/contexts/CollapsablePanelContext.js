@@ -22,7 +22,7 @@ class CollapsablePanelProvider extends React.Component {
   };
 
   // we start with both panels not collapsed
-  state = {isFiltersCollapsed: false, isSelectionsCollapsed: true};
+  state = {isFiltersCollapsed: false, isOperationsCollapsed: true};
 
   toggle = target =>
     this.setState(prevState => {
@@ -31,21 +31,21 @@ class CollapsablePanelProvider extends React.Component {
 
   toggleFilters = () => this.toggle('isFiltersCollapsed');
 
-  toggleSelections = () => this.toggle('isSelectionsCollapsed');
+  toggledOperations = () => this.toggle('isOperationsCollapsed');
 
   expand = target => this.setState({[target]: false});
 
   expandFilters = () => this.expand('isFiltersCollapsed');
 
-  expandSelections = () => this.expand('isSelectionsCollapsed');
+  expandOperations = () => this.expand('isOperationsCollapsed');
 
   render() {
     const contextValue = {
       ...this.state,
       toggleFilters: this.toggleFilters,
-      toggleSelections: this.toggleSelections,
+      toggledOperations: this.toggledOperations,
       expandFilters: this.expandFilters,
-      expandSelections: this.expandSelections
+      expandOperations: this.expandOperations
     };
 
     return (

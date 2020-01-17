@@ -15,8 +15,8 @@ describe('CollapsablePanelProvider', () => {
     // Filters panel is not collapsed
     expect(node.state.isFiltersCollapsed).toBe(false);
 
-    // Selections panel is not collapsed
-    expect(node.state.isSelectionsCollapsed).toBe(true);
+    // Operations panel is not collapsed
+    expect(node.state.isOperationsCollapsed).toBe(true);
   });
 
   describe('toggle', () => {
@@ -72,10 +72,10 @@ describe('CollapsablePanelProvider', () => {
       const node = shallow(<CollapsablePanelProvider />);
 
       // when
-      node.instance().expand('isSelectionsCollapsed');
+      node.instance().expand('isOperationsCollapsed');
 
       // then
-      expect(node.state('isSelectionsCollapsed')).toBe(false);
+      expect(node.state('isOperationsCollapsed')).toBe(false);
     });
 
     describe('expandFilters', () => {
@@ -92,17 +92,17 @@ describe('CollapsablePanelProvider', () => {
       });
     });
 
-    describe('expandSelections', () => {
-      it('should call expand with "isSelectionsCollapsed', () => {
+    describe('expandOperations', () => {
+      it('should call expand with "isOperationsCollapsed', () => {
         // given
         const node = shallow(<CollapsablePanelProvider />);
         const expandSpy = jest.spyOn(node.instance(), 'expand');
 
         // when
-        node.instance().expandSelections();
+        node.instance().expandOperations();
 
         // then
-        expect(expandSpy).toBeCalledWith('isSelectionsCollapsed');
+        expect(expandSpy).toBeCalledWith('isOperationsCollapsed');
       });
     });
   });

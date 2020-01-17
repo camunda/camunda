@@ -27,7 +27,9 @@ export const Content = styled.div`
   top: 0;
   left: 0;
   height: 100%;
-  width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
+  width: 100%
+  // TODO: restore when OperationsPanel is in place
+  // width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
 export const FilterSection = styled.div`

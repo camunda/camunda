@@ -6,7 +6,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {remove} from 'lodash';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
@@ -18,11 +17,10 @@ import {EXPAND_STATE} from 'modules/constants';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
-import {withSelection} from 'modules/contexts/SelectionContext';
 
 import ColumnHeader from './ColumnHeader';
 import ListContext, {useListContext} from './ListContext';
-import Skeleton from './Skeleton';
+import BaseSkeleton from './Skeleton';
 import * as Styled from './styled';
 
 const {THead, TBody, TH, TR, TD} = Table;
@@ -31,13 +29,7 @@ class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
     Overlay: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
-    onSelectedInstancesUpdate: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
-    selectedInstances: PropTypes.shape({
-      all: PropTypes.bool,
-      excludeIds: PropTypes.array,
-      ids: PropTypes.array
-    }).isRequired,
     isDataLoaded: PropTypes.bool.isRequired,
     filterCount: PropTypes.number,
     filter: PropTypes.object,
@@ -73,89 +65,91 @@ class List extends React.Component {
     }
   }
 
-  handleSelectAll = (_, isChecked) => {
-    this.props.onSelectedInstancesUpdate({
-      all: isChecked,
-      ids: [],
-      excludeIds: []
-    });
-  };
+  // TODO (paddy): this is likely to be reused somewhere else.
+  //
+  // handleSelectAll = (_, isChecked) => {
+  //   this.props.onSelectedInstancesUpdate({
+  //     all: isChecked,
+  //     ids: [],
+  //     excludeIds: []
+  //   });
+  // };
 
-  handleSelectInstance = instance => (_, isChecked) => {
-    const {selectedInstances, filterCount} = this.props;
+  // handleSelectInstance = instance => (_, isChecked) => {
+  //   const {selectedInstances, filterCount} = this.props;
 
-    let {all} = selectedInstances;
-    let ids = [...selectedInstances.ids];
-    let excludeIds = [...selectedInstances.excludeIds];
+  //   let {all} = selectedInstances;
+  //   let ids = [...selectedInstances.ids];
+  //   let excludeIds = [...selectedInstances.excludeIds];
 
-    let selectedIdArray = undefined;
-    let checked = undefined;
+  //   let selectedIdArray = undefined;
+  //   let checked = undefined;
 
-    // isChecked === true => instance has been selected
-    // isChecked === false => instance has been deselected
+  //   // isChecked === true => instance has been selected
+  //   // isChecked === false => instance has been deselected
 
-    if (all) {
-      // reverse logic:
-      // if (isChecked) => excludeIds.remove(instance) (include in selection)
-      // if (!isChecked) => excludeIds.add(instance) (exclude from selection)
-      checked = !isChecked;
-      selectedIdArray = excludeIds; // use reference to excludeIds
-    } else {
-      // if (isChecked) => ids.add(instance) (include in selection)
-      // if (!isChecked) => ids.remove(instance) (exclude from selection)
-      checked = isChecked;
-      selectedIdArray = ids; // use reference to ids
-    }
+  //   if (all) {
+  //     // reverse logic:
+  //     // if (isChecked) => excludeIds.remove(instance) (include in selection)
+  //     // if (!isChecked) => excludeIds.add(instance) (exclude from selection)
+  //     checked = !isChecked;
+  //     selectedIdArray = excludeIds; // use reference to excludeIds
+  //   } else {
+  //     // if (isChecked) => ids.add(instance) (include in selection)
+  //     // if (!isChecked) => ids.remove(instance) (exclude from selection)
+  //     checked = isChecked;
+  //     selectedIdArray = ids; // use reference to ids
+  //   }
 
-    this.handleSelection(selectedIdArray, instance, checked);
+  //   this.handleSelection(selectedIdArray, instance, checked);
 
-    if (selectedIdArray.length === filterCount) {
-      // selected array contains all filtered instances
+  //   if (selectedIdArray.length === filterCount) {
+  //     // selected array contains all filtered instances
 
-      // (1) reset arrays in selection
-      ids = [];
-      excludeIds = [];
+  //     // (1) reset arrays in selection
+  //     ids = [];
+  //     excludeIds = [];
 
-      // (2) determine 'all' state
-      // if (!all) => all = true
-      // if (all) => all = false
-      all = !all;
-    }
+  //     // (2) determine 'all' state
+  //     // if (!all) => all = true
+  //     // if (all) => all = false
+  //     all = !all;
+  //   }
 
-    this.props.onSelectedInstancesUpdate({all, ids, excludeIds});
-  };
+  //   this.props.onSelectedInstancesUpdate({all, ids, excludeIds});
+  // };
 
-  handleSelection = (selectedIds = [], {id}, isChecked) => {
-    if (isChecked) {
-      selectedIds.push(id);
-    } else {
-      remove(selectedIds, elem => elem === id);
-    }
-  };
+  // handleSelection = (selectedIds = [], {id}, isChecked) => {
+  //   if (isChecked) {
+  //     selectedIds.push(id);
+  //   } else {
+  //     remove(selectedIds, elem => elem === id);
+  //   }
+  // };
 
-  isSelected = id => {
-    const {selectedInstances} = this.props;
-    const {all} = selectedInstances;
-    return all ? !this.isExcluded(id) : this.isIncluded(id);
-  };
+  // isSelected = id => {
+  //   const {selectedInstances} = this.props;
+  //   const {all} = selectedInstances;
+  //   return all ? !this.isExcluded(id) : this.isIncluded(id);
+  // };
 
-  isExcluded = id => {
-    const {selectedInstances} = this.props;
-    const {excludeIds = []} = selectedInstances;
-    return excludeIds.indexOf(id) >= 0;
-  };
+  // isExcluded = id => {
+  //   const {selectedInstances} = this.props;
+  //   const {excludeIds = []} = selectedInstances;
+  //   return excludeIds.indexOf(id) >= 0;
+  // };
 
-  isIncluded = id => {
-    const {selectedInstances} = this.props;
-    const {ids = []} = selectedInstances;
-    return ids.indexOf(id) >= 0;
-  };
+  // isIncluded = id => {
+  //   const {selectedInstances} = this.props;
+  //   const {ids = []} = selectedInstances;
+  //   return ids.indexOf(id) >= 0;
+  // };
 
-  areAllInstancesSelected = () => {
-    const {selectedInstances} = this.props;
-    const {all, excludeIds = []} = selectedInstances;
-    return all && excludeIds.length === 0;
-  };
+  // areAllInstancesSelected = () => {
+  //   const {selectedInstances} = this.props;
+  //   const {all, excludeIds = []} = selectedInstances;
+  //   return all && excludeIds.length === 0;
+  // };
 
   recalculateHeight() {
     if (this.containerRef.current) {
@@ -180,12 +174,8 @@ class List extends React.Component {
               filter: this.props.filter,
               sorting: this.props.sorting,
               onSort: this.props.onSort,
-              areAllInstancesSelected: this.areAllInstancesSelected,
-              handleSelectAll: this.handleSelectAll,
               rowsToDisplay: this.props.rowsToDisplay,
-              isSelected: this.isSelected,
               isDataLoaded: this.props.isDataLoaded,
-              handleSelectInstance: this.handleSelectInstance,
               handleActionButtonClick: this.handleActionButtonClick
             }}
           >
@@ -197,56 +187,46 @@ class List extends React.Component {
   }
 }
 
-const WrappedList = withSelection(List);
-WrappedList.Item = List;
+export default List;
 
-export default WrappedList;
-
-WrappedList.Item.Skeleton = function ItemSkeleton(props) {
+const Skeleton = function(props) {
   const {rowsToDisplay} = useListContext();
-  return <Skeleton {...props} rowsToDisplay={rowsToDisplay} />;
+  return <BaseSkeleton {...props} rowsToDisplay={rowsToDisplay} />;
 };
 
-WrappedList.Item.Message = class Message extends React.Component {
-  static propTypes = {
-    message: PropTypes.string
-  };
-  render() {
-    return (
-      <TBody>
-        <Styled.EmptyTR>
-          <TD colSpan={6}>
-            <EmptyMessage
-              message={this.props.message}
-              data-test="empty-message-instances-list"
-            />
-          </TD>
-        </Styled.EmptyTR>
-      </TBody>
-    );
-  }
+const Message = function({message}) {
+  return (
+    <TBody>
+      <Styled.EmptyTR>
+        <TD colSpan={6}>
+          <EmptyMessage
+            message={message}
+            data-test="empty-message-instances-list"
+          />
+        </TD>
+      </Styled.EmptyTR>
+    </TBody>
+  );
 };
 
-WrappedList.Item.Body = function Body(props) {
-  const {
-    data,
-    rowsToDisplay,
-    isSelected,
-    handleSelectInstance,
-    handleActionButtonClick
-  } = useListContext();
+Message.propTypes = {
+  message: PropTypes.string
+};
+
+const Body = function(props) {
+  const {data, rowsToDisplay, handleActionButtonClick} = useListContext();
 
   return (
     <TBody {...props}>
       {data.slice(0, rowsToDisplay).map((instance, idx) => (
-        <TR key={idx} selected={isSelected(instance.id)}>
+        <TR key={idx}>
           <TD>
             <Styled.Cell>
               <Styled.SelectionStatusIndicator selected={false} />
               <Checkbox
                 type="selection"
-                isChecked={isSelected(instance.id)}
-                onChange={handleSelectInstance(instance)}
+                isChecked={false}
+                onChange={() => {}}
                 title={`Select instance ${instance.id}`}
               />
 
@@ -270,7 +250,7 @@ WrappedList.Item.Body = function Body(props) {
           <TD>
             <Actions
               instance={instance}
-              selected={isSelected(instance.id)}
+              selected={false}
               onButtonClick={() => handleActionButtonClick(instance)}
             />
           </TD>
@@ -280,16 +260,8 @@ WrappedList.Item.Body = function Body(props) {
   );
 };
 
-WrappedList.Item.Header = function Header(props) {
-  const {
-    data,
-    filter,
-    sorting,
-    onSort,
-    areAllInstancesSelected,
-    handleSelectAll,
-    isDataLoaded
-  } = useListContext();
+const Header = function(props) {
+  const {data, filter, sorting, onSort, isDataLoaded} = useListContext();
 
   const isListEmpty = !isDataLoaded || data.length === 0;
   const listHasFinishedInstances = filter.canceled || filter.completed;
@@ -301,8 +273,8 @@ WrappedList.Item.Header = function Header(props) {
             <Styled.CheckAll>
               <Checkbox
                 disabled={isListEmpty}
-                isChecked={areAllInstancesSelected()}
-                onChange={handleSelectAll}
+                isChecked={false}
+                onChange={() => {}}
                 title="Select all instances"
               />
             </Styled.CheckAll>
@@ -358,3 +330,8 @@ WrappedList.Item.Header = function Header(props) {
     </THead>
   );
 };
+
+List.Message = Message;
+List.Body = Body;
+List.Header = Header;
+List.Skeleton = Skeleton;

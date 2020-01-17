@@ -106,11 +106,15 @@ export default class Pane extends React.Component {
       <CollapsablePanelConsumer>
         {context => (
           <Styled.ButtonsContainer
-            isShifted={
-              this.props.hasShiftableControls
-                ? !context.isSelectionsCollapsed
-                : false
-            }
+          /**
+           * TODO (paddy): check if this is needed for OperationsPanel as well
+           *
+           * isShifted={
+           *   this.props.hasShiftableControls
+           *     ? !context.isSelectionsCollapsed
+           *     : false
+           *   }
+           **/
           >
             {isTopButtonVisible && this.topButton}
             {isBottomButtonVisible && this.bottomButton}

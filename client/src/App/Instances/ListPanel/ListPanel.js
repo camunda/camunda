@@ -156,11 +156,11 @@ class ListPanel extends React.Component {
 
   renderContent(isListEmpty) {
     if (!isListEmpty) {
-      return <List.Item.Body />;
+      return <List.Body />;
     } else if (this.state.initialLoad) {
-      return <List.Item.Skeleton rowsToDisplay={this.props.rowsToDisplay} />;
+      return <List.Skeleton rowsToDisplay={this.props.rowsToDisplay} />;
     } else {
-      return <List.Item.Message message={this.getEmptyListMessage()} />;
+      return <List.Message message={this.getEmptyListMessage()} />;
     }
   }
 
@@ -203,7 +203,7 @@ class ListPanel extends React.Component {
             onActionButtonClick={this.handleActionButtonClick}
             Overlay={this.renderSpinner()}
           >
-            <List.Item.Header />
+            <List.Header />
             {this.renderContent(isListEmpty)}
           </List>
         </Styled.PaneBody>

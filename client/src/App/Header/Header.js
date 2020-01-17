@@ -38,15 +38,11 @@ class Header extends React.Component {
       running: PropTypes.number,
       active: PropTypes.number,
       filterCount: PropTypes.number,
-      withIncidents: PropTypes.number,
-      instancesInSelectionsCount: PropTypes.number,
-      selectionCount: PropTypes.number
+      withIncidents: PropTypes.number
     }),
     location: PropTypes.object,
     isFiltersCollapsed: PropTypes.bool.isRequired,
-    isSelectionsCollapsed: PropTypes.bool.isRequired,
     expandFilters: PropTypes.func.isRequired,
-    expandSelections: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func
   };
 
@@ -180,11 +176,10 @@ class Header extends React.Component {
       return conditions[type];
     }
 
-    // Is 'dashboard', 'filters' or 'selections' active;
+    // Is 'dashboard' or 'filters' active;
     const conditions = {
       dashboard: currentView.isDashboard(),
-      filters: currentView.isInstances() && !this.props.isFiltersCollapsed,
-      selections: currentView.isInstances() && !this.props.isSelectionsCollapsed
+      filters: currentView.isInstances() && !this.props.isFiltersCollapsed
     };
 
     return conditions[type];
