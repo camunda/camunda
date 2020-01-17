@@ -71,7 +71,7 @@ public final class CorrelateWorkflowInstanceSubscription
   }
 
   @Override
-  public void onOpen(final ReadonlyProcessingContext processingContext) {
+  public void onRecovered(final ReadonlyProcessingContext processingContext) {
     final ActorControl actor = processingContext.getActor();
 
     final PendingWorkflowInstanceSubscriptionChecker pendingSubscriptionChecker =
