@@ -10,16 +10,20 @@ package io.zeebe.engine.processor.workflow.handlers;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
 import io.zeebe.engine.state.instance.VariablesState;
-import io.zeebe.msgpack.mapping.Mapping;
+import io.zeebe.msgpack.mapping.Mappings;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import java.util.HashSet;
-import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class IOMappingHelper {
 
   private final MsgPackMergeTool mergeTool = new MsgPackMergeTool(4096);
+
+  private final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
+  private final DirectBuffer bufferView = new UnsafeBuffer();
 
   public <T extends ExecutableFlowNode> void applyOutputMappings(final BpmnStepContext<T> context) {
     final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
@@ -28,8 +32,8 @@ public class IOMappingHelper {
     final WorkflowInstanceRecord record = context.getValue();
     final long elementInstanceKey = context.getKey();
     final long workflowKey = record.getWorkflowKey();
-    final Mapping[] outputMappings = element.getOutputMappings();
-    final boolean hasOutputMappings = outputMappings.length > 0;
+    final Mappings outputMappings = element.getOutputMappings();
+    final var hasOutputMappings = !outputMappings.isEmpty();
 
     final DirectBuffer temporaryVariables =
         variablesState.getTemporaryVariables(elementInstanceKey);
@@ -46,33 +50,55 @@ public class IOMappingHelper {
     }
 
     if (hasOutputMappings) {
-      mergeTool.reset();
-
-      final DirectBuffer variables =
-          determineVariables(variablesState, elementInstanceKey, outputMappings);
-
-      mergeTool.mergeDocumentStrictly(variables, outputMappings);
-      final DirectBuffer mergedVariables = mergeTool.writeResultToBuffer();
+      final DirectBuffer mergedVariables =
+          mergeOutputVariables(variablesState, elementInstanceKey, outputMappings);
 
       variablesState.setVariablesFromDocument(
           getVariableScopeKey(context), workflowKey, mergedVariables);
     }
   }
 
+  private DirectBuffer mergeOutputVariables(
+      final VariablesState variablesState,
+      final long elementInstanceKey,
+      final Mappings outputMappings) {
+
+    mergeTool.reset();
+
+    // fetch the variables from the target mappings to allow merging with existing variables
+    final DirectBuffer targetVariables =
+        variablesState.getVariablesAsDocument(
+            elementInstanceKey, outputMappings.getTargetVariableNames());
+
+    // copy variables to not override them with next variable state access
+    buffer.putBytes(0, targetVariables, 0, targetVariables.capacity());
+    bufferView.wrap(buffer, 0, targetVariables.capacity());
+
+    mergeTool.mergeDocument(bufferView);
+
+    final DirectBuffer sourceVariables =
+        variablesState.getVariablesAsDocument(
+            elementInstanceKey, outputMappings.getSourceVariableNames());
+
+    mergeTool.mergeDocument(sourceVariables, outputMappings.get());
+    return mergeTool.writeResultToBuffer();
+  }
+
   public <T extends ExecutableFlowNode> void applyInputMappings(final BpmnStepContext<T> context) {
 
     final T element = context.getElement();
-    final Mapping[] mappings = element.getInputMappings();
+    final Mappings mappings = element.getInputMappings();
 
-    if (mappings.length > 0) {
+    if (!mappings.isEmpty()) {
       mergeTool.reset();
 
       final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
 
       final DirectBuffer scopeVariables =
-          determineVariables(variablesState, getVariableScopeKey(context), mappings);
+          variablesState.getVariablesAsDocument(
+              getVariableScopeKey(context), mappings.getSourceVariableNames());
 
-      mergeTool.mergeDocumentStrictly(scopeVariables, mappings);
+      mergeTool.mergeDocument(scopeVariables, mappings.get());
       final DirectBuffer mappedVariables = mergeTool.writeResultToBuffer();
 
       final long scopeKey = context.getKey();
@@ -82,17 +108,6 @@ public class IOMappingHelper {
           .getVariablesState()
           .setVariablesLocalFromDocument(scopeKey, workflowKey, mappedVariables);
     }
-  }
-
-  private DirectBuffer determineVariables(
-      final VariablesState variablesState,
-      final long elementInstanceKey,
-      final Mapping[] outputMappings) {
-    final Set<DirectBuffer> variableNames = new HashSet<>();
-    for (final Mapping m : outputMappings) {
-      variableNames.add(m.getSource().getVariableName());
-    }
-    return variablesState.getVariablesAsDocument(elementInstanceKey, variableNames);
   }
 
   private long getVariableScopeKey(final BpmnStepContext<?> context) {

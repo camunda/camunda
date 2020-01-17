@@ -38,7 +38,7 @@ public final class MappingExtractTest {
     expectedException.expectMessage("No data found for query foo.");
 
     // when
-    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
+    mergeTool.mergeDocument(sourceDocument, mapping);
   }
 
   @Test

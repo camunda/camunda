@@ -322,25 +322,6 @@ public final class MappingMergeParameterizedTest {
             // expected result
             "{'obj':{'test':'value','newFoo':1},'int':1}"
           },
-          // 37. Test zeebe-io/zeebe#297
-          //                                            {
-          //                                                    // source
-          //
-          // "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
-          //                                                // target
-          //                                                "{}",
-          //                                                    // mapping
-          //                                                    createMappings()
-          //                                                            .mapping("$", "$.foo")
-          //                                                            .mapping("$.obj",
-          // "$.foo.int")
-          //                                                            .build(),
-          //                                                    // expected result
-          //
-          // "{'foo':{'foo':'bar','int':{'test':'ok'},'obj':{'test':'ok'},'array':[1,2,3]}}"
-          //
-          //
-          // 42.Test
           {
             // source
             "{'a':{'bb':{'value':'x'}}, 'ab':{'b':{'value':'y'}}}}",
