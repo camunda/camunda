@@ -51,8 +51,11 @@ export async function selectDefinition(t, name, version = 'Specific version') {
   await t
     .click('.Popover.DefinitionSelection')
     .typeText('.Typeahead input', name, {replace: true})
-    .click(Selector('.Typeahead .DropdownOption').withText(name))
-    .click('.VersionPopover');
+    .click(Selector('.Typeahead .DropdownOption').withText(name));
+
+  await t.expect(Selector('.VersionPopover button').hasAttribute('disabled')).notOk();
+
+  await t.click('.VersionPopover');
 
   if (typeof version === 'string') {
     await t.click(Selector('.label').withText(version));
