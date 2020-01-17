@@ -28,7 +28,6 @@ import {
   getFilterQueryString,
   getWorkflowByVersion,
   parseQueryString
-  // reduceToStates
 } from 'modules/utils/filter';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 
