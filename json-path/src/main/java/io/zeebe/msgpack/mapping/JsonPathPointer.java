@@ -7,18 +7,34 @@
  */
 package io.zeebe.msgpack.mapping;
 
+import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
+
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
+import org.agrona.DirectBuffer;
 
 public final class JsonPathPointer {
 
+  private final DirectBuffer variableName;
+
   private final String[] pathElements;
 
-  public JsonPathPointer(final String[] pathElements) {
-    this.pathElements = pathElements;
+  public JsonPathPointer(final String path) {
+    ensureNotNullOrEmpty("path", path);
+
+    // merging algorithm expect a root object $
+    pathElements = ("$." + path).split("\\.");
+
+    final String variableElement = pathElements[1];
+    variableName = BufferUtil.wrapString(variableElement);
   }
 
   public String[] getPathElements() {
     return pathElements;
+  }
+
+  public DirectBuffer getVariableName() {
+    return variableName;
   }
 
   @Override

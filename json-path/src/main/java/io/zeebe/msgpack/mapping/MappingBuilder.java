@@ -37,11 +37,7 @@ public final class MappingBuilder {
 
   public MappingBuilder mapping(final String source, final String target, final Mapping.Type type) {
     final JsonPathQuery sourceQuery = queryCompiler.compile(source);
-
-    // merging algorithm expect a root object $
-    final String targetPath = "$." + target;
-    final JsonPathPointer targetPointer = new JsonPathPointer(targetPath.split("\\."));
-
+    final JsonPathPointer targetPointer = new JsonPathPointer(target);
     mappings.add(new Mapping(sourceQuery, targetPointer, type));
     return this;
   }

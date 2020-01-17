@@ -15,19 +15,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class MsgPackMergeTool {
 
-  /** The maximum JSON key length. */
-  public static final int MAX_JSON_KEY_LEN = 256;
-
   /**
    * The message for the exception, which is thrown if the resulting document is not a map (json
    * object).
    */
   public static final String EXCEPTION_MSG_RESULTING_DOCUMENT_IS_NOT_OF_TYPE_MAP =
       "Processing failed, since mapping will result in a non map object (json object).";
-
-  /** The message for the exception which is thrown if the mapping is either null or empty. */
-  public static final String EXCEPTION_MSG_MAPPING_NULL_NOR_EMPTY =
-      "Mapping must be neither null nor empty!";
 
   private final MsgPackDocumentIndexer documentIndexer;
   private final MsgPackDocumentExtractor documentExtractor;
@@ -37,9 +30,9 @@ public final class MsgPackMergeTool {
   private final UnsafeBuffer resultBuffer = new UnsafeBuffer(0, 0);
 
   public MsgPackMergeTool(final int initialDocumentSize) {
-    this.documentIndexer = new MsgPackDocumentIndexer();
-    this.documentExtractor = new MsgPackDocumentExtractor();
-    this.treeWriter = new MsgPackDocumentTreeWriter(initialDocumentSize);
+    documentIndexer = new MsgPackDocumentIndexer();
+    documentExtractor = new MsgPackDocumentExtractor();
+    treeWriter = new MsgPackDocumentTreeWriter(initialDocumentSize);
 
     reset();
   }
@@ -49,27 +42,15 @@ public final class MsgPackMergeTool {
   }
 
   /**
-   * Throws no mapping exceptions. Assumes default values in case a mapping has ambiguous results.
-   */
-  public void mergeDocument(final DirectBuffer document, final Mapping... mappings) {
-    mergeDocument(document, false, mappings);
-  }
-
-  /**
    * Throws exceptions on ambiguous mapping results
    *
    * @throws MappingException in case a mapping has ambiguous results
    */
-  public void mergeDocumentStrictly(final DirectBuffer document, final Mapping... mappings) {
-    mergeDocument(document, true, mappings);
-  }
-
-  private void mergeDocument(
-      final DirectBuffer document, final boolean strictMode, final Mapping... mappings) {
+  public void mergeDocument(final DirectBuffer document, final Mapping... mappings) {
     EnsureUtil.ensureNotNull("document", document);
 
     if (mappings != null && mappings.length > 0) {
-      final MsgPackDiff diff = documentExtractor.extract(document, strictMode, mappings);
+      final MsgPackDiff diff = documentExtractor.extract(document, mappings);
       diff.mergeInto(currentTree);
     } else {
       final MsgPackDiff diff = documentIndexer.index(document);
