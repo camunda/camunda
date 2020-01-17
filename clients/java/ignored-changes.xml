@@ -1,0 +1,7 @@
+<differences>
+  <difference>
+    <className>io/zeebe/client/ZeebeClient</className>
+    <method>io.zeebe.client.impl.command.GatewayVersionCommandImpl newGatewayVersionCommand()</method>
+    <differenceType>7012</differenceType>
+  </difference>
+</differences>

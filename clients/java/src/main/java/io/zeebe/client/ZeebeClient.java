@@ -28,6 +28,7 @@ import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.client.impl.command.GatewayVersionCommandImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable, JobClient {
@@ -252,4 +253,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   ActivateJobsCommandStep1 newActivateJobsCommand();
+
+  /**
+   * Command to get the version of the gateway.
+   *
+   * @return
+   */
+  GatewayVersionCommandImpl newGatewayVersionCommand();
 }

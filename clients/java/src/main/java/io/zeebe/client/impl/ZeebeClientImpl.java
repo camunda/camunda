@@ -44,6 +44,7 @@ import io.zeebe.client.impl.command.ActivateJobsCommandImpl;
 import io.zeebe.client.impl.command.CancelWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.command.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.command.DeployWorkflowCommandImpl;
+import io.zeebe.client.impl.command.GatewayVersionCommandImpl;
 import io.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.zeebe.client.impl.command.ResolveIncidentCommandImpl;
@@ -301,6 +302,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
     return new ActivateJobsCommandImpl(
         asyncStub, config, objectMapper, credentialsProvider::shouldRetryRequest);
+  }
+
+  @Override
+  public GatewayVersionCommandImpl newGatewayVersionCommand() {
+    return new GatewayVersionCommandImpl(
+        asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
   }
 
   private JobClient newJobClient() {
