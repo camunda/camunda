@@ -80,7 +80,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(lifecycleAware);
-    inOrder.verify(lifecycleAware, times(1)).onOpen(any());
     inOrder.verify(lifecycleAware, times(1)).onRecovered(any());
     inOrder.verify(lifecycleAware, times(1)).onClose();
 
@@ -110,7 +109,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, times(1)).onRecovered(any());
     inOrder.verify(typedRecordProcessor, times(1)).onClose();
 
@@ -134,7 +132,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
@@ -173,7 +170,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(2))
@@ -201,7 +197,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
@@ -366,7 +361,7 @@ public final class StreamProcessorTest {
         (processingContext) -> {
           processingContextActor = processingContext.getActor();
           final ZeebeState state = processingContext.getZeebeState();
-          return processors()
+          return processors(state.getKeyGenerator())
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -425,7 +420,7 @@ public final class StreamProcessorTest {
         (processingContext) -> {
           processingContextActor = processingContext.getActor();
           final ZeebeState state = processingContext.getZeebeState();
-          return processors()
+          return processors(state.getKeyGenerator())
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,

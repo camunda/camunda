@@ -291,13 +291,8 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
   }
 
   @Override
-  public void onOpen(final ReadonlyProcessingContext processingContext) {
-    actor = processingContext.getActor();
-  }
-
-  @Override
   public void onRecovered(final ReadonlyProcessingContext processingContext) {
-    // recovered
+    actor = processingContext.getActor();
   }
 
   @Override

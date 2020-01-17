@@ -58,12 +58,11 @@ public final class StreamProcessorReprocessingTest {
 
     // when
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final StreamProcessor streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, state) ->
-                processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors
+                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(secondPosition), any(), any(), any(), any());
@@ -71,7 +70,6 @@ public final class StreamProcessorReprocessingTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onOpen(any());
     // reprocessing
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
@@ -118,7 +116,6 @@ public final class StreamProcessorReprocessingTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onOpen(any());
     // reprocessing
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
@@ -155,12 +152,11 @@ public final class StreamProcessorReprocessingTest {
 
     // when
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
-    final StreamProcessor streamProcessor =
-        streamProcessorRule.startTypedStreamProcessor(
-            (processors, state) ->
-                processors
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
-                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors
+                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
 
     verify(typedRecordProcessor, TIMEOUT.times(1))
         .processRecord(eq(secondPosition), any(), any(), any(), any());
@@ -168,7 +164,6 @@ public final class StreamProcessorReprocessingTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onOpen(any());
     // no reprocessing
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(2)).onRecovered(any());
     // normal processing
@@ -217,7 +212,6 @@ public final class StreamProcessorReprocessingTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(2))
         .processRecord(eq(firstPosition), any(), any(), any(), any());
@@ -243,7 +237,6 @@ public final class StreamProcessorReprocessingTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder
         .verify(typedRecordProcessor, never())
         .processRecord(eq(firstPosition), any(), any(), any(), any());

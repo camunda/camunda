@@ -9,8 +9,6 @@ package io.zeebe.engine.processor;
 
 public interface StreamProcessorLifecycleAware {
 
-  default void onOpen(final ReadonlyProcessingContext context) {}
-
   /** Callback after reprocessing was successful and before regular processing begins */
   default void onRecovered(final ReadonlyProcessingContext context) {}
 

@@ -98,16 +98,12 @@ public final class StreamProcessorRule implements TestRule {
     return streams.getLogStreamRecordWriter(logName);
   }
 
-  public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
-    final String logName = getLogName(partitionId);
-    return streams.newLogStreamRecordWriter(logName);
-  }
-
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return startTypedStreamProcessor(
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return factory.build(TypedRecordProcessors.processors(), zeebeState);
+          return factory.build(
+              TypedRecordProcessors.processors(zeebeState.getKeyGenerator()), zeebeState);
         });
   }
 
@@ -226,20 +222,6 @@ public final class StreamProcessorRule implements TestRule {
       final int partition, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(partition))
-        .recordType(RecordType.COMMAND)
-        .intent(intent)
-        .event(value)
-        .write();
-  }
-
-  public long writeCommandOnPartition(
-      final LogStreamRecordWriter writer,
-      final long key,
-      final Intent intent,
-      final UnpackedObject value) {
-    return streams
-        .newRecord(writer)
-        .key(key)
         .recordType(RecordType.COMMAND)
         .intent(intent)
         .event(value)

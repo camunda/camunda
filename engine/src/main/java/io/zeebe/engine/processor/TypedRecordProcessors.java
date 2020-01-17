@@ -18,11 +18,14 @@ public final class TypedRecordProcessors {
 
   private final RecordProcessorMap recordProcessorMap = new RecordProcessorMap();
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
+  private final KeyGenerator keyGenerator;
 
-  private TypedRecordProcessors() {}
+  private TypedRecordProcessors(final KeyGenerator keyGenerator) {
+    this.keyGenerator = keyGenerator;
+  }
 
-  public static TypedRecordProcessors processors() {
-    return new TypedRecordProcessors();
+  public static TypedRecordProcessors processors(final KeyGenerator keyGenerator) {
+    return new TypedRecordProcessors(keyGenerator);
   }
 
   // TODO: could remove the ValueType argument as it follows from the intent
@@ -48,7 +51,7 @@ public final class TypedRecordProcessors {
 
   public <T extends UnifiedRecordValue> TypedRecordProcessors onCommand(
       final ValueType valueType, final Intent intent, final CommandProcessor<T> commandProcessor) {
-    return onCommand(valueType, intent, new CommandProcessorImpl<>(commandProcessor));
+    return onCommand(valueType, intent, new CommandProcessorImpl<>(keyGenerator, commandProcessor));
   }
 
   public TypedRecordProcessors withListener(final StreamProcessorLifecycleAware listener) {
