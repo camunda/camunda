@@ -29,8 +29,8 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -170,10 +170,10 @@ public class AtomixTransportTest {
   }
 
   @Test
-  public void shouldOnInvalidResponseRetryUntilTimeout() {
+  public void shouldOnInvalidResponseRetryUntilTimeout() throws InterruptedException {
     // given
-    final var retries = new AtomicLong(0);
-    serverTransport.subscribe(0, new DirectlyResponder(bytes -> retries.getAndIncrement())).join();
+    final var latch = new CountDownLatch(2);
+    serverTransport.subscribe(0, new DirectlyResponder(bytes -> latch.countDown())).join();
 
     // when
     final var requestFuture =
@@ -185,7 +185,7 @@ public class AtomixTransportTest {
 
     // then
     assertThatThrownBy(requestFuture::join).hasRootCauseInstanceOf(TimeoutException.class);
-    assertThat(retries).hasValueGreaterThan(1);
+    latch.await(5, TimeUnit.SECONDS);
   }
 
   @Test
