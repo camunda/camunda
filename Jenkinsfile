@@ -380,23 +380,22 @@ pipeline {
             }
           }
         }
-        // FIXME: OPT-3099
-//        stage('Rolling data upgrade') {
-//          agent {
-//            kubernetes {
-//              cloud 'optimize-ci'
-//              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-//              defaultContainer 'jnlp'
-//              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
-//            }
-//          }
-//          steps {
-//            retry(2) {
-//              unstash name: "optimize-stash-distro"
-//              dataUpgradeTestSteps()
-//            }
-//          }
-//        }
+        stage('Rolling data upgrade') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            retry(2) {
+              unstash name: "optimize-stash-distro"
+              dataUpgradeTestSteps()
+            }
+          }
+        }
         stage('IT Latest') {
           agent {
             kubernetes {
@@ -577,7 +576,7 @@ void dataUpgradeTestSteps() {
     sh ("""apt-get update && apt-get install -y jq""")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pengine-latest")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -f qa/upgrade-optimize-data -pl generator -am")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots")
   }
 }
 

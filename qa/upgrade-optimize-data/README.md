@@ -7,7 +7,7 @@ This module runs as follows:
 
 1. Start Camunda bpm platform and Elasticsearch.
 2. Generate 1000 process instances and deploy these to the engine.
-3. Start the firts version of Optimize from the upgrade list.
+3. Start the first version of Optimize from the upgrade list.
 4. Generate all possible Optimize data using the data structures of the given version of Optimize.
 5. Terminate previous version of optimize and run the migration script.
 6. Start the next version of Optimize after migration.

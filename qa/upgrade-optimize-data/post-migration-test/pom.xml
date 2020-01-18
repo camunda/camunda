@@ -5,6 +5,9 @@
   <properties>
     <skipTests>true</skipTests>
     <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
+    <old.optimize.elasticsearch.port>9250</old.optimize.elasticsearch.port>
+    <new.optimize.elasticsearch.port>9200</new.optimize.elasticsearch.port>
+    <elasticsearch.snapshot.path>/usr/share/elasticsearch/essnapshots</elasticsearch.snapshot.path>
   </properties>
 
   <parent>
@@ -37,13 +40,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>${junit.jupiter.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
       <version>${hamcrest.version}</version>
@@ -57,98 +53,42 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <!-- 1. Start CamBPM and ES through docker-compose -->
-              <execution>
-                <id>docker-start</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <environmentVariables>
-                    <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
-                    <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
-                  </environmentVariables>
-                  <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
-                  <workingDirectory>../../../</workingDirectory>
-                  <arguments>
-                    <argument>-f</argument>
-                    <argument>${docker.compose.file}</argument>
-                    <argument>up</argument>
-                    <argument>-d</argument>
-                    <argument>--force-recreate</argument>
-                    <argument>--renew-anon-volumes</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-              <!-- Shutdown test environment after integration testing -->
-              <execution>
-                <id>docker-remove</id>
-                <phase>post-integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <skip>${skip.docker}</skip>
-                  <executable>docker-compose</executable>
-                  <workingDirectory>../../../</workingDirectory>
-                  <arguments>
-                    <argument>-f</argument>
-                    <argument>${docker.compose.file}</argument>
-                    <argument>down</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
-              <!-- 2. Unpack previous & current Optimize versions, copy optimize data generators with dependencies -->
+
+              <!-- 1. Start CamBPM and ES through docker-compose -->
               <execution>
-                <id>download-generators</id>
+                <id>start-old-new-ES-and-CamBpm</id>
                 <goals>
                   <goal>run</goal>
                 </goals>
                 <phase>pre-integration-test</phase>
                 <configuration>
-                  <skip>${skip.tests}</skip>
-                  <target name="unpack optimize distributions">
-                    <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
-                    <property environment="env" />
-                    <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
-                      <isset property="env.MAVEN_SETTINGS_XML" />
-                    </condition>
-                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
-                      <sequential>
-                        <echo message="Downloading &amp; unpacking Optimize Report Generator @{currentVersion}..." />
-                        <ac:if>
-                          <matches string="@{currentVersion}" pattern="2\.5\.0" />
-                          <ac:then>
-                            <!-- generator for 2.5.0 is broken, a patch version needs to be used -->
-                            <ac:var name="generatorArtifactVersion" value="2.5.1" />
-                          </ac:then>
-                          <ac:else>
-                            <ac:var name="generatorArtifactVersion" value="@{currentVersion}" />
-                          </ac:else>
-                        </ac:if>
-                        <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
-                          <arg value="-c" />
-                          <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${generatorArtifactVersion}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
-                        </exec>
-                      </sequential>
-                    </ac:for>
+                  <skip>${skip.docker}</skip>
+                  <target name="Starting CamBpm and old ES through docker-compose" xmlns:ac="antlib:net.sf.antcontrib">
+                    <exec dir="${project.basedir}/../../.." executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="docker-compose up -d --force-recreate --renew-anon-volumes cambpm" />
+                      <env key="CAMBPM_VERSION" value="${camunda.engine.version}" />
+                    </exec>
+                    <echo message="Create ES instances" />
+                    <!-- The old ElasticSearch docker container will automatically mount the ES data folder -->
+                    <exec dir="${project.basedir}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="docker-compose up -d --force-recreate --renew-anon-volumes" />
+                      <env key="NEW_ES_VERSION" value="${elasticsearch.version}" />
+                      <env key="OLD_ES_VERSION" value="${previous.optimize.elasticsearch.version}" />
+                      <env key="ELASTICSEARCH_SNAPSHOT_PATH" value="${elasticsearch.snapshot.path}" />
+                    </exec>
+                    <echo message="Create ES instances have been created." />
                   </target>
                 </configuration>
               </execution>
-              <!-- 3. Make sure CamBPM and ES are up and running -->
+
+              <!-- 2. Make sure CamBPM and ES are up and running -->
               <execution>
-                <id>check-cambpm-is-up</id>
+                <id>check-es-cambpm-is-up</id>
                 <goals>
                   <goal>run</goal>
                 </goals>
@@ -156,23 +96,43 @@
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                    <echo message="Check ES is running..." />
-                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="9200" />
-                    </waitfor>
-                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <http url="http://localhost:9200/_cluster/state" />
-                    </waitfor>
-                    <echo message="ES is running." />
+
                     <echo message="Check CamBPM is running..." />
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
                       <socket server="localhost" port="8080" />
                     </waitfor>
                     <echo message="CamBPM is running." />
+
+                    <echo message="Check new ES is running..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="${new.optimize.elasticsearch.port}" />
+                    </waitfor>
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <http url="http://localhost:${new.optimize.elasticsearch.port}/_cluster/state" />
+                    </waitfor>
+                    <echo message="New ES is running." />
+
+                    <echo message="Old ES successfully started." />
+                    <echo message="Waiting for old ES to be fully up..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="${old.optimize.elasticsearch.port}" />
+                    </waitfor>
+                    <waitfor maxwait="50" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <http url="http://localhost:${old.optimize.elasticsearch.port}/_cluster/health?wait_for_status=yellow&amp;timeout=10s" />
+                    </waitfor>
+                    <echo message="Old ES is running." />
+
+                    <echo message="Make sure that ES can write data to the shared volume" />
+                    <exec dir="${project.build.directory}" executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="docker exec -it upgrade-optimize-data-tests-old-elasticsearch-version chown -R elasticsearch:elasticsearch ${elasticsearch.snapshot.path}" />
+                    </exec>
+
                   </target>
                 </configuration>
               </execution>
-              <!--4. Generate engine data-->
+
+              <!--3. Generate engine data-->
               <execution>
                 <id>generate-engine-data</id>
                 <goals>
@@ -194,7 +154,36 @@
                   </target>
                 </configuration>
               </execution>
-              <!--5. Generate optimize data and run migration-->
+
+              <!-- 4. Download and unpack optimize data generators with dependencies -->
+              <execution>
+                <id>download-generators</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <skip>${skip.tests}</skip>
+                  <target name="unpack optimize distributions">
+                    <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
+                    <property environment="env" />
+                    <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
+                      <isset property="env.MAVEN_SETTINGS_XML" />
+                    </condition>
+                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
+                      <sequential>
+                        <echo message="Downloading &amp; unpacking Optimize Report Generator @{currentVersion}..." />
+                        <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                          <arg value="-c" />
+                          <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:@{currentVersion}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                        </exec>
+                      </sequential>
+                    </ac:for>
+                  </target>
+                </configuration>
+              </execution>
+              
+              <!--5. Download and unpack Optimize versions -->
               <execution>
                 <id>unpack</id>
                 <goals>
@@ -211,26 +200,123 @@
                     <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
                       <sequential>
                         <echo message="Downloading &amp; unpacking Optimize @{currentVersion}..." />
-                        <ac:if>
-                          <matches string="@{currentVersion}" pattern="2\.[0-2]\.0" />
-                          <ac:then>
-                            <ac:var name="optimize.classifier" value="standalone" />
-                          </ac:then>
-                          <ac:else>
-                            <ac:var name="optimize.classifier" value="production" />
-                          </ac:else>
-                        </ac:if>
                         <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                           <arg value="-c" />
-                          <arg value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier} -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                          <arg value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:production -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                         </exec>
                       </sequential>
                     </ac:for>
                   </target>
                 </configuration>
               </execution>
+
+              <!--6. Start old Optimize, generate Data and kill Optimize-->
               <execution>
-                <id>run-migration</id>
+                <id>start-old-Optimize-and-run-data-generation</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>integration-test</phase>
+                <configuration>
+                  <target>
+                    <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
+                    <property environment="env"/>
+                    <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
+                      <isset property="env.MAVEN_SETTINGS_XML"/>
+                    </condition>
+
+                      <echo message="Removing the default environment-config so we can overwrite the ES port..." />
+                      <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash">
+                        <arg value="-c" />
+                        <arg value="rm ./environment/environment-config.yaml" />
+                      </exec>
+
+                      <echo message="Starting the old Optimize version ${project.previousVersion}"/>
+                      <exec dir="${project.build.directory}/${project.previousVersion}/"
+                            executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh"
+                            spawn="true" >
+                        <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${old.optimize.elasticsearch.port}" />
+                      </exec>
+
+                      <echo message="Wait for Optimize to start..."/>
+                      <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                        <socket server="localhost" port="8090"/>
+                      </waitfor>
+
+                      <echo message="Waiting for Optimize to populate ES..."/>
+                      <exec executable="/bin/bash">
+                        <arg value="-c"/>
+                        <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_count' | jq '.count // 0') -ge 100; do sleep 2; done"/>
+                      </exec>
+
+                      <echo message="Generating optimize data"/>
+                      <exec executable="/bin/bash" failonerror="true">
+                        <arg value="-c"/>
+                        <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${project.previousVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                      </exec>
+
+                      <echo message="Killing Optimize ${project.previousVersion}..."/>
+                      <exec executable="/bin/bash">
+                        <arg value="-c"/>
+                        <arg value="pkill -f org.camunda.optimize.Main"/>
+                      </exec>
+
+                  </target>
+                </configuration>
+              </execution>
+
+              <!-- 7. Copy the data from the old ES to the new ES instance -->
+              <execution>
+                <id>copy-data</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>integration-test</phase>
+                <configuration>
+                  <skip>${skip.tests}</skip>
+                  <target name="Copy ES data" xmlns:ac="antlib:net.sf.antcontrib">
+
+                    <echo message="Create repository in old and new ES" />
+                    <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="curl -X PUT localhost:${old.optimize.elasticsearch.port}/_snapshot/my_backup?pretty -H 'Content-Type: application/json' -d'{ &quot;type&quot;: &quot;fs&quot;, &quot;settings&quot;: { &quot;location&quot;: &quot;${elasticsearch.snapshot.path}&quot;, &quot;compress&quot;: false } }' " />
+                    </exec>
+                    <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="curl -X PUT localhost:${new.optimize.elasticsearch.port}/_snapshot/my_backup?pretty -H 'Content-Type: application/json' -d'{ &quot;type&quot;: &quot;fs&quot;, &quot;settings&quot;: { &quot;location&quot;: &quot;${elasticsearch.snapshot.path}&quot;, &quot;compress&quot;: false } }' " />
+                    </exec>
+                    <echo message="Repositories successfully created." />
+
+                    <echo message="Create snapshot on old ES" />
+                    <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="curl -X PUT localhost:${old.optimize.elasticsearch.port}/_snapshot/my_backup/snapshot_1?wait_for_completion=true" />
+                    </exec>
+                    <echo message="Snapshot successfully created." />
+
+                    <!-- Both docker containers share a volume on ${elasticsearch.snapshot.path}. Thus, it's possible to immediately restore the snapshot. -->
+                    <echo message="Restore snapshot on new ES" />
+                    <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="curl -X POST localhost:${new.optimize.elasticsearch.port}/_snapshot/my_backup/snapshot_1/_restore?wait_for_completion=true" />
+                    </exec>
+                    <echo message="Snapshot successfully restored." />
+
+                    <echo message="Deleting snapshot..." />
+                    <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="curl -X DELETE localhost:${new.optimize.elasticsearch.port}/_snapshot/my_backup/snapshot_1?pretty" />
+                    </exec>
+                    <echo message="Snapshot deletion was successful." />
+
+                  </target>
+                </configuration>
+              </execution>
+
+
+              <!--7. Run migration, start new Optimize and run post migration tests -->
+              <execution>
+                <id>run-migration-start-new-Optimize-and-run-post-migration-tests</id>
                 <goals>
                   <goal>run</goal>
                 </goals>
@@ -243,102 +329,87 @@
                       <isset property="env.MAVEN_SETTINGS_XML" />
                     </condition>
 
-                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
-                      <sequential>
-                        <ac:if>
-                          <matches string="@{currentVersion}" pattern="2\.5\.0" />
-                          <ac:then>
-                            <!-- generator for 2.5.0 is broken, a patch version needs to be used -->
-                            <ac:var name="generatorArtifactVersion" value="2.5.1" />
-                          </ac:then>
-                          <ac:else>
-                            <ac:var name="generatorArtifactVersion" value="@{currentVersion}" />
-                          </ac:else>
-                        </ac:if>
-                        <!-- Migrate -->
-                        <ac:if>
-                          <!-- only if not the first version in the list -->
-                          <not>
-                            <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*" />
-                          </not>
-                          <ac:then>
-                            <echo message="Running migration to @{currentVersion}..." />
-                            <ac:if>
-                              <matches string="@{currentVersion}" pattern="2\.[0-3]\.0" />
-                              <ac:then>
-                                <ac:var name="optimize.upgrade.command" value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain" />
-                              </ac:then>
-                              <ac:else>
-                                <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh " />
-                              </ac:else>
-                            </ac:if>
-                            <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash">
-                              <arg value="-c" />
-                              <arg value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'" />
-                            </exec>
-                            <echo message="Starting Optimize @{currentVersion}..." />
-                            <exec dir="${project.build.directory}/@{currentVersion}/" executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true" />
+                    <echo message="Removing the default environment-config so we can overwrite the ES port..." />
+                    <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="rm ./environment/environment-config.yaml" />
+                    </exec>
 
-                            <echo message="Wait for Optimize to start..." />
-                            <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                              <socket server="localhost" port="8090" />
-                            </waitfor>
+                    <echo message="Upgrade to the new Optimize version ${project.version}..." />
+                    <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="set -o pipefail; ./upgrade/upgrade.sh --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT ${project.version}]: /'" />
+                      <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}"/>
+                    </exec>
+                    <echo message="Migration successfully completed." />
 
-                            <echo message="Waiting for Optimize to populate ES..." />
-                            <exec executable="/bin/bash">
-                              <arg value="-c" />
-                              <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:9200/optimize-process-definition/_count' | jq '.count // 0') -eq 0; do sleep 2; done" />
-                            </exec>
+                    <echo message="Starting Optimize ${project.version}..."/>
+                    <exec dir="${project.build.directory}/${project.version}/"
+                          executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
+                      <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
+                    </exec>
+                    <echo message="Optimize successfully started." />
 
-                            <echo message="Running post migration tests..." />
-                            <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
-                              <arg value="-c" />
-                              <arg value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} -f qa/upgrade-optimize-data -pl post-migration-test | sed 's/^/[POST MIGRATION TESTS]: /'" />
-                            </exec>
-                              <!-- Generate additional data-->
-                            <echo message="Generating optimize data" />
-                            <exec executable="/bin/bash" failonerror="true">
-                              <arg value="-c" />
-                              <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${generatorArtifactVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
-                            </exec>
-                            <echo message="Killing Optimize @{currentVersion}..." />
-                            <exec executable="/bin/bash">
-                              <arg value="-c" />
-                              <arg value="pkill -f org.camunda.optimize.Main" />
-                            </exec>
-                          </ac:then>
-                        <ac:else>
-                          <!--If the first version in the list-->
-                          <!-- Start the first version in the list and generate data-->
+                    <echo message="Wait for Optimize to start..."/>
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="8090"/>
+                    </waitfor>
+                    <echo message="Optimize successfully booted up." />
 
-                          <exec dir="${project.build.directory}/@{currentVersion}/" executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true" />
+                    <echo message="Waiting for Optimize to populate ES..."/>
+                    <exec executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:${new.optimize.elasticsearch.port}/optimize-process-definition/_count' | jq '.count // 0') -eq 0; do sleep 2; done" />
+                    </exec>
+                    <echo message="ES is fully populated." />
 
-                          <echo message="Wait for Optimize to start..." />
-                          <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                            <socket server="localhost" port="8090" />
-                          </waitfor>
+                    <echo message="Running post migration tests..." />
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings} -f qa/upgrade-optimize-data -pl post-migration-test | sed 's/^/[POST MIGRATION TESTS]: /'" />
+                    </exec>
+                    <echo message="Post migration tests successfully completed." />
 
-                          <echo message="Waiting for Optimize to populate ES..." />
-                          <exec executable="/bin/bash">
-                            <arg value="-c" />
-                            <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:9200/optimize-process-definition/_count' | jq '.count // 0') -eq 0; do sleep 2; done" />
-                          </exec>
+                    <!-- Generate additional data just to check if it's still possible-->
+                    <echo message="Generating optimize data" />
+                    <exec executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${project.version}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
+                    </exec>
 
-                          <echo message="Generating optimize data" />
-                          <exec executable="/bin/bash" failonerror="true">
-                            <arg value="-c" />
-                            <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${generatorArtifactVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
-                          </exec>
+                    <echo message="Killing Optimize ${project.version}..." />
+                    <exec executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="pkill -f org.camunda.optimize.Main" />
+                    </exec>
 
-                          <echo message="Killing Optimize @{currentVersion}..." />
-                          <exec executable="/bin/bash">
-                            <arg value="-c" />
-                            <arg value="pkill -f org.camunda.optimize.Main" />
-                          </exec>
-                        </ac:else>
-                        </ac:if>
-                      </sequential>
-                    </ac:for>
+                  </target>
+                </configuration>
+              </execution>
+
+              <!-- 8. Cleanup: stop all docker containers -->
+              <execution>
+                <id>cleanup</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>post-integration-test</phase>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <target name="Stop docker container" xmlns:ac="antlib:net.sf.antcontrib">
+                    <echo message="Stopping CamBPM..." />
+                    <exec dir="${project.basedir}/../../.." executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="docker-compose rm -sfv" />
+                    </exec>
+                    <echo message="CamBPM successfully stopped." />
+
+                    <echo message="Stopping ES instances..." />
+                    <exec dir="${project.basedir}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="docker-compose rm -sfv" />
+                    </exec>
+                    <echo message="ES instances successfully stopped." />
                   </target>
                 </configuration>
               </execution>
