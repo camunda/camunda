@@ -675,7 +675,8 @@ test('show process instance count', async t => {
   await t.expect(e.instanceCount.textContent).contains('Total Instance Count:');
 });
 
-test('process parts', async t => {
+// Process parts are currently broken: https://jira.camunda.com/browse/OPT-3101
+test.skip('process parts', async t => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
