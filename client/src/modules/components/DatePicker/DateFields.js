@@ -10,9 +10,9 @@ import DateRange from './DateRange';
 import DateInput from './DateInput';
 import moment from 'moment';
 import {isDateValid} from './service';
+import {Icon} from 'components';
 
 import './DateFields.scss';
-import {t} from 'translation';
 
 export default class DateFields extends React.PureComponent {
   constructor(props) {
@@ -75,14 +75,8 @@ export default class DateFields extends React.PureComponent {
             date={startDate}
             error={!startDateValid}
             disabled={this.props.disabled}
+            icon={<Icon type="arrow-right" />}
           />
-          <span
-            className={classnames('DateFields__divider', {
-              DateFields__divider_disabled: this.props.disabled
-            })}
-          >
-            {t('common.filter.dateModal.to')}
-          </span>
           <DateInput
             className={classnames('DateInput__end', {
               'DateInput__start--highlight': this.isFieldSelected('endDate')
@@ -98,6 +92,7 @@ export default class DateFields extends React.PureComponent {
             date={endDate}
             error={!endDateValid}
             disabled={this.props.disabled}
+            icon={<Icon type="calender" />}
           />
         </div>
         {this.state.popupOpen && (

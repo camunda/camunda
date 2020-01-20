@@ -1,9 +1,44 @@
 .DateFilter {
-  .tip {
-    font-size: 14px;
-    color: #626264;
-    display: block;
-    margin: 30px 0 10px 0;
-    text-align: center;
+  .Form {
+    padding-left: 20%;
+    padding-right: 10%;
+
+    .number {
+      max-width: 50px;
+      margin-right: 10px;
+    }
+
+    .selectGroup {
+      align-items: flex-start;
+    }
+
+    .unitSelection {
+      display: flex;
+      flex-wrap: wrap;
+
+      .Select {
+        flex: 1;
+
+        &:first-child {
+          flex-basis: 100%;
+          margin-bottom: 10px;
+        }
+      }
+
+      > .Message {
+        position: absolute;
+        top: 140px;
+      }
+
+      .customDate {
+        border-top: 1px solid #bbb;
+      }
+    }
+  }
+
+  .DateFilterPreview {
+    font-size: 0.875em;
+    align-items: center;
+    white-space: nowrap;
   }
 }

@@ -15,19 +15,15 @@ export const variableFilterOperatorButton = text =>
 export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input').nth(
   -1
 );
-export const dateFilterStartInput = Selector(
-  '.DateFields .DateInput__input-group:first-child input'
-);
-export const dateFilterEndInput = Selector('.DateFields .DateInput__input-group:last-child input');
+export const dateFilterStartInput = Selector('.DateFields .DateInput:first-child input');
+export const dateFilterEndInput = Selector('.DateFields .DateInput:last-child input');
 export const pickerDate = number =>
   Selector('.DateFields .rdr-Calendar:first-child .rdr-Day').withText(number);
-export const button = text => Selector('.Button').withText(text);
-export const relativeDateButton = Selector('.ButtonGroup .Button').withText('Relative Date');
-const relativeDateInputs = Selector('.label')
-  .withText('In the last')
-  .nextSibling();
-export const relativeDateInput = relativeDateInputs.find('input');
-export const relativeDateDropdown = relativeDateInputs.find('.Select');
+export const infoText = Selector('.Modal__content .tip');
+export const dateTypeSelect = Selector('.selectGroup > .Select');
+export const unitSelect = Selector('.unitSelection .Select:first-child');
+export const customDateInput = Selector('.unitSelection').find('input');
+export const customDateDropdown = Selector('.unitSelection .Select:nth-of-type(2)');
 export const durationFilterOperator = Selector('.DurationFilter .Select');
 export const durationFilterInput = Selector('.DurationFilter input[type="text"]');
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');

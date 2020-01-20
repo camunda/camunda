@@ -7,12 +7,9 @@
 import React from 'react';
 import moment from 'moment';
 
-import {ButtonGroup} from 'components';
-
 import './DatePicker.scss';
 
 import DateFields from './DateFields';
-import DateButton from './DateButton';
 
 import {isDateValid, DATE_FORMAT} from './service';
 
@@ -30,35 +27,7 @@ export default class DatePicker extends React.Component {
     };
   }
 
-  render() {
-    return (
-      <React.Fragment>
-        <div className="DatePicker__inputs">
-          <DateFields
-            format={DATE_FORMAT}
-            onDateChange={this.onDateChange}
-            startDate={this.state.startDate}
-            endDate={this.state.endDate}
-            setValidState={this.setValidState}
-            disabled={this.props.disabled}
-          />
-        </div>
-        <div className="DatePicker__buttons">
-          <ButtonGroup className="DatePicker__buttonRow" disabled={this.props.disabled}>
-            {this.getDateButtons(['today', 'yesterday', 'past7', 'past30'])}
-          </ButtonGroup>
-          <ButtonGroup className="DatePicker__buttonRow" disabled={this.props.disabled}>
-            {this.getDateButtons(['lastWeek', 'lastMonth', 'lastYear'])}
-          </ButtonGroup>
-          <ButtonGroup className="DatePicker__buttonRow" disabled={this.props.disabled}>
-            {this.getDateButtons(['thisWeek', 'thisMonth', 'thisYear'])}
-          </ButtonGroup>
-        </div>
-      </React.Fragment>
-    );
-  }
-
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate(_, prevState) {
     const isAllValid = isDateValid(this.state.startDate) && isDateValid(this.state.endDate);
     if (
       this.props.onDateChange &&
@@ -77,12 +46,6 @@ export default class DatePicker extends React.Component {
   }
 
   setValidState = valid => this.setState({valid});
-
-  getDateButtons(labels) {
-    return labels.map(label => (
-      <DateButton format={DATE_FORMAT} dateLabel={label} key={label} setDates={this.setDates} />
-    ));
-  }
 
   setDates = dates => this.setState({...dates});
 
@@ -116,4 +79,17 @@ export default class DatePicker extends React.Component {
       }
     );
   };
+
+  render() {
+    return (
+      <DateFields
+        format={DATE_FORMAT}
+        onDateChange={this.onDateChange}
+        startDate={this.state.startDate}
+        endDate={this.state.endDate}
+        setValidState={this.setValidState}
+        disabled={this.props.disabled}
+      />
+    );
+  }
 }

@@ -26,7 +26,7 @@ it('should render an unordered list', () => {
   expect(node.find('ul')).toExist();
 });
 
-it('should display a start date filter', () => {
+it('should display date preview if the filter is a date filter', () => {
   const startDate = '2017-11-16T00:00:00';
   const endDate = '2017-11-26T23:59:59';
   const data = [
@@ -226,45 +226,6 @@ it('should display a flow node filter with executing nodes', () => {
     nodes: [{id: 'flowNode1', name: undefined}],
     operator: undefined
   });
-});
-
-it('should display a rolling date filter', () => {
-  const data = [
-    {
-      type: 'startDate',
-      data: {
-        type: 'relative',
-        start: {
-          value: 18,
-          unit: 'hours'
-        },
-        end: null
-      }
-    }
-  ];
-
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
-
-  expect(node).toMatchSnapshot();
-});
-
-it('should display an end date filter', () => {
-  const startDate = '2017-11-16T00:00:00';
-  const endDate = '2017-11-26T23:59:59';
-  const data = [
-    {
-      type: 'endDate',
-      data: {
-        type: 'fixed',
-        start: startDate,
-        end: endDate
-      }
-    }
-  ];
-
-  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} />);
-
-  expect(node.find('ActionItem').dive()).toIncludeText('End Date is between');
 });
 
 it('should display a duration filter', () => {

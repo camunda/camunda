@@ -70,7 +70,9 @@ test('variable filter modal dependent on variable type', async t => {
 
   await t.typeText(Filter.variableFilterTypeaheadInput, 'dateVar', {replace: true});
   await t.click(Filter.variableFilterTypeaheadOption('dateVar'));
-  await t.click(Filter.button('Past 30 days'));
+  await t.click(Filter.dateFilterStartInput);
+  await t.click(Filter.pickerDate('1'));
+  await t.click(Filter.pickerDate('7'));
   await t.click(Filter.dateFilterEndInput);
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
@@ -136,55 +138,58 @@ test('pick a start date from the date picker', async t => {
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Start Date'));
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Report.option('Fixed Date'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
-  await t.click(Filter.pickerDate('8'));
-
-  await t.click(Report.primaryModalButton);
-
-  await t.expect(Report.reportRenderer.visible).ok();
-});
-
-test('pick a start date from the predefined buttons', async t => {
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'None');
-  await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Start Date'));
-
-  await t.click(Filter.button('This Year'));
+  await t.click(Filter.pickerDate('22'));
+  await t.click(Filter.infoText);
 
   await t.takeElementScreenshot(
     Report.modalContainer,
     'process/filter/fixed-start-date-filter.png'
   );
 
-  const filterStart = await Filter.dateFilterStartInput.value;
-  const filterEnd = await Filter.dateFilterEndInput.value;
-  await t.expect(filterStart).eql(`${new Date().getFullYear()}-01-01`);
-  await t.expect(filterEnd).eql(`${new Date().getFullYear()}-12-31`);
-
   await t.click(Report.primaryModalButton);
+
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add relative start date filter', async t => {
+test('add relative current month start date filter', async t => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Start Date'));
-  await t.click(Filter.relativeDateButton);
-  await t.typeText(Filter.relativeDateInput, '5', {replace: true});
-  await t.click(Filter.relativeDateDropdown);
-  await t.click(Report.option('months'));
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Report.option('This...'));
+  await t.click(Filter.unitSelect);
+  await t.click(Report.option('month'));
 
   await t.takeElementScreenshot(
     Report.modalContainer,
     'process/filter/relative-start-date-filter.png'
   );
+
+  await t.click(Report.primaryModalButton);
+  await t.expect(Report.reportRenderer.visible).ok();
+});
+
+test('add relative last 5 days end date filter', async t => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'None');
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('End Date'));
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Report.option('Last...'));
+  await t.click(Filter.unitSelect);
+  await t.click(Report.option('custom number'));
+  await t.typeText(Filter.customDateInput, '5', {replace: true});
+  await t.click(Filter.customDateDropdown);
+  await t.click(Report.option('days'));
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -246,7 +251,10 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Start Date'));
 
-  await t.click(Filter.button('This Year'));
+  await t.click(Filter.dateTypeSelect);
+  await t.click(Report.option('Last...'));
+  await t.click(Filter.unitSelect);
+  await t.click(Report.option('month'));
   await t.click(Report.primaryModalButton);
 
   await t.click(Report.filterButton);

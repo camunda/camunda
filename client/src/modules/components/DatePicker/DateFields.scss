@@ -7,12 +7,12 @@
 
 .DateFields__inputContainer {
   display: flex;
-  justify-content: center;
   align-items: stretch;
 }
 
 .DateFields__range {
   position: absolute;
+  width: max-content;
   left: 0;
   top: 50px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
@@ -52,10 +52,10 @@
 }
 
 .DateFields__range--right::before {
-  right: 20px;
+  left: 150px;
 }
 .DateFields__range--right::after {
-  right: 0;
+  left: 130px;
 }
 
 .DateFields__divider {

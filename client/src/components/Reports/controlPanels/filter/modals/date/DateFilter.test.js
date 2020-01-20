@@ -7,106 +7,68 @@
 import React from 'react';
 
 import DateFilter from './DateFilter';
-import {Modal, Button} from 'components';
 import {shallow} from 'enzyme';
 
-console.error = jest.fn();
+import {convertFilterToState} from './service';
 
-jest.mock('services', () => {
-  const rest = jest.requireActual('services');
-  return {
-    ...rest,
-    formatters: {
-      camelCaseToLabel: text => text
-    }
-  };
-});
+jest.mock('./service');
+
+const props = {
+  filterType: 'startDate',
+  filterData: null
+};
+
+const dateTypeSelect = node => node.find('Select').at(0);
+const unitSelect = node => node.find('Select').at(1);
 
 it('should contain a modal', () => {
-  const node = shallow(<DateFilter filterType="startDate" />);
+  const node = shallow(<DateFilter {...props} />);
 
   expect(node.find('Modal')).toExist();
 });
 
-it('should contain a Date Picker', () => {
-  const node = shallow(<DateFilter filterType="startDate" />);
+it('should disable the unit selection when not selecting this or last', () => {
+  const node = shallow(<DateFilter {...props} />);
 
-  expect(node.find('DatePicker')).toExist();
+  dateTypeSelect(node).prop('onChange')('today');
+
+  expect(unitSelect(node).prop('disabled')).toBe(true);
 });
 
-it('should pass the onDateChangeFunction to the DatePicker', () => {
-  const node = shallow(<DateFilter filterType="startDate" />);
+it('should render preview if the filter is valid', async () => {
+  convertFilterToState.mockReturnValue({dateType: 'yesterday'});
+  const filter = {type: 'startDate', data: {type: 'relative', start: {value: '1', unit: 'days'}}};
+  const node = shallow(<DateFilter {...props} filterData={filter} />);
 
-  expect(node.find('DatePicker')).toHaveProp('onDateChange');
+  expect(convertFilterToState).toHaveBeenCalledWith(filter.data);
+
+  expect(node.find('DateFilterPreview')).toExist();
 });
 
-it('should contain a button to abort the filter creation', () => {
-  const spy = jest.fn();
-  const node = shallow(<DateFilter filterType="startDate" close={spy} addFilter={jest.fn()} />);
+it('should reset the unit selection when changing the date type', () => {
+  const node = shallow(<DateFilter {...props} />);
+  dateTypeSelect(node).prop('onChange')('last');
+  unitSelect(node).prop('onChange')('custom');
+  dateTypeSelect(node).prop('onChange')('last');
+  expect(unitSelect(node).prop('value')).toBe('');
+});
 
-  const abortButton = node
-    .find(Modal.Actions)
-    .find(Button)
-    .at(0);
+it('should have isInvalid prop on the input if value is invalid', async () => {
+  const node = shallow(<DateFilter {...props} />);
+  dateTypeSelect(node).prop('onChange')('last');
+  unitSelect(node).prop('onChange')('custom');
+  node.find('.number').simulate('change', {target: {value: '-1'}});
 
-  abortButton.simulate('click');
-
-  expect(spy).toHaveBeenCalled();
+  expect(node.find({error: true})).toExist();
 });
 
 it('should have a create filter button', () => {
   const spy = jest.fn();
-  const node = shallow(<DateFilter filterType="startDate" addFilter={spy} />);
-  node.setState({
-    validDate: true
-  });
-  const addButton = node
-    .find(Modal.Actions)
-    .find(Button)
-    .at(1);
+  const filter = {type: 'startDate', data: {type: 'relative', start: {value: '5', unit: 'days'}}};
+  const node = shallow(<DateFilter {...props} addFilter={spy} filterData={filter} />);
+  const addButton = node.find({variant: 'primary'});
 
   addButton.simulate('click');
 
   expect(spy).toHaveBeenCalled();
-});
-
-it('should allow switching between static date and dynamic date mode', () => {
-  const node = shallow(<DateFilter filterType="startDate" />);
-
-  expect(node.find('ButtonGroup')).toMatchSnapshot();
-});
-
-it('should disable the add filter button when dynamic value is not valid', () => {
-  const node = shallow(<DateFilter filterType="startDate" />);
-
-  node.instance().setDynamicValue({target: {value: 'asd'}});
-
-  expect(node.state('validDate')).toBe(false);
-});
-
-it('shoud show a warning message if the modal is for end date filter', () => {
-  const endDateModal = shallow(<DateFilter filterType="endDate" />);
-
-  expect(endDateModal.find('MessageBox')).toExist();
-});
-
-it('shoud make difference between start and end date filter modals', () => {
-  const endDateModal = shallow(<DateFilter filterType="endDate" />);
-
-  expect(endDateModal.find(Modal.Header).html()).toMatch('Add End Date Filter');
-
-  endDateModal.instance().setState({
-    mode: 'dynamic'
-  });
-
-  expect(endDateModal.find(Modal.Header).html()).toMatch('Add End Date Filter');
-
-  const startDateModal = shallow(<DateFilter filterType="startDate" />);
-
-  expect(startDateModal.find(Modal.Header).html()).toMatch('Add Start Date Filter');
-
-  startDateModal.instance().setState({
-    mode: 'dynamic'
-  });
-  expect(startDateModal.find('.tip')).toIncludeText('Only include process instances started:');
 });

@@ -9,7 +9,7 @@ import moment from 'moment';
 
 import DateFields from './DateFields';
 import DateInput from './DateInput';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 jest.mock('./DateRange', () => props => `DateRange: props: ${JSON.stringify(props)}`);
 jest.mock('./DateInput');
@@ -19,20 +19,20 @@ const startDate = moment('2017-08-29').format(format);
 const endDate = moment('2020-06-05').format(format);
 
 it('should have start date input field', () => {
-  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} />);
+  const node = shallow(<DateFields format={format} startDate={startDate} endDate={endDate} />);
 
-  expect(node).toIncludeText('DateInput__start');
+  expect(node.find('.DateInput__start')).toExist();
 });
 
 it('should have end date input field', () => {
-  const node = mount(<DateFields format={format} startDate={startDate} endDate={endDate} />);
+  const node = shallow(<DateFields format={format} startDate={startDate} endDate={endDate} />);
 
-  expect(node).toIncludeText('DateInput__end');
+  expect(node.find('.DateInput__end')).toExist();
 });
 
 it('should set startDate on date change of start date input field', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <DateFields format={format} startDate={startDate} endDate={endDate} onDateChange={spy} />
   );
 
@@ -43,7 +43,7 @@ it('should set startDate on date change of start date input field', () => {
 
 it('should set endDate on date change of end date input field', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <DateFields format={format} startDate={startDate} endDate={endDate} onDateChange={spy} />
   );
 
@@ -53,7 +53,7 @@ it('should set endDate on date change of end date input field', () => {
 });
 
 it('should select date range popup on date input click', () => {
-  const node = mount(
+  const node = shallow(
     <DateFields
       format={format}
       startDate={startDate}
@@ -71,7 +71,7 @@ it('should select date range popup on date input click', () => {
 });
 
 it('should have DateRange', () => {
-  const node = mount(
+  const node = shallow(
     <DateFields
       format={format}
       startDate={startDate}
@@ -81,12 +81,12 @@ it('should have DateRange', () => {
   );
   node.setState({popupOpen: true});
 
-  expect(node).toIncludeText('DateRange');
+  expect(node.find('.DateFields__range')).toExist();
 });
 
 it('should change currently selected date to endDate', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <DateFields
       format={format}
       startDate={startDate}
@@ -105,7 +105,7 @@ it('should change currently selected date to endDate', () => {
 
 it('should selected endDate after second selection', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <DateFields
       format={format}
       startDate={startDate}
@@ -125,7 +125,7 @@ it('should selected endDate after second selection', () => {
 
 it('should selected endDate after second selection', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <DateFields
       format={format}
       startDate={startDate}
@@ -144,7 +144,7 @@ it('should selected endDate after second selection', () => {
 });
 
 it('should be possible to disable the date fields', () => {
-  const node = mount(
+  const node = shallow(
     <DateFields format={format} startDate={startDate} endDate={endDate} disabled />
   );
 

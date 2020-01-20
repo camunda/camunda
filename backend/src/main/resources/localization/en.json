@@ -579,16 +579,17 @@
       },
       "list": {
         "operators": {
-          "between": "is between",
+          "isBetween": "is between",
+          "between": "between",
           "more": "is more than",
           "less": "is less than",
           "greater": "is greater than",
-          "lessAgo": "is less than <span class='previewItemValue'>{duration}</span> ago",
           "is": "is",
           "not": "is not",
           "neither": "is neither",
           "nor": "nor",
-          "or": "or"
+          "or": "or",
+          "occurs": "occurs"
         },
         "values": {
           "null": "null",
@@ -606,30 +607,27 @@
       "editFilter": "Edit Filter",
       "dateModal": {
         "endDateWarning": "Reports with an active End Date Filter will only show completed instances.",
-        "fixedDate": "Fixed Date",
-        "relativeDate": "Relative Date",
-        "selectDates": "Select start and end dates to filter by:",
-        "includeInstances": {
-          "startDate": "Only include process instances started:",
-          "endDate": "Only include process instances ended:",
-          "evaluationDateTime": "Only include process instances evaluated:"
+        "info": {
+          "startDate": "Process Instances <b>started</b>",
+          "endDate": "Process Instances <b>ended</b>",
+          "evaluationDateTime": "Process Instances <b>evaluated</b>"
         },
-        "inLast": "In the last",
-        "invalidInput": "Please enter a numeric value",
-        "buttons": {
+        "invalidInput": "Please enter a positive integer value",
+        "to": "to",
+        "invalidDate": "Please enter a valid date",
+        "preview": {
+          "this": "In the current",
+          "last": "In the last",
+          "completed": "completed"
+        },
+        "unit": {
           "today": "Today",
           "yesterday": "Yesterday",
-          "past7": "Past 7 days",
-          "past30": "Past 30 days",
-          "lastWeek": "Last Week",
-          "lastMonth": "Last Month",
-          "lastYear": "Last Year",
-          "thisWeek": "This Week",
-          "thisMonth": "This Month",
-          "thisYear": "This Year"
-        },
-        "to": "to",
-        "invalidDate": "Please enter a valid date"
+          "fixed": "Fixed Date",
+          "this": "This...",
+          "last": "Last...",
+          "custom": "custom number"
+        }
       },
       "variableModal": {
         "inputLabel": "Variable Name",
@@ -750,6 +748,10 @@
       "month": {
         "label": "month",
         "label-plural": "months"
+      },
+      "quarter": {
+        "label": "quarter",
+        "label-plural": "quarters"
       },
       "year": {
         "label": "year",

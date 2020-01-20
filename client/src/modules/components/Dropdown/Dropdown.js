@@ -194,7 +194,7 @@ export default class Dropdown extends React.Component {
           aria-expanded={open ? 'true' : 'false'}
           active={this.props.active || open}
           disabled={this.props.disabled}
-          id={this.props.id ? this.props.id + '-button' : ''}
+          id={this.props.id ? this.props.id + '-button' : undefined}
         >
           {this.props.label}
           <Icon type="down" className="downIcon" />

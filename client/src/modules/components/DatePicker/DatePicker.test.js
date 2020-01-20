@@ -13,7 +13,6 @@ import moment from 'moment';
 console.error = jest.fn();
 
 jest.mock('./DateFields', () => props => `DateFields: props: ${Object.keys(props)}`);
-jest.mock('./DateButton', () => props => `DateButton: props: ${Object.keys(props)}`);
 
 jest.mock('components', () => {
   return {
@@ -44,13 +43,3 @@ it('should set valid state to false when startDate or endDate is invalid', () =>
   node.instance().onDateChange('startDate', 'invalid date');
   expect(node.state().valid).toBe(false);
 });
-
-// looks like enzyme does not find certain elements when they are rendered in a Fragment
-// try again when this is closed: https://github.com/airbnb/enzyme/issues/1213
-// it('should contain date buttons', () => {
-//   const node = mount(<DatePicker />);
-
-//   console.log(node.debug());
-
-//   expect(node).toIncludeText('DateButton');
-// });

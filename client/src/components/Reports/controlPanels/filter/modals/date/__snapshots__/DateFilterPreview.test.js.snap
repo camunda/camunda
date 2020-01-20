@@ -1,0 +1,72 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should create Today/Yesterday preview 1`] = `
+<div
+  className="DateFilterPreview"
+>
+  <span
+    className="parameterName"
+  >
+    Start Date
+     
+  </span>
+  occurs
+  : 
+  <span
+    className="previewItemValue"
+  >
+    Today
+  </span>
+</div>
+`;
+
+exports[`should create correct fixed date preview 1`] = `
+<div
+  className="DateFilterPreview"
+>
+  <span
+    className="parameterName"
+  >
+    Start Date
+     
+  </span>
+  occurs
+  : 
+  between
+   
+  <span
+    className="previewItemValue"
+  >
+    2015-01-20
+  </span>
+   and
+   
+  <span
+    className="previewItemValue"
+  >
+    2019-05-11
+  </span>
+</div>
+`;
+
+exports[`should create correct last... with custom preview 1`] = `
+<div
+  className="DateFilterPreview"
+>
+  <span
+    className="parameterName"
+  >
+    End Date
+     
+  </span>
+  occurs
+  : 
+  In the last
+   
+  <span
+    className="previewItemValue"
+  >
+    5 months
+  </span>
+</div>
+`;

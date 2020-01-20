@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {DateFilter} from './date';
+export {DateFilter, DateFilterPreview} from './date';
 export {VariableFilter} from './variable';
 export {NodeFilter, NodeListPreview} from './node';
 export {DurationFilter} from './duration';

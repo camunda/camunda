@@ -579,16 +579,17 @@
       },
       "list": {
         "operators": {
-          "between": "liegt zwischen",
+          "isBetween": "liegt zwischen",
+          "between": "zwischen",
           "more": "ist mehr als",
           "less": "ist weniger als",
           "greater": "ist größer als",
-          "lessAgo": "ist weniger als <span class='previewItemValue'>{duration}</span> her",
           "is": "ist",
           "not": "ist nicht",
           "neither": "ist weder",
           "nor": "noch",
-          "or": "oder"
+          "or": "oder",
+          "occurs": "ist"
         },
         "values": {
           "null": "null",
@@ -606,30 +607,27 @@
       "editFilter": "Filter bearbeiten",
       "dateModal": {
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
-        "fixedDate": "Festes Datum",
-        "relativeDate": "Relatives Datum",
-        "selectDates": "Wählen Sie Start- und Enddatum aus, nach welchen gefiltert werden soll:",
-        "includeInstances": {
-          "startDate": "Nur Prozessinstanzen berücksichtigen, die gestartet wurden:",
-          "endDate": "Nur Prozessinstanzen einbeziehen, die beendet wurden:",
-          "evaluationDateTime": "Nur evaluierte Prozessinstanzen einbeziehen:"
+        "info": {
+          "startDate": "Prozessinstanzen <b>gestartet</b>",
+          "endDate": "Prozessinstanzen <b>beendet</b>",
+          "evaluationDateTime": "Prozessinstanzen <b>evaluierte</b>"
         },
-        "inLast": "In der letzten",
-        "invalidInput": "Bitte geben Sie einen Zahlenwert ein",
-        "buttons": {
+        "invalidInput": "Bitte geben Sie einen positiven ganzzahligen Wert ein",
+        "to": "bis",
+        "invalidDate": "Bitte gültiges Datum eingeben",
+        "preview": {
+          "this": "In dem aktuellen",
+          "last": "In den letzten",
+          "completed": "Abgeschlossen"
+        },
+        "unit": {
           "today": "Heute",
           "yesterday": "Gestern",
-          "past7": "Letzte 7 Tage",
-          "past30": "Letzte 30 Tage",
-          "lastWeek": "Letzte Woche",
-          "lastMonth": "Letzter Monat",
-          "lastYear": "Letztes Jahr",
-          "thisWeek": "Diese Woche",
-          "thisMonth": "Diesen Monat",
-          "thisYear": "Dieses Jahr"
-        },
-        "to": "bis",
-        "invalidDate": "Bitte gültiges Datum eingeben"
+          "fixed": "Festes Datum",
+          "this": "Diese...",
+          "last": "Letzte...",
+          "custom": "Individuelle Nummer"
+        }
       },
       "variableModal": {
         "inputLabel": "Variablenname",
@@ -750,6 +748,10 @@
       "month": {
         "label": "Monat",
         "label-plural": "Monate"
+      },
+      "quarter": {
+        "label": "Quartal",
+        "label-plural": "Quartale"
       },
       "year": {
         "label": "Jahr",

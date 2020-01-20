@@ -21,3 +21,7 @@ export function isNonNegativeNumber(value) {
     return value.trim() && !isNaN(value.trim()) && +value >= 0;
   }
 }
+
+export function isPostiveInt(value) {
+  return isNonNegativeNumber(value) && Number.isInteger(+value);
+}

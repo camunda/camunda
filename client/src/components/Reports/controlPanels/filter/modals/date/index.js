@@ -5,3 +5,4 @@
  */
 
 export {default as DateFilter} from './DateFilter';
+export {default as DateFilterPreview} from './DateFilterPreview';

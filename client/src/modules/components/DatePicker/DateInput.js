@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import classnames from 'classnames';
 import {Input, Message} from 'components';
 
 import './DateInput.scss';
@@ -14,11 +13,11 @@ import {t} from 'translation';
 class DateInput extends React.PureComponent {
   render() {
     return (
-      <div className="DateInput__input-group">
+      <div className="DateInput">
         <Input
           type="text"
           ref={this.props.reference}
-          className={classnames(this.props.className, 'DateInput')}
+          className={this.props.className}
           value={this.props.date}
           onFocus={this.props.onFocus}
           onClick={this.onClick}
@@ -27,6 +26,7 @@ class DateInput extends React.PureComponent {
           isInvalid={this.props.error}
           disabled={this.props.disabled}
         />
+        {this.props.icon}
         {this.props.error && (
           <Message error className="DateInput__warning">
             {t('common.filter.dateModal.invalidDate')}

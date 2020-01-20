@@ -8,7 +8,7 @@ import React from 'react';
 import moment from 'moment';
 
 import {ActionItem} from 'components';
-import {NodeListPreview} from './modals';
+import {NodeListPreview, DateFilterPreview} from './modals';
 
 import './FilterList.scss';
 
@@ -31,55 +31,18 @@ export default class FilterList extends React.Component {
     for (let i = 0; i < this.props.data.length; i++) {
       const filter = this.props.data[i];
       if (filter.type.includes('Date')) {
-        const {type} = filter.data;
-
-        if (type === 'fixed') {
-          list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
-              <ActionItem
-                onClick={evt => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{t(`common.filter.types.${filter.type}`)}</span>
-                {this.createOperator(t('common.filter.list.operators.between'))}
-                <span className="previewItemValue">
-                  {moment(filter.data.start).format('YYYY-MM-DD')}
-                </span>
-                {this.createOperator(t('common.and'))}
-                <span className="previewItemValue">
-                  {moment(filter.data.end).format('YYYY-MM-DD')}
-                </span>
-              </ActionItem>
-            </li>
-          );
-        } else {
-          const {unit, value} = filter.data.start;
-
-          list.push(
-            <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
-              <ActionItem
-                onClick={evt => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{t(`common.filter.types.${filter.type}`)} </span>
-                <span
-                  dangerouslySetInnerHTML={{
-                    __html: t('common.filter.list.operators.lessAgo', {
-                      duration:
-                        value.toString() +
-                        ' ' +
-                        t(`common.unit.${unit.slice(0, -1)}.label${value !== 1 ? '-plural' : ''}`)
-                    })
-                  }}
-                />
-              </ActionItem>
-            </li>
-          );
-        }
+        list.push(
+          <li key={i} onClick={this.props.openEditFilterModal(filter)} className="listItem">
+            <ActionItem
+              onClick={evt => {
+                evt.stopPropagation();
+                this.props.deleteFilter(filter);
+              }}
+            >
+              <DateFilterPreview filterType={filter.type} filter={filter.data} />
+            </ActionItem>
+          </li>
+        );
       } else {
         if (filter.type.toLowerCase().includes('variable')) {
           const {name, type, data, filterForUndefined} = filter.data;
@@ -113,7 +76,7 @@ export default class FilterList extends React.Component {
                   }}
                 >
                   <span className="parameterName">{this.getVariableName(filter.type, name)}</span>
-                  {this.createOperator(t('common.filter.list.operators.between'))}
+                  {this.createOperator(t('common.filter.list.operators.isBetween'))}
                   <span className="previewItemValue">
                     {moment(data.start).format('YYYY-MM-DD')}
                   </span>

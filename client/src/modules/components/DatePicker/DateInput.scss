@@ -1,39 +1,41 @@
-.Input.DateInput {
-  flex: 1 0 auto;
-  font-size: 1em;
-  text-align: center;
-  padding: 8px 6px;
-}
+@import 'shared-styles/shared-styles.scss';
 
-.DateInput__input-group {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
+.DateInput {
   position: relative;
-}
 
-.Input.DateInput__start {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
+  .Input {
+    width: 130px;
 
-.Input.DateInput__end {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
+    &.DateInput__start {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      border-right: none;
+    }
 
-.Input.DateInput__start--highlight {
-  border-color: rgb(0, 145, 255);
-  background-color: rgba(0, 145, 255, 0.1);
-}
+    &.DateInput__end {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-left: none;
+    }
 
-.Input.DateInput__end--highlight {
-  border-color: rgb(0, 145, 255);
-  background-color: rgba(0, 145, 255, 0.1);
-}
+    &.DateInput__start--highlight,
+    &.DateInput__end--highlight {
+      border-color: rgb(0, 145, 255);
+      background-color: rgba(0, 145, 255, 0.1);
+    }
+  }
 
-.DateInput__warning {
-  position: absolute;
-  bottom: -20px;
-  left: 25%;
+  .Icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    right: 5px;
+    color: $text-disabled;
+  }
+
+  .DateInput__warning {
+    position: absolute;
+    top: 40px;
+  }
 }
