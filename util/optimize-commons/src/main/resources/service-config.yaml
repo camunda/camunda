@@ -70,11 +70,11 @@ engines:
       # * READ permission on the Authorization, Group, User & Tenant resources
       # to enable users to log in and Optimize to import the engine data.
       enabled: false
-      #When basic authentication is enabled, this password is used to
-      #authenticate against the engine.
+      # When basic authentication is enabled, this password is used to
+      # authenticate against the engine.
       password: ''
-      #When basic authentication is enabled, this user is used to authenticate
-      #against the engine.
+      # When basic authentication is enabled, this user is used to authenticate
+      # against the engine.
       user: ''
     # The webapps configuration allows Optimize to directly link
     # to the other Camunda Web Applications, e.g. to jump from
@@ -184,8 +184,8 @@ import:
 # a connection to it.
 es:
   connection:
-    #Maximum time without connection to Elasticsearch, Optimize should
-    #wait until a time out triggers.
+    # Maximum time without connection to Elasticsearch, Optimize should
+    # wait until a time out triggers.
     timeout: 10000
     # a list of Elasticsearch nodes Optimize can connect to. If you  have built
     # an Elasticsearch cluster with several nodes it is recommended to define
@@ -225,8 +225,8 @@ es:
       # used to enable or disable TLS/SSL for the HTTP connection
       enabled: false
 
-  #Maximum time a request to elasticsearch should last, before a timeout
-  #triggers.
+  # Maximum time a request to elasticsearch should last, before a timeout
+  # triggers.
   scrollTimeout: 60000
   settings:
     # the maximum number of buckets returned for an aggregation
@@ -243,33 +243,33 @@ es:
       # this property to take effect again, you need to delete all indexes (with it all data)
       # and restart Optimize.
       number_of_shards: 5
-      #How long Elasticsearch waits until the documents are available
-      #for search. A positive value defines the duration in seconds.
-      #A value of -1 means that a refresh needs to be done manually.
+      # How long Elasticsearch waits until the documents are available
+      # for search. A positive value defines the duration in seconds.
+      # A value of -1 means that a refresh needs to be done manually.
       refresh_interval: 2s
 
 plugin:
   # Defines the directory path in the local Optimize file system which should be checked for plugins
   directory: './plugin'
   variableImport:
-    #Look in the given base package list for variable import adaption plugins.
-    #If empty, the import is not influenced.
+    # Look in the given base package list for variable import adaption plugins.
+    # If empty, the import is not influenced.
     basePackages: []
   engineRestFilter:
-    #Look in the given base package list for engine rest filter plugins.
-    #If empty, the REST calls are not influenced.
+    # Look in the given base package list for engine rest filter plugins.
+    # If empty, the REST calls are not influenced.
     basePackages: []
   authenticationExtractor:
     # Looks in the given base package list for authentication extractor plugins.
     # If empty, the standard Optimize authentication mechanism is used.
     basePackages: []
   decisionInputImport:
-    #Look in the given base package list for Decision input import adaption plugins.
-    #If empty, the import is not influenced.
+    # Look in the given base package list for Decision input import adaption plugins.
+    # If empty, the import is not influenced.
     basePackages: []
   decisionOutputImport:
-    #Look in the given base package list for Decision output import adaption plugins.
-    #If empty, the import is not influenced.
+    # Look in the given base package list for Decision output import adaption plugins.
+    # If empty, the import is not influenced.
     basePackages: []
 
 serialization:
@@ -375,6 +375,8 @@ eventBasedProcess:
     # Requests will be rejected when exceeding that limit.
     # Defaults to 10MB.
     maxBatchRequestBytes: 10485760
+    # The maximum number of requests to the event ingestion endpoint that can be served at a time
+    maxRequests: 5
   eventIndexRollover:
     # scheduleIntervalInMinutes specifies how frequently the rollover API should be called to see if a rollover of the
     # event index is required (whether the rollover is triggered depends on the conditions specified by maxAgeInDays

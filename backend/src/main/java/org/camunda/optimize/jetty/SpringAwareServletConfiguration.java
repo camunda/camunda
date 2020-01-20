@@ -39,6 +39,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     "application/x-font-ttf," +
     "image/svg+xml";
 
+  private static final String SUSPEND_MS_KEY = "suspendMs";
   private static final String CONTEXT_CONFIG_LOCATION = "contextConfigLocation";
   private String springContextLocation = "classpath:applicationContext.xml";
   private String optimizeRestPackage = "org.camunda.optimize.rest";
@@ -93,6 +94,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     addLicenseFilter(context);
     addSingleSignOnFilter(context);
     addNoCachingFilter(context);
+    addEventIngestionQoSFilter(context);
     addIngestionRequestLimitFilter(context);
 
     NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
@@ -113,14 +115,31 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.addFilter(
       ingestionRequestLimitFilter,
       REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH,
-      EnumSet.of(DispatcherType.REQUEST)
+      EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC)
+    );
+  }
+
+  private void addEventIngestionQoSFilter(ServletContextHandler context) {
+    FilterHolder eventIngestionQoSFilterHolder = new FilterHolder();
+    eventIngestionQoSFilterHolder.setInitParameter(SUSPEND_MS_KEY, String.valueOf(500));
+    IngestionQoSFilter ingestionQoSFilter = new IngestionQoSFilter(
+      () -> getApplicationContext()
+        .getBean(ConfigurationService.class)
+        .getEventIngestionConfiguration()
+        .getMaxRequests()
+    );
+    eventIngestionQoSFilterHolder.setFilter(ingestionQoSFilter);
+    context.addFilter(
+      eventIngestionQoSFilterHolder,
+      REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH,
+      EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC)
     );
   }
 
   private void addSingleSignOnFilter(ServletContextHandler context) {
     FilterHolder singleSignOnFilterHolder = new FilterHolder();
     singleSignOnFilterHolder.setFilter(new SingleSignOnFilter(this));
-    context.addFilter(singleSignOnFilterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+    context.addFilter(singleSignOnFilterHolder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
   }
 
   private void addLicenseFilter(ServletContextHandler context) {
@@ -129,7 +148,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.addFilter(
       licenseFilterHolder,
       "/*",
-      EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR)
+      EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC)
     );
   }
 
@@ -139,7 +158,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     context.addFilter(
       licenseFilterHolder,
       "/*",
-      EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR)
+      EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC)
     );
   }
 

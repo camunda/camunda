@@ -91,6 +91,25 @@ public class EventIngestionRestIT extends AbstractIT {
   }
 
   @Test
+  public void ingestEventBatch_maxRequestsConfiguredReached() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setMaxRequests(0);
+
+    final List<CloudEventDto> eventDtos = IntStream.range(0, 1)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
+      .collect(toList());
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatch(eventDtos, null)
+      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_SERVICE_UNAVAILABLE);
+  }
+
+  @Test
   public void ingestEventBatch_customSecret() {
     // given
     final CloudEventDto eventDto = eventClient.createCloudEventDto();

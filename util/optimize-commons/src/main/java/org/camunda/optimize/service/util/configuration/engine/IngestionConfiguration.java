@@ -21,10 +21,12 @@ import java.util.Optional;
 public class IngestionConfiguration {
   private String accessToken;
   private long maxBatchRequestBytes;
+  private int maxRequests;
 
   @JsonCreator
   public IngestionConfiguration(@JsonProperty("accessToken") final String accessToken,
-                                @JsonProperty("maxBatchRequestLength") final long maxBatchRequestBytes) {
+                                @JsonProperty("maxBatchRequestLength") final long maxBatchRequestBytes,
+                                @JsonProperty("maxRequests") final int maxRequests) {
     this.accessToken = Optional.ofNullable(accessToken).orElseGet(() -> {
       final String generatedSecret = RandomStringUtils.random(
         16, 0, 0, true, true, null, new SecureRandom()
@@ -33,6 +35,7 @@ public class IngestionConfiguration {
       return generatedSecret;
     });
     this.maxBatchRequestBytes = maxBatchRequestBytes;
+    this.maxRequests = maxRequests;
   }
 
 }
