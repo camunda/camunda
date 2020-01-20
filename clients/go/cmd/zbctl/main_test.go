@@ -96,8 +96,9 @@ var tests = []struct {
 }
 
 func TestZbctlWithInsecureGateway(t *testing.T) {
-	err := buildZbctl()
+	output, err := buildZbctl()
 	if err != nil {
+		fmt.Println(string(output))
 		t.Fatal(fmt.Errorf("couldn't build zbctl: %w", err))
 	}
 
@@ -155,17 +156,17 @@ func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]
 	return cmd.CombinedOutput()
 }
 
-func buildZbctl() error {
+func buildZbctl() ([]byte, error) {
 	if runtime.GOOS == "linux" {
 		zbctl = "zbctl"
 	} else {
-		return fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
+		return nil, fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
-	cmd.Env = append(cmd.Env, "HOME=/tmp", "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
-	return cmd.Run()
+	cmd.Env = append(os.Environ(), "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
+	return cmd.CombinedOutput()
 }
