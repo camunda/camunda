@@ -23,7 +23,7 @@ beforeAll(() => {
   Object.defineProperty(window, 'location', {
     value: JSON.parse(windowProps)
   });
-  window.location.origin = 'http://example.com';
+  window.location.href = 'http://example.com/#/dashboard/1';
 });
 
 it('should render without crashing', () => {
