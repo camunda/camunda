@@ -317,6 +317,42 @@ public class InterruptingEventSubprocessTest {
         .doesNotContain("y");
   }
 
+  @Test
+  public void shouldCloseEventSubscriptions() {
+    // given
+    final var eventSubprocess = withEventSubprocess(builder);
+
+    eventSubprocess
+        .eventSubProcess(
+            "message-event-subprocess",
+            s ->
+                s.startEvent()
+                    .message(m -> m.name("other-message").zeebeCorrelationKey("key"))
+                    .endEvent())
+        .eventSubProcess(
+            "timer-event-subprocess",
+            s -> s.startEvent("other-timer").timerWithDuration("P1D").endEvent());
+
+    final long wfInstanceKey = createInstanceAndTriggerEvent(workflow(eventSubprocess));
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords()
+                .withWorkflowInstanceKey(wfInstanceKey)
+                .withMessageName("other-message")
+                .limit(4))
+        .extracting(Record::getIntent)
+        .contains(MessageSubscriptionIntent.CLOSED);
+
+    assertThat(
+            RecordingExporter.timerRecords()
+                .withWorkflowInstanceKey(wfInstanceKey)
+                .withHandlerNodeId("other-timer")
+                .limit(4))
+        .extracting(Record::getIntent)
+        .contains(TimerIntent.CANCELED);
+  }
+
   private static void assertEventSubprocessLifecycle(final long workflowInstanceKey) {
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
