@@ -176,7 +176,7 @@ pipeline {
               while ! nc -z -w 3 localhost 8090; do
                 sleep 5
               done
-              curl -X PUT \
+              curl -X POST \
                 http://localhost:8090/api/ingestion/event/batch \
                 -H 'Content-Type: application/cloudevents-batch+json' \
                 -H 'Authorization: secret' \
