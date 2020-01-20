@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -26,6 +27,11 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE
 
 public class EventStateProcessingServiceIT extends AbstractIT {
 
+  @BeforeEach
+  public void init() {
+    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+  }
+  
   @Test
   public void noEventsToProcess() {
     // when

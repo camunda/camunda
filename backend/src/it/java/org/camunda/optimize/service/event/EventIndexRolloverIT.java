@@ -16,6 +16,7 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -31,6 +32,11 @@ public class EventIndexRolloverIT extends AbstractIT {
   private static final int EXPECTED_NUMBER_OF_EVENTS = 10;
   private static final String EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER = "-000002";
   private static final String EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER = "-000003";
+
+  @BeforeEach
+  public void before() {
+    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+  }
 
   @Test
   public void testRolloverDueToDocAmountSuccessful() {

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -54,6 +55,9 @@ public class IngestionRestService {
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
                                 final @NotNull @Valid @RequestBody ValidList<CloudEventDto> cloudEventDtos) {
     validateAccessToken(requestContext);
+    if (!isEnabled()) {
+      throw new ForbiddenException("The event based process feature is not enabled.");
+    }
     eventService.saveEventBatch(mapToEventDto(cloudEventDtos));
   }
 
@@ -88,6 +92,10 @@ public class IngestionRestService {
 
   private String getAccessToken() {
     return configurationService.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken();
+  }
+
+  private boolean isEnabled() {
+    return configurationService.getEventBasedProcessConfiguration().isEnabled();
   }
 
   @Data
