@@ -1,7 +1,7 @@
 # Introduction
 
 Operate is a spring boot application.That means all ways to [configure](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config) a spring boot application can be applied. The configuration for Operate is stored in an YAML file `application.yml`. All Operate related settings are prefixed with `camunda.operate`.
-In the configuration it is possible to influence:
+The following parts are configurable:
 
  * [Authentication](authentication.md)
  * [Archiver and Importer](importer-and-archiver.md)
@@ -22,8 +22,8 @@ Operate stores and reads data in elasticsearch
 Name | Description | Default value
 -----|-------------|--------------
 camunda.operate.elasticsearch.clusterName | Clustername of elasticsearch | elasticsearch
-camunda.operate.elasticsearch.host | hostname where elasticsearch is running | localhost
-camunda.operate.elasticsearch.port | port of elasticsearch service | 9200
+camunda.operate.elasticsearch.host | Hostname where elasticsearch is running | localhost
+camunda.operate.elasticsearch.port | Port of elasticsearch service | 9200
 
 ## A snippet from application.yml:
 
@@ -102,9 +102,9 @@ Operate imports data from Zeebe Elasticsearch [Exporter](https://github.com/zeeb
 Name | Description | Default value
 -----|-------------|--------------
 camunda.operate.zeebeElasticsearch.clusterName | Clustername of elasticsearch | elasticsearch
-camunda.operate.zeebeElasticsearch.host | hostname where elasticsearch is running | localhost
-camunda.operate.zeebeElasticsearch.port | port of elasticsearch service | 9200
-camunda.operate.zeebeElasticsearch.prefix | Index prefix as configured in Elasticsearch | zeebe-record
+camunda.operate.zeebeElasticsearch.host | Hostname where elasticsearch is running | localhost
+camunda.operate.zeebeElasticsearch.port | Port of elasticsearch service | 9200
+camunda.operate.zeebeElasticsearch.prefix | Index prefix as configured in zeebe elasticsearch exporter | zeebe-record
 
 ## A snippet from application.yml:
 

@@ -76,5 +76,5 @@ camunda.operate:
 ```
 
 >**Note** Parallelization of import and archiving within one node will also happen based on Zeebe partitions, meaning that only configurations with
-> (number of nodes) * (threadsCount) <= (total number of Zeebe patitions) will make sense. Too many threads and nodes will still work, but some of them will be idle.
+> (number of nodes) * (threadsCount) <= (total number of Zeebe partitions) will make sense. Too many threads and nodes will still work, but some of them will be idle.
 
