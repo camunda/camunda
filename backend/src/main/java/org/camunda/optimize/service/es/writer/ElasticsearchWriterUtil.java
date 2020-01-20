@@ -15,7 +15,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -110,8 +109,6 @@ public class ElasticsearchWriterUtil {
       log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
       final BulkRequest bulkRequest = new BulkRequest();
-      bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-
       entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
       doBulkRequest(esClient, bulkRequest, importItemName);
     }
@@ -125,8 +122,6 @@ public class ElasticsearchWriterUtil {
       log.warn("Cannot import empty map of {}.", importItemName);
     } else {
       final BulkRequest bulkRequest = new BulkRequest();
-      bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-
       dtoMap.entrySet().forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
       doBulkRequest(esClient, bulkRequest, importItemName);
     }
