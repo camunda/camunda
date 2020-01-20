@@ -59,6 +59,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
@@ -363,6 +364,10 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       status = mapRejectionToStatus(((BrokerRejectionException) cause).getRejection());
     } else if (cause instanceof ClientOutOfMemoryException) {
       status = Status.UNAVAILABLE.augmentDescription(cause.getMessage());
+    } else if (cause instanceof TimeoutException) { // can be thrown by transport
+      status =
+          Status.DEADLINE_EXCEEDED.augmentDescription(
+              "Time out between gateway and broker: " + cause.getMessage());
     } else if (cause instanceof GrpcStatusException) {
       status = ((GrpcStatusException) cause).getGrpcStatus();
     } else {
