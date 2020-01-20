@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
+import org.slf4j.helpers.NOPLogger;
 
 public final class DbSnapshotStore implements SnapshotStore {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStore.class);
@@ -54,7 +55,7 @@ public final class DbSnapshotStore implements SnapshotStore {
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
 
-    this.positionSupplier = new StatePositionSupplier(-1, LOGGER);
+    this.positionSupplier = new StatePositionSupplier(-1, NOPLogger.NOP_LOGGER);
     this.lowerBoundId = new ReusableSnapshotId(Long.MIN_VALUE);
     this.upperBoundId = new ReusableSnapshotId(Long.MAX_VALUE);
     this.listeners = new CopyOnWriteArraySet<>();
