@@ -103,15 +103,15 @@ const colors = css`
 `;
 
 export const SkeletonBlock = themed(styled.div`
-  height: 12px;
+  height: 14px;
   width: 120px;
   ${colors};
 `);
 
 export const SkeletonCircle = themed(styled.div`
   border-radius: 50%;
-  margin-right: 5px;
-  height: 16px;
-  width: 16px;
+  margin-right: 11px;
+  height: 14px;
+  width: 14px;
   ${colors};
 `);
