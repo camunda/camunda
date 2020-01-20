@@ -8,7 +8,7 @@
     "lodash": "^4.17.15",
     "prop-types": "^15.6.2",
     "react": "^16.12.0",
-    "react-contenteditable": "^3.3.2",
+    "react-contenteditable": "^3.3.3",
     "react-dom": "^16.12.0",
     "react-router-dom": "^5.1.2",
     "react-textarea-autosize": "^7.1.2",
