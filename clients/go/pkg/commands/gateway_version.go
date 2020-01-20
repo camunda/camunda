@@ -20,7 +20,7 @@ import (
 )
 
 type GatewayVersionCommand interface {
-	Send(context.Context) (string, error)
+	Send(context.Context) (*pb.GatewayVersionResponse, error)
 }
 
 type gatewayVersionCmd struct {
@@ -28,7 +28,7 @@ type gatewayVersionCmd struct {
 	req *pb.GatewayVersionRequest
 }
 
-func (c *gatewayVersionCmd) Send(ctx context.Context) (string, error) {
+func (c *gatewayVersionCmd) Send(ctx context.Context) (*pb.GatewayVersionResponse, error) {
 	resp, err := c.gateway.GatewayVersion(ctx, c.req)
 
 	if err != nil {
@@ -36,10 +36,10 @@ func (c *gatewayVersionCmd) Send(ctx context.Context) (string, error) {
 			return c.Send(ctx)
 		}
 
-		return "", err
+		return nil, err
 	}
 
-	return resp.Version, nil
+	return resp, nil
 }
 
 func NewGatewayVersionCommand(client pb.GatewayClient, retryPred retryPredicate) GatewayVersionCommand {

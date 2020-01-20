@@ -40,13 +40,13 @@ func TestGatewayVersion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	response, err := command.Send(ctx)
+	resp, err := command.Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")
 	}
 
-	if response != expectedVersion {
+	if resp == nil || resp.Version != expectedVersion {
 		t.Errorf("Failed to receive response")
 	}
 }

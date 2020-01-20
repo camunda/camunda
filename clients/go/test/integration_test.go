@@ -223,7 +223,7 @@ func (s *integrationTestSuite) TestGatewayVersion() {
 		s.T().Fatal(err)
 	}
 
-	if resp == "" {
+	if resp == nil || resp.Version == "" {
 		s.T().Fatal("gateway version is empty")
 	}
 }

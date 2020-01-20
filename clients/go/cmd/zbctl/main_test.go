@@ -34,6 +34,12 @@ import (
 
 var zbctl string
 
+const (
+	// NOTE: taken from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	semVer = `(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*` +
+		`|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
+)
+
 type integrationTestSuite struct {
 	*containersuite.ContainerSuite
 }
@@ -128,18 +134,37 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			want := strings.Split(string(goldenOut), "\n")
 			got := strings.Split(string(cmdOut), "\n")
 
-			if diff := cmp.Diff(want, got, cmp.Comparer(compareStrIgnoreNumbers)); diff != "" {
+			if diff := cmp.Diff(want, got, cmp.Comparer(composeComparer(cmpIgnoreNums, cmpIgnoreVersion))); diff != "" {
 				t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
 			}
 		})
 	}
 }
 
-func compareStrIgnoreNumbers(x, y string) bool {
-	reg := regexp.MustCompile(`\d`)
+func composeComparer(cmpFuncs ...func(x, y string) bool) func(x, y string) bool {
+	return func(x, y string) bool {
+		for _, cmpFunc := range cmpFuncs {
+			if cmpFunc(x, y) {
+				return true
+			}
+		}
 
-	newX := reg.ReplaceAllString(x, "")
-	newY := reg.ReplaceAllString(y, "")
+		return false
+	}
+}
+
+func cmpIgnoreVersion(x, y string) bool {
+	versionRegex := regexp.MustCompile(semVer)
+	newX := versionRegex.ReplaceAllString(x, "")
+	newY := versionRegex.ReplaceAllString(y, "")
+
+	return newX == newY
+}
+
+func cmpIgnoreNums(x, y string) bool {
+	numbersRegex := regexp.MustCompile(`\d`)
+	newX := numbersRegex.ReplaceAllString(x, "")
+	newY := numbersRegex.ReplaceAllString(y, "")
 
 	return newX == newY
 }
