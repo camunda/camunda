@@ -675,8 +675,7 @@ test('show process instance count', async t => {
   await t.expect(e.instanceCount.textContent).contains('Total Instance Count:');
 });
 
-// Process parts are currently broken: https://jira.camunda.com/browse/OPT-3101
-test.skip('process parts', async t => {
+test('process parts', async t => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
@@ -688,9 +687,8 @@ test.skip('process parts', async t => {
   await t.resizeWindow(1150, 700);
 
   await t.click(e.processPartButton);
+  await t.click(e.modalFlowNode('StartEvent_1'));
   await t.click(e.modalFlowNode('assignApprover'));
-  // FIXME: OPT-3101 -> should be reviewInvoice instead
-  await t.click(e.modalFlowNode('invoiceProcessed'));
 
   await t.takeElementScreenshot(e.modalContainer, 'process/single-report/process-part.png');
   await t.maximizeWindow();
