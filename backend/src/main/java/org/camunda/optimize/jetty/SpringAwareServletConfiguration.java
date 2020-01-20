@@ -39,7 +39,6 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     "application/x-font-ttf," +
     "image/svg+xml";
 
-  private static final String SUSPEND_MS_KEY = "suspendMs";
   private static final String CONTEXT_CONFIG_LOCATION = "contextConfigLocation";
   private String springContextLocation = "classpath:applicationContext.xml";
   private String optimizeRestPackage = "org.camunda.optimize.rest";
@@ -121,7 +120,6 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
   private void addEventIngestionQoSFilter(ServletContextHandler context) {
     FilterHolder eventIngestionQoSFilterHolder = new FilterHolder();
-    eventIngestionQoSFilterHolder.setInitParameter(SUSPEND_MS_KEY, String.valueOf(500));
     IngestionQoSFilter ingestionQoSFilter = new IngestionQoSFilter(
       () -> getApplicationContext()
         .getBean(ConfigurationService.class)

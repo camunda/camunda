@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -17,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
+import org.camunda.optimize.jetty.IngestionQoSFilter;
 import org.camunda.optimize.jetty.MaxRequestSizeFilter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
@@ -101,12 +103,14 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(eventDtos, null)
-      .addSingleQueryParam(QUERY_PARAMETER_ACCESS_TOKEN, getAccessToken())
+      .buildIngestEventBatch(eventDtos, getAccessToken())
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_SERVICE_UNAVAILABLE);
+    assertThat(response).satisfies(httpResponse -> {
+      assertThat(httpResponse.getStatus()).isEqualTo(429);
+      assertThat(httpResponse.getHeaderString(HttpHeaders.RETRY_AFTER)).isEqualTo(IngestionQoSFilter.RETRY_AFTER_SECONDS);
+    });
   }
 
   @Test
