@@ -40,6 +40,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.GatewayVersionRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.GatewayVersionResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -282,6 +284,18 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
         RequestMapper::toUpdateJobRetriesRequest,
         ResponseMapper::toUpdateJobRetriesResponse,
         responseObserver);
+  }
+
+  @Override
+  public void gatewayVersion(
+      final GatewayVersionRequest request,
+      final StreamObserver<GatewayVersionResponse> responseObserver) {
+    final GatewayVersionResponse response =
+        GatewayVersionResponse.newBuilder()
+            .setVersion(getClass().getPackage().getImplementationVersion())
+            .build();
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
   }
 
   private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(
