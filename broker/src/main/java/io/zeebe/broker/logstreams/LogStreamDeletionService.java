@@ -18,14 +18,23 @@ public final class LogStreamDeletionService extends Actor implements SnapshotDel
   private final LogStream logStream;
   private final StatePositionSupplier positionSupplier;
   private final SnapshotStorage snapshotStorage;
+  private final String actorName;
 
   public LogStreamDeletionService(
+      final int nodeId,
+      final int partitionId,
       final LogStream logStream,
       final SnapshotStorage snapshotStorage,
       final StatePositionSupplier positionSupplier) {
     this.snapshotStorage = snapshotStorage;
     this.logStream = logStream;
     this.positionSupplier = positionSupplier;
+    actorName = buildActorName(nodeId, "DeletionService-" + partitionId);
+  }
+
+  @Override
+  public String getName() {
+    return actorName;
   }
 
   @Override
