@@ -290,10 +290,17 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
   public void gatewayVersion(
       final GatewayVersionRequest request,
       final StreamObserver<GatewayVersionResponse> responseObserver) {
+    final String version = getClass().getPackage().getImplementationVersion();
+    if (version == null || version.isBlank()) {
+      responseObserver.onError(
+          Status.NOT_FOUND
+              .augmentDescription("Failed to read gateway version, none was defined")
+              .asException());
+      return;
+    }
+
     final GatewayVersionResponse response =
-        GatewayVersionResponse.newBuilder()
-            .setVersion(getClass().getPackage().getImplementationVersion())
-            .build();
+        GatewayVersionResponse.newBuilder().setVersion(version).build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }
