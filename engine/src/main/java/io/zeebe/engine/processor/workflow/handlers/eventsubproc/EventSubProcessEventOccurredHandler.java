@@ -86,21 +86,28 @@ public final class EventSubProcessEventOccurredHandler<T extends ExecutableStart
   private boolean interruptParentScope(final BpmnStepContext<T> context) {
     final long scopeKey = context.getValue().getFlowScopeKey();
     final List<ElementInstance> children = context.getElementInstanceState().getChildren(scopeKey);
-    boolean waitForTermination = false;
+
+    int terminatedChildInstances = 0;
 
     for (final ElementInstance child : children) {
       if (child.canTerminate()) {
-        waitForTermination = true;
         context
             .getOutput()
             .appendFollowUpEvent(
                 child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
-      } else {
-        context.getElementInstanceState().consumeToken(scopeKey);
+
+        terminatedChildInstances += 1;
       }
     }
 
-    return waitForTermination;
+    // consume all other active tokens (e.g. tokens waiting at a joining gateway)
+    final int zombies =
+        context.getFlowScopeInstance().getNumberOfActiveTokens() - terminatedChildInstances;
+    for (int z = 0; z < zombies; z++) {
+      context.getElementInstanceState().consumeToken(scopeKey);
+    }
+
+    return terminatedChildInstances > 0;
   }
 
   private void prepareActivateContainer(
