@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 
 @RequiredArgsConstructor
@@ -134,21 +135,26 @@ public class ElasticSearchSchemaManager {
 
   public void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
                                   final IndexMappingCreator mapping,
-                                  final Set<String> additionalAliases) {
+                                  final Set<String> readOnlyAliases) {
+    final Set<String> prefixedReadOnlyAliases =
+      readOnlyAliases.stream()
+        .map(aliasName -> indexNameService.getOptimizeIndexAliasForIndex(aliasName))
+        .collect(toSet());
     final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
     final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
     final Settings indexSettings = createIndexSettings(mapping);
+
     try {
       if (mapping.getCreateFromTemplate()) {
         // Creating template without alias and adding aliases manually to indices created from this template to
         // ensure correct alias handling on rollover
         createOrUpdateTemplateWithoutAliases(
-          esClient, mapping, indexName, defaultAliasName, additionalAliases, indexSettings
+          esClient, mapping, indexName, defaultAliasName, prefixedReadOnlyAliases, indexSettings
         );
         createOptimizeIndexWithWriteAliasFromTemplate(esClient, indexName, defaultAliasName);
       } else {
         createOptimizeIndexFromRequest(
-          esClient, mapping, indexName, defaultAliasName, additionalAliases, indexSettings
+          esClient, mapping, indexName, defaultAliasName, prefixedReadOnlyAliases, indexSettings
         );
       }
     } catch (ElasticsearchStatusException e) {

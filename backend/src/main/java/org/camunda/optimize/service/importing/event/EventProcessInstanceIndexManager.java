@@ -79,7 +79,7 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
           );
           if (!indexAlreadyExists) {
             elasticSearchSchemaManager.createOptimizeIndex(
-              elasticsearchClient, processInstanceIndex, Collections.singleton(getOptimizeProcessIndexAlias())
+              elasticsearchClient, processInstanceIndex, Collections.singleton(PROCESS_INSTANCE_INDEX_NAME)
             );
           }
           publishedInstanceIndices.putIfAbsent(publishStateDto.getId(), publishStateDto);
@@ -89,10 +89,6 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
           );
         }
       });
-  }
-
-  private String getOptimizeProcessIndexAlias() {
-    return indexNameService.getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_INDEX_NAME);
   }
 
   public synchronized CompletableFuture<Void> registerIndexUsageAndReturnCompletableHook(
