@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.handlers.eventsubproc;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
@@ -21,10 +22,14 @@ import org.agrona.DirectBuffer;
 
 public final class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     extends EventOccurredHandler<T> {
+
+  private final CatchEventBehavior catchEventBehavior;
+
   private final WorkflowInstanceRecord containerRecord = new WorkflowInstanceRecord();
 
-  public EventSubProcessEventOccurredHandler() {
+  public EventSubProcessEventOccurredHandler(final CatchEventBehavior catchEventBehavior) {
     super(null);
+    this.catchEventBehavior = catchEventBehavior;
   }
 
   @Override
@@ -69,6 +74,9 @@ public final class EventSubProcessEventOccurredHandler<T extends ExecutableStart
 
   private long handleInterrupting(
       final BpmnStepContext<T> context, final EventTrigger triggeredEvent, final long scopeKey) {
+
+    catchEventBehavior.unsubscribeFromEvents(scopeKey, context);
+
     final boolean waitForTermination = interruptParentScope(context);
 
     if (waitForTermination) {
