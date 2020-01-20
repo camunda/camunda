@@ -350,6 +350,7 @@ public final class ZeebePartition extends Actor
         .logStream(logStream)
         .actorScheduler(scheduler)
         .zeebeDb(zeebeDb)
+        .nodeId(localBroker.getNodeId())
         .commandResponseWriter(commandApiService.newCommandResponseWriter())
         .onProcessedListener(commandApiService.getOnProcessedListener(partitionId))
         .streamProcessorFactory(
