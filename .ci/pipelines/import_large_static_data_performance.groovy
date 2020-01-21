@@ -125,6 +125,8 @@ pipeline {
         container('gcloud') {
           sh ("""
                 bash .ci/podSpecs/performanceTests/wait-for-import-to-finish.sh "${NAMESPACE}"
+
+                curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
                 
                 # assert expected counts
                 # note each call here is followed by `|| true` to not let the whole script fail if the curl call fails due short downtimes of pods
