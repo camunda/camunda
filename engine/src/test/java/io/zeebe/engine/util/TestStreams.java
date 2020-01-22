@@ -247,6 +247,7 @@ public final class TestStreams {
 
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
+            0,
             streamProcessor,
             currentSnapshotController,
             stream.getAsyncLogStream(),
@@ -388,6 +389,7 @@ public final class TestStreams {
 
     @Override
     public void close() {
+      logStreamWriter.close();
       logStream.close();
       logStorageRule.close();
     }

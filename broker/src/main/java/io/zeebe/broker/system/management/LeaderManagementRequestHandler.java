@@ -21,19 +21,26 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
 
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderForPartitions =
       new Int2ObjectHashMap<>();
-  private final BrokerInfo localBroker;
+  private final String actorName;
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
   private final Atomix atomix;
 
   public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
-    this.localBroker = localBroker;
     this.atomix = atomix;
+    this.actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
   }
 
   @Override
   public void onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.submit(() -> leaderForPartitions.remove(partitionId));
+    actor.submit(
+        () -> {
+          final var recordWriter = leaderForPartitions.remove(partitionId);
+
+          if (recordWriter != null) {
+            recordWriter.close();
+          }
+        });
   }
 
   @Override
@@ -58,7 +65,7 @@ public final class LeaderManagementRequestHandler extends Actor implements Parti
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "ManagementRequestHandler");
+    return actorName;
   }
 
   @Override

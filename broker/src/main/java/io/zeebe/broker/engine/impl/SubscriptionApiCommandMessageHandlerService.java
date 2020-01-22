@@ -23,23 +23,29 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions =
       new Int2ObjectHashMap<>();
   private final Atomix atomix;
-  private final BrokerInfo localBroker;
+  private final String actorName;
 
   public SubscriptionApiCommandMessageHandlerService(
       final BrokerInfo localBroker, final Atomix atomix) {
-    this.localBroker = localBroker;
     this.atomix = atomix;
+    this.actorName = buildActorName(localBroker.getNodeId(), "SubscriptionApi");
   }
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "SubscriptionApi");
+    return actorName;
   }
 
   @Override
   public void onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.submit(() -> leaderPartitions.remove(partitionId));
+    actor.submit(
+        () -> {
+          final var recordWriter = leaderPartitions.remove(partitionId);
+          if (recordWriter != null) {
+            recordWriter.close();
+          }
+        });
   }
 
   @Override

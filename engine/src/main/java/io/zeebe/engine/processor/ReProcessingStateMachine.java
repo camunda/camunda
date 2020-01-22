@@ -323,6 +323,9 @@ public final class ReProcessingStateMachine {
   private static final class NoopStreamWriter implements TypedStreamWriter {
 
     @Override
+    public void setDisabled(boolean disabled) {}
+
+    @Override
     public void appendRejection(
         final TypedRecord<? extends UnpackedObject> command,
         final RejectionType type,
@@ -373,5 +376,8 @@ public final class ReProcessingStateMachine {
     public long flush() {
       return 0;
     }
+
+    @Override
+    public void close() {}
   }
 }
