@@ -7,7 +7,7 @@
   <collaboration id="collaboration_3">
     <participant id="Process_Engine_1" name="Invoice Receipt" processRef="invoice-2-tenants-and-shared" />
   </collaboration>
-  <process id="invoice-2-tenants-and-shared" name="Invoice 2 Tenants &amp; Shared" isExecutable="true" camunda:versionTag="V2.0" camunda:historyTimeToLive="45">
+  <process id="invoice-2-tenants-and-shared" name="Invoice 2 Tenants &amp; Shared" isExecutable="true" camunda:versionTag="V2.0">
     <laneSet id="laneSet_5">
       <lane id="Approver" name="Approver">
         <flowNodeRef>invoice_approved</flowNodeRef>
