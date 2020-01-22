@@ -19,6 +19,7 @@ MAVEN_DOCKER_IMAGE = "maven:3.6.1-jdk-8-slim"
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+PREV_ES_TEST_VERSION_POM_PROPERTY = "previous.optimize.elasticsearch.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 
@@ -252,8 +253,8 @@ String gcloudContainerSpec() {
   """
 }
 
-String integrationTestPodSpec(String camBpmVersion, String esVersion) {
-  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchUpgradeContainerSpec( "6.4.0")+
+String integrationTestPodSpec(String camBpmVersion, String esVersion, String prevEsVersion) {
+  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchUpgradeContainerSpec( prevEsVersion)+
           elasticSearchContainerSpec(esVersion)
 }
 
@@ -286,6 +287,7 @@ pipeline {
     GCR_REGISTRY = credentials('docker-registry-ci3')
     def mavenProps = readMavenPom().getProperties()
     ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+    PREV_ES_VERSION = mavenProps.getProperty(PREV_ES_TEST_VERSION_POM_PROPERTY)
     CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
   }
 
@@ -364,7 +366,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
           }
           steps {
@@ -386,7 +388,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
           }
           steps {

@@ -7,9 +7,10 @@ def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-b
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+PREV_ES_TEST_VERSION_POM_PROPERTY = "previous.optimize.elasticsearch.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
-static String mavenElasticsearchAgent(env, esVersion, cambpmVersion) {
+static String mavenElasticsearchAgent(env, prevEsVersion, esVersion, cambpmVersion) {
   return """
 metadata:
   labels:
@@ -29,6 +30,8 @@ spec:
         path: /mnt/disks/array0
         type: Directory
     - name: cambpm-storage
+      emptyDir: {}
+    - name: es-snapshot
       emptyDir: {}
   initContainers:
   - name: init-sysctl
@@ -100,11 +103,15 @@ spec:
     volumeMounts:
       - name: cambpm-storage
         mountPath: /camunda/logs
-  - name: elasticsearch
-    image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
+  - name: elasticsearch-old
+    image: ${ELASTICSEARCH_DOCKER_IMAGE(prevEsVersion)}
     env:
+    - name: ES_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
     - name: ES_JAVA_OPTS
-      value: "-Xms6g -Xmx6g"
+      value: "-Xms5g -Xmx5g"
     - name: cluster.name
       value: elasticsearch
     - name: discovery.type
@@ -113,31 +120,79 @@ spec:
       value: false
     - name: bootstrap.memory_lock
       value: true
+    - name: http.port
+      value: 9250
+    - name: path.repo
+      value: /var/lib/elasticsearch/snapshots
     securityContext:
+      privileged: true
       capabilities:
-        add:
-          - IPC_LOCK
+        add: ["IPC_LOCK", "SYS_RESOURCE"]
     ports:
-    - containerPort: 9200
+    - containerPort: 9250
       name: es-http
-      protocol: TCP
-    - containerPort: 9300
-      name: es-transport
       protocol: TCP
     resources:
       limits:
         cpu: 12
-        memory: 8Gi
+        memory: 6Gi
       requests:
         cpu: 12
-        memory: 8Gi
+        memory: 6Gi
     volumeMounts:
       - name: es-storage
         mountPath: /usr/share/elasticsearch/data
-        subPath: data
+        subPath: data-old
       - name: es-storage
         mountPath: /usr/share/elasticsearch/logs
-        subPath: logs
+        subPath: logs-old
+      - name: es-snapshot
+        mountPath: /var/lib/elasticsearch/snapshots
+  - name: elasticsearch
+    image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
+    env:
+    - name: ES_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: ES_JAVA_OPTS
+      value: "-Xms1g -Xmx1g"
+    - name: cluster.name
+      value: elasticsearch
+    - name: discovery.type
+      value: single-node
+    - name: action.auto_create_index
+      value: false
+    - name: bootstrap.memory_lock
+      value: true
+    - name: http.port
+      value: 9200
+    - name: path.repo
+      value: /var/lib/elasticsearch/snapshots
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["IPC_LOCK", "SYS_RESOURCE"]
+    ports:
+    - containerPort: 9200
+      name: es-http
+      protocol: TCP
+    resources:
+      limits:
+        cpu: 2
+        memory: 2Gi
+      requests:
+        cpu: 2
+        memory: 2Gi
+    volumeMounts:
+      - name: es-storage
+        mountPath: /usr/share/elasticsearch/data
+        subPath: data-new
+      - name: es-storage
+        mountPath: /usr/share/elasticsearch/logs
+        subPath: logs-new
+      - name: es-snapshot
+        mountPath: /var/lib/elasticsearch/snapshots
 """
 }
 
@@ -224,6 +279,7 @@ pipeline {
         script {
           def mavenProps = readMavenPom().getProperties()
           env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+          env.PREV_ES_VERSION = params.PREV_ES_VERSION ?: mavenProps.getProperty(PREV_ES_TEST_VERSION_POM_PROPERTY)
           env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
         }
       }
@@ -234,7 +290,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenElasticsearchAgent(env, env.ES_VERSION, env.CAMBPM_VERSION)
+          yaml mavenElasticsearchAgent(env, env.PREV_ES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
       steps {
@@ -242,18 +298,18 @@ pipeline {
         container('maven') {
           sh 'apt-get update && apt-get install jq netcat -y'
           runMaven('-T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker clean install')
-          runMaven('-Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+          runMaven('-Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots -Dskip.docker -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
         }
       }
       post {
         always {
           container('maven') {
-            sh 'curl localhost:9200/_cat/indices?v'
+            sh 'curl localhost:9250/_cat/indices?v'
             sh ('''#!/bin/bash -ex
-              cp -R --parents /es-storage/logs /cambpm-storage .
+              cp -R --parents /es-storage/logs-old /es-storage/logs-new /cambpm-storage .
               chown -R 10000:1000 ./{es-storage,cambpm-storage}
             ''')
-            archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
+            archiveArtifacts artifacts: 'es-storage/logs-*/*,cambpm-storage/**/*', onlyIfSuccessful: false
           }
         }
       }
