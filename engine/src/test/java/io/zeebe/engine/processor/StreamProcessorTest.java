@@ -569,7 +569,7 @@ public final class StreamProcessorTest {
     // when
     recoveredLatch.await();
     final StateSnapshotController stateSnapshotController =
-      streamProcessorRule.getStateSnapshotController();
+        streamProcessorRule.getStateSnapshotController();
     streamProcessorRule.closeStreamProcessor();
 
     // then
