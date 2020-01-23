@@ -45,9 +45,7 @@ jest.mock(
 const mockCollapsablePanelProps = {
   getStateLocally: () => ({}),
   isFiltersCollapsed: false,
-  isSelectionsCollapsed: false,
-  expandFilters: jest.fn(),
-  expandSelections: jest.fn()
+  expandFilters: jest.fn()
 };
 
 const mountComponent = props => {

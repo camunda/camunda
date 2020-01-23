@@ -92,14 +92,10 @@ class InstancesPollProviderComp extends React.Component {
   triggerDataUpdates(completedInstances) {
     const {
       dataManager,
-      filter: {workflow, version},
-      visibleIdsInSelections
+      filter: {workflow, version}
     } = this.props;
 
-    const completedIdsInSelections = getCommonItems(
-      [...this.state.complete],
-      visibleIdsInSelections
-    );
+    const completedIdsInSelections = getCommonItems([...this.state.complete]);
 
     let updateParams = {
       endpoints: [

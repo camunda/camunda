@@ -10,31 +10,6 @@ import {parseDiagramXML} from 'modules/utils/bpmn';
 
 import {getWorkflowByVersion} from 'modules/utils/filter';
 
-export function getStateUpdateForAddSelection(
-  selection,
-  rollingSelectionIndex,
-  instancesInSelectionsCount,
-  selectionCount,
-  prevState
-) {
-  const currentSelectionIndex = rollingSelectionIndex + 1;
-  const newCount = instancesInSelectionsCount + selection.totalCount;
-  return {
-    selections: [
-      {
-        selectionId: currentSelectionIndex,
-        ...selection
-      },
-      ...prevState.selections
-    ],
-    rollingSelectionIndex: currentSelectionIndex,
-    instancesInSelectionsCount: newCount,
-    selectionCount: selectionCount + 1,
-    openSelection: currentSelectionIndex,
-    selection: {all: false, ids: [], excludeIds: []}
-  };
-}
-
 export function decodeFields(object) {
   let result = {};
 

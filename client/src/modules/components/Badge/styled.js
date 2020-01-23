@@ -29,23 +29,12 @@ const incidentsStyle = css`
   color: #ffffff;
 `;
 
-const selectionsStyle = css`
-  background-color: ${Colors.selections};
-  border-color: ${themeStyle({
-    dark: Colors.uiDark01,
-    light: Colors.uiLight01
-  })};
-  color: #ffffff;
-`;
-
 const badgeStyle = props => {
   switch (props.type) {
     case BADGE_TYPE.FILTERS:
       return filtersStyle;
     case BADGE_TYPE.INCIDENTS:
       return incidentsStyle;
-    case BADGE_TYPE.SELECTIONS:
-      return selectionsStyle;
     default:
       return runningInstancesStyle;
   }

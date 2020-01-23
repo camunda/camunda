@@ -43,8 +43,6 @@ describe('CountContext', () => {
     dataManager = createMockDataManager();
 
     node = mountComponent(dataManager, {
-      instancesInSelectionsCount: 0,
-      selectionCount: 0,
       filterCount: 0
     });
   });
@@ -71,42 +69,6 @@ describe('CountContext', () => {
 
     describe('local storage', () => {
       let compProps;
-      it('should use stored selection counts is available', () => {
-        // When: pass undefined
-        const {undefiendValues} = localStorage.selection;
-        node = mountComponent(dataManager, undefiendValues);
-
-        // Then:
-        compProps = node.find('div').props();
-        expect(compProps.countStore.selectionCount).toBe(0);
-        expect(compProps.countStore.instancesInSelectionsCount).toBe(0);
-
-        // // When: pass null
-        const {nullValues} = localStorage.selection;
-        node = mountComponent(dataManager, nullValues);
-
-        // Then:
-        compProps = node.find('div').props();
-        expect(compProps.countStore.selectionCount).toBe(
-          nullValues.selectionCount
-        );
-        expect(compProps.countStore.instancesInSelectionsCount).toBe(
-          nullValues.instancesInSelectionsCount
-        );
-
-        // When: pass number
-        const {integerValues} = localStorage.selection;
-        node = mountComponent(dataManager, integerValues);
-
-        // Then:
-        compProps = node.find('div').props();
-        expect(compProps.countStore.selectionCount).toBe(
-          integerValues.selectionCount
-        );
-        expect(compProps.countStore.instancesInSelectionsCount).toBe(
-          integerValues.instancesInSelectionsCount
-        );
-      });
 
       it('should use stored filterCounts', () => {
         // When: pass undefined
@@ -154,27 +116,6 @@ describe('CountContext', () => {
           expect(compProps.countStore.active).toBe(coreStatistics.active);
           expect(compProps.countStore.withIncidents).toBe(
             coreStatistics.withIncidents
-          );
-        });
-      });
-      it('should update when selections change', () => {
-        const subscriptions = dataManager.subscriptions();
-        const {selections} = dataRequests;
-
-        subscriptions['SELECTION_CHANGED']({
-          state: 'LOADED',
-          response: {
-            ...selections
-          }
-        });
-
-        jest.setTimeout(1, () => {
-          const compProps = node.find('div').props();
-          expect(compProps.countStore.selectionCount).toBe(
-            selections.selectionCount
-          );
-          expect(compProps.countStore.instancesInSelectionsCount).toBe(
-            selections.instancesInSelectionsCount
           );
         });
       });

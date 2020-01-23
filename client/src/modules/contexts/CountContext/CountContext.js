@@ -17,8 +17,6 @@ const initialState = {
   active: 0,
   withIncidents: 0,
   filterCount: null,
-  instancesInSelectionsCount: 0,
-  selectionCount: 0,
   isLoaded: false
 };
 
@@ -28,8 +26,6 @@ export function countReducer(state, {type, payload}) {
       return {...state, filterCount: payload};
     case 'coreStats':
       return {...state, ...payload, isLoaded: true};
-    case 'selectionCount':
-      return {...state, ...payload};
     default:
       throw new Error();
   }
@@ -44,16 +40,6 @@ export function Provider(props) {
           payload: response.coreStatistics
         });
       }
-    },
-    SELECTION_CHANGED: ({instancesInSelectionsCount, selectionCount}) => {
-      typeof selectionCount !== 'undefined' &&
-        dispatch({
-          type: 'selectionCount',
-          payload: {
-            instancesInSelectionsCount,
-            selectionCount
-          }
-        });
     },
     REFRESH_AFTER_OPERATION: ({state, response}) => {
       if (state === LOADING_STATE.LOADED) {
@@ -104,17 +90,7 @@ export function Provider(props) {
   }, []);
 
   useEffect(() => {
-    const {
-      instancesInSelectionsCount,
-      selectionCount,
-      filterCount
-    } = props.getStateLocally();
-
-    typeof selectionCount !== 'undefined' &&
-      dispatch({
-        type: 'selectionCount',
-        payload: {instancesInSelectionsCount, selectionCount}
-      });
+    const {filterCount} = props.getStateLocally();
 
     filterCount !== 'null' &&
       typeof filterCount !== 'undefined' &&

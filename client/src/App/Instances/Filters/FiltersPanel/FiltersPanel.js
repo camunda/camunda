@@ -54,8 +54,6 @@ FiltersPanel.propTypes = {
     active: PropTypes.number,
     withIncidents: PropTypes.number,
     filterCount: PropTypes.number,
-    instancesInSelectionsCount: PropTypes.number,
-    selectionCount: PropTypes.number,
     isLoaded: PropTypes.bool
   }).isRequired,
   children: PropTypes.oneOfType([

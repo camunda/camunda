@@ -40,12 +40,6 @@ export const SplitPane = styled(SplitPaneComponent)`
   width: 100%;
 `;
 
-export const Selections = styled.div`
-  width: 479px;
-  display: flex;
-  margin-left: 1px;
-`;
-
 export const RightCollapseButton = styled(CollapseButton)`
   position: absolute;
   left: 0;
@@ -53,15 +47,6 @@ export const RightCollapseButton = styled(CollapseButton)`
   border-top: none;
   border-bottom: none;
   border-left: none;
-`;
-
-export const SelectionHeader = styled(Panel.Header)`
-  display: flex;
-  justify-content: flex-start;
-
-  padding-left: 45px;
-  display: flex;
-  flex-shrink: 0;
 `;
 
 export const Badge = styled(BadgeComponent)`
