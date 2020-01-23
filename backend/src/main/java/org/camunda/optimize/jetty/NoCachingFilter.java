@@ -5,10 +5,6 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.camunda.optimize.service.license.LicenseManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -20,13 +16,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.ERROR_PAGE;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_HTML_PAGE;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.LICENSE_CSS;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.LICENSE_JS;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.LICENSE_PAGE;
-import static org.camunda.optimize.jetty.OptimizeResourceConstants.LOGIN_PAGE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
@@ -38,8 +27,6 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH
 public class NoCachingFilter implements Filter {
 
   public static final String NO_STORE = "no-store";
-
-  private static final Logger logger = LoggerFactory.getLogger(LicenseManager.class);
 
   public NoCachingFilter() {
   }
@@ -61,22 +48,6 @@ public class NoCachingFilter implements Filter {
       ((HttpServletResponse) response).setHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
     }
     chain.doFilter(request, response);
-  }
-
-  private boolean isErrorPage(String requestPath) {
-    return requestPath.endsWith(ERROR_PAGE);
-  }
-
-  private boolean isIndexPage(String requestPath) {
-    return (INDEX_PAGE).equals(requestPath) || requestPath.endsWith(INDEX_HTML_PAGE);
-  }
-
-  private boolean isLoginPage(String requestPath) {
-    return requestPath.endsWith(LOGIN_PAGE);
-  }
-
-  private boolean isLicenseResource(String requestPath) {
-    return requestPath.endsWith(LICENSE_PAGE) || requestPath.endsWith(LICENSE_CSS) || requestPath.endsWith(LICENSE_JS);
   }
 
   private boolean isApiRestCall(String requestPath) {

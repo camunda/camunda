@@ -11,6 +11,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -18,7 +19,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-
 
 public class NotFoundErrorHandler extends ErrorHandler {
   private static final String INDEX_PAGE = "/index.html";
@@ -30,13 +30,14 @@ public class NotFoundErrorHandler extends ErrorHandler {
 
     response.setHeader(HttpHeader.CONTENT_ENCODING.toString(), null);
 
-    boolean notApiOrPage = !request.getServletPath().startsWith(API_PATH) &&
-        (request.getServletPath().endsWith(".html") || request.getServletPath().split("\\.").length == 1);
+    String requestUri = request.getRequestURI();
+    boolean notApiOrPage = !requestUri.startsWith(API_PATH) &&
+        (requestUri.endsWith(".html") || requestUri.split("\\.").length == 1);
 
     if (notApiOrPage && HttpServletResponse.SC_NOT_FOUND == response.getStatus()) {
       response.setStatus(HttpStatus.SC_OK);
       response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
-      Dispatcher dispatcher = (Dispatcher) request.getServletContext().getRequestDispatcher(INDEX_PAGE);
+      Dispatcher dispatcher = (Dispatcher) ((Request) request).getErrorContext().getRequestDispatcher(INDEX_PAGE);
       
       try {
         dispatcher.forward(request, response);

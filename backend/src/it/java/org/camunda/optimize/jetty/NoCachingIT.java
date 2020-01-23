@@ -5,15 +5,19 @@
  */
 package org.camunda.optimize.jetty;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.jetty.NoCachingFilter.NO_STORE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
@@ -35,17 +39,15 @@ public class NoCachingIT extends AbstractIT {
     licenseManager.resetLicenseFromFile();
   }
 
-  @Test
-  public void loadingOfStaticResourcesContainsNoCacheHeader() {
-    // given
-    for (String staticResource : NO_CACHE_RESOURCES) {
+  @ParameterizedTest
+  @MethodSource("noCacheResources")
+  public void loadingOfStaticResourcesContainsNoCacheHeader(String staticResource) {
+    // when
+    Response response = embeddedOptimizeExtension.rootTarget(staticResource).request().get();
 
-      // when
-      Response response = embeddedOptimizeExtension.rootTarget(staticResource).request().get();
-
-      // then
-      assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
-    }
+    // then
+    assertThat(response.getStatus(), is(HttpStatus.SC_OK));
+    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
   }
 
   @Test
@@ -55,6 +57,10 @@ public class NoCachingIT extends AbstractIT {
 
     // then
     assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
+  }
+
+  private static Stream<String> noCacheResources() {
+    return NO_CACHE_RESOURCES.stream();
   }
 
   private void addLicenseToOptimize() {
