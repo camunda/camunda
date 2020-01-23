@@ -34,4 +34,8 @@ public final class JobRecordStream
   public JobRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
+
+  public JobRecordStream withElementId(final String elementId) {
+    return valueFilter(v -> v.getElementId().equals(elementId));
+  }
 }

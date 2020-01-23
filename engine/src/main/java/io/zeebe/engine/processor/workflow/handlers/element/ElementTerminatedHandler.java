@@ -54,7 +54,7 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
               flowScopeInstance.getKey(),
               WorkflowInstanceIntent.ELEMENT_TERMINATED,
               flowScopeInstance.getValue());
-    } else if (wasInterrupted(context, flowScopeInstance)) {
+    } else if (wasInterrupted(flowScopeInstance)) {
       publishInterruptingEventSubproc(context, flowScopeInstance);
     }
 
@@ -79,11 +79,10 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
     }
   }
 
-  private boolean wasInterrupted(
-      final BpmnStepContext<T> context, final ElementInstance flowScopeInstance) {
+  private boolean wasInterrupted(final ElementInstance flowScopeInstance) {
     return flowScopeInstance != null
         && flowScopeInstance.getNumberOfActiveTokens() == 2
-        && context.getFlowScopeInstance().getInterruptingEventKey() != -1
+        && flowScopeInstance.isInterrupted()
         && flowScopeInstance.isActive();
   }
 }

@@ -107,7 +107,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
     // assuming that error events are used rarely
     // - just walk through the scope hierarchy and look for a matching catch event
 
-    do {
+    while (instance != null && instance.isActive()) {
       final var instanceRecord = instance.getValue();
       final var workflow = getWorkflow(instanceRecord.getWorkflowKey());
 
@@ -119,8 +119,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
       // find in parent workflow instance if exists
       final var parentElementInstanceKey = instanceRecord.getParentElementInstanceKey();
       instance = elementInstanceState.getInstance(parentElementInstanceKey);
-
-    } while (instance != null && instance.isActive());
+    }
 
     // no matching catch event found
     return null;
@@ -129,7 +128,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
   private CatchEventTuple findCatchEventInWorkflow(
       final DirectBuffer errorCode, final ExecutableWorkflow workflow, ElementInstance instance) {
 
-    do {
+    while (instance != null && instance.isActive() && !instance.isInterrupted()) {
       final var found = findCatchEventInScope(errorCode, workflow, instance);
       if (found != null) {
         return found;
@@ -138,8 +137,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
       // find in parent scope if exists
       final var instanceParentKey = instance.getParentKey();
       instance = elementInstanceState.getInstance(instanceParentKey);
-
-    } while (instance != null && instance.isActive());
+    }
 
     return null;
   }

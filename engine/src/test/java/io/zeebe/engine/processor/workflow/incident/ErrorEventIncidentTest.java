@@ -15,6 +15,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
@@ -107,6 +108,59 @@ public final class ErrorEventIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)
         .hasErrorMessage("An error was thrown with the code 'other-error' but not caught.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfErrorIsThrownFromInterruptingEventSubprocess() {
+    // given
+    final var workflow =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess(
+                "error",
+                subprocess ->
+                    subprocess
+                        .startEvent("error-start", s -> s.error(ERROR_CODE).interrupting(true))
+                        .serviceTask("task-in-subprocess", t -> t.zeebeTaskType(JOB_TYPE))
+                        .endEvent())
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // trigger interrupting event subprocess
+    ENGINE
+        .job()
+        .ofInstance(workflowInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    final var jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId("task-in-subprocess")
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE.job().withKey(jobKey).withType(JOB_TYPE).withErrorCode(ERROR_CODE).throwError();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.JOB_NO_RETRIES)
+        .hasErrorMessage(
+            String.format("An error was thrown with the code '%s' but not caught.", ERROR_CODE))
+        .hasElementId("task-in-subprocess");
   }
 
   @Test
