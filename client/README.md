@@ -24,19 +24,19 @@ yarn start
 yarn test
 ```
 
-### Run operate without frontend
+### Run operate backend
 
 While developing the frontend, you might need to have Elasticsearch, Zeebe and the backend up and running.
 In this case you can run the following command in the root of this project:
 
 ```sh
-docker-compose up -d elasticsearch zeebe operate_backend
+make start-backend
 ```
 
 You can then destroy the environment using:
 
 ```sh
-docker-compose down
+make env-down
 ```
 
 ## Writing Components
@@ -59,6 +59,10 @@ Should contain a default export with the Component. The component implementation
 
 Should test the React component. All imports from the component under test should be mocked. We are using [jest](https://github.com/facebook/jest), [enzyme](https://github.com/airbnb/enzyme) as well as [jest-enzyme](https://github.com/FormidableLabs/enzyme-matchers).
 
+### Component.setup.js
+
+Should contain all static mock data which is used in Component.test.js.
+
 ### service.js
 
 Should contain all business logic and manage backend communication for a component. This file should be independent from React.
@@ -67,9 +71,19 @@ Should contain all business logic and manage backend communication for a compone
 
 Should test the service. You should not need enzyme here as the service should be independent from React or any rendered component.
 
-### api.js
+### constants.js
 
-Should contain the logic of the APIs calls for fetching or updating data. The stored methods should only connect to the API and return the responses. No extra logic is to be performed in this files. This file should be independent from React.
+Should contain all constants which are used by the component. If constants are used by multiple components, consider putting it on a higher level or into `/modules/constants`.
+
+### styled.js
+
+Should contain all styled components. We're using [https://styled-components.com/](styled-components) for this. They can be imported and used in Component.js like this:
+
+```js
+import * as Styled from './styled'
+...
+<Styled.Button onClick={() => {}} />
+```
 
 ### index.js
 
