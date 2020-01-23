@@ -100,6 +100,7 @@ export const TD = themed(styled.td`
 `);
 
 export const SkeletonTD = styled.td`
+  height: 100%;
   padding-top: 44px;
 `;
 
