@@ -64,7 +64,7 @@ export default class UserTypeahead extends React.Component {
     if (selectedIdentity) {
       this.props.onChange(selectedIdentity);
     } else {
-      this.props.onChange({id, type: 'user'});
+      this.props.onChange({id});
     }
   };
 

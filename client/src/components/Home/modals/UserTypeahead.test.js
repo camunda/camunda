@@ -68,3 +68,11 @@ it('should format user list information correctly', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should invoke onChange when selecting an identity even if it is not in loaded identities', async () => {
+  searchIdentities.mockReturnValue({result: [{id: 'notTest'}], total: 1});
+  const node = shallow(<UserTypeahead {...props} />);
+
+  node.find('Typeahead').prop('onChange')('test');
+  expect(props.onChange).toHaveBeenCalledWith({id: 'test'});
+});
