@@ -55,11 +55,11 @@ export default function OptionsList({
       let nextOption = -1;
       evt = evt || window.event;
 
-      const optionsCount = optionsWithProps.length;
+      const optionsCount = filteredOptions.length;
 
       if (evt.key === 'Enter') {
         evt.stopPropagation();
-        const optionToSelect = optionsWithProps[selectedOption];
+        const optionToSelect = filteredOptions[selectedOption];
         if (optionToSelect) {
           onSelect(optionToSelect);
         }
@@ -95,7 +95,7 @@ export default function OptionsList({
 
       setSelectedOption(nextOption);
     },
-    [selectedOption, onSelect, optionsWithProps, optionList, props]
+    [selectedOption, onSelect, filteredOptions, optionList, props]
   );
 
   useEffect(() => {
