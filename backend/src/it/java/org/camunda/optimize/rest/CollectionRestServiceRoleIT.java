@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
@@ -262,6 +263,72 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     assertThat(idDto.getId(), is(roleDto.getId()));
     final List<IdDto> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId);
     assertThat(roleIds, hasItem(idDto));
+  }
+
+  @Test
+  public void addExistingUserIdWithoutIdentityType() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
+
+    // when
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(USER_KERMIT, null),
+      RoleType.EDITOR
+    );
+    final IdDto idDto = collectionClient.addRoleToCollection(collectionId, roleDto);
+    final CollectionRoleDto expectedRoleDto = new CollectionRoleDto(
+      new IdentityDto(USER_KERMIT, IdentityType.USER),
+      RoleType.EDITOR
+    );
+
+    // then
+    assertThat(idDto.getId(), is(expectedRoleDto.getId()));
+    final List<IdDto> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId);
+    assertThat(roleIds, hasItem(idDto));
+  }
+
+  @Test
+  public void addExistingGroupIdWithoutIdentityType() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
+
+    // when
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(TEST_GROUP, null),
+      RoleType.EDITOR
+    );
+    final IdDto idDto = collectionClient.addRoleToCollection(collectionId, roleDto);
+    final CollectionRoleDto expectedRoleDto = new CollectionRoleDto(
+      new IdentityDto(TEST_GROUP, IdentityType.GROUP),
+      RoleType.EDITOR
+    );
+
+    // then
+    assertThat(idDto.getId(), is(expectedRoleDto.getId()));
+    final List<IdDto> roleIds = collectionClient.getCollectionRoleIdDtos(collectionId);
+    assertThat(roleIds, hasItem(idDto));
+  }
+
+  @Test
+  public void addNonExistentIdWithoutIdentityType() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final CollectionRoleDto roleDto = new CollectionRoleDto(
+      new IdentityDto(TEST_GROUP, null),
+      RoleType.EDITOR
+    );
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
   }
 
   @Test

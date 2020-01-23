@@ -43,6 +43,8 @@ public class CollectionRoleDto {
   }
 
   private String convertIdentityToRoleId(final IdentityDto identity) {
-    return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+    return identity.getType() == null
+      ? "UNKNOWN" + ID_SEGMENT_SEPARATOR + identity.getId()
+      : identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
   }
 }

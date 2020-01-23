@@ -9,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityRestDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -61,6 +62,15 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   public List<GroupDto> getAllGroupsOfUser(final String userId) {
     return userGroupsCache.get(userId);
+  }
+
+  public Optional<IdentityType> getTypeForId(final String userOrGroupId) {
+    if (getUserById(userOrGroupId).isPresent()) {
+      return Optional.of(IdentityType.USER);
+    } else if (getGroupById(userOrGroupId).isPresent()) {
+      return Optional.of(IdentityType.GROUP);
+    }
+    return Optional.empty();
   }
 
   public Optional<UserDto> getUserById(final String userId) {

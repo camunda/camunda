@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -20,10 +21,12 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
+import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
@@ -57,6 +60,7 @@ public class CollectionRestService {
   private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
   private final ReportService reportService;
+  private final IdentityService identityService;
 
   /**
    * Creates a new collection.
@@ -202,6 +206,17 @@ public class CollectionRestService {
                        @PathParam("id") String collectionId,
                        @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final IdentityDto identityDto = roleDtoRequest.getIdentity();
+    if (identityDto.getType() == null) {
+      IdentityType type = identityService.getTypeForId(identityDto.getId())
+        .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
+          String.format("No user or group with ID %s exists in Optimize.", identityDto.getId())
+        ));
+      roleDtoRequest = new CollectionRoleDto(
+        new IdentityDto(identityDto.getId(), type),
+        roleDtoRequest.getRole()
+      );
+    }
     CollectionRoleDto collectionRoleDto = collectionRoleService.addRoleToCollection(
       userId,
       collectionId,

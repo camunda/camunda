@@ -778,6 +778,7 @@
     "nonCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden.",
     "invalidLicenseError": "Die gegebene Lizenz ist ungültig.",
     "noLicenseStoredError": "Derzeit ist keine Lizenz in Optimize vorhanden. Bitte fügen Sie eine gültige Lizenz hinzu.",
-    "invalidEventProcessState": "Diese Aktion kann im aktuellen Zustand des Eventbasierten Prozesses nicht ausgeführt werden."
+    "invalidEventProcessState": "Diese Aktion kann im aktuellen Zustand des Eventbasierten Prozesses nicht ausgeführt werden.",
+    "userOrGroupIdNotFound": "Die gegebene Benutzer- oder Gruppen-ID konnte nicht in Optimize gefunden werden."
   }
 }
