@@ -83,7 +83,7 @@ class Diagram extends React.PureComponent {
       expandState !== prevExpandState &&
       expandState !== EXPAND_STATE.COLLAPSED
     ) {
-      this.handleZoomReset();
+      return this.resetViewer();
     }
 
     if (hasNewTheme || hasNewDefinitions) {
@@ -159,8 +159,6 @@ class Diagram extends React.PureComponent {
         this.initViewer
       );
     }
-
-    this.initViewer();
   };
 
   containerRef = node => {
@@ -321,6 +319,7 @@ class Diagram extends React.PureComponent {
         />
         {this.props.selectedFlowNodeId &&
           this.props.metadata &&
+          this.state.isViewerLoaded &&
           this.Viewer && (
             <PopoverOverlay
               key={this.props.selectedFlowNodeId}
