@@ -19,6 +19,10 @@ config.process.update = (type, data, props) => {
 
   changes.configuration = {sorting: {$set: null}};
 
+  if (type !== 'visualization') {
+    changes.configuration.distributedBy = {$set: 'none'};
+  }
+
   if (type === 'view') {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
 

@@ -10,14 +10,34 @@ import {Select} from 'components';
 
 import DistributedBy from './DistributedBy';
 
+const data = {
+  visualization: 'line',
+  view: {entity: 'userTask'},
+  configuration: {},
+  groupBy: {type: 'flowNodes'}
+};
+
+it('should match snapshot', () => {
+  const node = shallow(<DistributedBy report={{data}} />);
+
+  expect(node).toMatchSnapshot();
+});
+
 it('should change the visualization if it is incompatible with the new configuration', () => {
   const spy = jest.fn();
   const node = shallow(
     <DistributedBy
-      report={{data: {visualization: 'line', groupBy: {type: 'assignee'}, configuration: {}}}}
+      report={{
+        data: {
+          ...data,
+          groupBy: {type: 'assignee'}
+        }
+      }}
       onChange={spy}
     />
   );
+
+  expect(node.find({value: 'userTask'})).toExist();
 
   node.find(Select).prop('onChange')('userTask');
 

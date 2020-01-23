@@ -1,0 +1,32 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<fieldset
+  className="DistributedBy"
+>
+  <legend>
+    Distributed By
+  </legend>
+  <Select
+    onChange={[Function]}
+  >
+    <Option
+      value="none"
+    >
+      None
+    </Option>
+    <Option
+      key="assignee"
+      value="assignee"
+    >
+      Assignee
+    </Option>
+    <Option
+      key="candidateGroup"
+      value="candidateGroup"
+    >
+      Candidate Group
+    </Option>
+  </Select>
+</fieldset>
+`;

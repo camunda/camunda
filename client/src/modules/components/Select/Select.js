@@ -7,6 +7,7 @@
 import React from 'react';
 import {Dropdown} from 'components';
 import classnames from 'classnames';
+import {ignoreFragments} from './service';
 
 const emptyLabel = 'Select...';
 
@@ -73,16 +74,8 @@ export default class Select extends React.Component {
     }
   };
 
-  ignoreFragment = children => {
-    if (children && children.type === React.Fragment) {
-      return children.props.children;
-    }
-
-    return children;
-  };
-
   render() {
-    const children = this.ignoreFragment(this.props.children);
+    const children = ignoreFragments(this.props.children);
 
     return (
       <Dropdown

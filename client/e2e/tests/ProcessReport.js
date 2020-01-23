@@ -628,6 +628,9 @@ test('should be able to distribute candidate group by user task', async t => {
   await t.click(e.configurationOption('User Task'));
 
   await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
+  await t.click(e.configurationButton);
+
+  await t.takeElementScreenshot(e.reportRenderer, 'process/single-report/distributed-report.png');
 
   await t.click(e.visualizationDropdown);
 

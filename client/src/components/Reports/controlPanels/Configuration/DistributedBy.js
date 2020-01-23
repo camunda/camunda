@@ -11,18 +11,18 @@ import {t} from 'translation';
 
 export default function DistributedBy({
   report: {
-    data: {configuration, groupBy, visualization}
+    data: {configuration, view, groupBy, visualization}
   },
   onChange
 }) {
-  if (groupBy && ['assignee', 'candidateGroup'].includes(groupBy.type)) {
+  if (view && view.entity === 'userTask' && groupBy) {
     return (
       <fieldset className="DistributedBy">
         <legend>{t('report.config.userTaskDistributedBy')}</legend>
         <Select
           value={configuration.distributedBy}
           onChange={value => {
-            if (value === 'userTask' && (visualization === 'pie' || visualization === 'line')) {
+            if (value !== 'none' && (visualization === 'pie' || visualization === 'line')) {
               onChange(
                 {visualization: {$set: 'bar'}, configuration: {distributedBy: {$set: value}}},
                 true
@@ -33,7 +33,18 @@ export default function DistributedBy({
           }}
         >
           <Select.Option value="none">{t('common.none')}</Select.Option>
-          <Select.Option value="userTask">{t('report.view.userTask')}</Select.Option>
+          {groupBy.type === 'flowNodes' ? (
+            <>
+              <Select.Option key="assignee" value="assignee">
+                {t('report.groupBy.userAssignee')}
+              </Select.Option>
+              <Select.Option key="candidateGroup" value="candidateGroup">
+                {t('report.groupBy.userGroup')}
+              </Select.Option>
+            </>
+          ) : (
+            <Select.Option value="userTask">{t('report.view.userTask')}</Select.Option>
+          )}
         </Select>
       </fieldset>
     );
