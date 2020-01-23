@@ -143,6 +143,7 @@ public final class TestStreams {
     final LogContext logContext = LogContext.createLogContext(logStream, logStorageRule);
     logContextMap.put(name, logContext);
     closeables.manage(logContext);
+    closeables.manage(() -> logContextMap.remove(name));
 
     return logStream;
   }
@@ -270,7 +271,7 @@ public final class TestStreams {
   }
 
   public void closeProcessor(final String streamName) throws Exception {
-    streamContextMap.get(streamName).close();
+    streamContextMap.remove(streamName).close();
     LOG.info("Closed stream {}", streamName);
   }
 

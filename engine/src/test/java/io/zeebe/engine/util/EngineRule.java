@@ -168,9 +168,10 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(
         partitionId -> {
           try {
-            environmentRule.closeStreamProcessor(partitionId);
 
             final var snapshotController = environmentRule.getStateSnapshotController(partitionId);
+
+            environmentRule.closeStreamProcessor(partitionId);
 
             if (snapshotController.getValidSnapshotsCount() > 0) {
               FileUtil.deleteFolder(snapshotController.getLastValidSnapshotDirectory().toPath());

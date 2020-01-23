@@ -537,11 +537,11 @@ public final class StreamProcessorTest {
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     processingLatch.await();
+    final StateSnapshotController stateSnapshotController =
+        streamProcessorRule.getStateSnapshotController();
     streamProcessorRule.closeStreamProcessor();
 
     // then
-    final StateSnapshotController stateSnapshotController =
-        streamProcessorRule.getStateSnapshotController();
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
@@ -568,11 +568,11 @@ public final class StreamProcessorTest {
 
     // when
     recoveredLatch.await();
+    final StateSnapshotController stateSnapshotController =
+      streamProcessorRule.getStateSnapshotController();
     streamProcessorRule.closeStreamProcessor();
 
     // then
-    final StateSnapshotController stateSnapshotController =
-        streamProcessorRule.getStateSnapshotController();
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
