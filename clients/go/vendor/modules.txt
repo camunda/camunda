@@ -168,5 +168,5 @@ google.golang.org/grpc/status
 google.golang.org/grpc/tap
 # gopkg.in/asaskevich/govalidator.v9 v9.0.0-20180315120708-ccb8e960c48f
 gopkg.in/asaskevich/govalidator.v9
-# gopkg.in/yaml.v2 v2.2.7
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
