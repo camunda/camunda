@@ -283,7 +283,8 @@ public final class ZeebePartition extends Actor
 
     final StatePositionSupplier positionSupplier = new StatePositionSupplier(partitionId, LOG);
     final LogStreamDeletionService deletionService =
-        new LogStreamDeletionService(logStream, snapshotStorage, positionSupplier);
+        new LogStreamDeletionService(
+            localBroker.getNodeId(), partitionId, logStream, snapshotStorage, positionSupplier);
     closeables.add(deletionService);
 
     return scheduler.submitActor(deletionService);
