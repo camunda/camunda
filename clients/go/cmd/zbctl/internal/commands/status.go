@@ -44,7 +44,7 @@ var statusCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		topResp, err := client.NewTopologyCommand().Send(ctx)
+		resp, err := client.NewTopologyCommand().Send(ctx)
 		if err != nil {
 			return err
 		}
@@ -53,22 +53,19 @@ var statusCmd = &cobra.Command{
 		defer cancel()
 
 		gatewayVersion := "unavailable"
-		verResp, err := client.NewGatewayVersionCommand().Send(ctx)
-		if err != nil {
-			return err
-		} else if verResp.Version != "" {
-			gatewayVersion = verResp.Version
+		if resp.GatewayVersion != "" {
+			gatewayVersion = resp.GatewayVersion
 		}
 
-		fmt.Println("Cluster size:", topResp.ClusterSize)
-		fmt.Println("Partitions count:", topResp.PartitionsCount)
-		fmt.Println("Replication factor:", topResp.ReplicationFactor)
+		fmt.Println("Cluster size:", resp.ClusterSize)
+		fmt.Println("Partitions count:", resp.PartitionsCount)
+		fmt.Println("Replication factor:", resp.ReplicationFactor)
 		fmt.Println("Gateway version:", gatewayVersion)
 		fmt.Println("Brokers:")
 
-		sort.Sort(ByNodeId(topResp.Brokers))
+		sort.Sort(ByNodeId(resp.Brokers))
 
-		for _, broker := range topResp.Brokers {
+		for _, broker := range resp.Brokers {
 			fmt.Println("  Broker", broker.NodeId, "-", fmt.Sprintf("%s:%d", broker.Host, broker.Port))
 			sort.Sort(ByPartitionId(broker.Partitions))
 			for _, partition := range broker.Partitions {

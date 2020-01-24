@@ -117,10 +117,6 @@ func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
 	return worker.NewJobWorkerBuilder(c.gateway, c)
 }
 
-func (c *ClientImpl) NewGatewayVersionCommand() commands.GatewayVersionCommand {
-	return commands.NewGatewayVersionCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
-}
-
 func (c *ClientImpl) Close() error {
 	return c.connection.Close()
 }
