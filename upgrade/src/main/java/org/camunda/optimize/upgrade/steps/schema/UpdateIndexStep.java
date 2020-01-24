@@ -5,10 +5,14 @@
  */
 package org.camunda.optimize.upgrade.steps.schema;
 
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.elasticsearch.cluster.metadata.AliasMetaData;
+
+import java.util.Map;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
 
@@ -27,8 +31,8 @@ public class UpdateIndexStep implements UpgradeStep {
     int targetVersion = index.getVersion();
     final OptimizeIndexNameService indexNameService = esIndexAdjuster.getIndexNameService();
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
-    String sourceVersionAsString = String.valueOf(targetVersion - 1);
-    String targetVersionAsString = String.valueOf(targetVersion);
+    final String sourceVersionAsString = String.valueOf(targetVersion - 1);
+    final String targetVersionAsString = String.valueOf(targetVersion);
     final String sourceIndexName = getOptimizeIndexNameForAliasAndVersion(
       indexAlias, sourceVersionAsString
     );
@@ -36,11 +40,38 @@ public class UpdateIndexStep implements UpgradeStep {
       indexAlias, targetVersionAsString
     );
 
-    // create new index and reindex data to it
-    esIndexAdjuster.createIndex(index);
-    esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript);
-    esIndexAdjuster.addAlias(index);
-    esIndexAdjuster.deleteIndex(sourceIndexName);
-  }
+    if (index.getCreateFromTemplate()) {
+      // create new template & indices and reindex data to it
+      esIndexAdjuster.createOrUpdateTemplateWithoutAliases(index, indexAlias);
+      final Map<String, Set<AliasMetaData>> indexAliasMap = esIndexAdjuster.getAliasMap(indexAlias);
+      for (String sourceIndex : indexAliasMap.keySet()) {
+        String suffix = sourceIndex.replace(sourceIndexName, "");
+        String sourceIndexNameWithSuffix;
 
+        if (suffix.isEmpty()) {
+          // existing index is not yet suffixed, use default suffix
+          suffix = index.getIndexNameSuffix();
+          sourceIndexNameWithSuffix = sourceIndexName;
+        } else {
+          sourceIndexNameWithSuffix = sourceIndexName + suffix;
+        }
+        final String targetIndexNameWithSuffix = targetIndexName + suffix;
+
+        esIndexAdjuster.createIndexFromTemplate(targetIndexNameWithSuffix);
+        esIndexAdjuster.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript);
+        esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix);
+        for (AliasMetaData alias : indexAliasMap.get(sourceIndex)) {
+          esIndexAdjuster.addAlias(alias.getAlias(), targetIndexNameWithSuffix, alias.writeIndex());
+        }
+        esIndexAdjuster.deleteIndex(sourceIndexNameWithSuffix);
+      }
+    } else {
+      // create new index and reindex data to it
+      esIndexAdjuster.createIndex(index);
+      esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript);
+      esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName);
+      esIndexAdjuster.addAlias(index);
+      esIndexAdjuster.deleteIndex(sourceIndexName);
+    }
+  }
 }

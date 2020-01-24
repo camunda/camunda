@@ -16,6 +16,8 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.rollover.RolloverRequest;
+import org.elasticsearch.client.indices.rollover.RolloverResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -178,5 +180,29 @@ public class ElasticsearchHelper {
   public static boolean atLeastOneResponseExistsForMultiGet(MultiGetResponse multiGetResponse) {
     return Arrays.stream(multiGetResponse.getResponses())
       .anyMatch(multiGetItemResponse -> multiGetItemResponse.getResponse().isExists());
+  }
+
+  public static boolean triggerRollover(final OptimizeElasticsearchClient esClient, final String indexAliasName,
+                                        final TimeValue maxAge, final int maxDocs) {
+    RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
+    rolloverRequest.addMaxIndexAgeCondition(maxAge);
+    rolloverRequest.addMaxIndexDocsCondition(maxDocs);
+
+    log.info("Executing Rollover Request..");
+
+    try {
+      RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
+      if (rolloverResponse.isRolledOver()) {
+        log.info("Index {} has been rolled over. New index name: {}", indexAliasName, rolloverResponse.getNewIndex());
+      } else {
+        log.info("Index {} has not been rolled over.", indexAliasName);
+      }
+
+      return rolloverResponse.isRolledOver();
+    } catch (Exception e) {
+      String message = "Failed to execute rollover request";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
   }
 }

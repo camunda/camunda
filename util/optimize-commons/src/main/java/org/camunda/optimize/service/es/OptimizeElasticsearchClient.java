@@ -10,6 +10,10 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
+import org.elasticsearch.action.admin.indices.rollover.Condition;
+import org.elasticsearch.action.admin.indices.rollover.MaxAgeCondition;
+import org.elasticsearch.action.admin.indices.rollover.MaxDocsCondition;
+import org.elasticsearch.action.admin.indices.rollover.MaxSizeCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -82,7 +86,8 @@ public class OptimizeElasticsearchClient {
     return highLevelClient.count(countRequest, options);
   }
 
-  public final DeleteResponse delete(final DeleteRequest deleteRequest, final RequestOptions options) throws IOException {
+  public final DeleteResponse delete(final DeleteRequest deleteRequest, final RequestOptions options) throws
+                                                                                                      IOException {
     applyIndexPrefix(deleteRequest);
 
     return highLevelClient.delete(deleteRequest, options);
@@ -167,6 +172,7 @@ public class OptimizeElasticsearchClient {
   }
 
   public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
+    rolloverRequest = applyAliasPrefix(rolloverRequest);
     return highLevelClient.indices().rollover(rolloverRequest, RequestOptions.DEFAULT);
   }
 
@@ -180,6 +186,21 @@ public class OptimizeElasticsearchClient {
         .map(indexNameService::getOptimizeIndexAliasForIndex)
         .toArray(String[]::new)
     );
+  }
+
+  private RolloverRequest applyAliasPrefix(final RolloverRequest request) {
+    RolloverRequest requestWithPrefix = new RolloverRequest(
+      indexNameService.getOptimizeIndexAliasForIndex(request.getAlias()), null);
+    for (Condition condition : request.getConditions().values()) {
+      if (condition instanceof MaxAgeCondition) {
+        requestWithPrefix.addMaxIndexAgeCondition(((MaxAgeCondition) condition).value());
+      } else if (condition instanceof MaxDocsCondition) {
+        requestWithPrefix.addMaxIndexDocsCondition(((MaxDocsCondition) condition).value());
+      } else if (condition instanceof MaxSizeCondition) {
+        requestWithPrefix.addMaxIndexSizeCondition(((MaxSizeCondition) condition).value());
+      }
+    }
+    return requestWithPrefix;
   }
 
 }

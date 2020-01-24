@@ -20,4 +20,5 @@ public class UpgradeExecutionDependencies {
   protected final OptimizeElasticsearchClient prefixAwareClient;
   protected final ObjectMapper objectMapper;
   protected final ElasticsearchMetadataService metadataService;
+
 }

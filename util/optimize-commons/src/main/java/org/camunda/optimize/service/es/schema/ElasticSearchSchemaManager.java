@@ -315,10 +315,6 @@ public class ElasticSearchSchemaManager {
 
   private void updateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
                                                 IndexMappingCreator indexMapping) {
-    if (indexMapping instanceof EventIndex) {
-      // FIXME proper handling with OPT-3135
-      return;
-    }
     updateIndexDynamicSettingsAndMappings(esClient.getHighLevelClient(), indexMapping);
     if (indexMapping.getCreateFromTemplate()) {
       updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);
@@ -336,7 +332,7 @@ public class ElasticSearchSchemaManager {
   }
 
   private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, IndexMappingCreator indexMapping) {
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMapping);
+    final String indexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
@@ -349,7 +345,7 @@ public class ElasticSearchSchemaManager {
     }
 
     try {
-      final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
+      final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName + "*");
       putMappingRequest.source(indexMapping.getSource());
       esClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {

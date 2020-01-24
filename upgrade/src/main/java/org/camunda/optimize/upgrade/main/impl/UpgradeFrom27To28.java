@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -30,7 +31,7 @@ public class UpgradeFrom27To28 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      // TODO handle EventIndex with OPT-3135
+      .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
       .addUpgradeStep(new UpdateIndexStep(new EventSequenceCountIndex(), null))
       .build();
   }

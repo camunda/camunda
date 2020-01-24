@@ -55,7 +55,7 @@ public class ElasticsearchConstants {
 
   public static final String EVENT_PROCESS_INSTANCE_INDEX_PREFIX = "event-process-instance-";
 
-  public static final String EVENT_INDEX_SUFFIX = "-000001";
+  public static final String INDEX_SUFFIX_PRE_ROLLOVER = "-000001";
 
   public static final String EVENT_PROCESSING_IMPORT_REFERENCE = "eventStateProcessing";
   public static final String EVENT_PROCESSING_ENGINE_REFERENCE = "optimize";

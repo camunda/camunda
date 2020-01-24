@@ -127,8 +127,6 @@ public class SchemaInitializerIT extends AbstractIT {
     }
   }
 
-  // TODO reactivate with OPT-3135
-  @Disabled
   @Test
   public void dynamicSettingsAreUpdated() throws IOException {
     // given schema exists
@@ -147,8 +145,6 @@ public class SchemaInitializerIT extends AbstractIT {
     assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
   }
 
-  // TODO reactivate with OPT-3135
-  @Disabled
   @Test
   public void dynamicSettingsAreUpdatedForExistingIndexesWhenNewIndexesAreCreated() throws IOException {
     // given schema exists

@@ -7,14 +7,15 @@ package org.camunda.optimize.upgrade.indexes;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 @AllArgsConstructor
-public class UserTestIndex extends StrictIndexMappingCreator {
+public class UserTestWithTemplateUpdatedMappingIndex extends StrictIndexMappingCreator {
 
-  private int version = 1;
+  private static final int VERSION = 2;
 
   @Override
   public String getIndexName() {
@@ -22,9 +23,20 @@ public class UserTestIndex extends StrictIndexMappingCreator {
   }
 
   @Override
-  public int getVersion() {
-    return version;
+  public String getIndexNameSuffix() {
+    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
+
+  @Override
+  public Boolean getCreateFromTemplate() {
+    return true;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
+  }
+
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
@@ -33,6 +45,9 @@ public class UserTestIndex extends StrictIndexMappingCreator {
       .field("type", "keyword")
       .endObject()
       .startObject("username")
+      .field("type", "keyword")
+      .endObject()
+      .startObject("email")
       .field("type", "keyword")
       .endObject();
   }
