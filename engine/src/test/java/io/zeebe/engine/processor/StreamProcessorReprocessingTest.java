@@ -59,7 +59,7 @@ public final class StreamProcessorReprocessingTest {
     // when
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors
                 .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
                 .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
@@ -105,7 +105,7 @@ public final class StreamProcessorReprocessingTest {
     // when
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors
                 .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
                 .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
@@ -153,7 +153,7 @@ public final class StreamProcessorReprocessingTest {
     // when
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors
                 .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
                 .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATED, typedRecordProcessor));
@@ -206,7 +206,7 @@ public final class StreamProcessorReprocessingTest {
         .when(typedRecordProcessor)
         .processRecord(anyLong(), any(), any(), any(), any());
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
 
@@ -231,7 +231,7 @@ public final class StreamProcessorReprocessingTest {
     // when
     final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor));
 
@@ -266,7 +266,7 @@ public final class StreamProcessorReprocessingTest {
     // when
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors
                 .onEvent(
                     ValueType.WORKFLOW_INSTANCE,
@@ -317,7 +317,7 @@ public final class StreamProcessorReprocessingTest {
     // given
     final CountDownLatch processingLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 ELEMENT_ACTIVATING,
@@ -342,7 +342,7 @@ public final class StreamProcessorReprocessingTest {
     final List<Long> processedPositions = new ArrayList<>();
     final CountDownLatch newProcessLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 ELEMENT_ACTIVATING,
@@ -371,7 +371,7 @@ public final class StreamProcessorReprocessingTest {
     // given
     final CountDownLatch processingLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 ELEMENT_ACTIVATING,
@@ -402,7 +402,7 @@ public final class StreamProcessorReprocessingTest {
     final List<Long> processedPositions = new ArrayList<>();
     final CountDownLatch newProcessLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 ELEMENT_ACTIVATING,
