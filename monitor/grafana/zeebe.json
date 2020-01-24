@@ -58,7 +58,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1579186112364,
+  "iteration": 1579873290265,
   "links": [],
   "panels": [
     {
@@ -4372,7 +4372,7 @@
         "useTags": false
       },
       {
-        "allValue": "(bench-broker-[0-9]+)|(zeebe-[0-9]+)",
+        "allValue": "(.*-zeebe-[0-9]+$)",
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
         "definition": "label_values(jvm_info{namespace=~\"$namespace\"}, pod)",
@@ -4418,7 +4418,7 @@
     ]
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
@@ -4449,5 +4449,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 1
+  "version": 2
 }
