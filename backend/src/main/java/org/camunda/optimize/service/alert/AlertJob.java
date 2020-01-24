@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @NoArgsConstructor
 @Slf4j
@@ -96,13 +99,45 @@ public class AlertJob implements Job {
       "Alert name: " + alert.getName() + "\n" +
       "Report name: " + reportDefinition.getName() + "\n" +
       "Status: Given threshold [" +
-      alert.getThreshold() +
+      formatValueToHumanReadableString(alert.getThreshold(), reportDefinition) +
       "] " + statusText +
       ". Current value: " +
-      result.getResultAsNumber() +
+      formatValueToHumanReadableString(result.getResultAsNumber(), reportDefinition) +
       ". Please check your Optimize report for more information! \n" +
       createViewLink(alert);
     return emailBody;
+  }
+
+  private String formatValueToHumanReadableString(final long value, final ReportDefinitionDto reportDefinition) {
+    return isDurationReport(reportDefinition)
+      ? durationInMsToReadableFormat(value)
+      : String.valueOf(value);
+  }
+
+  private boolean isDurationReport(ReportDefinitionDto reportDefinition) {
+    if (reportDefinition.getData() instanceof ProcessReportDataDto) {
+      ProcessReportDataDto data = (ProcessReportDataDto) reportDefinition.getData();
+      return data.getView().getProperty().equals(ProcessViewProperty.DURATION);
+    }
+    return false;
+  }
+
+  private String durationInMsToReadableFormat(final long durationInMs) {
+    final long days = TimeUnit.MILLISECONDS.toDays(durationInMs);
+    final long hours = TimeUnit.MILLISECONDS.toHours(durationInMs) - TimeUnit.DAYS.toHours(days);
+    final long minutes = TimeUnit.MILLISECONDS.toMinutes(durationInMs)
+      - TimeUnit.DAYS.toMinutes(days)
+      - TimeUnit.HOURS.toMinutes(hours);
+    final long seconds = TimeUnit.MILLISECONDS.toSeconds(durationInMs)
+      - TimeUnit.DAYS.toSeconds(days)
+      - TimeUnit.HOURS.toSeconds(hours)
+      - TimeUnit.MINUTES.toSeconds(minutes);
+    final long milliSeconds = durationInMs - TimeUnit.DAYS.toMillis(days)
+      - TimeUnit.HOURS.toMillis(hours)
+      - TimeUnit.MINUTES.toMillis(minutes)
+      - TimeUnit.SECONDS.toMillis(seconds);
+
+    return String.format("%sd %sh %smin %ss %sms", days, hours, minutes, seconds, milliSeconds);
   }
 
   private String createViewLink(AlertDefinitionDto alert) {
@@ -162,10 +197,10 @@ public class AlertJob implements Job {
       "Alert name: " + alert.getName() + "\n" +
       "Report name: " + reportDefinition.getName() + "\n" +
       "Status: Given threshold [" +
-      alert.getThreshold() +
+      formatValueToHumanReadableString(alert.getThreshold(), reportDefinition) +
       "] " + statusText +
       ". Current value: " +
-      result.getResultAsNumber() +
+      formatValueToHumanReadableString(result.getResultAsNumber(), reportDefinition) +
       ". Please check your Optimize report for more information!\n" +
       createViewLink(alert);
     return emailBody;

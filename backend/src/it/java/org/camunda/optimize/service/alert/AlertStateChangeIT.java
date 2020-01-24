@@ -145,6 +145,39 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     );
   }
 
+  @Test
+  public void notificationFormatsDurationThresholdCorrectly() throws Exception {
+    //given
+    setEmailConfiguration();
+
+    long daysToShift = 0L;
+    long durationInSec = 30000000L;
+
+    ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
+    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
+    AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
+    simpleAlert.setFixNotification(true);
+    simpleAlert.setThreshold(258165800L); // = 2d 23h 42min 45s 800ms
+
+    String id = createAlert(simpleAlert);
+
+    triggerAndCompleteCheckJob(id);
+
+    // when
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    greenMail.purgeEmailFromAllMailboxes();
+    triggerAndCompleteReminderJob(id);
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(1));
+    String content = emails[0].getContent().toString();
+    assertThat(content, containsString("2d 23h 42min 45s 800ms"));
+  }
+
   private AlertCreationDto createAlertWithReminder(String reportId) {
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
     AlertInterval reminderInterval = new AlertInterval();
