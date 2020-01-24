@@ -44,8 +44,6 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -211,8 +209,6 @@ public final class TestStreams {
     final StateSnapshotController currentSnapshotController =
         spy(new StateSnapshotController(zeebeDbFactory, storage));
     final String logName = stream.getLogName();
-
-    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
     try {
       currentSnapshotController.recover();

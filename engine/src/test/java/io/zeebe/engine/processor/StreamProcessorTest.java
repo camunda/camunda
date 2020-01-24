@@ -80,7 +80,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(lifecycleAware);
-    inOrder.verify(lifecycleAware, times(1)).onOpen(any());
     inOrder.verify(lifecycleAware, times(1)).onRecovered(any());
     inOrder.verify(lifecycleAware, times(1)).onClose();
 
@@ -110,7 +109,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, times(1)).onRecovered(any());
     inOrder.verify(typedRecordProcessor, times(1)).onClose();
 
@@ -134,7 +132,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
@@ -173,7 +170,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(2))
@@ -201,7 +197,6 @@ public final class StreamProcessorTest {
 
     // then
     final InOrder inOrder = inOrder(typedRecordProcessor);
-    inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onOpen(any());
     inOrder.verify(typedRecordProcessor, TIMEOUT.times(1)).onRecovered(any());
     inOrder
         .verify(typedRecordProcessor, TIMEOUT.times(1))
@@ -366,7 +361,7 @@ public final class StreamProcessorTest {
         (processingContext) -> {
           processingContextActor = processingContext.getActor();
           final ZeebeState state = processingContext.getZeebeState();
-          return processors()
+          return processors(state.getKeyGenerator())
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -425,7 +420,7 @@ public final class StreamProcessorTest {
         (processingContext) -> {
           processingContextActor = processingContext.getActor();
           final ZeebeState state = processingContext.getZeebeState();
-          return processors()
+          return processors(state.getKeyGenerator())
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -479,7 +474,7 @@ public final class StreamProcessorTest {
     final CountDownLatch processingLatch = new CountDownLatch(1);
     final StreamProcessor streamProcessor =
         streamProcessorRule.startTypedStreamProcessor(
-            (processors, state) ->
+            (processors, context) ->
                 processors.onEvent(
                     ValueType.WORKFLOW_INSTANCE,
                     WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -518,7 +513,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processingLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -555,7 +550,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch recoveredLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -582,7 +577,7 @@ public final class StreamProcessorTest {
   @Test
   public void shouldNotCreateSnapshotsIfNoProcessorProcessEvent() throws Exception {
     // given
-    streamProcessorRule.startTypedStreamProcessor((processors, state) -> processors);
+    streamProcessorRule.startTypedStreamProcessor((processors, context) -> processors);
 
     // when
     final long position =
@@ -608,7 +603,7 @@ public final class StreamProcessorTest {
     // given
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -634,7 +629,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -676,7 +671,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -719,7 +714,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,

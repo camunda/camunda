@@ -20,21 +20,19 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 public final class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
-  private ElementInstanceState elementInstanceState;
-  private WorkflowEngineMetrics metrics;
+  private final ElementInstanceState elementInstanceState;
+  private final WorkflowEngineMetrics metrics;
 
-  public WorkflowEngineState(final WorkflowState workflowState) {
+  public WorkflowEngineState(final int partitionId, final WorkflowState workflowState) {
     this.workflowState = workflowState;
+    this.elementInstanceState = workflowState.getElementInstanceState();
+    this.metrics = new WorkflowEngineMetrics(partitionId);
   }
 
   @Override
-  public void onOpen(final ReadonlyProcessingContext processingContext) {
-    this.elementInstanceState = workflowState.getElementInstanceState();
-
-    this.metrics = new WorkflowEngineMetrics(processingContext.getLogStream().getPartitionId());
-
+  public void onRecovered(ReadonlyProcessingContext context) {
     final UpdateVariableStreamWriter updateVariableStreamWriter =
-        new UpdateVariableStreamWriter(processingContext.getLogStreamWriter());
+        new UpdateVariableStreamWriter(context.getLogStreamWriter());
 
     elementInstanceState.getVariablesState().setListener(updateVariableStreamWriter);
   }

@@ -11,6 +11,7 @@ import static io.zeebe.engine.util.Records.workflowInstance;
 
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.processor.CommandResponseWriter;
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
@@ -98,16 +99,12 @@ public final class StreamProcessorRule implements TestRule {
     return streams.getLogStreamRecordWriter(logName);
   }
 
-  public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
-    final String logName = getLogName(partitionId);
-    return streams.newLogStreamRecordWriter(logName);
-  }
-
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
     return startTypedStreamProcessor(
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return factory.build(TypedRecordProcessors.processors(), zeebeState);
+          return factory.build(
+              TypedRecordProcessors.processors(zeebeState.getKeyGenerator()), processingContext);
         });
   }
 
@@ -233,20 +230,6 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public long writeCommandOnPartition(
-      final LogStreamRecordWriter writer,
-      final long key,
-      final Intent intent,
-      final UnpackedObject value) {
-    return streams
-        .newRecord(writer)
-        .key(key)
-        .recordType(RecordType.COMMAND)
-        .intent(intent)
-        .event(value)
-        .write();
-  }
-
-  public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(partition))
@@ -297,7 +280,8 @@ public final class StreamProcessorRule implements TestRule {
 
   @FunctionalInterface
   public interface StreamProcessorTestFactory {
-    TypedRecordProcessors build(TypedRecordProcessors builder, ZeebeState zeebeState);
+    TypedRecordProcessors build(
+        TypedRecordProcessors builder, ReadonlyProcessingContext processingContext);
   }
 
   private class SetupRule extends ExternalResource {

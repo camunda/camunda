@@ -17,7 +17,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.engine.processor.CopiedRecords;
-import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.workflow.job.JobEventProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
@@ -98,7 +97,9 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
         .thenReturn(true);
 
     environmentRule.startTypedStreamProcessor(
-        (typedRecordProcessors, zeebeState) -> {
+        (typedRecordProcessors, processingContext) -> {
+          final var zeebeState = processingContext.getZeebeState();
+          actor = processingContext.getActor();
           workflowState = zeebeState.getWorkflowState();
           WorkflowEventProcessors.addWorkflowProcessors(
               zeebeState,
@@ -288,16 +289,6 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());
     return lookupStream.get().findFirst().get();
-  }
-
-  @Override
-  public void onOpen(final ReadonlyProcessingContext processingContext) {
-    actor = processingContext.getActor();
-  }
-
-  @Override
-  public void onRecovered(final ReadonlyProcessingContext processingContext) {
-    // recovered
   }
 
   @Override

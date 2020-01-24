@@ -119,8 +119,6 @@ public class StreamProcessor extends Actor {
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
-
-      lifecycleAwareListeners.forEach(l -> l.onOpen(processingContext));
     } catch (final Throwable e) {
       onFailure(e);
       LangUtil.rethrowUnchecked(e);

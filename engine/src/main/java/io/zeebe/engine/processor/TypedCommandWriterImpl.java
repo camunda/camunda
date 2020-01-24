@@ -70,6 +70,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final String rejectionReason,
       final UnpackedObject value,
       final Consumer<RecordMetadata> additionalMetadata) {
+
     final LogEntryBuilder event = batchWriter.event();
 
     if (sourceRecordPosition >= 0) {

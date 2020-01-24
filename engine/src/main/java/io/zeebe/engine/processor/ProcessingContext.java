@@ -21,7 +21,7 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
   private EventFilter eventFilter;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
-  private TypedStreamWriter logStreamWriter;
+  private TypedStreamWriter logStreamWriter = new NoopTypedStreamWriter();
   private CommandResponseWriter commandResponseWriter;
 
   private RecordValues recordValues;

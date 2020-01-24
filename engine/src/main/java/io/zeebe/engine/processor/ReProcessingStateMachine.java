@@ -14,13 +14,10 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
-import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.retry.EndlessRetryStrategy;
 import io.zeebe.util.retry.RetryStrategy;
 import io.zeebe.util.sched.ActorControl;
@@ -94,7 +91,7 @@ public final class ReProcessingStateMachine {
 
   private final EventFilter eventFilter;
   private final LogStreamReader logStreamReader;
-  private final TypedStreamWriter noopstreamWriter = new NoopStreamWriter();
+  private final TypedStreamWriter noopstreamWriter = new NoopTypedStreamWriter();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
   private final DbContext dbContext;
@@ -318,63 +315,5 @@ public final class ReProcessingStateMachine {
   private void onRecovered() {
     recoveryFuture.complete(null);
     failedEventPositions.clear();
-  }
-
-  private static final class NoopStreamWriter implements TypedStreamWriter {
-
-    @Override
-    public void appendRejection(
-        final TypedRecord<? extends UnpackedObject> command,
-        final RejectionType type,
-        final String reason) {}
-
-    @Override
-    public void appendRejection(
-        final TypedRecord<? extends UnpackedObject> command,
-        final RejectionType type,
-        final String reason,
-        final Consumer<RecordMetadata> metadata) {}
-
-    @Override
-    public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {}
-
-    @Override
-    public void appendFollowUpEvent(
-        final long key, final Intent intent, final UnpackedObject value) {}
-
-    @Override
-    public void appendFollowUpEvent(
-        final long key,
-        final Intent intent,
-        final UnpackedObject value,
-        final Consumer<RecordMetadata> metadata) {}
-
-    @Override
-    public void configureSourceContext(final long sourceRecordPosition) {}
-
-    @Override
-    public void appendNewCommand(final Intent intent, final UnpackedObject value) {}
-
-    @Override
-    public void appendFollowUpCommand(
-        final long key, final Intent intent, final UnpackedObject value) {}
-
-    @Override
-    public void appendFollowUpCommand(
-        final long key,
-        final Intent intent,
-        final UnpackedObject value,
-        final Consumer<RecordMetadata> metadata) {}
-
-    @Override
-    public void reset() {}
-
-    @Override
-    public long flush() {
-      return 0;
-    }
-
-    @Override
-    public void close() {}
   }
 }

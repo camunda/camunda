@@ -42,7 +42,8 @@ public final class DeploymentCreatedProcessorTest {
   @Before
   public void setUp() {
     rule.startTypedStreamProcessor(
-        (typedRecordProcessors, zeebeState) -> {
+        (typedRecordProcessors, processingContext) -> {
+          final var zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
 
           DeploymentEventProcessors.addDeploymentCreateProcessor(
