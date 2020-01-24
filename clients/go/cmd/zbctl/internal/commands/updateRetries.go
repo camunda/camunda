@@ -47,5 +47,7 @@ var updateRetriesCmd = &cobra.Command{
 func init() {
 	updateCmd.AddCommand(updateRetriesCmd)
 	updateRetriesCmd.Flags().Int32Var(&updateRetriesFlag, "retries", commands.DefaultJobRetries, "Specify retries of job")
-	updateRetriesCmd.MarkFlagRequired("retries")
+	if err := updateRetriesCmd.MarkFlagRequired("retries"); err != nil {
+		panic(err)
+	}
 }

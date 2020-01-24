@@ -15,7 +15,7 @@ cd ${ORG_DIR}/zeebe/clients/go
 PREFIX=github.com/zeebe-io/zeebe/clients/go
 EXCLUDE=""
 
-for file in internal/*; do
+for file in {internal,cmd/zbctl/internal}/*; do
   EXCLUDE=$EXCLUDE$PREFIX/$file,
 done
 

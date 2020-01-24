@@ -39,22 +39,36 @@ var statusCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+
 		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 		defer cancel()
 
-		response, err := client.NewTopologyCommand().Send(ctx)
+		topResp, err := client.NewTopologyCommand().Send(ctx)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("Cluster size:", response.ClusterSize)
-		fmt.Println("Partitions count:", response.PartitionsCount)
-		fmt.Println("Replication factor:", response.ReplicationFactor)
+		ctx, cancel = context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		gatewayVersion := "unavailable"
+		verResp, err := client.NewGatewayVersionCommand().Send(ctx)
+		if err != nil {
+			return err
+		} else if verResp.Version != "" {
+			gatewayVersion = verResp.Version
+		}
+
+		fmt.Println("Cluster size:", topResp.ClusterSize)
+		fmt.Println("Partitions count:", topResp.PartitionsCount)
+		fmt.Println("Replication factor:", topResp.ReplicationFactor)
+		fmt.Println("Gateway version:", gatewayVersion)
 		fmt.Println("Brokers:")
 
-		sort.Sort(ByNodeId(response.Brokers))
+		sort.Sort(ByNodeId(topResp.Brokers))
 
-		for _, broker := range response.Brokers {
+		for _, broker := range topResp.Brokers {
 			fmt.Println("  Broker", broker.NodeId, "-", fmt.Sprintf("%s:%d", broker.Host, broker.Port))
 			sort.Sort(ByPartitionId(broker.Partitions))
 			for _, partition := range broker.Partitions {

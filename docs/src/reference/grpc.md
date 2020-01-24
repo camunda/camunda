@@ -15,7 +15,7 @@
   * [ThrowError RPC](#throwerror-rpc)
   * [Topology RPC](#topology-rpc)
   * [UpdateJobRetries RPC](#updatejobretries-rpc)
-
+  * [GatewayVersion RPC](#gatewayversion-rpc)
 
 ## Error handling
 
@@ -677,3 +677,32 @@ Returned if:
 Returned if:
 
   - retries is not greater than 0
+
+### GatewayVersion RPC
+
+Obtains the gateway's version.
+
+#### Input: Request
+
+```protobuf
+message GatewayVersionRequest { 
+} 
+```
+
+#### Output: Response
+
+```protobuf
+message GatewayVersionResponse { 
+  // version of the gateway 
+  string version = 1; 
+} 
+```
+#### Errors
+
+##### GRPC_STATUS_NOT_FOUND
+
+Returned if:
+
+  - gateway version could not be determined
+
+
