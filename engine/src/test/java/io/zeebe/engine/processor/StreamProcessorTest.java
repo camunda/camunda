@@ -474,7 +474,7 @@ public final class StreamProcessorTest {
     final CountDownLatch processingLatch = new CountDownLatch(1);
     final StreamProcessor streamProcessor =
         streamProcessorRule.startTypedStreamProcessor(
-            (processors, state) ->
+            (processors, context) ->
                 processors.onEvent(
                     ValueType.WORKFLOW_INSTANCE,
                     WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -513,7 +513,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processingLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -550,7 +550,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch recoveredLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -577,7 +577,7 @@ public final class StreamProcessorTest {
   @Test
   public void shouldNotCreateSnapshotsIfNoProcessorProcessEvent() throws Exception {
     // given
-    streamProcessorRule.startTypedStreamProcessor((processors, state) -> processors);
+    streamProcessorRule.startTypedStreamProcessor((processors, context) -> processors);
 
     // when
     final long position =
@@ -603,7 +603,7 @@ public final class StreamProcessorTest {
     // given
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -629,7 +629,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -671,7 +671,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -714,7 +714,7 @@ public final class StreamProcessorTest {
     // given
     final CountDownLatch processLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processors, state) ->
+        (processors, context) ->
             processors.onEvent(
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING,

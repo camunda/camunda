@@ -11,6 +11,7 @@ import static io.zeebe.engine.util.Records.workflowInstance;
 
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.processor.CommandResponseWriter;
+import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
@@ -103,7 +104,7 @@ public final class StreamProcessorRule implements TestRule {
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           return factory.build(
-              TypedRecordProcessors.processors(zeebeState.getKeyGenerator()), zeebeState);
+              TypedRecordProcessors.processors(zeebeState.getKeyGenerator()), processingContext);
         });
   }
 
@@ -279,7 +280,8 @@ public final class StreamProcessorRule implements TestRule {
 
   @FunctionalInterface
   public interface StreamProcessorTestFactory {
-    TypedRecordProcessors build(TypedRecordProcessors builder, ZeebeState zeebeState);
+    TypedRecordProcessors build(
+        TypedRecordProcessors builder, ReadonlyProcessingContext processingContext);
   }
 
   private class SetupRule extends ExternalResource {
