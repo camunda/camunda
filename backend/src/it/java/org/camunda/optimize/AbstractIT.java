@@ -19,6 +19,8 @@ import org.camunda.optimize.test.optimize.SharingClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.function.Supplier;
+
 public abstract class AbstractIT {
 
   @RegisterExtension
@@ -31,16 +33,18 @@ public abstract class AbstractIT {
   @RegisterExtension
   @Order(3)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
+    () -> embeddedOptimizeExtension.getRequestExecutor();
 
   // engine test helpers
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   // optimize test helpers
-  protected CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
-  protected ReportClient reportClient = new ReportClient(embeddedOptimizeExtension);
-  protected AlertClient alertClient = new AlertClient(embeddedOptimizeExtension);
-  protected DashboardClient dashboardClient = new DashboardClient(embeddedOptimizeExtension);
-  protected EventProcessClient eventProcessClient = new EventProcessClient(embeddedOptimizeExtension);
-  protected SharingClient sharingClient = new SharingClient(embeddedOptimizeExtension);
+  protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);
+  protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
+  protected AlertClient alertClient = new AlertClient(optimizeRequestExecutorSupplier);
+  protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
+  protected EventProcessClient eventProcessClient = new EventProcessClient(optimizeRequestExecutorSupplier);
+  protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
   protected EventClient eventClient = new EventClient(embeddedOptimizeExtension, elasticSearchIntegrationTestExtension);
 }

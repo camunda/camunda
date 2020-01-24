@@ -173,9 +173,19 @@
                     <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
                       <sequential>
                         <echo message="Downloading &amp; unpacking Optimize Report Generator @{currentVersion}..." />
+                        <ac:if>
+                          <matches string="@{currentVersion}" pattern="2\.7\.0" />
+                          <ac:then>
+                            <!-- generator for 2.7.0 is broken, a patch version needs to be used -->
+                            <ac:var name="generatorArtifactVersion" value="2.7.1-SNAPSHOT" />
+                          </ac:then>
+                          <ac:else>
+                            <ac:var name="generatorArtifactVersion" value="@{currentVersion}" />
+                          </ac:else>
+                        </ac:if>
                         <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                           <arg value="-c" />
-                          <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:@{currentVersion}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                          <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${generatorArtifactVersion}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                         </exec>
                       </sequential>
                     </ac:for>
@@ -218,7 +228,7 @@
                 </goals>
                 <phase>integration-test</phase>
                 <configuration>
-                  <target>
+                  <target xmlns:ac="antlib:net.sf.antcontrib" >
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                     <property environment="env"/>
                     <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
@@ -250,9 +260,19 @@
                       </exec>
 
                       <echo message="Generating optimize data"/>
+                      <ac:if>
+                        <matches string="${project.previousVersion}" pattern="2\.7\.0" />
+                        <ac:then>
+                          <!-- generator for 2.7.0 is broken, a patch version needs to be used -->
+                          <ac:var name="generatorArtifactVersion" value="2.7.1-SNAPSHOT" />
+                        </ac:then>
+                        <ac:else>
+                          <ac:var name="generatorArtifactVersion" value="${project.previousVersion}" />
+                        </ac:else>
+                      </ac:if>
                       <exec executable="/bin/bash" failonerror="true">
                         <arg value="-c"/>
-                        <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${project.previousVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                        <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${generatorArtifactVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
                       </exec>
 
                       <echo message="Killing Optimize ${project.previousVersion}..."/>

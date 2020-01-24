@@ -7,33 +7,41 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.apache.http.HttpStatus;
-import org.assertj.core.util.Lists;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class DashboardClient {
 
-  private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
+  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public DashboardDefinitionDto getDashboard(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .execute(DashboardDefinitionDto.class, HttpStatus.SC_OK);
   }
 
   public String createEmptyDashboard(final String collectionId) {
-    return createDashboard(collectionId, Lists.emptyList());
+    return createDashboard(collectionId, Collections.emptyList());
   }
 
-  public String createDashboard(String collectionId, List<String> reportIds) {
+  public String createDashboard(final String collectionId, final List<String> reportIds) {
     return createDashboard(createSimpleDashboardDefinition(collectionId, reportIds));
+  }
+
+  public String createDashboard(final DashboardDefinitionDto dashboardDefinitionDto) {
+    return getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute(IdDto.class, HttpStatus.SC_OK)
+      .getId();
   }
 
   public void updateDashboardWithReports(final String dashboardId,
@@ -51,21 +59,19 @@ public class DashboardClient {
   }
 
   public Response updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
       .execute(HttpStatus.SC_NO_CONTENT);
   }
 
   public IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)
       .execute(IdDto.class, 200);
   }
 
   public void deleteDashboard(final String dashboardId, final boolean force) {
-    embeddedOptimizeExtension
-      .getRequestExecutor()
+    getRequestExecutor()
       .buildDeleteDashboardRequest(dashboardId, force)
       .execute(204);
   }
@@ -82,11 +88,7 @@ public class DashboardClient {
     return definitionDto;
   }
 
-  private String createDashboard(final DashboardDefinitionDto dashboardDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, HttpStatus.SC_OK)
-      .getId();
+  private OptimizeRequestExecutor getRequestExecutor() {
+    return requestExecutorSupplier.get();
   }
 }

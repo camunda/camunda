@@ -6,14 +6,15 @@
 package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -21,16 +22,22 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 @AllArgsConstructor
 public class AlertClient {
 
-  private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
+  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public String createAlertForReport(String reportId) {
-    return addAlertToOptimizeAsUser(createSimpleAlert(reportId));
+  public String createAlertForReport(final String reportId) {
+    return createAlert(createSimpleAlert(reportId));
+  }
+
+  public String createAlert(final AlertCreationDto creationDto) {
+    return getRequestExecutor()
+      .buildCreateAlertRequest(creationDto)
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   public Response editAlertAsUser(final String alertId, final AlertCreationDto updatedAlertDto,
                                      final String username, final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(username, password)
       .buildUpdateAlertRequest(alertId, updatedAlertDto)
       .execute();
@@ -38,35 +45,24 @@ public class AlertClient {
 
   public Response createAlertAsUser(final AlertCreationDto alertCreationDto,
                                        final String username, final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(username, password)
       .buildCreateAlertRequest(alertCreationDto)
       .execute();
   }
 
   public Response deleteAlertAsUser(final String alertId, final String username, final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(username, password)
       .buildDeleteAlertRequest(alertId)
       .execute();
   }
 
   public List<AlertDefinitionDto> getAlertsForCollectionAsDefaultUser(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .executeAndReturnList(AlertDefinitionDto.class, 200);
-  }
-
-  private String addAlertToOptimizeAsUser(final AlertCreationDto creationDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(creationDto)
-      .execute(IdDto.class, 200)
-      .getId();
   }
 
   private AlertCreationDto createSimpleAlert(String reportId) {
@@ -83,5 +79,9 @@ public class AlertClient {
     alertCreationDto.setReportId(reportId);
 
     return alertCreationDto;
+  }
+
+  private OptimizeRequestExecutor getRequestExecutor() {
+    return requestExecutorSupplier.get();
   }
 }

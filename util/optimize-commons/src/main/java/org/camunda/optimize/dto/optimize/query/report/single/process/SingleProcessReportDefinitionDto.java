@@ -14,6 +14,10 @@ public class SingleProcessReportDefinitionDto extends SingleReportDefinitionDto<
     super(new ProcessReportDataDto(), false, ReportType.PROCESS);
   }
 
+  public SingleProcessReportDefinitionDto(final ProcessReportDataDto data) {
+    super(data, false, ReportType.PROCESS);
+  }
+
   @Override
   public ReportType getReportType() {
     return super.getReportType();

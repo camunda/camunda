@@ -7,15 +7,17 @@ package org.camunda.optimize.data.upgrade;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
@@ -28,9 +30,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import org.camunda.optimize.test.optimize.AlertClient;
+import org.camunda.optimize.test.optimize.CollectionClient;
+import org.camunda.optimize.test.optimize.DashboardClient;
+import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 
@@ -39,38 +47,48 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Generator implements AutoCloseable {
+public class Generator {
 
-  private final OptimizeClient optimizeClient;
+  public static final String DEFAULT_USER = "demo";
   private String processDefinitionKey;
   private String processDefinitionVersion;
 
-  public Generator() throws IOException {
-    optimizeClient = new OptimizeClient();
+  private final CollectionClient collectionClient;
+  private final ReportClient reportClient;
+  private final AlertClient alertClient;
+  private final DashboardClient dashboardClient;
+
+  public Generator() {
+    WebTarget optimizeClient = ClientBuilder.newClient().target("http://localhost:8090/api/");
+    final OptimizeRequestExecutor requestExecutor =
+      new OptimizeRequestExecutor(
+        optimizeClient,
+        new ObjectMapperFactory(
+          new OptimizeDateTimeFormatterFactory().getObject(),
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+        ).createOptimizeMapper()
+      ).withUserAuthentication(DEFAULT_USER, DEFAULT_USER).withCurrentUserAuthenticationAsNewDefaultToken();
+    collectionClient = new CollectionClient(() -> requestExecutor);
+    reportClient = new ReportClient(() -> requestExecutor);
+    alertClient = new AlertClient(() -> requestExecutor);
+    dashboardClient = new DashboardClient(() -> requestExecutor);
   }
 
-  public static void main(String[] args) throws Exception {
-    try (Generator generator = new Generator()) {
-      generator.setDefaultProcessDefinition();
+  public static void main(String[] args) {
+    final Generator generator = new Generator();
+    generator.setDefaultProcessDefinition();
 
-      List<String> reportIds = generator.generateReports();
-      generator.generateAlerts();
-      generator.generateDashboards(reportIds);
+    List<String> reportIds = generator.generateReports();
+    generator.generateAlerts();
+    generator.generateDashboards(reportIds);
+    generator.generateCollection();
 
-      generator.generateCollection();
-    }
-  }
-
-  @Override
-  public void close() throws Exception {
-    this.optimizeClient.close();
   }
 
   private void setDefaultProcessDefinition() {
@@ -80,136 +98,102 @@ public class Generator implements AutoCloseable {
   }
 
   private void generateAlerts() {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    reportData.setVisualization(ProcessVisualization.NUMBER);
+    final String collectionId = collectionClient.createNewCollection();
+    addScopeToCollection(collectionId);
+    final String collectionNumberReportId = createSingleNumberReportInCollection(collectionId);
+    AlertCreationDto alertCreation = prepareAlertCreation(collectionNumberReportId);
+    alertClient.createAlert(alertCreation);
+  }
 
-    List<String> reports = createAndUpdateReports(Collections.singletonList(reportData), new ArrayList<>());
-
-    String reportId = reports.get(0);
-
-    AlertCreationDto alertCreation = prepareAlertCreation(reportId);
-    optimizeClient.createAlert(alertCreation);
+  private void addScopeToCollection(final String collectionId) {
+    final List<String> tenants = new ArrayList<>();
+    tenants.add(null);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(DefinitionType.PROCESS, processDefinitionKey, tenants)
+    );
   }
 
   private void generateDashboards(List<String> reportIds) {
-    DashboardDefinitionDto dashboard = prepareDashboard(reportIds);
-
-    String dashboardId = optimizeClient.createEmptyDashboard();
-    optimizeClient.createEmptyDashboard();
-
-    optimizeClient.updateDashboard(dashboardId, dashboard);
+    dashboardClient.createDashboard(prepareDashboard(reportIds));
+    dashboardClient.createDashboard(null, Collections.emptyList());
   }
 
   private void generateCollection() {
-    final String collectionId = optimizeClient.createCollection();
-
-    final String collectionDashboardId = optimizeClient.createEmptyDashboardInCollection(collectionId);
+    final String collectionId = collectionClient.createNewCollection();
+    addScopeToCollection(collectionId);
 
     final String collectionReport1 = createSingleNumberReportInCollection(collectionId);
     final String collectionReport2 = createSingleNumberReportInCollection(collectionId);
 
-    optimizeClient.addReportsToDashboard(collectionDashboardId, collectionReport1, collectionReport2);
+    dashboardClient.createDashboard(collectionId, Lists.newArrayList(collectionReport1, collectionReport2));
   }
 
   private String createSingleNumberReportInCollection(final String collectionId) {
-    final String collectionReportId = optimizeClient.createEmptySingleProcessReportInCollection(collectionId);
     final ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = prepareReportUpdate(
-      reportData, collectionReportId
-    );
-    optimizeClient.updateReport(collectionReportId, singleProcessReportDefinitionDto);
-    return collectionReportId;
+    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
+    singleProcessReportDefinitionDto.setData(reportData);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private List<String> generateReports() {
-    final List<ProcessReportDataDto> reportDefinitions = createDifferentReports();
-    final List<ProcessFilterDto> filters = prepareFilters();
+    final List<String> reportIds = new ArrayList<>();
 
-    return createAndUpdateReports(reportDefinitions, filters);
-  }
+    final ProcessReportDataDto processInstanceDurationReport = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+      .setFilter(prepareFilters())
+      .build();
+    reportIds.add(createProcessReport(processInstanceDurationReport));
 
-  private List<String> createAndUpdateReports(final List<ProcessReportDataDto> reportDefinitions,
-                                              final List<ProcessFilterDto> filters) {
-    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
-    combinedReportData.setReports(new ArrayList<>());
-    List<String> reportIds = new ArrayList<>();
-    for (ProcessReportDataDto reportData : reportDefinitions) {
-      String id = optimizeClient.createEmptySingleProcessReport();
-      reportIds.add(id);
-      // there are two reports expected matching this criteria
-      if (reportData.getVisualization().equals(ProcessVisualization.BAR)
-        && reportData.getGroupBy().getType().equals(ProcessGroupByType.START_DATE)) {
-        combinedReportData.getReports().add(new CombinedReportItemDto(id));
-      }
-      reportData.setFilter(filters);
+    final ProcessReportDataDto flowNodeDurationReport = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setFilter(prepareFilters())
+      .build();
+    reportIds.add(createProcessReport(flowNodeDurationReport));
 
-      SingleProcessReportDefinitionDto reportUpdate = prepareReportUpdate(reportData, id);
-      optimizeClient.updateReport(id, reportUpdate);
-    }
-    if (!combinedReportData.getReports().isEmpty()) {
-      reportIds.add(optimizeClient.createCombinedReport(combinedReportData));
-    }
-    return reportIds;
-  }
-
-  private List<ProcessReportDataDto> createDifferentReports() {
-    List<ProcessReportDataDto> reportDefinitions = new ArrayList<>();
-    reportDefinitions.add(
-      ProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
-        .build()
-    );
-    reportDefinitions.add(
-      ProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-        .build()
-    );
     final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setFilter(prepareFilters())
       .build();
     maxFlowNodeDurationGroupByFlowNodeHeatmapReport.getConfiguration().setAggregationType(AggregationType.MAX);
-    reportDefinitions.add(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
+    reportIds.add(createProcessReport(maxFlowNodeDurationGroupByFlowNodeHeatmapReport));
 
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
+    final ProcessReportDataDto processInstanceDurationByStartDateBarChart = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .setDateInterval(GroupByDateUnit.DAY)
+      .setFilter(prepareFilters())
       .build();
-    reportDataDto.setVisualization(ProcessVisualization.BAR);
-    reportDefinitions.add(reportDataDto);
+    processInstanceDurationByStartDateBarChart.setVisualization(ProcessVisualization.BAR);
+    // here we want two of the same type to be combined in a combined report to follow
+    final String durationByStartDateReportId1 = createProcessReport(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
+    reportIds.add(durationByStartDateReportId1);
+    final String durationByStartDateReportId2 = createProcessReport(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
+    reportIds.add(durationByStartDateReportId2);
 
-    reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
-      .setDateInterval(GroupByDateUnit.DAY)
-      .build();
-    reportDataDto.setVisualization(ProcessVisualization.BAR);
-    reportDefinitions.add(reportDataDto);
+    reportIds.add(
+      reportClient.createCombinedReport(
+        null, Lists.newArrayList(durationByStartDateReportId1, durationByStartDateReportId2)
+      )
+    );
 
-    reportDataDto = ProcessReportDataBuilder
+    final ProcessReportDataDto processInstanceDurationGroupByVariableProcessPartBarChart = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -218,11 +202,16 @@ public class Generator implements AutoCloseable {
       .setVariableName("var")
       .setStartFlowNodeId("startNode")
       .setEndFlowNodeId("endNode")
+      .setFilter(prepareFilters())
       .build();
-    reportDataDto.setVisualization(ProcessVisualization.BAR);
-    reportDefinitions.add(reportDataDto);
+    processInstanceDurationGroupByVariableProcessPartBarChart.setVisualization(ProcessVisualization.BAR);
+    reportIds.add(createProcessReport(processInstanceDurationGroupByVariableProcessPartBarChart));
 
-    return reportDefinitions;
+    return reportIds;
+  }
+
+  private String createProcessReport(final ProcessReportDataDto reportData) {
+    return reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto(reportData));
   }
 
   private static List<ProcessDefinitionEngineDto> getEngineProcessDefinitions() {
@@ -283,14 +272,6 @@ public class Generator implements AutoCloseable {
     dashboard.setReports(reportLocations);
 
     return dashboard;
-  }
-
-  private static SingleProcessReportDefinitionDto prepareReportUpdate(ProcessReportDataDto reportData, String id) {
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setName(reportData.createCommandKey());
-    return report;
   }
 
   private static List<ProcessFilterDto> prepareFilters() {

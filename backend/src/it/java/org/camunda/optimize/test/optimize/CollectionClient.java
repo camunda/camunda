@@ -23,10 +23,10 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static java.util.Collections.singletonList;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
@@ -43,7 +43,7 @@ public class CollectionClient {
   public static final List<String> DEFAULT_TENANTS = singletonList(DEFAULT_TENANT);
   public static final String PRIVATE_COLLECTION_ID = null;
 
-  private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
+  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public String createNewCollectionForAllDefinitionTypes() {
     final String collectionId = createNewCollectionWithDefaultScope(PROCESS);
@@ -88,16 +88,14 @@ public class CollectionClient {
   }
 
   public String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
   }
 
   public String createNewCollection(final String user, final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -105,22 +103,19 @@ public class CollectionClient {
   }
 
   public void updateCollection(String collectionId, PartialCollectionDefinitionDto updatedCollection) {
-    embeddedOptimizeExtension
-      .getRequestExecutor()
+    getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, updatedCollection)
       .execute(204);
   }
 
   public CollectionDefinitionRestDto getCollectionById(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(CollectionDefinitionRestDto.class, 200);
   }
 
   public List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
       .executeAndReturnList(
         AuthorizedReportDefinitionDto.class,
@@ -129,15 +124,13 @@ public class CollectionClient {
   }
 
   public List<AlertDefinitionDto> getAlertsForCollection(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .executeAndReturnList(AlertDefinitionDto.class,200);
   }
 
   public List<EntityDto> getEntitiesForCollection(final String collectionId){
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId)
       .executeAndReturnList(EntityDto.class, 200);
   }
@@ -145,7 +138,7 @@ public class CollectionClient {
   public void updateCollectionScopeAsKermit(final String collectionId,
                                             final CollectionScopeEntryRestDto scopeEntry,
                                             final List<String> tenants) {
-    embeddedOptimizeExtension.getRequestExecutor()
+    getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(
         collectionId,
         scopeEntry.getId(),
@@ -162,14 +155,14 @@ public class CollectionClient {
   }
 
   public List<CollectionScopeEntryRestDto> getCollectionScope(final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
       .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
       });
   }
 
   public List<CollectionScopeEntryRestDto> getCollectionScopeForKermit(final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
@@ -183,7 +176,7 @@ public class CollectionClient {
   }
 
   public Response deleteCollection(String id) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildDeleteCollectionRequest(id, true)
       .execute();
   }
@@ -197,46 +190,41 @@ public class CollectionClient {
   }
 
   public void addScopeEntriesToCollection(final String collectionId, final List<CollectionScopeEntryDto> entries) {
-    embeddedOptimizeExtension.getRequestExecutor()
+    getRequestExecutor()
       .buildAddScopeEntriesToCollectionRequest(collectionId, entries)
       .execute(204);
   }
 
   public void addScopeEntryToCollectionWithUser(final String collectionId, final CollectionScopeEntryDto entry,
                                                 final String user, final String password) {
-    embeddedOptimizeExtension.getRequestExecutor()
+    getRequestExecutor()
       .buildAddScopeEntriesToCollectionRequest(collectionId, singletonList(entry))
       .withUserAuthentication(user, password)
       .execute(IdDto.class, 204);
   }
 
   public IdDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
   }
 
   public OptimizeRequestExecutor getAlertsRequest(final String userId, final String password,
                                                   final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .withUserAuthentication(userId, password);
   }
 
-
   public List<CollectionRoleRestDto> getCollectionRoles(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(CollectionRoleRestDto.class, 200);
   }
 
   public List<IdDto> getCollectionRoleIdDtos(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(IdDto.class, 200);
@@ -247,8 +235,7 @@ public class CollectionClient {
   }
 
   public IdDto copyCollection(String collectionId, String newName) {
-    OptimizeRequestExecutor executor = embeddedOptimizeExtension
-      .getRequestExecutor()
+    OptimizeRequestExecutor executor = getRequestExecutor()
       .buildCopyCollectionRequest(collectionId);
 
     if (newName != null) {
@@ -259,4 +246,7 @@ public class CollectionClient {
       .execute(IdDto.class, 200);
   }
 
+  private OptimizeRequestExecutor getRequestExecutor() {
+    return requestExecutorSupplier.get();
+  }
 }

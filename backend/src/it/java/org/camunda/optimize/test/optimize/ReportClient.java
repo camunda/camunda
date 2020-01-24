@@ -7,7 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.apache.http.HttpStatus;
-import org.assertj.core.util.Lists;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -24,7 +24,9 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -37,7 +39,7 @@ public class ReportClient {
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
 
-  private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
+  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public String createCombinedReport(String collectionId, List<String> singleReportIds) {
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
@@ -47,7 +49,7 @@ public class ReportClient {
   }
 
   public String createEmptyCombinedReport(final String collectionId) {
-    return createCombinedReport(collectionId, Lists.emptyList());
+    return createCombinedReport(collectionId, Collections.emptyList());
   }
 
   public String createNewCombinedReport(String... singleReportIds) {
@@ -65,22 +67,19 @@ public class ReportClient {
           .map(CombinedReportItemDto::new)
           .collect(Collectors.toList())
       );
-    embeddedOptimizeExtension
-      .getRequestExecutor()
+    getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
       .execute();
   }
 
   public void updateSingleProcessReport(final String reportId, final SingleProcessReportDefinitionDto updatedReport) {
-    embeddedOptimizeExtension
-      .getRequestExecutor()
+    getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(reportId, updatedReport)
       .execute(204);
   }
 
   private String createNewCombinedReport(CombinedReportDefinitionDto combinedReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
@@ -154,8 +153,7 @@ public class ReportClient {
   }
 
   public String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
@@ -200,8 +198,7 @@ public class ReportClient {
 
   public String createSingleProcessReportAsUser(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
                                                 final String user, final String pw) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(user, pw)
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, HttpStatus.SC_OK)
@@ -210,8 +207,7 @@ public class ReportClient {
 
   public String createNewDecisionReportAsUser(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto,
                                               final String user, final String pw) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .withUserAuthentication(user, pw)
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, HttpStatus.SC_OK)
@@ -219,8 +215,7 @@ public class ReportClient {
   }
 
   public String createSingleDecisionReport(SingleDecisionReportDefinitionDto decisionReportDefinition) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(decisionReportDefinition)
       .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
@@ -236,8 +231,7 @@ public class ReportClient {
   }
 
   public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
+    return getRequestExecutor()
       .buildGetReportRequest(originalReportId)
       .execute(SingleProcessReportDefinitionDto.class, 200);
   }
@@ -247,9 +241,12 @@ public class ReportClient {
   }
 
   public void deleteReport(final String reportId, final boolean force) {
-    embeddedOptimizeExtension
-      .getRequestExecutor()
+    getRequestExecutor()
       .buildDeleteReportRequest(reportId, force)
       .execute(204);
+  }
+
+  private OptimizeRequestExecutor getRequestExecutor() {
+    return requestExecutorSupplier.get();
   }
 }

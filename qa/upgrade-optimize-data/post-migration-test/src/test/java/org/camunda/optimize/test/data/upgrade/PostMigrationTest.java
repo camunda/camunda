@@ -79,7 +79,6 @@ public class PostMigrationTest {
     assertThat(entities.size(), is(greaterThan(0)));
   }
 
-  @Disabled
   @Test
   public void retrieveAlerts() {
     Response response = client.target(OPTIMIZE_API_ENDPOINT + "alert")

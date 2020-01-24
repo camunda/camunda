@@ -13,26 +13,26 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @AllArgsConstructor
 public class EventProcessClient {
 
-  private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
+  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public boolean getIsEventBasedProcessEnabled() {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildGetIsEventProcessEnabledRequest()
       .execute(Boolean.class, 200);
   }
 
   public OptimizeRequestExecutor createCreateEventProcessMappingRequest(final EventProcessMappingDto eventProcessMappingDto) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildCreateEventProcessMappingRequest(eventProcessMappingDto);
+    return getRequestExecutor().buildCreateEventProcessMappingRequest(eventProcessMappingDto);
   }
 
   public String createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
@@ -40,7 +40,7 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createGetEventProcessMappingRequest(final String eventProcessMappingId) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildGetEventProcessMappingRequest(eventProcessMappingId);
+    return getRequestExecutor().buildGetEventProcessMappingRequest(eventProcessMappingId);
   }
 
   public EventProcessMappingDto getEventProcessMapping(final String eventProcessMappingId) {
@@ -48,7 +48,7 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest() {
-    return embeddedOptimizeExtension.getRequestExecutor().buildGetAllEventProcessMappingsRequests();
+    return getRequestExecutor().buildGetAllEventProcessMappingsRequests();
   }
 
   public List<EventProcessMappingDto> getAllEventProcessMappings() {
@@ -59,7 +59,7 @@ public class EventProcessClient {
 
   public OptimizeRequestExecutor createUpdateEventProcessMappingRequest(final String eventProcessMappingId,
                                                                         final EventProcessMappingDto eventProcessMappingDto) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMappingDto);
   }
 
@@ -68,7 +68,7 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createPublishEventProcessMappingRequest(final String eventProcessMappingId) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildPublishEventProcessMappingRequest(eventProcessMappingId);
+    return getRequestExecutor().buildPublishEventProcessMappingRequest(eventProcessMappingId);
   }
 
   public void publishEventProcessMapping(final String eventProcessMappingId) {
@@ -76,7 +76,7 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createCancelPublishEventProcessMappingRequest(final String eventProcessMappingId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
+    return getRequestExecutor()
       .buildCancelPublishEventProcessMappingRequest(eventProcessMappingId);
   }
 
@@ -85,7 +85,7 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createDeleteEventProcessMappingRequest(final String eventProcessMappingId) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildDeleteEventProcessMappingRequest(eventProcessMappingId);
+    return getRequestExecutor().buildDeleteEventProcessMappingRequest(eventProcessMappingId);
   }
 
   public ConflictResponseDto getDeleteConflictsForEventProcessMapping(String eventProcessMappingId) {
@@ -94,7 +94,7 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createGetDeleteConflictsForEventProcessMappingRequest(final String eventProcessMappingId) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId);
+    return getRequestExecutor().buildGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId);
   }
 
   public void deleteEventProcessMapping(final String eventProcessMappingId) {
@@ -127,4 +127,7 @@ public class EventProcessClient {
       .build();
   }
 
+  private OptimizeRequestExecutor getRequestExecutor() {
+    return requestExecutorSupplier.get();
+  }
 }

@@ -84,7 +84,13 @@ public class OptimizeRequestExecutor {
 
   private ObjectMapper objectMapper;
 
-  public OptimizeRequestExecutor(WebTarget client, String defaultAuthToken, ObjectMapper objectMapper) {
+  public OptimizeRequestExecutor(final WebTarget client, final ObjectMapper objectMapper) {
+    this(client, null, objectMapper);
+  }
+
+  public OptimizeRequestExecutor(final WebTarget client,
+                                 final String defaultAuthToken,
+                                 final ObjectMapper objectMapper) {
     this.client = client;
     this.authCookie = defaultAuthToken;
     this.defaultAuthCookie = defaultAuthToken;
@@ -133,6 +139,11 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor withGivenAuthToken(String authToken) {
     this.authCookie = AuthCookieService.createOptimizeAuthCookieValue(authToken);
+    return this;
+  }
+
+  public OptimizeRequestExecutor withCurrentUserAuthenticationAsNewDefaultToken() {
+    this.defaultAuthCookie = authCookie;
     return this;
   }
 
