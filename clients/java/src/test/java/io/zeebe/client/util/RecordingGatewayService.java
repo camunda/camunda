@@ -36,8 +36,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GatewayVersionRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GatewayVersionResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -92,8 +90,6 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(ActivateJobsRequest.class, r -> ActivateJobsResponse.getDefaultInstance());
     addRequestHandler(
         ResolveIncidentRequest.class, r -> ResolveIncidentResponse.getDefaultInstance());
-    addRequestHandler(
-        GatewayVersionRequest.class, r -> GatewayVersionResponse.getDefaultInstance());
   }
 
   public static Partition partition(final int partitionId, final PartitionBrokerRole role) {
@@ -223,17 +219,11 @@ public final class RecordingGatewayService extends GatewayImplBase {
     handle(request, responseObserver);
   }
 
-  @Override
-  public void gatewayVersion(
-      final GatewayVersionRequest request,
-      final StreamObserver<GatewayVersionResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
   public void onTopologyRequest(
       final int clusterSize,
       final int partitionsCount,
       final int replicationFactor,
+      final String gatewayVersion,
       final BrokerInfo... brokers) {
     addRequestHandler(
         TopologyRequest.class,
@@ -242,6 +232,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setClusterSize(clusterSize)
                 .setPartitionsCount(partitionsCount)
                 .setReplicationFactor(replicationFactor)
+                .setGatewayVersion(gatewayVersion)
                 .addAllBrokers(Arrays.asList(brokers))
                 .build());
   }
@@ -301,12 +292,6 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         SetVariablesRequest.class,
         request -> SetVariablesResponse.newBuilder().setKey(key).build());
-  }
-
-  public void onGatewayVersion(final String version) {
-    addRequestHandler(
-        GatewayVersionRequest.class,
-        request -> GatewayVersionResponse.newBuilder().setVersion(version).build());
   }
 
   public void errorOnRequest(

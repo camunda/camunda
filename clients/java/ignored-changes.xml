@@ -1,7 +1,7 @@
 <differences>
   <difference>
-    <className>io/zeebe/client/ZeebeClient</className>
-    <method>io.zeebe.client.impl.command.GatewayVersionCommandImpl newGatewayVersionCommand()</method>
+    <className>io/zeebe/client/api/response/Topology</className>
+    <method>java.lang.String getGatewayVersion()</method>
     <differenceType>7012</differenceType>
   </difference>
 </differences>

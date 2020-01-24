@@ -16,6 +16,7 @@ import io.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.client.api.response.PartitionBrokerRole;
 import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.response.Topology;
+import io.zeebe.gateway.Gateway;
 import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -85,5 +86,9 @@ public final class TopologyClusterTest {
     assertThat(topology.getClusterSize()).isEqualTo(CLUSTERING_RULE.getClusterSize());
     assertThat(topology.getPartitionsCount()).isEqualTo(CLUSTERING_RULE.getPartitionCount());
     assertThat(topology.getReplicationFactor()).isEqualTo(CLUSTERING_RULE.getReplicationFactor());
+    // NOTE: this fails in Intellij because we don't have access to the package version but it works
+    // from the CLI
+    assertThat(topology.getGatewayVersion())
+        .isEqualTo(Gateway.class.getPackage().getImplementationVersion());
   }
 }
