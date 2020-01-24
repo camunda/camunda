@@ -165,6 +165,7 @@ public final class AtomixLogStorageRule extends ExternalResource
     storage = null;
     Optional.ofNullable(raftStorage).ifPresent(RaftStorage::deleteLog);
     raftStorage = null;
+    positionListener = null;
   }
 
   public int getPartitionId() {
