@@ -112,7 +112,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:0.21.1
+      image: camunda/zeebe:0.22.0
       env:
       volumeMounts:
         - name: zeebe-configuration
@@ -126,7 +126,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: operate
-      image: camunda/operate:1.1.0
+      image: camunda/operate:1.2.0
       env:
         - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
           value: false
@@ -212,7 +212,7 @@ pipeline {
 	stage('Migrate data') {
 		steps {
 		   container('maven') {
-			 // migrate from 1.1.0 to 1.2.0
+		   	 // Migrate 
 			 sh("cd ./els-schema/target/classes && sh ./migrate.sh")
 		 }
 	  }

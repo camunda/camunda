@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-event_*"
+			"operate-event-${schema.old_version}_*"
 		]
 	},
 	"dest": {

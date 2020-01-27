@@ -23,7 +23,7 @@ public class Connector {
 
   @Autowired
   private MigrationProperties dataGeneratorProperties;
-  
+
   @Bean
   public ZeebeClient createZeebeClient() {
     String brokerContactPoint = dataGeneratorProperties.getZeebeBrokerContactPoint();

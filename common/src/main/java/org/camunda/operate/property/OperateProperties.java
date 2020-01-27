@@ -48,6 +48,9 @@ public class OperateProperties {
 
   @Value("${camunda.operate.internal.schema.version}")
   private String schemaVersion;
+  
+  @Value("${camunda.operate.internal.schema.previous_version}")
+  private String previousSchemaVersion;
 
   @NestedConfigurationProperty
   private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
@@ -196,11 +199,13 @@ public class OperateProperties {
   public void setSchemaVersion(String schemaVersion) {
     this.schemaVersion = schemaVersion;
   }
+  
+  public String getPreviousSchemaVersion() {
+    return previousSchemaVersion.toLowerCase();
+  }
 
-  //
-//  public static String getSchemaVersion() {
-//    String versionFromManifest = OperateProperties.class.getPackage().getImplementationVersion();
-//    String version = versionFromManifest==null?DEFAULT_VERSION:versionFromManifest;
-//    return version.toLowerCase(); // elasticsearch accepts only lowercase index/template names
-//  }
+  public void setPreviousSchemaVersion(String previousSchemaVersion) {
+    this.previousSchemaVersion = previousSchemaVersion;
+  }
+
 }

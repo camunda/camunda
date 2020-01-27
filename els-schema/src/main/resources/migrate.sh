@@ -7,7 +7,7 @@ RESTCLIENT="curl -K curl.config"
 createNewTemplatesAndTheirIndexes(){
    for template in create/template/*.json; do
      templatename=`basename $template .json`
-     echo "Create template $templatename"
+     echo "Create template ${templatename}-${schema.version} and index ${templatename}-${schema.version}_"
      echo "-------------------------------"
  	 $RESTCLIENT --request PUT --url $ES/_template/${templatename}-${schema.version}?include_type_name=false --data @$template
  	 $RESTCLIENT --request PUT --url $ES/${templatename}-${schema.version}_
@@ -19,7 +19,7 @@ createNewTemplatesAndTheirIndexes(){
 createNewIndexes(){
    for index in create/index/*.json; do
      indexname=`basename $index .json`
-     echo "Create index $indexname"
+     echo "Create index ${indexname}-${schema.version}_"
      echo "-------------------------------"
      $RESTCLIENT --request PUT --url $ES/${indexname}-${schema.version}_?include_type_name=false --data @$index
      echo
@@ -50,21 +50,25 @@ removeOldTemplates(){
 	echo "Delete all old templates"
 	for template in create/template/*.json; do
 		templatename=`basename $template .json`
+		echo "Delete old templates ${templatename}-${schema.old_version}_template"
 		echo "-------------------------------"
-		$RESTCLIENT --request DELETE --url $ES/_template/${templatename}_template
-done
-	echo
-	echo "-------------------------------"
+		$RESTCLIENT --request DELETE --url $ES/_template/${templatename}-${schema.old_version}_template
+		echo
+    	echo "-------------------------------"
+	done
 }
 
 migrate(){
 	echo "Migrate indices ( reindex old to new index and delete old index)"
 	for index in migrate/reindex/*.json; do
 		indexname=`basename $index .json`
-		echo "Migrate $index "
+		echo "Migrate $indexname "
 		echo "-------------------------------"
     	$RESTCLIENT --request POST --url $ES/_reindex?wait_for_completion=true --data @$index
-    	$RESTCLIENT --request DELETE --url $ES/${indexname}_ 
+    	echo
+    	echo "Delete ${indexname}-${schema.old_version}_ "
+		echo "-------------------------------"
+    	$RESTCLIENT --request DELETE --url $ES/${indexname}-${schema.old_version}_
     	echo
     	echo "-------------------------------"
 	done

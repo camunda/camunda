@@ -27,13 +27,27 @@
 				<artifactId>build-helper-maven-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>regex-property</id>
+						<id>project-version-property</id>
 						<goals>
 							<goal>regex-property</goal>
 						</goals>
 						<configuration>
 							<name>schema.version</name>
 							<value>${project.version}</value>
+							<regex>.*</regex>
+							<replacement>$0</replacement>
+							<failIfNoMatch>false</failIfNoMatch>
+							<toLowerCase>true</toLowerCase>
+						</configuration>
+					</execution>
+					<execution>
+						<id>project-previous_version</id>
+						<goals>
+							<goal>regex-property</goal>
+						</goals>
+						<configuration>
+							<name>schema.old_version</name>
+							<value>${project.previous_version}</value>
 							<regex>.*</regex>
 							<replacement>$0</replacement>
 							<failIfNoMatch>false</failIfNoMatch>

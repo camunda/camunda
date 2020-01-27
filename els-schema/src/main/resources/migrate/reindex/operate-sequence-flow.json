@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-sequence-flow_*"
+			"operate-sequence-flow-${schema.old_version}_*"
 		]
 	},
 	"dest": {
