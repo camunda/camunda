@@ -57,9 +57,11 @@ public class EmbeddedCamundaOptimizeIT extends AbstractIT {
   private Set<Thread> getCurrentThreads() {
     return Thread.getAllStackTraces().keySet().stream()
       .filter(thread -> thread.getThreadGroup() != null
-        && !thread.getName().contains("ForkJoinPool.commonPool-worker")
         && !thread.getThreadGroup().getName().equals("system")
+        && !thread.getThreadGroup().getName().equals("InnocuousThreadGroup")
+        && !thread.getName().contains("ForkJoinPool.commonPool-worker")
         && !thread.getName().contains("WebSocketClient")
+        && !thread.getName().contains("Keep-Alive-Timer")
       )
       .collect(Collectors.toSet());
   }
