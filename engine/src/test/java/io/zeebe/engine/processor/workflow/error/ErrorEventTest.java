@@ -283,4 +283,44 @@ public class ErrorEventTest {
             tuple("subprocess", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
+
+  @Test
+  public void shouldThrowErrorOnEndEvent() {
+    // given
+    final var workflow =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess(
+                "subProcess",
+                subProcess ->
+                    subProcess
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .endEvent("throw-error", e -> e.error(ERROR_CODE)))
+            .boundaryEvent("catch-error", b -> b.error(ERROR_CODE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(workflow).deploy();
+
+    // when
+    final var workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
 }

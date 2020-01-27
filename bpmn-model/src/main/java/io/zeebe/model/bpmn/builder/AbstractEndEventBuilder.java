@@ -42,4 +42,31 @@ public abstract class AbstractEndEventBuilder<B extends AbstractEndEventBuilder<
 
     return myself;
   }
+
+  /**
+   * Creates an error event definition with an unique id and returns a builder for the error event
+   * definition.
+   *
+   * @return the error event definition builder object
+   */
+  public ErrorEventDefinitionBuilder errorEventDefinition(final String id) {
+    final ErrorEventDefinition errorEventDefinition = createEmptyErrorEventDefinition();
+    if (id != null) {
+      errorEventDefinition.setId(id);
+    }
+
+    element.getEventDefinitions().add(errorEventDefinition);
+    return new ErrorEventDefinitionBuilder(modelInstance, errorEventDefinition);
+  }
+
+  /**
+   * Creates an error event definition and returns a builder for the error event definition.
+   *
+   * @return the error event definition builder object
+   */
+  public ErrorEventDefinitionBuilder errorEventDefinition() {
+    final ErrorEventDefinition errorEventDefinition = createEmptyErrorEventDefinition();
+    element.getEventDefinitions().add(errorEventDefinition);
+    return new ErrorEventDefinitionBuilder(modelInstance, errorEventDefinition);
+  }
 }

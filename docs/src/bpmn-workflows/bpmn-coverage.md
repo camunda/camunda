@@ -692,7 +692,7 @@ Elements marked in orange are currently implemented by Zeebe.
       </td>
       <td></td>
       <td></td>
-      <td>
+      <td class="implemented">
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#333333" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" id="svg_1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>
             <path fill="#333333" stroke="none" d="M21.820839,10.171502L18.36734,23.58992L12.541380000000002,13.281818999999999L8.338651200000001,19.071607L12.048949000000002,5.832305699999999L17.996148000000005,15.132659L21.820839,10.171502Z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" transform="matrix(0.9375,0,0,0.9375,5.9425,5.9194)" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
