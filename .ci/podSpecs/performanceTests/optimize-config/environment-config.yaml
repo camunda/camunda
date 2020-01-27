@@ -17,3 +17,6 @@ es:
     nodes:
     - host: 'elasticsearch'
       httpPort: 9200
+  settings:
+    index:
+      refresh_interval: ${ES_REFRESH_INTERVAL}

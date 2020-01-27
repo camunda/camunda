@@ -35,6 +35,8 @@ spec:
           value: |
             -Xmx4g
             -XX:MaxMetaspaceSize=128m
+        - name: ES_REFRESH_INTERVAL
+          value: ${ES_REFRESH_INTERVAL}
         - name: WAIT_FOR
           value: "elasticsearch:9200"
         - name: WAIT_FOR_TIMEOUT

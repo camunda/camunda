@@ -4,7 +4,7 @@ die () {
     exit 1
 }
 
-[[ "$#" -eq 6 ]] || die "4 arguments required [NAMESPACE] [DOCKER_REGISTRY_USER] [DOCKER_REGISTRY_PW] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION], $# provided"
+[[ "$#" -eq 7 ]] || die "7 arguments required [NAMESPACE] [DOCKER_REGISTRY_USER] [DOCKER_REGISTRY_PW] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION] [ES_REFRESH_INTERVAL], $# provided"
 
 NAMESPACE=$1
 REGISTRY_USR=$2
@@ -57,6 +57,6 @@ sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/cambpm.yml
 #Spawning optimize
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/optimize-cfg.yml | kubectl apply -f -
 kubectl -n "$NAMESPACE" create configmap performance-optimize-camunda-cloud --from-file=.ci/podSpecs/performanceTests/optimize-config/
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/optimize.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_REFRESH_INTERVAL}/$ES_REFRESH_INTERVAL/g" < .ci/podSpecs/performanceTests/optimize.yml | kubectl apply -f -
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/optimize.yml  | kubectl rollout status -f - --watch=true
