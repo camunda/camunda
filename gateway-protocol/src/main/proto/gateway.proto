@@ -248,6 +248,8 @@ message TopologyResponse {
   int32 partitionsCount = 3;
   // configured replication factor for this cluster
   int32 replicationFactor = 4;
+  // gateway version
+  string gatewayVersion = 5;
 }
 
 message BrokerInfo {
@@ -305,14 +307,6 @@ message SetVariablesRequest {
 message SetVariablesResponse {
   // the unique key of the set variables command
   int64 key = 1;
-}
-
-message GatewayVersionRequest {
-}
-
-message GatewayVersionResponse {
-  // version of the gateway
-  string version = 1;
 }
 
 service Gateway {
@@ -485,11 +479,5 @@ service Gateway {
         - retries is not greater than 0
    */
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
-  }
-
-  /* 
-    Returns the version of the gateway.
-  */
-  rpc GatewayVersion (GatewayVersionRequest) returns (GatewayVersionResponse) {
   }
 }

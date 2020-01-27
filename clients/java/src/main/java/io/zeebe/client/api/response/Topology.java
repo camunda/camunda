@@ -29,4 +29,7 @@ public interface Topology {
 
   /** @return the configured replication factor for every partition */
   int getReplicationFactor();
+
+  /** @return the gateway version or an empty string if none was found */
+  String getGatewayVersion();
 }

@@ -40,8 +40,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GatewayVersionRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GatewayVersionResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -251,6 +249,11 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
           .setPartitionsCount(topology.getPartitionsCount())
           .setReplicationFactor(topology.getReplicationFactor());
 
+      final String gatewayVersion = getClass().getPackage().getImplementationVersion();
+      if (gatewayVersion != null && !gatewayVersion.isBlank()) {
+        topologyResponseBuilder.setGatewayVersion(gatewayVersion);
+      }
+
       final ArrayList<BrokerInfo> brokers = new ArrayList<>();
 
       topology
@@ -284,25 +287,6 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
         RequestMapper::toUpdateJobRetriesRequest,
         ResponseMapper::toUpdateJobRetriesResponse,
         responseObserver);
-  }
-
-  @Override
-  public void gatewayVersion(
-      final GatewayVersionRequest request,
-      final StreamObserver<GatewayVersionResponse> responseObserver) {
-    final String version = getClass().getPackage().getImplementationVersion();
-    if (version == null || version.isBlank()) {
-      responseObserver.onError(
-          Status.NOT_FOUND
-              .augmentDescription("Failed to read gateway version, none was defined")
-              .asException());
-      return;
-    }
-
-    final GatewayVersionResponse response =
-        GatewayVersionResponse.newBuilder().setVersion(version).build();
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
   }
 
   private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(

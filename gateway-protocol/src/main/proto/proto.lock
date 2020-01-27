@@ -473,6 +473,11 @@
                 "id": 4,
                 "name": "replicationFactor",
                 "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "gatewayVersion",
+                "type": "string"
               }
             ]
           },
@@ -564,19 +569,6 @@
                 "type": "int64"
               }
             ]
-          },
-          {
-            "name": "GatewayVersionRequest"
-          },
-          {
-            "name": "GatewayVersionResponse",
-            "fields": [
-              {
-                "id": 1,
-                "name": "version",
-                "type": "string"
-              }
-            ]
           }
         ],
         "services": [
@@ -648,11 +640,6 @@
                 "name": "UpdateJobRetries",
                 "in_type": "UpdateJobRetriesRequest",
                 "out_type": "UpdateJobRetriesResponse"
-              },
-              {
-                "name": "GatewayVersion",
-                "in_type": "GatewayVersionRequest",
-                "out_type": "GatewayVersionResponse"
               }
             ]
           }

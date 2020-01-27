@@ -15,7 +15,6 @@
   * [ThrowError RPC](#throwerror-rpc)
   * [Topology RPC](#topology-rpc)
   * [UpdateJobRetries RPC](#updatejobretries-rpc)
-  * [GatewayVersion RPC](#gatewayversion-rpc)
 
 ## Error handling
 
@@ -610,6 +609,8 @@ message TopologyResponse {
   int32 partitionsCount = 3;
   // configured replication factor for this cluster
   int32 replicationFactor = 4;
+  // gateway version
+  string gatewayVersion = 5;
 }
 
 message BrokerInfo {
@@ -677,32 +678,3 @@ Returned if:
 Returned if:
 
   - retries is not greater than 0
-
-### GatewayVersion RPC
-
-Obtains the gateway's version.
-
-#### Input: Request
-
-```protobuf
-message GatewayVersionRequest { 
-} 
-```
-
-#### Output: Response
-
-```protobuf
-message GatewayVersionResponse { 
-  // version of the gateway 
-  string version = 1; 
-} 
-```
-#### Errors
-
-##### GRPC_STATUS_NOT_FOUND
-
-Returned if:
-
-  - gateway version could not be determined
-
-
