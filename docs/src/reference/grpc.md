@@ -622,6 +622,8 @@ message BrokerInfo {
   int32 port = 3;
   // list of partitions managed or replicated on this broker
   repeated Partition partitions = 4;
+  // broker version
+  string version = 5;
 }
 
 message Partition {
