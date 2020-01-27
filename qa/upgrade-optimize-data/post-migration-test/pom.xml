@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <properties>
-    <skipTests>true</skipTests>
-    <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
+    <skip.tests>true</skip.tests>
     <old.optimize.elasticsearch.port>9250</old.optimize.elasticsearch.port>
     <new.optimize.elasticsearch.port>9200</new.optimize.elasticsearch.port>
     <elasticsearch.snapshot.path>/usr/share/elasticsearch/essnapshots</elasticsearch.snapshot.path>
+    <previous.generator.version>2.7.1-SNAPSHOT</previous.generator.version>
   </properties>
 
   <parent>
@@ -50,6 +50,10 @@
   <profiles>
     <profile>
       <id>upgrade-optimize-data</id>
+      <properties>
+        <skip.tests>false</skip.tests>
+        <skip.docker>false</skip.docker>
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -66,7 +70,7 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skip.docker}</skip>
-                  <target name="Starting CamBpm and old ES through docker-compose" xmlns:ac="antlib:net.sf.antcontrib">
+                  <target name="Starting CamBpm and old ES through docker-compose">
                     <exec dir="${project.basedir}/../../.." executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
                       <arg value="docker-compose up -d --force-recreate --renew-anon-volumes cambpm" />
@@ -157,65 +161,67 @@
 
               <!-- 4. Download and unpack optimize data generators with dependencies -->
               <execution>
-                <id>download-generators</id>
+                <id>download-and-unpack-generators</id>
                 <goals>
                   <goal>run</goal>
                 </goals>
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skip.tests}</skip>
-                  <target name="unpack optimize distributions">
+                  <target name="download and unpack optimize data generators">
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                     <property environment="env" />
                     <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
                       <isset property="env.MAVEN_SETTINGS_XML" />
                     </condition>
-                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
-                      <sequential>
-                        <echo message="Downloading &amp; unpacking Optimize Report Generator @{currentVersion}..." />
-                        <ac:if>
-                          <matches string="@{currentVersion}" pattern="2\.7\.0" />
-                          <ac:then>
-                            <!-- generator for 2.7.0 is broken, a patch version needs to be used -->
-                            <ac:var name="generatorArtifactVersion" value="2.7.1-SNAPSHOT" />
-                          </ac:then>
-                          <ac:else>
-                            <ac:var name="generatorArtifactVersion" value="@{currentVersion}" />
-                          </ac:else>
-                        </ac:if>
-                        <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
-                          <arg value="-c" />
-                          <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${generatorArtifactVersion}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
-                        </exec>
-                      </sequential>
-                    </ac:for>
+
+                    <echo message="Downloading &amp; unpacking Optimize Report Generator ${previous.generator.version}..." />
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${previous.generator.version}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                    </exec>
+                    <echo message="Optimize ${previous.generator.version} generator successfully unpacked." />
+
+                    <echo message="Downloading &amp; unpacking Optimize Report Generator ${project.version}..." />
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="mvn dependency:copy ${maven-settings} -f qa/upgrade-optimize-data/post-migration-test/pom.xml -Dartifact=org.camunda.optimize:generator:${project.version}:jar:jar-with-dependencies -DoutputDirectory=./target/generators -DoverWriteReleases=true -Dmdep.useBaseVersion=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                    </exec>
+                    <echo message="Optimize ${project.version} generator successfully unpacked." />
+
                   </target>
                 </configuration>
               </execution>
               
               <!--5. Download and unpack Optimize versions -->
               <execution>
-                <id>unpack</id>
+                <id>download-and-unpack-Optimize-versions</id>
                 <goals>
                   <goal>run</goal>
                 </goals>
                 <phase>pre-integration-test</phase>
                 <configuration>
-                  <target name="unpack optimize distributions">
+                  <target name="download and unpack optimize distributions">
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                     <property environment="env" />
                     <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
                       <isset property="env.MAVEN_SETTINGS_XML" />
                     </condition>
-                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
-                      <sequential>
-                        <echo message="Downloading &amp; unpacking Optimize @{currentVersion}..." />
-                        <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
-                          <arg value="-c" />
-                          <arg value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:production -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
-                        </exec>
-                      </sequential>
-                    </ac:for>
+
+                    <echo message="Downloading &amp; unpacking Optimize ${project.previousVersion}..." />
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:${project.previousVersion}:tar.gz:production -DoutputDirectory=${project.build.directory}/${project.previousVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                    </exec>
+                    <echo message="Optimize ${project.previousVersion} successfully unpacked." />
+
+                    <echo message="Downloading &amp; unpacking Optimize ${project.version}..." />
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:${project.version}:tar.gz:production -DoutputDirectory=${project.build.directory}/${project.version} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                    </exec>
+                    <echo message="Optimize ${project.version} successfully unpacked." />
+
                   </target>
                 </configuration>
               </execution>
@@ -228,7 +234,7 @@
                 </goals>
                 <phase>integration-test</phase>
                 <configuration>
-                  <target xmlns:ac="antlib:net.sf.antcontrib" >
+                  <target name="Start old Optimize, generate Data and kill Optimize">
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                     <property environment="env"/>
                     <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
@@ -260,19 +266,9 @@
                       </exec>
 
                       <echo message="Generating optimize data"/>
-                      <ac:if>
-                        <matches string="${project.previousVersion}" pattern="2\.7\.0" />
-                        <ac:then>
-                          <!-- generator for 2.7.0 is broken, a patch version needs to be used -->
-                          <ac:var name="generatorArtifactVersion" value="2.7.1-SNAPSHOT" />
-                        </ac:then>
-                        <ac:else>
-                          <ac:var name="generatorArtifactVersion" value="${project.previousVersion}" />
-                        </ac:else>
-                      </ac:if>
                       <exec executable="/bin/bash" failonerror="true">
                         <arg value="-c"/>
-                        <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${generatorArtifactVersion}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                        <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${previous.generator.version}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
                       </exec>
 
                       <echo message="Killing Optimize ${project.previousVersion}..."/>
@@ -294,7 +290,7 @@
                 <phase>integration-test</phase>
                 <configuration>
                   <skip>${skip.tests}</skip>
-                  <target name="Copy ES data" xmlns:ac="antlib:net.sf.antcontrib">
+                  <target name="Copy ES data">
 
                     <echo message="Create repository in old and new ES" />
                     <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
@@ -416,7 +412,7 @@
                 <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skip.docker}</skip>
-                  <target name="Stop docker container" xmlns:ac="antlib:net.sf.antcontrib">
+                  <target name="Stop docker container">
                     <echo message="Stopping CamBPM..." />
                     <exec dir="${project.basedir}/../../.." executable="/bin/bash" failonerror="true">
                       <arg value="-c" />

@@ -17,7 +17,6 @@
     <upgrade.expected.activityInstance.count>21</upgrade.expected.activityInstance.count>
     <!-- default 30 minutes -->
     <upgrade.timeout.seconds>1800</upgrade.timeout.seconds>
-    <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
     <old.optimize.elasticsearch.port>9250</old.optimize.elasticsearch.port>
     <new.optimize.elasticsearch.port>9200</new.optimize.elasticsearch.port>
     <elasticsearch.snapshot.path>/usr/share/elasticsearch/essnapshots</elasticsearch.snapshot.path>
@@ -44,24 +43,20 @@
                 <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
                   <isset property="env.MAVEN_SETTINGS_XML" />
                 </condition>
-                <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
-                  <sequential>
-                    <echo message="Downloading &amp; unpacking Optimize @{currentVersion}..." />
-                    <ac:if>
-                      <matches string="@{currentVersion}" pattern="2\.[0-2]\.0" />
-                      <ac:then>
-                        <ac:var name="optimize.classifier" value="standalone" />
-                      </ac:then>
-                      <ac:else>
-                        <ac:var name="optimize.classifier" value="production" />
-                      </ac:else>
-                    </ac:if>
-                    <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
-                      <arg value="-c" />
-                      <arg value="mvn dependency:unpack ${maven-settings} -pl qa/upgrade-es-schema-tests -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier} -DoutputDirectory=./target/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
-                    </exec>
-                  </sequential>
-                </ac:for>
+                <echo message="Downloading &amp; unpacking Optimize ${project.previousVersion}..." />
+                <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="mvn dependency:unpack ${maven-settings} -pl qa/upgrade-es-schema-tests -Dartifact=org.camunda.optimize:camunda-optimize:${project.previousVersion}:tar.gz:production -DoutputDirectory=./target/${project.previousVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                </exec>
+                <echo message="Optimize ${project.previousVersion} successfully unpacked." />
+
+                <echo message="Downloading &amp; unpacking Optimize ${project.version}..." />
+                <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="mvn dependency:unpack ${maven-settings} -pl qa/upgrade-es-schema-tests -Dartifact=org.camunda.optimize:camunda-optimize:${project.version}:tar.gz:production -DoutputDirectory=./target/${project.version} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                </exec>
+                <echo message="Optimize ${project.version} successfully unpacked." />
+
               </target>
             </configuration>
           </execution>
@@ -74,7 +69,7 @@
             <phase>pre-integration-test</phase>
             <configuration>
               <skip>${skip.docker}</skip>
-              <target name="Starting CamBpm and old ES through docker-compose" xmlns:ac="antlib:net.sf.antcontrib">
+              <target name="Starting CamBpm and old ES through docker-compose">
                 <exec dir="${project.basedir}/../.." executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="docker-compose up -d --force-recreate --renew-anon-volumes cambpm" />
@@ -215,7 +210,7 @@
             <phase>pre-integration-test</phase>
             <configuration>
               <skip>${skip.tests}</skip>
-              <target name="Start new ES version" xmlns:ac="antlib:net.sf.antcontrib">
+              <target name="Start new ES version">
 
                 <echo message="Create repository in old and new ES" />
                 <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
@@ -262,7 +257,7 @@
             <phase>integration-test</phase>
             <configuration>
               <skip>${skip.tests}</skip>
-              <target name="perform migration" xmlns:ac="antlib:net.sf.antcontrib">
+              <target name="perform migration">
                 <echo message="Removing the default environment-config so we can overwrite the ES port..." />
                 <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
                   <arg value="-c" />
@@ -319,7 +314,7 @@
             <phase>post-integration-test</phase>
             <configuration>
               <skip>${skip.docker}</skip>
-              <target name="Stop docker container" xmlns:ac="antlib:net.sf.antcontrib">
+              <target name="Stop docker container">
                 <echo message="Stopping CamBPM..." />
                 <exec dir="${project.basedir}/../.." executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
