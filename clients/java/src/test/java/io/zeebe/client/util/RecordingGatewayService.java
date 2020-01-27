@@ -97,11 +97,16 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   public static BrokerInfo broker(
-      final int nodeId, final String host, final int port, final Partition... partitions) {
+      final int nodeId,
+      final String host,
+      final int port,
+      final String version,
+      final Partition... partitions) {
     return BrokerInfo.newBuilder()
         .setNodeId(nodeId)
         .setHost(host)
         .setPort(port)
+        .setVersion(version)
         .addAllPartitions(Arrays.asList(partitions))
         .build();
   }

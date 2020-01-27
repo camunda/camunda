@@ -44,9 +44,9 @@ public final class TopologyRequestTest extends ClientTest {
         10,
         3,
         "1.22.3-SNAPSHOT",
-        broker(0, "host1", 123, partition(0, LEADER), partition(1, FOLLOWER)),
-        broker(1, "host2", 212, partition(0, FOLLOWER), partition(1, LEADER)),
-        broker(2, "host3", 432, partition(0, FOLLOWER), partition(1, FOLLOWER)));
+        broker(0, "host1", 123, "1.22.3-SNAPSHOT", partition(0, LEADER), partition(1, FOLLOWER)),
+        broker(1, "host2", 212, "2.22.3-SNAPSHOT", partition(0, FOLLOWER), partition(1, LEADER)),
+        broker(2, "host3", 432, "3.22.3-SNAPSHOT", partition(0, FOLLOWER), partition(1, FOLLOWER)));
 
     // when
     final Topology topology = client.newTopologyRequest().send().join();
@@ -65,6 +65,7 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(broker.getHost()).isEqualTo("host1");
     assertThat(broker.getPort()).isEqualTo(123);
     assertThat(broker.getAddress()).isEqualTo("host1:123");
+    assertThat(broker.getVersion()).isEqualTo("1.22.3-SNAPSHOT");
     assertThat(broker.getPartitions())
         .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole)
         .containsOnly(tuple(0, PartitionBrokerRole.LEADER), tuple(1, PartitionBrokerRole.FOLLOWER));
@@ -74,6 +75,7 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(broker.getHost()).isEqualTo("host2");
     assertThat(broker.getPort()).isEqualTo(212);
     assertThat(broker.getAddress()).isEqualTo("host2:212");
+    assertThat(broker.getVersion()).isEqualTo("2.22.3-SNAPSHOT");
     assertThat(broker.getPartitions())
         .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole)
         .containsOnly(tuple(0, PartitionBrokerRole.FOLLOWER), tuple(1, PartitionBrokerRole.LEADER));
@@ -83,6 +85,7 @@ public final class TopologyRequestTest extends ClientTest {
     assertThat(broker.getHost()).isEqualTo("host3");
     assertThat(broker.getPort()).isEqualTo(432);
     assertThat(broker.getAddress()).isEqualTo("host3:432");
+    assertThat(broker.getVersion()).isEqualTo("3.22.3-SNAPSHOT");
     assertThat(broker.getPartitions())
         .extracting(PartitionInfo::getPartitionId, PartitionInfo::getRole)
         .containsOnly(
