@@ -98,6 +98,24 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shouldDeleteJob() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord();
+
+    // when
+    jobState.create(key, jobRecord);
+    jobState.delete(key, jobRecord);
+
+    // then
+    Assertions.assertThat(jobState.exists(key)).isFalse();
+    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    Assertions.assertThat(jobState.getJob(key)).isNull();
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
+  @Test
   public void shouldNeverPersistJobVariables() {
     // given
     final long key = 1L;
@@ -167,9 +185,9 @@ public final class JobStateTest {
     jobState.throwError(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertJobState(key, State.ERROR_THROWN);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -224,9 +242,9 @@ public final class JobStateTest {
     jobState.throwError(key, jobRecord);
 
     // then
-    Assertions.assertThat(jobState.exists(key)).isFalse();
-    Assertions.assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    Assertions.assertThat(jobState.getJob(key)).isNull();
+    Assertions.assertThat(jobState.exists(key)).isTrue();
+    assertJobState(key, State.ERROR_THROWN);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
