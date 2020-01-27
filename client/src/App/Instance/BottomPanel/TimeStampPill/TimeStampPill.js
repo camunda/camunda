@@ -17,14 +17,7 @@ function TimeStampPill(props) {
   const {showTimeStamp, onTimeStampToggle} = props;
   const [isTreeLoaded, setIsTreeLoaded] = useState(false);
   const [isDefLoaded, setIsDefLoaded] = useState(false);
-  const [isDisabled, setDisabled] = useState(true);
   const {subscribe, unsubscribe} = useDataManager();
-
-  useEffect(() => {
-    if (isTreeLoaded && isDefLoaded) {
-      setDisabled(false);
-    }
-  }, [isTreeLoaded, isDefLoaded]);
 
   useEffect(() => {
     subscribe(
@@ -44,6 +37,8 @@ function TimeStampPill(props) {
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const isDisabled = !isTreeLoaded && !isDefLoaded;
 
   return (
     <Styled.Pill
