@@ -72,6 +72,10 @@ func (s *integrationTestSuite) TestTopology() {
 	s.EqualValues(1, response.GetPartitionsCount())
 	s.EqualValues(1, response.GetReplicationFactor())
 	s.NotEmpty(response.GetGatewayVersion())
+
+	for _, broker := range response.GetBrokers() {
+		s.EqualValues(response.GetGatewayVersion(), broker.GetVersion())
+	}
 }
 
 func (s *integrationTestSuite) TestDeployWorkflow() {
