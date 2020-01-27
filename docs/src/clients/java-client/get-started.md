@@ -145,7 +145,7 @@ Later, we will extend the workflow with more functionality.
 Open the Zeebe Modeler and create a new BPMN diagram.
 Add a start event and an end event to the diagram and connect the events.
 
-![model-workflow-step-1](/java-client/order-process-simple.png)
+![model-workflow-step-1](/clients/java-client/order-process-simple.png)
 
 Set the id (the BPMN process id), and mark the diagram as executable.
 
@@ -238,7 +238,7 @@ If you are running without Docker:
 * Open a web browser and go to <http://localhost:8080/>.
 
 In the Simple Monitor interface, you see the current state of the workflow instance.
-![zeebe-monitor-step-1](/java-client/java-get-started-monitor-1.gif)
+![zeebe-monitor-step-1](/clients/java-client/java-get-started-monitor-1.gif)
 
 ## Work on a job
 
@@ -249,7 +249,7 @@ Then extend your main class and create a job worker to process jobs which are cr
 Open the BPMN diagram in the Zeebe Modeler.
 Insert a few service tasks between the start and the end event.
 
-![model-workflow-step-2](/java-client/order-process.png)
+![model-workflow-step-2](/clients/java-client/order-process.png)
 
 You need to set the type of each task, which identifies the nature of the work to be performed.
 Set the type of the first task to 'payment-service'.
@@ -305,7 +305,7 @@ Collect money
 
 When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
 
-![zeebe-monitor-step-2](/java-client/java-get-started-monitor-2.gif)
+![zeebe-monitor-step-2](/clients/java-client/java-get-started-monitor-2.gif)
 
 ## Work with data
 
@@ -383,7 +383,7 @@ Collect money: $46.50
 
 When we have a look at the Zeebe Monitor, then we can see that the variable `totalPrice` is set:
 
-![zeebe-monitor-step-3](/java-client/java-get-started-monitor-3.gif)
+![zeebe-monitor-step-3](/clients/java-client/java-get-started-monitor-3.gif)
 
 ## What's next?
 
@@ -392,7 +392,7 @@ Hurray! You finished this tutorial and learned the basic usage of the Java clien
 Next steps:
 * Learn more about the [concepts behind Zeebe](/basics/)
 * Learn more about [BPMN workflows](/bpmn-workflows/)
-* Take a deeper look into the [Java client](/java-client/)
+* Take a deeper look into the [Java client](/clients/java-client/)
 
 [job worker]: ../basics/job-workers.html
 [zeebe-docker-compose]: https://github.com/zeebe-io/zeebe-docker-compose
