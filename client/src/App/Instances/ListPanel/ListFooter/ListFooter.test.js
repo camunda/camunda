@@ -18,14 +18,9 @@ describe('ListFooter', () => {
     return shallow(
       <ListFooter
         onFirstElementChange={jest.fn()}
-        onAddNewSelection={jest.fn()}
-        onAddToSelectionById={jest.fn()}
-        onAddToOpenSelection={jest.fn()}
         perPage={10}
         firstElement={0}
         filterCount={9}
-        selection={{ids: [], excludeIds: []}}
-        selections={[{selectionId: 0}, {selectionId: 1}]}
         dataManager={{}}
         hasContent={true}
         {...props}
@@ -41,9 +36,8 @@ describe('ListFooter', () => {
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
-  it('should render button if no selection exists', () => {
+  it('should render copyright note', () => {
     const node = renderFooter();
-    node.setProps({selections: []});
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
