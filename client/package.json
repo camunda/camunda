@@ -4,7 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@ibm/plex": "^4.0.1",
+    "@ibm/plex": "^4.0.2",
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.1.0",
     "bpmn-js": "6.1.2",
