@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -31,10 +31,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
+public class RelativeDateFilterIT extends AbstractRelativeDateFilterIT {
 
   @Test
-  public void testStartDateRollingLogic() {
+  public void testStartDateRelativeLogic() {
     // given
     embeddedOptimizeExtension.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -50,12 +50,12 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
-      createAndEvaluateReportWithRollingStartDateFilter(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion(),
-      RelativeDateFilterUnit.DAYS,
-      false
-    );
+      createAndEvaluateReportWithRelativeStartDateFilter(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion(),
+        DateFilterUnit.DAYS,
+        false
+      );
 
     assertResults(processInstance, result, 1);
 
@@ -63,10 +63,10 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
     //token has to be refreshed, as the old one expired already after moving the date
-    result = createAndEvaluateReportWithRollingStartDateFilter(
+    result = createAndEvaluateReportWithRelativeStartDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
-      RelativeDateFilterUnit.DAYS,
+      DateFilterUnit.DAYS,
       true
     );
 
@@ -74,7 +74,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
   }
 
   @Test
-  public void testEndDateRollingLogic() {
+  public void testEndDateRelativeLogic() {
     embeddedOptimizeExtension.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
@@ -90,22 +90,22 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     //token has to be refreshed, as the old one expired already after moving the date
     AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
-      createAndEvaluateReportWithRollingEndDateFilter(
-      processInstance.getProcessDefinitionKey(),
-      processInstance.getProcessDefinitionVersion(),
-      RelativeDateFilterUnit.DAYS,
-      true
-    );
+      createAndEvaluateReportWithRelativeEndDateFilter(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion(),
+        DateFilterUnit.DAYS,
+        true
+      );
 
     assertResults(processInstance, result, 1);
 
     LocalDateUtil.setCurrentTime(processInstanceEndTime.plusDays(2L));
 
     //token has to be refreshed, as the old one expired already after moving the date
-    result = createAndEvaluateReportWithRollingEndDateFilter(
+    result = createAndEvaluateReportWithRelativeEndDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
-      RelativeDateFilterUnit.DAYS,
+      DateFilterUnit.DAYS,
       true
     );
 
@@ -150,7 +150,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportData.setFilter(
-      ProcessFilterBuilder.filter().relativeStartDate().start(10L, RelativeDateFilterUnit.DAYS).add().buildList()
+      ProcessFilterBuilder.filter().relativeStartDate().start(10L, DateFilterUnit.DAYS).add().buildList()
     );
     final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
@@ -217,7 +217,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     reportData.setFilter(
       ProcessFilterBuilder.filter()
         .relativeEndDate()
-        .start(10L, RelativeDateFilterUnit.DAYS)
+        .start(10L, DateFilterUnit.DAYS)
         .add()
         .buildList()
     );

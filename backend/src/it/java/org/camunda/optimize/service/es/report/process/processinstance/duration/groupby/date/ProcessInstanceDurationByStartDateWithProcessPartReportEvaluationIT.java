@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.processinstance.duration.
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
@@ -77,7 +77,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
     dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
       4L,
-      RelativeDateFilterUnit.DAYS
+      DateFilterUnit.DAYS
     ));
     final StartDateFilterDto startDateFilterDto = new StartDateFilterDto(dateFilterDataDto);
 

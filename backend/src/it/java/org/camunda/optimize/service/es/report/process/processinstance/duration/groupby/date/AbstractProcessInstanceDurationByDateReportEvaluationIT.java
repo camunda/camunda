@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -533,7 +533,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
       .duration()
       .operator(LESS_THAN)
-      .unit(RelativeDateFilterUnit.HOURS.getId())
+      .unit(DateFilterUnit.HOURS.getId())
       .value(2L)
       .add()
       .buildList();

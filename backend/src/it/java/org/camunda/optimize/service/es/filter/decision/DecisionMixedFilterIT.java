@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Eva
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -25,7 +25,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeEvaluationDateFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringInputVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -78,8 +78,8 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     final OutputVariableFilterDto booleanOutputVariableFilter = createBooleanOutputVariableFilter(
       OUTPUT_AUDIT_ID, expectedAuditOutput
     );
-    final EvaluationDateFilterDto rollingEvaluationDateFilter = createRollingEvaluationDateFilter(
-      1L, RelativeDateFilterUnit.DAYS
+    final EvaluationDateFilterDto relativeEvaluationDateFilter = createRelativeEvaluationDateFilter(
+      1L, DateFilterUnit.DAYS
     );
 
     reportData.setFilter(Lists.newArrayList(
@@ -87,7 +87,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       doubleInputVariableFilter,
       stringInputVariableFilter,
       booleanOutputVariableFilter,
-      rollingEvaluationDateFilter
+      relativeEvaluationDateFilter
     ));
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 

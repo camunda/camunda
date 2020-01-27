@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -85,7 +85,7 @@ public class DateHistogramBucketLimiterUtilTest {
         limit.intValue()
       );
 
-    assertThat(limitedFixedDateFilter.getStart().getUnit(), is(RelativeDateFilterUnit.valueOf(unit.name())));
+    assertThat(limitedFixedDateFilter.getStart().getUnit(), is(DateFilterUnit.valueOf(unit.name())));
     assertThat(limitedFixedDateFilter.getStart().getValue(), is(limit - 1));
     assertThat(limitedFixedDateFilter.getEnd(), is(dateFilterDataDto.getEnd()));
   }
@@ -230,7 +230,7 @@ public class DateHistogramBucketLimiterUtilTest {
     final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
     dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
       startAmountToSubtract,
-      RelativeDateFilterUnit.valueOf(unit.name())
+      DateFilterUnit.valueOf(unit.name())
     ));
     dateFilterDataDto.setEnd(now.minus(endAmountToSubtract - 1, unit));
     return dateFilterDataDto;

@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -28,7 +28,7 @@ import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedEvaluationDateFilter;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeEvaluationDateFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -130,7 +130,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   }
 
   @Test
-  public void resultFilterByRollingEvaluationDateStartFrom() {
+  public void resultFilterByRelativeEvaluationDateStartFrom() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
@@ -140,7 +140,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, RelativeDateFilterUnit.DAYS)));
+    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, DateFilterUnit.DAYS)));
 
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
@@ -151,7 +151,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   }
 
   @Test
-  public void resultFilterByRollingEvaluationDateOutOfRange() {
+  public void resultFilterByRelativeEvaluationDateOutOfRange() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
@@ -161,7 +161,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, RelativeDateFilterUnit.DAYS)));
+    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, DateFilterUnit.DAYS)));
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
@@ -211,7 +211,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
-      .setFilter(createRollingEvaluationDateFilter(3L, RelativeDateFilterUnit.DAYS))
+      .setFilter(createRelativeEvaluationDateFilter(3L, DateFilterUnit.DAYS))
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 

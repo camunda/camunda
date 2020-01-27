@@ -174,7 +174,6 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
                                                               @NotNull ReportDefinitionDto reportDefinitionDto) {
-
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult = reportService.evaluateReport(
       userId,

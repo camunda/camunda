@@ -7,8 +7,9 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.date;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum RelativeDateFilterUnit {
+public enum DateFilterUnit {
   YEARS("years"),
+  QUARTERS("quarters"),
   MONTHS("months"),
   WEEKS("weeks"),
   DAYS("days"),
@@ -18,7 +19,7 @@ public enum RelativeDateFilterUnit {
 
   private final String id;
 
-  RelativeDateFilterUnit(final String id) {
+  DateFilterUnit(final String id) {
     this.id = id;
   }
 

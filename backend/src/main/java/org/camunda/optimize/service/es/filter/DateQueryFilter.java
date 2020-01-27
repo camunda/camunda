@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -24,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit.QUARTERS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 
@@ -46,7 +48,7 @@ public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> 
           queryDate = createFixedStartDateFilter(fixedStartDateFilterDataDto, dateFieldType);
         } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
           RelativeDateFilterDataDto relativeStartDateFilterDataDto = (RelativeDateFilterDataDto) dateDto;
-          queryDate = createRelativeStartDateFilter(relativeStartDateFilterDataDto, dateFieldType);
+          queryDate = createRelativeDateFilter(relativeStartDateFilterDataDto, dateFieldType);
         } else {
           logger.warn("Cannot execute start date filter. Unknown type [{}]", dateDto.getType());
         }
@@ -70,13 +72,18 @@ public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> 
     return queryDate;
   }
 
-  private RangeQueryBuilder createRelativeStartDateFilter(RelativeDateFilterDataDto dateDto, String type) {
-    RelativeDateFilterStartDto startDate = dateDto.getStart();
+  private RangeQueryBuilder createRelativeDateFilter(RelativeDateFilterDataDto dateDto, String type) {
+    RelativeDateFilterStartDto startDto = dateDto.getStart();
     RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(type);
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     queryDate.lte(formatter.format(now));
 
-    OffsetDateTime dateBeforeGivenFilter = now.minus(startDate.getValue(), unitOf(startDate.getUnit().getId()));
+    if (startDto.getUnit().equals(QUARTERS)) {
+      logger.warn("Cannot create date filter: {} is not supported for {} filters", startDto.getUnit(), dateDto.getType());
+      throw new OptimizeValidationException(String.format("%s is not supported for %s filters", startDto.getUnit(), dateDto.getType()));
+    }
+
+    OffsetDateTime dateBeforeGivenFilter = now.minus(startDto.getValue(), unitOf(startDto.getUnit().getId()));
     queryDate.gte(formatter.format(dateBeforeGivenFilter));
     return queryDate;
   }
