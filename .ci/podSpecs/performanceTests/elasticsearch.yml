@@ -98,12 +98,12 @@ spec:
             - name: discovery.type
               value: "single-node"
             - name: ES_JAVA_OPTS
-              value: "-Xms8g -Xmx8g -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+              value: "-Xms8g -Xmx8g"
             - name: bootstrap.memory_lock
               value: "true"
           resources:
             limits:
-              cpu: 8
+              cpu: 16
             requests:
               cpu: 8
               memory: "16Gi"
