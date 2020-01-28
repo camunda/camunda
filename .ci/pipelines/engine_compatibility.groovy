@@ -273,6 +273,14 @@ pipeline {
         }
       }
     }
+    always {
+      // Retrigger the build if the slave disconnected
+      script {
+        if (slaveDisconnected()) {
+          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+        }
+      }
+    }
   }
 }
 
