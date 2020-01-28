@@ -34,11 +34,13 @@ func TestTopologyCommand(t *testing.T) {
 		ClusterSize:       12,
 		PartitionsCount:   23,
 		ReplicationFactor: 3,
+		GatewayVersion:    "0.23.0-SNAPSHOT",
 		Brokers: []*pb.BrokerInfo{
 			{
-				NodeId: 0,
-				Host:   "foo",
-				Port:   12,
+				NodeId:  0,
+				Host:    "foo",
+				Port:    12,
+				Version: "0.23.0-SNAPSHOT",
 				Partitions: []*pb.Partition{
 					{
 						PartitionId: 0,
@@ -51,9 +53,10 @@ func TestTopologyCommand(t *testing.T) {
 				},
 			},
 			{
-				NodeId: 1,
-				Host:   "bar",
-				Port:   9237,
+				NodeId:  1,
+				Host:    "bar",
+				Port:    9237,
+				Version: "0.23.0-SNAPSHOT",
 				Partitions: []*pb.Partition{
 					{
 						PartitionId: 1,

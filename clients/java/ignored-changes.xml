@@ -4,4 +4,9 @@
     <method>java.lang.String getGatewayVersion()</method>
     <differenceType>7012</differenceType>
   </difference>
+  <difference>
+    <className>io/zeebe/client/api/response/BrokerInfo</className>
+    <method>java.lang.String getVersion()</method>
+    <differenceType>7012</differenceType>
+  </difference>
 </differences>
