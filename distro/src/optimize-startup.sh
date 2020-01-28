@@ -39,8 +39,9 @@ if [ "$1" == "debug" ]; then
   DEBUG_JAVA_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,address=$DEBUG_PORT,server=y,suspend=n"
 fi
 
-# Set up the optimize classpaths, i.e. add the environment folder and the optimize jar
-OPTIMIZE_CLASSPATH=$BASEDIR/environment:$BASEDIR/optimize-backend-${project.version}.jar
+# Set up the optimize classpaths, i.e. add the environment folder, the Optimize back-end dependencies
+# and the optimize jar
+OPTIMIZE_CLASSPATH="${BASEDIR}/environment:${BASEDIR}/lib/*:${BASEDIR}/optimize-backend-${project.version}.jar"
 
 # forward any set java properties
 for argument in "$@"
@@ -51,4 +52,4 @@ do
     fi
 done
 
-exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp $OPTIMIZE_CLASSPATH ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp ${OPTIMIZE_CLASSPATH} ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 org.camunda.optimize.Main

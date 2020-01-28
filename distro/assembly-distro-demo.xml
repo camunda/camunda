@@ -12,6 +12,12 @@
   <includeBaseDirectory>false</includeBaseDirectory>
 
   <fileSets>
+    <!-- Add the Optimize back-end dependencies -->
+    <fileSet>
+      <directory>${project.basedir}/../backend/target/lib</directory>
+      <outputDirectory>lib</outputDirectory>
+    </fileSet>
+
     <fileSet>
       <directory>${project.build.directory}/elasticsearch-${elasticsearch.version}</directory>
       <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.version}</outputDirectory>

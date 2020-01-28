@@ -25,7 +25,7 @@ if [ -z "$OPTIMIZE_JAVA_OPTS" ]; then
 fi
 
 # Set up the classpath
-OPTIMIZE_CLASSPATH=$BASEDIR/../environment:$BASEDIR/*:$BASEDIR/../optimize-backend-${project.version}.jar
+OPTIMIZE_CLASSPATH=$BASEDIR/../environment:${BASEDIR}/../lib/*:$BASEDIR/*:$BASEDIR/../optimize-backend-${project.version}.jar
 
 echo
 echo "Starting Camunda Optimize Upgrade to ${project.version}...";

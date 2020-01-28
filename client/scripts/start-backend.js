@@ -106,7 +106,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           'java',
           [
             '-cp',
-            `../src/main/resources/:optimize-backend-${backendVersion}.jar`,
+            `../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar`,
             '-Xms1g',
             '-Xmx1g',
             '-XX:MetaspaceSize=256m',
