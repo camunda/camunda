@@ -2,7 +2,21 @@
 # Define migration functions
 ES=${1:-http://localhost:9200}
 # For testing prefix with 'echo ' 
-RESTCLIENT="curl -K curl.config"
+RESTCLIENT="curl -s -K curl.config"
+
+error_exit(){
+   msg=$1 || "Unknown error"
+   echo "Couldn't migrate: $msg" 
+   exit 1
+}
+
+checkElasticsearchConnection(){
+  $RESTCLIENT --request GET --url $ES/_cluster/health &> /dev/null || error_exit "Connection to $ES failed"
+}
+
+checkIsCurrentVersionAlreadyInstalled(){
+  $RESTCLIENT --request GET --url $ES/operate-*-${schema.version}* | grep "${schema.version}" &> /dev/null && error_exit "Schema version '${schema.version}' exists already."
+}
 
 createNewTemplatesAndTheirIndexes(){
    for template in create/template/*.json; do
@@ -11,8 +25,8 @@ createNewTemplatesAndTheirIndexes(){
      full_indexname=${full_templatename}_
      echo "Create template ${templatename}-${schema.version} and index ${templatename}-${schema.version}_"
      echo "-------------------------------"
- 	 $RESTCLIENT --request PUT --url $ES/_template/${full_templatename}?include_type_name=false --data @$template
- 	 $RESTCLIENT --request PUT --url $ES/${full_indexname}
+ 	 $RESTCLIENT --request PUT --url $ES/_template/${full_templatename}?include_type_name=false --data @$template || error_exit "Failed to create template $full_templatename"
+ 	 $RESTCLIENT --request PUT --url $ES/${full_indexname} || error_exit "Failed to create index $full_indexname"
      echo
      echo "-------------------------------"
    done
@@ -24,7 +38,7 @@ createNewIndexes(){
      full_indexname=${indexname}-${schema.version}_
      echo "Create index ${full_indexname}"
      echo "-------------------------------"
-     $RESTCLIENT --request PUT --url $ES/${full_indexname}?include_type_name=false --data @$index
+     $RESTCLIENT --request PUT --url $ES/${full_indexname}?include_type_name=false --data @$index || error_exit "Failed to create index $full_indexname"
      echo
      echo "-------------------------------"
    done
@@ -35,7 +49,7 @@ createPipelines(){
     	pipelinename=`basename $pipeline .json`
     	echo "Create pipeline $pipelinename"
     	echo "-------------------------------"
-    	$RESTCLIENT --request PUT --url $ES/_ingest/pipeline/$pipelinename --data @$pipeline
+    	$RESTCLIENT --request PUT --url $ES/_ingest/pipeline/$pipelinename --data @$pipeline || error_exit "Failed to create pipeline $pipelinename"
     	echo
     	echo "-------------------------------"
 	done
@@ -44,7 +58,7 @@ createPipelines(){
 removePipelines(){
 	echo "Delete all pipelines that match operate-*"
 	echo "-------------------------------"
-	$RESTCLIENT --request DELETE --url $ES/_ingest/pipeline/operate-*
+	$RESTCLIENT --request DELETE --url $ES/_ingest/pipeline/operate-* || error_exit "Failed to delete pipelines that match operate-*"
 	echo
 	echo "-------------------------------"
 }
@@ -56,7 +70,7 @@ removeOldTemplates(){
 		full_templatename=${templatename}-${schema.old_version}_template
 		echo "Delete old templates ${full_templatename}"
 		echo "-------------------------------"
-		$RESTCLIENT --request DELETE --url $ES/_template/${full_templatename}
+		$RESTCLIENT --request DELETE --url $ES/_template/${full_templatename} || error_exit "Failed to delete $full_templatename"
 		echo
     	echo "-------------------------------"
 	done
@@ -68,17 +82,19 @@ migrate(){
 		indexname=`basename $index .json`
 		echo "Migrate $indexname "
 		echo "-------------------------------"
-    	$RESTCLIENT --request POST --url $ES/_reindex?wait_for_completion=true --data @$index
+    	$RESTCLIENT --request POST --url $ES/_reindex?wait_for_completion=true --data @$index || error_exit "Failed to reindex $indexname"
     	echo
     	echo "Delete ${indexname}-${schema.old_version}* "
 		echo "-------------------------------"
-    	$RESTCLIENT --request DELETE --url $ES/${indexname}-${schema.old_version}*
+    	$RESTCLIENT --request DELETE --url $ES/${indexname}-${schema.old_version}* || error_exit "Failed to delete indices that match ${indexname}-${schema.old_version}*"
     	echo
     	echo "-------------------------------"
 	done
 }
 
 ## main
+checkElasticsearchConnection
+checkIsCurrentVersionAlreadyInstalled
 removeOldTemplates
 createNewIndexes
 createNewTemplatesAndTheirIndexes

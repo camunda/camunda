@@ -7,11 +7,12 @@ To migrate operate Elasticsearch data to current version, you need a http/rest c
 
 The migration is organized in several steps:
 
+ 0. Check for connection and existing schema
  1. Remove old templates
  2. Create new templates and indices
  3. Create pipelines that defines the migration from old index to new index (if needed).
  4. Reindex (migrate) from old index into new index with usage of pipelines and delete old index (for each index).
- 4. Delete pipelines 
+ 5. Delete pipelines 
 
 There exists directories for each steps. These directories contains for every index/template a json request payload file.
 The _create_ directory contains **index** and **template** settings and descriptions. 
