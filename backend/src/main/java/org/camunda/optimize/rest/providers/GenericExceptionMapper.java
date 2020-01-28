@@ -23,10 +23,11 @@ import javax.ws.rs.ext.Provider;
 @Slf4j
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
+  public static final String GENERIC_ERROR_CODE = "serverError";
+  public static final String NOT_FOUND_ERROR_CODE = "notFoundError";
+  public static final String BAD_REQUEST_ERROR_CODE = "badRequestError";
+
   private final LocalizationService localizationService;
-  private static final String GENERIC_ERROR_CODE = "serverError";
-  private static final String NOT_FOUND_ERROR_CODE = "notFoundError";
-  private static final String BAD_REQUEST_ERROR_CODE = "badRequestError";
 
   public GenericExceptionMapper(@Context final LocalizationService localizationService) {
     this.localizationService = localizationService;

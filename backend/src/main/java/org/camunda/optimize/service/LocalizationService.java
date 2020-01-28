@@ -53,7 +53,7 @@ public class LocalizationService implements ConfigurationReloadable {
 
   public String getDefaultLocaleMessageForApiErrorCode(final String code) {
     try {
-      return getMessageForCode(configurationService.getFallbackLocale(), API_ERRORS_FIELD, code);
+      return getMessageForApiErrorCode(configurationService.getFallbackLocale(), code);
     } catch (Exception e) {
       return String.format("Failed to localize error message for code [%s]", code);
     }
@@ -159,16 +159,20 @@ public class LocalizationService implements ConfigurationReloadable {
     return result.orElseThrow(() -> new OptimizeRuntimeException("Could not load localization file: " + localeFileName));
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  private String getMessageForApiErrorCode(final String localeCode, final String errorCode) throws IOException {
+    return getMessageForCode(localeCode, API_ERRORS_FIELD, errorCode);
+  }
+
+  @SuppressWarnings({"unchecked"})
   private String getMessageForCode(final String localeCode,
                                    final String categoryCode,
                                    final String messageCode) throws IOException {
     // @formatter:off
-    final Map<String, Map> localisationMap = objectMapper.readValue(
-      getLocalizedJsonFile(localeCode), new TypeReference<Map<String, Map>>() {}
+    final Map<String, Object> localisationMap = objectMapper.readValue(
+      getLocalizedJsonFile(localeCode), new TypeReference<Map<String, Object>>() {}
     );
     // @formatter:on
-    final Map<String, String> errorCodeMap = localisationMap.get(categoryCode);
-    return errorCodeMap.get(messageCode);
+    final Map<String, String> categoryMessageCodeMap = (Map<String, String>) localisationMap.get(categoryCode);
+    return categoryMessageCodeMap.get(messageCode);
   }
 }
