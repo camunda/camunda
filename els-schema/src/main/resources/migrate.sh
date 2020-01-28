@@ -94,7 +94,7 @@ migrate(){
 
 ## main
 checkElasticsearchConnection
-checkIsCurrentVersionAlreadyInstalled
+#checkIsCurrentVersionAlreadyInstalled
 removeOldTemplates
 createNewIndexes
 createNewTemplatesAndTheirIndexes
