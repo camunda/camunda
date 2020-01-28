@@ -82,7 +82,8 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     brokerInfo
         .setNodeId(brokerId)
         .setHost(addressParts[0])
-        .setPort(Integer.parseInt(addressParts[1]));
+        .setPort(Integer.parseInt(addressParts[1]))
+        .setVersion(topology.getBrokerVersion(brokerId));
   }
 
   private void addPartitionInfoToBrokerInfo(
@@ -243,7 +244,6 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final BrokerClusterState topology = topologyManager.getTopology();
 
     if (topology != null) {
-
       topologyResponseBuilder
           .setClusterSize(topology.getClusterSize())
           .setPartitionsCount(topology.getPartitionsCount())

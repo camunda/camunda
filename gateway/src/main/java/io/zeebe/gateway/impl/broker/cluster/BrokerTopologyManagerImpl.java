@@ -136,5 +136,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     if (clientAddress != null) {
       newTopology.setBrokerAddressIfPresent(nodeId, clientAddress);
     }
+
+    newTopology.setBrokerVersionIfPresent(nodeId, distributedBrokerInfo.getVersion());
   }
 }

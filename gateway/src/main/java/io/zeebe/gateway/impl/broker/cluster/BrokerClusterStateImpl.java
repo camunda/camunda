@@ -20,6 +20,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   private final Int2ObjectHashMap<Long> partitionLeaderTerms;
   private final Int2ObjectHashMap<List<Integer>> partitionFollowers;
   private final Int2ObjectHashMap<String> brokerAddresses;
+  private final Int2ObjectHashMap<String> brokerVersions;
   private final IntArrayList brokers;
   private final IntArrayList partitions;
   private final Random randomBroker;
@@ -34,6 +35,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
       partitionLeaderTerms.putAll(topology.partitionLeaderTerms);
       partitionFollowers.putAll(topology.partitionFollowers);
       brokerAddresses.putAll(topology.brokerAddresses);
+      brokerVersions.putAll(topology.brokerVersions);
 
       brokers.addAll(topology.brokers);
       partitions.addAll(topology.partitions);
@@ -49,6 +51,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     partitionLeaderTerms = new Int2ObjectHashMap<>();
     partitionFollowers = new Int2ObjectHashMap<>();
     brokerAddresses = new Int2ObjectHashMap<>();
+    brokerVersions = new Int2ObjectHashMap<>();
     brokers = new IntArrayList(5, NODE_ID_NULL);
     partitions = new IntArrayList(32, PARTITION_ID_NULL);
     randomBroker = new Random();
@@ -78,18 +81,22 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   public void addBrokerIfAbsent(final int nodeId) {
     if (brokerAddresses.get(nodeId) == null) {
       brokerAddresses.put(nodeId, "");
+      brokerVersions.put(nodeId, "");
       brokers.addInt(nodeId);
     }
   }
 
   public void setBrokerAddressIfPresent(final int brokerId, final String address) {
-    if (brokerAddresses.get(brokerId) != null) {
-      brokerAddresses.put(brokerId, address);
-    }
+    brokerAddresses.computeIfPresent(brokerId, (k, v) -> address);
+  }
+
+  public void setBrokerVersionIfPresent(final int brokerId, final String version) {
+    brokerVersions.computeIfPresent(brokerId, (k, v) -> version);
   }
 
   public void removeBroker(final int brokerId) {
     brokerAddresses.remove(brokerId);
+    brokerVersions.remove(brokerId);
     brokers.removeInt(brokerId);
     partitions.forEachOrderedInt(
         partitionId -> {
@@ -98,7 +105,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
           }
           final List<Integer> followers = partitionFollowers.get(partitionId);
           if (followers != null) {
-            followers.remove(new Integer(brokerId));
+            followers.remove(Integer.valueOf(brokerId));
           }
         });
   }
@@ -171,6 +178,11 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     } else {
       return PARTITION_ID_NULL;
     }
+  }
+
+  @Override
+  public String getBrokerVersion(final int brokerId) {
+    return brokerVersions.get(brokerId);
   }
 
   @Override
