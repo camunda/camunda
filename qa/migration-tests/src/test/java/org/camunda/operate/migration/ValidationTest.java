@@ -73,7 +73,12 @@ public class ValidationTest {
 	
 	@Before
 	public void setUp() {
-		setupContext();
+		TestContextManager testContextManager = new TestContextManager(getClass());
+    try {
+      testContextManager.prepareTestInstance(this);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to initialize context manager", e);
+    }
 	  entityReader = beanFactory.getBean(EntityReader.class,operateProperties.getSchemaVersion());
 	}
 	
@@ -170,12 +175,15 @@ public class ValidationTest {
      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
      long runningCount = getAggregationCountFor(response,"running");
      long incidentCount = getAggregationCountFor(response, "incidents");
+     
+     long maxNotRunning = config.getCountOfResolveOperation() + config.getCountOfCancelOperation();
+     // At least the canceled one are not running
      assertThat(runningCount).isBetween(
-       (long)config.getWorkflowInstanceCount() - config.getCountOfCancelOperation(),
-       (long) config.getWorkflowInstanceCount()
-     );
+         config.getWorkflowInstanceCount() - maxNotRunning, 
+         (long)config.getWorkflowInstanceCount() - config.getCountOfCancelOperation());
+     // Incidents resolved or Workflow instances are canceled
      assertThat(incidentCount).isBetween(
-        (long)config.getIncidentCount() - (config.getCountOfCancelOperation() + config.getCountOfResolveOperation()),
+        (long)config.getIncidentCount() - maxNotRunning,
         (long) config.getIncidentCount()
      );
   }
@@ -207,14 +215,5 @@ public class ValidationTest {
       }
       assertThat(incidentsCount).isEqualTo(savedIncidents);
   }
-
-	protected void setupContext() {
-		TestContextManager testContextManager = new TestContextManager(getClass());
-	    try {
-	      testContextManager.prepareTestInstance(this);
-	    } catch (Exception e) {
-	      throw new RuntimeException("Failed to initialize context manager", e);
-	    }
-	}
 	
 }
