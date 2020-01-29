@@ -21,6 +21,9 @@ export const Header = themed(styled.div`
   padding: 9px 10px;
   padding-left: 20px;
   height: 38px;
+
+  display: flex;
+  align-items: center;
 `);
 
 export const Headline = themed(styled.span``);

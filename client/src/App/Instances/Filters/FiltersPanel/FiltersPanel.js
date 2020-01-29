@@ -6,7 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {DIRECTION, BADGE_TYPE} from 'modules/constants';
+import {PANEL_POSITION, BADGE_TYPE} from 'modules/constants';
 import {withCountStore} from 'modules/contexts/CountContext';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 
@@ -16,32 +16,25 @@ import Badge from 'modules/components/Badge';
 import * as Styled from './styled';
 
 function FiltersPanel(props) {
-  function renderCount() {
-    return props.countStore.isLoaded ? props.countStore.filterCount : '';
+  function renderHeader() {
+    const count = props.countStore.isLoaded ? props.countStore.filterCount : '';
+
+    return (
+      <Styled.FiltersHeader>
+        <Badge type={BADGE_TYPE.FILTERS}>{count}</Badge>
+      </Styled.FiltersHeader>
+    );
   }
+
   return (
     <CollapsablePanel
-      isCollapsed={props.isFiltersCollapsed}
-      onCollapse={props.toggleFilters}
       maxWidth={328}
-      expandButton={
-        <Styled.VerticalButton label="Filters">
-          <Badge type={BADGE_TYPE.FILTERS}>{renderCount()}</Badge>
-        </Styled.VerticalButton>
-      }
-      collapseButton={
-        <Styled.CollapseButton
-          direction={DIRECTION.LEFT}
-          isExpanded={true}
-          title="Collapse Filters"
-        />
-      }
+      label="Filters"
+      renderHeader={renderHeader}
+      renderFooter={() => <div></div>}
+      panelPosition={PANEL_POSITION.LEFT}
     >
-      <Styled.FiltersHeader>
-        Filters
-        <Badge type={BADGE_TYPE.FILTERS}>{renderCount()}</Badge>
-      </Styled.FiltersHeader>
-      <Styled.FiltersBody>{props.children}</Styled.FiltersBody>
+      {props.children}
     </CollapsablePanel>
   );
 }

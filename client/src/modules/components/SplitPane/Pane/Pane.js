@@ -107,7 +107,8 @@ export default class Pane extends React.Component {
         {context => (
           <Styled.ButtonsContainer
           /**
-           * TODO (paddy): check if this is needed for OperationsPanel as well
+           * TODO (paddy): check if this is needed for OperationsPanel as well.
+           * If not, remove CollapsablePanelProvider
            *
            * isShifted={
            *   this.props.hasShiftableControls

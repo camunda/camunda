@@ -38,6 +38,11 @@ export const DIRECTION = {
   LEFT: 'LEFT'
 };
 
+export const PANEL_POSITION = {
+  LEFT: 'LEFT',
+  RIGHT: 'RIGHT'
+};
+
 export const FLOWNODE_TYPE = {
   TASK: 'Task',
   GATEWAY: 'Gateway',

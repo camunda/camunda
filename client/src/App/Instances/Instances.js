@@ -18,6 +18,7 @@ import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import DiagramPanel from './DiagramPanel';
 import ListPanel from './ListPanel';
 import Filters from './Filters';
+import OperationsPanel from './OperationsPanel';
 
 import {getWorkflowNameFromFilter} from './service';
 
@@ -110,6 +111,7 @@ export default class Instances extends Component {
               />
             </Styled.SplitPane>
           </Styled.Content>
+          <OperationsPanel />
         </Styled.Instances>
       </InstancesPollProvider>
     );

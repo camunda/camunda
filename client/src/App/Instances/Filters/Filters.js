@@ -10,7 +10,6 @@ import PropTypes from 'prop-types';
 import {withRouter} from 'react-router';
 
 import FiltersPanel from './FiltersPanel';
-import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Button from 'modules/components/Button';
 import Input from 'modules/components/Input';
 import {
@@ -376,7 +375,6 @@ class Filters extends React.Component {
             Reset Filters
           </Button>
         </Styled.ResetButtonContainer>
-        <CollapsablePanel.Footer />
       </FiltersPanel>
     );
   }

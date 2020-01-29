@@ -6,11 +6,8 @@
 
 import styled from 'styled-components';
 
-import BadgeComponent from 'modules/components/Badge';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
-import Panel from 'modules/components/Panel';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
-import CollapseButton from 'modules/components/CollapseButton';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -28,8 +25,7 @@ export const Content = styled.div`
   left: 0;
   height: 100%;
   width: 100%
-  // TODO: restore when OperationsPanel is in place
-  // width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
+  width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
 export const FilterSection = styled.div`
@@ -38,20 +34,6 @@ export const FilterSection = styled.div`
 
 export const SplitPane = styled(SplitPaneComponent)`
   width: 100%;
-`;
-
-export const RightCollapseButton = styled(CollapseButton)`
-  position: absolute;
-  left: 0;
-  top: 0;
-  border-top: none;
-  border-bottom: none;
-  border-left: none;
-`;
-
-export const Badge = styled(BadgeComponent)`
-  top: 2px;
-  margin-left: 13px;
 `;
 
 export const Pane = styled(SplitPane.Pane)`
