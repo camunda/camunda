@@ -39,16 +39,17 @@ import org.slf4j.Logger;
 
 public final class Gateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
-  private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
+  private static final Function<GatewayCfg, ServerBuilder<?>> DEFAULT_SERVER_BUILDER_FACTORY =
       cfg -> setNetworkConfig(cfg.getNetwork());
 
-  private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
+  private final Function<GatewayCfg, ServerBuilder<?>> serverBuilderFactory;
   private final BrokerClientFactory clientFactory;
   private final GatewayCfg gatewayCfg;
   private final ActorScheduler actorScheduler;
 
   private Server server;
   private BrokerClient brokerClient;
+  private Tracer tracer;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
@@ -72,7 +73,7 @@ public final class Gateway {
       final GatewayCfg gatewayCfg,
       final ActorScheduler actorScheduler,
       final BrokerClientFactory clientFactory,
-      final Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
+      final Function<GatewayCfg, ServerBuilder<?>> serverBuilderFactory) {
     this.gatewayCfg = gatewayCfg;
     this.clientFactory = clientFactory;
     this.serverBuilderFactory = serverBuilderFactory;
@@ -94,7 +95,7 @@ public final class Gateway {
     }
 
     final var interceptors = new ArrayList<ServerInterceptor>();
-    Tracer tracer = NoopTracerFactory.create();
+    tracer = NoopTracerFactory.create(); // NOSONAR
     if (gatewayCfg.getMonitoring().isEnabled()) {
       interceptors.add(MonitoringServerInterceptor.create(Configuration.allMetrics()));
 
@@ -116,7 +117,7 @@ public final class Gateway {
     actorScheduler.submitActor(longPollingHandler);
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, longPollingHandler);
-    final ServerBuilder serverBuilder = serverBuilderFactory.apply(gatewayCfg);
+    final ServerBuilder<?> serverBuilder = serverBuilderFactory.apply(gatewayCfg);
     serverBuilder.addService(ServerInterceptors.intercept(endpointManager, interceptors));
 
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
@@ -141,7 +142,7 @@ public final class Gateway {
         .permitKeepAliveWithoutCalls(false);
   }
 
-  private void setSecurityConfig(final ServerBuilder serverBuilder, final SecurityCfg security) {
+  private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {
     if (security.getCertificateChainPath() == null) {
       throw new IllegalArgumentException(
           "Expected to find a valid path to a certificate chain but none was found. "
@@ -193,7 +194,6 @@ public final class Gateway {
       try {
         server.awaitTermination();
       } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
         LOG.error("Failed to await termination of gateway", e);
         Thread.currentThread().interrupt();
       } finally {
@@ -204,6 +204,11 @@ public final class Gateway {
     if (brokerClient != null) {
       brokerClient.close();
       brokerClient = null;
+    }
+
+    if (tracer != null) {
+      tracer.close();
+      tracer = null;
     }
   }
 }
