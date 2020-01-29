@@ -89,16 +89,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.opentracing</groupId>
-      <artifactId>opentracing-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.opentracing.contrib</groupId>
-      <artifactId>opentracing-grpc</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-testing</artifactId>
       <scope>test</scope>
@@ -163,9 +153,9 @@
         </configuration>
       </plugin>
 
-      <plugin> 
-        <groupId>org.codehaus.mojo</groupId> 
-        <artifactId>clirr-maven-plugin</artifactId> 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
