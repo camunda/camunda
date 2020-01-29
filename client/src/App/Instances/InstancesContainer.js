@@ -41,7 +41,6 @@ import {
   hasUrlChanged,
   hasFilterChanged
 } from './service';
-import {compactObject} from 'modules/utils';
 
 class InstancesContainer extends Component {
   static propTypes = {
@@ -148,7 +147,7 @@ class InstancesContainer extends Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    // Browser has changed (via navigation or manual URL manipulation)
+    // UI change: Browser (via navigation or manual URL manipulation)
     if (hasUrlChanged(prevProps.location, this.props.location)) {
       this.handleUrlUpdate();
     }
@@ -170,11 +169,6 @@ class InstancesContainer extends Component {
 
   componentWillUnmount() {
     this.props.dataManager.unsubscribe(this.subscriptions);
-  }
-
-  reduceToStates(filter) {
-    const {active, incidents, completed, canceled} = filter;
-    return compactObject({active, incidents, completed, canceled});
   }
 
   handleUrlUpdate() {
