@@ -2,6 +2,10 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
+boolean slaveDisconnected() {
+  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+}
+
 String storeNumOfBuilds() {
   return env.BRANCH_NAME == 'master' ? '30' : '10'
 }
@@ -506,8 +510,7 @@ pipeline {
     changed {
       // Do not send email if the slave disconnected
       script {
-        def slaveDisconnected = load ".ci/slave_disconnected.groovy"
-        if (!slaveDisconnected.slaveDisconnected()){
+        if (!slaveDisconnected()){
           buildNotification(currentBuild.result)
         }
       }
@@ -515,8 +518,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        def slaveDisconnected = load ".ci/slave_disconnected.groovy"
-        if (slaveDisconnected.slaveDisconnected()) {
+        if (slaveDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

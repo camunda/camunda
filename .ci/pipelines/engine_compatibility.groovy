@@ -1,5 +1,9 @@
 #!/usr/bin/env groovy
 
+boolean slaveDisconnected() {
+  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+}
+
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 def static NODE_POOL() { return "slaves" }
 

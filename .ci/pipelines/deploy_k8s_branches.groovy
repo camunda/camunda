@@ -1,5 +1,9 @@
 #!/usr/bin/env groovy
 
+boolean slaveDisconnected() {
+  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+}
+
 // general properties for CI execution
 def static NODE_POOL() { return "slaves-ssd-small" }
 def static GCLOUD_DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
@@ -195,8 +199,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        def slaveDisconnected = load ".ci/slave_disconnected.groovy"
-        if (slaveDisconnected.slaveDisconnected()) {
+        if (slaveDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

@@ -1,5 +1,9 @@
 #!/usr/bin/env groovy
 
+boolean slaveDisconnected() {
+  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+}
+
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
@@ -159,8 +163,7 @@ pipeline {
       }
       // Retrigger the build if the slave disconnected
       script {
-        def slaveDisconnected = load ".ci/slave_disconnected.groovy"
-        if (slaveDisconnected.slaveDisconnected()) {
+        if (slaveDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

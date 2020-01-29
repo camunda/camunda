@@ -1,5 +1,9 @@
 #!/usr/bin/env groovy
 
+boolean slaveDisconnected() {
+  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+}
+
 // general properties for CI execution
 def static NODE_POOL() { return "slaves" }
 def static OPENJDK_MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.1-jdk-${javaVersion}" }
@@ -333,8 +337,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        def slaveDisconnected = load ".ci/slave_disconnected.groovy"
-        if (slaveDisconnected.slaveDisconnected()) {
+        if (slaveDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }
