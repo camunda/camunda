@@ -22,7 +22,6 @@ import static io.zeebe.client.ClientProperties.KEEP_ALIVE;
 import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 
 import io.grpc.ClientInterceptor;
-import io.opentracing.Tracer;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
@@ -54,8 +53,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
-  private final List interceptors = new ArrayList();
-  private Tracer tracer;
+  private final List<ClientInterceptor> interceptors = new ArrayList<>();
 
   @Override
   public String getBrokerContactPoint() {
@@ -120,11 +118,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public List getInterceptors() {
     return interceptors;
-  }
-
-  @Override
-  public Tracer getTracer() {
-    return tracer;
   }
 
   @Override
@@ -254,11 +247,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder withInterceptors(final ClientInterceptor... interceptors) {
     this.interceptors.addAll(Arrays.asList(interceptors));
-    return this;
-  }
-
-  public ZeebeClientBuilder tracer(final Tracer tracer) {
-    this.tracer = tracer;
     return this;
   }
 

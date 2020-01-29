@@ -17,13 +17,11 @@
 package io.zeebe.client.impl;
 
 import io.grpc.CallCredentials;
-import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
-import io.opentracing.contrib.grpc.TracingClientInterceptor;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
@@ -167,18 +165,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public static GatewayStub buildGatewayStub(
       final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
-    final List<ClientInterceptor> interceptors = config.getInterceptors();
-
-    // TODO(npepinpe): remove tracer in favor of just interceptors?
-    if (config.getTracer() != null) {
-      interceptors.add(
-          TracingClientInterceptor.newBuilder()
-              .withTracer(config.getTracer())
-              .withStreaming()
-              .build());
-    }
-
-    return GatewayGrpc.newStub(ClientInterceptors.intercept(channel, interceptors))
+    return GatewayGrpc.newStub(ClientInterceptors.intercept(channel, config.getInterceptors()))
         .withCallCredentials(credentials);
   }
 

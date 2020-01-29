@@ -16,7 +16,6 @@
 package io.zeebe.client;
 
 import io.grpc.ClientInterceptor;
-import io.opentracing.Tracer;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
@@ -88,10 +87,11 @@ public interface ZeebeClientBuilder {
   /** Time interval between keep alive messages sent to the gateway. The default is 45 seconds. */
   ZeebeClientBuilder keepAlive(Duration keepAlive);
 
+  /**
+   * Customize the underlying gRPC client by adding {@link ClientInterceptor}, e.g. for distributed
+   * tracing
+   */
   ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
-
-  /** Tracer to use in order to create client spans for Zeebe. */
-  ZeebeClientBuilder tracer(Tracer tracer);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
