@@ -35,7 +35,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.2.0</version.agrona>
+    <version.agrona>1.3.0</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.14.0</version.assertj>
     <version.atomix>3.2.0-SNAPSHOT</version.atomix>
