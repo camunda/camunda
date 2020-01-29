@@ -171,13 +171,15 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
     // TODO(npepinpe): remove tracer in favor of just interceptors?
     if (config.getTracer() != null) {
-      interceptors.add(TracingClientInterceptor.newBuilder()
-        .withTracer(config.getTracer())
-        .withStreaming()
-        .build());
+      interceptors.add(
+          TracingClientInterceptor.newBuilder()
+              .withTracer(config.getTracer())
+              .withStreaming()
+              .build());
     }
 
-    return GatewayGrpc.newStub(ClientInterceptors.intercept(channel, interceptors)).withCallCredentials(credentials);
+    return GatewayGrpc.newStub(ClientInterceptors.intercept(channel, interceptors))
+        .withCallCredentials(credentials);
   }
 
   private static ScheduledExecutorService buildExecutorService(

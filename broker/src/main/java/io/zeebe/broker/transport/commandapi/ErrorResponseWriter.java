@@ -11,8 +11,6 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.transport.commandapi.CommandTracer.NoopCommandTracer;
-import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.ErrorResponseEncoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;

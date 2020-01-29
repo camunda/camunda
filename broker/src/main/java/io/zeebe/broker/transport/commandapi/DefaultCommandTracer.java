@@ -27,10 +27,7 @@ public class DefaultCommandTracer implements CommandTracer {
   }
 
   @Override
-  public void start(
-      final DirectBuffer serialized,
-      final int partitionId,
-      final long requestId) {
+  public void start(final DirectBuffer serialized, final int partitionId, final long requestId) {
     final var adapter = new SbeTracingAdapter(serialized);
     final var builder =
         tracer

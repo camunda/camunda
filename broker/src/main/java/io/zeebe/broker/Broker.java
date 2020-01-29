@@ -234,11 +234,11 @@ public final class Broker implements AutoCloseable {
 
     if (brokerCfg.getMonitoring().isTracing()) {
       final Tracer tracer =
-        Configuration.fromEnv("io.zeebe.broker")
-          .getTracerBuilder()
-          .registerInjector(SbeTracingCodec.format(), SbeTracingCodec.codec())
-          .registerExtractor(SbeTracingCodec.format(), SbeTracingCodec.codec())
-          .build();
+          Configuration.fromEnv("io.zeebe.broker")
+              .getTracerBuilder()
+              .registerInjector(SbeTracingCodec.format(), SbeTracingCodec.codec())
+              .registerExtractor(SbeTracingCodec.format(), SbeTracingCodec.codec())
+              .build();
       commandTracer = new DefaultCommandTracer(tracer);
     }
 

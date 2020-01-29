@@ -96,10 +96,9 @@ final class CommandApiRequestHandler implements RequestHandler {
     final ValueType eventType = requestWrapper.getValueType();
     final Intent eventIntent = requestWrapper.getIntent();
 
-    tracer.start(
-        requestWrapper.getSpanContext(), partitionId, requestId);
+    tracer.start(requestWrapper.getSpanContext(), partitionId, requestId);
 
-      final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
+    final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
     if (logStreamWriter == null) {
       errorResponseWriter
           .partitionLeaderMismatch(partitionId)
@@ -161,8 +160,10 @@ final class CommandApiRequestHandler implements RequestHandler {
   }
 
   private boolean writeCommand(
-      final RecordMetadata eventMetadata, final long key, final LogStreamRecordWriter logStreamWriter) {
-      logStreamWriter.reset();
+      final RecordMetadata eventMetadata,
+      final long key,
+      final LogStreamRecordWriter logStreamWriter) {
+    logStreamWriter.reset();
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
       logStreamWriter.key(key);
     } else {
