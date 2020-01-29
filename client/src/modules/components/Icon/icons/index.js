@@ -41,6 +41,8 @@ import {ReactComponent as publish} from './publish.svg';
 import {ReactComponent as cancel} from './cancel.svg';
 import {ReactComponent as arrowRight} from './arrow-right.svg';
 import {ReactComponent as calender} from './calender.svg';
+import {ReactComponent as user} from './user.svg';
+import {ReactComponent as group} from './usergroup.svg';
 
 const icons = {
   autorefresh,
@@ -79,7 +81,9 @@ const icons = {
   publish,
   cancel,
   'arrow-right': arrowRight,
-  calender
+  calender,
+  user,
+  group
 };
 
 export default icons;

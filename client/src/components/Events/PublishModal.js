@@ -11,15 +11,25 @@ import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 
-import {publish} from './service';
-
+import {publish, getUsers} from './service';
+import UsersModal from './UsersModal';
 import './PublishModal.scss';
 
 export default withErrorHandling(
   class PublishModal extends React.Component {
     state = {
-      loading: false
+      loading: false,
+      editingAccess: null,
+      isPrivate: false
     };
+
+    componentDidMount() {
+      this.props.mightFail(
+        getUsers(this.props.id),
+        users => this.setState({isPrivate: users.length <= 1}),
+        showError
+      );
+    }
 
     publish = () => {
       const {mightFail, id, onPublish, onClose} = this.props;
@@ -39,9 +49,12 @@ export default withErrorHandling(
       );
     };
 
+    closeUsersModal = isPrivate =>
+      this.setState({isPrivate: isPrivate === true, editingAccess: null});
+
     render() {
       const {id, onClose, republish} = this.props;
-      const {loading} = this.state;
+      const {loading, editingAccess, isPrivate} = this.state;
 
       return (
         <Modal open={id} onClose={onClose} onConfirm={this.publish} className="PublishModal">
@@ -57,6 +70,14 @@ export default withErrorHandling(
                 <p>{t('events.publishModal.hint')}</p>
               </>
             )}
+            <div className="permission">
+              <h4>{t('events.permissions.whoHasAccess')}</h4>
+              {isPrivate ? t('events.permissions.private') : t('events.permissions.userGranted')}
+              <Button onClick={() => this.setState({editingAccess: id})} variant="link">
+                {t('common.change')}...
+              </Button>
+            </div>
+            {editingAccess && <UsersModal id={editingAccess} onClose={this.closeUsersModal} />}
           </Modal.Content>
           <Modal.Actions>
             <Button disabled={loading} className="close" onClick={onClose}>

@@ -17,6 +17,7 @@ import {checkDeleteConflict} from 'services';
 import {ReactComponent as ProcessIcon} from './icons/process.svg';
 
 import PublishModal from './PublishModal';
+import UsersModal from './UsersModal';
 import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
 
 export default withErrorHandling(
@@ -25,7 +26,8 @@ export default withErrorHandling(
       processes: null,
       deleting: null,
       publishing: null,
-      redirect: null
+      redirect: null,
+      editingAccess: null
     };
 
     componentDidMount() {
@@ -106,7 +108,7 @@ export default withErrorHandling(
     };
 
     render() {
-      const {processes, deleting, redirect, publishing} = this.state;
+      const {processes, deleting, redirect, publishing, editingAccess} = this.state;
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -136,6 +138,11 @@ export default withErrorHandling(
                     icon: 'edit',
                     text: t('common.edit'),
                     action: () => this.setState({redirect: link + 'edit'})
+                  },
+                  {
+                    icon: 'user',
+                    text: t('common.editAccess'),
+                    action: () => this.setState({editingAccess: process})
                   },
                   {
                     icon: 'delete',
@@ -185,12 +192,20 @@ export default withErrorHandling(
             onClose={() => this.setState({deleting: null})}
             deleteEntity={({id}) => removeProcess(id)}
           />
-          <PublishModal
-            id={publishing && publishing.id}
-            onPublish={this.loadList}
-            onClose={() => this.setState({publishing: null})}
-            republish={publishing && publishing.state === 'unpublished_changes'}
-          />
+          {publishing && (
+            <PublishModal
+              id={publishing.id}
+              onPublish={this.loadList}
+              onClose={() => this.setState({publishing: null})}
+              republish={publishing.state === 'unpublished_changes'}
+            />
+          )}
+          {editingAccess && (
+            <UsersModal
+              id={editingAccess.id}
+              onClose={() => this.setState({editingAccess: null})}
+            />
+          )}
         </div>
       );
     }

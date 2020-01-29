@@ -9,12 +9,6 @@ import {t} from 'translation';
 import {formatters} from 'services';
 const {formatTenantName} = formatters;
 
-export async function searchIdentities(terms) {
-  const response = await get(`api/identity/search`, {terms});
-
-  return await response.json();
-}
-
 export async function getDefinitionTenants(defintionKey, defintionType) {
   const response = await get(`api/definition/${defintionType}/${defintionKey}`);
 

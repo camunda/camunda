@@ -9,13 +9,14 @@ import {shallow} from 'enzyme';
 
 import {showError, addNotification} from 'notifications';
 
-import {publish} from './service';
+import {publish, getUsers} from './service';
 import PublishModalWithErrorHandling from './PublishModal';
 
 const PublishModal = PublishModalWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
-  publish: jest.fn()
+  publish: jest.fn(),
+  getUsers: jest.fn().mockReturnValue([])
 }));
 
 jest.mock('notifications', () => ({
@@ -67,4 +68,11 @@ it('should show an error message', () => {
 
   expect(showError).toHaveBeenCalled();
   expect(showError.mock.calls[0]).toMatchSnapshot();
+});
+
+it('should show that access is granted if there are more than one user', () => {
+  getUsers.mockReturnValue([{}, {}]);
+  const node = shallow(<PublishModal {...props} />);
+
+  expect(node.find('.permission')).toMatchSnapshot();
 });

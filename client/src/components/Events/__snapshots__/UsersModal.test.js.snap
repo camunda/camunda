@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should add/remove user/group from the list 1`] = `
+Array [
+  Object {
+    "className": "user",
+    "icon": <Icon
+      size="24"
+      type="user"
+    />,
+    "meta1": false,
+    "meta3": false,
+    "name": "kermit",
+    "type": "User",
+  },
+  Object {
+    "className": "group",
+    "icon": <Icon
+      size="24"
+      type="group"
+    />,
+    "meta1": <React.Fragment>
+      2
+       
+      Users
+    </React.Fragment>,
+    "meta3": <ForwardRef(Button)
+      onClick={[Function]}
+    >
+      <Icon
+        type="delete"
+      />
+    </ForwardRef(Button)>,
+    "name": "Sales",
+    "type": "User Group",
+  },
+]
+`;

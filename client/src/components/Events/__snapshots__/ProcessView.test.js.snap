@@ -74,11 +74,5 @@ exports[`should match snapshot 1`] = `
     onDelete={[MockFunction]}
     type="process"
   />
-  <PublishModalErrorHandler
-    id={null}
-    onClose={[Function]}
-    onPublish={[Function]}
-    republish={false}
-  />
 </div>
 `;

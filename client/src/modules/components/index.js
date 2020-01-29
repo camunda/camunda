@@ -41,3 +41,4 @@ export {Badge} from './Badge';
 export {SubNav, NavItem} from './navigation';
 export {HeatmapOverlay} from './HeatmapOverlay';
 export {EntityList} from './EntityList';
+export {UserTypeahead} from './UserTypeahead';

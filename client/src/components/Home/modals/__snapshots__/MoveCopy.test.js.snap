@@ -15,7 +15,6 @@ exports[`should match snapshot 1`] = `
     noSpacing={true}
   >
     <Typeahead
-      initialValue={null}
       noValuesMessage="No collections have been created"
       onChange={[Function]}
       onClose={[Function]}

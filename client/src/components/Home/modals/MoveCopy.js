@@ -69,7 +69,7 @@ export default withErrorHandling(
             <>
               <Form.Group noSpacing>
                 <Typeahead
-                  initialValue={collection}
+                  initialValue={(collection || {}).id}
                   noValuesMessage={t('home.copy.noCollections')}
                   placeholder={t('home.copy.pleaseSelect')}
                   onChange={id => {

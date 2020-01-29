@@ -27,11 +27,26 @@ exports[`should show different text depending on the republish prop 1`] = `
   </Component>
   <Component>
     <p>
-      Published Event Based Processes will be available to use in Reports.
+      Published Event Based Processes will be available to use in Reports by selected users.
     </p>
     <p>
       Hint: To use inside a Collection, add the process in the Data Sources tab.
     </p>
+    <div
+      className="permission"
+    >
+      <h4>
+        Who can use this process?
+      </h4>
+      Private - Only you
+      <ForwardRef(Button)
+        onClick={[Function]}
+        variant="link"
+      >
+        Change
+        ...
+      </ForwardRef(Button)>
+    </div>
   </Component>
   <Component>
     <ForwardRef(Button)
@@ -68,6 +83,21 @@ exports[`should show different text depending on the republish prop 2`] = `
     <p>
       Re-Publishing will update data in all associated Reports.
     </p>
+    <div
+      className="permission"
+    >
+      <h4>
+        Who can use this process?
+      </h4>
+      Private - Only you
+      <ForwardRef(Button)
+        onClick={[Function]}
+        variant="link"
+      >
+        Change
+        ...
+      </ForwardRef(Button)>
+    </div>
   </Component>
   <Component>
     <ForwardRef(Button)
@@ -88,4 +118,22 @@ exports[`should show different text depending on the republish prop 2`] = `
     </ForwardRef(Button)>
   </Component>
 </Modal>
+`;
+
+exports[`should show that access is granted if there are more than one user 1`] = `
+<div
+  className="permission"
+>
+  <h4>
+    Who can use this process?
+  </h4>
+  User access granted
+  <ForwardRef(Button)
+    onClick={[Function]}
+    variant="link"
+  >
+    Change
+    ...
+  </ForwardRef(Button)>
+</div>
 `;

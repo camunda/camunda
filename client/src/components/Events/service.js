@@ -48,3 +48,12 @@ export async function loadEvents(body, searchTerm) {
   const response = await post('/api/event/count', body, {query});
   return await response.json();
 }
+
+export async function getUsers(id) {
+  const response = await get(`api/eventBasedProcess/${id}/role`);
+  return await response.json();
+}
+
+export async function updateUsers(id, newUsers) {
+  return await put(`api/eventBasedProcess/${id}/role`, newUsers);
+}

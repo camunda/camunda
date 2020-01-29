@@ -15,10 +15,6 @@ import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 
 import {addUser, editUser, removeUser, getUsers} from './service';
-
-import {ReactComponent as UserIcon} from './icons/user.svg';
-import {ReactComponent as GroupIcon} from './icons/usergroup.svg';
-
 import './UserList.scss';
 
 export default withErrorHandling(
@@ -163,15 +159,8 @@ export default withErrorHandling(
   }
 );
 
-function getEntityIcon(type) {
-  switch (type) {
-    case 'user':
-      return <UserIcon />;
-    case 'group':
-      return <GroupIcon />;
-    default:
-      return <UserIcon />;
-  }
+function getEntityIcon(type = 'user') {
+  return <Icon type={type} size="24" />;
 }
 
 function formatType(type) {

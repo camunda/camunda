@@ -82,8 +82,9 @@
       "editor-description": "Erstellen, bearbeiten und löschen von Dashboards, Berichten und Alarmen",
       "manager": "Manager",
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
-      "existing-user-error": "Ein Benutzer mit dieser ID existiert schon in dieser Sammlung",
-      "existing-group-error": "Eine Gruppe mit dieser ID existiert schon in dieser Sammlung",
+      "existing-user-error": "Ein Benutzer mit dieser ID existiert schon",
+      "existing-group-error": "Eine Gruppe mit dieser ID existiert schon",
+      "inCollection": "in dieser Sammlung",
       "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein.",
       "deleteWarning": "'{name}' {type} wird von der Sammlung entfernt."
     },
@@ -138,7 +139,7 @@
       "head": "Prozess Veröffentlichen",
       "republishHead": "Prozess Neu-Veröffentlichen",
       "republishText": "Neu-Veröffentlichung wird Daten in allen assoziierten Berichten aktualisieren.",
-      "text": "Veröffentlichte Eventbasierte Prozesse werden in Reports zur Verfügung stehen.",
+      "text": "Veröffentlichte Eventbasierte Prozesse werden von ausgewählten Benutzern in Reports zur Verfügung stehen.",
       "hint": "Hinweis: Um den Prozess in einer Sammlung zu verwenden, fügen Sie ihn im Datenquellen Register hinzu."
     },
     "state": {
@@ -147,6 +148,12 @@
       "publish_pending": "Veröffentlichen {publishingProgress}%",
       "published": "Veröffentlicht",
       "unpublished_changes": "Unveröffentlichte Änderungen"
+    },
+    "permissions": {
+      "private": "Privat - Nur Sie",
+      "whoHasAccess": "Wer kann diesen Prozess nutzen?",
+      "userGranted": "Benutzerzugriff gewährt",
+      "description": "Ermöglichen Sie den folgenden Benutzern und Gruppen die Erstellung von Berichten, die auf diesem Prozess basieren..."
     }
   },
   "report": {
@@ -473,6 +480,7 @@
     "close": "Schließen",
     "add": "Hinzufügen",
     "copy": "Kopieren",
+    "change": "Ändern",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
     "saving": "Speichern ... ",
@@ -494,6 +502,8 @@
     "noData": "Keine Daten verfügbar",
     "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern.",
     "goToHome": "zur Homepage",
+    "editAccess": "Zugriff bearbeiten",
+    "id": "ID",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig"
     },

@@ -144,12 +144,14 @@ export default withErrorHandling(
             deleteEntity={({id}) => removeProcess(id)}
             checkConflicts={({id}) => checkDeleteConflict(id, 'eventBasedProcess')}
           />
-          <PublishModal
-            id={publishing}
-            onPublish={this.load}
-            onClose={() => this.setState({publishing: null})}
-            republish={state === 'unpublished_changes'}
-          />
+          {publishing && (
+            <PublishModal
+              id={publishing}
+              onPublish={this.load}
+              onClose={() => this.setState({publishing: null})}
+              republish={state === 'unpublished_changes'}
+            />
+          )}
         </div>
       );
     }

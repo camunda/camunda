@@ -59,11 +59,15 @@ export default class Modal extends React.Component {
       // - the first primary button
       // - any focusable element
       const defaultElement =
-        container.querySelector('input[type="text"]:not(.typeaheadInput)') ||
+        container.querySelector('input[type="text"]') ||
         container.querySelector('.primary') ||
         container.querySelector('input, button, textarea, select');
       if (defaultElement) {
-        defaultElement.focus();
+        if (defaultElement.className.includes('typeaheadInput')) {
+          container.querySelector('.optionsButton').focus();
+        } else {
+          defaultElement.focus();
+        }
       }
 
       // safeguard in case there is no focusable element or the default element is disabled

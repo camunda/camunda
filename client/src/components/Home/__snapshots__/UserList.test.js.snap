@@ -11,7 +11,10 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": false,
           "className": "user",
-          "icon": <ForwardRef(SvgUser) />,
+          "icon": <Icon
+            size="24"
+            type="user"
+          />,
           "meta1": false,
           "meta2": "Manager",
           "meta3": <React.Fragment>
@@ -35,7 +38,10 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": false,
           "className": "group",
-          "icon": <ForwardRef(SvgUsergroup) />,
+          "icon": <Icon
+            size="24"
+            type="group"
+          />,
           "meta1": <React.Fragment>
             2
              
@@ -119,7 +125,10 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "user",
-          "icon": <ForwardRef(SvgUser) />,
+          "icon": <Icon
+            size="24"
+            type="user"
+          />,
           "meta1": false,
           "meta2": "Manager",
           "meta3": <React.Fragment>
@@ -154,7 +163,10 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "group",
-          "icon": <ForwardRef(SvgUsergroup) />,
+          "icon": <Icon
+            size="24"
+            type="group"
+          />,
           "meta1": <React.Fragment>
             2
              

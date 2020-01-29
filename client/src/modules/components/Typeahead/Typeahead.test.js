@@ -73,3 +73,17 @@ it('should select an option', () => {
   expect(node.find('OptionsList').prop('open')).toBe(false);
   expect(spy).toHaveBeenCalledWith('1');
 });
+
+it('should function as a controlled select', () => {
+  const node = shallow(
+    <Typeahead>
+      <Typeahead.Option id="test_option" value="1">
+        Option One
+      </Typeahead.Option>
+    </Typeahead>
+  );
+
+  node.setProps({value: '1'});
+
+  expect(node.find(Input).prop('value')).toBe('Option One');
+});

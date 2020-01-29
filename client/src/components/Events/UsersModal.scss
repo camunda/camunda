@@ -1,0 +1,64 @@
+.UsersModal {
+  .inputGroup {
+    display: flex;
+    align-items: flex-end;
+
+    .userTypeahead {
+      flex-grow: 1;
+      margin-right: 10px;
+    }
+  }
+
+  .description {
+    color: #717171;
+    margin-top: 0;
+    font-size: 0.875em;
+  }
+
+  .EntityList {
+    width: 100%;
+
+    .header {
+      width: 100%;
+      position: static;
+      margin-top: 50px;
+      padding-top: 0;
+    }
+
+    .content {
+      padding-top: 0;
+
+      .ListItem > ul {
+        width: 100%;
+      }
+
+      .ListItemSection {
+        &.meta1 {
+          width: 120px;
+        }
+
+        &.meta2 {
+          width: 0;
+        }
+
+        &.meta3 {
+          width: auto;
+          padding: 0 5px;
+
+          .Button {
+            background: none;
+            border: none;
+            padding: 0;
+            .Icon {
+              margin-right: 0;
+            }
+          }
+        }
+
+        .name {
+          width: 300px;
+        }
+      }
+    }
+  }
+}

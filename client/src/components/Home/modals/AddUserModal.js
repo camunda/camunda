@@ -6,10 +6,9 @@
 
 import React from 'react';
 
-import {Button, LabeledInput, Modal, Form, Message} from 'components';
+import {Button, LabeledInput, Modal, Form, Message, UserTypeahead} from 'components';
 
 import {t} from 'translation';
-import UserTypeahead from './UserTypeahead.js';
 
 const defaultState = {
   selectedIdentity: null,
@@ -68,10 +67,14 @@ export default class AddUserModal extends React.Component {
             <Form.Group>
               <UserTypeahead onChange={selectedIdentity => this.setState({selectedIdentity})} />
               {alreadyExists && selectedIdentity.type === 'user' && (
-                <Message error>{t('home.roles.existing-user-error')}</Message>
+                <Message error>
+                  {t('home.roles.existing-user-error')} {t('home.roles.inCollection')}
+                </Message>
               )}
               {alreadyExists && selectedIdentity.type === 'group' && (
-                <Message error>{t('home.roles.existing-group-error')}</Message>
+                <Message error>
+                  {t('home.roles.existing-group-error')} {t('home.roles.inCollection')}
+                </Message>
               )}
             </Form.Group>
             {t('home.roles.userRole')}

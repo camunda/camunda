@@ -11,6 +11,11 @@ import './Typeahead.scss';
 import {t} from 'translation';
 import classnames from 'classnames';
 
+const defaultState = {
+  query: '',
+  open: false,
+  selected: ''
+};
 export default class Typeahead extends React.Component {
   static defaultProps = {
     onSearch: () => {},
@@ -19,11 +24,7 @@ export default class Typeahead extends React.Component {
     onClose: () => {}
   };
 
-  state = {
-    query: '',
-    open: false,
-    selected: ''
-  };
+  state = defaultState;
 
   optionClicked = false;
 
@@ -35,19 +36,41 @@ export default class Typeahead extends React.Component {
   };
 
   componentDidMount() {
-    const {children, initialValue} = this.props;
-    if (initialValue) {
-      const {props} = React.Children.toArray(children).find(
-        option => option.props.value === initialValue
-      );
+    this.findAndSelect(this.props.initialValue);
+    this.findAndSelect(this.props.value);
+  }
 
-      const selected = props.label || props.children;
+  componentDidUpdate(prevProps) {
+    if (prevProps.value !== this.props.value) {
+      this.findAndSelect(this.props.value);
+    }
+
+    if (!prevProps.initialValue && this.props.initialValue) {
+      this.findAndSelect(this.props.initialValue);
+    }
+  }
+
+  findAndSelect = value => {
+    if (typeof value === 'undefined') {
+      return;
+    }
+    const {children} = this.props;
+    const foundOption = React.Children.toArray(children).find(
+      option => option.props.value === value
+    );
+
+    if (foundOption) {
+      const {label, children} = foundOption.props;
+      const selected = label || children;
       this.setState({
         selected,
         query: selected
       });
+    } else if (value === null) {
+      this.setState(defaultState);
+      this.props.onSearch('');
     }
-  }
+  };
 
   selectOption = ({props: {label, children, value}}) => {
     const selected = label || children;

@@ -13,10 +13,10 @@ import './UserTypeahead.scss';
 
 export default class UserTypeahead extends React.Component {
   state = {
-    loading: false,
+    loading: true,
     hasMore: false,
     initialDataLoaded: false,
-    empty: false,
+    empty: true,
     identities: []
   };
 
@@ -51,7 +51,7 @@ export default class UserTypeahead extends React.Component {
   handleClose = () => {
     const {empty, loading} = this.state;
     // prevents unnecessary requests
-    if (loading) {
+    if (loading && !empty) {
       this.cancelPendingSearch();
     } else if (empty) {
       // prevents disabling the typeahead if closed empty
@@ -70,8 +70,10 @@ export default class UserTypeahead extends React.Component {
 
   render() {
     const {loading, hasMore, identities} = this.state;
+    const {selectedIdentity} = this.props;
     return (
       <Typeahead
+        value={selectedIdentity && selectedIdentity.id}
         className="UserTypeahead"
         onSearch={this.loadNewValues}
         loading={loading}

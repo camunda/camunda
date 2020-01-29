@@ -55,7 +55,7 @@ it('should pass a process to the Deleter', () => {
   node
     .find(EntityList)
     .prop('data')[0]
-    .actions[2].action();
+    .actions[3].action();
 
   expect(node.find(Deleter).prop('entity').id).toBe('process1');
 });
