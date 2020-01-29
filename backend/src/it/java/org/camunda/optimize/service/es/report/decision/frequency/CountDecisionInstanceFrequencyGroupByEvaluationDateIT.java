@@ -224,7 +224,6 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
     );
-
   }
 
   @Test
@@ -299,7 +298,6 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-
     // when
     final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
     dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
@@ -319,7 +317,6 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
-
 
     // then
     final List<MapResultEntryDto> resultData = evaluationResult.getResult().getData();
@@ -677,6 +674,5 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .build();
     return evaluateMapReport(reportData);
   }
-
 
 }

@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.FIXED_DATE_FILTER;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FILTER;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
 
 public enum DateFilterType {
   FIXED(FIXED_DATE_FILTER),
   RELATIVE(RELATIVE_DATE_FILTER),
+  ROLLING(ROLLING_DATE_FILTER),
   ;
 
   private final String id;

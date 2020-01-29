@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.filter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -21,6 +22,7 @@ import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
@@ -28,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public abstract class AbstractRelativeDateFilterIT extends AbstractFilterIT {
+public abstract class AbstractDateFilterIT extends AbstractFilterIT {
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcessWithVariables(new HashMap<>());
@@ -67,11 +69,13 @@ public abstract class AbstractRelativeDateFilterIT extends AbstractFilterIT {
     }
   }
 
-  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRelativeStartDateFilter(
+  protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithStartDateFilter(
     String processDefinitionKey,
     String processDefinitionVersion,
     DateFilterUnit unit,
-    boolean newToken
+    Long value,
+    boolean newToken,
+    DateFilterType filterType
   ) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
@@ -79,19 +83,32 @@ public abstract class AbstractRelativeDateFilterIT extends AbstractFilterIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(RAW_DATA)
       .build();
-    List<ProcessFilterDto> relativeDateFilter = createRelativeStartDateFilter(unit);
 
-    reportData.setFilter(relativeDateFilter);
+    if (filterType.equals(DateFilterType.ROLLING)) {
+      reportData.setFilter(createRollingStartDateFilter(unit, value));
+    } else if (filterType.equals(DateFilterType.RELATIVE)) {
+      reportData.setFilter(createRelativeStartDateFilter(unit, value));
+    }
+
     return evaluateReport(reportData, newToken);
   }
 
-  protected List<ProcessFilterDto> createRelativeStartDateFilter(final DateFilterUnit unit) {
+  protected List<ProcessFilterDto> createRelativeStartDateFilter(final DateFilterUnit unit, final Long value) {
     return ProcessFilterBuilder
         .filter()
         .relativeStartDate()
-        .start(1L, unit)
+        .start(value, unit)
         .add()
         .buildList();
+  }
+
+  protected List<ProcessFilterDto> createRollingStartDateFilter(final DateFilterUnit unit, final Long value) {
+    return ProcessFilterBuilder
+      .filter()
+      .rollingStartDate()
+      .start(value, unit)
+      .add()
+      .buildList();
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> createAndEvaluateReportWithRelativeEndDateFilter(
@@ -133,6 +150,24 @@ public abstract class AbstractRelativeDateFilterIT extends AbstractFilterIT {
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
       // @formatter:on
+  }
+
+  protected static Stream<DateFilterUnit> getRelativeSupportedFilterUnits() {
+    return Stream.of(
+      DateFilterUnit.MINUTES,
+      DateFilterUnit.DAYS,
+      DateFilterUnit.HOURS,
+      DateFilterUnit.WEEKS,
+      DateFilterUnit.MONTHS,
+      DateFilterUnit.YEARS
+    );
+  }
+
+  protected static Stream<DateFilterUnit> getRollingSupportedFilterUnits() {
+    return Stream.concat(
+      Stream.of(DateFilterUnit.QUARTERS),
+      getRelativeSupportedFilterUnits()
+    );
   }
 
 }

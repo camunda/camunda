@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.http.HttpStatus;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -15,21 +16,19 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RelativeDateFilterUnitsIT extends AbstractRelativeDateFilterIT {
+public class DateFilterUnitsIT extends AbstractDateFilterIT {
 
   @ParameterizedTest
-  @MethodSource("getSupportedFilterUnitsAndAmounts")
-  public void relativeDateFilterInReport(DateFilterUnit dateFilterUnit, int amount) {
+  @MethodSource("getRelativeSupportedFilterUnits")
+  public void relativeDateFilterInReport(DateFilterUnit dateFilterUnit) {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
@@ -44,15 +43,17 @@ public class RelativeDateFilterUnitsIT extends AbstractRelativeDateFilterIT {
 
     // when
     AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
-      createAndEvaluateReportWithRelativeStartDateFilter(
+      createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         dateFilterUnit,
-        true
+        1L,
+        true,
+        DateFilterType.RELATIVE
       );
 
     //then
-    assertResults(processInstance, result, amount);
+    assertResults(processInstance, result, 1);
   }
 
   @Test
@@ -65,7 +66,7 @@ public class RelativeDateFilterUnitsIT extends AbstractRelativeDateFilterIT {
     // when
     ProcessReportDataDto reportData = createReport(processInstance.getProcessDefinitionKey(),
                                                    processInstance.getProcessDefinitionVersion());
-    List<ProcessFilterDto> relativeDateFilter = createRelativeStartDateFilter(DateFilterUnit.QUARTERS);
+    List<ProcessFilterDto> relativeDateFilter = createRelativeStartDateFilter(DateFilterUnit.QUARTERS, 1L);
     reportData.setFilter(relativeDateFilter);
 
     //then
@@ -73,15 +74,56 @@ public class RelativeDateFilterUnitsIT extends AbstractRelativeDateFilterIT {
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
   }
 
-  private static Stream<Arguments> getSupportedFilterUnitsAndAmounts() {
-    return Stream.of(
-      Arguments.of(DateFilterUnit.MINUTES, 1),
-      Arguments.of(DateFilterUnit.DAYS, 1),
-      Arguments.of(DateFilterUnit.HOURS, 1),
-      Arguments.of(DateFilterUnit.WEEKS, 1),
-      Arguments.of(DateFilterUnit.MONTHS, 1),
-      Arguments.of(DateFilterUnit.YEARS, 1)
-    );
+  @ParameterizedTest
+  @MethodSource("getRollingSupportedFilterUnits")
+  public void rollingDateFilterInReportCurrentInterval(DateFilterUnit dateFilterUnit) {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    OffsetDateTime processInstanceStartTime =
+      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    LocalDateUtil.setCurrentTime(processInstanceStartTime);
+
+    // when
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+      createAndEvaluateReportWithStartDateFilter(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion(),
+        dateFilterUnit,
+        1L,
+        true,
+        DateFilterType.ROLLING
+      );
+
+    //then
+    assertResults(processInstance, result, 0);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getRollingSupportedFilterUnits")
+  public void rollingDateFilterInReportPreviousInterval(DateFilterUnit dateFilterUnit) {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    OffsetDateTime processInstanceStartTime =
+      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    LocalDateUtil.setCurrentTime(processInstanceStartTime);
+
+    // when
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
+      createAndEvaluateReportWithStartDateFilter(
+        processInstance.getProcessDefinitionKey(),
+        processInstance.getProcessDefinitionVersion(),
+        dateFilterUnit,
+        0L,
+        true,
+        DateFilterType.ROLLING
+      );
+
+    //then
+    assertResults(processInstance, result, 1);
   }
 
 }

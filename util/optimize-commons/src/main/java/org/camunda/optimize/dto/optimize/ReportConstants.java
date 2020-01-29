@@ -79,6 +79,7 @@ public class ReportConstants {
 
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";
+  public static final String ROLLING_DATE_FILTER = "rolling";
 
   public static final String RAW_RESULT_TYPE = "raw";
   public static final String NUMBER_RESULT_TYPE = "number";

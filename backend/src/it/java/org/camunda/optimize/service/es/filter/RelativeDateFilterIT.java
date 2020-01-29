@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -31,7 +32,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class RelativeDateFilterIT extends AbstractRelativeDateFilterIT {
+public class RelativeDateFilterIT extends AbstractDateFilterIT {
 
   @Test
   public void testStartDateRelativeLogic() {
@@ -50,11 +51,13 @@ public class RelativeDateFilterIT extends AbstractRelativeDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
-      createAndEvaluateReportWithRelativeStartDateFilter(
+      createAndEvaluateReportWithStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         DateFilterUnit.DAYS,
-        false
+        1L,
+        false,
+        DateFilterType.RELATIVE
       );
 
     assertResults(processInstance, result, 1);
@@ -63,11 +66,13 @@ public class RelativeDateFilterIT extends AbstractRelativeDateFilterIT {
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
     //token has to be refreshed, as the old one expired already after moving the date
-    result = createAndEvaluateReportWithRelativeStartDateFilter(
+    result = createAndEvaluateReportWithStartDateFilter(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
       DateFilterUnit.DAYS,
-      true
+      1L,
+      true,
+      DateFilterType.RELATIVE
     );
 
     assertResults(processInstance, result, 0);

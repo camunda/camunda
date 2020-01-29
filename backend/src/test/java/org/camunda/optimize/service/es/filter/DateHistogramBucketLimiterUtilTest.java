@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.es.filter;
 
 import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -28,8 +30,8 @@ import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public class DateHistogramBucketLimiterUtilTest {
 
@@ -78,16 +80,36 @@ public class DateHistogramBucketLimiterUtilTest {
 
     final RelativeDateFilterDataDto dateFilterDataDto = createRelativeDateFilter(now, unit, startAmountToSubtract, endAmountToSubtract);
 
-    final RelativeDateFilterDataDto limitedFixedDateFilter =
+    final RelativeDateFilterDataDto limitRelativeDateFilter =
       DateHistogramBucketLimiterUtil.limitRelativeDateFilterToMaxBucketsForUnit(
         unit,
         dateFilterDataDto,
         limit.intValue()
       );
 
-    assertThat(limitedFixedDateFilter.getStart().getUnit(), is(DateFilterUnit.valueOf(unit.name())));
-    assertThat(limitedFixedDateFilter.getStart().getValue(), is(limit - 1));
-    assertThat(limitedFixedDateFilter.getEnd(), is(dateFilterDataDto.getEnd()));
+    assertThat(limitRelativeDateFilter.getStart().getUnit(), is(DateFilterUnit.valueOf(unit.name())));
+    assertThat(limitRelativeDateFilter.getStart().getValue(), is(limit - 1));
+    assertThat(limitRelativeDateFilter.getEnd(), is(dateFilterDataDto.getEnd()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("getHistogramData")
+  public void testLimitRollingDateFilterToMaxBucketsForUnit(ChronoUnit unit, long startAmountToSubtract,
+                                                             long endAmountToSubtract, Long limit) {
+    final OffsetDateTime now = OffsetDateTime.now();
+
+    final RollingDateFilterDataDto dateFilterDataDto = createRollingDateFilter(now, unit, startAmountToSubtract, endAmountToSubtract);
+
+    final RollingDateFilterDataDto limitedRollingDateFilter =
+      DateHistogramBucketLimiterUtil.limitRollingDateFilterToMaxBucketsForUnit(
+        unit,
+        dateFilterDataDto,
+        limit.intValue()
+      );
+
+    assertThat(limitedRollingDateFilter.getStart().getUnit(), is(DateFilterUnit.valueOf(unit.name())));
+    assertThat(limitedRollingDateFilter.getStart().getValue(), is(limit - 1));
+    assertThat(limitedRollingDateFilter.getEnd(), is(dateFilterDataDto.getEnd()));
   }
 
   @ParameterizedTest
@@ -229,6 +251,19 @@ public class DateHistogramBucketLimiterUtilTest {
                                                              long endAmountToSubtract) {
     final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
     dateFilterDataDto.setStart(new RelativeDateFilterStartDto(
+      startAmountToSubtract,
+      DateFilterUnit.valueOf(unit.name())
+    ));
+    dateFilterDataDto.setEnd(now.minus(endAmountToSubtract - 1, unit));
+    return dateFilterDataDto;
+  }
+
+  private RollingDateFilterDataDto createRollingDateFilter(final OffsetDateTime now,
+                                                             ChronoUnit unit,
+                                                             long startAmountToSubtract,
+                                                             long endAmountToSubtract) {
+    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto();
+    dateFilterDataDto.setStart(new RollingDateFilterStartDto(
       startAmountToSubtract,
       DateFilterUnit.valueOf(unit.name())
     ));

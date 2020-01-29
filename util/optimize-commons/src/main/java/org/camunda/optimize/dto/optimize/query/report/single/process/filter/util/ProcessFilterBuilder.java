@@ -50,6 +50,10 @@ public class ProcessFilterBuilder {
     return RelativeDateFilterBuilder.startDate(this);
   }
 
+  public RollingDateFilterBuilder rollingStartDate() {
+    return RollingDateFilterBuilder.startDate(this);
+  }
+
   public FixedDateFilterBuilder fixedEndDate() {
     return FixedDateFilterBuilder.endDate(this);
   }

@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.FIXED_DATE_FILTER;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FILTER;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ROLLING_DATE_FILTER;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which
@@ -22,8 +23,9 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RELATIVE_DATE_FI
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = RelativeDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
   @JsonSubTypes.Type(value = FixedDateFilterDataDto.class, name = FIXED_DATE_FILTER),
+  @JsonSubTypes.Type(value = RelativeDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
+  @JsonSubTypes.Type(value = RollingDateFilterDataDto.class, name = ROLLING_DATE_FILTER),
 })
 
 @Getter

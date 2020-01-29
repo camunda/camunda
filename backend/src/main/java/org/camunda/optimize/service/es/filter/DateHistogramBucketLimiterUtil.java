@@ -6,13 +6,18 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.util.DateFilterUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
 
@@ -158,7 +163,7 @@ public class DateHistogramBucketLimiterUtil {
   public static Optional<ExtendedBounds> getExtendedBoundsFromDateFilters(final List<DateFilterDataDto> dateFilters,
                                                                           final DateTimeFormatter dateFormatter) {
 
-    //in case of several dateFilters, use min (oldest) one as start, and max (newest) one as end
+    // in case of several dateFilters, use min (oldest) one as start, and max (newest) one as end
     final Optional<OffsetDateTime> filterStart = getMinDateFilterOffsetDateTime(dateFilters);
     final OffsetDateTime filterEnd = getMaxDateFilterOffsetDateTime(dateFilters);
 
@@ -175,7 +180,7 @@ public class DateHistogramBucketLimiterUtil {
 
   private static Optional<OffsetDateTime> getMinDateFilterOffsetDateTime(final List<DateFilterDataDto> dateFilters) {
     final OffsetDateTime now = OffsetDateTime.now();
-    return Stream.concat(
+    return Stream.of(
       dateFilters.stream()
         .filter(FixedDateFilterDataDto.class::isInstance)
         .map(date -> (OffsetDateTime) date.getStart()),
@@ -185,8 +190,19 @@ public class DateHistogramBucketLimiterUtil {
           final RelativeDateFilterStartDto startDto = (RelativeDateFilterStartDto) filter.getStart();
           final ChronoUnit filterUnit = ChronoUnit.valueOf(startDto.getUnit().name());
           return now.minus(startDto.getValue(), filterUnit);
+        }),
+      dateFilters.stream()
+        .filter(RollingDateFilterDataDto.class::isInstance)
+        .map(filter -> {
+          RollingDateFilterStartDto startDto = ((RollingDateFilterDataDto) filter).getStart();
+          OffsetDateTime startOfCurrentInterval = DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit());
+          if (startDto.getValue() == 0) {
+            return startOfCurrentInterval;
+          } else {
+            return DateFilterUtil.getStartOfPreviousInterval(startOfCurrentInterval, startDto.getUnit(), startDto.getValue());
+          }
         })
-    ).min(OffsetDateTime::compareTo);
+    ).flatMap(stream -> stream).min(OffsetDateTime::compareTo);
   }
 
   public static List<DateFilterDataDto> limitFiltersToMaxBucketsForGroupByUnit(final List<DateFilterDataDto> dateFilters,
@@ -199,7 +215,7 @@ public class DateHistogramBucketLimiterUtil {
   private static List<DateFilterDataDto> limitFiltersToMaxBucketsForUnit(final List<DateFilterDataDto> dateFilters,
                                                                          final ChronoUnit groupByUnit,
                                                                          int bucketLimit) {
-    return Stream.concat(
+    return Stream.of(
       dateFilters.stream()
         .filter(FixedDateFilterDataDto.class::isInstance)
         .map(filterDto -> limitFixedDateFilterToMaxBucketsForUnit(
@@ -209,8 +225,13 @@ public class DateHistogramBucketLimiterUtil {
         .filter(RelativeDateFilterDataDto.class::isInstance)
         .map(filterDto -> limitRelativeDateFilterToMaxBucketsForUnit(
           groupByUnit, (RelativeDateFilterDataDto) filterDto, bucketLimit
+        )),
+      dateFilters.stream()
+        .filter(RollingDateFilterDataDto.class::isInstance)
+        .map(filterDto -> limitRollingDateFilterToMaxBucketsForUnit(
+          groupByUnit, (RollingDateFilterDataDto) filterDto, bucketLimit
         ))
-    ).collect(Collectors.toList());
+    ).flatMap(stream -> stream).collect(Collectors.toList());
   }
 
   static FixedDateFilterDataDto limitFixedDateFilterToMaxBucketsForUnit(final ChronoUnit groupByUnit,
@@ -236,8 +257,10 @@ public class DateHistogramBucketLimiterUtil {
   static RelativeDateFilterDataDto limitRelativeDateFilterToMaxBucketsForUnit(final ChronoUnit groupByUnit,
                                                                               final RelativeDateFilterDataDto dateFilter,
                                                                               int bucketLimit) {
-
     final RelativeDateFilterStartDto startDto = dateFilter.getStart();
+    if (startDto.getUnit() == DateFilterUnit.QUARTERS) {
+      throw new OptimizeValidationException(String.format("%s are not supported by relative filters", DateFilterUnit.QUARTERS));
+    }
     final ChronoUnit filterUnit = ChronoUnit.valueOf(startDto.getUnit().name());
     final OffsetDateTime endDate = Optional.ofNullable(dateFilter.getEnd()).orElse(OffsetDateTime.now());
 
@@ -254,6 +277,45 @@ public class DateHistogramBucketLimiterUtil {
       final RelativeDateFilterDataDto reducedBucketsFilter = new RelativeDateFilterDataDto();
       reducedBucketsFilter.setStart(new RelativeDateFilterStartDto(
         filterUnit.between(newStartDate, endDate),
+        startDto.getUnit()
+      ));
+      reducedBucketsFilter.setEnd(dateFilter.getEnd());
+      return reducedBucketsFilter;
+    } else {
+      return dateFilter;
+    }
+  }
+
+  static RollingDateFilterDataDto limitRollingDateFilterToMaxBucketsForUnit(final ChronoUnit groupByUnit,
+                                                                              final RollingDateFilterDataDto dateFilter,
+                                                                              int bucketLimit) {
+    final RollingDateFilterStartDto startDto = dateFilter.getStart();
+    final OffsetDateTime endDate = Optional.ofNullable(dateFilter.getEnd()).orElse(OffsetDateTime.now());
+    OffsetDateTime startOfCurrentInterval = DateFilterUtil.getStartOfCurrentInterval(endDate, startDto.getUnit());
+    long expectedNumberOfBuckets;
+    if (startDto.getValue() == 0) {
+      expectedNumberOfBuckets = groupByUnit.between(startOfCurrentInterval, endDate);
+    } else {
+      expectedNumberOfBuckets = groupByUnit.between(
+        DateFilterUtil.getStartOfPreviousInterval(startOfCurrentInterval, startDto.getUnit(), startDto.getValue()),
+        startOfCurrentInterval
+      );
+    }
+
+    // +1 as the end of the filter is inclusive
+    expectedNumberOfBuckets++;
+
+    if (expectedNumberOfBuckets > bucketLimit) {
+      final OffsetDateTime newStartDate = getNewLimitedStartDate(groupByUnit, bucketLimit, endDate);
+      final long newValue;
+      if (startDto.getUnit() == DateFilterUnit.QUARTERS) {
+        newValue = ChronoUnit.MONTHS.between(newStartDate, endDate) / 3;
+      } else {
+        newValue = ChronoUnit.valueOf(startDto.getUnit().name()).between(newStartDate, endDate);
+      }
+      final RollingDateFilterDataDto reducedBucketsFilter = new RollingDateFilterDataDto();
+      reducedBucketsFilter.setStart(new RollingDateFilterStartDto(
+        newValue,
         startDto.getUnit()
       ));
       reducedBucketsFilter.setEnd(dateFilter.getEnd());
