@@ -179,10 +179,6 @@ String getCamBpmDockerImage(String camBpmVersion) {
   return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
-}
-
 void gitCheckoutOptimize() {
   git url: 'git@github.com:camunda/camunda-optimize',
           branch: "${params.BRANCH}",

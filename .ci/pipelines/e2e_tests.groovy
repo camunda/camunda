@@ -320,7 +320,8 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        def slaveDisconnected = load ".ci/slave_disconnected.groovy"
+        if (slaveDisconnected.slaveDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }
