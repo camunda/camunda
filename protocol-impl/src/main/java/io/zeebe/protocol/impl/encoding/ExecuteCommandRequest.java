@@ -146,10 +146,12 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     final int spanContextLength = bodyDecoder.spanContextLength();
     offset += ExecuteCommandRequestDecoder.spanContextHeaderLength();
 
-    spanContext.wrap(buffer, offset, spanContextLength);
-    offset += spanContextLength;
-    bodyDecoder.limit(offset);
+    if (spanContextLength > 0) {
+      spanContext.wrap(buffer, offset, spanContextLength);
+      offset += spanContextLength;
+    }
 
+    bodyDecoder.limit(offset);
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
             + bodyDecoder.limit()
