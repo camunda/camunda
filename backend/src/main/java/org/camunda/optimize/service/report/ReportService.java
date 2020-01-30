@@ -14,6 +14,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
@@ -41,8 +42,9 @@ import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluation
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeReportConflictException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeScopeComplianceException;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
@@ -65,6 +67,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractProcessDefinitionName;
 import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extractDecisionDefinitionName;
 
@@ -104,7 +109,7 @@ public class ReportService implements CollectionReferencingService {
 
   public IdDto createNewSingleDecisionReport(final String userId,
                                              final SingleDecisionReportDefinitionDto definitionDto) {
-    compliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
+    ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
     return createReport(
       userId, definitionDto, DecisionReportDataDto::new, reportWriter::createNewSingleDecisionReport
     );
@@ -112,7 +117,7 @@ public class ReportService implements CollectionReferencingService {
 
   public IdDto createNewSingleProcessReport(final String userId,
                                             final SingleProcessReportDefinitionDto definitionDto) {
-    compliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
+    ensureCompliesWithCollectionScope(userId, definitionDto.getCollectionId(), definitionDto);
     return createReport(
       userId, definitionDto, ProcessReportDataDto::new, reportWriter::createNewSingleProcessReport
     );
@@ -312,7 +317,7 @@ public class ReportService implements CollectionReferencingService {
       reportId, userId
     );
     getReportWithEditAuthorization(userId, currentReportVersion);
-    compliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
+    ensureCompliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
 
     final SingleProcessReportDefinitionUpdateDto reportUpdate = convertToSingleProcessReportUpdate(
       updatedReport, userId
@@ -337,7 +342,7 @@ public class ReportService implements CollectionReferencingService {
     final SingleDecisionReportDefinitionDto currentReportVersion =
       getSingleDecisionReportDefinition(reportId, userId);
     getReportWithEditAuthorization(userId, currentReportVersion);
-    compliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
+    ensureCompliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
 
     final SingleDecisionReportDefinitionUpdateDto reportUpdate = convertToSingleDecisionReportUpdate(
       updatedReport, userId
@@ -429,7 +434,7 @@ public class ReportService implements CollectionReferencingService {
         case PROCESS:
           SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
             (SingleProcessReportDefinitionDto) originalReportDefinition;
-          compliesWithCollectionScope(
+          ensureCompliesWithCollectionScope(
             userId,
             newCollectionId,
             singleProcessReportDefinitionDto
@@ -440,7 +445,7 @@ public class ReportService implements CollectionReferencingService {
         case DECISION:
           SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto =
             (SingleDecisionReportDefinitionDto) originalReportDefinition;
-          compliesWithCollectionScope(
+          ensureCompliesWithCollectionScope(
             userId,
             newCollectionId,
             singleDecisionReportDefinitionDto
@@ -484,7 +489,7 @@ public class ReportService implements CollectionReferencingService {
         .getReports()
         .stream()
         .sequential()
-        .peek(report -> compliesWithCollectionScope(userId, newCollectionId, report.getId()))
+        .peek(report -> ensureCompliesWithCollectionScope(userId, newCollectionId, report.getId()))
         .forEach(combinedReportItemDto -> {
           final String originalSubReportId = combinedReportItemDto.getId();
           final String reportName = keepSubReportNames ? reportReader.getReport(originalSubReportId).getName() : null;
@@ -517,17 +522,17 @@ public class ReportService implements CollectionReferencingService {
     return conflictedItems;
   }
 
-  public void compliesWithCollectionScope(final String userId, final String collectionId, final String reportId) {
-    final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
+  public void ensureCompliesWithCollectionScope(final String userId, final String collectionId, final String reportId) {
+    final ReportDefinitionDto<?> reportDefinition = reportReader.getReport(reportId);
     if (!reportDefinition.getCombined()) {
-      SingleReportDefinitionDto singleProcessReportDefinitionDto =
-        (SingleReportDefinitionDto) reportDefinition;
-      compliesWithCollectionScope(userId, collectionId, singleProcessReportDefinitionDto);
+      SingleReportDefinitionDto<?> singleProcessReportDefinitionDto =
+        (SingleReportDefinitionDto<?>) reportDefinition;
+      ensureCompliesWithCollectionScope(userId, collectionId, singleProcessReportDefinitionDto);
     }
   }
 
-  private void compliesWithCollectionScope(final String userId, final String collectionId,
-                                           final SingleReportDefinitionDto<?> definition) {
+  private void ensureCompliesWithCollectionScope(final String userId, final String collectionId,
+                                                 final SingleReportDefinitionDto<?> definition) {
     if (collectionId == null) {
       return;
     }
@@ -535,27 +540,52 @@ public class ReportService implements CollectionReferencingService {
     final CollectionDefinitionDto collection =
       collectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId).getDefinitionDto();
 
-    boolean isAllowedForCollectionScope = isReportAllowedForCollectionScope(definition, collection);
-    if (!isAllowedForCollectionScope) {
+    ScopeComplianceType complianceLevel = getScopeComplianceForReport(definition, collection);
+    if (NON_TENANT_COMPLIANT.equals(complianceLevel)) {
       final ConflictedItemDto conflictedItemDto = new ConflictedItemDto(
         collection.getId(),
         ConflictedItemType.COLLECTION,
         collection.getName()
       );
-      throw new OptimizeScopeComplianceException(ImmutableSet.of(conflictedItemDto));
+      throw new OptimizeNonTenantScopeCompliantException(ImmutableSet.of(conflictedItemDto));
+    } else if (NON_DEFINITION_COMPLIANT.equals(complianceLevel)) {
+      final ConflictedItemDto conflictedItemDto = new ConflictedItemDto(
+        collection.getId(),
+        ConflictedItemType.COLLECTION,
+        collection.getName()
+      );
+      throw new OptimizeNonDefinitionScopeCompliantException(ImmutableSet.of(conflictedItemDto));
     }
   }
 
-  public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> definition,
+  public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> report,
                                                    final CollectionDefinitionDto collection) {
-    final boolean definitionKeyDefined = definition.getData().getDefinitionKey() != null;
-    return collection.getData()
+    return COMPLIANT.equals(getScopeComplianceForReport(report, collection));
+  }
+
+  private ScopeComplianceType getScopeComplianceForReport(final SingleReportDefinitionDto<?> report,
+                                                          final CollectionDefinitionDto collection) {
+    final boolean definitionKeyDefined = report.getData().getDefinitionKey() != null;
+    List<ScopeComplianceType> compliances = collection.getData()
       .getScope()
       .stream()
-      .anyMatch(scope -> {
-        final SingleReportDataDto data = definition.getData();
-        return scope.isInScope(definition.getDefinitionType(), data.getDefinitionKey(), data.getTenantIds());
-      }) || !definitionKeyDefined;
+      .map(scope -> {
+        final SingleReportDataDto data = report.getData();
+        return scope.getComplianceType(report.getDefinitionType(), data.getDefinitionKey(), data.getTenantIds());
+      })
+      .collect(Collectors.toList());
+
+    boolean scopeCompliant =
+      compliances.stream().anyMatch(compliance -> compliance.equals(COMPLIANT)) || !definitionKeyDefined;
+    if (scopeCompliant) {
+      return COMPLIANT;
+    }
+    boolean definitionCompliantButNonTenantCompliant =
+      compliances.stream().anyMatch(compliance -> compliance.equals(ScopeComplianceType.NON_TENANT_COMPLIANT));
+    if (definitionCompliantButNonTenantCompliant) {
+      return ScopeComplianceType.NON_TENANT_COMPLIANT;
+    }
+    return ScopeComplianceType.NON_DEFINITION_COMPLIANT;
   }
 
   private void checkForUpdateConflictsOnSingleProcessDefinition(SingleProcessReportDefinitionDto currentReportVersion,

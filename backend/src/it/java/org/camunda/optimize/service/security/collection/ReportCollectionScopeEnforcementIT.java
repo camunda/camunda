@@ -22,6 +22,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -29,6 +32,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -239,6 +243,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
 
   @SuppressWarnings("unused")
@@ -265,6 +271,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
 
   @SuppressWarnings("unused")
@@ -288,9 +296,11 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonDefinitionScopeCompliantErrorCode());
   }
 
-  private boolean singleReportHasDefinitionKey(ReportDefinitionDto reportDefinition) {
+  private boolean singleReportHasDefinitionKey(ReportDefinitionDto<?> reportDefinition) {
     if (reportDefinition instanceof SingleReportDefinitionDto) {
       return ((SingleReportDataDto) reportDefinition.getData()).getDefinitionKey() != null;
     }
@@ -630,6 +640,14 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       );
       return copyAndMoveReportRequest(privateReportId, scenario.getCollectionIdToAddReportTo());
     };
+  }
+
+  private String getNonTenantScopeCompliantErrorCode() {
+    return new OptimizeNonTenantScopeCompliantException(Collections.emptySet()).getErrorCode();
+  }
+
+  private String getNonDefinitionScopeCompliantErrorCode() {
+    return new OptimizeNonDefinitionScopeCompliantException(Collections.emptySet()).getErrorCode();
   }
 
   @Data

@@ -17,6 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
+import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
+
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
@@ -59,12 +63,25 @@ public class CollectionScopeEntryDto {
     return Optional.ofNullable(id).orElse(convertTypeAndKeyToScopeEntryId(definitionType, definitionKey));
   }
 
-  public boolean isInScope(final DefinitionType definitionType,
-                           final String definitionKey,
-                           final List<String> tenants) {
+  public ScopeComplianceType getComplianceType(final DefinitionType definitionType,
+                                               final String definitionKey,
+                                               final List<String> tenants) {
+    if (!isInDefinitionScope(definitionType, definitionKey)) {
+      return NON_DEFINITION_COMPLIANT;
+    } else if (!isInTenantScope(tenants)) {
+      return NON_TENANT_COMPLIANT;
+    }
+    return COMPLIANT;
+  }
+
+  private boolean isInDefinitionScope(final DefinitionType definitionType,
+                                      final String definitionKey) {
     return this.definitionType.equals(definitionType) &&
-      this.definitionKey.equals(definitionKey) &&
-      Optional.ofNullable(tenants)
+      this.definitionKey.equals(definitionKey);
+  }
+
+  private boolean isInTenantScope(final List<String> tenants) {
+    return Optional.ofNullable(tenants)
       .map(tenantList -> this.tenants.containsAll(tenantList))
       .orElse(false);
   }

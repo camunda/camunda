@@ -9,17 +9,19 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 
 import java.util.Set;
 
-public class OptimizeScopeComplianceException extends OptimizeConflictException {
+public class OptimizeNonTenantScopeCompliantException extends OptimizeConflictException {
 
-  public OptimizeScopeComplianceException(Set<ConflictedItemDto> conflictedItems) {
+  public OptimizeNonTenantScopeCompliantException(Set<ConflictedItemDto> conflictedItems) {
     super(
-      "Operation cannot be executed as entity is non-compliant with the collections data source.",
+      "Could not apply action due to conflicts with the collection data source. The definition for the report is " +
+        "available in the data source yet at least one tenant defined in the report is not available in the data " +
+        "source.",
       conflictedItems
     );
   }
 
   @Override
   public String getErrorCode() {
-    return "nonCompliantConflict";
+    return "nonTenantScopeCompliantConflict";
   }
 }

@@ -174,7 +174,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       .stream()
       .map(ReportLocationDto::getId)
       .filter(IdGenerator::isValidId)
-      .forEach(reportId -> reportService.compliesWithCollectionScope(userId, collectionId, reportId));
+      .forEach(reportId -> reportService.ensureCompliesWithCollectionScope(userId, collectionId, reportId));
   }
 
   public AuthorizedDashboardDefinitionDto getDashboardDefinition(final String dashboardId,
