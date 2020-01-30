@@ -31,7 +31,6 @@ function FiltersPanel(props) {
       maxWidth={328}
       label="Filters"
       renderHeader={renderHeader}
-      renderFooter={() => <div></div>}
       panelPosition={PANEL_POSITION.LEFT}
     >
       {props.children}

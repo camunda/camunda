@@ -33,13 +33,14 @@ export const FilterSection = styled.div`
 `;
 
 export const SplitPane = styled(SplitPaneComponent)`
+  border-radius: 3px 0 0 0;
   width: 100%;
 `;
 
 export const Pane = styled(SplitPane.Pane)`
-  border-radius: 3px 3px 0 0;
+  border-radius: inherit;
 `;
 
 export const PaneHeader = styled(SplitPane.Pane.Header)`
-  border-radius: 3px 3px 0 0;
+  border-radius: inherit;
 `;

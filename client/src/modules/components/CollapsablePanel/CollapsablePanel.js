@@ -41,23 +41,32 @@ function CollapsablePanel({
     <Styled.Collapsable
       {...props}
       isCollapsed={isCollapsed}
-      position={panelPosition}
+      panelPosition={panelPosition}
       isOverlay={isOverlay}
     >
       <Styled.CollapsedPanel
         isCollapsed={isCollapsed}
+        panelPosition={panelPosition}
         transitionTimeout={TRANSITION_TIMEOUT}
       >
-        <Styled.VerticalButton onClick={expand} label={label}>
-          {renderHeader ? renderHeader() : ''}
-        </Styled.VerticalButton>
+        <Styled.ExpandButton
+          title={`Expand ${label}`}
+          onClick={expand}
+          panelPosition={panelPosition}
+        >
+          <Styled.Vertical>
+            <span>{label}</span>
+            {renderHeader ? renderHeader() : ''}
+          </Styled.Vertical>
+        </Styled.ExpandButton>
       </Styled.CollapsedPanel>
 
       <Styled.ExpandedPanel
         isCollapsed={isCollapsed}
+        panelPosition={panelPosition}
         transitionTimeout={TRANSITION_TIMEOUT}
       >
-        <Styled.Header position={panelPosition}>
+        <Styled.Header panelPosition={panelPosition}>
           <Styled.CollapseButton
             direction={buttonDirection}
             isExpanded={true}
