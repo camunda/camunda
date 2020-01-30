@@ -15,6 +15,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
@@ -437,6 +438,10 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public EventIndexRolloverService getEventIndexRolloverService() {
     return getOptimize().getEventIndexRolloverService();
+  }
+
+  public LocalizationService getLocalizationService() {
+    return getOptimize().getLocalizationService();
   }
 
   public ObjectMapper getObjectMapper() {

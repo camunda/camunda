@@ -356,7 +356,8 @@
       "includeTableColumn": "Table columns to include",
       "showGradientBars": "Show Gradient Bars"
     },
-    "missingVariableValue": "null / undefined"
+    "missingVariableValue": "null / undefined",
+    "missingAssignee": "Unassigned"
   },
   "dashboard": {
     "label": "Dashboard",

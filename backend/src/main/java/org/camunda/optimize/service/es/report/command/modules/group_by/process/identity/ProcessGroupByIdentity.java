@@ -7,9 +7,10 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -41,17 +42,20 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 @RequiredArgsConstructor
 public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDataDto> {
 
-  private static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
-  private static final String USER_TASKS_AGGREGATION = "userTasks";
-  private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
+  protected static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
+  protected static final String USER_TASKS_AGGREGATION = "userTasks";
+  protected static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
+  // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask names
+  private static final String GROUP_BY_IDENTITY_MISSING_KEY = "unassignedUserTasks___";
 
-  private final ConfigurationService configurationService;
+  protected final ConfigurationService configurationService;
+  protected final LocalizationService localizationService;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
-    final NestedAggregationBuilder groupByAssigneeAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
+    final NestedAggregationBuilder groupByIdentityAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
         filter(
           FILTERED_USER_TASKS_AGGREGATION,
@@ -67,10 +71,11 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
               .size(configurationService.getEsAggregationBucketLimit())
               .order(BucketOrder.key(true))
               .field(USER_TASKS + "." + getIdentityField())
-              .subAggregation(distributedByPart.createAggregation(context))
-          )
+              .missing(GROUP_BY_IDENTITY_MISSING_KEY)
+              .subAggregation(distributedByPart.createAggregation(context)))
       );
-    return Collections.singletonList(groupByAssigneeAggregation);
+
+    return Collections.singletonList(groupByIdentityAggregation);
   }
 
   protected abstract String getIdentityField();
@@ -84,12 +89,8 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byIdentityAggregation = filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
 
-    final List<GroupByResult> groupedData = new ArrayList<>();
-    for (Terms.Bucket identityBucket : byIdentityAggregation.getBuckets()) {
-      final List<DistributedByResult> singleResult =
-        distributedByPart.retrieveResult(response, identityBucket.getAggregations(), context);
-      groupedData.add(GroupByResult.createGroupByResult(identityBucket.getKeyAsString(), singleResult));
-    }
+    final List<GroupByResult> groupedData =
+      getGroupedDataFromAggregations(response, filteredUserTasks, context);
 
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(byIdentityAggregation.getSumOfOtherDocCounts() == 0L);
@@ -100,4 +101,40 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     );
   }
 
+  private List<CompositeCommandResult.GroupByResult> getGroupedDataFromAggregations(final SearchResponse response,
+                                                                                    final Filter filteredUserTasks,
+                                                                                    final ExecutionContext<ProcessReportDataDto> context) {
+    List<CompositeCommandResult.GroupByResult> groupByResults = new ArrayList<>();
+    groupByResults.addAll(getByIdentityAggregationResults(response, filteredUserTasks, context));
+    return groupByResults;
+  }
+
+  private List<GroupByResult> getByIdentityAggregationResults(final SearchResponse response,
+                                                              final Filter filteredUserTasks,
+                                                              final ExecutionContext<ProcessReportDataDto> context) {
+    final Terms byIdentityAggregation = filteredUserTasks.getAggregations().get(GROUP_BY_IDENTITY_TERMS_AGGREGATION);
+    final List<GroupByResult> groupedData = new ArrayList<>();
+    for (Terms.Bucket identityBucket : byIdentityAggregation.getBuckets()) {
+      final List<DistributedByResult> singleResult =
+        distributedByPart.retrieveResult(response, identityBucket.getAggregations(), context);
+
+      if (identityBucket.getKeyAsString().equals(GROUP_BY_IDENTITY_MISSING_KEY)) {
+        // ensure missing identity bucket is excluded if its empty
+        final boolean resultIsEmpty = singleResult.isEmpty()
+          || singleResult.stream()
+          .allMatch(
+            result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber().equals(0L)
+          );
+        if (!resultIsEmpty) {
+          groupedData.add(GroupByResult.createGroupByResult(
+            localizationService.getDefaultLocaleMessageForMissingAssigneeLabel(),
+            singleResult
+          ));
+        }
+      } else {
+        groupedData.add(GroupByResult.createGroupByResult(identityBucket.getKeyAsString(), singleResult));
+      }
+    }
+    return groupedData;
+  }
 }

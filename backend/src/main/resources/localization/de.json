@@ -356,7 +356,8 @@
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
       "showGradientBars": "Verlaufsbalken anzeigen"
     },
-    "missingVariableValue": "nicht definiert"
+    "missingVariableValue": "nicht definiert",
+    "missingAssignee": "Nicht zugewiesen"
   },
   "dashboard": {
     "label": "Dashboard",

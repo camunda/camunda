@@ -36,6 +36,8 @@ public class LocalizationService implements ConfigurationReloadable {
   private static final String JSON_FILE_EXTENSION = "json";
   private static final String MARKDOWN_FILE_EXTENSION = "md";
   private static final String LOCALIZATION_FILE_PREFIX_WHATSNEW = "whatsnew";
+  private static final String REPORT_FIELD = "report";
+  private static final String MISSING_ASSIGNEE_FIELD = "missingAssignee";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final ConfigurationService configurationService;
@@ -56,6 +58,17 @@ public class LocalizationService implements ConfigurationReloadable {
       return getMessageForApiErrorCode(configurationService.getFallbackLocale(), code);
     } catch (Exception e) {
       return String.format("Failed to localize error message for code [%s]", code);
+    }
+  }
+
+  public String getDefaultLocaleMessageForMissingAssigneeLabel() {
+    try {
+      return getMessageForCode(configurationService.getFallbackLocale(), REPORT_FIELD, MISSING_ASSIGNEE_FIELD);
+    } catch (Exception e) {
+      return String.format(
+        "Failed to localize label for missing assignee field with localization code: %s",
+        MISSING_ASSIGNEE_FIELD
+      );
     }
   }
 

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -172,6 +173,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public EventIndexRolloverService getEventIndexRolloverService() {
     return getApplicationContext().getBean(EventIndexRolloverService.class);
+  }
+
+  public LocalizationService getLocalizationService() {
+    return getApplicationContext().getBean(LocalizationService.class);
   }
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {

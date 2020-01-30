@@ -12,8 +12,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -22,6 +20,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -76,7 +76,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -115,14 +116,59 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   }
 
   @Test
+  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishUserTask1AWithDefaultAndLeaveTasks2BUnassigned(processInstanceDto);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      evaluateHyperMapReport(reportData);
+
+    // then
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
+    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
+    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
+
+    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(DEFAULT_USERNAME)
+        .distributedByContains(USER_TASK_1, 1L)
+        .distributedByContains(USER_TASK_2, null)
+        .distributedByContains(USER_TASK_A, 1L)
+        .distributedByContains(USER_TASK_B, null)
+      .groupByContains(getLocalisedUnassignedLabel())
+        .distributedByContains(USER_TASK_1, null)
+        .distributedByContains(USER_TASK_2, 1L)
+        .distributedByContains(USER_TASK_A, null)
+        .distributedByContains(USER_TASK_B, 1L)
+      .doAssert(actualResult);
+    // @formatter:on
+  }
+
+  @Test
   public void reportEvaluationForSeveralProcesses() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto2);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    finishUserTask1AWithDefaultAndLeaveTasks2BUnassigned(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -142,9 +188,14 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
         .distributedByContains(USER_TASK_B, null)
       .groupByContains(SECOND_USER)
         .distributedByContains(USER_TASK_1, null)
-        .distributedByContains(USER_TASK_2, 2L)
+        .distributedByContains(USER_TASK_2, 1L)
         .distributedByContains(USER_TASK_A, null)
-        .distributedByContains(USER_TASK_B, 2L)
+        .distributedByContains(USER_TASK_B, 1L)
+      .groupByContains(getLocalisedUnassignedLabel())
+        .distributedByContains(USER_TASK_1, null)
+        .distributedByContains(USER_TASK_2, 1L)
+        .distributedByContains(USER_TASK_A, null)
+        .distributedByContains(USER_TASK_B, 1L)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -154,10 +205,12 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // given
     final ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -188,11 +241,20 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     // finish first task with default user
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
     // finish second task with second user
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER,
+      SECOND_USERS_PASSWORD,
+      processInstanceDto1.getId()
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -220,13 +282,31 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     // finish first task with default user
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER,
+      SECOND_USERS_PASSWORD,
+      processInstanceDto2.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER,
+      SECOND_USERS_PASSWORD,
+      processInstanceDto2.getId()
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -255,13 +335,31 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     // finish first task with default user
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER,
+      SECOND_USERS_PASSWORD,
+      processInstanceDto2.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER,
+      SECOND_USERS_PASSWORD,
+      processInstanceDto2.getId()
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -290,13 +388,26 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    // finish first task with default user
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto2.getId());
-
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    // finish first and second task with default user
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto1.getId()
+    );
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto2.getId()
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -313,6 +424,9 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
       .groupByContains(DEFAULT_USERNAME)
         .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .groupByContains(getLocalisedUnassignedLabel())
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -325,9 +439,14 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
-    final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto3.getId());
+    final ProcessDefinitionEngineDto processDefinition2 = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(
+      processDefinition2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto3.getId()
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -349,7 +468,11 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(DEFAULT_USERNAME)
-        .distributedByContains(USER_TASK_1, 1L)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .groupByContains(getLocalisedUnassignedLabel())
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
       .doAssert(actualResult2);
     // @formatter:on
   }
@@ -417,12 +540,18 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto.getId()
+    );
     engineIntegrationExtension.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId());
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     // claim first running task
     engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
 
@@ -451,10 +580,12 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
         .done();
     // @formatter:on
 
-    final ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      processWithMultiInstanceUserTask
-    );
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        processWithMultiInstanceUserTask
+      );
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -468,7 +599,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(DEFAULT_USERNAME)
-        .distributedByContains(USER_TASK_1, 2L)
+      .distributedByContains(USER_TASK_1, 2L)
       .doAssert(actualResult);
   }
 
@@ -478,7 +609,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
 
     for (int i = 0; i < 11; i++) {
-      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+        processDefinition.getId());
       engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     }
 
@@ -493,7 +625,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(11L)
       .groupByContains(DEFAULT_USERNAME)
-        .distributedByContains(USER_TASK_1, 11L)
+      .distributedByContains(USER_TASK_1, 11L)
       .doAssert(actualResult);
   }
 
@@ -501,11 +633,13 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   public void filterInReport() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    final OffsetDateTime processStartTime = engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
-      .getStartTime();
+    final OffsetDateTime processStartTime =
+      engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
+        .getStartTime();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -529,7 +663,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .groupByContains(DEFAULT_USERNAME)
-        .distributedByContains(USER_TASK_1, 1L)
+      .distributedByContains(USER_TASK_1, 1L)
       .doAssert(actualResult);
   }
 
@@ -589,11 +723,28 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
   }
 
-  private void finishUserTask1AWithDefaultAndTaskB2WithSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
+  private void finishUserTask1AWithDefaultAndLeaveTasks2BUnassigned(final ProcessInstanceEngineDto processInstanceDto) {
     // finish user task 1 and A with default user
-    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto.getId()
+    );
+  }
+
+  private void finishUserTask1AWithDefaultAndTaskB2WithSecondUser(final ProcessInstanceEngineDto processInstanceDto) {
+    // finish user task 1 and A with default user
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto.getId()
+    );
     // finish user task 2 and B with second user
-    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(
+      SECOND_USER,
+      SECOND_USERS_PASSWORD,
+      processInstanceDto.getId()
+    );
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
@@ -627,9 +778,9 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1)
-        .name(USER_TASK_1_NAME)
+      .name(USER_TASK_1_NAME)
       .userTask(USER_TASK_2)
-        .name(USER_TASK_2_NAME)
+      .name(USER_TASK_2_NAME)
       .endEvent(END_EVENT)
       .done();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
@@ -639,15 +790,19 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
       .parallelGateway()
-        .userTask(USER_TASK_1)
-        .userTask(USER_TASK_2)
-        .endEvent()
+      .userTask(USER_TASK_1)
+      .userTask(USER_TASK_2)
+      .endEvent()
       .moveToLastGateway()
-        .userTask(USER_TASK_A)
-        .userTask(USER_TASK_B)
-        .endEvent()
+      .userTask(USER_TASK_A)
+      .userTask(USER_TASK_B)
+      .endEvent()
       .done();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
+  private String getLocalisedUnassignedLabel() {
+    return embeddedOptimizeExtension.getLocalizationService()
+      .getDefaultLocaleMessageForMissingAssigneeLabel();
+  }
 }

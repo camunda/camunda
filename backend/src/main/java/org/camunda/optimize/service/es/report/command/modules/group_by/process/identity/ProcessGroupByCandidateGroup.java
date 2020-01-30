@@ -7,21 +7,21 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByCandidateGroup extends ProcessGroupByIdentity {
 
-
-  public ProcessGroupByCandidateGroup(final ConfigurationService configurationService) {
-    super(configurationService);
+  public ProcessGroupByCandidateGroup(final ConfigurationService configurationService,
+                                      final LocalizationService localizationService) {
+    super(configurationService, localizationService);
   }
 
   @Override

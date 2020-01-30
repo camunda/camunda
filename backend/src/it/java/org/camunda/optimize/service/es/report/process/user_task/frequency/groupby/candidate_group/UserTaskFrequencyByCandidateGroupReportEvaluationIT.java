@@ -12,8 +12,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -21,6 +19,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -109,6 +109,46 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   }
 
   @Test
+  public void reportEvaluationForOneProcessWithUnassignedTasks() {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+
+    // when
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      evaluateMapReport(reportData);
+
+    // then
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
+    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
+    assertThat(resultReportDataDto.getView(), is(notNullValue()));
+    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
+    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
+
+    final ReportMapResultDto result = evaluationResponse.getResult();
+    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData().size(), is(2));
+    assertThat(getExecutedFlowNodeCount(result), is(2L));
+    assertThat(
+      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(1L)
+    );
+    assertThat(
+      result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
+      is(1L)
+    );
+    assertThat(result.getInstanceCount(), is(1L));
+  }
+
+  @Test
   public void reportEvaluationForMultipleCandidateGroups() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -157,7 +197,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
+    finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -167,15 +207,19 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(3L));
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(2L)
     );
     assertThat(
       result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(2L)
+      is(1L)
+    );
+    assertThat(
+      result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
+      is(1L)
     );
     assertThat(result.getInstanceCount(), is(2L));
   }
@@ -221,7 +265,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
+    finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -233,12 +277,14 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
+    assertThat(resultData.size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(3L));
+    final List<String> resultKeys = resultData.stream()
+      .map(entry -> entry.getKey().toLowerCase())
+      .collect(Collectors.toList());
     assertThat(
       resultKeys,
-      // expect ascending order
+      // expect descending order ignoring case
       contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
@@ -254,7 +300,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
+    finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -266,18 +312,17 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
+    assertThat(resultData.size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(3L));
     final List<String> resultLabels = resultData.stream()
-      .map(MapResultEntryDto::getLabel)
+      .map(entry -> entry.getLabel().toLowerCase())
       .collect(Collectors.toList());
     assertThat(
       resultLabels,
-      // expect ascending order
+      // expect descending order ignoring case
       contains(resultLabels.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
-
 
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
@@ -290,7 +335,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto2.getId());
+    finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto2);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -301,15 +346,15 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
+    assertThat(result.getData().size(), is(3));
+    assertThat(getExecutedFlowNodeCount(result), is(3L));
     assertCorrectValueOrdering(result);
   }
 
   @Test
   public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
-    final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition1 = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition1.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
@@ -317,10 +362,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       processDefinition1.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
 
-    final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition2 = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(
       processDefinition2.getId());
-    finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto3);
+    finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(processInstanceDto3);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -332,17 +377,25 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result2 = evaluateMapReport(reportData2).getResult();
 
     // then
-    assertThat(result1.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result1), is(1L));
+    assertThat(result1.getData().size(), is(2));
+    assertThat(getExecutedFlowNodeCount(result1), is(2L));
     assertThat(
       result1.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
       is(2L)
     );
+    assertThat(
+      result1.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
+      is(2L)
+    );
 
-    assertThat(result2.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result2), is(1L));
+    assertThat(result2.getData().size(), is(2));
+    assertThat(getExecutedFlowNodeCount(result2), is(2L));
     assertThat(
       result2.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
+      is(1L)
+    );
+    assertThat(
+      result2.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
       is(1L)
     );
   }
@@ -462,8 +515,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     final ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      processWithMultiInstanceUserTask
-    );
+        processWithMultiInstanceUserTask
+      );
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
@@ -522,7 +575,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
 
     final OffsetDateTime processStartTime = engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto
-                                                                                                        .getId())
+                                                                                                    .getId())
       .getStartTime();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
@@ -609,13 +662,19 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     return ProcessFilterBuilder.filter().fixedStartDate().start(startDate).end(endDate).add().buildList();
   }
 
-  private void finishTwoUserTasksOneWithFirstAndSecondGroup(final ProcessInstanceEngineDto processInstanceDto1) {
+  private void finishTwoUserTasksOneWithFirstAndSecondGroup(final ProcessInstanceEngineDto processInstanceDto) {
     // finish first task
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     // finish second task with
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+  }
+
+  private void finishOneUserTaskOneWithFirstAndLeaveSecondUnassigned(final ProcessInstanceEngineDto processInstanceDto) {
+    // finish first task
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
@@ -679,6 +738,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     for (int i = resultData.size() - 1; i > getExecutedFlowNodeCount(result) - 1; i--) {
       assertThat(bucketValues.get(i), nullValue());
     }
+  }
+
+  private String getLocalisedUnassignedLabel() {
+    return embeddedOptimizeExtension.getLocalizationService()
+      .getDefaultLocaleMessageForMissingAssigneeLabel();
   }
 
 }

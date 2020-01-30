@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -18,9 +19,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByAssignee extends ProcessGroupByIdentity {
 
-
-  public ProcessGroupByAssignee(final ConfigurationService configurationService) {
-    super(configurationService);
+  public ProcessGroupByAssignee(final ConfigurationService configurationService,
+                                final LocalizationService localizationService) {
+    super(configurationService, localizationService);
   }
 
   @Override
@@ -32,5 +33,4 @@ public class ProcessGroupByAssignee extends ProcessGroupByIdentity {
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
     reportData.setGroupBy(new AssigneeGroupByDto());
   }
-
 }
