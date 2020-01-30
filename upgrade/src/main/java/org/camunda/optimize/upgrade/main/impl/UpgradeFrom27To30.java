@@ -12,9 +12,9 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
-public class UpgradeFrom27To28 extends UpgradeProcedure {
+public class UpgradeFrom27To30 extends UpgradeProcedure {
   private static final String FROM_VERSION = "2.7.0";
-  private static final String TO_VERSION = "2.8.0";
+  private static final String TO_VERSION = "3.0.0";
 
   @Override
   public String getInitialVersion() {
