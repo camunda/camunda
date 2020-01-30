@@ -66,7 +66,9 @@ exports[`should match snapshot 1`] = `
     />
   </Themed(BPMNDiagramErrorHandler)>
   <DeleterErrorHandler
+    checkConflicts={[Function]}
     deleteEntity={[Function]}
+    descriptionText="The '' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections."
     entity={null}
     onClose={[Function]}
     onDelete={[MockFunction]}

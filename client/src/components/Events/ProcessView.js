@@ -15,6 +15,7 @@ import {showError, addNotification} from 'notifications';
 import ProcessRenderer from './ProcessRenderer';
 import PublishModal from './PublishModal';
 import {removeProcess, cancelPublish, loadProcess} from './service';
+import {checkDeleteConflict} from 'services';
 
 import './ProcessView.scss';
 
@@ -134,10 +135,14 @@ export default withErrorHandling(
           </BPMNDiagram>
           <Deleter
             type="process"
+            descriptionText={t('events.deleteWarning', {
+              name: (deleting && deleting.name) || ''
+            })}
             entity={deleting}
             onDelete={this.props.onDelete}
             onClose={() => this.setState({deleting: null})}
             deleteEntity={({id}) => removeProcess(id)}
+            checkConflicts={({id}) => checkDeleteConflict(id, 'eventBasedProcess')}
           />
           <PublishModal
             id={publishing}
