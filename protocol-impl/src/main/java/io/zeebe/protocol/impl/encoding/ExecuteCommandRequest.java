@@ -123,7 +123,11 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
     final int frameEnd = offset + length;
     headerDecoder.wrap(buffer, offset);
-    bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
+    bodyDecoder.wrap(
+        buffer,
+        offset + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
 
     partitionId = bodyDecoder.partitionId();
     key = bodyDecoder.key();
