@@ -97,7 +97,9 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
   @Override
   public void injectTrace(final Tracer tracer) {
-    tracer.inject(activeSpan.context(), Builtin.BINARY, request.getSpanContextAdapter());
+    if (activeSpan != null) {
+      tracer.inject(activeSpan.context(), Builtin.BINARY, request.getSpanContextAdapter());
+    }
   }
 
   @Override

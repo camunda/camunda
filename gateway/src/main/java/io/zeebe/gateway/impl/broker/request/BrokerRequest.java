@@ -74,10 +74,6 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   public abstract void injectTrace(Tracer tracer);
 
-  public Span getActiveSpan() {
-    return activeSpan;
-  }
-
   public BrokerResponse<T> getResponse(final DirectBuffer responseBuffer) {
     try {
       if (isValidResponse(responseBuffer)) {
