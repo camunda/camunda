@@ -31,7 +31,7 @@ class CollapsablePanelProvider extends React.Component {
 
   toggleFilters = () => this.toggle('isFiltersCollapsed');
 
-  toggledOperations = () => this.toggle('isOperationsCollapsed');
+  toggleOperations = () => this.toggle('isOperationsCollapsed');
 
   expand = target => this.setState({[target]: false});
 
@@ -43,7 +43,7 @@ class CollapsablePanelProvider extends React.Component {
     const contextValue = {
       ...this.state,
       toggleFilters: this.toggleFilters,
-      toggledOperations: this.toggledOperations,
+      toggleOperations: this.toggleOperations,
       expandFilters: this.expandFilters,
       expandOperations: this.expandOperations
     };

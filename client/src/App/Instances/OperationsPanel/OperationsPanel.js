@@ -5,19 +5,28 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
+
 import {PANEL_POSITION} from 'modules/constants';
-
 import CollapsablePanel from 'modules/components/CollapsablePanel';
+import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 
-export default function OperationsPanel() {
+function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
   return (
     <CollapsablePanel
       label="Operations"
       panelPosition={PANEL_POSITION.RIGHT}
-      maxWidth={350}
+      maxWidth={478}
       isOverlay
-    >
-      <div style={{padding: '20px'}}>Body</div>
-    </CollapsablePanel>
+      isCollapsed={isOperationsCollapsed}
+      toggle={toggleOperations}
+    />
   );
 }
+
+OperationsPanel.propTypes = {
+  isOperationsCollapsed: PropTypes.bool.isRequired,
+  toggleOperations: PropTypes.func.isRequired
+};
+
+export default withCollapsablePanel(OperationsPanel);

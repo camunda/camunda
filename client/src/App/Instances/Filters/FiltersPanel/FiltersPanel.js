@@ -32,6 +32,8 @@ function FiltersPanel(props) {
       label="Filters"
       renderHeader={renderHeader}
       panelPosition={PANEL_POSITION.LEFT}
+      isCollapsed={props.isFiltersCollapsed}
+      toggle={props.toggleFilters}
     >
       {props.children}
     </CollapsablePanel>

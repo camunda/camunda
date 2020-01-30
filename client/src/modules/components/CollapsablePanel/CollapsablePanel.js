@@ -4,12 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useRef, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
-import usePrevious from 'modules/hooks/usePrevious';
 import {PANEL_POSITION} from 'modules/constants';
-
+import usePrevious from 'modules/hooks/usePrevious';
 import Panel from 'modules/components/Panel';
 import * as Styled from './styled';
 import {DIRECTION} from '../../constants';
@@ -23,23 +22,16 @@ function CollapsablePanel({
   renderFooter,
   isOverlay,
   children,
+  isCollapsed,
+  toggle,
   ...props
 }) {
-  const [isCollapsed, setCollapsed] = useState(true);
-
   const buttonDirection =
     panelPosition === PANEL_POSITION.RIGHT ? DIRECTION.RIGHT : DIRECTION.LEFT;
 
-  const expand = () => {
-    setCollapsed(false);
-  };
-
-  const collapse = () => {
-    setCollapsed(true);
-  };
-
   const expandButtonRef = useRef(null);
   const collapseButtonRef = useRef(null);
+
   const prevIsCollapsed = usePrevious(isCollapsed);
 
   useEffect(() => {
@@ -67,7 +59,7 @@ function CollapsablePanel({
         <Styled.ExpandButton
           ref={expandButtonRef}
           title={`Expand ${label}`}
-          onClick={expand}
+          onClick={toggle}
           panelPosition={panelPosition}
         >
           <Styled.Vertical>
@@ -88,7 +80,7 @@ function CollapsablePanel({
             direction={buttonDirection}
             isExpanded={true}
             title="Collapse Filters"
-            onClick={collapse}
+            onClick={toggle}
           />
           {label}
           {renderHeader ? renderHeader() : ''}
@@ -107,6 +99,8 @@ CollapsablePanel.propTypes = {
   renderHeader: PropTypes.func,
   renderFooter: PropTypes.func,
   isOverlay: PropTypes.bool,
+  toggle: PropTypes.func.isRequired,
+  isCollapsed: PropTypes.bool.isRequired,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
