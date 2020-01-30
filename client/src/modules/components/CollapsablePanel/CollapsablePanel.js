@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import PropTypes from 'prop-types';
 
+import usePrevious from 'modules/hooks/usePrevious';
 import {PANEL_POSITION} from 'modules/constants';
 
 import Panel from 'modules/components/Panel';
@@ -37,6 +38,20 @@ function CollapsablePanel({
     setCollapsed(true);
   };
 
+  const expandButtonRef = useRef(null);
+  const collapseButtonRef = useRef(null);
+  const prevIsCollapsed = usePrevious(isCollapsed);
+
+  useEffect(() => {
+    if (prevIsCollapsed !== isCollapsed) {
+      if (isCollapsed) {
+        setTimeout(() => expandButtonRef.current.focus(), TRANSITION_TIMEOUT);
+      } else {
+        setTimeout(() => collapseButtonRef.current.focus(), TRANSITION_TIMEOUT);
+      }
+    }
+  }, [isCollapsed, prevIsCollapsed]);
+
   return (
     <Styled.Collapsable
       {...props}
@@ -50,6 +65,7 @@ function CollapsablePanel({
         transitionTimeout={TRANSITION_TIMEOUT}
       >
         <Styled.ExpandButton
+          ref={expandButtonRef}
           title={`Expand ${label}`}
           onClick={expand}
           panelPosition={panelPosition}
@@ -68,6 +84,7 @@ function CollapsablePanel({
       >
         <Styled.Header panelPosition={panelPosition}>
           <Styled.CollapseButton
+            ref={collapseButtonRef}
             direction={buttonDirection}
             isExpanded={true}
             title="Collapse Filters"

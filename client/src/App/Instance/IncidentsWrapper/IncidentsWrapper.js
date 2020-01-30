@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useMemo, useRef} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {isEqual} from 'lodash';
 
 import PropTypes from 'prop-types';
@@ -13,6 +13,7 @@ import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
 import IncidentsFilter from './IncidentsFilter';
 import {SORT_ORDER} from 'modules/constants';
+import usePrevious from 'modules/hooks/usePrevious';
 import {sortData} from './service';
 
 import * as Styled from './styled';
@@ -51,14 +52,6 @@ function IncidentsWrapper(props) {
       setSelectedFlowNodes(updateFilters(selectedFlowNodes, flowNodes));
     }
   }, [prevFlowNodes, flowNodes, selectedFlowNodes]);
-
-  function usePrevious(value) {
-    const ref = useRef();
-    useEffect(() => {
-      ref.current = value;
-    });
-    return ref.current;
-  }
 
   function didFiltersChange(previous, current) {
     return previous && !isEqual([...current.keys()], [...previous.keys()]);
