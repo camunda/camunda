@@ -122,36 +122,26 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     reset();
 
     final int frameEnd = offset + length;
-
     headerDecoder.wrap(buffer, offset);
-
-    offset += headerDecoder.encodedLength();
-
-    bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
+    bodyDecoder.wrap(buffer, offset + headerDecoder.encodedLength(), headerDecoder.blockLength(), headerDecoder.version());
 
     partitionId = bodyDecoder.partitionId();
     key = bodyDecoder.key();
     valueType = bodyDecoder.valueType();
     intent = Intent.fromProtocolValue(valueType, bodyDecoder.intent());
 
-    offset += bodyDecoder.sbeBlockLength();
-
-    final int valueLength = bodyDecoder.valueLength();
-    offset += ExecuteCommandRequestDecoder.valueHeaderLength();
-
-    value.wrap(buffer, offset, valueLength);
-    offset += valueLength;
-    bodyDecoder.limit(offset);
-
-    final int spanContextLength = bodyDecoder.spanContextLength();
-    offset += ExecuteCommandRequestDecoder.spanContextHeaderLength();
-
-    if (spanContextLength > 0) {
-      spanContext.wrap(buffer, offset, spanContextLength);
-      offset += spanContextLength;
+    if (bodyDecoder.limit() < frameEnd && bodyDecoder.valueLength() > 0) {
+      bodyDecoder.wrapValue(value);
+    } else {
+      bodyDecoder.skipValue();
     }
 
-    bodyDecoder.limit(offset);
+    if (bodyDecoder.limit() < frameEnd && bodyDecoder.spanContextLength() > 0) {
+      bodyDecoder.wrapSpanContext(spanContext);
+    } else {
+      bodyDecoder.skipSpanContext();
+    }
+
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
             + bodyDecoder.limit()

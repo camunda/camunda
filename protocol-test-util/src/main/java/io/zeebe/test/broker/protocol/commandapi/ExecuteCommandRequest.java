@@ -36,9 +36,10 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private int partitionId = partitionIdNullValue();
   private long key = keyNullValue();
   private ValueType valueType = ValueType.NULL_VAL;
-  private byte[] encodedCmd;
+  private byte[] encodedCmd = new byte[0];
   private ActorFuture<DirectBuffer> responseFuture;
   private Intent intent = null;
+  private byte[] spanContext = new byte[0];
 
   public ExecuteCommandRequest(
       final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
@@ -80,6 +81,14 @@ public final class ExecuteCommandRequest implements ClientRequest {
     return this;
   }
 
+  public ExecuteCommandRequest spanContext(final BufferWriter spanContext) {
+    final int length = spanContext.getLength();
+    this.spanContext = new byte[length];
+    spanContext.write(new UnsafeBuffer(this.spanContext), 0);
+
+    return this;
+  }
+
   public ExecuteCommandRequest send() {
     if (responseFuture != null) {
       throw new RuntimeException("Cannot send request more than once");
@@ -109,7 +118,9 @@ public final class ExecuteCommandRequest implements ClientRequest {
     return MessageHeaderEncoder.ENCODED_LENGTH
         + ExecuteCommandRequestEncoder.BLOCK_LENGTH
         + ExecuteCommandRequestEncoder.valueHeaderLength()
-        + encodedCmd.length;
+        + encodedCmd.length
+        + ExecuteCommandRequestEncoder.spanContextHeaderLength()
+        + spanContext.length;
   }
 
   @Override
@@ -127,6 +138,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
         .key(key)
         .valueType(valueType)
         .intent(intent.value())
-        .putValue(encodedCmd, 0, encodedCmd.length);
+        .putValue(encodedCmd, 0, encodedCmd.length)
+        .putSpanContext(spanContext, 0, spanContext.length);
   }
 }
