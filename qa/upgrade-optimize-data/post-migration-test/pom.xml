@@ -13,7 +13,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>upgrade-optimize-data</artifactId>
-    <version>3.0.0-alpha1</version>
+    <version>2.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>post-migration-test</artifactId>
@@ -236,9 +236,9 @@
                 <configuration>
                   <target name="Start old Optimize, generate Data and kill Optimize">
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
-                    <property environment="env" />
+                    <property environment="env"/>
                     <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
-                      <isset property="env.MAVEN_SETTINGS_XML" />
+                      <isset property="env.MAVEN_SETTINGS_XML"/>
                     </condition>
 
                       <echo message="Removing the default environment-config so we can overwrite the ES port..." />
@@ -247,32 +247,34 @@
                         <arg value="rm ./environment/environment-config.yaml" />
                       </exec>
 
-                      <echo message="Starting the old Optimize version ${project.previousVersion}" />
-                      <exec dir="${project.build.directory}/${project.previousVersion}/" executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh" spawn="true">
+                      <echo message="Starting the old Optimize version ${project.previousVersion}"/>
+                      <exec dir="${project.build.directory}/${project.previousVersion}/"
+                            executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh"
+                            spawn="true" >
                         <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${old.optimize.elasticsearch.port}" />
                       </exec>
 
-                      <echo message="Wait for Optimize to start..." />
+                      <echo message="Wait for Optimize to start..."/>
                       <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                        <socket server="localhost" port="8090" />
+                        <socket server="localhost" port="8090"/>
                       </waitfor>
 
-                      <echo message="Waiting for Optimize to populate ES..." />
+                      <echo message="Waiting for Optimize to populate ES..."/>
                       <exec executable="/bin/bash">
-                        <arg value="-c" />
-                        <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_count' | jq '.count // 0') -ge 100; do sleep 2; done" />
+                        <arg value="-c"/>
+                        <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_count' | jq '.count // 0') -ge 100; do sleep 2; done"/>
                       </exec>
 
-                      <echo message="Generating optimize data" />
+                      <echo message="Generating optimize data"/>
                       <exec executable="/bin/bash" failonerror="true">
-                        <arg value="-c" />
-                        <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${previous.generator.version}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'" />
+                        <arg value="-c"/>
+                        <arg value="set -o pipefail; java -jar ${project.build.directory}/generators/generator-${previous.generator.version}-jar-with-dependencies.jar | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
                       </exec>
 
-                      <echo message="Killing Optimize ${project.previousVersion}..." />
+                      <echo message="Killing Optimize ${project.previousVersion}..."/>
                       <exec executable="/bin/bash">
-                        <arg value="-c" />
-                        <arg value="pkill -f org.camunda.optimize.Main" />
+                        <arg value="-c"/>
+                        <arg value="pkill -f org.camunda.optimize.Main"/>
                       </exec>
 
                   </target>
@@ -353,23 +355,24 @@
                     <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
                       <arg value="-c" />
                       <arg value="set -o pipefail; ./upgrade/upgrade.sh --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT ${project.version}]: /'" />
-                      <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
+                      <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}"/>
                     </exec>
                     <echo message="Migration successfully completed." />
 
-                    <echo message="Starting Optimize ${project.version}..." />
-                    <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
+                    <echo message="Starting Optimize ${project.version}..."/>
+                    <exec dir="${project.build.directory}/${project.version}/"
+                          executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
                       <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
                     </exec>
                     <echo message="Optimize successfully started." />
 
-                    <echo message="Wait for Optimize to start..." />
+                    <echo message="Wait for Optimize to start..."/>
                     <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="8090" />
+                      <socket server="localhost" port="8090"/>
                     </waitfor>
                     <echo message="Optimize successfully booted up." />
 
-                    <echo message="Waiting for Optimize to populate ES..." />
+                    <echo message="Waiting for Optimize to populate ES..."/>
                     <exec executable="/bin/bash">
                       <arg value="-c" />
                       <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:${new.optimize.elasticsearch.port}/optimize-process-definition/_count' | jq '.count // 0') -eq 0; do sleep 2; done" />
