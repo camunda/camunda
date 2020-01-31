@@ -104,6 +104,12 @@ public final class MessageOutputMappingTest {
         activityVariables(tuple("x", "{\"y\":2}")),
         scopeVariables(tuple("y", "2"))
       },
+      {
+        "{'x': 1, 'y': 2}",
+        mapping(b -> b.zeebeOutput("x", "z.x").zeebeOutput("y", "z.y")),
+        activityVariables(tuple("x", "1"), tuple("y", "2")),
+        scopeVariables(tuple("z", "{\"x\":1,\"y\":2}"))
+      },
       // update variable
       {"{'i': 1}", mapping(b -> {}), activityVariables(), scopeVariables(tuple("i", "1"))},
       {

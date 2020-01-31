@@ -72,6 +72,16 @@ public final class ActivityOutputMappingTest {
         scopeVariables(tuple("z", "{\"y\":2}"))
       },
       {"{'x': {'y': 2}}", mapping(b -> b.zeebeOutput("x.y", "z")), scopeVariables(tuple("z", "2"))},
+      {
+        "{'z': {'x': 1}, 'y': 2}",
+        mapping(b -> b.zeebeOutput("y", "z.y")),
+        scopeVariables(tuple("z", "{\"x\":1,\"y\":2}"))
+      },
+      {
+        "{'x': 1, 'y': 2}",
+        mapping(b -> b.zeebeOutput("x", "z.x").zeebeOutput("y", "z.y")),
+        scopeVariables(tuple("z", "{\"x\":1,\"y\":2}"))
+      },
     };
   }
 
