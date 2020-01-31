@@ -10,7 +10,7 @@ An error indicates that some kind of business error has occurred which should be
 
 An error can be referenced by one or more error events. It must define the `errorCode` (e.g. `Invalid Credit Card`) of the error.
 
-The `errorCode` is a `string` that must match to the error code that is sent by the client command.
+The `errorCode` is a `string` that must match to the error code that is sent by the client command or from the error end event.
 
 ## Catching the Error
 
@@ -32,15 +32,15 @@ Alternatively, an error can also be thrown inside a workflow using an error **en
 
 ## Unhandled Errors
 
-When an error is triggered then it should be handled in the workflow. If it is not handled (e.g. unexpected error code) then an **incident** is raised to indicate the failure. The incident is attached to the corresponding service task of the processed job.
+When an error is triggered then it should be handled in the workflow. If it is not handled (e.g. unexpected error code) then an **incident** is raised to indicate the failure. The incident is attached to the corresponding service task of the processed job or the error end event.
 
-The incident can be solved by increasing the retries of the processed job.
+The incident can not be solved by the user because the failure is in the workflow itself that can not be changed to handle the error for this workflow instance.
 
 ## Business Error vs. Technical Error
 
 While processing a job, two different types of errors can be occurred: a technical error (e.g. database connection interrupted) and a business error (e.g. invalid credit card).
 
-A technical error is unexpected and cannot be handled in the workflow. The error may disappear when the job is retried, or an incident is created to indicate that user interaction is required.
+A technical error is usually unexpected and should not be handled in the workflow. The error may disappear when the job is retried, or an incident is created to indicate that an user interaction is required.
 
 A business error is expected and is handled in the workflow. The workflow may take a different path to compensate the error or undo previous actions.
 
