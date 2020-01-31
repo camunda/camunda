@@ -9343,10 +9343,10 @@ mkdirp@0.5.1, mkdirp@0.5.x, "mkdirp@>=0.5 0", mkdirp@^0.5.0, mkdirp@^0.5.1, mkdi
   dependencies:
     minimist "0.0.8"
 
-mock-socket@^9.0.0:
-  version "9.0.2"
-  resolved "https://registry.yarnpkg.com/mock-socket/-/mock-socket-9.0.2.tgz#8197f7e830f2f9d4b3a687eb69dce160689c23e4"
-  integrity sha512-VIs8Hp/FCKbs2rQeI5Zm7SGZAffTYQufooWFXTLF032ru/pv6W+KqQ1cOL4QMOktV2ugqYSP04JyE4SVG6QmWw==
+mock-socket@^9.0.3:
+  version "9.0.3"
+  resolved "https://registry.yarnpkg.com/mock-socket/-/mock-socket-9.0.3.tgz#4bc6d2aea33191e4fed5ec71f039e2bbeb95e414"
+  integrity sha512-SxIiD2yE/By79p3cNAAXyLQWTvEFNEzcAO7PH+DzRqKSFaplAPFjiQLmw8ofmpCsZf+Rhfn2/xCJagpdGmYdTw==
   dependencies:
     url-parse "^1.4.4"
 
