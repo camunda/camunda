@@ -14,44 +14,29 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
-import io.zeebe.engine.processor.workflow.EventHandle;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processor.workflow.handlers.endevent.ErrorEventHandler;
 import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.ElementInstanceState;
-import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> {
 
-  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
-
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
-  private final CatchEventTuple catchEventTuple = new CatchEventTuple();
-
-  private final WorkflowState workflowState;
   private final ElementInstanceState elementInstanceState;
-  private final EventScopeInstanceState eventScopeInstanceState;
-  private final EventHandle eventHandle;
   private final JobState jobState;
+  private final ErrorEventHandler errorEventHandler;
 
   public JobErrorThrownProcessor(
       final WorkflowState workflowState, final KeyGenerator keyGenerator, final JobState jobState) {
-    this.workflowState = workflowState;
     elementInstanceState = workflowState.getElementInstanceState();
-    eventScopeInstanceState = workflowState.getEventScopeInstanceState();
     this.jobState = jobState;
-
-    eventHandle = new EventHandle(keyGenerator, eventScopeInstanceState);
+    errorEventHandler = new ErrorEventHandler(workflowState, keyGenerator);
   }
 
   @Override
@@ -68,11 +53,9 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
 
       final var errorCode = job.getErrorCodeBuffer();
 
-      final var foundCatchEvent = findCatchEvent(errorCode, serviceTaskInstance);
-      if (foundCatchEvent != null) {
-
-        eventHandle.triggerEvent(
-            streamWriter, foundCatchEvent.instance, foundCatchEvent.catchEvent, NO_VARIABLES);
+      final boolean errorThrown =
+          errorEventHandler.throwErrorEvent(errorCode, serviceTaskInstance, streamWriter);
+      if (errorThrown) {
 
         // remove job reference to not cancel it while terminating the task
         serviceTaskInstance.setJobKey(-1L);
@@ -89,82 +72,6 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
         raiseIncident(record.getKey(), job, streamWriter);
       }
     }
-  }
-
-  private ExecutableWorkflow getWorkflow(final long workflowKey) {
-
-    final var deployedWorkflow = workflowState.getWorkflowByKey(workflowKey);
-    if (deployedWorkflow == null) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected workflow with key '%d' to be deployed but not found", workflowKey));
-    }
-
-    return deployedWorkflow.getWorkflow();
-  }
-
-  private CatchEventTuple findCatchEvent(final DirectBuffer errorCode, ElementInstance instance) {
-    // assuming that error events are used rarely
-    // - just walk through the scope hierarchy and look for a matching catch event
-
-    while (instance != null && instance.isActive()) {
-      final var instanceRecord = instance.getValue();
-      final var workflow = getWorkflow(instanceRecord.getWorkflowKey());
-
-      final var found = findCatchEventInWorkflow(errorCode, workflow, instance);
-      if (found != null) {
-        return found;
-      }
-
-      // find in parent workflow instance if exists
-      final var parentElementInstanceKey = instanceRecord.getParentElementInstanceKey();
-      instance = elementInstanceState.getInstance(parentElementInstanceKey);
-    }
-
-    // no matching catch event found
-    return null;
-  }
-
-  private CatchEventTuple findCatchEventInWorkflow(
-      final DirectBuffer errorCode, final ExecutableWorkflow workflow, ElementInstance instance) {
-
-    while (instance != null && instance.isActive() && !instance.isInterrupted()) {
-      final var found = findCatchEventInScope(errorCode, workflow, instance);
-      if (found != null) {
-        return found;
-      }
-
-      // find in parent scope if exists
-      final var instanceParentKey = instance.getParentKey();
-      instance = elementInstanceState.getInstance(instanceParentKey);
-    }
-
-    return null;
-  }
-
-  private CatchEventTuple findCatchEventInScope(
-      final DirectBuffer errorCode,
-      final ExecutableWorkflow workflow,
-      final ElementInstance instance) {
-
-    final var elementId = instance.getValue().getElementIdBuffer();
-    final var activity = workflow.getElementById(elementId, ExecutableActivity.class);
-
-    for (final ExecutableCatchEvent catchEvent : activity.getEvents()) {
-      if (hasErrorCode(catchEvent, errorCode)) {
-
-        catchEventTuple.instance = instance;
-        catchEventTuple.catchEvent = catchEvent;
-        return catchEventTuple;
-      }
-    }
-
-    return null;
-  }
-
-  private boolean hasErrorCode(
-      final ExecutableCatchEvent catchEvent, final DirectBuffer errorCode) {
-    return catchEvent.isError() && catchEvent.getError().getErrorCode().equals(errorCode);
   }
 
   private void raiseIncident(
@@ -192,10 +99,5 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
         .setVariableScopeKey(job.getElementInstanceKey());
 
     streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
-  }
-
-  private static class CatchEventTuple {
-    private ExecutableCatchEvent catchEvent;
-    private ElementInstance instance;
   }
 }

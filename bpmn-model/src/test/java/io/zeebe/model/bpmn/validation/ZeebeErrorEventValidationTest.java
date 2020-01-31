@@ -153,6 +153,20 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
                 SubProcess.class,
                 "Multiple error event definitions with the same errorCode 'ERROR' are not allowed."))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent("error", e -> e.error(""))
+            .done(),
+        singletonList(expect(ErrorEventDefinition.class, "ErrorCode must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .endEvent("error", e -> e.errorEventDefinition())
+            .done(),
+        singletonList(expect(ErrorEventDefinition.class, "Must reference an error"))
+      },
     };
   }
 }

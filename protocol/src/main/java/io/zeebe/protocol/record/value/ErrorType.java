@@ -27,4 +27,6 @@ public enum ErrorType {
   EXTRACT_VALUE_ERROR,
 
   CALLED_ELEMENT_ERROR,
+
+  UNHANDLED_ERROR_EVENT,
 }

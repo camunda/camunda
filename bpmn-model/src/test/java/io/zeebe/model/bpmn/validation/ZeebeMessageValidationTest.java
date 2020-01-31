@@ -112,7 +112,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
       },
       {
         Bpmn.createExecutableProcess("process").startEvent().endEvent().message("foo").done(),
-        singletonList(expect(EndEvent.class, "Must be a none end event"))
+        singletonList(expect(EndEvent.class, "End events must be one of: none or error"))
       },
       {
         Bpmn.createExecutableProcess("process")

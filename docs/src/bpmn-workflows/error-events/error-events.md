@@ -4,8 +4,7 @@ Error events are events which reference an error. They are used to handle busine
 
  ![workflow](/bpmn-workflows/error-events/error-events.png)
 
-An error is triggered from a **client command** while processing a job. It indicates that some kind of business error is occurred which should be handled in the workflow, for example, by taking a different path to compensate the error.
-
+An error indicates that some kind of business error has occurred which should be handled in the workflow, for example, by taking a different path to compensate the error.
 
 ## Defining the Error
 
@@ -15,9 +14,21 @@ The `errorCode` is a `string` that must match to the error code that is sent by 
 
 ## Catching the Error
 
-An error can be caught using an error **boundary event** or an error **event subprocess**. The error is caught if the error code matches.
+An error can be caught using an error **boundary event** or an error **event subprocess**.
 
 The boundary event or the event subprocess must be interrupting. When the error is caught then the service task gets terminated and the boundary event or event subprocess gets activated. That means the workflow instance continues where the error is caught instead of following the regular path.
+
+An error is caught by the first event in the scope hierarchy that matches the error code. If the error is thrown form a service task then it can be caught by an attached boundary event. If the task has no boundary event or the error code does not match then the error is propagated to the parent or root scope of the workflow instance.
+
+In case the workflow instance is created via call activity, the error can also be caught in the calling parent workflow instance.
+
+## Throwing the Error
+
+An error can be thrown from a **client command** while processing a job. See the [gRPC command](/reference/grpc.html#throwerror-rpc) for details.
+
+Alternatively, an error can also be thrown inside a workflow using an error **end event**.
+
+ ![workflow](/bpmn-workflows/error-events/error-throw-events.png)
 
 ## Unhandled Errors
 
