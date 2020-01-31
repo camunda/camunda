@@ -55,12 +55,14 @@ function CollapsablePanel({
         isCollapsed={isCollapsed}
         panelPosition={panelPosition}
         transitionTimeout={TRANSITION_TIMEOUT}
+        data-test="collapsed-panel"
       >
         <Styled.ExpandButton
           ref={expandButtonRef}
           title={`Expand ${label}`}
           onClick={toggle}
           panelPosition={panelPosition}
+          data-test="expand-button"
         >
           <Styled.Vertical>
             <span>{label}</span>
@@ -73,14 +75,16 @@ function CollapsablePanel({
         isCollapsed={isCollapsed}
         panelPosition={panelPosition}
         transitionTimeout={TRANSITION_TIMEOUT}
+        data-test="expanded-panel"
       >
         <Styled.Header panelPosition={panelPosition}>
           <Styled.CollapseButton
             ref={collapseButtonRef}
             direction={buttonDirection}
             isExpanded={true}
-            title="Collapse Filters"
+            title={`Collapse ${label}`}
             onClick={toggle}
+            data-test="collapse-button"
           />
           {label}
           {renderHeader ? renderHeader() : ''}

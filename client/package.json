@@ -41,6 +41,7 @@
     "husky": "^3.1.0",
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^9.0.0",
+    "jest-styled-components": "^6.3.4",
     "lint-staged": "^9.5.0",
     "prettier": "^1.18.2",
     "react-scripts": "^3.3.1",
