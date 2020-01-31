@@ -20,6 +20,7 @@ function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
       isOverlay
       isCollapsed={isOperationsCollapsed}
       toggle={toggleOperations}
+      verticalLabelOffset={27}
     />
   );
 }

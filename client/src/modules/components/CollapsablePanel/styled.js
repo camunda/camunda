@@ -17,7 +17,7 @@ export const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
 
 const overlayStyles = css`
   position: absolute;
-
+  z-index: 2;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.5);
 
   ${({panelPosition}) => {
@@ -131,6 +131,7 @@ export const ExpandButton = themed(styled.button`
 `);
 
 export const Vertical = styled.span`
+  padding-right: ${({offset}) => offset}px;
   position: absolute;
   top: 0;
   left: 0;

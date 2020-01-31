@@ -24,6 +24,7 @@ function CollapsablePanel({
   children,
   isCollapsed,
   toggle,
+  verticalLabelOffset,
   ...props
 }) {
   const buttonDirection =
@@ -64,9 +65,9 @@ function CollapsablePanel({
           panelPosition={panelPosition}
           data-test="expand-button"
         >
-          <Styled.Vertical>
+          <Styled.Vertical offset={verticalLabelOffset}>
             <span>{label}</span>
-            {renderHeader ? renderHeader() : ''}
+            {renderHeader()}
           </Styled.Vertical>
         </Styled.ExpandButton>
       </Styled.CollapsedPanel>
@@ -87,14 +88,21 @@ function CollapsablePanel({
             data-test="collapse-button"
           />
           {label}
-          {renderHeader ? renderHeader() : ''}
+          {renderHeader()}
         </Styled.Header>
         <Panel.Body>{children}</Panel.Body>
-        <Panel.Footer>{renderFooter ? renderFooter() : ''}</Panel.Footer>
+        <Panel.Footer>{renderFooter()}</Panel.Footer>
       </Styled.ExpandedPanel>
     </Styled.Collapsable>
   );
 }
+
+CollapsablePanel.defaultProps = {
+  renderHeader: () => '',
+  renderFooter: () => '',
+  isOverlay: false,
+  verticalLabelOffset: 0
+};
 
 CollapsablePanel.propTypes = {
   label: PropTypes.string.isRequired,
@@ -108,7 +116,8 @@ CollapsablePanel.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
-  ])
+  ]),
+  verticalLabelOffset: PropTypes.number
 };
 
 export default CollapsablePanel;
