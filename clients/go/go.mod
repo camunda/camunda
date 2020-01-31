@@ -12,7 +12,7 @@ require (
 	github.com/docker/docker v0.7.3-0.20190506211059-b20a14b54661
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/go-ozzo/ozzo-validation/v3 v3.8.1
+	github.com/go-ozzo/ozzo-validation/v3/v4 v4.0.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/mock v1.4.0
 	github.com/golang/protobuf v1.3.3
