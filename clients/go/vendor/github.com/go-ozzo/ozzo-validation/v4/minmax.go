@@ -5,17 +5,27 @@
 package validation
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"time"
+)
+
+var (
+	// ErrMinGreaterEqualThanRequired is the error that returns when a value is less than a specified threshold.
+	ErrMinGreaterEqualThanRequired = NewError("validation_min_greater_equal_than_required", "must be no less than {{.threshold}}")
+	// ErrMaxLessEqualThanRequired is the error that returns when a value is greater than a specified threshold.
+	ErrMaxLessEqualThanRequired = NewError("validation_max_less_equal_than_required", "must be no greater than {{.threshold}}")
+	// ErrMinGreaterThanRequired is the error that returns when a value is less than or equal to a specified threshold.
+	ErrMinGreaterThanRequired = NewError("validation_min_greater_than_required", "must be greater than {{.threshold}}")
+	// ErrMaxLessThanRequired is the error that returns when a value is greater than or equal to a specified threshold.
+	ErrMaxLessThanRequired = NewError("validation_max_less_than_required", "must be less than {{.threshold}}")
 )
 
 // ThresholdRule is a validation rule that checks if a value satisfies the specified threshold requirement.
 type ThresholdRule struct {
 	threshold interface{}
 	operator  int
-	message   string
+	err       Error
 }
 
 const (
@@ -34,8 +44,9 @@ func Min(min interface{}) ThresholdRule {
 	return ThresholdRule{
 		threshold: min,
 		operator:  greaterEqualThan,
-		message:   fmt.Sprintf("must be no less than %v", min),
+		err:       ErrMinGreaterEqualThanRequired,
 	}
+
 }
 
 // Max returns a validation rule that checks if a value is less or equal than the specified value.
@@ -47,7 +58,7 @@ func Max(max interface{}) ThresholdRule {
 	return ThresholdRule{
 		threshold: max,
 		operator:  lessEqualThan,
-		message:   fmt.Sprintf("must be no greater than %v", max),
+		err:       ErrMaxLessEqualThanRequired,
 	}
 }
 
@@ -55,10 +66,10 @@ func Max(max interface{}) ThresholdRule {
 func (r ThresholdRule) Exclusive() ThresholdRule {
 	if r.operator == greaterEqualThan {
 		r.operator = greaterThan
-		r.message = fmt.Sprintf("must be greater than %v", r.threshold)
+		r.err = ErrMinGreaterThanRequired
 	} else if r.operator == lessEqualThan {
 		r.operator = lessThan
-		r.message = fmt.Sprintf("must be less than %v", r.threshold)
+		r.err = ErrMaxLessThanRequired
 	}
 	return r
 }
@@ -116,12 +127,18 @@ func (r ThresholdRule) Validate(value interface{}) error {
 		return fmt.Errorf("type not supported: %v", rv.Type())
 	}
 
-	return errors.New(r.message)
+	return r.err.SetParams(map[string]interface{}{"threshold": r.threshold})
 }
 
 // Error sets the error message for the rule.
 func (r ThresholdRule) Error(message string) ThresholdRule {
-	r.message = message
+	r.err = r.err.SetMessage(message)
+	return r
+}
+
+// ErrorObject sets the error struct for the rule.
+func (r ThresholdRule) ErrorObject(err Error) ThresholdRule {
+	r.err = err
 	return r
 }
 

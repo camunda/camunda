@@ -4,9 +4,8 @@
 
 package validation
 
-import (
-	"errors"
-)
+// ErrNotInInvalid is the error that returns when a value is in a list.
+var ErrNotInInvalid = NewError("validation_not_in_invalid", "must not be in list")
 
 // NotIn returns a validation rule that checks if a value is absent from the given list of values.
 // Note that the value being checked and the possible range of values must be of the same type.
@@ -14,14 +13,14 @@ import (
 func NotIn(values ...interface{}) NotInRule {
 	return NotInRule{
 		elements: values,
-		message:  "must not be in list",
+		err:      ErrNotInInvalid,
 	}
 }
 
 // NotInRule is a validation rule that checks if a value is absent from the given list of values.
 type NotInRule struct {
 	elements []interface{}
-	message  string
+	err      Error
 }
 
 // Validate checks if the given value is valid or not.
@@ -33,7 +32,7 @@ func (r NotInRule) Validate(value interface{}) error {
 
 	for _, e := range r.elements {
 		if e == value {
-			return errors.New(r.message)
+			return r.err
 		}
 	}
 	return nil
@@ -41,6 +40,12 @@ func (r NotInRule) Validate(value interface{}) error {
 
 // Error sets the error message for the rule.
 func (r NotInRule) Error(message string) NotInRule {
-	r.message = message
+	r.err = r.err.SetMessage(message)
+	return r
+}
+
+// ErrorObject sets the error struct for the rule.
+func (r NotInRule) ErrorObject(err Error) NotInRule {
+	r.err = err
 	return r
 }

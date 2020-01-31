@@ -15,6 +15,7 @@ It has the following features:
 * can validate custom data types as long as they implement the `Validatable` interface.
 * can validate data types that implement the `sql.Valuer` interface (e.g. `sql.NullString`).
 * customizable and well-formatted validation errors.
+* error code and message translation support.
 * provide a rich set of validation rules right out of box.
 * extremely easy to create and use custom validation rules.
 
@@ -36,8 +37,8 @@ or `validation.ValidateStruct()` to validate the value.
 Run the following command to install the package:
 
 ```
-go get github.com/go-ozzo/ozzo-validation/v3
-go get github.com/go-ozzo/ozzo-validation/v3/is
+go get github.com/go-ozzo/ozzo-validation/v4
+go get github.com/go-ozzo/ozzo-validation/v4/is
 ```
 
 ### Validating a Simple Value
@@ -50,8 +51,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/go-ozzo/ozzo-validation/v3"
-	"github.com/go-ozzo/ozzo-validation/v3/is"
+	"github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 func main() {
@@ -87,8 +88,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/go-ozzo/ozzo-validation/v3"
-	"github.com/go-ozzo/ozzo-validation/v3/is"
+	"github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
 
 type Address struct {
@@ -301,8 +302,7 @@ fields which are map/slices/arrays of validatables.
 
 #### Each
 
-An other option is to use the `validation.Each` method.
-This method allows you to define the rules for the iterables within a struct.
+The `Each` validation rule allows you to apply a set of rules to each element of an array, slice, or map.
 
 ```go
 type Customer struct {
@@ -370,8 +370,6 @@ the fields of an embedded struct are treated as if they belong directly to the c
 type Employee struct {
 	Name string
 }
-
-func ()
 
 type Manager struct {
 	Employee
@@ -510,6 +508,24 @@ fmt.Println(err)
 // must be a string with five digits
 ```
 
+You can also customize the pre-defined error(s) of a built-in rule such that the customization applies to *every*
+instance of rule. For example, the `Required` rule uses the pre-defined error `ErrRequired`. You can customize it
+during the application initialization:
+```go
+import "github.com/go-ozzo/ozzo-validation/v4"
+
+validation.ErrRequired = validation.ErrRequired.SetMessage("the value is required") 
+```
+
+### Error Code and Message Translation
+
+The library defines an `Error` interface which includes the `Code()` method to provide the error code information.
+While you often need to customize the message of a validation error, the error code is immutable once the error is
+created. This allows you to programmatically check a validation error or use an error code to look for the translation
+of an error message.
+
+If you are developing your own validation rules, you can use `validation.NewError()` to create an error object
+as the validation error of the rule. The error object implements the aforementioned `Error` interface.
 
 ## Creating Custom Rules
 

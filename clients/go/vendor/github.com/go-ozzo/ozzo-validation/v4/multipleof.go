@@ -1,29 +1,37 @@
 package validation
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
+
+// ErrMultipleOfInvalid is the error that returns when a value is not multiple of a base.
+var ErrMultipleOfInvalid = NewError("validation_multiple_of_invalid", "must be multiple of {{.base}}")
 
 // MultipleOf returns a validation rule that checks if a value is a multiple of the "base" value.
 // Note that "base" should be of integer type.
 func MultipleOf(base interface{}) MultipleOfRule {
 	return MultipleOfRule{
-		base,
-		fmt.Sprintf("must be multiple of %v", base),
+		base: base,
+		err:  ErrMultipleOfInvalid,
 	}
 }
 
 // MultipleOfRule is a validation rule that checks if a value is a multiple of the "base" value.
 type MultipleOfRule struct {
-	base    interface{}
-	message string
+	base interface{}
+	err  Error
 }
 
 // Error sets the error message for the rule.
 func (r MultipleOfRule) Error(message string) MultipleOfRule {
-	r.message = message
+	r.err = r.err.SetMessage(message)
+	return r
+}
+
+// ErrorObject sets the error struct for the rule.
+func (r MultipleOfRule) ErrorObject(err Error) MultipleOfRule {
+	r.err = err
 	return r
 }
 
@@ -53,5 +61,5 @@ func (r MultipleOfRule) Validate(value interface{}) error {
 		return fmt.Errorf("type not supported: %v", rv.Type())
 	}
 
-	return errors.New(r.message)
+	return r.err.SetParams(map[string]interface{}{"base": r.base})
 }

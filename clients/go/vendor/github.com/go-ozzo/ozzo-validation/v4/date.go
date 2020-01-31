@@ -5,16 +5,21 @@
 package validation
 
 import (
-	"errors"
 	"time"
+)
+
+var (
+	// ErrDateInvalid is the error that returns in case of an invalid date.
+	ErrDateInvalid = NewError("validation_date_invalid", "must be a valid date")
+	// ErrDateOutOfRange is the error that returns in case of an invalid date.
+	ErrDateOutOfRange = NewError("validation_date_out_of_range", "the date is out of range")
 )
 
 // DateRule is a validation rule that validates date/time string values.
 type DateRule struct {
-	layout       string
-	min, max     time.Time
-	message      string
-	rangeMessage string
+	layout        string
+	min, max      time.Time
+	err, rangeErr Error
 }
 
 // Date returns a validation rule that checks if a string value is in a format that can be parsed into a date.
@@ -30,21 +35,33 @@ type DateRule struct {
 // An empty value is considered valid. Use the Required rule to make sure a value is not empty.
 func Date(layout string) DateRule {
 	return DateRule{
-		layout:       layout,
-		message:      "must be a valid date",
-		rangeMessage: "the data is out of range",
+		layout:   layout,
+		err:      ErrDateInvalid,
+		rangeErr: ErrDateOutOfRange,
 	}
 }
 
 // Error sets the error message that is used when the value being validated is not a valid date.
 func (r DateRule) Error(message string) DateRule {
-	r.message = message
+	r.err = r.err.SetMessage(message)
+	return r
+}
+
+// ErrorObject sets the error struct that is used when the value being validated is not a valid date..
+func (r DateRule) ErrorObject(err Error) DateRule {
+	r.err = err
 	return r
 }
 
 // RangeError sets the error message that is used when the value being validated is out of the specified Min/Max date range.
 func (r DateRule) RangeError(message string) DateRule {
-	r.rangeMessage = message
+	r.rangeErr = r.rangeErr.SetMessage(message)
+	return r
+}
+
+// RangeErrorObject sets the error struct that is used when the value being validated is out of the specified Min/Max date range.
+func (r DateRule) RangeErrorObject(err Error) DateRule {
+	r.rangeErr = err
 	return r
 }
 
@@ -74,11 +91,11 @@ func (r DateRule) Validate(value interface{}) error {
 
 	date, err := time.Parse(r.layout, str)
 	if err != nil {
-		return errors.New(r.message)
+		return r.err
 	}
 
 	if !r.min.IsZero() && r.min.After(date) || !r.max.IsZero() && date.After(r.max) {
-		return errors.New(r.rangeMessage)
+		return r.rangeErr
 	}
 
 	return nil

@@ -51,9 +51,9 @@ github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
-# github.com/go-ozzo/ozzo-validation/v3 v3.8.1
-github.com/go-ozzo/ozzo-validation/v3
-github.com/go-ozzo/ozzo-validation/v3/is
+# github.com/go-ozzo/ozzo-validation/v4 v4.0.0
+github.com/go-ozzo/ozzo-validation/v4
+github.com/go-ozzo/ozzo-validation/v4/is
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 # github.com/golang/mock v1.4.0
