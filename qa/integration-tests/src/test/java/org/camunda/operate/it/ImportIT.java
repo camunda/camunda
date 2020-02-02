@@ -67,8 +67,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getWorkflowKey()).isEqualTo(workflowKey);
-    //TODO uncomment within OPE-896
-    //assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
+    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
@@ -80,8 +79,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getWorkflowId()).isEqualTo(ConversionUtils.toStringOrNull(workflowKey));
-    //TODO uncomment within OPE-896
-//    assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
+    assertThat(wi.getWorkflowName()).isEqualTo("Demo process");
     assertThat(wi.getWorkflowVersion()).isEqualTo(1);
     assertThat(wi.getId()).isEqualTo(workflowInstanceKey.toString());
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.ACTIVE);
