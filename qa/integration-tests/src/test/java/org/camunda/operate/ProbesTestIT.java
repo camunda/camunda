@@ -8,7 +8,7 @@ package org.camunda.operate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.util.TestElasticsearchSchemaManager;
+import org.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import org.camunda.operate.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;

@@ -9,27 +9,39 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import org.camunda.operate.TestApplication;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
-import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
+@SpringBootTest(
+    classes = { TestApplication.class},
+    properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+        OperateProperties.PREFIX + ".importer.threadsCount = 1",
+        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
 public class ImportMidnightIT extends OperateZeebeIntegrationTest {
+
+  private static final Logger logger = LoggerFactory.getLogger(ImportMidnightIT.class);
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
@@ -78,31 +90,23 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     completeTask(workflowInstanceKey, "task1", null, false);
     //let Zeebe export data
-    sleepFor(2000);
+    sleepFor(5000);
     //complete instances next day
     Instant secondDate = firstDate.plus(1, ChronoUnit.DAYS);
     brokerRule.getClock().setCurrentTime(secondDate);
     completeTask(workflowInstanceKey, "task2", null, false);
     //let Zeebe export data
-    sleepFor(2000);
+    sleepFor(5000);
 
+    //when
     //refresh 2nd date index and load all data
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, () -> {
       zeebeRule.refreshIndices(secondDate);
       return null;
     }, workflowInstanceKey);
+
+    //then internally previous index will also be refreshed and full data will be loaded
     WorkflowInstanceForListViewEntity wi = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
-    assertThat(wi.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
-
-    //when
-    //refresh 1st date index and try to load data
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, () -> {
-      zeebeRule.refreshIndices(firstDate);
-      return null;
-    }, workflowInstanceKey, "task1");
-
-    //then
-    wi = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
 
     ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);

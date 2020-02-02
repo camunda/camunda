@@ -14,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "org.camunda.operate",
@@ -24,7 +25,8 @@ import org.springframework.context.annotation.FilterType;
       @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.it\\..*"),
       @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = TestApplication.class),
       @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class)
-  })
+  },
+  nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class ModulesTestApplication {
 
   public static void main(String[] args) throws Exception {

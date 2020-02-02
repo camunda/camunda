@@ -5,24 +5,27 @@
  */
 package org.camunda.operate.entities;
 
-import io.zeebe.protocol.record.ValueType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public enum EventSourceType {
 
   JOB,
   WORKFLOW_INSTANCE,
   INCIDENT,
-  UNKNOWN;
+  UNKNOWN,
+  UNSPECIFIED;
 
-  public static EventSourceType fromZeebeValueType(ValueType valueType) {
-    switch (valueType) {
-    case JOB:
-      return JOB;
-    case INCIDENT:
-      return INCIDENT;
-    case WORKFLOW_INSTANCE:
-      return WORKFLOW_INSTANCE;
-    default:
+  private static final Logger logger = LoggerFactory.getLogger(EventSourceType.class);
+
+  public static EventSourceType fromZeebeValueType(String valueType) {
+    if (valueType == null) {
+      return UNSPECIFIED;
+    }
+    try {
+      return EventSourceType.valueOf(valueType);
+    } catch (IllegalArgumentException ex) {
+      logger.error("Value type not found for value [{}]. UNKNOWN type will be assigned.", valueType);
       return UNKNOWN;
     }
   }

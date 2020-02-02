@@ -106,7 +106,7 @@ public class MetricIT extends OperateZeebeIntegrationTest {
         .done();
     
     tester
-      .deployWorkflow(startEndProcess, "startEndProcess.bpmn")
+      .deployWorkflow(startEndProcess, "startEndProcess.bpmn").workflowIsDeployed()
       .and()
       .startWorkflowInstance(bpmnProcessId).waitUntil().workflowInstanceIsCompleted()
       .and()

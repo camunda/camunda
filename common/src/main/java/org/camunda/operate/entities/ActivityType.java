@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.entities;
 
-import io.zeebe.protocol.record.value.BpmnElementType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,14 +29,14 @@ public enum ActivityType {
 
   private static final Logger logger = LoggerFactory.getLogger(ActivityType.class);
 
-  public static ActivityType fromZeebeBpmnElementType(BpmnElementType type) {
-    if (type == null) {
+  public static ActivityType fromZeebeBpmnElementType(String bpmnElementType) {
+    if (bpmnElementType == null) {
       return UNSPECIFIED;
     }
     try {
-      return ActivityType.valueOf(type.toString());
+      return ActivityType.valueOf(bpmnElementType);
     } catch (IllegalArgumentException ex) {
-      logger.error("Activity type not found for value [{}]. UNKNOWN type will be assigned.", type);
+      logger.error("Activity type not found for value [{}]. UNKNOWN type will be assigned.", bpmnElementType);
       return UNKNOWN;
     }
   }

@@ -8,6 +8,7 @@ package org.camunda.operate.qa.util;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -22,13 +23,20 @@ import java.util.List;
 public abstract class ElasticsearchUtil {
 
   public static int getFieldCardinality(RestHighLevelClient esClient, String aliasName, String fieldName) throws IOException {
+    return getFieldCardinalityWithRequest(esClient, aliasName, fieldName, null);
+  }
+
+  public static int getFieldCardinalityWithRequest(RestHighLevelClient esClient, String aliasName, String fieldName, QueryBuilder query) throws IOException {
     final String aggName = "agg";
     AggregationBuilder agg = AggregationBuilders.cardinality(aggName)
       .field(fieldName)
       .precisionThreshold(40000);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().aggregation(agg);
+    if (query != null) {
+      searchSourceBuilder.query(query);
+    }
     SearchRequest searchRequest = new SearchRequest(aliasName)
-      .source(new SearchSourceBuilder()
-        .aggregation(agg));
+      .source(searchSourceBuilder);
     final long value = ((Cardinality) esClient.search(searchRequest, RequestOptions.DEFAULT).getAggregations().get(aggName)).getValue();
     return (int)value;
   }

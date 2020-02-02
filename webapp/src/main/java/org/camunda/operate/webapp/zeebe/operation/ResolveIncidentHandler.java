@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.webapp.zeebe.operation;
 
-import static io.zeebe.protocol.record.value.ErrorType.JOB_NO_RETRIES;
-
 import io.zeebe.client.api.command.ClientException;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
@@ -19,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 
 /**
  * Resolve the incident.

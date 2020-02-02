@@ -8,7 +8,7 @@ package org.camunda.operate.zeebeimport;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -19,9 +19,7 @@ import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.NoSuchIndexException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebe.ImportValueType;
-import org.camunda.operate.zeebe.record.RecordImpl;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -40,10 +38,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.core.annotation.Timed;
-import io.zeebe.protocol.record.Record;
 import static org.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
@@ -105,9 +99,6 @@ public class RecordsReader {
   private RestHighLevelClient zeebeEsClient;
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   private BeanFactory beanFactory;
 
   @Autowired
@@ -123,12 +114,12 @@ public class RecordsReader {
     try {
       ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
       ImportBatch importBatch = readNextBatch(latestPosition.getPosition(), null);
-      if (importBatch.getRecords().size() == 0) {
+      if (importBatch.getHits().size() == 0) {
         doBackoff();
       } else {
         scheduleImport(latestPosition, importBatch);
       }
-      return importBatch.getRecords().size();
+      return importBatch.getHits().size();
     } catch (NoSuchIndexException ex) {
       //if no index found, we back off current reader
       doBackoff();
@@ -171,15 +162,14 @@ public class RecordsReader {
   }
 
   private ImportBatch createImportBatch(SearchResponse searchResponse) {
-    JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
     SearchHit[] hits = searchResponse.getHits().getHits();
-    final List<Record> result = ElasticsearchUtil.mapSearchHits(hits, objectMapper, valueType);
     String indexName = null;
     if (hits.length > 0) {
       indexName = hits[hits.length - 1].getIndex();
     }
-    return new ImportBatch(partitionId, importValueType, result, indexName);
+    return new ImportBatch(partitionId, importValueType, Arrays.asList(hits), indexName);
   }
+
 
   private SearchRequest createSearchQuery(String aliasName, long positionFrom, Long positionTo) {
     RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);

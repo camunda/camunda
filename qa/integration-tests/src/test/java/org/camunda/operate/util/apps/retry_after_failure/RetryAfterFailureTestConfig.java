@@ -8,7 +8,7 @@ package org.camunda.operate.util.apps.retry_after_failure;
 import java.util.HashSet;
 import java.util.Set;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
+import org.camunda.operate.zeebeimport.v23.processors.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ImportBatch;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.springframework.context.annotation.Bean;
@@ -32,13 +32,13 @@ public class RetryAfterFailureTestConfig {
     private Set<ImportValueType> alreadyFailedTypes = new HashSet<>();
 
     @Override
-    public void persistZeebeRecords(ImportBatch importBatch) throws PersistenceException {
+    public void performImport(ImportBatch importBatch) throws PersistenceException {
       ImportValueType importValueType = importBatch.getImportValueType();
       if (!alreadyFailedTypes.contains(importValueType)) {
         alreadyFailedTypes.add(importValueType);
         throw new PersistenceException(String.format("Fake exception when saving data of type %s to Elasticsearch", importValueType));
       } else {
-        super.persistZeebeRecords(importBatch);
+        super.performImport(importBatch);
       }
     }
 

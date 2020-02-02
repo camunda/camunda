@@ -49,6 +49,7 @@ public abstract class ElasticsearchUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
+  public static final String ZEEBE_INDEX_DELIMITER = "_";
   public static final String ES_INDEX_TYPE = "_doc";
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries
@@ -201,6 +202,10 @@ public abstract class ElasticsearchUtil {
   }
 
   /* MAP QUERY RESULTS */
+
+  public static <T> List<T> mapSearchHits(List<SearchHit> searchHits, ObjectMapper objectMapper, JavaType valueType) {
+    return mapSearchHits(searchHits.toArray(new SearchHit[searchHits.size()]), objectMapper, valueType);
+  }
 
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, Function<SearchHit, T> searchHitMapper) {
     return map(searchHits, searchHitMapper);

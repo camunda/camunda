@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.command.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.response.DeploymentEvent;
@@ -61,7 +62,11 @@ public abstract class ZeebeTestUtil {
       .jobType(jobType)
       .handler((jobClient, job) -> {
         if (countCompleted[0] < count) {
-          jobClient.newCompleteCommand(job.getKey()).variables(payload).send().join();
+          CompleteJobCommandStep1 completeJobCommandStep1 = jobClient.newCompleteCommand(job.getKey());
+          if (payload != null) {
+            completeJobCommandStep1 = completeJobCommandStep1.variables(payload);
+          }
+          completeJobCommandStep1.send().join();
           logger.debug("Task completed jobKey [{}]", job.getKey());
           countCompleted[0]++;
           if (countCompleted[0] % 1000 == 0) {

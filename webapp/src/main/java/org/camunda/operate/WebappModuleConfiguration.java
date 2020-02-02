@@ -11,9 +11,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @Configuration
-@ComponentScan(basePackages = "org.camunda.operate.webapp")
+@ComponentScan(basePackages = "org.camunda.operate.webapp", nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(name = "camunda.operate.webappEnabled", havingValue = "true", matchIfMissing = true)
 public class WebappModuleConfiguration {
 

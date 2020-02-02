@@ -12,11 +12,11 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
-import io.zeebe.protocol.record.value.ErrorType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
@@ -152,7 +152,7 @@ public class IncidentReader extends AbstractReader {
       final List<IncidentEntity> incidents = scroll(searchRequest, IncidentEntity.class, aggs -> {
         ((Terms) aggs.get(errorTypesAggName)).getBuckets().forEach(b -> {
           ErrorType errorType = ErrorType.valueOf(b.getKeyAsString());
-          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(IncidentEntity.getErrorTypeTitle(errorType), (int) b.getDocCount()));
+          incidentResponse.getErrorTypes().add(new IncidentErrorTypeDto(errorType.getTitle(), (int) b.getDocCount()));
         });
         ((Terms) aggs.get(flowNodesAggName)).getBuckets()
             .forEach(b -> incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int) b.getDocCount())));

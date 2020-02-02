@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.util;
 
-import static io.zeebe.protocol.record.value.ErrorType.JOB_NO_RETRIES;
+import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static org.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
 import static org.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
 

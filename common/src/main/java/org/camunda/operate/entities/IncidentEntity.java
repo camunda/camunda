@@ -5,24 +5,9 @@
  */
 package org.camunda.operate.entities;
 
-import io.zeebe.protocol.record.value.ErrorType;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
-
-  private static final Map<ErrorType, String> ErrorType2Title;
-  static {
-    ErrorType2Title = new HashMap<>();
-    ErrorType2Title.put(ErrorType.UNKNOWN, "Unknown");
-    ErrorType2Title.put(ErrorType.IO_MAPPING_ERROR, "I/O mapping error");
-    ErrorType2Title.put(ErrorType.JOB_NO_RETRIES, "No more retries left");
-    ErrorType2Title.put(ErrorType.CONDITION_ERROR, "Condition error");
-    ErrorType2Title.put(ErrorType.EXTRACT_VALUE_ERROR, "Extract value error");
-    ErrorType2Title.put(ErrorType.CALLED_ELEMENT_ERROR, "Called element error");
-    ErrorType2Title.put(ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
-  }
 
   private ErrorType errorType;
 
@@ -52,10 +37,6 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
   public IncidentEntity setErrorType(ErrorType errorType) {
     this.errorType = errorType;
     return this;
-  }
-  
-  public static String getErrorTypeTitle(ErrorType errorType) {
-    return ErrorType2Title.getOrDefault(errorType, "Unknown error");
   }
 
   public String getErrorMessage() {

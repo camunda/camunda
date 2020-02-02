@@ -113,7 +113,16 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected boolean failed = false;
   
   private int waitingRound = 1;
-  
+
+  private String indexPrefix;
+
+  public ElasticsearchTestRule() {
+  }
+
+  public ElasticsearchTestRule(String indexPrefix) {
+    this.indexPrefix = indexPrefix;
+  }
+
   @Override
   protected void failed(Throwable e, Description description) {
     super.failed(e, description);
@@ -122,7 +131,9 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Override
   protected void starting(Description description) {
-    String indexPrefix = TestUtil.createRandomString(10) + "-operate";
+    if (indexPrefix == null) {
+      indexPrefix = TestUtil.createRandomString(10) + "-operate";
+    }
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     if (operateProperties.getElasticsearch().isCreateSchema()) {
       elasticsearchSchemaManager.createSchema();
