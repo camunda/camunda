@@ -1,5 +1,23 @@
 # Upgrade Instructions
 
+## Upgrade from 3.x to 4.x
+
+If you are customizing the error messages of the following built-in validation rules, you may need to 
+change the parameter placeholders from `%v` to the Go template variable placeholders.
+* `Length`: use `{{.min}}` and `{{.max}}` in the error message to refer to the minimum and maximum lengths.
+* `Min`: use `{{.threshold}}` in the error message to refer to the lower bound.
+* `Max`: use `{{.threshold}}` in the error message to refer to the upper bound
+* `MultipleOf`: use `{{.base}}` in the error message to refer to the base of the multiples.
+
+For example,
+ ```go
+// 3.x
+lengthRule := validation.Length(2,10).Error("the length must be between %v and %v")
+
+// 4.x
+lengthRule := validation.Length(2,10).Error("the length must be between {{.min}} and {{.max}}")
+```
+
 ## Upgrade from 2.x to 3.x
 
 * Instead of using `StructRules` to define struct validation rules, use `ValidateStruct()` to declare and perform

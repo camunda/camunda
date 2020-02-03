@@ -4,14 +4,12 @@
 
 package validation
 
-import "errors"
-
 type stringValidator func(string) bool
 
 // StringRule is a rule that checks a string variable using a specified stringValidator.
 type StringRule struct {
 	validate stringValidator
-	message  string
+	err      Error
 }
 
 // NewStringRule creates a new validation rule using a function that takes a string value and returns a bool.
@@ -20,18 +18,34 @@ type StringRule struct {
 func NewStringRule(validator stringValidator, message string) StringRule {
 	return StringRule{
 		validate: validator,
-		message:  message,
+		err:      NewError("", message),
+	}
+}
+
+// NewStringRuleWithError creates a new validation rule using a function that takes a string value and returns a bool.
+// The rule returned will use the function to check if a given string or byte slice is valid or not.
+// An empty value is considered to be valid. Please use the Required rule to make sure a value is not empty.
+func NewStringRuleWithError(validator stringValidator, err Error) StringRule {
+	return StringRule{
+		validate: validator,
+		err:      err,
 	}
 }
 
 // Error sets the error message for the rule.
-func (v StringRule) Error(message string) StringRule {
-	v.message = message
-	return v
+func (r StringRule) Error(message string) StringRule {
+	r.err = r.err.SetMessage(message)
+	return r
+}
+
+// ErrorObject sets the error struct for the rule.
+func (r StringRule) ErrorObject(err Error) StringRule {
+	r.err = err
+	return r
 }
 
 // Validate checks if the given value is valid or not.
-func (v StringRule) Validate(value interface{}) error {
+func (r StringRule) Validate(value interface{}) error {
 	value, isNil := Indirect(value)
 	if isNil || IsEmpty(value) {
 		return nil
@@ -42,8 +56,9 @@ func (v StringRule) Validate(value interface{}) error {
 		return err
 	}
 
-	if v.validate(str) {
+	if r.validate(str) {
 		return nil
 	}
-	return errors.New(v.message)
+
+	return r.err
 }

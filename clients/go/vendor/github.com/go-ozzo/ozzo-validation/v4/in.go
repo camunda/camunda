@@ -5,9 +5,11 @@
 package validation
 
 import (
-	"errors"
 	"reflect"
 )
+
+// ErrInInvalid is the error that returns in case of an invalid value for "in" rule.
+var ErrInInvalid = NewError("validation_in_invalid", "must be a valid value")
 
 // In returns a validation rule that checks if a value can be found in the given list of values.
 // reflect.DeepEqual() will be used to determine if two values are equal.
@@ -16,14 +18,14 @@ import (
 func In(values ...interface{}) InRule {
 	return InRule{
 		elements: values,
-		message:  "must be a valid value",
+		err:      ErrInInvalid,
 	}
 }
 
 // InRule is a validation rule that validates if a value can be found in the given list of values.
 type InRule struct {
 	elements []interface{}
-	message  string
+	err      Error
 }
 
 // Validate checks if the given value is valid or not.
@@ -38,11 +40,18 @@ func (r InRule) Validate(value interface{}) error {
 			return nil
 		}
 	}
-	return errors.New(r.message)
+
+	return r.err
 }
 
 // Error sets the error message for the rule.
 func (r InRule) Error(message string) InRule {
-	r.message = message
+	r.err = r.err.SetMessage(message)
+	return r
+}
+
+// ErrorObject sets the error struct for the rule.
+func (r InRule) ErrorObject(err Error) InRule {
+	r.err = err
 	return r
 }
