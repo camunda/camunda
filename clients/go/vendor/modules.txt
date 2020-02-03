@@ -85,7 +85,7 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v0.1.1
 github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
@@ -101,7 +101,7 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.0.10
+# github.com/testcontainers/testcontainers-go v0.1.0
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
 # golang.org/x/net v0.0.0-20200202094626-16171245cfb2
