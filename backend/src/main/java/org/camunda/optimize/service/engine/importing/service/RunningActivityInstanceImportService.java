@@ -8,6 +8,7 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.CamundaActivityEventService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
@@ -25,14 +26,17 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private RunningActivityInstanceWriter runningActivityInstanceWriter;
+  private CamundaActivityEventService camundaActivityEventService;
 
   public RunningActivityInstanceImportService(RunningActivityInstanceWriter runningActivityInstanceWriter,
+                                              CamundaActivityEventService camundaActivityEventService,
                                               ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
+    this.camundaActivityEventService = camundaActivityEventService;
   }
 
   @Override
@@ -61,7 +65,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
                                                                                 Runnable callback) {
     RunningActivityInstanceElasticsearchImportJob activityImportJob =
-      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, callback);
+      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, camundaActivityEventService, callback);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }

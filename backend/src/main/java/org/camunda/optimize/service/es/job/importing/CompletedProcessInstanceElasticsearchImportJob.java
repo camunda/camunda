@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.CamundaActivityEventService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
 
@@ -17,14 +16,11 @@ public class CompletedProcessInstanceElasticsearchImportJob extends Elasticsearc
 
   private CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private CamundaActivityEventService camundaActivityEventService;
-  private ConfigurationService configurationService;
 
   public CompletedProcessInstanceElasticsearchImportJob(CompletedProcessInstanceWriter completedProcessInstanceWriter,
                                                         CamundaActivityEventService camundaActivityEventService,
-                                                        ConfigurationService configurationService,
                                                         Runnable callback) {
     super(callback);
-    this.configurationService = configurationService;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaActivityEventService = camundaActivityEventService;
   }
@@ -32,8 +28,6 @@ public class CompletedProcessInstanceElasticsearchImportJob extends Elasticsearc
   @Override
   protected void persistEntities(List<ProcessInstanceDto> newOptimizeEntities) throws Exception {
     completedProcessInstanceWriter.importProcessInstances(newOptimizeEntities);
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      camundaActivityEventService.importCompletedProcessInstancesToCamundaActivityEvents(newOptimizeEntities);
-    }
+    camundaActivityEventService.importCompletedProcessInstancesToCamundaActivityEvents(newOptimizeEntities);
   }
 }

@@ -15,7 +15,6 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -29,7 +28,6 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
   protected EngineContext engineContext;
   private CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private CamundaActivityEventService camundaActivityEventService;
-  private ConfigurationService configurationService;
 
   @Override
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
@@ -57,7 +55,7 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
   private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto> processInstances,
                                                                                   Runnable callback) {
     CompletedProcessInstanceElasticsearchImportJob importJob = new CompletedProcessInstanceElasticsearchImportJob(
-      completedProcessInstanceWriter, camundaActivityEventService, configurationService, callback);
+      completedProcessInstanceWriter, camundaActivityEventService, callback);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

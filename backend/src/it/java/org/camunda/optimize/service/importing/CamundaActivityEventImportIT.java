@@ -40,13 +40,16 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   private static final String END_EVENT = ActivityTypes.END_EVENT_NONE;
   private static final String USER_TASK = ActivityTypes.TASK_USER_TASK;
 
+  private OptimizeIndexNameService indexNameService;
+
   @BeforeEach
   public void init() {
+    indexNameService = embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService();
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
   }
 
   @Test
-  public void expectedEventsAreCreatedOnImport() throws IOException {
+  public void expectedEventsAreCreatedOnImportOfCompletedProcess() throws IOException {
     // given
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("eventsDef");
 
@@ -74,7 +77,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
           addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
           addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
           USER_TASK,
-          processInstanceEngineDto),
+          processInstanceEngineDto
+        ),
         createAssertionEvent(
           addDelimiterForStrings(USER_TASK, END_MAPPED_SUFFIX),
           addDelimiterForStrings(USER_TASK, END_MAPPED_SUFFIX),
@@ -97,14 +101,49 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void expectedEventsCreatedOnImportOfRunningProcess() throws IOException {
+    // given
+    ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("runningActivities");
+
+    // when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    List<CamundaActivityEventDto> storedEvents =
+      getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
+
+    assertThat(storedEvents)
+      .hasSize(2)
+      .usingElementComparatorIgnoringFields(
+        CamundaActivityEventDto.Fields.activityInstanceId,
+        CamundaActivityEventDto.Fields.processDefinitionName,
+        CamundaActivityEventDto.Fields.engine,
+        CamundaActivityEventDto.Fields.timestamp
+      )
+      .containsExactlyInAnyOrder(
+        createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, processInstanceEngineDto),
+        createAssertionEvent(
+          addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
+          addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
+          USER_TASK,
+          processInstanceEngineDto
+        )
+      );
+  }
+
+  @Test
   public void noEventsCreatedOnImportWithFeatureDisabled() throws JsonProcessingException {
-    // given the index has been created and the start Event has been saved already
+    // given the index has been created, the start Event and start of user task has been saved already
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("noEventsDef");
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     List<CamundaActivityEventDto> initialStoredEvents =
       getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
-    assertThat(initialStoredEvents).hasSize(1);
+    assertThat(initialStoredEvents)
+      .hasSize(2)
+      .extracting(CamundaActivityEventDto::getActivityId)
+      .containsExactlyInAnyOrder(START_EVENT, addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX));
 
     // when the feature is disabled
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
@@ -135,7 +174,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     GetIndexRequest request = new GetIndexRequest(
       createExpectedIndexNameForProcessDefinition(firstProcessInstanceEngineDto.getProcessDefinitionKey()),
-      createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey()));
+      createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey())
+    );
     assertThat(esClient.exists(request, RequestOptions.DEFAULT)).isTrue();
 
     // then events have been saved in each index
@@ -162,7 +202,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     GetIndexRequest request = new GetIndexRequest(
       createExpectedIndexNameForProcessDefinition(firstProcessInstanceEngineDto.getProcessDefinitionKey()),
-      createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey()));
+      createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey())
+    );
     assertThat(esClient.exists(request, RequestOptions.DEFAULT)).isTrue();
 
     // then events have been saved in each index. The conversion to set is to remove duplicate entries due to multiple import batches
@@ -206,7 +247,6 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   }
 
   private String createExpectedIndexNameForProcessDefinition(final String processDefinitionKey) {
-    OptimizeIndexNameService indexNameService = embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService();
     return indexNameService.getVersionedOptimizeIndexNameForIndexMapping(new CamundaActivityEventIndex(processDefinitionKey));
   }
 

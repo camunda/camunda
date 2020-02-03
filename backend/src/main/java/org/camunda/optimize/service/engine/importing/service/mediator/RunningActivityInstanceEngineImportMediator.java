@@ -7,6 +7,7 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.CamundaActivityEventService;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.RunningActivityInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.service.RunningActivityInstanceImportService;
@@ -29,7 +30,8 @@ public class RunningActivityInstanceEngineImportMediator
 
   @Autowired
   private RunningActivityInstanceWriter runningActivityInstanceWriter;
-
+  @Autowired
+  private CamundaActivityEventService camundaActivityEventService;
   private RunningActivityInstanceImportService runningActivityInstanceImportService;
 
   public RunningActivityInstanceEngineImportMediator(EngineContext engineContext) {
@@ -41,7 +43,7 @@ public class RunningActivityInstanceEngineImportMediator
     importIndexHandler = provider.getRunningActivityInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(RunningActivityInstanceFetcher.class, engineContext);
     importService = new RunningActivityInstanceImportService(
-      runningActivityInstanceWriter, elasticsearchImportJobExecutor, engineContext
+      runningActivityInstanceWriter, camundaActivityEventService, elasticsearchImportJobExecutor, engineContext
     );
   }
 

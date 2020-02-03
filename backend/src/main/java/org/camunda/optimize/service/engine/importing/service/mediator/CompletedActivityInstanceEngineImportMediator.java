@@ -45,8 +45,7 @@ public class CompletedActivityInstanceEngineImportMediator
       completedActivityInstanceWriter,
       camundaActivityEventService,
       elasticsearchImportJobExecutor,
-      engineContext,
-      configurationService
+      engineContext
     );
   }
 

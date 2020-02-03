@@ -20,12 +20,14 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,71 +73,68 @@ public class CamundaActivityEventService {
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
+  private final ConfigurationService configurationService;
 
-  public void importActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> activityInstances) {
-    List<String> processDefinitionKeysInBatch = activityInstances
-      .stream()
-      .map(FlowNodeEventDto::getProcessDefinitionKey)
-      .collect(Collectors.toList());
-    createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
-    final List<CamundaActivityEventDto> camundaActivityEventDtos = activityInstances
-      .stream()
-      .flatMap(this::convertFlowNodeToCamundaActivityEvents)
-      .filter(Objects::nonNull)
-      .collect(Collectors.toList());
-    camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
+  public void importRunningActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> activityInstances) {
+    importActivityInstancesToCamundaActivityEvents(activityInstances, this::convertRunningActivityToCamundaActivityEvents);
+  }
+
+  public void importCompletedActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> activityInstances) {
+    importActivityInstancesToCamundaActivityEvents(activityInstances, this::convertCompletedActivityToCamundaActivityEvents);
   }
 
   public void importCompletedProcessInstancesToCamundaActivityEvents(List<ProcessInstanceDto> processInstanceDtos) {
-    final List<String> processDefinitionKeysInBatch = processInstanceDtos
-      .stream()
-      .map(ProcessInstanceDto::getProcessDefinitionKey).collect(Collectors.toList());
-    createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
-    final List<CamundaActivityEventDto> camundaActivityEventDtos = processInstanceDtos
-      .stream()
-      .flatMap(this::convertProcessInstanceToCamundaActivityEvents)
-      .filter(Objects::nonNull)
-      .collect(Collectors.toList());
-    camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      final List<String> processDefinitionKeysInBatch = processInstanceDtos
+        .stream()
+        .map(ProcessInstanceDto::getProcessDefinitionKey)
+        .collect(Collectors.toList());
+      createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
+      final List<CamundaActivityEventDto> camundaActivityEventDtos = processInstanceDtos
+        .stream()
+        .flatMap(this::convertProcessInstanceToCamundaActivityEvents)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+      camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
+    }
   }
 
   private static String addDelimiterForStrings(String... strings) {
     return String.join("_", strings);
   }
 
-  private void createMissingActivityIndicesForProcessDefinitions(List<String> processDefinitionKeys) {
-    final List<IndexMappingCreator> activityIndicesToCheck = processDefinitionKeys.stream()
-      .distinct()
-      .map(CamundaActivityEventIndex::new)
-      .collect(Collectors.toList());
-    try {
-      // We make this check first to see if we can avoid checking individually for each definition key in the batch
-      if (elasticSearchSchemaManager.indicesExist(elasticsearchClient, activityIndicesToCheck)) {
-        return;
-      }
-    } catch (OptimizeRuntimeException ex) {
-      log.warn(
-        "Failed to check if camunda activity event indices exist for process definition keys {}",
-        processDefinitionKeys
-      );
+  private void importActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> activityInstances,
+                                                              Function<FlowNodeEventDto,
+                                                                Stream<CamundaActivityEventDto>> eventExtractionFunction) {
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      List<String> processDefinitionKeysInBatch = activityInstances
+        .stream()
+        .map(FlowNodeEventDto::getProcessDefinitionKey)
+        .collect(Collectors.toList());
+      createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
+      final List<CamundaActivityEventDto> camundaActivityEventDtos = activityInstances
+        .stream()
+        .flatMap(eventExtractionFunction)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+      camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
     }
-    activityIndicesToCheck.forEach(activityIndex -> {
-      try {
-        final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
-          elasticsearchClient, activityIndex
-        );
-        if (!indexAlreadyExists) {
-          elasticSearchSchemaManager.createOptimizeIndex(
-            elasticsearchClient, activityIndex);
-        }
-      } catch (final Exception e) {
-        log.error("Failed ensuring camunda activity event index is present: {}", activityIndex.getIndexName(), e);
-        throw e;
-      }
-    });
   }
 
-  private Stream<CamundaActivityEventDto> convertFlowNodeToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {
+  private Stream<CamundaActivityEventDto> convertRunningActivityToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {
+    if (START_END_MAPPED_TYPES.contains(flowNodeEventDto.getActivityType())) {
+      return Stream.of(
+        toCamundaActivityEvent(flowNodeEventDto).toBuilder()
+          .activityId(addDelimiterForStrings(flowNodeEventDto.getActivityId(), START_MAPPED_SUFFIX))
+          .activityName(addDelimiterForStrings(flowNodeEventDto.getActivityName(), START_MAPPED_SUFFIX))
+          .activityInstanceId(addDelimiterForStrings(flowNodeEventDto.getActivityInstanceId(), START_MAPPED_SUFFIX))
+          .build()
+      );
+    }
+    return Stream.empty();
+  }
+
+  private Stream<CamundaActivityEventDto> convertCompletedActivityToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {
     if (START_END_MAPPED_TYPES.contains(flowNodeEventDto.getActivityType())) {
       return Stream.of(
         toCamundaActivityEvent(flowNodeEventDto).toBuilder()
@@ -209,6 +208,38 @@ public class CamundaActivityEventService {
         .timestamp(processInstanceDto.getEndDate())
         .build()
     );
+  }
+
+  private void createMissingActivityIndicesForProcessDefinitions(List<String> processDefinitionKeys) {
+    final List<IndexMappingCreator> activityIndicesToCheck = processDefinitionKeys.stream()
+      .distinct()
+      .map(CamundaActivityEventIndex::new)
+      .collect(Collectors.toList());
+    try {
+      // We make this check first to see if we can avoid checking individually for each definition key in the batch
+      if (elasticSearchSchemaManager.indicesExist(elasticsearchClient, activityIndicesToCheck)) {
+        return;
+      }
+    } catch (OptimizeRuntimeException ex) {
+      log.warn(
+        "Failed to check if camunda activity event indices exist for process definition keys {}",
+        processDefinitionKeys
+      );
+    }
+    activityIndicesToCheck.forEach(activityIndex -> {
+      try {
+        final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
+          elasticsearchClient, activityIndex
+        );
+        if (!indexAlreadyExists) {
+          elasticSearchSchemaManager.createOptimizeIndex(
+            elasticsearchClient, activityIndex);
+        }
+      } catch (final Exception e) {
+        log.error("Failed ensuring camunda activity event index is present: {}", activityIndex.getIndexName(), e);
+        throw e;
+      }
+    });
   }
 
 }
