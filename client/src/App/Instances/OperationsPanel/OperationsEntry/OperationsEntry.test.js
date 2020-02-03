@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {OPERATION_TYPES} from '../constants';
+import {OPERATION_TYPES} from './constants';
 
 import OperationsEntry from './OperationsEntry';
 
@@ -15,15 +15,15 @@ describe('OperationsEntry', () => {
   it('should render', () => {
     const node = shallow(
       <OperationsEntry
-        id={123312}
-        type={OPERATION_TYPES.RETRY}
+        id={'123312'}
+        type={OPERATION_TYPES.RESOLVE_INCIDENT}
         isRunning={true}
       />
     );
 
     const html = node.html();
 
-    expect(html).toContain(123312);
+    expect(html).toContain('123312');
     expect(html).toContain('Retry');
   });
 });

@@ -8,17 +8,51 @@ import {mount} from 'enzyme';
 import React from 'react';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+import {DataManagerProvider} from 'modules/DataManager';
 
 import OperationsPanel from './OperationsPanel';
 
-describe('OperationsPanel', () => {
-  it('should expand', () => {
-    // given
-    const node = mount(
+import useDataManager from 'modules/hooks/useDataManager';
+
+jest.mock('modules/hooks/useDataManager');
+
+const mountOperationsPanel = () => {
+  return mount(
+    <DataManagerProvider>
       <CollapsablePanelProvider>
         <OperationsPanel />
       </CollapsablePanelProvider>
-    );
+    </DataManagerProvider>
+  );
+};
+
+describe('OperationsPanel', () => {
+  beforeEach(() => {
+    createMockDataManager();
+  });
+
+  it('should display fetched data', () => {
+    // given
+    const response = [{id: 'MyOperationId', type: 'RESOLVE_INCIDENT'}];
+    useDataManager.mockReturnValue({
+      subscribe: jest.fn((topic, statehooks, cb) => {
+        cb(response);
+      })
+    });
+
+    // when
+    const node = mountOperationsPanel();
+
+    // then
+    const entry = node.find('[data-test="operations-entry"]');
+    expect(entry.html()).toContain('MyOperationId');
+    expect(entry.html()).toContain('Retry');
+  });
+
+  it('should expand', () => {
+    // given
+    const node = mountOperationsPanel();
 
     // when
     node
@@ -36,11 +70,7 @@ describe('OperationsPanel', () => {
 
   it('should collapse', () => {
     // given
-    const node = mount(
-      <CollapsablePanelProvider>
-        <OperationsPanel />
-      </CollapsablePanelProvider>
-    );
+    const node = mountOperationsPanel();
 
     // when
     node

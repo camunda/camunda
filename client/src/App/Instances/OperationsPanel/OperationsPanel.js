@@ -4,34 +4,44 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import PropTypes from 'prop-types';
 
-import {PANEL_POSITION} from 'modules/constants';
+import {
+  PANEL_POSITION,
+  SUBSCRIPTION_TOPIC,
+  LOADING_STATE
+} from 'modules/constants';
+import {withData} from 'modules/DataManager';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
+import useDataManager from 'modules/hooks/useDataManager';
 
-import {OPERATION_TYPES} from './constants';
+import * as Styled from './styled';
+import {isBatchOperationRunning} from './service';
 import OperationsEntry from './OperationsEntry';
 
-// comment out to see data in operations panel
-// TODO (paddy): will be replaced by real data in OPE-846
-//
-const batchOperations = [];
-// const batchOperations = [
-//   {
-//     type: OPERATION_TYPES.RETRY,
-//     id: 123456789,
-//     isRunning: true
-//   },
-//   {
-//     type: OPERATION_TYPES.CANCEL,
-//     id: 987654321,
-//     isRunning: false
-//   }
-// ];
+function OperationsPanel({
+  isOperationsCollapsed,
+  toggleOperations,
+  dataManager
+}) {
+  const [batchOperations, setBatchOperations] = useState([]);
+  const {subscribe, unsubscribe} = useDataManager();
 
-function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
+  const handleSubscription = useCallback(() => {
+    subscribe(
+      SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
+      LOADING_STATE.LOADED,
+      data => setBatchOperations(data)
+    );
+
+    dataManager.getBatchOperations({pageSize: 20});
+    return () => unsubscribe();
+  }, [subscribe, unsubscribe, dataManager]);
+
+  useEffect(handleSubscription, []);
+
   return (
     <CollapsablePanel
       label="Operations"
@@ -42,18 +52,25 @@ function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
       toggle={toggleOperations}
       verticalLabelOffset={27}
     >
-      <div>
+      <Styled.OperationsList>
         {batchOperations.map(batchOperation => (
-          <OperationsEntry {...batchOperation} key={batchOperation.id} />
+          <OperationsEntry
+            isRunning={isBatchOperationRunning(batchOperation)}
+            id={batchOperation.id}
+            type={batchOperation.type}
+            key={batchOperation.id}
+            data-test="operations-entry"
+          />
         ))}
-      </div>
+      </Styled.OperationsList>
     </CollapsablePanel>
   );
 }
 
 OperationsPanel.propTypes = {
   isOperationsCollapsed: PropTypes.bool.isRequired,
-  toggleOperations: PropTypes.func.isRequired
+  toggleOperations: PropTypes.func.isRequired,
+  dataManager: PropTypes.object
 };
 
-export default withCollapsablePanel(OperationsPanel);
+export default withData(withCollapsablePanel(OperationsPanel));
