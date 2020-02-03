@@ -379,10 +379,7 @@ eventBasedProcess:
     maxRequests: 5
   eventIndexRollover:
     # scheduleIntervalInMinutes specifies how frequently the rollover API should be called to see if a rollover of the
-    # event index is required (whether the rollover is triggered depends on the conditions specified by maxAgeInDays
-    # and maxDocs)
+    # event index is required (whether the rollover is triggered depends on the conditions specified by maxIndexSizeGB).
     scheduleIntervalInMinutes: 10
-    # A rollover is triggered when the age of the current event index matches or exceeds the maxAgeInDays threshold
-    maxAgeInDays: 30
-    # A rollover is triggered when the doc count of the current event index matches or exceeds the maxDocs threshold
-    maxDocs: 1000000
+    # A rollover is triggered when the size of the current event index matches or exceeds the maxIndexSizeGB threshold.
+    maxIndexSizeGB: 50

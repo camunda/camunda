@@ -24,6 +24,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX
 @Component
 @Slf4j
 public class EventIndexRolloverService extends AbstractScheduledService {
+
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
@@ -43,19 +44,14 @@ public class EventIndexRolloverService extends AbstractScheduledService {
   }
 
   public boolean triggerRollover() {
-    return ElasticsearchHelper.triggerRollover(
-      esClient,
-      EVENT_INDEX_NAME,
-      getMaxAge(),
-      getMaxDocs()
-    );
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      return ElasticsearchHelper.triggerRollover(
+        esClient,
+        EVENT_INDEX_NAME,
+        configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB()
+      );
+    }
+    return false;
   }
 
-  private TimeValue getMaxAge() {
-    return new TimeValue(configurationService.getEventIndexRolloverConfiguration().getMaxAgeInDays(), TimeUnit.DAYS);
-  }
-
-  private int getMaxDocs() {
-    return configurationService.getEventIndexRolloverConfiguration().getMaxDocs();
-  }
 }

@@ -29,6 +29,7 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EventIndexRolloverIT extends AbstractIT {
+
   private static final int EXPECTED_NUMBER_OF_EVENTS = 10;
   private static final String EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER = "-000002";
   private static final String EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER = "-000003";
@@ -39,23 +40,10 @@ public class EventIndexRolloverIT extends AbstractIT {
   }
 
   @Test
-  public void testRolloverDueToDocAmountSuccessful() {
+  public void testRolloverDueToIndexSizeSuccessful() {
     // given
     addEvents();
-    getEventIndexRolloverConfiguration().setMaxDocs(EXPECTED_NUMBER_OF_EVENTS);
-
-    // when
-    final boolean isRolledOver = getEventIndexRolloverService().triggerRollover();
-
-    // then
-    assertThat(isRolledOver).isTrue();
-  }
-
-  @Test
-  public void testRolloverDueToAgeSuccessful() {
-    // given
-    addEvents();
-    getEventIndexRolloverConfiguration().setMaxAgeInDays(0);
+    getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
 
     // when
     final boolean isRolledOver = getEventIndexRolloverService().triggerRollover();
@@ -68,7 +56,7 @@ public class EventIndexRolloverIT extends AbstractIT {
   @Test
   public void testMultipleRolloversSuccessful() {
     // given
-    getEventIndexRolloverConfiguration().setMaxAgeInDays(0);
+    getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
 
     // when
     addEvents();
@@ -87,7 +75,7 @@ public class EventIndexRolloverIT extends AbstractIT {
   }
 
   @Test
-  public void testRolloverUnsuccessful() {
+  public void testRolloverConditionsNotMet() {
     // given
     addEvents();
 
@@ -103,7 +91,7 @@ public class EventIndexRolloverIT extends AbstractIT {
   public void aliasAssociatedWithCorrectIndexAfterRollover() {
     // given
     addEvents();
-    getEventIndexRolloverConfiguration().setMaxDocs(EXPECTED_NUMBER_OF_EVENTS);
+    getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
 
     // when
     getEventIndexRolloverService().triggerRollover();
@@ -118,7 +106,7 @@ public class EventIndexRolloverIT extends AbstractIT {
   public void noDataLossAfterRollover() {
     // given
     addEvents();
-    getEventIndexRolloverConfiguration().setMaxDocs(EXPECTED_NUMBER_OF_EVENTS);
+    getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
 
     // when
     getEventIndexRolloverService().triggerRollover();
@@ -132,7 +120,7 @@ public class EventIndexRolloverIT extends AbstractIT {
   public void searchAliasPointsToAllIndicesAfterRollover() {
     // given
     addEvents();
-    getEventIndexRolloverConfiguration().setMaxDocs(EXPECTED_NUMBER_OF_EVENTS);
+    getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
 
     // when
     getEventIndexRolloverService().triggerRollover();
@@ -143,6 +131,19 @@ public class EventIndexRolloverIT extends AbstractIT {
     assertThat(eventCount).isEqualTo(EXPECTED_NUMBER_OF_EVENTS * 2);
   }
 
+  @Test
+  public void rolloversDisabledWhenEventBasedProcessFeatureDisabled() {
+    // given
+    getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
+    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+
+    // when
+    final boolean isRolledOver = getEventIndexRolloverService().triggerRollover();
+
+    // then
+    assertThat(isRolledOver).isFalse();
+  }
+  
   private EventIndexRolloverService getEventIndexRolloverService() {
     return embeddedOptimizeExtension.getEventIndexRolloverService();
   }
@@ -187,7 +188,7 @@ public class EventIndexRolloverIT extends AbstractIT {
   }
 
   @AfterEach
-  private void cleanUpEventIndices() {
+  public void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllEventIndices();
 
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(

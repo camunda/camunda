@@ -15,6 +15,5 @@ import lombok.NoArgsConstructor;
 @Data
 public class EventIndexRolloverConfiguration {
   private int scheduleIntervalInMinutes;
-  private int maxAgeInDays;
-  private int maxDocs;
+  private int maxIndexSizeGB;
 }

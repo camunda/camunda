@@ -18,6 +18,8 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.rollover.RolloverRequest;
 import org.elasticsearch.client.indices.rollover.RolloverResponse;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -183,21 +185,19 @@ public class ElasticsearchHelper {
   }
 
   public static boolean triggerRollover(final OptimizeElasticsearchClient esClient, final String indexAliasName,
-                                        final TimeValue maxAge, final int maxDocs) {
+                                        final int maxIndexSizeGB) {
     RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
-    rolloverRequest.addMaxIndexAgeCondition(maxAge);
-    rolloverRequest.addMaxIndexDocsCondition(maxDocs);
+    rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
 
-    log.info("Executing Rollover Request..");
+    log.info("Executing Rollover Request...");
 
     try {
       RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
       if (rolloverResponse.isRolledOver()) {
         log.info("Index {} has been rolled over. New index name: {}", indexAliasName, rolloverResponse.getNewIndex());
       } else {
-        log.info("Index {} has not been rolled over.", indexAliasName);
+        log.debug("Index {} has not been rolled over.", indexAliasName);
       }
-
       return rolloverResponse.isRolledOver();
     } catch (Exception e) {
       String message = "Failed to execute rollover request";

@@ -172,8 +172,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     ElasticsearchHelper.triggerRollover(
       prefixAwareClient,
       TEST_INDEX_WITH_TEMPLATE.getIndexName(),
-      TimeValue.ZERO,
-      10
+      0
     );
 
     UpgradePlan upgradePlan =

@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -41,10 +40,6 @@ public class UpgradeUtil {
       indexNameService
     );
     ElasticsearchMetadataService metadataService = new ElasticsearchMetadataService(objectMapper);
-    EventIndexRolloverService eventIndexRolloverService = new EventIndexRolloverService(
-      client,
-      configurationService
-    );
     return new UpgradeExecutionDependencies(
       configurationService,
       indexNameService,
