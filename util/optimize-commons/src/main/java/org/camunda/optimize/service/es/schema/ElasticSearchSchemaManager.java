@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;

@@ -41,12 +41,12 @@ public abstract class AbstractActivityInstanceWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void importActivityInstances(List<FlowNodeEventDto> events) {
+  public void importActivityInstancesToProcessInstances(List<FlowNodeEventDto> activityInstances) {
     String importItemName = "activity instances";
-    log.debug("Writing [{}] {} to ES.", events.size(), importItemName);
+    log.debug("Writing [{}] {} to ES.", activityInstances.size(), importItemName);
 
     Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
-    for (FlowNodeEventDto e : events) {
+    for (FlowNodeEventDto e : activityInstances) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
         processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
       }
@@ -109,9 +109,9 @@ public abstract class AbstractActivityInstanceWriter {
     return processEvents.get(0);
   }
 
-  private List<SimpleEventDto> getSimpleEventDtos(List<FlowNodeEventDto> processEvents) {
+  private List<SimpleEventDto> getSimpleEventDtos(List<FlowNodeEventDto> activityInstances) {
     List<SimpleEventDto> simpleEvents = new ArrayList<>();
-    for (FlowNodeEventDto e : processEvents) {
+    for (FlowNodeEventDto e : activityInstances) {
       SimpleEventDto simpleEventDto = new SimpleEventDto();
       simpleEventDto.setDurationInMs(e.getDurationInMs());
       simpleEventDto.setActivityId(e.getActivityId());

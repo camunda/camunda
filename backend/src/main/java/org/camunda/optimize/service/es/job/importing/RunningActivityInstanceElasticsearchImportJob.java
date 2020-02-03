@@ -23,6 +23,6 @@ public class RunningActivityInstanceElasticsearchImportJob extends Elasticsearch
 
   @Override
   protected void persistEntities(List<FlowNodeEventDto> newOptimizeEntities) throws Exception {
-    runningActivityInstanceWriter.importActivityInstances(newOptimizeEntities);
+    runningActivityInstanceWriter.importActivityInstancesToProcessInstances(newOptimizeEntities);
   }
 }

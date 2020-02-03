@@ -32,4 +32,5 @@ public class HistoricActivityInstanceEngineDto implements EngineDto {
   protected Boolean canceled;
   protected Boolean completeScope;
   protected String tenantId;
+
 }

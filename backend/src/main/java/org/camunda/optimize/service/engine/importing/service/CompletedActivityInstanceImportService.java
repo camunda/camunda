@@ -8,6 +8,7 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.CamundaActivityEventService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceElasticsearchImportJob;
@@ -25,14 +26,16 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private CompletedActivityInstanceWriter completedActivityInstanceWriter;
+  private CamundaActivityEventService camundaActivityEventService;
 
   public CompletedActivityInstanceImportService(CompletedActivityInstanceWriter completedActivityInstanceWriter,
+                                                CamundaActivityEventService camundaActivityEventService,
                                                 ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                                EngineContext engineContext
-  ) {
+                                                EngineContext engineContext) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
+    this.camundaActivityEventService = camundaActivityEventService;
   }
 
   @Override
@@ -62,15 +65,17 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
                                                                                 Runnable callback) {
     CompletedActivityInstanceElasticsearchImportJob activityImportJob =
-      new CompletedActivityInstanceElasticsearchImportJob(completedActivityInstanceWriter, callback);
+      new CompletedActivityInstanceElasticsearchImportJob(completedActivityInstanceWriter,
+                                                          camundaActivityEventService, callback);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }
 
   private FlowNodeEventDto mapEngineEntityToOptimizeEntity(final HistoricActivityInstanceEngineDto engineEntity) {
-    final FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto(
+    return new FlowNodeEventDto(
       engineEntity.getId(),
       engineEntity.getActivityId(),
+      engineEntity.getActivityName(),
       engineEntity.getParentActivityInstanceId(),
       engineEntity.getStartTime(),
       engineEntity.getProcessDefinitionKey(),
@@ -83,7 +88,6 @@ public class CompletedActivityInstanceImportService implements ImportService<His
       engineContext.getEngineAlias(),
       engineEntity.getTenantId()
     );
-    return flowNodeEventDto;
   }
 
 }

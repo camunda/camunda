@@ -29,9 +29,6 @@ public class EventIndex extends StrictIndexMappingCreator {
   public static final String SOURCE = EventDto.Fields.source;
   public static final String DATA = EventDto.Fields.data;
 
-  public static final String N_GRAM_FIELD = "nGramField";
-  public static final String LOWERCASE_FIELD = "lowercase";
-
   public static final int VERSION = 2;
 
   @Override

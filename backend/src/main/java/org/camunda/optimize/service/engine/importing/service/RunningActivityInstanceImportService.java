@@ -70,6 +70,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
     final FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto(
       engineEntity.getId(),
       engineEntity.getActivityId(),
+      engineEntity.getActivityName(),
       engineEntity.getParentActivityInstanceId(),
       engineEntity.getStartTime(),
       engineEntity.getProcessDefinitionKey(),

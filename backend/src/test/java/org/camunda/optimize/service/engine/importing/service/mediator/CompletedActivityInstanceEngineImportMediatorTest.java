@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class CompletedActivityInstanceEngineImportMediatorTest extends TimestampBasedImportMediatorTest {
 
-
   @Mock
   private ImportIndexHandlerProvider provider;
 

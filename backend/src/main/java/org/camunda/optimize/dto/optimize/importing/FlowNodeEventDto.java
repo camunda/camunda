@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 public class FlowNodeEventDto implements Serializable, OptimizeDto {
   private String id;
   private String activityId;
+  private String activityName;
   private String activityInstanceId;
   private OffsetDateTime timestamp;
   private String processDefinitionKey;
