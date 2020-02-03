@@ -140,10 +140,10 @@ public class EventProcessInstanceWriter {
       "}\n" +
 
       "Map existingFlowNodeInstancesByActivityId = existingEventsByIdMap.values().stream()\n" +
-        ".collect(Collectors.groupingBy(" +
-          "event -> event.activityId," +
-          "Collectors.toCollection(() -> new TreeSet(eventDateComparator))" +
-        "));\n" +
+        ".collect(Collectors.groupingBy(event -> event.activityId));\n" +
+      "existingFlowNodeInstancesByActivityId\n" +
+        ".values()\n" +
+        ".forEach(byActivityIdList -> byActivityIdList.sort(eventDateComparator));\n" +
       "List pendingFlowNodeInstanceUpdates = new ArrayList(processInstance.pendingFlowNodeInstanceUpdates);\n" +
       "for (def newPendingUpdate : processInstanceUpdate.pendingFlowNodeInstanceUpdates) {\n" +
         "pendingFlowNodeInstanceUpdates.removeIf(existingUpdate -> existingUpdate.id.equals(newPendingUpdate.id));\n" +

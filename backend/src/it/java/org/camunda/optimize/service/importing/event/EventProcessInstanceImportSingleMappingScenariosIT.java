@@ -9,6 +9,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -148,6 +149,43 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
               .containsExactlyInAnyOrder(
                 Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
                 Tuple.tuple(thirdEventId, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
+              )
+            );
+        }
+      );
+  }
+
+  @Test
+  public void multipleActivityInstancesAreGeneratedPerUniqueEvent() {
+    // given
+    final String firstEventId1 = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
+    // this creates another event which is equal to the previous except for having a new unique id
+    final String firstEventId2 = ingestTestEvent(FIRST_EVENT_NAME, FIRST_EVENT_DATETIME);
+
+    createAndPublishMapping(
+      startMapping(FIRST_EVENT_NAME), startMapping(SECOND_EVENT_NAME), startMapping(THIRD_EVENT_NAME)
+    );
+
+    // when
+    executeImportCycle();
+
+    // then
+    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(
+        processInstanceDto -> {
+          assertThat(processInstanceDto)
+            .extracting(ProcessInstanceDto::getEvents)
+            .satisfies(events -> assertThat(events)
+              .extracting(
+                SimpleEventDto::getId,
+                SimpleEventDto::getActivityId,
+                SimpleEventDto::getStartDate
+              )
+              .containsExactlyInAnyOrder(
+                Tuple.tuple(firstEventId1, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME),
+                Tuple.tuple(firstEventId2, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME)
               )
             );
         }
