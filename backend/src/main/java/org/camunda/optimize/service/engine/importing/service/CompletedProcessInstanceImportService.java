@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.CamundaActivityEventService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
@@ -26,6 +27,7 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private CompletedProcessInstanceWriter completedProcessInstanceWriter;
+  private CamundaActivityEventService camundaActivityEventService;
 
   @Override
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
@@ -53,13 +55,13 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
   private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto> processInstances,
                                                                                   Runnable callback) {
     CompletedProcessInstanceElasticsearchImportJob importJob = new CompletedProcessInstanceElasticsearchImportJob(
-      completedProcessInstanceWriter, callback);
+      completedProcessInstanceWriter, camundaActivityEventService, callback);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }
 
   private ProcessInstanceDto mapEngineEntityToOptimizeEntity(HistoricProcessInstanceDto engineEntity) {
-    final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto(
+    return new ProcessInstanceDto(
       engineEntity.getProcessDefinitionKey(),
       engineEntity.getProcessDefinitionVersionAsString(),
       engineEntity.getProcessDefinitionId(),
@@ -72,7 +74,6 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
       engineContext.getEngineAlias(),
       engineEntity.getTenantId().orElseGet(() -> engineContext.getDefaultTenantId().orElse(null))
     );
-    return processInstanceDto;
   }
 
 }

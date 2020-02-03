@@ -7,7 +7,9 @@ package org.camunda.optimize.service;
 
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.activity.CamundaActivityEventDto;
 import org.camunda.optimize.service.engine.importing.service.ProcessDefinitionResolverService;
@@ -29,8 +31,11 @@ public class CamundaActivityEventService {
 
   private static final String START_MAPPED_SUFFIX = "_start";
   private static final String END_MAPPED_SUFFIX = "_end";
+  private static final String PROCESS_START_TYPE = "processInstanceStart";
+  private static final String PROCESS_END_TYPE = "processInstanceEnd";
 
   private static final Set<String> SINGLE_MAPPED_TYPES =
+    // @formatter:off
     Sets.newHashSet(SUB_PROCESS, SUB_PROCESS_AD_HOC, CALL_ACTIVITY, TRANSACTION,
                     ////////////////////////////////////////////////////////////////////////////////////////////
                     BOUNDARY_TIMER, BOUNDARY_MESSAGE, BOUNDARY_SIGNAL, BOUNDARY_COMPENSATION,
@@ -45,12 +50,15 @@ public class CamundaActivityEventService {
                     INTERMEDIATE_EVENT_THROW, INTERMEDIATE_EVENT_SIGNAL_THROW, INTERMEDIATE_EVENT_COMPENSATION_THROW,
                     INTERMEDIATE_EVENT_MESSAGE_THROW, INTERMEDIATE_EVENT_NONE_THROW, INTERMEDIATE_EVENT_ESCALATION_THROW,
                     ////////////////////////////////////////////////////////////////////////////////////////////
-                    END_EVENT_ERROR, END_EVENT_CANCEL, END_EVENT_TERMINATE, END_EVENT_MESSAGE, END_EVENT_SIGNAL,
-                    END_EVENT_COMPENSATION, END_EVENT_ESCALATION, END_EVENT_NONE);
+                    END_EVENT_ERROR, END_EVENT_CANCEL, END_EVENT_TERMINATE, END_EVENT_MESSAGE,
+                    END_EVENT_SIGNAL, END_EVENT_COMPENSATION, END_EVENT_ESCALATION, END_EVENT_NONE
+    );
+  // @formatter:on
 
   private static final Set<String> START_END_MAPPED_TYPES =
     Sets.newHashSet(TASK, TASK_SCRIPT, TASK_SERVICE, TASK_BUSINESS_RULE, TASK_MANUAL_TASK,
-                    TASK_USER_TASK, TASK_SEND_TASK, TASK_RECEIVE_TASK);
+                    TASK_USER_TASK, TASK_SEND_TASK, TASK_RECEIVE_TASK
+    );
 
   private final CamundaActivityEventWriter camundaActivityEventWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -59,6 +67,15 @@ public class CamundaActivityEventService {
     final List<CamundaActivityEventDto> camundaActivityEventDtos = activityInstances
       .stream()
       .flatMap(this::convertFlowNodeToCamundaActivityEvents)
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+    camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
+  }
+
+  public void importCompletedProcessInstancesToCamundaActivityEvents(List<ProcessInstanceDto> processInstanceDtos) {
+    final List<CamundaActivityEventDto> camundaActivityEventDtos = processInstanceDtos
+      .stream()
+      .flatMap(this::convertProcessInstanceToCamundaActivityEvents)
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
     camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
@@ -76,7 +93,9 @@ public class CamundaActivityEventService {
           .build()
       );
     } else if (SINGLE_MAPPED_TYPES.contains(flowNodeEventDto.getActivityType())) {
-      return Stream.of(toCamundaActivityEvent(flowNodeEventDto).toBuilder().timestamp(flowNodeEventDto.getStartDate()).build());
+      return Stream.of(toCamundaActivityEvent(flowNodeEventDto).toBuilder()
+                         .timestamp(flowNodeEventDto.getStartDate())
+                         .build());
     }
     return Stream.empty();
   }
@@ -84,7 +103,7 @@ public class CamundaActivityEventService {
   private CamundaActivityEventDto toCamundaActivityEvent(final FlowNodeEventDto flowNodeEventDto) {
     Optional<ProcessDefinitionOptimizeDto> processDefinition =
       processDefinitionResolverService.getDefinitionForProcessDefinitionId(
-      flowNodeEventDto.getProcessDefinitionId());
+        flowNodeEventDto.getProcessDefinitionId());
     return CamundaActivityEventDto.builder()
       .activityId(flowNodeEventDto.getActivityId())
       .activityName(flowNodeEventDto.getActivityName())
@@ -97,6 +116,38 @@ public class CamundaActivityEventService {
       .tenantId(flowNodeEventDto.getTenantId())
       .timestamp(flowNodeEventDto.getStartDate())
       .build();
+  }
+
+  private Stream<CamundaActivityEventDto> convertProcessInstanceToCamundaActivityEvents(ProcessInstanceDto
+                                                                                          processInstanceDto) {
+    String processDefinitionName = processDefinitionResolverService.getDefinitionForProcessDefinitionId(
+      processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
+    return Stream.of(
+      CamundaActivityEventDto.builder()
+        .activityId(processInstanceDto.getProcessDefinitionKey() + "_" + PROCESS_START_TYPE)
+        .activityName(PROCESS_START_TYPE)
+        .activityType(PROCESS_START_TYPE)
+        .processDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+        .processInstanceId(processInstanceDto.getProcessInstanceId())
+        .processDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+        .processDefinitionName(processDefinitionName)
+        .engine(processInstanceDto.getEngine())
+        .tenantId(processInstanceDto.getTenantId())
+        .timestamp(processInstanceDto.getStartDate())
+        .build(),
+      CamundaActivityEventDto.builder()
+        .activityId(processInstanceDto.getProcessDefinitionKey() + "_" + PROCESS_END_TYPE)
+        .activityName(PROCESS_END_TYPE)
+        .activityType(PROCESS_END_TYPE)
+        .processDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+        .processInstanceId(processInstanceDto.getProcessInstanceId())
+        .processDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+        .processDefinitionName(processDefinitionName)
+        .engine(processInstanceDto.getEngine())
+        .tenantId(processInstanceDto.getTenantId())
+        .timestamp(processInstanceDto.getEndDate())
+        .build()
+    );
   }
 
 }
