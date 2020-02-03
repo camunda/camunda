@@ -25,6 +25,7 @@ public class CamundaActivityEventDto {
   private String activityId;
   private String activityName;
   private String activityType;
+  private String activityInstanceId;
   private String processDefinitionKey;
   private String processInstanceId;
   private String processDefinitionVersion;

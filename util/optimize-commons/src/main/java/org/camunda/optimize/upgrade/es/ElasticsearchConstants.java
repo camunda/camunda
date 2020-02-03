@@ -52,9 +52,9 @@ public class ElasticsearchConstants {
   public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
   public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX = "event-process-publish-state";
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
-  public static final String CAMUNDA_ACTIVITY_EVENT_INDEX_NAME = "camunda-activity-event";
 
   public static final String EVENT_PROCESS_INSTANCE_INDEX_PREFIX = "event-process-instance-";
+  public static final String CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX = "camunda-activity-event-";
 
   public static final String INDEX_SUFFIX_PRE_ROLLOVER = "-000001";
 

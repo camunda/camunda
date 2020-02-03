@@ -105,4 +105,5 @@ public abstract class AbstractImportIT extends AbstractIT {
     variables.put("aVariable", "aStringVariable");
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
+
 }

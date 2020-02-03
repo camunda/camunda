@@ -35,7 +35,6 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .toVersion(TO_VERSION)
       .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
       .addUpgradeStep(new UpdateIndexStep(new EventSequenceCountIndex(), null))
-      .addUpgradeStep(new CreateIndexStep(new CamundaActivityEventIndex()))
       .build();
   }
 

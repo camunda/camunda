@@ -7,13 +7,19 @@ package org.camunda.optimize.service;
 
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.activity.CamundaActivityEventDto;
 import org.camunda.optimize.service.engine.importing.service.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -27,12 +33,13 @@ import static org.camunda.bpm.engine.ActivityTypes.*;
 
 @AllArgsConstructor
 @Component
+@Slf4j
 public class CamundaActivityEventService {
 
-  private static final String START_MAPPED_SUFFIX = "_start";
-  private static final String END_MAPPED_SUFFIX = "_end";
-  private static final String PROCESS_START_TYPE = "processInstanceStart";
-  private static final String PROCESS_END_TYPE = "processInstanceEnd";
+  public static final String START_MAPPED_SUFFIX = "start";
+  public static final String END_MAPPED_SUFFIX = "end";
+  public static final String PROCESS_START_TYPE = "processInstanceStart";
+  public static final String PROCESS_END_TYPE = "processInstanceEnd";
 
   private static final Set<String> SINGLE_MAPPED_TYPES =
     // @formatter:off
@@ -62,8 +69,15 @@ public class CamundaActivityEventService {
 
   private final CamundaActivityEventWriter camundaActivityEventWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+  private final OptimizeElasticsearchClient elasticsearchClient;
+  private final ElasticSearchSchemaManager elasticSearchSchemaManager;
 
   public void importActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> activityInstances) {
+    List<String> processDefinitionKeysInBatch = activityInstances
+      .stream()
+      .map(FlowNodeEventDto::getProcessDefinitionKey)
+      .collect(Collectors.toList());
+    createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
     final List<CamundaActivityEventDto> camundaActivityEventDtos = activityInstances
       .stream()
       .flatMap(this::convertFlowNodeToCamundaActivityEvents)
@@ -73,6 +87,10 @@ public class CamundaActivityEventService {
   }
 
   public void importCompletedProcessInstancesToCamundaActivityEvents(List<ProcessInstanceDto> processInstanceDtos) {
+    final List<String> processDefinitionKeysInBatch = processInstanceDtos
+      .stream()
+      .map(ProcessInstanceDto::getProcessDefinitionKey).collect(Collectors.toList());
+    createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
     final List<CamundaActivityEventDto> camundaActivityEventDtos = processInstanceDtos
       .stream()
       .flatMap(this::convertProcessInstanceToCamundaActivityEvents)
@@ -81,14 +99,54 @@ public class CamundaActivityEventService {
     camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
   }
 
+  private static String addDelimiterForStrings(String... strings) {
+    return String.join("_", strings);
+  }
+
+  private void createMissingActivityIndicesForProcessDefinitions(List<String> processDefinitionKeys) {
+    final List<IndexMappingCreator> activityIndicesToCheck = processDefinitionKeys.stream()
+      .distinct()
+      .map(CamundaActivityEventIndex::new)
+      .collect(Collectors.toList());
+    try {
+      // We make this check first to see if we can avoid checking individually for each definition key in the batch
+      if (elasticSearchSchemaManager.indicesExist(elasticsearchClient, activityIndicesToCheck)) {
+        return;
+      }
+    } catch (OptimizeRuntimeException ex) {
+      log.warn(
+        "Failed to check if camunda activity event indices exist for process definition keys {}",
+        processDefinitionKeys
+      );
+    }
+    activityIndicesToCheck.forEach(activityIndex -> {
+      try {
+        final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
+          elasticsearchClient, activityIndex
+        );
+        if (!indexAlreadyExists) {
+          elasticSearchSchemaManager.createOptimizeIndex(
+            elasticsearchClient, activityIndex);
+        }
+      } catch (final Exception e) {
+        log.error("Failed ensuring camunda activity event index is present: {}", activityIndex.getIndexName(), e);
+        throw e;
+      }
+    });
+  }
+
   private Stream<CamundaActivityEventDto> convertFlowNodeToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {
     if (START_END_MAPPED_TYPES.contains(flowNodeEventDto.getActivityType())) {
       return Stream.of(
         toCamundaActivityEvent(flowNodeEventDto).toBuilder()
-          .activityName(flowNodeEventDto.getActivityName() + START_MAPPED_SUFFIX)
+          .activityId(addDelimiterForStrings(flowNodeEventDto.getActivityId(), START_MAPPED_SUFFIX))
+          .activityName(addDelimiterForStrings(flowNodeEventDto.getActivityName(), START_MAPPED_SUFFIX))
+          .activityInstanceId(addDelimiterForStrings(flowNodeEventDto.getActivityInstanceId(), START_MAPPED_SUFFIX))
           .build(),
         toCamundaActivityEvent(flowNodeEventDto).toBuilder()
-          .activityName(flowNodeEventDto.getActivityName() + END_MAPPED_SUFFIX)
+          .activityId(addDelimiterForStrings(flowNodeEventDto.getActivityId(), END_MAPPED_SUFFIX))
+          .activityName(addDelimiterForStrings(flowNodeEventDto.getActivityName(), END_MAPPED_SUFFIX))
+          .activityInstanceId(addDelimiterForStrings(flowNodeEventDto.getActivityInstanceId(), END_MAPPED_SUFFIX))
           .timestamp(flowNodeEventDto.getEndDate())
           .build()
       );
@@ -108,6 +166,7 @@ public class CamundaActivityEventService {
       .activityId(flowNodeEventDto.getActivityId())
       .activityName(flowNodeEventDto.getActivityName())
       .activityType(flowNodeEventDto.getActivityType())
+      .activityInstanceId(flowNodeEventDto.getId())
       .processDefinitionKey(flowNodeEventDto.getProcessDefinitionKey())
       .processInstanceId(flowNodeEventDto.getProcessInstanceId())
       .processDefinitionVersion(processDefinition.map(ProcessDefinitionOptimizeDto::getVersion).orElse(null))
@@ -124,9 +183,10 @@ public class CamundaActivityEventService {
       processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
     return Stream.of(
       CamundaActivityEventDto.builder()
-        .activityId(processInstanceDto.getProcessDefinitionKey() + "_" + PROCESS_START_TYPE)
+        .activityId(addDelimiterForStrings(processInstanceDto.getProcessDefinitionKey(), PROCESS_START_TYPE))
         .activityName(PROCESS_START_TYPE)
         .activityType(PROCESS_START_TYPE)
+        .activityInstanceId(addDelimiterForStrings(processInstanceDto.getProcessDefinitionKey(), PROCESS_START_TYPE))
         .processDefinitionKey(processInstanceDto.getProcessDefinitionKey())
         .processInstanceId(processInstanceDto.getProcessInstanceId())
         .processDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -136,9 +196,10 @@ public class CamundaActivityEventService {
         .timestamp(processInstanceDto.getStartDate())
         .build(),
       CamundaActivityEventDto.builder()
-        .activityId(processInstanceDto.getProcessDefinitionKey() + "_" + PROCESS_END_TYPE)
+        .activityId(addDelimiterForStrings(processInstanceDto.getProcessDefinitionKey(), PROCESS_END_TYPE))
         .activityName(PROCESS_END_TYPE)
         .activityType(PROCESS_END_TYPE)
+        .activityInstanceId(addDelimiterForStrings(processInstanceDto.getProcessDefinitionKey(), PROCESS_END_TYPE))
         .processDefinitionKey(processInstanceDto.getProcessDefinitionKey())
         .processInstanceId(processInstanceDto.getProcessInstanceId())
         .processDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())

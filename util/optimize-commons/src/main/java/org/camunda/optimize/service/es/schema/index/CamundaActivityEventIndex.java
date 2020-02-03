@@ -7,23 +7,22 @@ package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.query.event.activity.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 
-@Component
 public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
 
   public static final String ACTIVITY_ID = CamundaActivityEventDto.Fields.activityId;
   public static final String ACTIVITY_NAME = CamundaActivityEventDto.Fields.activityName;
   public static final String ACTIVITY_TYPE = CamundaActivityEventDto.Fields.activityType;
+  public static final String ACTIVITY_INSTANCE_ID = CamundaActivityEventDto.Fields.activityInstanceId;
   public static final String PROCESS_DEFINITION_KEY = CamundaActivityEventDto.Fields.processDefinitionKey;
   public static final String PROCESS_INSTANCE_ID = CamundaActivityEventDto.Fields.processInstanceId;
   public static final String PROCESS_INSTANCE_VERSION = CamundaActivityEventDto.Fields.processDefinitionVersion;
@@ -34,9 +33,15 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
 
   public static final int VERSION = 1;
 
+  private String indexName;
+
+  public CamundaActivityEventIndex(final String processDefinitionKey) {
+    indexName = CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey;
+  }
+
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_NAME;
+    return indexName;
   }
 
   @Override
@@ -55,6 +60,9 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(ACTIVITY_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ACTIVITY_INSTANCE_ID)
         .field("type", "keyword")
       .endObject()
       .startObject(PROCESS_DEFINITION_KEY)

@@ -12,6 +12,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class EventImportSchedulerIT extends AbstractIT {
+
   @Test
   public void verifyEventImportDisabledByDefault() {
     assertThat(embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().isEnabled(), is(false));
@@ -34,4 +35,5 @@ public class EventImportSchedulerIT extends AbstractIT {
     embeddedOptimizeExtension.getIngestedEventImportScheduler().stopImportScheduling();
     assertThat(embeddedOptimizeExtension.getIngestedEventImportScheduler().isScheduledToRun(), is(false));
   }
+  
 }

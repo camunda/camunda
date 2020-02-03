@@ -91,7 +91,7 @@ public class ElasticSearchSchemaManager {
     return indicesExist(esClient, Collections.singletonList(mapping));
   }
 
-  private boolean indicesExist(final OptimizeElasticsearchClient esClient,
+  public boolean indicesExist(final OptimizeElasticsearchClient esClient,
                                final List<IndexMappingCreator> mappings) {
     final List<String> indices = mappings.stream().map(IndexMappingCreator::getIndexName)
       .map(indexNameService::getOptimizeIndexAliasForIndex)

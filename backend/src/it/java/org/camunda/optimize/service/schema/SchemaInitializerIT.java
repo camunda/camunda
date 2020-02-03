@@ -31,7 +31,6 @@ import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -101,7 +100,7 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size()).isEqualTo(26);
+    assertThat(mappings.size()).isEqualTo(25);
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }
