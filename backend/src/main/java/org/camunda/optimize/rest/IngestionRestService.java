@@ -50,7 +50,7 @@ public class IngestionRestService {
 
   @POST
   @Path(EVENT_BATCH_SUB_PATH)
-  @Consumes(CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH)
+  @Consumes({CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH, MediaType.APPLICATION_JSON})
   @Produces(MediaType.APPLICATION_JSON)
   public void ingestCloudEvents(final @Context ContainerRequestContext requestContext,
                                 final @NotNull @Valid @RequestBody ValidList<CloudEventDto> cloudEventDtos) {

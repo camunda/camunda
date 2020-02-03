@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -65,6 +65,24 @@ public class EventIngestionRestIT extends AbstractIT {
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getAccessToken())
+      .execute();
+
+    // then
+    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+
+    assertEventDtosArePersisted(eventDtos);
+  }
+
+  @Test
+  public void ingestEventBatchWithPlainJsonContentType() {
+    // given
+    final List<CloudEventDto> eventDtos = IntStream.range(0, 10)
+      .mapToObj(operand -> eventClient.createCloudEventDto())
+      .collect(toList());
+
+    // when
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventBatchWithMediaType(eventDtos, getAccessToken(), MediaType.APPLICATION_JSON)
       .execute();
 
     // then

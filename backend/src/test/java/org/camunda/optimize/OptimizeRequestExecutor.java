@@ -1086,10 +1086,16 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildIngestEventBatch(final List<CloudEventDto> eventDtos, final String secret) {
+    return buildIngestEventBatchWithMediaType(eventDtos, secret, CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH);
+  }
+
+  public OptimizeRequestExecutor buildIngestEventBatchWithMediaType(final List<CloudEventDto> eventDtos,
+                                                                     final String secret,
+                                                                     final String mediaType) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
     addSingleHeader(HttpHeaders.AUTHORIZATION, secret);
-    this.mediaType = CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
+    this.mediaType = mediaType;
     this.body = getBody(eventDtos);
     return this;
   }
