@@ -81,4 +81,5 @@ public class CompletedActivityInstanceEngineImportMediatorTest extends Timestamp
     // then
     assertThat(result, is(true));
   }
+
 }

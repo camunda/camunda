@@ -42,7 +42,11 @@ public class CompletedActivityInstanceEngineImportMediator
     importIndexHandler = provider.getCompletedActivityInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext);
     importService = new CompletedActivityInstanceImportService(
-      completedActivityInstanceWriter, camundaActivityEventService, elasticsearchImportJobExecutor, engineContext
+      completedActivityInstanceWriter,
+      camundaActivityEventService,
+      elasticsearchImportJobExecutor,
+      engineContext,
+      configurationService
     );
   }
 

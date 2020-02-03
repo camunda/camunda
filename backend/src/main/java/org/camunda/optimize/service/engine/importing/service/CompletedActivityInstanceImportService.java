@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedActivityInstanceWriter;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,13 +28,16 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   protected EngineContext engineContext;
   private CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private CamundaActivityEventService camundaActivityEventService;
+  private ConfigurationService configurationService;
 
   public CompletedActivityInstanceImportService(CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                 CamundaActivityEventService camundaActivityEventService,
                                                 ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                                EngineContext engineContext) {
+                                                EngineContext engineContext,
+                                                ConfigurationService configurationService) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
+    this.configurationService = configurationService;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.camundaActivityEventService = camundaActivityEventService;
   }
@@ -66,7 +70,9 @@ public class CompletedActivityInstanceImportService implements ImportService<His
                                                                                 Runnable callback) {
     CompletedActivityInstanceElasticsearchImportJob activityImportJob =
       new CompletedActivityInstanceElasticsearchImportJob(completedActivityInstanceWriter,
-                                                          camundaActivityEventService, callback);
+                                                          camundaActivityEventService,
+                                                          configurationService,
+                                                          callback);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }
