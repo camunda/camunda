@@ -12,6 +12,7 @@ REGISTRY_PSW=$3
 SQL_DUMP=$4
 ES_VERSION=$5
 CAMPBM_VERSION=$6
+ES_REFRESH_INTERVAL=$7
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/ns.yml | kubectl apply -f -
 kubectl create secret docker-registry registry-camunda-cloud-secret \
