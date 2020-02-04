@@ -26,4 +26,4 @@ jobs:
           fi
 
       - name: Build
-        run: go build -v .
+        run: cd clients/go && go build -v .
