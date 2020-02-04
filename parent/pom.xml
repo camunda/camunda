@@ -46,7 +46,7 @@
     <version.commons-codec>1.14</version.commons-codec>
     <version.elasticsearch>6.8.6</version.elasticsearch>
     <version.error-prone>2.3.4</version.error-prone>
-    <version.grpc>1.26.0</version.grpc>
+    <version.grpc>1.27.0</version.grpc>
     <version.gson>2.8.6</version.gson>
     <version.guava>28.2-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -65,7 +65,7 @@
     <version.netty-tcnative>2.0.28.Final</version.netty-tcnative>
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.8.1</version.prometheus>
-    <version.protobuf>3.11.1</version.protobuf>
+    <version.protobuf>3.11.3</version.protobuf>
     <version.rocksdbjni>6.5.3</version.rocksdbjni>
     <version.sbe>1.16.1</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
@@ -74,7 +74,7 @@
     <version.snakeyaml>1.25</version.snakeyaml>
     <version.toml>0.7.2</version.toml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>2.25.1</version.wiremock>
+    <version.wiremock>2.26.0</version.wiremock>
     <version.asm>7.3.1</version.asm>
     <version.testcontainers>1.12.5</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>

@@ -14,6 +14,7 @@ import io.zeebe.engine.processor.workflow.deployment.DeploymentEventProcessors;
 import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributeProcessor;
 import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processor.workflow.incident.IncidentEventProcessors;
+import io.zeebe.engine.processor.workflow.job.JobErrorThrownProcessor;
 import io.zeebe.engine.processor.workflow.job.JobEventProcessors;
 import io.zeebe.engine.processor.workflow.message.MessageEventProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
@@ -58,8 +59,13 @@ public final class EngineProcessors {
     final BpmnStepProcessor stepProcessor =
         addWorkflowProcessors(
             zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
-    addIncidentProcessors(zeebeState, stepProcessor, typedRecordProcessors);
-    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize);
+
+    final JobErrorThrownProcessor jobErrorThrownProcessor =
+        addJobProcessors(
+            zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize);
+
+    addIncidentProcessors(
+        zeebeState, stepProcessor, typedRecordProcessors, jobErrorThrownProcessor);
 
     return typedRecordProcessors;
   }
@@ -117,16 +123,18 @@ public final class EngineProcessors {
   private static void addIncidentProcessors(
       final ZeebeState zeebeState,
       final BpmnStepProcessor stepProcessor,
-      final TypedRecordProcessors typedRecordProcessors) {
-    IncidentEventProcessors.addProcessors(typedRecordProcessors, zeebeState, stepProcessor);
+      final TypedRecordProcessors typedRecordProcessors,
+      final JobErrorThrownProcessor jobErrorThrownProcessor) {
+    IncidentEventProcessors.addProcessors(
+        typedRecordProcessors, zeebeState, stepProcessor, jobErrorThrownProcessor);
   }
 
-  private static void addJobProcessors(
+  private static JobErrorThrownProcessor addJobProcessors(
       final ZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final Consumer<String> onJobsAvailableCallback,
       final int maxFragmentSize) {
-    JobEventProcessors.addJobProcessors(
+    return JobEventProcessors.addJobProcessors(
         typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize);
   }
 

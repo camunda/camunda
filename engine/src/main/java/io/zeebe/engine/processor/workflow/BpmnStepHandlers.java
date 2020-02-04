@@ -75,7 +75,7 @@ public final class BpmnStepHandlers {
             state.getKeyGenerator(),
             state.getMessageState(),
             state.getWorkflowState().getEventScopeInstanceState());
-    final var errorEventHandle =
+    final var errorEventHandler =
         new ErrorEventHandler(state.getWorkflowState(), state.getKeyGenerator());
 
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>());
@@ -202,7 +202,7 @@ public final class BpmnStepHandlers {
         BpmnStep.CALL_ACTIVITY_TERMINATING,
         new CallActivityTerminatingHandler(catchEventSubscriber));
 
-    stepHandlers.put(BpmnStep.THROW_ERROR, new ThrowErrorHandler(errorEventHandle));
+    stepHandlers.put(BpmnStep.THROW_ERROR, new ThrowErrorHandler(errorEventHandler));
   }
 
   public void handle(final BpmnStepContext context) {

@@ -17,7 +17,8 @@ import io.zeebe.protocol.record.intent.JobIntent;
 import java.util.function.Consumer;
 
 public final class JobEventProcessors {
-  public static void addJobProcessors(
+
+  public static JobErrorThrownProcessor addJobProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
@@ -27,6 +28,9 @@ public final class JobEventProcessors {
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
 
+    final var jobErrorThrownProcessor =
+        new JobErrorThrownProcessor(workflowState, keyGenerator, jobState);
+
     typedRecordProcessors
         .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor(workflowState))
         .onEvent(ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor(workflowState))
@@ -35,10 +39,7 @@ public final class JobEventProcessors {
         .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
         .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
         .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(jobState))
-        .onEvent(
-            ValueType.JOB,
-            JobIntent.ERROR_THROWN,
-            new JobErrorThrownProcessor(workflowState, keyGenerator, jobState))
+        .onEvent(ValueType.JOB, JobIntent.ERROR_THROWN, jobErrorThrownProcessor)
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor(jobState))
@@ -58,5 +59,7 @@ public final class JobEventProcessors {
                 jobState.setJobsAvailableCallback(onJobsAvailableCallback);
               }
             });
+
+    return jobErrorThrownProcessor;
   }
 }

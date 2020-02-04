@@ -46,6 +46,13 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
       final TypedStreamWriter streamWriter) {
 
     final var job = record.getValue();
+    final var jobKey = record.getKey();
+
+    processRecord(jobKey, job, streamWriter);
+  }
+
+  public void processRecord(
+      final long jobKey, final JobRecord job, final TypedStreamWriter streamWriter) {
     final var serviceTaskInstanceKey = job.getElementInstanceKey();
     final var serviceTaskInstance = elementInstanceState.getInstance(serviceTaskInstanceKey);
 
@@ -61,15 +68,10 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
         serviceTaskInstance.setJobKey(-1L);
         elementInstanceState.updateInstance(serviceTaskInstance);
 
-        // remove job from state
-        jobState.throwError(record.getKey(), job);
+        jobState.delete(jobKey, job);
 
       } else {
-        // mark job as failed and create an incident
-        job.setRetries(0);
-        jobState.fail(record.getKey(), job);
-
-        raiseIncident(record.getKey(), job, streamWriter);
+        raiseIncident(jobKey, job, streamWriter);
       }
     }
   }
@@ -88,7 +90,7 @@ public class JobErrorThrownProcessor implements TypedRecordProcessor<JobRecord> 
 
     incidentEvent.reset();
     incidentEvent
-        .setErrorType(ErrorType.JOB_NO_RETRIES)
+        .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
         .setErrorMessage(incidentErrorMessage)
         .setBpmnProcessId(job.getBpmnProcessIdBuffer())
         .setWorkflowKey(job.getWorkflowKey())
