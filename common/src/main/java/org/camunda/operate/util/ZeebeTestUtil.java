@@ -5,6 +5,16 @@
  */
 package org.camunda.operate.util;
 
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
@@ -16,13 +26,6 @@ import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiConsumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public abstract class ZeebeTestUtil {
 
@@ -128,7 +131,13 @@ public abstract class ZeebeTestUtil {
       failCommand.send().join();
     })).get(0);
   }
-
+  
+  public static Long throwErrorInTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures, String errorCode,String errorMessage) {
+    return handleTasks(client, jobType, workerName, numberOfFailures, ((jobClient, job) -> {
+      jobClient.newThrowErrorCommand(job.getKey()).errorCode(errorCode).errorMessage(errorMessage).send().join();
+    })).get(0);
+  }
+  
   private static List<Long> handleTasks(ZeebeClient client, String jobType, String workerName, int jobCount, BiConsumer<JobClient, ActivatedJob> jobHandler) {
     final List<Long> jobKeys = new ArrayList<>();
     while (jobKeys.size() < jobCount) {

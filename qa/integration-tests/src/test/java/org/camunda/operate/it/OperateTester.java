@@ -5,6 +5,11 @@
  */
 package org.camunda.operate.it;
 
+import static org.camunda.operate.util.CollectionUtil.filter;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.AbstractArchiverJob;
@@ -43,15 +49,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-
-import static org.camunda.operate.util.CollectionUtil.*;
-
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
@@ -119,6 +120,8 @@ public class OperateTester {
   
   private boolean operationExecutorEnabled = true;
 
+  private Long jobKey;
+
   public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
     this.mockMvcTestRule = mockMvcTestRule;
@@ -179,11 +182,21 @@ public class OperateTester {
     return this;
   }
   
+  public OperateTester completeTask(String taskName) {
+     ZeebeTestUtil.completeTask(zeebeClient, taskName, UUID.randomUUID().toString(), null);
+     return this;
+  }
+  
   public OperateTester failTask(String taskName, String errorMessage) {
-    /*jobKey =*/ ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
+    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
     return this;
   }
- 
+  
+  public OperateTester throwError(String taskName,String errorCode,String errorMessage) {
+    ZeebeTestUtil.throwErrorInTask(zeebeClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
+    return this;
+  }
+  
   public OperateTester incidentIsActive() {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return this;
