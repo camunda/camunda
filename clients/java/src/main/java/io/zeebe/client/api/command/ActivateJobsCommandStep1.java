@@ -50,21 +50,6 @@ public interface ActivateJobsCommandStep1 {
      * subscription work on the job. When the time is over then the job can be assigned again by
      * this or other subscription if it's not completed yet.
      *
-     * <p>If no timeout is set, then the default is used from the configuration.
-     *
-     * @param timeout the time in milliseconds
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
-     */
-    ActivateJobsCommandStep3 timeout(long timeout);
-
-    /**
-     * Set the time for how long a job is exclusively assigned for this subscription.
-     *
-     * <p>In this time, the job can not be assigned by other subscriptions to ensure that only one
-     * subscription work on the job. When the time is over then the job can be assigned again by
-     * this or other subscription if it's not completed yet.
-     *
      * <p>If no time is set then the default is used from the configuration.
      *
      * @param timeout the time as duration (e.g. "Duration.ofMinutes(5)")
