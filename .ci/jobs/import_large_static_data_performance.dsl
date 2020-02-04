@@ -14,7 +14,7 @@ pipelineJob('import-performance-large-static-dataset') {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
 
     choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc'])
-    stringParam('ES_REFRESH_INTERVAL', '5s', 'Elasticsearch index refresh interval.')
+    stringParam('ES_REFRESH_INTERVAL', '2s', 'Elasticsearch index refresh interval.')
     stringParam('EXPECTED_NUMBER_OF_PROCESS_INSTANCES', '10000000', '')
     stringParam('EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES', '125887254', '')
     stringParam('EXPECTED_NUMBER_OF_USER_TASKS', '9442215', '')
