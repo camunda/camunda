@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.command;
 
+import io.zeebe.client.api.response.FailJobResponse;
+
 public interface FailJobCommandStep1 {
 
   /**
@@ -29,7 +31,7 @@ public interface FailJobCommandStep1 {
    */
   FailJobCommandStep2 retries(int remainingRetries);
 
-  interface FailJobCommandStep2 extends FinalCommandStep<Void> {
+  interface FailJobCommandStep2 extends FinalCommandStep<FailJobResponse> {
     // the place for new optional parameters
 
     /**

@@ -29,8 +29,8 @@ import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.response.DeploymentEventImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -156,11 +156,12 @@ public final class DeployWorkflowCommandImpl
   public ZeebeFuture<DeploymentEvent> send() {
     final DeployWorkflowRequest request = requestBuilder.build();
 
-    final RetriableClientFutureImpl<DeploymentEvent, DeployWorkflowResponse> future =
-        new RetriableClientFutureImpl<>(
-            DeploymentEventImpl::new,
-            retryPredicate,
-            streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployWorkflowResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                DeploymentEventImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
 
     send(request, future);
 

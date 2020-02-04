@@ -1,0 +1,6 @@
+<differences>
+  <difference>
+    <className>io/zeebe/client/api/response/JobEvent</className>
+    <differenceType>8001</differenceType>
+  </difference>
+</differences>
