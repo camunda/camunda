@@ -117,7 +117,7 @@ public final class AtomixFactory {
     final ByteValue maxMessageSize = networkCfg.getMaxMessageSize();
     partitionGroupBuilder.withMaxEntrySize((int) maxMessageSize.toBytes());
 
-    Optional.ofNullable(dataCfg.getRaftSegmentSize())
+    Optional.ofNullable(dataCfg.getLogSegmentSize())
         .map(ByteValue::new)
         .ifPresent(
             segmentSize -> {
