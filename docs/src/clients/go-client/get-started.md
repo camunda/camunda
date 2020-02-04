@@ -112,7 +112,7 @@ Later, we will extend the workflow with more functionality.
 Open the Zeebe Modeler and create a new BPMN diagram.
 Add a start event and an end event to the diagram and connect the events.
 
-![model-workflow-step-1](/go-client/order-process-simple.png)
+![model-workflow-step-1](/clients/go-client/order-process-simple.png)
 
 Set the id to `order-process` (i.e., the BPMN process id) and mark the diagram
 as executable.  Save the diagram in the project's source folder.
@@ -217,7 +217,7 @@ Start the Zeebe Monitor using `java -jar zeebe-simple-monitor-app-*.jar`.
 Open a web browser and go to <http://localhost:8080/>.
 
 Here, you see the current state of the workflow instance.
-![zeebe-monitor-step-1](/java-client/java-get-started-monitor-1.gif)
+![zeebe-monitor-step-1](/clients/java-client/java-get-started-monitor-1.gif)
 
 
 ## Work on a task
@@ -230,7 +230,7 @@ reaches a service task.
 Open the BPMN diagram in the Zeebe Modeler.
 Insert a few service tasks between the start and the end event.
 
-![model-workflow-step-2](/go-client/order-process.png)
+![model-workflow-step-2](/clients/go-client/order-process.png)
 
 You need to set the type of each task, which identifies the nature of the work to be performed.
 Set the type of the first task to `payment-service`.
@@ -338,7 +338,7 @@ it encounters a problem while processing the job.
 
 When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
 
-![zeebe-monitor-step-2](/java-client/java-get-started-monitor-2.gif)
+![zeebe-monitor-step-2](/clients/java-client/java-get-started-monitor-2.gif)
 
 When you run the above example you should see similar output:
 

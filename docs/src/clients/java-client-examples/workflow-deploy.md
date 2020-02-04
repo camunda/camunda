@@ -14,7 +14,7 @@
 [Source on github](https://github.com/zeebe-io/zeebe/tree/{{commit}}/samples/src/main/java/io/zeebe/example/workflow/WorkflowDeployer.java)
 
 ```java
-{{#include ../../../samples/src/main/java/io/zeebe/example/workflow/WorkflowDeployer.java}}
+{{#include ../../../../samples/src/main/java/io/zeebe/example/workflow/WorkflowDeployer.java}}
 ```
 
 ## demoProcess.bpmn
@@ -24,5 +24,5 @@
 Download the XML and save it in the Java classpath before running the example. Open the file with Zeebe Modeler for a graphical representation.
 
 ```xml
-{{#include ../../../samples/src/main/resources/demoProcess.bpmn}}
+{{#include ../../../../samples/src/main/resources/demoProcess.bpmn}}
 ```

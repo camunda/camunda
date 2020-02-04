@@ -18,7 +18,7 @@ gRPC has many nice features that make it a good fit for Zeebe. It:
 
 ## Supported clients
 
-At the moment, Zeebe officially supports two gRPC clients: one in [Java](/java-client/), and one in [Golang](/go-client/).
+At the moment, Zeebe officially supports two gRPC clients: one in [Java](/clients/java-client/), and one in [Golang](/clients/go-client/).
 
 If Zeebe does not provide an officially-supported client in your target language, you can read the official [Quick Start](https://grpc.io/docs/quickstart/) page to find out how
 to create a very basic one.
