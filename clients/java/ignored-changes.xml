@@ -9,4 +9,14 @@
     <method>java.lang.String getVersion()</method>
     <differenceType>7012</differenceType>
   </difference>
+  <difference>
+    <className>io/zeebe/client/api/command/ActivateJobsCommandStep1$ActivateJobsCommandStep3</className>
+    <method>io.zeebe.client.api.command.ActivateJobsCommandStep1$ActivateJobsCommandStep3 timeout(long)</method>
+    <differenceType>7002</differenceType>
+  </difference>
+  <difference>
+    <className>io/zeebe/client/impl/command/ActivateJobsCommandImpl</className>
+    <method>io.zeebe.client.api.command.ActivateJobsCommandStep1$ActivateJobsCommandStep3 timeout(long)</method>
+    <differenceType>7002</differenceType>
+  </difference>
 </differences>

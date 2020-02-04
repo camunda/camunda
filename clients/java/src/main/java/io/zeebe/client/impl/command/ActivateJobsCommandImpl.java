@@ -73,14 +73,9 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
-  public ActivateJobsCommandStep3 timeout(final long timeout) {
-    builder.setTimeout(timeout);
-    return this;
-  }
-
-  @Override
   public ActivateJobsCommandStep3 timeout(final Duration timeout) {
-    return timeout(timeout.toMillis());
+    builder.setTimeout(timeout.toMillis());
+    return this;
   }
 
   @Override
