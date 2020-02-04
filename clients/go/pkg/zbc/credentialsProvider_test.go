@@ -43,8 +43,9 @@ type customCredentialsProvider struct {
 	retryPredicate func(error) bool
 }
 
-func (t customCredentialsProvider) ApplyCredentials(_ context.Context, headers map[string]string) {
+func (t customCredentialsProvider) ApplyCredentials(_ context.Context, headers map[string]string) error {
 	headers["Authorization"] = t.customToken
+	return nil
 }
 
 func (t customCredentialsProvider) ShouldRetryRequest(_ context.Context, err error) bool {

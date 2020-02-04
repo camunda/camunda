@@ -482,8 +482,6 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 	}
 
 	s.EqualValues(codes.Unauthenticated, status.Code(err))
-	// TODO(MiguelPires): uncomment after https://github.com/zeebe-io/zeebe/issues/3536
-	//  s.True(errors.Is(err, context.DeadlineExceeded))
 }
 
 func mockAuthorizationServer(t *testing.T, token *mutableToken) *httptest.Server {
