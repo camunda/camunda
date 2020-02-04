@@ -191,7 +191,7 @@ func configureCredentialsProvider(config *ClientConfig, opts []grpc.DialOption) 
 		callCredentials := &callCredentials{credentialsProvider: config.CredentialsProvider}
 		opts = append(opts, grpc.WithPerRPCCredentials(callCredentials))
 	} else {
-		config.CredentialsProvider = &NoopCredentialsProvider{}
+		config.CredentialsProvider = &noopCredentialsProvider{}
 	}
 
 	return opts, nil

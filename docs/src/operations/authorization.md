@@ -50,8 +50,9 @@ type MyCredentialsProvider struct {
 }
 
 // ApplyCredentials adds a token to the Authorization header of a gRPC call.
-func (p *MyCredentialsProvider) ApplyCredentials(headers map[string]string) {
-	  headers["Authorization"] = "someToken"
+func (p *MyCredentialsProvider) ApplyCredentials(headers map[string]string) error {
+    headers["Authorization"] = "someToken"
+    return nil
 }
 
 // ShouldRetryRequest returns true if the call failed with a deadline exceed error.
@@ -128,7 +129,7 @@ The client will create an OAuthCredentialProvider with the credentials specified
 ```go
 func main() {
     credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
-  	  	ClientID:     "clientId",
+        ClientID:     "clientId",
         ClientSecret: "clientSecret",
         Audience:     "cluster.endpoint.com",
     })

@@ -91,18 +91,27 @@ type oauthRequestPayload struct {
 
 // ApplyCredentials takes a map of headers as input and adds an access token prefixed by a token type to the 'Authorization'
 // header of a gRPC call.
-func (p *OAuthCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) {
-	credentials := p.getCredentials(ctx)
-	if credentials != nil {
-		headers["Authorization"] = fmt.Sprintf("%s %s", credentials.TokenType, credentials.AccessToken)
+func (p *OAuthCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) error {
+	credentials, err := p.getCredentials(ctx)
+	if err != nil {
+		return status.Errorf(codes.Canceled, err.Error())
 	}
+
+	headers["Authorization"] = fmt.Sprintf("%s %s", credentials.TokenType, credentials.AccessToken)
+	return nil
 }
 
 // ShouldRetryRequest checks if the error is UNAUTHENTICATED and, if so, attempts to refresh the access token. If the
 // new credentials are different from the stored ones, returns true. If the credentials are the same, returns false.
 func (p *OAuthCredentialsProvider) ShouldRetryRequest(ctx context.Context, err error) bool {
 	if status.Code(err) == codes.Unauthenticated {
-		return p.updateCredentials(ctx)
+		updated, err := p.updateCredentials(ctx)
+		if err != nil {
+			log.Printf("Expected to refresh token after UNAUTHENTICATED response but: %s", err.Error())
+			return false
+		}
+
+		return updated
 	}
 
 	return false
@@ -142,30 +151,33 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 	return &provider, nil
 }
 
-func (p *OAuthCredentialsProvider) getCredentials(ctx context.Context) *OAuthCredentials {
+func (p *OAuthCredentialsProvider) getCredentials(ctx context.Context) (*OAuthCredentials, error) {
 	if p.credentials == nil {
 		credentials := p.getCachedCredentials()
+
 		if credentials != nil {
 			p.credentials = credentials
-			return credentials
-		} else {
-			p.updateCredentials(ctx)
+			return credentials, nil
+		}
+
+		if _, err := p.updateCredentials(ctx); err != nil {
+			return nil, err
 		}
 	}
-	return p.credentials
+	return p.credentials, nil
 }
 
-func (p *OAuthCredentialsProvider) updateCredentials(ctx context.Context) (updated bool) {
+func (p *OAuthCredentialsProvider) updateCredentials(ctx context.Context) (bool, error) {
 	credentials, err := p.fetchAccessToken(ctx)
 	if err != nil {
-		log.Printf("Failed while attempting to refresh credentials: %s", err.Error())
+		return false, fmt.Errorf("failed updating access token: %w", err)
 	} else if p.credentials == nil || *(p.credentials) != *credentials {
 		p.credentials = credentials
 		p.updateCache(credentials)
-		return true
+		return true, nil
 	}
 
-	return false
+	return false, nil
 }
 
 func (p *OAuthCredentialsProvider) updateCache(credentials *OAuthCredentials) {
@@ -278,6 +290,7 @@ func (p *OAuthCredentialsProvider) buildOAuthRequest(ctx context.Context) (*http
 		cancel()
 		return nil, nil, fmt.Errorf("failed while building request: %w", err)
 	}
+	req.Header.Add("Content-Type", "application/json")
 
 	return req, cancel, nil
 }
