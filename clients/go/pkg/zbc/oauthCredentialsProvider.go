@@ -94,7 +94,7 @@ type oauthRequestPayload struct {
 func (p *OAuthCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) error {
 	credentials, err := p.getCredentials(ctx)
 	if err != nil {
-		return err
+		return status.Errorf(codes.Canceled, err.Error())
 	}
 
 	headers["Authorization"] = fmt.Sprintf("%s %s", credentials.TokenType, credentials.AccessToken)
