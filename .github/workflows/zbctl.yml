@@ -17,7 +17,7 @@ jobs:
         run: CGO_ENABLED=0 go get -a -ldflags '-s' github.com/zeebe-io/zeebe/clients/go/cmd/zbctl
 
       - name: Run zbctl
-        run: /go/bin/zbctl
+        run: $GOROOT/bin/zbctl
 
 #      - name: Check out code into the Go module directory
 #        uses: actions/checkout@v2
