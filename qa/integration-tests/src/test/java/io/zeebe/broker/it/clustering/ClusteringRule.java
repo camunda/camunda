@@ -20,6 +20,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
@@ -49,6 +50,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -303,6 +305,8 @@ public final class ClusteringRule extends ExternalResource {
                 BootstrapDiscoveryProvider.builder()
                     .withNodes(Address.from(clusterCfg.getContactPoint()))
                     .build())
+            .withMembershipProtocol(
+                SwimMembershipProtocol.builder().withSyncInterval(Duration.ofSeconds(1)).build())
             .build();
 
     atomixCluster.start().join();
