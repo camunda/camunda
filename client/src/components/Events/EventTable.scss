@@ -3,28 +3,31 @@
   border-bottom: none;
 
   > .header {
-    height: 37px;
     border-bottom: solid 1px #dfdfdf;
     background-color: #f8f8f8;
+    display: flex;
+    align-items: flex-start;
 
     .Switch {
-      display: inline-block;
       font-size: 14px;
       color: #787878;
+      margin-top: 9px;
+      .label {
+        white-space: nowrap;
+      }
     }
 
     b {
       font-size: 14px;
       color: #434343;
       margin: 9px 20px;
-      display: inline-block;
+      white-space: nowrap;
     }
 
     .searchContainer {
-      margin-left: auto;
       position: relative;
-      margin: 2px;
-      float: right;
+      margin-top: 2px;
+      margin-right: 2px;
 
       .searchIcon {
         position: absolute;

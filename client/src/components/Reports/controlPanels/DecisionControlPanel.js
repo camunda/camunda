@@ -14,8 +14,13 @@ import ReportSelect from './ReportSelect';
 
 import {DecisionFilter} from './filter';
 
-import {reportConfig, loadDecisionDefinitionXml} from 'services';
-import {loadInputVariables, loadOutputVariables} from './service';
+import {
+  loadInputVariables,
+  loadOutputVariables,
+  reportConfig,
+  loadDecisionDefinitionXml
+} from 'services';
+
 import {t} from 'translation';
 
 const {decision: decisionConfig} = reportConfig;

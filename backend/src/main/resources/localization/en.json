@@ -155,6 +155,22 @@
       "whoHasAccess": "Who can use this process?",
       "userGranted": "User access granted",
       "description": "Enable the following users and groups to create Reports based on this process..."
+    },
+    "sources": {
+      "add": "Add Process",
+      "externalEvents": "External Events",
+      "editSource": "Edit Event Selection",
+      "addEvents": "Add Process Events",
+      "editEvents": "Edit Process Events",
+      "alreadyExists": "The selected process is already added",
+      "defineTrace": "Define the trace ID",
+      "byVariable": "By Variable",
+      "byKey": "By Business Key",
+      "startAndEnd": "Process start and end",
+      "flownodeEvents": "Start and End Flownode Events",
+      "allEvents": "All Flownode Events",
+      "selectProcess": "Please select a Process Definition",
+      "display": "Select events to display"
     }
   },
   "report": {
@@ -476,6 +492,7 @@
     "delete": "Delete",
     "remove": "Remove",
     "save": "Save",
+    "update": "Update",
     "apply": "Apply",
     "cancel": "Cancel",
     "close": "Close",

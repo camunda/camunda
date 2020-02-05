@@ -11,7 +11,10 @@ export {
   loadDefinitions,
   loadProcessDefinitionXml,
   loadDecisionDefinitionXml,
-  checkDeleteConflict
+  checkDeleteConflict,
+  loadVariables,
+  loadInputVariables,
+  loadOutputVariables
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
 export {incompatibleFilters} from './incompatibleFilters';

@@ -32,7 +32,8 @@ jest.mock('./service', () => ({
   loadProcess: jest.fn().mockReturnValue({
     name: 'Process Name',
     xml: 'Process XML',
-    mappings: {}
+    mappings: {},
+    eventSources: []
   })
 }));
 
@@ -61,7 +62,7 @@ it('should update the process', async () => {
 
   await node.find(EntityNameForm).prop('onSave')();
 
-  expect(updateProcess).toHaveBeenCalledWith('1', 'Process Name', 'Process XML', {});
+  expect(updateProcess).toHaveBeenCalledWith('1', 'Process Name', 'Process XML', {}, []);
   expect(saveSpy).toHaveBeenCalledWith('1');
 });
 
@@ -69,7 +70,7 @@ it('should set a new mapping', () => {
   const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});
 
-  node.find(EventTable).prop('onChange')({eventName: '1'}, true);
+  node.find(EventTable).prop('onMappingChange')({eventName: '1'}, true);
 
   expect(node.find(EventTable).prop('mappings')).toEqual({a: {end: {eventName: '1'}, start: null}});
 });
@@ -83,7 +84,7 @@ it('should edit a mapping', () => {
   const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});
 
-  node.find(EventTable).prop('onChange')({eventName: '1'}, true, 'start');
+  node.find(EventTable).prop('onMappingChange')({eventName: '1'}, true, 'start');
 
   expect(node.find(EventTable).prop('mappings')).toEqual({a: {start: {eventName: '1'}, end: null}});
 });
@@ -97,13 +98,23 @@ it('should unset a mapping', () => {
   const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});
 
-  node.find(EventTable).prop('onChange')({eventName: '1'}, false);
+  node.find(EventTable).prop('onMappingChange')({eventName: '1'}, false);
 
   expect(node.find(EventTable).prop('mappings')).toEqual({a: {start: {eventName: '2'}, end: null}});
 
-  node.find(EventTable).prop('onChange')({eventName: '2'}, false);
+  node.find(EventTable).prop('onMappingChange')({eventName: '2'}, false);
 
   expect(node.find(EventTable).prop('mappings')).toEqual({});
+});
+
+it('should set new sources', () => {
+  const node = shallow(<ProcessEdit {...props} />);
+
+  const newSources = [{processDefinitionKey: 'newSource'}];
+
+  node.find(EventTable).prop('onSourcesChange')(newSources);
+
+  expect(node.find(EventTable).prop('eventSources')).toEqual(newSources);
 });
 
 it('should remove mappings when a node is removed', () => {

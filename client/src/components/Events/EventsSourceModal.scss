@@ -1,0 +1,27 @@
+.EventsSourceModal {
+  .DefinitionSelection {
+    min-height: 82px;
+
+    .info {
+      display: none;
+    }
+  }
+
+  .Message.error {
+    margin-top: -10px;
+  }
+
+  .sourceOptions {
+    > .FormGroup {
+      .label.after {
+        padding: 10px 0;
+      }
+
+      h4 {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #606060;
+      }
+    }
+  }
+}

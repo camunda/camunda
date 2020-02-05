@@ -28,15 +28,15 @@ export async function cancelPublish(id) {
   return await post(`/api/eventBasedProcess/${id}/_cancelPublish`);
 }
 
-export async function createProcess(name, xml, mappings) {
-  const response = await post('/api/eventBasedProcess', {name, xml, mappings});
+export async function createProcess(name, xml, mappings, eventSources) {
+  const response = await post('/api/eventBasedProcess', {name, xml, mappings, eventSources});
   const json = await response.json();
 
   return json.id;
 }
 
-export async function updateProcess(id, name, xml, mappings) {
-  return await put('/api/eventBasedProcess/' + id, {name, xml, mappings});
+export async function updateProcess(id, name, xml, mappings, eventSources) {
+  return await put('/api/eventBasedProcess/' + id, {name, xml, mappings, eventSources});
 }
 
 export async function loadEvents(body, searchTerm) {

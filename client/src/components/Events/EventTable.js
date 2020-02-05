@@ -18,6 +18,7 @@ import {getOptimizeVersion} from 'config';
 import {loadEvents} from './service';
 
 import './EventTable.scss';
+import EventsSources from './EventsSources';
 
 const asMapping = ({group, source, eventName}) => ({group, source, eventName});
 
@@ -42,7 +43,7 @@ export default withErrorHandling(
     }
 
     loadEvents = searchQuery => {
-      const {selection, xml, mappings} = this.props;
+      const {selection, xml, mappings, eventSources} = this.props;
 
       this.setState({events: null});
 
@@ -51,7 +52,8 @@ export default withErrorHandling(
         payload = {
           targetFlowNodeId: selection.id,
           xml,
-          mappings
+          mappings,
+          eventSources
         };
       }
 
@@ -135,7 +137,7 @@ export default withErrorHandling(
 
     render() {
       const {events, searchQuery, version, showSuggested} = this.state;
-      const {selection, onChange, mappings} = this.props;
+      const {selection, onMappingChange, mappings, eventSources} = this.props;
 
       const {start, end} = (selection && mappings[selection.id]) || {};
       const numberOfMappings = !!start + !!end;
@@ -154,6 +156,7 @@ export default withErrorHandling(
               }
               label={t('events.table.showSuggestions')}
             />
+            <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
             <div className="searchContainer">
               <Icon className="searchIcon" type="search" />
               <Input
@@ -197,7 +200,9 @@ export default withErrorHandling(
                             type="checkbox"
                             checked={!!mappedAs}
                             disabled={isDisabled}
-                            onChange={({target: {checked}}) => onChange(eventAsMapping, checked)}
+                            onChange={({target: {checked}}) =>
+                              onMappingChange(eventAsMapping, checked)
+                            }
                           />,
                           group,
                           mappedAs ? (
@@ -215,7 +220,7 @@ export default withErrorHandling(
                                 }
                               }}
                               onChange={value =>
-                                mappedAs !== value && onChange(eventAsMapping, true, value)
+                                mappedAs !== value && onMappingChange(eventAsMapping, true, value)
                               }
                             >
                               <Select.Option

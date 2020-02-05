@@ -14,7 +14,7 @@ import FilterList from './FilterList';
 import './Filter.scss';
 
 import {loadValues, filterIncompatibleExistingFilters} from './service';
-import {loadVariables} from '../service';
+import {loadVariables} from 'services';
 import {t} from 'translation';
 
 export default class Filter extends React.Component {

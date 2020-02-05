@@ -29,7 +29,8 @@ export default withErrorHandling(
         name: null,
         xml: null,
         selectedNode: null,
-        mappings: {}
+        mappings: {},
+        eventSources: null
       };
     }
 
@@ -66,14 +67,21 @@ export default withErrorHandling(
         </bpmndi:BPMNDiagram>
       </bpmn:definitions>
       `,
-        mappings: {}
+        mappings: {},
+        eventSources: []
       });
     };
 
     loadProcess = () => {
       this.props.mightFail(
         loadProcess(this.props.id),
-        ({name, xml, mappings}) => this.setState({name, xml, mappings}),
+        ({name, xml, mappings, eventSources}) =>
+          this.setState({
+            name,
+            xml,
+            mappings,
+            eventSources
+          }),
         showError
       );
     };
@@ -81,13 +89,15 @@ export default withErrorHandling(
     save = () => {
       return new Promise(async (resolve, reject) => {
         const {mightFail, id} = this.props;
-        const {name, mappings, xml} = this.state;
+        const {name, mappings, xml, eventSources} = this.state;
 
         if (this.isNew()) {
-          mightFail(createProcess(name, xml, mappings), resolve, error => reject(showError(error)));
+          mightFail(createProcess(name, xml, mappings, eventSources), resolve, error =>
+            reject(showError(error))
+          );
         } else {
           mightFail(
-            updateProcess(id, name, xml, mappings),
+            updateProcess(id, name, xml, mappings, eventSources),
             () => resolve(id),
             error => reject(showError(error))
           );
@@ -161,8 +171,13 @@ export default withErrorHandling(
       });
     };
 
+    updateSources = eventSources => {
+      this.setDirty();
+      this.setState({eventSources});
+    };
+
     render() {
-      const {name, mappings, selectedNode, xml} = this.state;
+      const {name, mappings, selectedNode, xml, eventSources} = this.state;
 
       if (!xml) {
         return <LoadingIndicator />;
@@ -211,8 +226,10 @@ export default withErrorHandling(
           <EventTable
             selection={selectedNode}
             mappings={mappings}
+            eventSources={eventSources}
             xml={xml}
-            onChange={this.setMapping}
+            onMappingChange={this.setMapping}
+            onSourcesChange={this.updateSources}
           />
         </div>
       );

@@ -13,12 +13,12 @@ import {withErrorHandling} from 'HOC';
 import ReportSelect from './ReportSelect';
 
 import {Filter} from './filter';
-import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml} from 'services';
+import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 
-import {loadVariables, isDurationHeatmap, isProcessInstanceDuration} from './service';
+import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import {Configuration} from './Configuration';
 

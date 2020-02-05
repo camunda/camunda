@@ -45,7 +45,7 @@ const props = {
       }
     }
   },
-  onChange: jest.fn(),
+  onMappingChange: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   xml: 'some xml'
 };
@@ -83,7 +83,7 @@ it('should allow searching for events', () => {
 
 it('should call callback when changing mapping', () => {
   const spy = jest.fn();
-  const node = shallow(<EventTable {...props} onChange={spy} />);
+  const node = shallow(<EventTable {...props} onMappingChange={spy} />);
 
   node
     .find(Table)

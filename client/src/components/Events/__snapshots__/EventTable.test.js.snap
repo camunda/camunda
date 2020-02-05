@@ -15,6 +15,7 @@ exports[`should match snapshot 1`] = `
       label="Show suggested Events"
       onChange={[Function]}
     />
+    <EventSources />
     <div
       className="searchContainer"
     >

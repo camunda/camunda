@@ -155,6 +155,22 @@
       "whoHasAccess": "Wer kann diesen Prozess nutzen?",
       "userGranted": "Benutzerzugriff gewährt",
       "description": "Ermöglichen Sie den folgenden Benutzern und Gruppen die Erstellung von Berichten, die auf diesem Prozess basieren..."
+    },
+    "sources": {
+      "add": "Prozess hinzufügen",
+      "externalEvents": "Externe Events",
+      "editSource": "Eventauswahl bearbeiten",
+      "addEvents": "Prozessevents hinzufügen",
+      "editEvents": "Prozessevents bearbeiten",
+      "alreadyExists": "Der ausgewählte Prozess wurde bereits hinzugefügt",
+      "defineTrace": "Auswahl der TraceID",
+      "byVariable": "Nach Variable",
+      "byKey": "Nach Business Key",
+      "startAndEnd": "Prozessbeginn und -ende",
+      "flownodeEvents": "Start und Ende der Prozessknotenevents",
+      "allEvents": "Alle Prozessknotenevents",
+      "selectProcess": "Bitte wählen Sie eine Prozessdefinition aus",
+      "display": "Wählen Sie die anzuzeigenden Events aus"
     }
   },
   "report": {
@@ -476,6 +492,7 @@
     "delete": "Löschen",
     "remove": "Entfernen",
     "save": "Speichern",
+    "update": "Aktualisieren",
     "apply": "Anwenden",
     "cancel": "Abbrechen",
     "close": "Schließen",

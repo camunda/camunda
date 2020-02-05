@@ -4,18 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {post} from 'request';
-
-const loadVariablesFrom = endpoint => async payload => {
-  const response = await post(endpoint, payload);
-
-  return await response.json();
-};
-
-export const loadVariables = loadVariablesFrom('api/variables');
-export const loadInputVariables = loadVariablesFrom('api/decision-variables/inputs/names');
-export const loadOutputVariables = loadVariablesFrom('api/decision-variables/outputs/names');
-
 export function isDurationHeatmap({
   view,
   visualization,

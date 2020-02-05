@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should apply the source to the state when editing a source 1`] = `
+Object {
+  "eventScope": "start_end",
+  "processDefinitionKey": "foo",
+  "processDefinitionName": "Foo",
+  "tenants": Array [
+    "a",
+    "b",
+  ],
+  "traceVariable": "var",
+  "tracedByBusinessKey": false,
+  "variables": Array [],
+  "versions": Array [
+    "1",
+  ],
+}
+`;

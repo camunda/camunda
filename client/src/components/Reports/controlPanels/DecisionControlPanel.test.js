@@ -12,12 +12,7 @@ import {DefinitionSelection} from 'components';
 import DecisionControlPanel from './DecisionControlPanel';
 import ReportSelect from './ReportSelect';
 
-import {loadInputVariables, loadOutputVariables} from './service';
-
-jest.mock('./service', () => ({
-  loadInputVariables: jest.fn().mockReturnValue([]),
-  loadOutputVariables: jest.fn().mockReturnValue([])
-}));
+import {loadInputVariables, loadOutputVariables} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -25,6 +20,8 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadDecisionDefinitionXml: jest.fn().mockReturnValue('somexml'),
+    loadInputVariables: jest.fn().mockReturnValue([]),
+    loadOutputVariables: jest.fn().mockReturnValue([]),
     reportConfig: {
       ...rest.reportConfig,
       decision: {

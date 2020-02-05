@@ -10,9 +10,7 @@ import {shallow} from 'enzyme';
 import ReportSelect from './ReportSelect';
 
 import ReportControlPanelWithErrorHandling from './ReportControlPanel';
-import {getFlowNodeNames, loadProcessDefinitionXml} from 'services';
-
-import * as service from './service';
+import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables} from 'services';
 import {DefinitionSelection} from 'components';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
@@ -25,6 +23,7 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadProcessDefinitionXml: jest.fn().mockReturnValue('I am a process definition xml'),
+    loadVariables: jest.fn().mockReturnValue([]),
     reportConfig: {
       process: {
         getLabelFor: () => 'foo',
@@ -47,8 +46,6 @@ jest.mock('services', () => {
     })
   };
 });
-
-service.loadVariables = jest.fn().mockReturnValue([]);
 
 const report = {
   data: {
@@ -107,7 +104,7 @@ it('should load the variables of the process', () => {
     }
   });
 
-  expect(service.loadVariables).toHaveBeenCalledWith({
+  expect(loadVariables).toHaveBeenCalledWith({
     processDefinitionKey: 'bar',
     processDefinitionVersions: ['ALL'],
     tenantIds: []

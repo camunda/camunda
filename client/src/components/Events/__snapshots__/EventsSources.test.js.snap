@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="EventsSources"
+>
+  <div
+    className="sourcesList"
+  >
+    <div
+      className="external"
+    >
+      External Events
+    </div>
+    <Dropdown
+      className="isActive"
+      key="src1"
+      label="src1"
+    >
+      <ForwardRef(DropdownOption)
+        onClick={[Function]}
+      >
+        Edit Event Selection
+      </ForwardRef(DropdownOption)>
+      <ForwardRef(DropdownOption)
+        onClick={[Function]}
+      >
+        Remove
+      </ForwardRef(DropdownOption)>
+    </Dropdown>
+  </div>
+  <ForwardRef(Button)
+    className="addProcess"
+    onClick={[Function]}
+  >
+    <Icon
+      size="14"
+      type="plus"
+    />
+    Add Process
+  </ForwardRef(Button)>
+</div>
+`;
