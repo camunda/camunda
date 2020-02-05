@@ -16,14 +16,38 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
-      - name: Get dependencies
-        run: |
-          cd clients/go
-          go get -v -t -d ./...
-          if [ -f Gopkg.toml ]; then
-              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-              dep ensure
-          fi
-
       - name: Build
-        run: cd clients/go && go build -v .
+        run: |
+          export CGO_ENABLED=0
+          CGO_ENABLED=0
+          ORG_DIR=/go/src/github.com/zeebe-io
+          mkdir -p /go/src/github.com/zeebe-io
+          ln -s . /go/src/github.com/zeebe-io/zeebe
+          go get -u github.com/jstemmer/go-junit-report
+          cd /go/src/github.com/zeebe-io/zeebe/clients/go
+          PREFIX=github.com/zeebe-io/zeebe/clients/go
+          EXCLUDE=
+          for file in {internal,cmd/zbctl/internal}/*
+          EXCLUDE=github.com/zeebe-io/zeebe/clients/go/internal/containersuite,
+          for file in {internal,cmd/zbctl/internal}/*
+          EXCLUDE=github.com/zeebe-io/zeebe/clients/go/internal/containersuite,github.com/zeebe-io/zeebe/clients/go/internal/mock_pb,
+          for file in {internal,cmd/zbctl/internal}/*
+          EXCLUDE=github.com/zeebe-io/zeebe/clients/go/internal/containersuite,github.com/zeebe-io/zeebe/clients/go/internal/mock_pb,github.com/zeebe-io/zeebe/clients/go/internal/utils,
+          for file in {internal,cmd/zbctl/internal}/*
+          EXCLUDE=github.com/zeebe-io/zeebe/clients/go/internal/containersuite,github.com/zeebe-io/zeebe/clients/go/internal/mock_pb,github.com/zeebe-io/zeebe/clients/go/internal/utils,github.com/zeebe-io/zeebe/clients/go/cmd/zbctl/internal/commands,
+          /usr/bin/gocompat compare --go1compat --exclude-package=github.com/zeebe-io/zeebe/clients/go/internal/containersuite,github.com/zeebe-io/zeebe/clients/go/internal/mock_pb,github.com/zeebe-io/zeebe/clients/go/internal/utils,github.com/zeebe-io/zeebe/clients/go/cmd/zbctl/internal/commands, ./...
+          cd /go/src/github.com/zeebe-io/zeebe/clients/go/cmd/zbctl
+          ./build.sh
+          dirname ./build.sh
+          SRC_DIR=.
+          DIST_DIR=./dist
+          VERSION=development
+          git rev-parse HEAD
+          COMMIT=$GITHUB_SHA
+          mkdir -p ./dist
+          CGO_ENABLED=0
+          GOOS=linux
+          GOARCH=amd64
+          go build -mod=vendor -a -tags netgo -ldflags '-w -X github.com/zeebe-io/zeebe/clients/go/cmd/zbctl/internal/commands.Version=development -X github.com/zeebe-io/zeebe/clients/go/cmd/zbctl/internal/commands.Commit='"$GITHUB_SHA"'' -o ./dist/zbctl ./main.go
+      - name: Test
+        run: ./dist/zbctl
