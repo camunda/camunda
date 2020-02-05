@@ -1,3 +1,45 @@
+<a name="0.23.0-alpha1"></a>
+## 0.23.0-alpha1 (2020-02-05)
+
+
+#### Features
+
+* **broker:**
+  *  support error end events ([a1f14944](https://github.com/zeebe-io/zeebe/commit/a1f14944694611d1e212d83f7d924b8a4a875aa2))
+  *  add gateway version command ([ac11614b](https://github.com/zeebe-io/zeebe/commit/ac11614baf5b7be05d10f678bcfb386a1444a819))
+  *  catch error event from child instance ([4eee987d](https://github.com/zeebe-io/zeebe/commit/4eee987dd2b14fbb78e0ebd61892ed30df221491))
+* **clients/go:**
+  *  expose broker version in status cmd ([341daa72](https://github.com/zeebe-io/zeebe/commit/341daa728c532eaa78d753efa3a45c159451ef30))
+  *  add gateway version to zbctl version ([6f4e7f71](https://github.com/zeebe-io/zeebe/commit/6f4e7f71f0ccca60ee27cb897331dd2447ecd30e))
+  *  add gateway version ([787e48eb](https://github.com/zeebe-io/zeebe/commit/787e48eb4843f5802c1bce50dc433054aac1c98d))
+  *  require context to send commands ([86cd8128](https://github.com/zeebe-io/zeebe/commit/86cd812831bef5984e0a239a0dc21ce9398adf33), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **clients/java:**
+  *  removed setTimeout(long) ([1936898d](https://github.com/zeebe-io/zeebe/commit/1936898d612b00685a79de192eff6a3fcd023066))
+  *  expose broker version in topology cmd ([62d3b11a](https://github.com/zeebe-io/zeebe/commit/62d3b11a4f7dff479d62122cd3e31cd7a2baadc2))
+  *  add gateway version to Java client ([847ba4ee](https://github.com/zeebe-io/zeebe/commit/847ba4eed1c4403e59a31c2cdc947fc394011d7b))
+
+#### Breaking Changes
+
+* **clients/go:**
+  *  add content-type to OAuth request ([5592456d](https://github.com/zeebe-io/zeebe/commit/5592456d37583102b9b368b895cc0b0e2e20be5f), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+  *  require context to send commands ([86cd8128](https://github.com/zeebe-io/zeebe/commit/86cd812831bef5984e0a239a0dc21ce9398adf33), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+#### Bug Fixes
+
+* **broker:**
+  *  merge variable on output mapping ([294ec409](https://github.com/zeebe-io/zeebe/commit/294ec40974f8b7204c3363694325c1dc0722ec8a))
+  *  close event subscriptions ([ee34273f](https://github.com/zeebe-io/zeebe/commit/ee34273fa74173a5eae8cd33c325d79b451db3e1))
+  *  consume tokens when triggering event subprocess ([94b8fe10](https://github.com/zeebe-io/zeebe/commit/94b8fe104eda31f6252bdc5182cbd13f1ec9aa6b))
+  *  raise incident if error catch event is interrupted ([deafcedd](https://github.com/zeebe-io/zeebe/commit/deafceddb926f1b23fc144632dac0489ceb9754f))
+  *  catch error inside multi-instance subprocess ([7bc78ab2](https://github.com/zeebe-io/zeebe/commit/7bc78ab25cff5bb55c68f839a89f69ee210e4b01))
+* **clients/go:**  add content-type to OAuth request ([5592456d](https://github.com/zeebe-io/zeebe/commit/5592456d37583102b9b368b895cc0b0e2e20be5f), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **logstreams:**
+  *  fix LogAppender partitionId ([eee42927](https://github.com/zeebe-io/zeebe/commit/eee4292740508bf5a699bc05e9b1f39ec63dc91a))
+  *  introduce reference counting for log stream writers ([b1294979](https://github.com/zeebe-io/zeebe/commit/b12949797f96304325f123805460780e0155bde3))
+* **transport:**  cancel timer after response ([6032d1d8](https://github.com/zeebe-io/zeebe/commit/6032d1d88606ee3ed2f396e9d0247d86150492e0))
+
+
+
 <a name="0.22.0"></a>
 # Release: 0.22.0
 ## Enhancements
