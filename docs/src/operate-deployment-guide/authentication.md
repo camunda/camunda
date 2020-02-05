@@ -5,7 +5,7 @@
 Operate provides two ways for authentication:
 
 1. Authenticate with user information stored in [Elasticsearch](#user-in-elasticsearch)
-2. Authenticate via [Auth0 Single Sign-On provider](#single-sign-on)  
+2. Authenticate via [Auth0 Single Sign-On provider](#auth0-single-sign-on)  
 
 By default user storage in Elasticsearch is enabled. 
 
