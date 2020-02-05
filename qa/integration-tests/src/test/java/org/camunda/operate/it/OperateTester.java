@@ -182,11 +182,6 @@ public class OperateTester {
     return this;
   }
   
-  public OperateTester completeTask(String taskName) {
-     ZeebeTestUtil.completeTask(zeebeClient, taskName, UUID.randomUUID().toString(), null);
-     return this;
-  }
-  
   public OperateTester failTask(String taskName, String errorMessage) {
     jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
     return this;
