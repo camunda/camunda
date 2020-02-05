@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -423,7 +423,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void evaluateInvalidReportById() {
     //given
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(RANDOM_KEY)
       .setProcessDefinitionVersion(RANDOM_VERSION)
@@ -463,7 +463,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final SingleReportDataDto reportDataDto;
     switch (reportType) {
       case PROCESS:
-        reportDataDto = ProcessReportDataBuilder
+        reportDataDto = TemplatedProcessReportDataBuilder
           .createReportData()
           .setProcessDefinitionKey(RANDOM_KEY)
           .setProcessDefinitionVersion(RANDOM_VERSION)
@@ -772,7 +772,7 @@ public class ReportRestServiceIT extends AbstractIT {
     String id;
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
+        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
           .createReportData()
           .setProcessDefinitionKey(RANDOM_KEY)
           .setProcessDefinitionVersion(RANDOM_VERSION)
@@ -865,7 +865,7 @@ public class ReportRestServiceIT extends AbstractIT {
   private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType, final String collectionId) {
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
+        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
           .createReportData()
           .setProcessDefinitionKey(RANDOM_KEY)
           .setProcessDefinitionVersion(RANDOM_VERSION)

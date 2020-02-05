@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +71,7 @@ public class CountProcessInstanceFrequencyByEndDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -134,7 +134,7 @@ public class CountProcessInstanceFrequencyByEndDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())

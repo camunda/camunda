@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
@@ -129,7 +129,7 @@ public class QueryPerformanceTest {
     List<ProcessReportDataDto> reports = new ArrayList<>();
     ProcessPartDto processPart = createProcessPart(definition);
     for (ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
-      ProcessReportDataBuilder reportDataBuilder = ProcessReportDataBuilder.createReportData()
+      TemplatedProcessReportDataBuilder reportDataBuilder = TemplatedProcessReportDataBuilder.createReportData()
         .setReportDataType(reportDataType)
         .setProcessDefinitionKey(definition.getKey())
         .setProcessDefinitionVersion(definition.getVersionAsString())

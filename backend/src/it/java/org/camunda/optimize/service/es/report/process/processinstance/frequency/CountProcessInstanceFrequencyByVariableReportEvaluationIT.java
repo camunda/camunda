@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -19,12 +17,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +46,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByVariable;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -458,7 +458,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -568,12 +568,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-      processInstanceDto.getProcessDefinitionKey(),
-      Collections.singletonList(processInstanceDto.getProcessDefinitionVersion()),
-      "dateVar",
-      VariableType.DATE
-    );
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("dateVar")
+      .setVariableType(VariableType.DATE)
+      .build();
+
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> response = evaluateMapReport(
       reportData);
 
@@ -739,7 +742,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
                                             String processDefinitionVersion,
                                             String variableName,
                                             VariableType variableType) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

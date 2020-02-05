@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -75,7 +75,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
 
   private String createSingleProcessReportForDefinitionAsDefaultUser(final ProcessDefinitionEngineDto processDefinitionEngineDto,
                                                                      final String collectionId) {
-    final ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionEngineDto.getKey())
       .setProcessDefinitionVersion(processDefinitionEngineDto.getVersionAsString())

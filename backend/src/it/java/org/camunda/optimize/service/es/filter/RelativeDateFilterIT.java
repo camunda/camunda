@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -148,7 +148,7 @@ public class RelativeDateFilterIT extends AbstractDateFilterIT {
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -213,7 +213,7 @@ public class RelativeDateFilterIT extends AbstractDateFilterIT {
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -242,7 +242,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

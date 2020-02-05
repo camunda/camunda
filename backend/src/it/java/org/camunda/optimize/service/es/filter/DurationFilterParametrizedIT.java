@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -40,7 +40,7 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())

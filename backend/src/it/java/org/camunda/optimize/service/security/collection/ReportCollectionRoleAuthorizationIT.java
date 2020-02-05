@@ -29,7 +29,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -1009,7 +1009,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
         } else {
           SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
           singleProcessReportDefinitionDto.setCollectionId(collectionId);
-          ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
+          ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
             .setProcessDefinitionVersion("1")
@@ -1167,7 +1167,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         SingleProcessReportDefinitionDto processReportDefinitionDto = new SingleProcessReportDefinitionDto();
-        ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
+        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
           .createReportData()
           .setProcessDefinitionKey(getDefinitionKey(resourceType))
           .setProcessDefinitionVersion("1")

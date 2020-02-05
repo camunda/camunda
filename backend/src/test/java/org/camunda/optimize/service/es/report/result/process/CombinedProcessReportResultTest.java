@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.export.CSVUtils;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,9 +61,9 @@ public class CombinedProcessReportResultTest {
     // then
     assertThat(new String[]{"SingleTestReport0", "", "", "SingleTestReport1", ""}, is(resultAsCsv.get(0)));
     assertThat(
-      new String[]{"variable_test_DOUBLE", "processInstance_frequency", "", "variable_test_DOUBLE",
-        "processInstance_frequency"},
-      is(resultAsCsv.get(1))
+      resultAsCsv.get(1),
+      is(new String[]{"variable_test_DOUBLE", "processInstance_frequency", "", "variable_test_DOUBLE",
+        "processInstance_frequency"})
     );
     assertThat(new String[]{"900.0", "1", "", "900.0", "1"}, is(resultAsCsv.get(2)));
     assertThat(new String[]{"10.99", "1", "", "10.99", "1"}, is(resultAsCsv.get(3)));
@@ -287,7 +287,7 @@ public class CombinedProcessReportResultTest {
                                                                             List<SingleReportResultDto> reportResultDtos,
                                                                             AggregationType aggregationType) {
 
-    final ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder.createReportData()
+    final ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setVariableName("test")
       .setReportDataType(reportDataType)
       .setVariableType(VariableType.DOUBLE)

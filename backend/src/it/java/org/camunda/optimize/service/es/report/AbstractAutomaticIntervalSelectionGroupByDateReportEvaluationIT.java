@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -88,7 +88,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   }
 
   protected ProcessReportDataDto getGroupByStartDateReportData(String key, String version) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)
@@ -242,7 +242,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     changeProcessInstanceDates(procInstMin, now.plusDays(1), now.plusDays(2));
     changeProcessInstanceDates(procInstMax, now.plusDays(3), now.plusDays(6));
 
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
+    ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
@@ -251,7 +251,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
       .build();
     String singleReportId = createNewSingleReport(reportDataDto);
 
-    ProcessReportDataDto reportDataDto2 = ProcessReportDataBuilder
+    ProcessReportDataDto reportDataDto2 = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())

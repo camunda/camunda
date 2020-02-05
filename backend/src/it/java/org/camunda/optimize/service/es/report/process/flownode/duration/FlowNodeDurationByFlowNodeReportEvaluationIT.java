@@ -27,7 +27,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,6 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1024,7 +1023,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   private ProcessReportDataDto createReport(String definitionKey, List<String> definitionVersions,
                                             List<String> tenantIds) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersions(definitionVersions)

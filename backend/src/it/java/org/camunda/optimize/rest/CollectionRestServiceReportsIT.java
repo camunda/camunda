@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -139,7 +138,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   }
 
   private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion("someVersion")

@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -1163,7 +1163,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
 
   private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto> filterList) {
     final String TEST_DEFINITION_KEY = "testDefinition";
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(TEST_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
@@ -1185,7 +1185,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
   private RawDataProcessReportResultDto evaluateReportWithFilter(String processDefinitionKey,
                                                                  String processDefinitionVersion,
                                                                  List<ProcessFilterDto> filter) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

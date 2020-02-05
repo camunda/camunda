@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.get.GetRequest;
@@ -158,7 +158,7 @@ public class ForceReimportIT extends AbstractIT {
   private SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
                                                                   String processDefinitionVersion) {
     ProcessReportDataDto reportData =
-      ProcessReportDataBuilder
+      TemplatedProcessReportDataBuilder
         .createReportData()
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessDefinitionVersion(processDefinitionVersion)

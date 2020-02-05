@@ -26,7 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -68,7 +68,7 @@ public class ReportConflictIT extends AbstractIT {
     final SingleProcessReportDefinitionDto firstSingleReport =
       (SingleProcessReportDefinitionDto) getReport(firstSingleReportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto groupByStartDateReport = ProcessReportDataBuilder
+    ProcessReportDataDto groupByStartDateReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(firstSingleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(firstSingleReport.getData().getDefinitionVersions())
@@ -102,7 +102,7 @@ public class ReportConflictIT extends AbstractIT {
 
     // when
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto userTaskReport = ProcessReportDataBuilder
+    ProcessReportDataDto userTaskReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK)
       .build();
@@ -126,7 +126,7 @@ public class ReportConflictIT extends AbstractIT {
   @MethodSource("provideForceParameterAsBoolean")
   public void updateSingleProcessReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
-    ProcessReportDataDto numberReport = ProcessReportDataBuilder
+    ProcessReportDataDto numberReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion(RANDOM_VERSION)
@@ -142,7 +142,7 @@ public class ReportConflictIT extends AbstractIT {
     final SingleProcessReportDefinitionDto singleReport =
       (SingleProcessReportDefinitionDto) getReport(reportId);
     final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto groupByStartDateReport = ProcessReportDataBuilder
+    ProcessReportDataDto groupByStartDateReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(singleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(singleReport.getData().getDefinitionVersions())
@@ -510,7 +510,7 @@ public class ReportConflictIT extends AbstractIT {
   }
 
   private ProcessReportDataDto createRandomRawDataReport() {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion(RANDOM_VERSION)

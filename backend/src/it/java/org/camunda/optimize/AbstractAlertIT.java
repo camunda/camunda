@@ -28,7 +28,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -346,7 +346,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
   private SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String collectionId,
                                                                                String processDefinitionKey,
                                                                                String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -393,7 +393,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
   private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String collectionId,
                                                                           String processDefinitionKey,
                                                                           String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
@@ -572,7 +572,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   }
 
   private ProcessReportDataDto createReport(String definitionKey, String definitionVersion, String start, String end) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(definitionVersion)

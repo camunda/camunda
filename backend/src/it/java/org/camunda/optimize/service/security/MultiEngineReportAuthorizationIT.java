@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -450,7 +450,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder.createReportData()
+        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder.createReportData()
           .setProcessDefinitionKey(key)
           .setProcessDefinitionVersion("1")
           .setReportDataType(ProcessReportDataType.RAW_DATA)

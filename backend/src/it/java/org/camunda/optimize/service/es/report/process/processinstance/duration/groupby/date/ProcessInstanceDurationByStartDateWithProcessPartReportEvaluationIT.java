@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +81,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     ));
     final StartDateFilterDto startDateFilterDto = new StartDateFilterDto(dateFilterDataDto);
 
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(procDefDto.getKey())
       .setProcessDefinitionVersion(procDefDto.getVersionAsString())

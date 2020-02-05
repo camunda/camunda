@@ -24,7 +24,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.Is;
@@ -720,7 +720,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
   private ProcessReportDataDto createReport(String processDefinitionKey, List<String> definitionVersions,
                                             List<String> tenantIds) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(definitionVersions)

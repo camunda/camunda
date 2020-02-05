@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
@@ -59,7 +59,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
 
   @Override
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)

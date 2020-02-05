@@ -21,7 +21,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 
 import javax.ws.rs.core.Response;
@@ -47,7 +47,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())

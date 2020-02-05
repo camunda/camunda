@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Order;
@@ -256,7 +256,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -266,7 +266,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   }
 
   private String createNewSingleDurationMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto processInstanceDurationGroupByNone = ProcessReportDataBuilder
+    ProcessReportDataDto processInstanceDurationGroupByNone = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -283,7 +283,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   }
 
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -295,7 +295,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   }
 
   private String createNewSingleDurationNumberReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto processInstanceDurationGroupByNone = ProcessReportDataBuilder
+    ProcessReportDataDto processInstanceDurationGroupByNone = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())

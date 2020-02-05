@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -77,7 +77,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
     boolean newToken,
     DateFilterType filterType
   ) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -117,7 +117,7 @@ public abstract class AbstractDateFilterIT extends AbstractFilterIT {
     DateFilterUnit unit,
     boolean newToken
   ) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

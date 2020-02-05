@@ -9,8 +9,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -21,14 +19,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -56,7 +55,7 @@ import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConst
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByVariable;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
@@ -82,7 +81,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -132,7 +131,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), endDate);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
@@ -190,7 +189,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processDefinitionDto.getKey())
@@ -231,7 +230,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
-      final ProcessReportDataDto reportData = ProcessReportDataBuilder
+      final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
         .createReportData()
         .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
         .setProcessDefinitionKey(processDefinitionDto.getKey())
@@ -274,12 +273,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
-      processInstanceDto.getProcessDefinitionKey(),
-      Collections.singletonList(processInstanceDto.getProcessDefinitionVersion()),
-      "dateVar",
-      VariableType.DATE
-    );
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("dateVar")
+      .setVariableType(VariableType.DATE)
+      .build();
+
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> response = evaluateMapReport(
       reportData);
 
@@ -312,7 +314,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -351,9 +353,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByVariable(
-      processKey, newArrayList(ALL_VERSIONS), DEFAULT_VARIABLE_NAME, VariableType.STRING
-    );
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processKey)
+      .setProcessDefinitionVersion(ALL_VERSIONS)
+      .setVariableName(DEFAULT_VARIABLE_NAME)
+      .setVariableType(VariableType.STRING)
+      .build();
+
     reportData.setTenantIds(selectedTenants);
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
@@ -376,7 +384,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processDefinitionDto.getKey())
@@ -422,7 +430,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processDefinitionDto.getKey())
@@ -478,7 +486,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -531,7 +539,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -580,7 +588,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -638,7 +646,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -684,7 +692,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -731,7 +739,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -779,7 +787,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
       VariableType variableType = varNameToTypeMap.get(entry.getKey());
-      ProcessReportDataDto reportData = ProcessReportDataBuilder
+      ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
         .createReportData()
         .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
         .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -859,7 +867,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(definition.getKey())
@@ -908,7 +916,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     //when
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
@@ -948,7 +956,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
@@ -984,7 +992,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey("123")
@@ -1005,7 +1013,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey("123")
@@ -1026,7 +1034,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey("123")
@@ -1047,7 +1055,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void optimizeExceptionOnGroupByValueNameIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey("123")
@@ -1069,7 +1077,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void optimizeExceptionOnGroupByValueTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey("123")

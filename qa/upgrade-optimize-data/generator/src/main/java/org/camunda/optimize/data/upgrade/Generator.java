@@ -39,7 +39,7 @@ import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
 import org.camunda.optimize.test.optimize.ReportClient;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 
 import javax.ws.rs.client.Client;
@@ -129,7 +129,7 @@ public class Generator {
   }
 
   private String createSingleNumberReportInCollection(final String collectionId) {
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -144,7 +144,7 @@ public class Generator {
   private List<String> generateReports() {
     final List<String> reportIds = new ArrayList<>();
 
-    final ProcessReportDataDto processInstanceDurationReport = ProcessReportDataBuilder
+    final ProcessReportDataDto processInstanceDurationReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -153,7 +153,7 @@ public class Generator {
       .build();
     reportIds.add(createProcessReport(processInstanceDurationReport));
 
-    final ProcessReportDataDto flowNodeDurationReport = ProcessReportDataBuilder
+    final ProcessReportDataDto flowNodeDurationReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -162,7 +162,7 @@ public class Generator {
       .build();
     reportIds.add(createProcessReport(flowNodeDurationReport));
 
-    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport = ProcessReportDataBuilder
+    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -172,7 +172,7 @@ public class Generator {
     maxFlowNodeDurationGroupByFlowNodeHeatmapReport.getConfiguration().setAggregationType(AggregationType.MAX);
     reportIds.add(createProcessReport(maxFlowNodeDurationGroupByFlowNodeHeatmapReport));
 
-    final ProcessReportDataDto processInstanceDurationByStartDateBarChart = ProcessReportDataBuilder
+    final ProcessReportDataDto processInstanceDurationByStartDateBarChart = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -193,7 +193,7 @@ public class Generator {
       )
     );
 
-    final ProcessReportDataDto processInstanceDurationGroupByVariableProcessPartBarChart = ProcessReportDataBuilder
+    final ProcessReportDataDto processInstanceDurationGroupByVariableProcessPartBarChart = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

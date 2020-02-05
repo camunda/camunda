@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,7 +139,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
   }
 
   private ProcessReportDataDto createFrequencyReport(final String processDefinitionKey, final String version) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(version)
@@ -152,7 +152,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
   }
 
   private ProcessReportDataDto createDurationReport(final String processDefinitionKey, final String version) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(version)

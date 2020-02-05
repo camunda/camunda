@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +31,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
@@ -68,7 +68,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())

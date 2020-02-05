@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -155,7 +155,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
   }
 
   private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion("someVersion")

@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -182,7 +182,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private String createSingleProcessReportForDefinitionAsDefaultUser(final ProcessDefinitionEngineDto processDefinition) {
-    final ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
+    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())

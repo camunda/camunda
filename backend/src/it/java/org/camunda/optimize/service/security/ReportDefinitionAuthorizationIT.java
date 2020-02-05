@@ -24,7 +24,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -33,7 +33,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -521,7 +520,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
                                                 final String user,
                                                 final String password) {
     String singleReportId = createNewReportAsUser(RESOURCE_TYPE_PROCESS_DEFINITION, user, password);
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion("1")
@@ -648,7 +647,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         SingleProcessReportDefinitionDto processReportDefinitionDto = new SingleProcessReportDefinitionDto();
-        ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
+        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
           .createReportData()
           .setProcessDefinitionKey(definitionKey)
           .setProcessDefinitionVersion("1")

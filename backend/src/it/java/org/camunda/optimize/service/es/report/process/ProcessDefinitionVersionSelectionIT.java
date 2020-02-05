@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -153,7 +153,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
                                                                             List<String> definitionVersions) {
     List<ProcessReportDataDto> reports = new ArrayList<>();
     for (ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
-      ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
         .setReportDataType(reportDataType)
         .setProcessDefinitionKey(definitionKey)
         .setProcessDefinitionVersions(definitionVersions)

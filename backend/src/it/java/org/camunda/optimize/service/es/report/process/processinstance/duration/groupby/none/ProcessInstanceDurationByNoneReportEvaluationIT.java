@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -335,7 +335,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -381,7 +381,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -422,7 +422,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -474,7 +474,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_NONE)
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -554,7 +554,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   private ProcessReportDataDto createReport(String processKey, String definitionVersion) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(definitionVersion)

@@ -17,8 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -109,7 +108,7 @@ public class ReportClient {
   public SingleProcessReportDefinitionDto createSingleProcessReportDefinitionDto(String collectionId,
                                                                                  String definitionKey,
                                                                                  List<String> tenants) {
-    ProcessReportDataDto numberReport = ProcessReportDataBuilder
+    ProcessReportDataDto numberReport = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(RANDOM_VERSION)

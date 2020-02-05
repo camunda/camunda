@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -89,7 +89,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -135,7 +135,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     ));
     final StartDateFilterDto startDateFilterDto = new StartDateFilterDto(dateFilterDataDto);
 
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -192,7 +192,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
@@ -258,7 +258,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -309,7 +309,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())

@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Order;
@@ -125,7 +125,7 @@ public class ProcessExportServiceIT extends AbstractIT {
 
   private static ProcessReportDataDto createRunningFlowNodeDurationGroupByFlowNodeTableReport() {
     final ProcessReportDataDto reportDataDto =
-      ProcessReportDataBuilder
+      TemplatedProcessReportDataBuilder
         .createReportData()
         .setProcessDefinitionKey(FAKE)
         .setProcessDefinitionVersion(FAKE)
@@ -137,54 +137,60 @@ public class ProcessExportServiceIT extends AbstractIT {
 
   private static Stream<Arguments> getParameters() {
     return Stream.of(
-      Arguments.of(ProcessReportDataBuilder
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
                      .createReportData()
                      .setProcessDefinitionKey(FAKE)
                      .setProcessDefinitionVersion(FAKE)
                      .setReportDataType(ProcessReportDataType.RAW_DATA)
                      .build(),
-                   "/csv/process/single/raw_process_data_grouped_by_none.csv",
-                   "Raw Data Grouped By None"),
-      Arguments.of(ProcessReportDataBuilder
+        "/csv/process/single/raw_process_data_grouped_by_none.csv",
+        "Raw Data Grouped By None"),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
                      .createReportData()
                      .setProcessDefinitionKey(FAKE)
                      .setProcessDefinitionVersion(FAKE)
                      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
                      .build(),
-                   "/csv/process/single/pi_frequency_group_by_none.csv",
-                   "Process Instance Frequency Grouped By None"),
-      Arguments.of(ProcessReportDataBuilder
+        "/csv/process/single/pi_frequency_group_by_none.csv",
+        "Process Instance Frequency Grouped By None"),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
                      .createReportData()
                      .setProcessDefinitionKey(FAKE)
                      .setProcessDefinitionVersion(FAKE)
                      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
                      .build(),
-                   "/csv/process/single/pi_frequency_group_by_none.csv",
-                   "Process Instance Frequency Grouped By None"),
-      Arguments.of(ProcessReportDataBuilder
+        "/csv/process/single/pi_frequency_group_by_none.csv",
+        "Process Instance Frequency Grouped By None"),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
                      .createReportData()
                      .setProcessDefinitionKey(FAKE)
                      .setProcessDefinitionVersion(FAKE)
                      .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
                      .build(),
-                   "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
-                   "Flow Node Frequency Grouped By Flow Node"),
-      Arguments.of(ProcessReportDataBuilder
+        "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
+        "Flow Node Frequency Grouped By Flow Node"),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
                      .createReportData()
                      .setProcessDefinitionKey(FAKE)
                      .setProcessDefinitionVersion(FAKE)
                      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
                      .build(),
-                   "/csv/process/single/pi_duration_group_by_none.csv",
-                   "Process Instance Duration Grouped By None"),
-      Arguments.of(ProcessReportDataBuilder
+        "/csv/process/single/pi_duration_group_by_none.csv",
+        "Process Instance Duration Grouped By None"),
+      Arguments.of(
+        TemplatedProcessReportDataBuilder
                      .createReportData()
                      .setProcessDefinitionKey(FAKE)
                      .setProcessDefinitionVersion(FAKE)
                      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
                      .build(),
-                   "/csv/process/single/flownode_duration_group_by_flownodes.csv",
-                   "Flow Node Duration Grouped By Flow Node"),
+        "/csv/process/single/flownode_duration_group_by_flownodes.csv",
+        "Flow Node Duration Grouped By Flow Node"),
       Arguments.of(createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
                    "/csv/process/single/flownode_duration_group_by_flownodes_no_values.csv",
                    "Flow Node Duration Grouped By Flow Node - Running and null duration")

@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -44,7 +44,7 @@ public abstract class AbstractFilterIT extends AbstractIT {
   }
 
   protected ProcessReportDataDto createReport(String definitionKey, String definitionVersion) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(definitionVersion)

@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -65,7 +65,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
   }
 
   private ProcessReportDataDto createReport(ProcessInstanceEngineDto processInstanceDto) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -297,7 +297,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
   }
 
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeReport(ProcessInstanceEngineDto processDefinition) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processDefinition.getProcessDefinitionVersion())

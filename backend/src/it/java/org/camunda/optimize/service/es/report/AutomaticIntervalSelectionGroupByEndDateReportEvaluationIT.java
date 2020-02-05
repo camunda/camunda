@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 
 import java.sql.SQLException;
@@ -21,7 +21,7 @@ public class AutomaticIntervalSelectionGroupByEndDateReportEvaluationIT
 
   @Override
   protected ProcessReportDataDto getGroupByStartDateReportData(String key, String version) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)

@@ -29,7 +29,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
@@ -82,7 +82,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -121,7 +121,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -173,7 +173,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -208,7 +208,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -247,7 +247,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -297,7 +297,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
-      final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
         .setDateInterval(GroupByDateUnit.DAY)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessDefinitionVersion(processDefinitionVersion)
@@ -356,7 +356,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
-    final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -392,7 +392,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setProcessDefinitionKey(processDefinitionKey)
@@ -436,7 +436,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setProcessDefinitionKey(processDefinitionKey)
@@ -489,7 +489,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -538,7 +538,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .add()
       .buildList();
 
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
@@ -565,7 +565,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.HOUR)
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
@@ -625,7 +625,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
@@ -649,7 +649,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
       .setDateInterval(GroupByDateUnit.WEEK)
@@ -674,7 +674,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.MONTH)
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
@@ -699,7 +699,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
@@ -724,7 +724,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -755,7 +755,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
@@ -783,7 +783,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -799,7 +799,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     assertThat(result.getData().size(), is(1));
 
     // when
-    reportData = ProcessReportDataBuilder
+    reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -829,7 +829,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
@@ -849,7 +849,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
   @Test
   public void optimizeExceptionOnGroupByValueIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
@@ -870,7 +870,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
   @Test
   public void optimizeExceptionOnGroupByUnitIsNull() {
     // given
-    ProcessReportDataDto dataDto = ProcessReportDataBuilder.createReportData()
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion("1")
       .setDateInterval(GroupByDateUnit.DAY)

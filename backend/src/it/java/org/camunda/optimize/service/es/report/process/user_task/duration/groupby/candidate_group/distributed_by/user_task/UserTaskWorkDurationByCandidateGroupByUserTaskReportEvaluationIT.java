@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.Report
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
@@ -68,7 +68,7 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
 
   @Override
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions) {
-    return ProcessReportDataBuilder
+    return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)

@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequ
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -373,7 +373,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   private void assertThatEveryFlowNodeWasExecuted4Times(String processDefinitionKey) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(ALL_VERSIONS)

@@ -28,6 +28,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -40,7 +41,8 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -72,12 +74,11 @@ import java.util.stream.Stream;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByEndDate;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByVariable;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createFlowNodeDurationGroupByFlowNodeBarReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createUserTaskIdleDurationMapGroupByFlowNodeReport;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -182,47 +183,63 @@ public class CombinedReportHandlingIT extends AbstractIT {
   private static Stream<List<SingleProcessReportDefinitionDto>> getCombinableSingleReports() {
     //different procDefs
     SingleProcessReportDefinitionDto procDefKeyReport = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto procDefKeyReportData = createCountProcessInstanceFrequencyGroupByStartDate(
-      "key",
-      Collections.singletonList("1"),
-      GroupByDateUnit.YEAR
-    );
+    ProcessReportDataDto procDefKeyReportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .build();
+
     procDefKeyReportData.setVisualization(ProcessVisualization.BAR);
     procDefKeyReport.setData(procDefKeyReportData);
 
     SingleProcessReportDefinitionDto procDefAnotherKeyReport = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto procDefAnotherKeyReportData = createCountProcessInstanceFrequencyGroupByStartDate(
-      "anotherKey",
-      Collections.singletonList("1"),
-      GroupByDateUnit.YEAR
-    );
+    ProcessReportDataDto procDefAnotherKeyReportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setProcessDefinitionKey("anotherKey")
+      .setProcessDefinitionVersion("1")
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .build();
+
     procDefAnotherKeyReportData.setVisualization(ProcessVisualization.BAR);
     procDefAnotherKeyReport.setData(procDefAnotherKeyReportData);
 
     //byStartDate/byEndDate
     SingleProcessReportDefinitionDto byEndDate = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto byEndDateData = createCountProcessInstanceFrequencyGroupByEndDate(
-      "key",
-      Collections.singletonList("1"),
-      GroupByDateUnit.YEAR
-    );
+    ProcessReportDataDto byEndDateData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .build();
+
     byEndDateData.setVisualization(ProcessVisualization.BAR);
     byEndDate.setData(byEndDateData);
 
     //userTaskDuration/flowNodeDuration
     SingleProcessReportDefinitionDto userTaskDuration = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto userTaskDurationData = createUserTaskIdleDurationMapGroupByFlowNodeReport(
-      "key",
-      Collections.singletonList("1")
-    );
+    ProcessReportDataDto userTaskDurationData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(USER_TASK_DURATION_GROUP_BY_FLOW_NODE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .build();
+
     userTaskDurationData.setVisualization(ProcessVisualization.BAR);
     userTaskDuration.setData(userTaskDurationData);
 
     SingleProcessReportDefinitionDto flowNodeDuration = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto flowNodeDurationData = createFlowNodeDurationGroupByFlowNodeBarReport(
-      "key",
-      Collections.singletonList("1")
-    );
+    ProcessReportDataDto flowNodeDurationData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+
     flowNodeDurationData.setVisualization(ProcessVisualization.BAR);
     flowNodeDuration.setData(flowNodeDurationData);
 
@@ -237,41 +254,53 @@ public class CombinedReportHandlingIT extends AbstractIT {
   private static Stream<List<SingleProcessReportDefinitionDto>> getUncombinableSingleReports() {
     //uncombinable visualization
     SingleProcessReportDefinitionDto PICount_startDateYear_bar = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto PICount_startDateYear_barData = createCountProcessInstanceFrequencyGroupByStartDate(
-      "key",
-      Collections.singletonList("1"),
-      GroupByDateUnit.YEAR
-    );
+    ProcessReportDataDto PICount_startDateYear_barData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .build();
+
     PICount_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
     PICount_startDateYear_bar.setData(PICount_startDateYear_barData);
 
     SingleProcessReportDefinitionDto PICount_startDateYear_line = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto PICount_startDateYear_lineData = createCountProcessInstanceFrequencyGroupByStartDate(
-      "key",
-      Collections.singletonList("1"),
-      GroupByDateUnit.YEAR
-    );
+    ProcessReportDataDto PICount_startDateYear_lineData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .build();
+
     PICount_startDateYear_lineData.setVisualization(ProcessVisualization.LINE);
     PICount_startDateYear_line.setData(PICount_startDateYear_lineData);
 
     //uncombinable groupBy
-    ProcessReportDataDto PICount_byVariable_barData = createCountProcessInstanceFrequencyGroupByVariable(
-      "key",
-      Collections.singletonList("1"),
-      "var",
-      VariableType.BOOLEAN
-    );
+    ProcessReportDataDto PICount_byVariable_barData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVariableName("var")
+      .setVariableType(VariableType.BOOLEAN)
+      .build();
     PICount_byVariable_barData.setVisualization(ProcessVisualization.BAR);
     SingleProcessReportDefinitionDto PICount_byVariable_bar = new SingleProcessReportDefinitionDto();
     PICount_byVariable_bar.setData(PICount_byVariable_barData);
 
     //uncombinable view
     SingleProcessReportDefinitionDto PIDuration_startDateYear_bar = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto PIDuration_startDateYear_barData = createProcessInstanceDurationGroupByStartDateReport(
-      "key",
-      Collections.singletonList("1"),
-      GroupByDateUnit.YEAR
-    );
+    ProcessReportDataDto PIDuration_startDateYear_barData = new ProcessReportDataBuilderHelper()
+      .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+      .viewProperty(ProcessViewProperty.DURATION)
+      .groupByType(ProcessGroupByType.START_DATE)
+      .dateInterval(GroupByDateUnit.YEAR)
+      .processDefinitionKey("key")
+      .processDefinitionVersions(Collections.singletonList("1"))
+      .build();
+    
     PIDuration_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
     PIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
 
@@ -689,7 +718,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithVisualizeAsChangedWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -728,7 +757,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithGroupByChangedWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -767,7 +796,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithViewChangedWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1098,7 +1127,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String combinedReportId = createNewCombinedReport();
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1119,7 +1148,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1129,7 +1158,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleDurationNumberReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto durationReportData = ProcessReportDataBuilder
+    ProcessReportDataDto durationReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1139,7 +1168,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleDurationMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto durationMapReportData = ProcessReportDataBuilder
+    ProcessReportDataDto durationMapReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1150,7 +1179,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleUserTaskTotalDurationMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto durationMapReportData = ProcessReportDataBuilder
+    ProcessReportDataDto durationMapReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1162,7 +1191,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleUserTaskIdleDurationMapReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto durationMapReportData = ProcessReportDataBuilder
+    ProcessReportDataDto durationMapReportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1180,7 +1209,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1197,19 +1226,19 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   private String createNewSingleReportGroupByEndDate(ProcessInstanceEngineDto engineDto,
                                                      GroupByDateUnit groupByDateUnit) {
-    ProcessReportDataDto reportDataByEndDate = ProcessReportDataBuilder
+    ProcessReportDataDto reportDataByEndDate = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setDateInterval(groupByDateUnit)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
     return createNewSingleMapReport(reportDataByEndDate);
   }
 
   private String createNewSingleReportGroupByStartDate(ProcessInstanceEngineDto engineDto,
                                                        GroupByDateUnit groupByDateUnit) {
-    ProcessReportDataDto reportDataByStartDate = ProcessReportDataBuilder
+    ProcessReportDataDto reportDataByStartDate = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
@@ -1221,7 +1250,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
 
   private String createNewSingleRawReport(ProcessInstanceEngineDto engineDto) {
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())

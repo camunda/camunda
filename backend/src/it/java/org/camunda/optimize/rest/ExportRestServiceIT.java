@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -150,7 +150,7 @@ public class ExportRestServiceIT extends AbstractIT {
 
   private String createAndStoreDefaultValidRawProcessReportDefinition(String processDefinitionKey,
                                                                       String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
@@ -172,7 +172,7 @@ public class ExportRestServiceIT extends AbstractIT {
 
   private String createAndStoreDefaultInvalidReportDefinition(String processDefinitionKey,
                                                               String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)

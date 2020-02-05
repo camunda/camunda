@@ -26,7 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -373,7 +373,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   public void reportEvaluationReturnsMetaData() {
     // given
     String reportId = createNewReport();
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(FOO_PROCESS_DEFINITION_KEY)
       .setProcessDefinitionVersion(FOO_PROCESS_DEFINITION_VERSION)
@@ -401,7 +401,7 @@ public class SingleReportHandlingIT extends AbstractIT {
   @Test
   public void evaluateReportWithoutVisualization() {
     // given
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey("foo")
       .setProcessDefinitionVersion("1")
