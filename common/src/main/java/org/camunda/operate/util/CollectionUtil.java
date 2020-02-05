@@ -34,6 +34,10 @@ public abstract class CollectionUtil {
     }
     return listOfNotNulls;
   }
+  
+  public static <T> List<T> emptyListWhenNull(List<T> aList){
+    return aList == null ? Collections.emptyList() : aList;
+  }
 
   @SuppressWarnings("unchecked")
   public static <T> List<T> withoutNulls(Collection<T> aCollection){

@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.List;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
-import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
@@ -33,7 +32,7 @@ public class SequenceFlowReader extends AbstractReader {
   private SequenceFlowTemplate sequenceFlowTemplate;
 
   public List<SequenceFlowEntity> getSequenceFlowsByWorkflowInstanceKey(Long workflowInstanceKey) {
-    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(VariableTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    final TermQueryBuilder workflowInstanceKeyQuery = termQuery(SequenceFlowTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(workflowInstanceKeyQuery);
 

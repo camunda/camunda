@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.entities;
 
-public class UserEntity extends OperateEntity{
+public class UserEntity extends OperateEntity<UserEntity>{
 
   private String username;
   private String password;

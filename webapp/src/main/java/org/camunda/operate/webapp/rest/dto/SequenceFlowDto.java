@@ -5,9 +5,10 @@
  */
 package org.camunda.operate.webapp.rest.dto;
 
-import java.util.ArrayList;
 import java.util.List;
+
 import org.camunda.operate.entities.SequenceFlowEntity;
+import static org.camunda.operate.util.CollectionUtil.*;
 import org.camunda.operate.util.ConversionUtils;
 
 public class SequenceFlowDto {
@@ -22,47 +23,41 @@ public class SequenceFlowDto {
     return id;
   }
 
-  public void setId(String id) {
+  public SequenceFlowDto setId(String id) {
     this.id = id;
+    return this;
   }
 
   public String getWorkflowInstanceId() {
     return workflowInstanceId;
   }
 
-  public void setWorkflowInstanceId(String workflowInstanceId) {
+  public SequenceFlowDto setWorkflowInstanceId(String workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
+    return this;
   }
 
   public String getActivityId() {
     return activityId;
   }
 
-  public void setActivityId(String activityId) {
+  public SequenceFlowDto setActivityId(String activityId) {
     this.activityId = activityId;
+    return this;
   }
 
   public static SequenceFlowDto createFrom(SequenceFlowEntity sequenceFlowEntity) {
     if (sequenceFlowEntity == null) {
       return null;
     }
-    SequenceFlowDto sequenceFlowDto = new SequenceFlowDto();
-    sequenceFlowDto.setId(sequenceFlowEntity.getId());
-    sequenceFlowDto.setWorkflowInstanceId(ConversionUtils.toStringOrNull(sequenceFlowEntity.getWorkflowInstanceKey()));
-    sequenceFlowDto.setActivityId(sequenceFlowEntity.getActivityId());
-    return sequenceFlowDto;
+    return new SequenceFlowDto()
+      .setId(sequenceFlowEntity.getId())
+      .setWorkflowInstanceId(ConversionUtils.toStringOrNull(sequenceFlowEntity.getWorkflowInstanceKey()))
+      .setActivityId(sequenceFlowEntity.getActivityId());
   }
 
   public static List<SequenceFlowDto> createFrom(List<SequenceFlowEntity> sequenceFlowEntities) {
-    List<SequenceFlowDto> result = new ArrayList<>();
-    if (sequenceFlowEntities != null) {
-      for (SequenceFlowEntity sequenceFlowEntity: sequenceFlowEntities) {
-        if (sequenceFlowEntity != null) {
-          result.add(createFrom(sequenceFlowEntity));
-        }
-      }
-    }
-    return result;
+    return map(emptyListWhenNull(sequenceFlowEntities), s -> createFrom(s));
   }
 
   @Override

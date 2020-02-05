@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-public class IncidentEntity extends OperateZeebeEntity {
+public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private static final Map<ErrorType, String> ErrorType2Title;
   static {

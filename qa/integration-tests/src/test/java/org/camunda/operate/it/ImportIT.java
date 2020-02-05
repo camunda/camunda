@@ -34,7 +34,6 @@ import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -216,39 +215,6 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getStartDate()).isEqualTo(startDate);
-
-  }
-
-  @Test
-  @Ignore("OPE-437")
-  public void testSequenceFlowsPersisted() {
-    // having
-    String processId = "demoProcess";
-    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
-      .startEvent("start")
-      .sequenceFlowId("sf1")
-      .serviceTask("task1").zeebeTaskType("task1")
-      .sequenceFlowId("sf2")
-      .serviceTask("task2").zeebeTaskType("task2")
-      .sequenceFlowId("sf3")
-      .endEvent()
-      .done();
-    deployWorkflow(workflow, processId + ".bpmn");
-
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
-
-    completeTask(workflowInstanceKey, "task1", null);
-
-    completeTask(workflowInstanceKey, "task2", null);
-
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
-
-    //TODO
-//    WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-  
-//    assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
-//      .extracting(IncidentTemplate.FLOW_NODE_ID).containsOnly("sf1", "sf2", "sf3");
 
   }
 

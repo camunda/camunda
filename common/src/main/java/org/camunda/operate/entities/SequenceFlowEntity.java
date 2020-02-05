@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.entities;
 
-public class SequenceFlowEntity extends  OperateZeebeEntity {
+public class SequenceFlowEntity extends OperateZeebeEntity<SequenceFlowEntity> {
 
   private Long workflowInstanceKey;
   private String activityId;
@@ -14,16 +14,18 @@ public class SequenceFlowEntity extends  OperateZeebeEntity {
     return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
+  public SequenceFlowEntity setWorkflowInstanceKey(Long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
+    return this;
   }
 
   public String getActivityId() {
     return activityId;
   }
 
-  public void setActivityId(String activityId) {
+  public SequenceFlowEntity setActivityId(String activityId) {
     this.activityId = activityId;
+    return this;
   }
 
   @Override

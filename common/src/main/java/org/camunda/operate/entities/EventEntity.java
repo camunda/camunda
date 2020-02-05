@@ -7,7 +7,7 @@ package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
 
-public class EventEntity extends OperateZeebeEntity {
+public class EventEntity extends OperateZeebeEntity<EventEntity> {
 
   /**
    * Workflow data.

@@ -25,7 +25,6 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
@@ -252,13 +251,6 @@ public abstract class TestUtil {
       result.add(workflowEntity);
     }
     return result;
-  }
-
-  public static SequenceFlowEntity createSequenceFlow() {
-    SequenceFlowEntity sequenceFlowEntity = new SequenceFlowEntity();
-    sequenceFlowEntity.setId(UUID.randomUUID().toString());
-    sequenceFlowEntity.setActivityId("SequenceFlow_" + random.nextInt());
-    return sequenceFlowEntity;
   }
 
   public static ListViewRequestDto createWorkflowInstanceQuery(Consumer<ListViewQueryDto> filtersSupplier) {

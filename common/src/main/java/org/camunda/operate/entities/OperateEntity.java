@@ -26,7 +26,7 @@ public abstract class OperateEntity<T extends OperateEntity<T>> {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    OperateEntity that = (OperateEntity) o;
+    OperateEntity<T> that = (OperateEntity<T>) o;
 
     return id != null ? id.equals(that.id) : that.id == null;
   }

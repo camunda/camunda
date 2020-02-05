@@ -22,6 +22,7 @@ import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
+import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
@@ -87,6 +88,14 @@ public class OperateTester {
   @Autowired
   @Qualifier("incidentIsActiveCheck")
   private Predicate<Object[]> incidentIsActiveCheck;
+  
+  @Autowired
+  @Qualifier("activityIsActiveCheck")
+  private Predicate<Object[]> activityIsActiveCheck;
+  
+  @Autowired
+  @Qualifier("activityIsCompletedCheck")
+  private Predicate<Object[]> activityIsCompletedCheck;
   
   @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
@@ -178,6 +187,21 @@ public class OperateTester {
   public OperateTester incidentIsActive() {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return this;
+  }
+  
+  public OperateTester activityIsActive(String activityId) {
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey,activityId);
+    return this;
+  }
+  
+  public OperateTester activityIsCompleted(String activityId) {
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
+    return this;
+  }
+  
+  public OperateTester completeTask(String activityId) {
+    ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), null);
+    return activityIsCompleted(activityId);
   }
   
   public OperateTester and() {
@@ -281,7 +305,7 @@ public class OperateTester {
   public OperateTester archive() {
     try {
       WorkflowInstancesArchiverJob.ArchiveBatch finishedAtDateIds = new AbstractArchiverJob.ArchiveBatch("_test_archived", Arrays.asList(workflowInstanceKey));
-      WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, null);
+      WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class);
       archiverJob.archiveBatch(finishedAtDateIds);
     } catch (ArchiverException e) {
       return this;
