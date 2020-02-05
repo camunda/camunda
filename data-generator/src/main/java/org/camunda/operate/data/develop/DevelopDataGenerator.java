@@ -273,6 +273,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployWorkflow(client, "develop/bigProcess.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "develop/errorProcess.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/error-end-event.bpmn");
   }
 
   @Override
@@ -300,6 +302,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
             .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"boundary\"}"));
         workflowInstanceKeys.add(ZeebeTestUtil
             .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"subProcess\"}"));
+        workflowInstanceKeys.add(ZeebeTestUtil
+            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"unknown\"}"));
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "error-end-process", null));
       }
 
       if (version == 2) {
