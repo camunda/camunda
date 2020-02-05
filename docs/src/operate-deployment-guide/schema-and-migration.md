@@ -64,7 +64,7 @@ Follow the next steps to migrate:
 
 1. Change to *schema* folder Operate 
 2. Extract *camunda-operate-els-schema-<OPERATE-VERSION>.zip*
-3. Execute *migration.sh* [elasticsearch host:port] shell script
+3. Execute *migration.sh* ``[elasticsearch host:port]`` shell script
 
 ```
 cd schema
