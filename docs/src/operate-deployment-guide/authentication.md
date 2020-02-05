@@ -1,44 +1,47 @@
 # Authentication
 
 # Introduction
-Operate provides 2 ways for authentication:
 
-1. Authenticate with user information stored in [elasticsearch](#user-in-elasticsearch)
-2. Authenticate with a [Single-Sign-On](#single-sign-on) provider 
+Operate provides two ways for authentication:
 
-Default enabled is user storage in elasticsearch. 
+1. Authenticate with user information stored in [Elasticsearch](#user-in-elasticsearch)
+2. Authenticate via [Auth0 Single Sign-On provider](#single-sign-on)  
 
-# User in elasticsearch
+By default user storage in Elasticsearch is enabled. 
 
-In this mode the user authenticates with username and password. 
-**username** and **password** can be set in application.yml:
+# User in Elasticsearch
+
+In this mode the user authenticates with username and password, that are stored in Elasticsearch. 
+**username** and **password** for one user may be set in application.yml:
 
 ```
 camunda.operate:
   username: anUser
   password: aPassword
 ```
-If the user doesn't exist it will be created. 
 
-## Default values
+On Operate startup the user will be created if not existed before. 
 
-Default **username** is `demo` and **password** is `demo`.
+By default one user with **username**/**password** `demo`/`demo` will be created.
 
+More users can be added directly to Elasticsearch, to the index `operate-user_`. Password must be encoded with BCrypt strong hashing function.
 
-# Single-Sign-On
+# Auth0 Single Sign-On
 
-## Enable Single-Sign-On
+Currently Operate supports Auth0.com implementation of Single Sign-On.
 
-Single-Sign-On is only enabled by setting [spring profile](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-profiles): `sso-auth`
+## Enable Single Sign-On
 
-Example for setting spring profiles as environment variable:
+Single Sign-On may be enabled only by setting [Spring profile](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-profiles): `sso-auth`
+
+Example for setting spring profile as environmental variable:
 ```
 export SPRING_PROFILES_ACTIVE=sso-auth
 ```
 
-## Configure Single-Sign-On
+## Configure Single Sign-On
 
-Single-Sign-On needs following parameters:
+Single Sign-On needs following parameters:
 
 Parametername | Optional | Default value | Description
 --------------|----------|---------------|-------------
@@ -50,6 +53,7 @@ camunda.operate.auth0.claimName | yes | https://camunda.com/orgs |The claim that
 camunda.operate.auth0.organization | no | | The given organization should be contained in value of claim name
 
 Example for setting parameters as environment variables:
+
 ```
 export CAMUNDA_OPERATE_AUTH0_CLIENTID=A_CLIENT_ID
 export CAMUNDA_OPERATE_AUTH0_CLIENTSECRET=A_SECRET
