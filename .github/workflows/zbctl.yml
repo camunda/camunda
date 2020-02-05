@@ -1,0 +1,28 @@
+name: Go
+on: [push]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: Get dependencies
+        working-directory: clients/go
+        run: |
+          go mod download
+          go mod verify
+      - name: Build
+        working-directory: clients/go/cmd/zbctl
+        run: |
+          GO111MODULE=on CGO_ENABLED=0 go build -mod=vendor -a -tags netgo \
+            -ldflags '-s -w -X github.com/zeebe-io/zeebe/clients/go/cmd/zbctl/internal/commands.Version=development' \
+            -o ./dist/zbctl ./main.go
+      - name: Test
+        working-directory: clients/go/cmd/zbctl/dist
+        run: zbctl status
