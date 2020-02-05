@@ -46,7 +46,7 @@
 							<goal>regex-property</goal>
 						</goals>
 						<configuration>
-							<name>schema.old_version</name>
+							<name>schema.previous_version</name>
 							<value>${project.previous_version}</value>
 							<regex>.*</regex>
 							<replacement>$0</replacement>

@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-activity-instance-${schema.old_version}_*"
+			"operate-activity-instance-${schema.previous_version}_*"
 		]
 	},
 	"dest": {

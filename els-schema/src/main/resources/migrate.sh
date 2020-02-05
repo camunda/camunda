@@ -21,9 +21,9 @@ checkIsCurrentVersionAlreadyInstalled(){
 createNewTemplatesAndTheirIndexes(){
    for template in create/template/*.json; do
      templatename=`basename $template .json`
-     full_templatename=${templatename}-${schema.version}
-     full_indexname=${full_templatename}_
-     echo "Create template ${templatename}-${schema.version} and index ${templatename}-${schema.version}_"
+     full_templatename=${templatename}-${schema.version}_template
+     full_indexname=${templatename}-${schema.version}_
+     echo "Create template ${full_templatename} and index ${full_indexname}"
      echo "-------------------------------"
  	 $RESTCLIENT --request PUT --url $ES/_template/${full_templatename}?include_type_name=false --data @$template || error_exit "Failed to create template $full_templatename"
  	 $RESTCLIENT --request PUT --url $ES/${full_indexname} || error_exit "Failed to create index $full_indexname"
@@ -67,7 +67,7 @@ removeOldTemplates(){
 	echo "Delete all old templates"
 	for template in create/template/*.json; do
 		templatename=`basename $template .json`
-		full_templatename=${templatename}-${schema.old_version}_template
+		full_templatename=${templatename}-${schema.previous_version}_template
 		echo "Delete old templates ${full_templatename}"
 		echo "-------------------------------"
 		$RESTCLIENT --request DELETE --url $ES/_template/${full_templatename} || error_exit "Failed to delete $full_templatename"
@@ -84,9 +84,9 @@ migrate(){
 		echo "-------------------------------"
     	$RESTCLIENT --request POST --url $ES/_reindex?wait_for_completion=true --data @$index || error_exit "Failed to reindex $indexname"
     	echo
-    	echo "Delete ${indexname}-${schema.old_version}* "
+    	echo "Delete ${indexname}-${schema.previous_version}* "
 		echo "-------------------------------"
-    	$RESTCLIENT --request DELETE --url $ES/${indexname}-${schema.old_version}* || error_exit "Failed to delete indices that match ${indexname}-${schema.old_version}*"
+    	$RESTCLIENT --request DELETE --url $ES/${indexname}-${schema.previous_version}* || error_exit "Failed to delete indices that match ${indexname}-${schema.previous_version}*"
     	echo
     	echo "-------------------------------"
 	done

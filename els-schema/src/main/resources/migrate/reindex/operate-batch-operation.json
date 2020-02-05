@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-batch-operation-${schema.old_version}_*"
+			"operate-batch-operation-${schema.previous_version}_*"
 		]
 	},
 	"dest": {

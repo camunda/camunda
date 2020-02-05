@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-incident-${schema.old_version}_*"
+			"operate-incident-${schema.previous_version}_*"
 		]
 	},
 	"dest": {

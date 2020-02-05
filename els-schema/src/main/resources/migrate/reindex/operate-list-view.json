@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-list-view-${schema.old_version}_*"
+			"operate-list-view-${schema.previous_version}_*"
 		]
 	},
 	"dest": {
