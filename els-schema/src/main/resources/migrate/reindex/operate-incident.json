@@ -5,8 +5,7 @@
 		]
 	},
 	"dest": {
-		"index": "operate-incident-${schema.version}_",
-		"pipeline": "operate-incident"
+		"index": "operate-incident-${schema.version}_"
 	},
 	"script": {
 		"lang": "painless",
