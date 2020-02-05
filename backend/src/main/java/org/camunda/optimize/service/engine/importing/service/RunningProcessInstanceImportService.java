@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.CamundaActivityEventService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningProcessInstanceElasticsearchImportJob;
@@ -25,6 +26,7 @@ public class RunningProcessInstanceImportService implements ImportService<Histor
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private RunningProcessInstanceWriter runningProcessInstanceWriter;
+  private CamundaActivityEventService camundaActivityEventService;
 
   @Override
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
@@ -54,7 +56,7 @@ public class RunningProcessInstanceImportService implements ImportService<Histor
                                                                                     processInstances, Runnable
                                                                                     callback) {
     RunningProcessInstanceElasticsearchImportJob importJob =
-      new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter, callback);
+      new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter, camundaActivityEventService, callback);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

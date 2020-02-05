@@ -114,7 +114,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
 
     assertThat(storedEvents)
-      .hasSize(2)
+      .hasSize(3)
       .usingElementComparatorIgnoringFields(
         CamundaActivityEventDto.Fields.activityInstanceId,
         CamundaActivityEventDto.Fields.processDefinitionName,
@@ -122,6 +122,12 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         CamundaActivityEventDto.Fields.timestamp
       )
       .containsExactlyInAnyOrder(
+        createAssertionEvent(
+          addDelimiterForStrings(processInstanceEngineDto.getProcessDefinitionKey(), PROCESS_START_TYPE),
+          PROCESS_START_TYPE,
+          PROCESS_START_TYPE,
+          processInstanceEngineDto
+        ),
         createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, processInstanceEngineDto),
         createAssertionEvent(
           addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
@@ -134,16 +140,23 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
   @Test
   public void noEventsCreatedOnImportWithFeatureDisabled() throws JsonProcessingException {
-    // given the index has been created, the start Event and start of user task has been saved already
+    // given the index has been created, the process start, the start Event, and start of user task has been saved already
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("noEventsDef");
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     List<CamundaActivityEventDto> initialStoredEvents =
       getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
     assertThat(initialStoredEvents)
-      .hasSize(2)
+      .hasSize(3)
       .extracting(CamundaActivityEventDto::getActivityId)
-      .containsExactlyInAnyOrder(START_EVENT, addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX));
+      .containsExactlyInAnyOrder(
+        START_EVENT,
+        addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
+        addDelimiterForStrings(
+          processInstanceEngineDto.getProcessDefinitionKey(),
+          PROCESS_START_TYPE
+        )
+      );
 
     // when the feature is disabled
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
