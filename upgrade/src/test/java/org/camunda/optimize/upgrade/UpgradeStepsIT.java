@@ -12,6 +12,8 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.camunda.optimize.upgrade.indexes.RenameFieldTestIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestWithTemplateIndex;
@@ -28,6 +30,8 @@ import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -35,7 +39,7 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
-import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class UpgradeStepsIT extends AbstractUpgradeIT {
 
@@ -320,6 +325,35 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // then
     Map<?, ?> mappingFields = getMappingFields();
     assertThat(mappingFields.containsKey("email"), is(true));
+  }
+
+  @Test
+  public void fieldRenameWithoutRemovingOldFieldAbortsUpgrade() throws IOException {
+    //given
+    createOptimizeIndexWithTypeAndVersion(new RenameFieldTestIndex(), 1);
+
+    IndexRequest indexRequest = new IndexRequest("users")
+      .source("{\"name\": \"yuri_loza\"}", XContentType.JSON);
+
+    prefixAwareClient.index(indexRequest, RequestOptions.DEFAULT);
+
+    RefreshRequest refreshRequest = new RefreshRequest("*");
+    prefixAwareClient.getHighLevelClient().indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+
+    UpgradePlan upgradePlan =
+      UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
+        .fromVersion(FROM_VERSION)
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(new UpdateIndexStep(
+                          TEST_INDEX_WITH_UPDATED_MAPPING,
+                          "def foo = \"noop\";"
+                        )
+        )
+        .build();
+
+    // when
+    assertThrows(UpgradeRuntimeException.class, upgradePlan::execute);
   }
 
   @Test

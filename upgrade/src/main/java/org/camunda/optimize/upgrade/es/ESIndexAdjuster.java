@@ -149,8 +149,17 @@ public class ESIndexAdjuster {
               "A reindex batch that is part of the upgrade failed. Elasticsearch reported the following error: {}.",
               taskResponse.getError().toString()
             );
-            logger.error("The upgrade will be aborted. Please restore your Elasticsearch backup and try again.");
             throw new UpgradeRuntimeException(taskResponse.getError().toString());
+          }
+
+          if (taskResponse.getResponseDetails() != null) {
+            List<Object> failures = taskResponse.getResponseDetails().getFailures();
+            if (failures != null && failures.size() != 0) {
+              String errorMessage = "A reindex batch that is part of the upgrade failed.";
+              logger.error(failures.toString());
+              logger.error(errorMessage);
+              throw new UpgradeRuntimeException(errorMessage);
+            }
           }
 
           int currentProgress = new Double(taskResponse.getProgress() * 100.0).intValue();

@@ -79,11 +79,13 @@ public class EsIndexAdjusterIT {
     final Response inProgressResponse = createEsResponse(new TaskResponse(
       false,
       new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 3L, 3L, 4L)),
+      null,
       null
     ));
     final Response completedResponse = createEsResponse(new TaskResponse(
       true,
       new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)),
+      null,
       null
     ));
     when(lowLevelRestClient.performRequest(
@@ -129,7 +131,8 @@ public class EsIndexAdjusterIT {
     final TaskResponse taskResponseWithError = new TaskResponse(
       true,
       new TaskResponse.Task(taskId, new TaskResponse.Status(1L, 0L, 0L, 0L)),
-      new TaskResponse.Error("error", "failed hard", "reindex")
+      new TaskResponse.Error("error", "failed hard", "reindex"),
+      null
     );
     final Response taskStatusResponse = createEsResponse(taskResponseWithError);
     when(lowLevelRestClient.performRequest(

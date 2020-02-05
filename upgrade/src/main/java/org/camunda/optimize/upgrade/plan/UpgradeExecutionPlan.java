@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +83,14 @@ public class UpgradeExecutionPlan implements UpgradePlan {
         upgradeSteps.size(),
         step.getClass().getSimpleName()
       );
-      step.execute(esIndexAdjuster);
+
+      try {
+        step.execute(esIndexAdjuster);
+      } catch (UpgradeRuntimeException e) {
+        logger.error("The upgrade will be aborted. Please restore your Elasticsearch backup and try again.");
+        throw e;
+      }
+
       logger.info(
         "Successfully finished step {}/{}: {}",
         currentStepCount,

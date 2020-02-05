@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,6 +28,8 @@ public class TaskResponse {
   private Task task;
   @JsonProperty("error")
   private Error error;
+  @JsonProperty("response")
+  private TaskResponseDetails responseDetails;
 
   public String getTaskId() {
     return Optional.ofNullable(task).map(Task::getId).orElse(null);
@@ -48,6 +51,10 @@ public class TaskResponse {
       .filter(status -> status.getTotal() != 0)
       .map(status -> ((double) (status.getCreated() + status.getUpdated() + status.getDeleted())) / status.getTotal())
       .orElse(0.0D);
+  }
+
+  public TaskResponseDetails getResponseDetails() {
+    return responseDetails;
   }
 
   public Error getError() {
@@ -112,6 +119,19 @@ public class TaskResponse {
         ", reason='" + reason + '\'' +
         ", phase='" + phase + '\'' +
         '}';
+    }
+  }
+
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  @AllArgsConstructor
+  @Setter
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class TaskResponseDetails {
+    @JsonProperty("failures")
+    private List<Object> failures;
+
+    public List<Object> getFailures() {
+      return failures;
     }
   }
 
