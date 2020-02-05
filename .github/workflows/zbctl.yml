@@ -25,4 +25,8 @@ jobs:
             -o ./dist/zbctl ./main.go
       - name: Test
         working-directory: clients/go/cmd/zbctl/dist
-        run: zbctl status
+        run: zbctl
+      - uses: actions/upload-artifact@v1
+        with:
+          name: zbctl
+          path: clients/go/cmd/zbctl/dist/zbctl
