@@ -9,6 +9,7 @@ package io.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.protocols.raft.RaftCommitListener;
+import io.atomix.protocols.raft.RaftRoleChangeListener;
 import io.atomix.protocols.raft.RaftServer.Role;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
@@ -38,6 +39,7 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -57,7 +59,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public final class ZeebePartition extends Actor implements RaftCommitListener, Consumer<Role> {
+public final class ZeebePartition extends Actor
+    implements RaftCommitListener, RaftRoleChangeListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;
@@ -124,15 +127,15 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
    * @param newRole the new role of the raft partition
    */
   @Override
-  public void accept(final Role newRole) {
-    actor.run(() -> onRoleChange(newRole));
+  public void onNewRole(final Role newRole, final long newTerm) {
+    actor.run(() -> onRoleChange(newRole, newTerm));
   }
 
-  private void onRoleChange(final Role newRole) {
+  private void onRoleChange(final Role newRole, final long newTerm) {
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
-          leaderTransition();
+          leaderTransition(newTerm);
         }
         break;
       case INACTIVE:
@@ -142,7 +145,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
       case FOLLOWER:
       default:
         if (raftRole == null || raftRole == Role.LEADER) {
-          followerTransition();
+          followerTransition(newTerm);
         }
         break;
     }
@@ -151,13 +154,13 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
     raftRole = newRole;
   }
 
-  private void leaderTransition() {
+  private void leaderTransition(final long newTerm) {
     onTransitionTo(this::transitionToLeader)
         .onComplete(
             (success, error) -> {
               if (error == null) {
                 partitionListeners.forEach(
-                    l -> l.onBecomingLeader(partitionId, atomixRaftPartition.term(), logStream));
+                    l -> l.onBecomingLeader(partitionId, newTerm, logStream));
               } else {
                 LOG.error("Failed to install leader partition {}", partitionId, error);
                 // TODO https://github.com/zeebe-io/zeebe/issues/3499
@@ -165,13 +168,13 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
             });
   }
 
-  private void followerTransition() {
+  private void followerTransition(final long newTerm) {
     onTransitionTo(this::transitionToFollower)
         .onComplete(
             (success, error) -> {
               if (error == null) {
                 partitionListeners.forEach(
-                    l -> l.onBecomingFollower(partitionId, atomixRaftPartition.term(), logStream));
+                    l -> l.onBecomingFollower(partitionId, newTerm, logStream));
               } else {
                 LOG.error("Failed to install follower partition {}", partitionId, error);
                 // TODO https://github.com/zeebe-io/zeebe/issues/3499
@@ -280,7 +283,8 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
     final StatePositionSupplier positionSupplier = new StatePositionSupplier(partitionId, LOG);
     final LogStreamDeletionService deletionService =
-        new LogStreamDeletionService(logStream, snapshotStorage, positionSupplier);
+        new LogStreamDeletionService(
+            localBroker.getNodeId(), partitionId, logStream, snapshotStorage, positionSupplier);
     closeables.add(deletionService);
 
     return scheduler.submitActor(deletionService);
@@ -304,7 +308,8 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
         runtimeDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
         new AtomixRecordEntrySupplierImpl(reader),
-        brokerCfg.getData().getMaxSnapshots());
+        brokerCfg.getData().getMaxSnapshots(),
+        new SnapshotMetrics(partitionId));
   }
 
   private boolean shouldReplicateSnapshots() {
@@ -346,6 +351,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
         .logStream(logStream)
         .actorScheduler(scheduler)
         .zeebeDb(zeebeDb)
+        .nodeId(localBroker.getNodeId())
         .commandResponseWriter(commandApiService.newCommandResponseWriter())
         .onProcessedListener(commandApiService.getOnProcessedListener(partitionId))
         .streamProcessorFactory(
@@ -528,7 +534,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
                 this.logStream = log;
                 atomixRaftPartition.getServer().addCommitListener(this);
                 atomixRaftPartition.addRoleChangeListener(this);
-                onRoleChange(atomixRaftPartition.getRole());
+                onRoleChange(atomixRaftPartition.getRole(), atomixRaftPartition.term());
               } else {
                 LOG.error(
                     "Failed to install log stream service for partition {}",

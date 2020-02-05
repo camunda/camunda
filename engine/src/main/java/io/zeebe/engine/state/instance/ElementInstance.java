@@ -88,10 +88,6 @@ public final class ElementInstance implements DbValue {
     }
   }
 
-  public void incrementChildCount() {
-    childCount++;
-  }
-
   public boolean canTerminate() {
     return WorkflowInstanceLifecycle.canTerminate(getState());
   }
@@ -158,7 +154,11 @@ public final class ElementInstance implements DbValue {
   }
 
   public void setInterruptingEventKey(final long key) {
-    this.interruptingEventKey = key;
+    interruptingEventKey = key;
+  }
+
+  public boolean isInterrupted() {
+    return getInterruptingEventKey() > 0;
   }
 
   @Override

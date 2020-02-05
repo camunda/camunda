@@ -20,11 +20,13 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 
 public final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord> {
-  public static final String NO_FAILED_RECORD_MESSAGE =
+
+  private static final String NO_FAILED_RECORD_MESSAGE =
       "Expected to create incident for failed record with key '%d', but no such record was found";
-  public static final String JOB_NOT_FAILED_MESSAGE =
-      "Expected to create incident for failed job with key '%d', but it is not failed";
-  public static final String NO_FAILED_JOB_MESSAGE =
+
+  private static final String INVALID_JOB_STATE_MESSAGE =
+      "Expected to create incident for failed job with key '%d', but it is in state '%s'";
+  private static final String NO_FAILED_JOB_MESSAGE =
       "Expected to create incident for failed job with key '%d', but no such job was found";
 
   private final ZeebeState zeebeState;
@@ -69,12 +71,15 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
 
     if (jobState == State.NOT_FOUND) {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_FAILED_JOB_MESSAGE, jobKey));
-    } else if (jobState != State.FAILED) {
+      return true;
+
+    } else if (jobState != State.FAILED && jobState != State.ERROR_THROWN) {
       commandControl.reject(
-          RejectionType.INVALID_STATE, String.format(JOB_NOT_FAILED_MESSAGE, jobKey));
+          RejectionType.INVALID_STATE, String.format(INVALID_JOB_STATE_MESSAGE, jobKey, jobState));
+      return true;
     }
 
-    return jobState != State.FAILED;
+    return false;
   }
 
   private boolean rejectWorkflowInstanceIncident(

@@ -19,21 +19,21 @@ import "context"
 // CredentialsProvider is responsible for adding credentials to each gRPC call's headers.
 type CredentialsProvider interface {
 	// Takes a map of gRPC headers as defined in credentials.PerRPCCredentials and adds credentials to them.
-	ApplyCredentials(ctx context.Context, headers map[string]string)
+	ApplyCredentials(ctx context.Context, headers map[string]string) error
 	// Returns true if the request should be retried, false otherwise.
 	ShouldRetryRequest(ctx context.Context, err error) bool
 }
 
-// NoopCredentialsProvider implements the CredentialsProvider interface but doesn't modify the authorization headers and
+// noopCredentialsProvider implements the CredentialsProvider interface but doesn't modify the authorization headers and
 // doesn't retry requests in case of failure.
-type NoopCredentialsProvider struct{}
+type noopCredentialsProvider struct{}
 
 // ApplyCredentials does nothing.
-func (NoopCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) {
-	// Noop
+func (noopCredentialsProvider) ApplyCredentials(_ context.Context, _ map[string]string) error {
+	return nil
 }
 
 // ShouldRetryRequest always returns false.
-func (NoopCredentialsProvider) ShouldRetryRequest(ctx context.Context, err error) bool {
+func (noopCredentialsProvider) ShouldRetryRequest(_ context.Context, _ error) bool {
 	return false
 }

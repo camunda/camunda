@@ -59,7 +59,7 @@ To continue this guide open another terminal to execute commands using the
 Zeebe CLI `zbctl`.
 
 We can now check the status of the Zeebe broker.
-> **Note:** By default, the embedded gateway listens to a plaintext connection but the clients are configured to use TLS. Therefore, all `zbctl` commands in the quickstart will specify the `--insecure` flag. 
+> **Note:** By default, the embedded gateway listens to a plaintext connection but the clients are configured to use TLS. Therefore, all `zbctl` commands in the quickstart will specify the `--insecure` flag.
 
 ```
 ./bin/zbctl --insecure status
@@ -230,4 +230,4 @@ In the [BPMN Workflows chapter](/bpmn-workflows/) you can find an
 introduction to creating Workflows with BPMN.
 
 The documentation also provides getting started guides for implementing job
-workers using [Java](/java-client/) or [Go](/go-client/).
+workers using [Java](/clients/java-client/) or [Go](/clients/go-client/).

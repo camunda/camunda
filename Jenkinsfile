@@ -33,6 +33,9 @@ pipeline {
                 container('maven-jdk8') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
+                container('golang') {
+                    sh '.ci/scripts/distribution/prepare-go.sh'
+                }
             }
         }
 
@@ -59,7 +62,7 @@ pipeline {
                 }
 
                 container('maven') {
-                    sh '.ci/scripts/docker/prepare.sh'
+                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                 }
 
                 container('docker') {
@@ -74,6 +77,13 @@ pipeline {
                     sh '.ci/scripts/distribution/test-go.sh'
                 }
             }
+
+            post {
+                always {
+                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
+                }
+            }
+ 
         }
 
         stage('Test (Java)') {

@@ -1,4 +1,4 @@
-// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
+\// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -29,14 +28,20 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/containerSuite"
+	"github.com/zeebe-io/zeebe/clients/go/internal/containersuite"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
 
 var zbctl string
 
+const (
+	// NOTE: taken from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+	semVer = `(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*` +
+		`|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
+)
+
 type integrationTestSuite struct {
-	*containerSuite.ContainerSuite
+	*containersuite.ContainerSuite
 }
 
 var tests = []struct {
@@ -97,14 +102,15 @@ var tests = []struct {
 }
 
 func TestZbctlWithInsecureGateway(t *testing.T) {
-	err := buildZbctl()
+	output, err := buildZbctl()
 	if err != nil {
+		fmt.Println(string(output))
 		t.Fatal(fmt.Errorf("couldn't build zbctl: %w", err))
 	}
 
 	suite.Run(t,
 		&integrationTestSuite{
-			ContainerSuite: &containerSuite.ContainerSuite{
+			ContainerSuite: &containersuite.ContainerSuite{
 				WaitTime:       time.Second,
 				ContainerImage: "camunda/zeebe:current-test",
 			},
@@ -121,7 +127,6 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			}
 
 			cmdOut, _ := s.runCommand(test.cmd, test.envVars...)
-
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
 			if err != nil {
 				t.Fatal(err)
@@ -129,21 +134,37 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			want := strings.Split(string(goldenOut), "\n")
 			got := strings.Split(string(cmdOut), "\n")
 
-			if diff := cmp.Diff(want, got, cmp.Comparer(compareStrIgnoreNumbers)); diff != "" {
+			if diff := cmp.Diff(want, got, cmp.Comparer(composeComparer(cmpIgnoreNums, cmpIgnoreVersion))); diff != "" {
 				t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
 			}
 		})
 	}
 }
 
-func compareStrIgnoreNumbers(x, y string) bool {
-	reg, err := regexp.Compile(`\d`)
-	if err != nil {
-		panic(err)
-	}
+func composeComparer(cmpFuncs ...func(x, y string) bool) func(x, y string) bool {
+	return func(x, y string) bool {
+		for _, cmpFunc := range cmpFuncs {
+			if cmpFunc(x, y) {
+				return true
+			}
+		}
 
-	newX := reg.ReplaceAllString(x, "")
-	newY := reg.ReplaceAllString(y, "")
+		return false
+	}
+}
+
+func cmpIgnoreVersion(x, y string) bool {
+	versionRegex := regexp.MustCompile(semVer)
+	newX := versionRegex.ReplaceAllString(x, "")
+	newY := versionRegex.ReplaceAllString(y, "")
+
+	return newX == newY
+}
+
+func cmpIgnoreNums(x, y string) bool {
+	numbersRegex := regexp.MustCompile(`\d`)
+	newX := numbersRegex.ReplaceAllString(x, "")
+	newY := numbersRegex.ReplaceAllString(y, "")
 
 	return newX == newY
 }
@@ -160,34 +181,17 @@ func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]
 	return cmd.CombinedOutput()
 }
 
-func buildZbctl() error {
+func buildZbctl() ([]byte, error) {
 	if runtime.GOOS == "linux" {
 		zbctl = "zbctl"
 	} else {
-		return fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
+		return nil, fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
 
-	files, err := ioutil.ReadDir("dist")
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-
-	var alreadyBuilt bool
-	for _, file := range files {
-		alreadyBuilt = file.Name() == zbctl
-		if alreadyBuilt {
-			break
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if !alreadyBuilt {
-		cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
-		cmd.Env = append(cmd.Env, "HOME=/tmp", "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
-		return cmd.Run()
-	}
-
-	return nil
+	cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
+	cmd.Env = append(os.Environ(), "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
+	return cmd.CombinedOutput()
 }

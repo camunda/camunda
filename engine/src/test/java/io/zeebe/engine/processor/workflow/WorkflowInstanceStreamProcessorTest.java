@@ -168,7 +168,7 @@ public final class WorkflowInstanceStreamProcessorTest {
   }
 
   @Test
-  public void shouldCancelAndCompleteJobConcurrentlyInSubProcess() {
+  public void shouldCancelAndCompleteJobConcurrentlyIbProcess() {
     // given
     streamProcessorRule.deploy(SUB_PROCESS_WORKFLOW);
     final Record<WorkflowInstanceRecord> createdEvent =

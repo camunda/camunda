@@ -59,6 +59,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
@@ -81,7 +82,8 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     brokerInfo
         .setNodeId(brokerId)
         .setHost(addressParts[0])
-        .setPort(Integer.parseInt(addressParts[1]));
+        .setPort(Integer.parseInt(addressParts[1]))
+        .setVersion(topology.getBrokerVersion(brokerId));
   }
 
   private void addPartitionInfoToBrokerInfo(
@@ -242,11 +244,15 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final BrokerClusterState topology = topologyManager.getTopology();
 
     if (topology != null) {
-
       topologyResponseBuilder
           .setClusterSize(topology.getClusterSize())
           .setPartitionsCount(topology.getPartitionsCount())
           .setReplicationFactor(topology.getReplicationFactor());
+
+      final String gatewayVersion = getClass().getPackage().getImplementationVersion();
+      if (gatewayVersion != null && !gatewayVersion.isBlank()) {
+        topologyResponseBuilder.setGatewayVersion(gatewayVersion);
+      }
 
       final ArrayList<BrokerInfo> brokers = new ArrayList<>();
 
@@ -363,6 +369,10 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       status = mapRejectionToStatus(((BrokerRejectionException) cause).getRejection());
     } else if (cause instanceof ClientOutOfMemoryException) {
       status = Status.UNAVAILABLE.augmentDescription(cause.getMessage());
+    } else if (cause instanceof TimeoutException) { // can be thrown by transport
+      status =
+          Status.DEADLINE_EXCEEDED.augmentDescription(
+              "Time out between gateway and broker: " + cause.getMessage());
     } else if (cause instanceof GrpcStatusException) {
       status = ((GrpcStatusException) cause).getGrpcStatus();
     } else {

@@ -41,7 +41,6 @@ public class StreamProcessor extends Actor {
   // processing
   private final ProcessingContext processingContext;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
-  private final int nodeId;
   private LogStreamReader logStreamReader;
   private ActorCondition onCommitPositionUpdatedCondition;
   private long snapshotPosition = -1L;
@@ -67,8 +66,7 @@ public class StreamProcessor extends Actor {
             .abortCondition(this::isClosed);
     this.logStream = processingContext.getLogStream();
     this.partitionId = logStream.getPartitionId();
-    this.nodeId = processorBuilder.getNodeId();
-    this.actorName = buildActorName(nodeId, "StreamProcessor-" + partitionId);
+    this.actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor-" + partitionId);
   }
 
   public static StreamProcessorBuilder builder() {
@@ -121,8 +119,6 @@ public class StreamProcessor extends Actor {
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
-
-      lifecycleAwareListeners.forEach(l -> l.onOpen(processingContext));
     } catch (final Throwable e) {
       onFailure(e);
       LangUtil.rethrowUnchecked(e);

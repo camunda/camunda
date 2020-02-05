@@ -80,8 +80,7 @@ public final class FailJobTest {
 
     // when
     final var expectedMessage =
-        String.format(
-            "Expected to fail activated job with key '%d', but it does not exist", jobKey);
+        String.format("Expected to fail job with key '%d', but it does not exist", jobKey);
 
     assertThatThrownBy(
             () -> CLIENT_RULE.getClient().newFailCommand(jobKey).retries(1).send().join())

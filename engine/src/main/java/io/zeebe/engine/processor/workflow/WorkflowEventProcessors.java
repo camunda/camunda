@@ -54,7 +54,7 @@ public final class WorkflowEventProcessors {
         zeebeState.getWorkflowInstanceSubscriptionState();
 
     final WorkflowEngineState workflowEngineState =
-        new WorkflowEngineState(zeebeState.getWorkflowState());
+        new WorkflowEngineState(zeebeState.getPartitionId(), zeebeState.getWorkflowState());
     typedRecordProcessors.withListener(workflowEngineState);
 
     addWorkflowInstanceCommandProcessor(typedRecordProcessors, workflowEngineState, zeebeState);

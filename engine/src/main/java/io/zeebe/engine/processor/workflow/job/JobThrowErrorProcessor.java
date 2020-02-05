@@ -19,8 +19,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to throw an error for job with key '%d', but no such job was found";
-  private static final String FAILED_JOB_MESSAGE =
-      "Expected to throw an error for job with key '%d', but the job is marked as failed";
+  private static final String INVALID_JOB_STATE_MESSAGE =
+      "Expected to throw an error for job with key '%d', but it is in state '%s'";
 
   private final JobState state;
 
@@ -34,17 +34,31 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final long jobKey = command.getKey();
     final State jobState = state.getState(jobKey);
 
-    if (jobState == State.NOT_FOUND) {
-      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
-    } else if (jobState == State.FAILED) {
-      commandControl.reject(RejectionType.INVALID_STATE, String.format(FAILED_JOB_MESSAGE, jobKey));
-    } else {
-      final JobRecord job = state.getJob(jobKey);
-      job.setErrorCode(command.getValue().getErrorCodeBuffer());
-      job.setErrorMessage(command.getValue().getErrorMessageBuffer());
+    if (jobState == State.ACTIVATABLE || jobState == State.ACTIVATED) {
+      acceptCommand(jobKey, command, commandControl);
 
-      commandControl.accept(JobIntent.ERROR_THROWN, job);
+    } else if (jobState == State.NOT_FOUND) {
+      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
+
+    } else {
+      commandControl.reject(
+          RejectionType.INVALID_STATE, String.format(INVALID_JOB_STATE_MESSAGE, jobKey, jobState));
     }
+
     return true;
+  }
+
+  private void acceptCommand(
+      final long jobKey,
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl) {
+
+    final JobRecord job = state.getJob(jobKey);
+    job.setErrorCode(command.getValue().getErrorCodeBuffer());
+    job.setErrorMessage(command.getValue().getErrorMessageBuffer());
+
+    state.throwError(jobKey, job);
+
+    commandControl.accept(JobIntent.ERROR_THROWN, job);
   }
 }

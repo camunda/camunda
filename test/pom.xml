@@ -13,6 +13,15 @@
     <relativePath>../parent</relativePath>
   </parent>
 
+  <build>
+    <plugins>
+      <plugin> 
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>

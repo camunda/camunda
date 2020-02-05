@@ -147,12 +147,14 @@ public final class JobState {
     metrics.jobCanceled(record.getType());
   }
 
-  public void throwError(final long key, final JobRecord record) {
-    delete(key, record);
-    metrics.jobErrorThrown(record.getType());
+  public void throwError(final long key, final JobRecord updatedValue) {
+    updateJob(key, updatedValue, State.ERROR_THROWN);
+    makeJobNotActivatable(updatedValue.getTypeBuffer());
+
+    metrics.jobErrorThrown(updatedValue.getType());
   }
 
-  private void delete(final long key, final JobRecord record) {
+  public void delete(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
 
@@ -167,6 +169,13 @@ public final class JobState {
   }
 
   public void fail(final long key, final JobRecord updatedValue) {
+    final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+    updateJob(key, updatedValue, newState);
+
+    metrics.jobFailed(updatedValue.getType());
+  }
+
+  private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
     final long deadline = updatedValue.getDeadline();
 
@@ -174,7 +183,6 @@ public final class JobState {
 
     resetVariablesAndUpdateJobRecord(key, updatedValue);
 
-    final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
     updateJobState(newState);
 
     if (newState == State.ACTIVATABLE) {
@@ -184,8 +192,6 @@ public final class JobState {
     if (deadline > 0) {
       removeJobDeadline(deadline);
     }
-
-    metrics.jobFailed(updatedValue.getType());
   }
 
   private void validateParameters(final DirectBuffer type) {
@@ -193,11 +199,7 @@ public final class JobState {
   }
 
   public void resolve(final long key, final JobRecord updatedValue) {
-    final DirectBuffer type = updatedValue.getTypeBuffer();
-
-    resetVariablesAndUpdateJobRecord(key, updatedValue);
-    updateJobState(State.ACTIVATABLE);
-    makeJobActivatable(type, key);
+    updateJob(key, updatedValue, State.ACTIVATABLE);
   }
 
   public void forEachTimedOutEntry(
@@ -327,7 +329,8 @@ public final class JobState {
     ACTIVATABLE((byte) 0),
     ACTIVATED((byte) 1),
     FAILED((byte) 2),
-    NOT_FOUND((byte) 3);
+    NOT_FOUND((byte) 3),
+    ERROR_THROWN((byte) 4);
 
     byte value;
 
@@ -343,6 +346,10 @@ public final class JobState {
           return ACTIVATED;
         case 2:
           return FAILED;
+        case 3:
+          return NOT_FOUND;
+        case 4:
+          return ERROR_THROWN;
         default:
           return NOT_FOUND;
       }

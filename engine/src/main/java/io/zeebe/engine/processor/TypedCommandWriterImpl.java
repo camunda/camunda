@@ -71,7 +71,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final String rejectionReason,
       final UnpackedObject value,
       final Consumer<RecordMetadata> additionalMetadata) {
-    assert !disabled : "Command writer called in disabled mode, probably during reprocessing";
 
     final LogEntryBuilder event = batchWriter.event();
 
@@ -91,11 +90,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     }
 
     event.metadataWriter(metadata).valueWriter(value).done();
-  }
-
-  @Override
-  public void setDisabled(boolean disabled) {
-    this.disabled = disabled;
   }
 
   @Override

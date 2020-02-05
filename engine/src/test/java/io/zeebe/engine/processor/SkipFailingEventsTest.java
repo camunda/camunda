@@ -99,7 +99,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return TypedRecordProcessors.processors()
+          return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -138,7 +138,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return TypedRecordProcessors.processors()
+          return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -186,7 +186,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return TypedRecordProcessors.processors()
+          return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_ACTIVATING, processor)
               .onEvent(
@@ -266,7 +266,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return TypedRecordProcessors.processors()
+          return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
               .withListener(
                   new StreamProcessorLifecycleAware() {
                     @Override
@@ -324,7 +324,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return TypedRecordProcessors.processors()
+          return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
               .onEvent(ValueType.JOB, JobIntent.ACTIVATED, dumpProcessor);
         });
@@ -398,7 +398,7 @@ public final class SkipFailingEventsTest {
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
-          return TypedRecordProcessors.processors()
+          return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
               .onCommand(ValueType.TIMER, TimerIntent.CREATE, errorProneProcessor);
         });
 

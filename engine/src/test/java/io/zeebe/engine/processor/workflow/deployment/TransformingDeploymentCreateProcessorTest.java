@@ -61,7 +61,8 @@ public final class TransformingDeploymentCreateProcessorTest {
         .thenReturn(true);
 
     rule.startTypedStreamProcessor(
-        (typedRecordProcessors, zeebeState) -> {
+        (typedRecordProcessors, processingContext) -> {
+          final var zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
           DeploymentEventProcessors.addTransformingDeploymentProcessor(
               typedRecordProcessors,

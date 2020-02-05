@@ -44,6 +44,12 @@ public final class TopologyManagerImpl extends Actor
         .setClusterSize(clusterCfg.getClusterSize())
         .setPartitionsCount(clusterCfg.getPartitionsCount())
         .setReplicationFactor(clusterCfg.getReplicationFactor());
+
+    final String version = getClass().getPackage().getImplementationVersion();
+    if (version != null && !version.isBlank()) {
+      localBroker.setVersion(version);
+    }
+
     this.actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
   }
 

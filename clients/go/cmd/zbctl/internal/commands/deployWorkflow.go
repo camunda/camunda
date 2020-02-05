@@ -14,6 +14,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +29,10 @@ var deployWorkflowCmd = &cobra.Command{
 			zbCmd = zbCmd.AddResourceFile(args[i])
 		}
 
-		response, err := zbCmd.Send()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		response, err := zbCmd.Send(ctx)
 		if err != nil {
 			return err
 		}

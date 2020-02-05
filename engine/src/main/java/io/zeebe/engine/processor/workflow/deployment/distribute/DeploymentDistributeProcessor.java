@@ -30,25 +30,23 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
 
   private final DeploymentsState deploymentsState;
   private final DeploymentDistributor deploymentDistributor;
-  private ActorControl actor;
+  private final ActorControl actor;
 
   public DeploymentDistributeProcessor(
-      final DeploymentsState deploymentsState, final DeploymentDistributor deploymentDistributor) {
+      final ActorControl actor,
+      final DeploymentsState deploymentsState,
+      final DeploymentDistributor deploymentDistributor) {
     this.deploymentsState = deploymentsState;
     this.deploymentDistributor = deploymentDistributor;
+    this.actor = actor;
   }
 
   @Override
-  public void onOpen(final ReadonlyProcessingContext processingContext) {
-    actor = processingContext.getActor();
-  }
-
-  @Override
-  public void onRecovered(ReadonlyProcessingContext context) {
+  public void onRecovered(final ReadonlyProcessingContext context) {
     actor.submit(() -> reprocessPendingDeployments(context.getLogStreamWriter()));
   }
 
-  private void reprocessPendingDeployments(TypedStreamWriter logStreamWriter) {
+  private void reprocessPendingDeployments(final TypedStreamWriter logStreamWriter) {
     deploymentsState.foreachPending(
         ((pendingDeploymentDistribution, key) -> {
           final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
@@ -84,7 +82,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
       final long key,
       final long position,
       final DirectBuffer buffer,
-      TypedStreamWriter logStreamWriter) {
+      final TypedStreamWriter logStreamWriter) {
     final ActorFuture<Void> pushDeployment =
         deploymentDistributor.pushDeployment(key, position, buffer);
 
@@ -93,7 +91,7 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   }
 
   private void writeCreatingDeploymentCommand(
-      TypedStreamWriter logStreamWriter, final long deploymentKey) {
+      final TypedStreamWriter logStreamWriter, final long deploymentKey) {
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         deploymentDistributor.removePendingDeployment(deploymentKey);
     final DirectBuffer buffer = pendingDeploymentDistribution.getDeployment();

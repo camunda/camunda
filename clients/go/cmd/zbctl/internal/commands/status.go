@@ -14,6 +14,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
@@ -38,28 +39,54 @@ var statusCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		response, err := client.NewTopologyCommand().Send()
+		var err error
+
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		resp, err := client.NewTopologyCommand().Send(ctx)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("Cluster size:", response.ClusterSize)
-		fmt.Println("Partitions count:", response.PartitionsCount)
-		fmt.Println("Replication factor:", response.ReplicationFactor)
-		fmt.Println("Brokers:")
+		ctx, cancel = context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
 
-		sort.Sort(ByNodeId(response.Brokers))
-
-		for _, broker := range response.Brokers {
-			fmt.Println("  Broker", broker.NodeId, "-", fmt.Sprintf("%s:%d", broker.Host, broker.Port))
-			sort.Sort(ByPartitionId(broker.Partitions))
-			for _, partition := range broker.Partitions {
-				fmt.Println("    Partition", partition.PartitionId, ":", roleToString(partition.Role))
-			}
-		}
+		printStatus(resp)
 
 		return nil
 	},
+}
+
+func printStatus(resp *pb.TopologyResponse) {
+	gatewayVersion := "unavailable"
+	if resp.GatewayVersion != "" {
+		gatewayVersion = resp.GatewayVersion
+	}
+
+	fmt.Println("Cluster size:", resp.ClusterSize)
+	fmt.Println("Partitions count:", resp.PartitionsCount)
+	fmt.Println("Replication factor:", resp.ReplicationFactor)
+	fmt.Println("Gateway version:", gatewayVersion)
+	fmt.Println("Brokers:")
+
+	sort.Sort(ByNodeId(resp.Brokers))
+
+	for _, broker := range resp.Brokers {
+		fmt.Printf("  Broker %d - %s:%d\n", broker.NodeId, broker.Host, broker.Port)
+
+		version := "unavailable"
+		if broker.Version != "" {
+			version = broker.Version
+		}
+
+		fmt.Printf("    Version: %s\n", version)
+
+		sort.Sort(ByPartitionId(broker.Partitions))
+		for _, partition := range broker.Partitions {
+			fmt.Printf("    Partition %d : %s\n", partition.PartitionId, roleToString(partition.Role))
+		}
+	}
 }
 
 func init() {

@@ -54,6 +54,7 @@ public class ZeebeState {
   private final DbString lastProcessedEventKey;
   private final DbLong lastProcessedEventPosition;
   private final ColumnFamily<DbString, DbLong> lastProcessedRecordPositionColumnFamily;
+  private final int partitionId;
 
   public ZeebeState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     this(Protocol.DEPLOYMENT_PARTITION, zeebeDb, dbContext);
@@ -61,6 +62,7 @@ public class ZeebeState {
 
   public ZeebeState(
       final int partitionId, final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
+    this.partitionId = partitionId;
     keyState = new KeyState(partitionId, zeebeDb, dbContext);
     workflowState = new WorkflowState(zeebeDb, dbContext, keyState);
     deploymentState = new DeploymentsState(zeebeDb, dbContext);
@@ -168,5 +170,9 @@ public class ZeebeState {
   public long getLastSuccessfulProcessedRecordPosition() {
     final DbLong position = lastProcessedRecordPositionColumnFamily.get(lastProcessedEventKey);
     return position != null ? position.getValue() : NO_EVENTS_PROCESSED;
+  }
+
+  public int getPartitionId() {
+    return partitionId;
   }
 }

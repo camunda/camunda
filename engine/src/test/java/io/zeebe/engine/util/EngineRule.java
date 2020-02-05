@@ -69,7 +69,7 @@ public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
-  protected final StreamProcessorRule environmentRule;
+  private StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
@@ -112,6 +112,11 @@ public final class EngineRule extends ExternalResource {
     if (!explicitStart) {
       startProcessors();
     }
+  }
+
+  @Override
+  protected void after() {
+    environmentRule = null;
   }
 
   public void start() {
@@ -168,9 +173,10 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(
         partitionId -> {
           try {
-            environmentRule.closeStreamProcessor(partitionId);
 
             final var snapshotController = environmentRule.getStateSnapshotController(partitionId);
+
+            environmentRule.closeStreamProcessor(partitionId);
 
             if (snapshotController.getValidSnapshotsCount() > 0) {
               FileUtil.deleteFolder(snapshotController.getLastValidSnapshotDirectory().toPath());
@@ -270,7 +276,7 @@ public final class EngineRule extends ExternalResource {
     private TypedEventImpl typedEvent;
 
     @Override
-    public void onOpen(final ReadonlyProcessingContext context) {
+    public void onRecovered(final ReadonlyProcessingContext context) {
       final int partitionId = context.getLogStream().getPartitionId();
       typedEvent = new TypedEventImpl(partitionId);
       final ActorControl actor = context.getActor();
@@ -285,6 +291,7 @@ public final class EngineRule extends ExternalResource {
               ((reader, throwable) -> {
                 if (throwable == null) {
                   logStreamReader = reader;
+                  onNewEventCommitted();
                 }
               }));
     }

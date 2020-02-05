@@ -45,7 +45,7 @@ public final class DbPendingSnapshot implements PendingSnapshot {
    * @param directory the snapshot's working directory (i.e. where we should write chunks)
    * @param snapshotStore the store which will be called when the snapshot is to be committed
    */
-  public DbPendingSnapshot(
+  DbPendingSnapshot(
       final long index,
       final long term,
       final WallClockTimestamp timestamp,

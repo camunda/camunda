@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
+import org.slf4j.helpers.NOPLogger;
 
 public final class DbSnapshotStore implements SnapshotStore {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStore.class);
@@ -46,7 +47,7 @@ public final class DbSnapshotStore implements SnapshotStore {
   private final ReusableSnapshotId lowerBoundId;
   private final ReusableSnapshotId upperBoundId;
 
-  public DbSnapshotStore(
+  DbSnapshotStore(
       final Path snapshotsDirectory,
       final Path pendingDirectory,
       final ConcurrentNavigableMap<DbSnapshotId, DbSnapshot> snapshots) {
@@ -54,7 +55,7 @@ public final class DbSnapshotStore implements SnapshotStore {
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
 
-    this.positionSupplier = new StatePositionSupplier(-1, LOGGER);
+    this.positionSupplier = new StatePositionSupplier(-1, NOPLogger.NOP_LOGGER);
     this.lowerBoundId = new ReusableSnapshotId(Long.MIN_VALUE);
     this.upperBoundId = new ReusableSnapshotId(Long.MAX_VALUE);
     this.listeners = new CopyOnWriteArraySet<>();
@@ -97,6 +98,9 @@ public final class DbSnapshotStore implements SnapshotStore {
 
   @Override
   public void delete() {
+    // currently only called by Atomix when permanently leaving a cluster - it should be safe here
+    // to not update the metrics, as they will simply disappear as time moves on. Once we have a
+    // single store/replication mechanism, we can consider updating the metrics here
     snapshots.clear();
 
     try {
@@ -220,6 +224,7 @@ public final class DbSnapshotStore implements SnapshotStore {
     LOGGER.debug("Deleting snapshot {}", snapshot);
     snapshot.delete();
     snapshots.remove(snapshot.getMetadata());
+    listeners.forEach(l -> l.onSnapshotDeletion(snapshot, this));
     LOGGER.trace("Snapshots count: {}", snapshots.size());
   }
 

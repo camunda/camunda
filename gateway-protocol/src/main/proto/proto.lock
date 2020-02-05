@@ -473,6 +473,11 @@
                 "id": 4,
                 "name": "replicationFactor",
                 "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "gatewayVersion",
+                "type": "string"
               }
             ]
           },
@@ -499,6 +504,11 @@
                 "name": "partitions",
                 "type": "Partition",
                 "is_repeated": true
+              },
+              {
+                "id": 5,
+                "name": "version",
+                "type": "string"
               }
             ]
           },

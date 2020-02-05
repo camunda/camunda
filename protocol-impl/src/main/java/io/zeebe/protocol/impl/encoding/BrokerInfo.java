@@ -11,6 +11,7 @@ import static io.zeebe.protocol.record.BrokerInfoEncoder.clusterSizeNullValue;
 import static io.zeebe.protocol.record.BrokerInfoEncoder.nodeIdNullValue;
 import static io.zeebe.protocol.record.BrokerInfoEncoder.partitionsCountNullValue;
 import static io.zeebe.protocol.record.BrokerInfoEncoder.replicationFactorNullValue;
+import static io.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLength;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.protocol.impl.Loggers;
@@ -68,6 +69,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   private int partitionsCount;
   private int clusterSize;
   private int replicationFactor;
+  private DirectBuffer version = new UnsafeBuffer();
 
   public BrokerInfo() {
     reset();
@@ -85,6 +87,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     clusterSize = clusterSizeNullValue();
     replicationFactor = replicationFactorNullValue();
     addresses.clear();
+    version.wrap(0, 0);
     clearPartitions();
 
     return this;
@@ -129,6 +132,18 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   public BrokerInfo setReplicationFactor(final int replicationFactor) {
     this.replicationFactor = replicationFactor;
     return this;
+  }
+
+  public String getVersion() {
+    return BufferUtil.bufferAsString(version);
+  }
+
+  public void setVersion(final String version) {
+    this.version = BufferUtil.wrapString(version);
+  }
+
+  public void setVersion(final DirectBuffer buffer, final int offset, final int length) {
+    this.version.wrap(buffer, offset, length);
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -225,6 +240,12 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
           partitionLeaderTermsDecoder.partitionId(), partitionLeaderTermsDecoder.term());
     }
 
+    if (bodyDecoder.versionLength() > 0) {
+      bodyDecoder.wrapVersion(version);
+    } else {
+      bodyDecoder.skipVersion();
+    }
+
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
             + bodyDecoder.limit()
@@ -240,7 +261,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
             + bodyEncoder.sbeBlockLength()
             + AddressesEncoder.sbeHeaderSize()
             + PartitionRolesEncoder.sbeHeaderSize()
-            + PartitionLeaderTermsEncoder.sbeHeaderSize();
+            + PartitionLeaderTermsEncoder.sbeHeaderSize()
+            + versionHeaderLength()
+            + version.capacity();
 
     for (final Entry<DirectBuffer, DirectBuffer> entry : addresses.entrySet()) {
       length +=
@@ -308,6 +331,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         partitionLeaderTermsEncoder.next().partitionId(entry.getKey()).term(entry.getValue());
       }
     }
+
+    bodyEncoder.putVersion(version, 0, version.capacity());
   }
 
   public static BrokerInfo fromProperties(final Properties properties) {
@@ -381,6 +406,8 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         + partitionRoles
         + ", partitionLeaderTerms="
         + partitionLeaderTerms
+        + ", version="
+        + BufferUtil.bufferAsString(version)
         + '}';
   }
 }

@@ -16,7 +16,6 @@
   * [Topology RPC](#topology-rpc)
   * [UpdateJobRetries RPC](#updatejobretries-rpc)
 
-
 ## Error handling
 
 The gRPC API for Zeebe is exposed through the gateway, which acts as a proxy
@@ -610,6 +609,8 @@ message TopologyResponse {
   int32 partitionsCount = 3;
   // configured replication factor for this cluster
   int32 replicationFactor = 4;
+  // gateway version
+  string gatewayVersion = 5;
 }
 
 message BrokerInfo {
@@ -621,6 +622,8 @@ message BrokerInfo {
   int32 port = 3;
   // list of partitions managed or replicated on this broker
   repeated Partition partitions = 4;
+  // broker version
+  string version = 5;
 }
 
 message Partition {

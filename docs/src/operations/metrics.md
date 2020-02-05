@@ -82,3 +82,14 @@ The following metrics can be used to monitor back-pressure and processing latenc
 * `zeebe_stream_processor_latency_bucket`: The processing latency for commands and event.
 
 [prom-format]: https://prometheus.io/docs/instrumenting/exposition_formats/#text-format-details
+
+## Grafana
+
+Zeebe comes with a pre-built dashboard, available in the repository: 
+[monitor/grafana/zeebe.json](https://github.com/zeebe-io/zeebe/tree/{{commit}}/monitor/grafana/zeebe.json)
+
+[Import](https://grafana.com/docs/grafana/latest/reference/export_import/#importing-a-dashboard)
+it into your Grafana instance, then select the correct Prometheus data source (important if you have more than one), and
+you should be greeted with the following dashboard:
+
+![cluster](/operations/grafana-preview.png)
