@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 @NoArgsConstructor
@@ -45,6 +46,11 @@ public class PluginVariableDto {
    * The value of the variable.
    */
   private String value;
+
+  /*
+   * The timestamp of the last update to the variable.
+   */
+  private OffsetDateTime timestamp;
 
   /**
    * A map containing additional, value-type-dependent properties.

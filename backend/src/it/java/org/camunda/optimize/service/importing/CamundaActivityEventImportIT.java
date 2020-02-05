@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.bpm.engine.ActivityTypes;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.event.activity.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -28,10 +28,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.camunda.optimize.service.CamundaActivityEventService.END_MAPPED_SUFFIX;
-import static org.camunda.optimize.service.CamundaActivityEventService.PROCESS_END_TYPE;
-import static org.camunda.optimize.service.CamundaActivityEventService.PROCESS_START_TYPE;
-import static org.camunda.optimize.service.CamundaActivityEventService.START_MAPPED_SUFFIX;
+import static org.camunda.optimize.service.CamundaEventService.END_MAPPED_SUFFIX;
+import static org.camunda.optimize.service.CamundaEventService.PROCESS_END_TYPE;
+import static org.camunda.optimize.service.CamundaEventService.PROCESS_START_TYPE;
+import static org.camunda.optimize.service.CamundaEventService.START_MAPPED_SUFFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {

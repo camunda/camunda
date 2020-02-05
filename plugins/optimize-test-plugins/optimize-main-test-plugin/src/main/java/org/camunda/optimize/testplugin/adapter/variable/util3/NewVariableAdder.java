@@ -9,6 +9,7 @@ package org.camunda.optimize.testplugin.adapter.variable.util3;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class NewVariableAdder implements VariableImportAdapter {
@@ -20,6 +21,7 @@ public class NewVariableAdder implements VariableImportAdapter {
     dto.setValue("bar");
     dto.setType("string");
     dto.setId("asdfasdf");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setProcessDefinitionId(list.get(0).getProcessDefinitionId());
     dto.setProcessDefinitionKey(list.get(0).getProcessDefinitionKey());
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());

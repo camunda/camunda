@@ -41,6 +41,7 @@ public class MapComplexVariableToPrimitiveOne implements VariableImportAdapter {
           nameVar.setName("personsName");
           nameVar.setType("String");
           nameVar.setValue(jsonVariable.get("name"));
+          nameVar.setTimestamp(pluginVariableDto.getTimestamp());
           resultList.add(nameVar);
         } catch (IOException e) {
           e.printStackTrace();

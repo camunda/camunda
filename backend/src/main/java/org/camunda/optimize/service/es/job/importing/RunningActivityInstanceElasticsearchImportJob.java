@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.service.CamundaActivityEventService;
+import org.camunda.optimize.service.CamundaEventService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 
@@ -15,20 +15,20 @@ import java.util.List;
 public class RunningActivityInstanceElasticsearchImportJob extends ElasticsearchImportJob<FlowNodeEventDto> {
 
   private RunningActivityInstanceWriter runningActivityInstanceWriter;
-  private CamundaActivityEventService camundaActivityEventService;
+  private CamundaEventService camundaEventService;
 
   public RunningActivityInstanceElasticsearchImportJob(RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                                       CamundaActivityEventService camundaActivityEventService,
+                                                       CamundaEventService camundaEventService,
                                                        Runnable callback) {
 
     super(callback);
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
-    this.camundaActivityEventService = camundaActivityEventService;
+    this.camundaEventService = camundaEventService;
   }
 
   @Override
   protected void persistEntities(List<FlowNodeEventDto> runningActivityInstances) throws Exception {
     runningActivityInstanceWriter.importActivityInstancesToProcessInstances(runningActivityInstances);
-    camundaActivityEventService.importRunningActivityInstancesToCamundaActivityEvents(runningActivityInstances);
+    camundaEventService.importRunningActivityInstancesToCamundaActivityEvents(runningActivityInstances);
   }
 }

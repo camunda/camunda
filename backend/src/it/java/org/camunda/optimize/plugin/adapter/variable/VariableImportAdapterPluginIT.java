@@ -6,6 +6,7 @@
 package org.camunda.optimize.plugin.adapter.variable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -24,8 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class VariableImportAdapterPluginIT extends AbstractIT {
 
@@ -55,7 +55,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
-    assertThat(variablesResponseDtos.size(), is(2));
+    assertThat(variablesResponseDtos).hasSize(2);
   }
 
   @Test
@@ -78,7 +78,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
-    assertThat(variablesResponseDtos.size(), is(2));
+    assertThat(variablesResponseDtos).hasSize(2);
   }
 
   @Test
@@ -96,7 +96,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then all the variables are added to Optimize
-    assertThat(variablesResponseDtos.size(), is(2));
+    assertThat(variablesResponseDtos).hasSize(2);
   }
 
   @Test
@@ -114,7 +114,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then extra variable is added to Optimize
-    assertThat(variablesResponseDtos.size(), is(3));
+    assertThat(variablesResponseDtos).hasSize(3);
   }
 
   @Test
@@ -131,8 +131,10 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
 
     //then only half the variables are added to Optimize
-    assertThat(variablesResponseDtos.size(), is(1));
-    assertThat(variablesResponseDtos.get(0).getName(), is("var"));
+    assertThat(variablesResponseDtos)
+      .hasSize(1)
+      .extracting(ProcessVariableNameResponseDto::getName)
+      .containsExactly("var");
   }
 
   @Test
@@ -163,9 +165,29 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then only half the variables are added to Optimize
-    assertThat(variablesResponseDtos.size(), is(1));
-    assertThat(variablesResponseDtos.get(0).getName(), is("personsName"));
-    assertThat(variablesResponseDtos.get(0).getType(), is(VariableType.STRING));
+    assertThat(variablesResponseDtos)
+      .hasSize(1)
+      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+      .containsExactly(Tuple.tuple("personsName", VariableType.STRING));
+  }
+
+  @Test
+  public void removeTimestampFromVariables() throws Exception {
+    // given plugin that removes timestamps
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util6");
+
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var1", 1);
+    variables.put("var2", 1);
+    ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
+
+    // then all variables are stored in Optimize
+    assertThat(variablesResponseDtos).hasSize(2);
   }
 
   private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto processDefinition) {

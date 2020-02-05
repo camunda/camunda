@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -14,32 +15,37 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
 public class VariableImportIT extends AbstractImportIT {
+
+  @BeforeEach
+  public void setup() {
+   embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+  }
 
   @Test
   public void deletionOfProcessInstancesDoesNotDistortVariableInstanceImport() {
@@ -57,7 +63,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void variableImportWorks() {
+  public void variableImportWorks() throws JsonProcessingException {
     //given
     BpmnModelInstance processModel = createSimpleProcessDefinition();
 
@@ -68,14 +74,37 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     //then
-    assertThat(variablesResponseDtos.size(), is(variables.size()));
+    assertThat(variablesResponseDtos).hasSize(variables.size());
+    assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
   @Test
-  public void variablesWithComplexTypeAreNotImported() {
+  public void variableImportExcludesVariableInstanceWritingIfFeatureDisabled() throws JsonProcessingException {
+    //given
+    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
+    ProcessInstanceEngineDto instanceDto =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //when
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
+
+    //then
+    assertThat(variablesResponseDtos).hasSize(variables.size());
+    assertThat(storedVariableUpdateInstances).isEmpty();
+  }
+
+  @Test
+  public void variablesWithComplexTypeAreNotImported() throws JsonProcessingException {
     // given
     ComplexVariableDto complexVariableDto = new ComplexVariableDto();
     complexVariableDto.setType("Object");
@@ -92,15 +121,17 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     //then
-    assertThat(variablesResponseDtos.size(), is(0));
+    assertThat(variablesResponseDtos).isEmpty();
+    assertThat(storedVariableUpdateInstances).isEmpty();
   }
 
 
   @Test
-  public void variableUpdateImport() {
+  public void variableUpdateImport() throws JsonProcessingException {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
@@ -115,14 +146,16 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
+    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     //then
-    assertThat(variablesResponseDtos.size(), is(variables.size()));
+    assertThat(variablesResponseDtos).hasSize(variables.size());
+    assertThat(storedVariableUpdateInstances).hasSize(variables.size());
   }
 
   @Test
-  public void variablesCanHaveNullValue() {
+  public void variablesCanHaveNullValue() throws JsonProcessingException {
     //given
     BpmnModelInstance processModel = createSimpleProcessDefinition();
 
@@ -135,13 +168,17 @@ public class VariableImportIT extends AbstractImportIT {
     // when
     SearchResponse responseForAllDocumentsOfIndex = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
     for (SearchHit searchHit : responseForAllDocumentsOfIndex.getHits()) {
       List<Map> retrievedVariables = (List<Map>) searchHit.getSourceAsMap().get(VARIABLES);
-      assertThat(retrievedVariables.size(), is(variables.size()));
-      retrievedVariables.forEach(var -> assertThat(var.get("value"), nullValue()));
+      assertThat(retrievedVariables).hasSize(variables.size());
+      retrievedVariables.forEach(var -> assertThat(var.get("value")).isNull());
     }
+    assertThat(storedVariableUpdateInstances)
+      .hasSize(variables.size())
+      .allSatisfy(instance -> assertThat(instance.getValue()).isNull());
   }
 
   @Test
@@ -166,10 +203,10 @@ public class VariableImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
 
     //then
-    assertThat(variablesResponseDtos.size(), is(1));
+    assertThat(variablesResponseDtos).hasSize(1);
   }
 
   @Test
@@ -211,8 +248,9 @@ public class VariableImportIT extends AbstractImportIT {
         .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
-    assertThat(variableValues.size(), is(1));
-    assertThat(variableValues.get(0), is("bar"));
+    assertThat(variableValues)
+      .hasSize(1)
+      .first().isEqualTo("bar");
   }
 
   @Test
@@ -250,8 +288,9 @@ public class VariableImportIT extends AbstractImportIT {
         .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
-    assertThat(variableValues.size(), is(1));
-    assertThat(variableValues.get(0), is("bar"));
+    assertThat(variableValues)
+      .hasSize(1)
+      .first().isEqualTo("bar");
 
     // when
     requestDto = new ProcessVariableValueRequestDto();
@@ -266,8 +305,9 @@ public class VariableImportIT extends AbstractImportIT {
         .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
-    assertThat(variableValues.size(), is(1));
-    assertThat(variableValues.get(0), is("2"));
+    assertThat(variableValues)
+      .hasSize(1)
+      .first().isEqualTo("2");
   }
 
   @Test
@@ -309,8 +349,9 @@ public class VariableImportIT extends AbstractImportIT {
         .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
-    assertThat(variableValues.size(), is(1));
-    assertThat(variableValues.get(0), is("foo"));
+    assertThat(variableValues)
+      .hasSize(1)
+      .first().isEqualTo("foo");
   }
 
   @Test
@@ -343,10 +384,10 @@ public class VariableImportIT extends AbstractImportIT {
         .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
-    assertThat(variableValues.size(), is(0));
+    assertThat(variableValues).isEmpty();
   }
 
-  private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
+  private List<ProcessVariableNameResponseDto> getVariablesForProcessInstance(ProcessInstanceEngineDto instanceDto) {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
@@ -354,6 +395,18 @@ public class VariableImportIT extends AbstractImportIT {
       .getRequestExecutor()
       .buildProcessVariableNamesRequest(variableRequestDto)
       .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  private List<VariableUpdateInstanceDto> getStoredVariableUpdateInstances() throws JsonProcessingException {
+    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
+      VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = new ArrayList<>();
+    for (SearchHit searchHitFields : response.getHits()) {
+      final VariableUpdateInstanceDto variableUpdateInstanceDto = embeddedOptimizeExtension.getObjectMapper().readValue(
+        searchHitFields.getSourceAsString(), VariableUpdateInstanceDto.class);
+      storedVariableUpdateInstances.add(variableUpdateInstanceDto);
+    }
+    return storedVariableUpdateInstances;
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {
@@ -381,10 +434,10 @@ public class VariableImportIT extends AbstractImportIT {
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     ReportMapResultDto result = evaluateReport(reportData).getResult();
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     List<MapResultEntryDto> flowNodeIdToExecutionFrequency = result.getData();
     for (MapResultEntryDto frequency : flowNodeIdToExecutionFrequency) {
-      assertThat(frequency.getValue(), is(4L));
+      assertThat(frequency.getValue()).isEqualTo(4L);
     }
   }
 

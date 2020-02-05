@@ -12,13 +12,15 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.dto.optimize.query.event.activity.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.engine.importing.service.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
+import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -37,7 +39,7 @@ import static org.camunda.bpm.engine.ActivityTypes.*;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class CamundaActivityEventService {
+public class CamundaEventService {
 
   public static final String START_MAPPED_SUFFIX = "start";
   public static final String END_MAPPED_SUFFIX = "end";
@@ -70,6 +72,7 @@ public class CamundaActivityEventService {
                     TASK_USER_TASK, TASK_SEND_TASK, TASK_RECEIVE_TASK
     );
 
+  private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
   private final CamundaActivityEventWriter camundaActivityEventWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final OptimizeElasticsearchClient elasticsearchClient;
@@ -94,6 +97,12 @@ public class CamundaActivityEventService {
   public void importCompletedProcessInstancesToCamundaActivityEvents(List<ProcessInstanceDto> completedProcessInstances) {
     importEngineEntityToCamundaActivityEvents(completedProcessInstances, ProcessInstanceDto::getProcessDefinitionKey,
                                               this::convertCompletedProcessInstanceToCamundaActivityEvents);
+  }
+
+  public void importVariableUpdateInstances(final List<ProcessVariableDto> variableUpdates) {
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      variableUpdateInstanceWriter.importVariableUpdatesToVariableUpdateInstances(variableUpdates);
+    }
   }
 
   private <T> void importEngineEntityToCamundaActivityEvents(List<T> activitiesToImport,

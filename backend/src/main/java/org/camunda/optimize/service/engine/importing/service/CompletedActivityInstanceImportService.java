@@ -8,7 +8,7 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaActivityEventService;
+import org.camunda.optimize.service.CamundaEventService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceElasticsearchImportJob;
@@ -26,16 +26,16 @@ public class CompletedActivityInstanceImportService implements ImportService<His
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private CompletedActivityInstanceWriter completedActivityInstanceWriter;
-  private CamundaActivityEventService camundaActivityEventService;
+  private CamundaEventService camundaEventService;
 
   public CompletedActivityInstanceImportService(CompletedActivityInstanceWriter completedActivityInstanceWriter,
-                                                CamundaActivityEventService camundaActivityEventService,
+                                                CamundaEventService camundaEventService,
                                                 ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                 EngineContext engineContext) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
-    this.camundaActivityEventService = camundaActivityEventService;
+    this.camundaEventService = camundaEventService;
   }
 
   @Override
@@ -66,7 +66,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
                                                                                 Runnable callback) {
     CompletedActivityInstanceElasticsearchImportJob activityImportJob =
       new CompletedActivityInstanceElasticsearchImportJob(completedActivityInstanceWriter,
-                                                          camundaActivityEventService,
+                                                          camundaEventService,
                                                           callback);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;

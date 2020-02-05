@@ -8,6 +8,7 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.CamundaEventService;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.VariableUpdateInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.service.VariableUpdateInstanceImportService;
@@ -29,6 +30,8 @@ public class VariableUpdateEngineImportMediator
   private VariableUpdateInstanceFetcher engineEntityFetcher;
 
   @Autowired
+  private CamundaEventService camundaEventService;
+  @Autowired
   private ProcessVariableUpdateWriter variableWriter;
   @Autowired
   private ImportAdapterProvider importAdapterProvider;
@@ -42,7 +45,7 @@ public class VariableUpdateEngineImportMediator
     importIndexHandler = provider.getRunningVariableInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext);
     importService = new VariableUpdateInstanceImportService(
-      variableWriter, importAdapterProvider, elasticsearchImportJobExecutor, engineContext
+      variableWriter, camundaEventService, importAdapterProvider, elasticsearchImportJobExecutor, engineContext
     );
   }
 

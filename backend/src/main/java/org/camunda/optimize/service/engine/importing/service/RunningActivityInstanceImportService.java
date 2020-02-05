@@ -8,7 +8,7 @@ package org.camunda.optimize.service.engine.importing.service;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaActivityEventService;
+import org.camunda.optimize.service.CamundaEventService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
@@ -26,17 +26,17 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private RunningActivityInstanceWriter runningActivityInstanceWriter;
-  private CamundaActivityEventService camundaActivityEventService;
+  private CamundaEventService camundaEventService;
 
   public RunningActivityInstanceImportService(RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                              CamundaActivityEventService camundaActivityEventService,
+                                              CamundaEventService camundaEventService,
                                               ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
-    this.camundaActivityEventService = camundaActivityEventService;
+    this.camundaEventService = camundaEventService;
   }
 
   @Override
@@ -65,7 +65,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
                                                                                 Runnable callback) {
     RunningActivityInstanceElasticsearchImportJob activityImportJob =
-      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, camundaActivityEventService, callback);
+      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, camundaEventService, callback);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }

@@ -214,19 +214,19 @@ public class ProcessVariableUpdateWriter {
     if (!(processVariableEntry.getValue().stream().allMatch(dto -> dto instanceof ProcessVariableDto))) {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
-    final List<ProcessVariableDto> variablesWitAllInformation = (List<ProcessVariableDto>) (List<?>) processVariableEntry.getValue();
+    final List<ProcessVariableDto> variablesWithAllInformation = (List<ProcessVariableDto>) (List<?>) processVariableEntry.getValue();
     final String processInstanceId = processVariableEntry.getKey();
 
-    List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWitAllInformation);
+    List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
     Map<String, Object> params = buildParameters(variables);
 
     final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
 
-    if (variablesWitAllInformation.isEmpty()) {
+    if (variablesWithAllInformation.isEmpty()) {
       //all is lost, no variables to persist, should have crashed before.
       return;
     }
-    final ProcessVariableDto firstVariable = variablesWitAllInformation.get(0);
+    final ProcessVariableDto firstVariable = variablesWithAllInformation.get(0);
     String newEntryIfAbsent = null;
     try {
       newEntryIfAbsent = getNewProcessInstanceRecordString(

@@ -3,13 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event.activity;
+package org.camunda.optimize.dto.optimize.query.variable;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 import java.time.OffsetDateTime;
@@ -17,20 +16,15 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldNameConstants
-@Builder(toBuilder = true)
+@Builder
 @Getter
-@ToString
-public class CamundaActivityEventDto {
+public class VariableUpdateInstanceDto {
 
-  private String activityId;
-  private String activityName;
-  private String activityType;
-  private String activityInstanceId;
-  private String processDefinitionKey;
+  private String instanceId;
+  private String name;
+  private String type;
+  private String value;
   private String processInstanceId;
-  private String processDefinitionVersion;
-  private String processDefinitionName;
-  private String engine;
   private String tenantId;
   private OffsetDateTime timestamp;
 

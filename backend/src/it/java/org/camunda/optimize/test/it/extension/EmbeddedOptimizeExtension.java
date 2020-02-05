@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.CamundaActivityEventService;
+import org.camunda.optimize.service.CamundaEventService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
@@ -175,11 +175,12 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
     RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
-    CamundaActivityEventService camundaActivityEventService = getApplicationContext().getBean(CamundaActivityEventService.class);
+    CamundaEventService camundaEventService = getApplicationContext().getBean(CamundaEventService.class);
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       RunningActivityInstanceImportService service =
-        new RunningActivityInstanceImportService(writer, camundaActivityEventService, getElasticsearchImportJobExecutor(), configuredEngine);
+        new RunningActivityInstanceImportService(writer,
+                                                 camundaEventService, getElasticsearchImportJobExecutor(), configuredEngine);
       service.executeImport(activities, () -> {
       });
     }

@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
 public class UpgradeFrom27To30 extends UpgradeProcedure {
@@ -35,6 +37,7 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
       .addUpgradeStep(new UpdateIndexStep(new EventSequenceCountIndex(), null))
       .addUpgradeStep(addEventSourcesAndRolesField())
+      .addUpgradeStep(new CreateIndexStep(new VariableUpdateInstanceIndex()))
       .build();
   }
 

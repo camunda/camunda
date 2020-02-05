@@ -7,7 +7,7 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaActivityEventService;
+import org.camunda.optimize.service.CamundaEventService;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.CompletedProcessInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.service.CompletedProcessInstanceImportService;
@@ -31,7 +31,7 @@ public class CompletedProcessInstanceEngineImportMediator
   @Autowired
   private CompletedProcessInstanceWriter completedProcessInstanceWriter;
   @Autowired
-  private CamundaActivityEventService camundaActivityEventService;
+  private CamundaEventService camundaEventService;
 
   public CompletedProcessInstanceEngineImportMediator(EngineContext engineContext) {
     super(engineContext);
@@ -45,7 +45,7 @@ public class CompletedProcessInstanceEngineImportMediator
       elasticsearchImportJobExecutor,
       engineContext,
       completedProcessInstanceWriter,
-      camundaActivityEventService
+      camundaEventService
     );
   }
 

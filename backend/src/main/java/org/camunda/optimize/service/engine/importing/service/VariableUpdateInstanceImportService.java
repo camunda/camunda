@@ -12,11 +12,13 @@ import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.CamundaEventService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,13 +33,16 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private ImportAdapterProvider importAdapterProvider;
   protected EngineContext engineContext;
   private ProcessVariableUpdateWriter variableWriter;
+  private CamundaEventService camundaEventService;
 
   public VariableUpdateInstanceImportService(
     ProcessVariableUpdateWriter variableWriter,
+    CamundaEventService camundaEventService,
     ImportAdapterProvider importAdapterProvider,
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
     EngineContext engineContext
   ) {
+    this.camundaEventService = camundaEventService;
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.variableWriter = variableWriter;
@@ -76,6 +81,9 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private List<ProcessVariableDto> convertPluginListToImportList(List<PluginVariableDto> pluginVariableList) {
     List<ProcessVariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
     for (PluginVariableDto dto : pluginVariableList) {
+      if (dto != null && dto.getTimestamp() == null) {
+        dto.setTimestamp(OffsetDateTime.now());
+      }
       if (isValidVariable(dto)) {
         if (dto instanceof ProcessVariableDto) {
           variableImportList.add((ProcessVariableDto) dto);
@@ -93,6 +101,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       pluginVariableDto.getName(),
       pluginVariableDto.getType(),
       pluginVariableDto.getValue(),
+      pluginVariableDto.getTimestamp(),
       pluginVariableDto.getValueInfo(),
       pluginVariableDto.getProcessDefinitionKey(),
       pluginVariableDto.getProcessDefinitionId(),
@@ -112,7 +121,6 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
         pluginVariableDto -> pluginVariableDto,
         (existingEntry, newEntry) -> newEntry.getVersion() > existingEntry.getVersion() ? newEntry : existingEntry
       ));
-
     return new ArrayList<>(resultSet.values());
   }
 
@@ -122,6 +130,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       engineEntity.getVariableName(),
       engineEntity.getVariableType(),
       engineEntity.getValue(),
+      engineEntity.getTime(),
       engineEntity.getValueInfo(),
       engineEntity.getProcessDefinitionKey(),
       engineEntity.getProcessDefinitionId(),
@@ -152,6 +161,12 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       log.info(
         "Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not " +
           "supported.",
+        variableDto.getName()
+      );
+      return false;
+    } else if (variableDto.getTimestamp() == null) {
+      log.info(
+        "Refuse to add variable [{}] from variable import adapter plugin. Variable has no timestamp.",
         variableDto.getName()
       );
       return false;
@@ -201,7 +216,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
 
   private ElasticsearchImportJob<ProcessVariableDto> createElasticsearchImportJob(List<ProcessVariableDto> processInstances,
                                                                                   Runnable callback) {
-    VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(variableWriter, callback);
+    VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(variableWriter,
+                                                                                              camundaEventService, callback);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

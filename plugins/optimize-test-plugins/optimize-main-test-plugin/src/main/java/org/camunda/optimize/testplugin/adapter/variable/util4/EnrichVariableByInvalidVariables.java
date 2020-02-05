@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.testplugin.adapter.variable.util4;
 
-
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
@@ -26,6 +26,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType("String");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias(null);
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
@@ -39,6 +40,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType("String");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
@@ -52,6 +54,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType("String");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
@@ -65,6 +68,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType("String");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(null);
@@ -78,6 +82,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType(null);
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
@@ -91,6 +96,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType("String");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(null);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
@@ -104,6 +110,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName(null);
     dto.setValue("Bar");
     dto.setType("String");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
@@ -117,6 +124,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType("asgasdfad");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
@@ -130,6 +138,7 @@ public class EnrichVariableByInvalidVariables implements VariableImportAdapter {
     dto.setName("Foo");
     dto.setValue("Bar");
     dto.setType("String");
+    dto.setTimestamp(OffsetDateTime.now());
     dto.setVersion(1L);
     dto.setEngineAlias("camunda-bpm");
     dto.setProcessInstanceId(list.get(0).getProcessInstanceId());
