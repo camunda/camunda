@@ -1,44 +1,112 @@
 <a name="0.23.0-alpha1"></a>
-## 0.23.0-alpha1 (2020-02-05)
 
+# Release: 0.23.0-alpha1
+## Enhancements
+### Broker
+* Throw an error from an end event ([#3510](https://github.com/zeebe-io/zeebe/issues/3510))
+* Raise an incident if an error is not caught ([#3503](https://github.com/zeebe-io/zeebe/issues/3503))
+* Catch an error from a called workflow instance ([#3502](https://github.com/zeebe-io/zeebe/issues/3502))
 
-#### Features
-
-* **broker:**
-  *  support error end events ([a1f14944](https://github.com/zeebe-io/zeebe/commit/a1f14944694611d1e212d83f7d924b8a4a875aa2))
-  *  add gateway version command ([ac11614b](https://github.com/zeebe-io/zeebe/commit/ac11614baf5b7be05d10f678bcfb386a1444a819))
-  *  catch error event from child instance ([4eee987d](https://github.com/zeebe-io/zeebe/commit/4eee987dd2b14fbb78e0ebd61892ed30df221491))
-* **clients/go:**
-  *  expose broker version in status cmd ([341daa72](https://github.com/zeebe-io/zeebe/commit/341daa728c532eaa78d753efa3a45c159451ef30))
-  *  add gateway version to zbctl version ([6f4e7f71](https://github.com/zeebe-io/zeebe/commit/6f4e7f71f0ccca60ee27cb897331dd2447ecd30e))
-  *  add gateway version ([787e48eb](https://github.com/zeebe-io/zeebe/commit/787e48eb4843f5802c1bce50dc433054aac1c98d))
-  *  require context to send commands ([86cd8128](https://github.com/zeebe-io/zeebe/commit/86cd812831bef5984e0a239a0dc21ce9398adf33), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **clients/java:**
-  *  removed setTimeout(long) ([1936898d](https://github.com/zeebe-io/zeebe/commit/1936898d612b00685a79de192eff6a3fcd023066))
-  *  expose broker version in topology cmd ([62d3b11a](https://github.com/zeebe-io/zeebe/commit/62d3b11a4f7dff479d62122cd3e31cd7a2baadc2))
-  *  add gateway version to Java client ([847ba4ee](https://github.com/zeebe-io/zeebe/commit/847ba4eed1c4403e59a31c2cdc947fc394011d7b))
-
-#### Breaking Changes
-
-* **clients/go:**
-  *  add content-type to OAuth request ([5592456d](https://github.com/zeebe-io/zeebe/commit/5592456d37583102b9b368b895cc0b0e2e20be5f), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-  *  require context to send commands ([86cd8128](https://github.com/zeebe-io/zeebe/commit/86cd812831bef5984e0a239a0dc21ce9398adf33), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-
-#### Bug Fixes
-
-* **broker:**
-  *  merge variable on output mapping ([294ec409](https://github.com/zeebe-io/zeebe/commit/294ec40974f8b7204c3363694325c1dc0722ec8a))
-  *  close event subscriptions ([ee34273f](https://github.com/zeebe-io/zeebe/commit/ee34273fa74173a5eae8cd33c325d79b451db3e1))
-  *  consume tokens when triggering event subprocess ([94b8fe10](https://github.com/zeebe-io/zeebe/commit/94b8fe104eda31f6252bdc5182cbd13f1ec9aa6b))
-  *  raise incident if error catch event is interrupted ([deafcedd](https://github.com/zeebe-io/zeebe/commit/deafceddb926f1b23fc144632dac0489ceb9754f))
-  *  catch error inside multi-instance subprocess ([7bc78ab2](https://github.com/zeebe-io/zeebe/commit/7bc78ab25cff5bb55c68f839a89f69ee210e4b01))
-* **clients/go:**  add content-type to OAuth request ([5592456d](https://github.com/zeebe-io/zeebe/commit/5592456d37583102b9b368b895cc0b0e2e20be5f), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
-* **logstreams:**
-  *  fix LogAppender partitionId ([eee42927](https://github.com/zeebe-io/zeebe/commit/eee4292740508bf5a699bc05e9b1f39ec63dc91a))
-  *  introduce reference counting for log stream writers ([b1294979](https://github.com/zeebe-io/zeebe/commit/b12949797f96304325f123805460780e0155bde3))
-* **transport:**  cancel timer after response ([6032d1d8](https://github.com/zeebe-io/zeebe/commit/6032d1d88606ee3ed2f396e9d0247d86150492e0))
-
-
+### Go Client
+* Allow context in Go client API ([#3530](https://github.com/zeebe-io/zeebe/issues/3530))
+### Misc
+* Add broker version info to Topology cmd in clients ([#3733](https://github.com/zeebe-io/zeebe/issues/3733))
+* Add broker version to topology ([#3732](https://github.com/zeebe-io/zeebe/issues/3732))
+* Get gateway version in zbctl ([#3701](https://github.com/zeebe-io/zeebe/issues/3701))
+* Get gateway version in Java client ([#3692](https://github.com/zeebe-io/zeebe/issues/3692))
+* Get gateway version in Go client ([#3691](https://github.com/zeebe-io/zeebe/issues/3691))
+* Broker version via API ([#2981](https://github.com/zeebe-io/zeebe/issues/2981))
+## Bug Fixes
+### Broker
+* Race condition with snapshot replication ([#3717](https://github.com/zeebe-io/zeebe/issues/3717))
+* TopologyManager gets two leaders for same partition at same term. ([#3697](https://github.com/zeebe-io/zeebe/issues/3697))
+* Inconsistent log positions ([#3651](https://github.com/zeebe-io/zeebe/issues/3651))
+### Go Client
+* zbctl build does not contain version information ([#3647](https://github.com/zeebe-io/zeebe/issues/3647))
+### Misc
+* Out of direct memory in the Engine ([#3686](https://github.com/zeebe-io/zeebe/issues/3686))
+* Subscriptions of event subprocesses are not closed when one interrupting event subprocess is triggered ([#3681](https://github.com/zeebe-io/zeebe/issues/3681))
+* Workflow instance is stuck when an interrupting event subprocess is triggered ([#3680](https://github.com/zeebe-io/zeebe/issues/3680))
+* No incident is raising if an error is not caught and a matching error event subprocess exists ([#3678](https://github.com/zeebe-io/zeebe/issues/3678))
+* Error is not caught by an error event subprocess inside a multi-instance embedded subprocess ([#3671](https://github.com/zeebe-io/zeebe/issues/3671))
+* Possible OOM with embedded Gateway and high load ([#3653](https://github.com/zeebe-io/zeebe/issues/3653))
+* Output Parameters with result dict ([#3621](https://github.com/zeebe-io/zeebe/issues/3621))
+## Documentation
+* Document GatewayVersion RPC request ([#3702](https://github.com/zeebe-io/zeebe/issues/3702))
+## Merged Pull Requests
+* Add RocksDB snapshot metrics ([#3447](https://github.com/zeebe-io/zeebe/issues/3447))
+* Add content-type to OAuth request ([#3781](https://github.com/zeebe-io/zeebe/pull/3781))
+* feat(clients/java): removed setTimeout(long) ([#3778](https://github.com/zeebe-io/zeebe/pull/3778))
+* chore(deps): update module testcontainers/testcontainers-go to v0.1.0 ([#3774](https://github.com/zeebe-io/zeebe/pull/3774))
+* chore(deps): update version.protobuf to v3.11.3 ([#3773](https://github.com/zeebe-io/zeebe/pull/3773))
+* chore(README): correct docs for new users links ([#3772](https://github.com/zeebe-io/zeebe/pull/3772))
+* chore(deps): update golang.org/x/net commit hash to 1617124 ([#3771](https://github.com/zeebe-io/zeebe/pull/3771))
+* chore(deps): update dependency com.github.tomakehurst:wiremock-jre8 to v2.26.0 ([#3769](https://github.com/zeebe-io/zeebe/pull/3769))
+* feat(broker): resolve incident for unhandled error ([#3766](https://github.com/zeebe-io/zeebe/pull/3766))
+* chore(deps): update module go-ozzo/ozzo-validation/v3 to v4 ([#3762](https://github.com/zeebe-io/zeebe/pull/3762))
+* chore(deps): update module golang/protobuf to v1.3.3 ([#3754](https://github.com/zeebe-io/zeebe/pull/3754))
+* chore(deps): update version.grpc to v1.27.0 ([#3753](https://github.com/zeebe-io/zeebe/pull/3753))
+* chore(deps): update dependency com.fasterxml.jackson:jackson-bom to v2.10.2.20200130 ([#3750](https://github.com/zeebe-io/zeebe/pull/3750))
+* chore(deps): update dependency org.assertj:assertj-core to v3.15.0 ([#3749](https://github.com/zeebe-io/zeebe/pull/3749))
+* chore(deps): update module google.golang.org/grpc to v1.27.0 ([#3748](https://github.com/zeebe-io/zeebe/pull/3748))
+* feat(broker): support error end events ([#3744](https://github.com/zeebe-io/zeebe/pull/3744))
+* docs(clients): add section on other clients ([#3742](https://github.com/zeebe-io/zeebe/pull/3742))
+* Expose broker version in topology cmd ([#3740](https://github.com/zeebe-io/zeebe/pull/3740))
+* chore(broker): distribute broker version in topology ([#3739](https://github.com/zeebe-io/zeebe/pull/3739))
+* chore(monitor): adjust pod variables to helm usage ([#3737](https://github.com/zeebe-io/zeebe/pull/3737))
+* fix(broker): merge variable on output mapping ([#3736](https://github.com/zeebe-io/zeebe/pull/3736))
+* Refactor gateway version command ([#3735](https://github.com/zeebe-io/zeebe/pull/3735))
+* Fix out of direct memory issue on running engine tests  ([#3731](https://github.com/zeebe-io/zeebe/pull/3731))
+* chore(deps): update version.prometheus to v0.8.1 ([#3730](https://github.com/zeebe-io/zeebe/pull/3730))
+* chore(deps): update module yaml to v2.2.8 ([#3729](https://github.com/zeebe-io/zeebe/pull/3729))
+* chore(deps): update dependency org.testcontainers:testcontainers to v1.12.5 ([#3728](https://github.com/zeebe-io/zeebe/pull/3728))
+* Engine close resources ([#3727](https://github.com/zeebe-io/zeebe/pull/3727))
+* chore(deps): update module golang/mock to v1.4.0 ([#3725](https://github.com/zeebe-io/zeebe/pull/3725))
+* chore(deps): update dependency org.rocksdb:rocksdbjni to v6.5.3 ([#3724](https://github.com/zeebe-io/zeebe/pull/3724))
+* chore(deps): update version.sbe to v1.16.1 ([#3723](https://github.com/zeebe-io/zeebe/pull/3723))
+* chore(deps): update dependency org.agrona:agrona to v1.3.0 ([#3722](https://github.com/zeebe-io/zeebe/pull/3722))
+* Add gateway version to zbctl ([#3720](https://github.com/zeebe-io/zeebe/pull/3720))
+* fix(broker): fixing interrupting event subprocesses ([#3719](https://github.com/zeebe-io/zeebe/pull/3719))
+* chore(broker): replicate empty files ([#3718](https://github.com/zeebe-io/zeebe/pull/3718))
+* chore(broker): use node id on stream processor ([#3716](https://github.com/zeebe-io/zeebe/pull/3716))
+* chore(broker): use actor name on LogStreamDeletionService ([#3715](https://github.com/zeebe-io/zeebe/pull/3715))
+* Remove onOpen lifecycle method ([#3714](https://github.com/zeebe-io/zeebe/pull/3714))
+* fix(broker): raise incident if error catch event is interrupted ([#3713](https://github.com/zeebe-io/zeebe/pull/3713))
+* chore(broker): suppress position supplier log in snapshotstore ([#3712](https://github.com/zeebe-io/zeebe/pull/3712))
+* chore(deps): update dependency net.alchim31.maven:scala-maven-plugin to v4.3.1 ([#3710](https://github.com/zeebe-io/zeebe/pull/3710))
+* chore(deps): update dependency org.apache.httpcomponents:httpclient to v4.5.11 ([#3709](https://github.com/zeebe-io/zeebe/pull/3709))
+* chore(broker): get role and term on raft role change ([#3708](https://github.com/zeebe-io/zeebe/pull/3708))
+* Add gateway version cmd in Java client ([#3707](https://github.com/zeebe-io/zeebe/pull/3707))
+* feat(broker): add gateway version command ([#3706](https://github.com/zeebe-io/zeebe/pull/3706))
+* chore(gateway): return DEADLINE_EXCEEDED on transport timeout ([#3700](https://github.com/zeebe-io/zeebe/pull/3700))
+* fix(broker): catch error inside multi-instance subprocess ([#3698](https://github.com/zeebe-io/zeebe/pull/3698))
+* chore(qa): prevent false positive exceptions on ClusteringRule#after ([#3696](https://github.com/zeebe-io/zeebe/pull/3696))
+* Get gateway version in Go client ([#3695](https://github.com/zeebe-io/zeebe/pull/3695))
+* Don't use writer on reprocessing ([#3693](https://github.com/zeebe-io/zeebe/pull/3693))
+* fix(logstreams): reset writer on reprocessing ([#3690](https://github.com/zeebe-io/zeebe/pull/3690))
+* chore(monitor): add Grafana dashboard ([#3689](https://github.com/zeebe-io/zeebe/pull/3689))
+* chore(broker): adds snapshot metrics ([#3668](https://github.com/zeebe-io/zeebe/pull/3668))
+* Fix inconsistent position creation ([#3660](https://github.com/zeebe-io/zeebe/pull/3660))
+* fix(transport): cancel timer after response ([#3659](https://github.com/zeebe-io/zeebe/pull/3659))
+* chore(clients/java): enforce API stability in Java code ([#3658](https://github.com/zeebe-io/zeebe/pull/3658))
+* chore(deps): update golang.org/x/net commit hash to 6afb519 ([#3657](https://github.com/zeebe-io/zeebe/pull/3657))
+* feat(broker): catch error event from child instance ([#3650](https://github.com/zeebe-io/zeebe/pull/3650))
+* Check backwards compatibility in Go client ([#3649](https://github.com/zeebe-io/zeebe/pull/3649))
+* chore(clients/go): fix set zbctl version and commit during build ([#3648](https://github.com/zeebe-io/zeebe/pull/3648))
+* chore(deps): update dependency io.netty:netty-bom to v4.1.45.final ([#3646](https://github.com/zeebe-io/zeebe/pull/3646))
+* docs(bpmn-workflows): add error event section ([#3644](https://github.com/zeebe-io/zeebe/pull/3644))
+* chore(deps): update version.httpcomponents to v4.4.13 ([#3643](https://github.com/zeebe-io/zeebe/pull/3643))
+* chore(engine): clean up timers after each test ([#3642](https://github.com/zeebe-io/zeebe/pull/3642))
+* feat(clients/go): require context to send commands ([#3638](https://github.com/zeebe-io/zeebe/pull/3638))
+* chore(deps): update version.sbe to v1.16.0 ([#3636](https://github.com/zeebe-io/zeebe/pull/3636))
+* chore(deps): update dependency org.ow2.asm:asm to v7.3.1 ([#3635](https://github.com/zeebe-io/zeebe/pull/3635))
+* Uniform actor names ([#3634](https://github.com/zeebe-io/zeebe/pull/3634))
+* chore(transport): do not send request when timeout is already reached ([#3629](https://github.com/zeebe-io/zeebe/pull/3629))
+* chore(deps): update dependency com.google.guava:guava to v28.2-jre ([#3627](https://github.com/zeebe-io/zeebe/pull/3627))
+* chore(deps): update dependency org.agrona:agrona to v1.2.0 ([#3625](https://github.com/zeebe-io/zeebe/pull/3625))
+* test(transport): fix flaky test ([#3620](https://github.com/zeebe-io/zeebe/pull/3620))
+* add a java sample code for create workflow with await result ([#3616](https://github.com/zeebe-io/zeebe/pull/3616))
+* chore(deps): update module google/go-cmp to v0.4.0 ([#3611](https://github.com/zeebe-io/zeebe/pull/3611))
 
 <a name="0.22.0"></a>
 # Release: 0.22.0
