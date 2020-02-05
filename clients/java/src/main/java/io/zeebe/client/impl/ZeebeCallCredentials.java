@@ -17,7 +17,9 @@ package io.zeebe.client.impl;
 
 import io.grpc.Metadata;
 import io.grpc.SecurityLevel;
+import io.grpc.Status;
 import io.zeebe.client.CredentialsProvider;
+import java.io.IOException;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,15 +36,18 @@ public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
   @Override
   public void applyRequestMetadata(
       final RequestInfo requestInfo, final Executor appExecutor, final MetadataApplier applier) {
-
     if (requestInfo.getSecurityLevel().ordinal() < SecurityLevel.PRIVACY_AND_INTEGRITY.ordinal()) {
       LOG.warn(
           "The request's security level does not guarantee that the credentials will be confidential.");
     }
 
-    final Metadata headers = new Metadata();
-    credentialsProvider.applyCredentials(headers);
-    applier.apply(headers);
+    try {
+      final Metadata headers = new Metadata();
+      credentialsProvider.applyCredentials(headers);
+      applier.apply(headers);
+    } catch (IOException e) {
+      applier.fail(Status.CANCELLED.withCause(e));
+    }
   }
 
   @Override

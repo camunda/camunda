@@ -22,7 +22,7 @@ import com.google.common.io.CharStreams;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import io.grpc.Status.Code;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.IOException;
@@ -57,24 +57,24 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
     endpoint = builder.getAudience();
-    jsonPayload = createJsonPayload(builder);
+    try {
+      jsonPayload = createJsonPayload(builder);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedIOException(e);
+    }
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
   }
 
   /** Adds an access token to the Authorization header of a gRPC call. */
   @Override
-  public void applyCredentials(final Metadata headers) {
-    try {
-      if (credentials == null) {
-        loadCredentials();
-      }
-
-      headers.put(
-          HEADER_AUTH_KEY,
-          String.format("%s %s", credentials.getTokenType(), credentials.getAccessToken()));
-    } catch (final IOException e) {
-      LOG.warn("Failed while fetching credentials, will not add credentials to rpc: ", e);
+  public void applyCredentials(final Metadata headers) throws IOException {
+    if (credentials == null) {
+      loadCredentials();
     }
+
+    headers.put(
+        HEADER_AUTH_KEY,
+        String.format("%s %s", credentials.getTokenType(), credentials.getAccessToken()));
   }
 
   /**
@@ -84,8 +84,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   @Override
   public boolean shouldRetryRequest(final Throwable throwable) {
     try {
-      return throwable instanceof StatusRuntimeException
-          && ((StatusRuntimeException) throwable).getStatus() == Status.UNAUTHENTICATED
+      return Status.fromThrowable(throwable).getCode() == Code.UNAUTHENTICATED
           && refreshCredentials();
     } catch (final IOException e) {
       LOG.error("Failed while fetching credentials: ", e);
@@ -130,18 +129,15 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     return true;
   }
 
-  private static String createJsonPayload(final OAuthCredentialsProviderBuilder builder) {
-    try {
-      final Map<String, String> payload = new HashMap<>();
-      payload.put("client_id", builder.getClientId());
-      payload.put("client_secret", builder.getClientSecret());
-      payload.put("audience", builder.getAudience());
-      payload.put("grant_type", "client_credentials");
+  private static String createJsonPayload(final OAuthCredentialsProviderBuilder builder)
+      throws JsonProcessingException {
+    final Map<String, String> payload = new HashMap<>();
+    payload.put("client_id", builder.getClientId());
+    payload.put("client_secret", builder.getClientSecret());
+    payload.put("audience", builder.getAudience());
+    payload.put("grant_type", "client_credentials");
 
-      return JSON_MAPPER.writeValueAsString(payload);
-    } catch (final JsonProcessingException e) {
-      throw new UncheckedIOException(e);
-    }
+    return JSON_MAPPER.writeValueAsString(payload);
   }
 
   private ZeebeClientCredentials fetchCredentials() throws IOException {
