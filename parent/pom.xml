@@ -38,7 +38,7 @@
     <version.agrona>1.3.0</version.agrona>
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.15.0</version.assertj>
-    <version.atomix>3.2.0-alpha11</version.atomix>
+    <version.atomix>3.2.0-SNAPSHOT</version.atomix>
     <version.camunda>7.12.0</version.camunda>
     <version.commons-lang>3.9</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
