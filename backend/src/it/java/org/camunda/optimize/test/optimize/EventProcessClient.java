@@ -13,8 +13,11 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 
 import javax.servlet.http.HttpServletResponse;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,8 +46,8 @@ public class EventProcessClient {
     return getRequestExecutor().buildGetEventProcessMappingRequest(eventProcessMappingId);
   }
 
-  public EventProcessMappingDto getEventProcessMapping(final String eventProcessMappingId) {
-    return createGetEventProcessMappingRequest(eventProcessMappingId).execute(EventProcessMappingDto.class, 200);
+  public EventProcessMappingRestDto getEventProcessMapping(final String eventProcessMappingId) {
+    return createGetEventProcessMappingRequest(eventProcessMappingId).execute(EventProcessMappingRestDto.class, 200);
   }
 
   public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest() {
@@ -123,6 +126,7 @@ public class EventProcessClient {
     return EventProcessMappingDto.builder()
       .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))
       .mappings(flowNodeEventMappingsDto)
+      .eventSources(new ArrayList<>())
       .xml(xml)
       .build();
   }

@@ -3,7 +3,8 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.rest.event;
+
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -11,8 +12,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -26,8 +27,7 @@ import java.util.Map;
 @Data
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants
-public class EventProcessMappingDto implements OptimizeDto {
+public class EventProcessMappingRestDto {
   @EqualsAndHashCode.Include
   private String id;
   @NotBlank
@@ -48,6 +48,5 @@ public class EventProcessMappingDto implements OptimizeDto {
 
   private Double publishingProgress;
 
-  @Builder.Default
-  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
+  private List<EventSourceEntryRestDto> eventSources = new ArrayList<>();
 }

@@ -13,12 +13,16 @@ import org.elasticsearch.cluster.metadata.AliasMetaData;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
 
 public class UpdateIndexStep implements UpgradeStep {
   private final IndexMappingCreator index;
   private final String mappingScript;
+  // expected suffix: hyphen and numbers at end of index name
+  private final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
 
   public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript) {
     this.index = index;
@@ -45,15 +49,18 @@ public class UpdateIndexStep implements UpgradeStep {
       esIndexAdjuster.createOrUpdateTemplateWithoutAliases(index, indexAlias);
       final Map<String, Set<AliasMetaData>> indexAliasMap = esIndexAdjuster.getAliasMap(indexAlias);
       for (String sourceIndex : indexAliasMap.keySet()) {
-        String suffix = sourceIndex.replace(sourceIndexName, "");
+        String suffix = "";
         String sourceIndexNameWithSuffix;
+        Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);
 
-        if (suffix.isEmpty()) {
-          // existing index is not yet suffixed, use default suffix
+        if (suffixMatcher.find()) {
+          // sourceIndex is already suffixed
+          suffix = sourceIndex.substring(sourceIndex.lastIndexOf("-"));
+          sourceIndexNameWithSuffix = sourceIndexName + suffix;
+        } else {
+          // sourceIndex is not yet suffixed, use default suffix
           suffix = index.getIndexNameSuffix();
           sourceIndexNameWithSuffix = sourceIndexName;
-        } else {
-          sourceIndexNameWithSuffix = sourceIndexName + suffix;
         }
         final String targetIndexNameWithSuffix = targetIndexName + suffix;
 

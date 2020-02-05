@@ -333,7 +333,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected String createSimpleProcessDefinitionXml() {
+  protected static String createSimpleProcessDefinitionXml() {
     final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
       .camundaVersionTag("aVersionTag")
       .name("aProcessName")
@@ -530,5 +530,4 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     Bpmn.writeModelToStream(xmlOutput, bpmnModel);
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
-
 }

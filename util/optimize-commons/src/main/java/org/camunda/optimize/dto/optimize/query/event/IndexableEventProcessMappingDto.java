@@ -32,6 +32,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
   private OffsetDateTime lastModified;
   private String lastModifier;
   private List<IndexableEventMappingDto> mappings;
+  private List<EventSourceEntryDto> eventSources;
 
   public static IndexableEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
     return IndexableEventProcessMappingDto.builder()
@@ -51,6 +52,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
             .collect(Collectors.toList()))
           .orElse(null)
       )
+      .eventSources(eventMappingDto.getEventSources())
       .build();
 
   }
@@ -72,6 +74,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
                 .end(mapping.getEnd()).build()
             ))).orElse(null)
       )
+      .eventSources(this.eventSources)
       .build();
   }
 

@@ -54,7 +54,8 @@ public class EventProcessMappingWriter {
       final IndexRequest request = new IndexRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
         .id(id)
         .source(
-          objectMapper.writeValueAsString(IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto)),
+          objectMapper.writeValueAsString(IndexableEventProcessMappingDto.fromEventProcessMappingDto(
+            eventProcessMappingDto)),
           XContentType.JSON
         )
         .setRefreshPolicy(IMMEDIATE);
@@ -81,7 +82,7 @@ public class EventProcessMappingWriter {
       Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
         Sets.newHashSet(
           EventProcessMappingIndex.NAME, EventProcessMappingIndex.XML, EventProcessMappingIndex.LAST_MODIFIED,
-          EventProcessMappingIndex.LAST_MODIFIER, EventProcessMappingIndex.MAPPINGS
+          EventProcessMappingIndex.LAST_MODIFIER, EventProcessMappingIndex.MAPPINGS, EventProcessMappingIndex.EVENT_SOURCES
         ),
         IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
         objectMapper
@@ -128,5 +129,4 @@ public class EventProcessMappingWriter {
 
     return deleteResponse.getResult().equals(DeleteResponse.Result.DELETED);
   }
-
 }

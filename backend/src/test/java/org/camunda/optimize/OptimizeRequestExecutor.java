@@ -533,7 +533,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id) {
-    this.path = "collection/" + id +"/entities";
+    this.path = "collection/" + id + "/entities";
     this.method = GET;
     return this;
   }

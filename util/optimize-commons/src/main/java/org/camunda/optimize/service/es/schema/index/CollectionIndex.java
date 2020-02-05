@@ -108,7 +108,7 @@ public class CollectionIndex extends StrictIndexMappingCreator {
     // @formatter:on
   }
 
-    private XContentBuilder addRolesField(final XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addRolesField(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder.
       startObject(CollectionDataDto.Fields.roles.name())

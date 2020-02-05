@@ -6,10 +6,16 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.security.EventProcessAuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
@@ -29,7 +35,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
 import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 @AllArgsConstructor
 @Path("/eventBasedProcess")
@@ -40,6 +49,7 @@ public class EventBasedProcessRestService {
   private final EventProcessService eventProcessService;
   private final EventProcessAuthenticationService authenticationService;
   private final SessionService sessionService;
+  private final DefinitionService definitionService;
 
   @GET
   @Path("/isEnabled")
@@ -52,22 +62,27 @@ public class EventBasedProcessRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public EventProcessMappingDto getEventProcessMapping(@PathParam("id") final String eventProcessId,
-                                                       @Context ContainerRequestContext requestContext) {
+  public EventProcessMappingRestDto getEventProcessMapping(@PathParam("id") final String eventProcessId,
+                                                           @Context ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
-    return eventProcessService.getEventProcessMapping(eventProcessId);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return mapMappingDtoToRestDto(userId, eventProcessService.getEventProcessMapping(eventProcessId));
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml(
+  public List<EventProcessMappingRestDto> getAllEventProcessMappingsOmitXml(
     @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
-    return eventProcessService.getAllEventProcessMappingsOmitXml();
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return eventProcessService.getAllEventProcessMappingsOmitXml()
+      .stream()
+      .map(mappingRestDto -> mapMappingDtoToRestDto(userId, mappingRestDto))
+      .collect(toList());
   }
 
   @POST
@@ -81,7 +96,7 @@ public class EventBasedProcessRestService {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     eventProcessMappingDto.setLastModifier(userId);
-    return eventProcessService.createEventProcessMapping(eventProcessMappingDto);
+    return eventProcessService.createEventProcessMapping(userId, eventProcessMappingDto);
   }
 
   @PUT
@@ -95,7 +110,7 @@ public class EventBasedProcessRestService {
     validateAccessToEventProcessManagement(userId);
     eventProcessMappingDto.setId(eventProcessId);
     eventProcessMappingDto.setLastModifier(userId);
-    eventProcessService.updateEventProcessMapping(eventProcessMappingDto);
+    eventProcessService.updateEventProcessMapping(userId, eventProcessMappingDto);
   }
 
   @POST
@@ -160,4 +175,47 @@ public class EventBasedProcessRestService {
     return authenticationService.hasEventProcessManagementAccess(userId);
   }
 
+  private EventProcessMappingRestDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
+    EventProcessMappingRestDto restDto = EventProcessMappingRestDto.builder()
+      .id(dto.getId())
+      .lastModified(dto.getLastModified())
+      .lastModifier(dto.getLastModifier())
+      .mappings(dto.getMappings())
+      .name(dto.getName())
+      .state(dto.getState())
+      .publishingProgress(dto.getPublishingProgress())
+      .xml(dto.getXml())
+      .eventSources(mapSourceEntryToRestDto(userId, dto.getEventSources()))
+      .build();
+
+    return restDto;
+  }
+
+  private List<EventSourceEntryRestDto> mapSourceEntryToRestDto(final String userId,
+                                                                final List<EventSourceEntryDto> eventSourceDtos) {
+    List<EventSourceEntryRestDto> sourceRestDtos = new ArrayList<>();
+
+    for (EventSourceEntryDto sourceDto : eventSourceDtos) {
+      final String definitionName = getDefinitionName(userId, sourceDto);
+
+      EventSourceEntryRestDto sourceRestDto = EventSourceEntryRestDto.builder()
+        .id(sourceDto.getId())
+        .eventScope(sourceDto.getEventScope())
+        .processDefinitionKey(sourceDto.getProcessDefinitionKey())
+        .processDefinitionName(definitionName)
+        .tracedByBusinessKey(sourceDto.getTracedByBusinessKey())
+        .traceVariable(sourceDto.getTraceVariable())
+        .versions(sourceDto.getVersions())
+        .tenants(sourceDto.getTenants())
+        .build();
+      sourceRestDtos.add(sourceRestDto);
+    }
+    return sourceRestDtos;
+  }
+
+  private String getDefinitionName(final String userId, final EventSourceEntryDto eventSource) {
+    return definitionService.getDefinition(DefinitionType.PROCESS, eventSource.getProcessDefinitionKey(), userId)
+      .map(DefinitionWithTenantsDto::getName)
+      .orElse(eventSource.getProcessDefinitionKey());
+  }
 }

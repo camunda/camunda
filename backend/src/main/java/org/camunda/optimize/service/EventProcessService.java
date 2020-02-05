@@ -10,12 +10,14 @@ import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -28,13 +30,16 @@ import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -48,6 +53,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.REPORT;
@@ -65,6 +71,7 @@ public class EventProcessService {
     EventProcessState.PUBLISH_PENDING, EventProcessState.PUBLISHED, EventProcessState.UNPUBLISHED_CHANGES
   );
 
+  private final DefinitionAuthorizationService definitionAuthorizationService;
   private final ConfigurationService configurationService;
   private final ReportService reportService;
   private final ReportRelationService reportRelationService;
@@ -80,24 +87,35 @@ public class EventProcessService {
     return configurationService.getEventBasedProcessConfiguration().isEnabled();
   }
 
-  public IdDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
+  public IdDto createEventProcessMapping(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
     validateMappingsForProvidedXml(eventProcessMappingDto);
+    validateEventSources(userId, eventProcessMappingDto);
     return eventProcessMappingWriter.createEventProcessMapping(eventProcessMappingDto);
   }
 
-  public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
+  public void updateEventProcessMapping(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
     validateMappingsForProvidedXml(eventProcessMappingDto);
+    validateEventSources(userId, eventProcessMappingDto);
     eventProcessMappingWriter.updateEventProcessMapping(eventProcessMappingDto);
   }
 
   public ConflictResponseDto getDeleteConflictingItems(final String eventProcessId) {
-    List<ReportDefinitionDto> reportsForProcessDefinitionKey = reportService.getAllReportsForProcessDefinitionKey(eventProcessId);
+    List<ReportDefinitionDto> reportsForProcessDefinitionKey = reportService.getAllReportsForProcessDefinitionKey(
+      eventProcessId);
     Set<ConflictedItemDto> conflictedItems = new HashSet<>();
     for (ReportDefinitionDto reportForEventProcess : reportsForProcessDefinitionKey) {
       if (reportForEventProcess instanceof CombinedReportDefinitionDto) {
-        conflictedItems.add(new ConflictedItemDto(reportForEventProcess.getId(), COMBINED_REPORT, reportForEventProcess.getName()));
+        conflictedItems.add(new ConflictedItemDto(
+          reportForEventProcess.getId(),
+          COMBINED_REPORT,
+          reportForEventProcess.getName()
+        ));
       } else {
-        conflictedItems.add(new ConflictedItemDto(reportForEventProcess.getId(), REPORT, reportForEventProcess.getName()));
+        conflictedItems.add(new ConflictedItemDto(
+          reportForEventProcess.getId(),
+          REPORT,
+          reportForEventProcess.getName()
+        ));
       }
       conflictedItems.addAll(reportRelationService.getConflictedItemsForDeleteReport(reportForEventProcess));
     }
@@ -188,6 +206,50 @@ public class EventProcessService {
         eventProcessMappingId
       );
       throw new OptimizeValidationException(message);
+    }
+  }
+
+  private void validateEventSources(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
+    validateAccessToEventSources(userId, eventProcessMappingDto);
+    validateNoDuplicateEventSources(eventProcessMappingDto);
+  }
+
+  private void validateAccessToEventSources(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
+    final Set<String> notAuthorizedProcesses = new HashSet<>();
+    for (EventSourceEntryDto eventSource : eventProcessMappingDto.getEventSources()) {
+      final boolean hasAccessToDefinition = definitionAuthorizationService.isAuthorizedToSeeDefinition(
+        userId,
+        IdentityType.USER,
+        eventSource.getProcessDefinitionKey(),
+        PROCESS,
+        eventSource.getTenants()
+      );
+      if (!hasAccessToDefinition) {
+        notAuthorizedProcesses.add(eventSource.getProcessDefinitionKey());
+      }
+    }
+    if (!notAuthorizedProcesses.isEmpty()) {
+      final String errorMessage = String.format(
+        "The user is not authorized to access the following process definitions in the event sources: %s",
+        notAuthorizedProcesses
+      );
+      throw new ForbiddenException(errorMessage);
+    }
+  }
+
+  private void validateNoDuplicateEventSources(final EventProcessMappingDto eventProcessMappingDto) {
+    Set<String> processDefinitionKeys = new HashSet<>();
+    final Set<String> duplicates = eventProcessMappingDto.getEventSources()
+      .stream()
+      .map(source -> source.getProcessDefinitionKey())
+      .filter(key -> !processDefinitionKeys.add(key))
+      .collect(toSet());
+    if (!duplicates.isEmpty()) {
+      final String errorMessage = String.format(
+        "The process definitions with keys %s already exist as event sources for the mapping with ID [%s]",
+        duplicates, eventProcessMappingDto
+      );
+      throw new OptimizeConflictException(errorMessage);
     }
   }
 
