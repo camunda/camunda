@@ -108,6 +108,27 @@
 * add a java sample code for create workflow with await result ([#3616](https://github.com/zeebe-io/zeebe/pull/3616))
 * chore(deps): update module google/go-cmp to v0.4.0 ([#3611](https://github.com/zeebe-io/zeebe/pull/3611))
 
+<a name="0.22.1"></a>
+# Release: 0.22.1
+## Fixes
+* Out of direct memory in the Engine ([#3686](https://github.com/zeebe-io/zeebe/issues/3686))
+* Possible OOM with embedded Gateway and high load ([#3653](https://github.com/zeebe-io/zeebe/issues/3653))
+* Inconsistent log positions ([#3651](https://github.com/zeebe-io/zeebe/issues/3651))
+* zbctl build does not contain version information ([#3647](https://github.com/zeebe-io/zeebe/issues/3647))
+* Append Backpressure metrics are broken ([#3626](https://github.com/zeebe-io/zeebe/issues/3626))
+
+## Merged Pull Requests
+* [BACKPORT] Don't use writer on reprocessing ([#3694](https://github.com/zeebe-io/zeebe/pull/3694))
+* Don't use writer on reprocessing ([#3693](https://github.com/zeebe-io/zeebe/pull/3693))
+* [BACKPORT] Fix inconsistent position creation ([#3685](https://github.com/zeebe-io/zeebe/pull/3685))
+* [BACKPORT] chore(clients/go): fix set zbctl version and commit during build ([#3684](https://github.com/zeebe-io/zeebe/pull/3684))
+* [BACKPORT] Uniform actor names ([#3683](https://github.com/zeebe-io/zeebe/pull/3683))
+* [BACKPORT] fix(transport): cancel timer after response ([#3682](https://github.com/zeebe-io/zeebe/pull/3682))
+* Fix inconsistent position creation ([#3660](https://github.com/zeebe-io/zeebe/pull/3660))
+* fix(transport): cancel timer after response ([#3659](https://github.com/zeebe-io/zeebe/pull/3659))
+* chore(clients/go): fix set zbctl version and commit during build ([#3648](https://github.com/zeebe-io/zeebe/pull/3648))
+* Uniform actor names ([#3634](https://github.com/zeebe-io/zeebe/pull/3634))
+
 <a name="0.22.0"></a>
 # Release: 0.22.0
 ## Enhancements
