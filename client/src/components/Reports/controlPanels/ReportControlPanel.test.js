@@ -203,7 +203,11 @@ it('should load the process definition xml when a new definition is selected', a
 
   loadProcessDefinitionXml.mockClear();
 
-  await node.find(DefinitionSelection).prop('onChange')('newDefinition', ['1'], ['a', 'b']);
+  await node.find(DefinitionSelection).prop('onChange')({
+    key: 'newDefinition',
+    versions: ['1'],
+    tenantIds: ['a', 'b']
+  });
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', '1', 'a');
 });

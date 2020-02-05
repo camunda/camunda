@@ -156,11 +156,11 @@ it('should update to most recent version when key is selected', async () => {
 
   await node.instance().changeDefinition('foo');
 
-  expect(spy.mock.calls[0][1]).toEqual(['3']);
+  expect(spy.mock.calls[0][0].versions).toEqual(['3']);
 });
 
 it('should store specifically selected versions', async () => {
-  const node = await shallow(<DefinitionSelection {...props} />);
+  const node = await shallow(<DefinitionSelection {...props} definitionKey="foo" />);
 
   node.instance().changeVersions(['3', '1']);
   expect(node.find(VersionPopover).prop('selectedSpecificVersions')).toEqual(['3', '1']);
@@ -178,7 +178,7 @@ it('should update definition if versions is changed', async () => {
 
   await node.instance().changeVersions(['1']);
 
-  expect(spy.mock.calls[0][1]).toEqual(['1']);
+  expect(spy.mock.calls[0][0].versions).toEqual(['1']);
 });
 
 it('should disable typeahead if no reports are avaialbe', async () => {
@@ -365,7 +365,7 @@ it('should preserve previously deselected tenants if version changes', async () 
 
   spy.mockClear();
   await node.instance().changeVersions(['2']);
-  expect(spy).toHaveBeenCalledWith('foo', ['2'], ['b']);
+  expect(spy).toHaveBeenCalledWith({key: 'foo', name: 'Foo', tenantIds: ['b'], versions: ['2']});
 });
 
 describe('tenants', () => {
@@ -492,6 +492,17 @@ describe('tenants', () => {
 
     spy.mockClear();
     node.instance().changeDefinition('foo');
-    expect(spy).toHaveBeenCalledWith('foo', ['3'], [null, 'a', 'b']);
+    expect(spy).toHaveBeenCalledWith({
+      key: 'foo',
+      name: 'Foo',
+      tenantIds: [null, 'a', 'b'],
+      versions: ['3']
+    });
   });
+});
+
+it('should display expanded definition selection without a popover if specified', async () => {
+  const node = await shallow(<DefinitionSelection {...props} expanded />);
+
+  expect(node.find('.DefinitionSelection').type()).toBe('div');
 });

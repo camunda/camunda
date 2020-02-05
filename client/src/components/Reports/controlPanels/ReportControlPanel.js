@@ -83,13 +83,13 @@ export default withErrorHandling(
       }
     }
 
-    changeDefinition = async (key, versions, tenants) => {
+    changeDefinition = async ({key, versions, tenantIds}) => {
       const {groupBy, filter} = this.props.report.data;
 
       const change = {
         processDefinitionKey: {$set: key},
         processDefinitionVersions: {$set: versions},
-        tenantIds: {$set: tenants},
+        tenantIds: {$set: tenantIds},
         configuration: {
           excludedColumns: {$set: []},
           columnOrder: {
@@ -109,7 +109,7 @@ export default withErrorHandling(
           xml: {
             $set:
               key && versions && versions[0]
-                ? await loadProcessDefinitionXml(key, versions[0], tenants[0])
+                ? await loadProcessDefinitionXml(key, versions[0], tenantIds[0])
                 : null
           }
         },

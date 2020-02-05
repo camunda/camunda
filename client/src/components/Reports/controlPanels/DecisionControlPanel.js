@@ -58,13 +58,13 @@ export default class DecisionControlPanel extends React.Component {
     }
   };
 
-  changeDefinition = async (key, versions, tenants) => {
+  changeDefinition = async ({key, versions, tenantIds}) => {
     const {groupBy, filter} = this.props.report.data;
 
     const change = {
       decisionDefinitionKey: {$set: key},
       decisionDefinitionVersions: {$set: versions},
-      tenantIds: {$set: tenants},
+      tenantIds: {$set: tenantIds},
       configuration: {
         excludedColumns: {$set: []},
         columnOrder: {
@@ -78,7 +78,7 @@ export default class DecisionControlPanel extends React.Component {
         xml: {
           $set:
             key && versions && versions[0]
-              ? await loadDecisionDefinitionXml(key, versions[0], tenants[0])
+              ? await loadDecisionDefinitionXml(key, versions[0], tenantIds[0])
               : null
         }
       },

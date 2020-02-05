@@ -43,6 +43,8 @@ export default withRouter(
 
     hasDefinition = () => this.props.definitionKey;
 
+    getName = key => this.getDefinitionObject(key).name;
+
     changeDefinition = key => {
       if (this.props.definitionKey === key) {
         return;
@@ -53,11 +55,12 @@ export default withRouter(
       const tenants = this.getAvailableTenants(key, latestVersion);
 
       this.setState({selectedSpecificVersions: latestVersion});
-      this.props.onChange(
+      this.props.onChange({
         key,
-        latestVersion,
-        tenants.map(({id}) => id)
-      );
+        versions: latestVersion,
+        tenantIds: tenants.map(({id}) => id),
+        name: this.getName(key)
+      });
     };
 
     getDefinitionObject = key => this.state.availableDefinitions.find(def => def.key === key);
@@ -97,7 +100,13 @@ export default withRouter(
     getSelectedTenants = () => this.props.tenants;
 
     changeTenants = tenantSelection => {
-      this.props.onChange(this.props.definitionKey, this.props.versions, tenantSelection);
+      const {definitionKey, versions} = this.props;
+      this.props.onChange({
+        key: definitionKey,
+        versions: versions,
+        tenantIds: tenantSelection,
+        name: this.getName(definitionKey)
+      });
     };
 
     getAvailableVersions = key => {
@@ -115,7 +124,12 @@ export default withRouter(
         this.setState({selectedSpecificVersions: versions});
       }
 
-      this.props.onChange(this.props.definitionKey, versions, this.findTenants(versions));
+      this.props.onChange({
+        key: this.props.definitionKey,
+        versions,
+        tenantIds: this.findTenants(versions),
+        name: this.getName(this.props.definitionKey)
+      });
     };
 
     findTenants = versions => {
@@ -179,6 +193,7 @@ export default withRouter(
 
     render() {
       const {loaded, availableDefinitions, selectedSpecificVersions} = this.state;
+      const {expanded, type, disableDefinition} = this.props;
       const collectionId = getCollection(this.props.location.pathname);
       const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
       const selectedKey = this.props.definitionKey;
@@ -192,10 +207,15 @@ export default withRouter(
           </div>
         );
       }
+
       const def = this.getDefinitionObject(selectedKey);
+      const Wrapper = expanded ? 'div' : Popover;
+      const processSelectLabel = expanded
+        ? t(`common.definitionSelection.select.${type}`)
+        : t('common.name');
 
       return (
-        <Popover className="DefinitionSelection" title={this.createTitle()}>
+        <Wrapper className="DefinitionSelection" title={this.createTitle()}>
           <div
             className={classnames('container', {
               large: this.canRenderDiagram(),
@@ -204,11 +224,11 @@ export default withRouter(
           >
             <div className="selectionPanel">
               <div className="dropdowns">
-                <Labeled className="entry" label={t('common.name')}>
+                <Labeled className="entry" label={processSelectLabel}>
                   <Typeahead
                     className="name"
                     initialValue={def ? def.key : null}
-                    disabled={noDefinitions}
+                    disabled={noDefinitions || disableDefinition}
                     placeholder={t('common.select')}
                     onChange={this.changeDefinition}
                     noValuesMessage={t('common.definitionSelection.noDefinition')}
@@ -256,7 +276,7 @@ export default withRouter(
               </div>
             )}
           </div>
-        </Popover>
+        </Wrapper>
       );
     }
   }

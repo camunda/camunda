@@ -22,7 +22,7 @@ export default function OutlierControlPanel(props) {
             versions={props.processDefinitionVersions}
             tenants={props.tenantIds}
             xml={props.xml}
-            onChange={(key, versions, tenantIds) =>
+            onChange={({key, versions, tenantIds}) =>
               props.onChange({
                 processDefinitionKey: key,
                 processDefinitionVersions: versions,
