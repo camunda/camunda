@@ -24,8 +24,7 @@ jobs:
             -ldflags '-s -w -X github.com/zeebe-io/zeebe/clients/go/cmd/zbctl/internal/commands.Version=development' \
             -o ./dist/zbctl ./main.go
       - name: Test
-        working-directory: clients/go/cmd/zbctl/dist
-        run: zbctl
+        run: clients/go/cmd/zbctl/dist/zbctl
       - uses: actions/upload-artifact@v1
         with:
           name: zbctl
