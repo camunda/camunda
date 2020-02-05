@@ -24,7 +24,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,17 +82,13 @@ public final class OAuthCredentialsCache {
     return audiences.size();
   }
 
-  private void ensureCacheFileExists() {
+  private void ensureCacheFileExists() throws IOException {
     if (cacheFile.exists()) {
       return;
     }
 
-    try {
-      Files.createDirectories(cacheFile.getParentFile().toPath());
-      Files.createFile(cacheFile.toPath());
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    Files.createDirectories(cacheFile.getParentFile().toPath());
+    Files.createFile(cacheFile.toPath());
   }
 
   private static final class OAuthCachedCredentials {
