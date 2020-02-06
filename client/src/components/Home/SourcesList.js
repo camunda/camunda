@@ -26,6 +26,8 @@ import EditSourceModal from './modals/EditSourceModal';
 import {areTenantsAvailable} from 'config';
 
 import './SourcesList.scss';
+import {formatters} from 'services';
+const {formatTenantName} = formatters;
 
 export default withErrorHandling(
   class SourcesList extends React.Component {
@@ -254,12 +256,5 @@ function formatTenants(tenants) {
     return '';
   }
 
-  return tenants
-    .map(({id, name}) => {
-      if (id === '__unauthorizedTenantId__') {
-        return t('home.sources.unauthorizedTenant');
-      }
-      return name;
-    })
-    .join(', ');
+  return tenants.map(formatTenantName).join(', ');
 }

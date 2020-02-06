@@ -290,5 +290,10 @@ export function formatTenantName({id, name}) {
   if (!id) {
     return t('common.definitionSelection.tenant.notDefined');
   }
+
+  if (id === '__unauthorizedTenantId__') {
+    return t('home.sources.unauthorizedTenant');
+  }
+
   return name || id;
 }
