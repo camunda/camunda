@@ -10,7 +10,6 @@ package io.zeebe.broker.system.configuration;
 import io.zeebe.util.Environment;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
@@ -22,14 +21,11 @@ public final class DataCfg implements ConfigurationEntry {
 
   private String snapshotPeriod = "15m";
 
-  private String raftSegmentSize;
-
   private int maxSnapshots = 3;
 
   @Override
   public void init(
       final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
-    raftSegmentSize = Optional.ofNullable(raftSegmentSize).orElse(logSegmentSize);
 
     applyEnvironment(environment);
     directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
@@ -71,14 +67,6 @@ public final class DataCfg implements ConfigurationEntry {
     this.maxSnapshots = maxSnapshots;
   }
 
-  public String getRaftSegmentSize() {
-    return raftSegmentSize;
-  }
-
-  public void setRaftSegmentSize(final String raftSegmentSize) {
-    this.raftSegmentSize = raftSegmentSize;
-  }
-
   @Override
   public String toString() {
     return "DataCfg{"
@@ -89,9 +77,6 @@ public final class DataCfg implements ConfigurationEntry {
         + '\''
         + ", snapshotPeriod='"
         + snapshotPeriod
-        + '\''
-        + ", raftSegmentSize='"
-        + raftSegmentSize
         + '\''
         + ", maxSnapshots="
         + maxSnapshots
