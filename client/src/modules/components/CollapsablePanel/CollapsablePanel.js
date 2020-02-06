@@ -91,7 +91,7 @@ function CollapsablePanel({
           {renderHeader()}
         </Styled.Header>
         <Panel.Body>{children}</Panel.Body>
-        <Panel.Footer>{renderFooter()}</Panel.Footer>
+        {renderFooter ? <Panel.Footer>{renderFooter()}</Panel.Footer> : ''}
       </Styled.ExpandedPanel>
     </Styled.Collapsable>
   );
@@ -99,7 +99,6 @@ function CollapsablePanel({
 
 CollapsablePanel.defaultProps = {
   renderHeader: () => '',
-  renderFooter: () => '',
   isOverlay: false,
   verticalLabelOffset: 0
 };
