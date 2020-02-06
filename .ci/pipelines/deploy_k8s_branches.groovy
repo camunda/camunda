@@ -153,8 +153,16 @@ pipeline {
     stage('Deploy to K8s') {
       steps {
         container('gcloud') {
+          dir('optimize') {
+            script{
+              def mavenProps = readMavenPom().getProperties()
+              env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty("elasticsearch.test.version")
+              env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty("camunda.engine.version")
+            }
+          }
           dir('k8s-infrastructure') {
             sh("""
+              sed -i -e "s/@CAMBPM_VERSION@/$CAMBPM_VERSION/g" -e "s/@ES_VERSION@/$ES_VERSION/g" ${WORKSPACE}/optimize/.ci/branch-deployment/deployment.yml
               ./cmd/k8s/deploy-template-to-branch \
               ${WORKSPACE}/k8s-infrastructure/infrastructure/ci-30-162810/deployments/optimize-branch \
               ${WORKSPACE}/optimize/.ci/branch-deployment \
