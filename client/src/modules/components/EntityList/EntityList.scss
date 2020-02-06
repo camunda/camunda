@@ -66,6 +66,7 @@
 
   .ListItem {
     position: relative;
+    white-space: nowrap;
 
     > ul {
       margin-left: -25px;
