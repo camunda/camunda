@@ -6,7 +6,6 @@
 
 import {
   fetchWorkflowInstancesStatistics,
-  fetchWorkflowInstancesBySelection,
   fetchWorkflowCoreStatistics,
   fetchWorkflowInstancesByIds,
   fetchWorkflowInstance,
@@ -153,29 +152,6 @@ export class DataManager {
       fetchWorkflowInstancesStatistics,
       params
     );
-  }
-
-  async getWorkflowInstancesBySelection(params, topic, selectionId) {
-    const cachedParams = this.cache.update(
-      'workflowInstancesBySelection',
-      fetchWorkflowInstancesBySelection,
-      params
-    );
-
-    this.publisher.publish(topic, {state: LOADING_STATE.LOADING});
-    const response = await fetchWorkflowInstancesBySelection(cachedParams);
-
-    if (response.error) {
-      this.publisher.publish(topic, {
-        state: LOADING_STATE.LOAD_FAILED,
-        response
-      });
-    } else {
-      this.publisher.publish(topic, {
-        state: LOADING_STATE.LOADED,
-        response: {...response, selectionId}
-      });
-    }
   }
 
   getWorkflowXML(params, staticContent) {

@@ -152,17 +152,6 @@ describe('DataManager', () => {
         );
       });
     });
-    describe('fetch workflow instances by selection', () => {
-      it('should publish loading states to topic', () => {
-        // when
-        dataManager.getWorkflowInstancesBySelection(mockParams, customTopic);
-
-        // then
-        expect(publishSpy).toHaveBeenCalledWith(customTopic, {
-          state: LOADING_STATE.LOADING
-        });
-      });
-    });
     describe('fetch workflow instances by Ids', () => {
       it('should publish loading states to topic', () => {
         // when

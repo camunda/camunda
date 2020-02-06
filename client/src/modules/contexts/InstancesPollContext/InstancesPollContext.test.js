@@ -78,7 +78,7 @@ describe('InstancesPollContext', () => {
     expect(compProps.polling.removeIds).toBeDefined();
   });
 
-  it('should start polling when ids are added', async () => {
+  it('should register for polling when ids are added', async () => {
     // given
     function FooComp() {
       return <div>foo</div>;
@@ -99,11 +99,10 @@ describe('InstancesPollContext', () => {
     node.update();
 
     // then
-    // expect polling to start
     expect(
       node.find(InstancesPollProvider.WrappedComponent).instance().props
-        .dataManager.poll.start
-    ).toHaveBeenCalled();
+        .dataManager.poll.register
+    ).toHaveBeenCalledWith('INSTANCES_LIST', expect.any(Function));
   });
 
   it('should append new added ids to the existing ones', () => {
@@ -159,17 +158,15 @@ describe('InstancesPollContext', () => {
 
     expect(
       node.find(InstancesPollProvider.WrappedComponent).instance().props
-        .dataManager.poll.start
+        .dataManager.poll.register
+    ).toHaveBeenCalledWith('INSTANCES_LIST', expect.any(Function));
+
+    jest.runOnlyPendingTimers();
+
+    expect(
+      node.find(InstancesPollProvider.WrappedComponent).instance().props
+        .dataManager.getWorkflowInstancesByIds
     ).toHaveBeenCalled();
-
-    //TODO: mock waiting for poll to complete
-    // jest.runOnlyPendingTimers();
-    // await flushPromises();
-
-    // expect(
-    //   node.find(InstancesPollProvider.WrappedComponent).instance().props
-    //     .dataManager.getWorkflowInstancesByIds
-    // ).toHaveBeenCalled();
   });
 
   it('should poll when there are active instances', async () => {
@@ -211,8 +208,10 @@ describe('InstancesPollContext', () => {
     node.update();
 
     // then
-    // expect polling to start
-    expect(dataManagerMock.poll.start).toHaveBeenCalled();
+    expect(dataManagerMock.poll.register).toHaveBeenCalledWith(
+      'INSTANCES_LIST',
+      expect.any(Function)
+    );
     expect(dataManagerMock.getWorkflowInstancesByIds).toHaveBeenCalledWith(
       ['1', '2'],
       SUBSCRIPTION_TOPIC.LOAD_SELECTION_INSTANCES
@@ -280,8 +279,7 @@ describe('InstancesPollContext', () => {
     const props = node.find(InstancesPollProvider.WrappedComponent).instance()
       .props;
     // then
-    // expect polling to start
-    expect(props.dataManager.poll.start).toBeCalledTimes(1);
+    expect(props.dataManager.poll.register).toBeCalledTimes(1);
     node.unmount();
 
     // expect to fetch the instances for this ids

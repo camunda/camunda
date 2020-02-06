@@ -406,7 +406,10 @@ describe('Instance', () => {
       expect(isRunningInstance(node.instance().state.instance)).toBe(true);
 
       //then
-      expect(dataManager.poll.start).toHaveBeenCalled();
+      expect(dataManager.poll.register).toHaveBeenCalledWith(
+        'INSTANCE',
+        expect.any(Function)
+      );
       expect(dataManager.update).toHaveBeenCalled();
     });
 
@@ -438,7 +441,7 @@ describe('Instance', () => {
       node.update();
 
       //then
-      expect(dataManager.poll.start).not.toHaveBeenCalled();
+      expect(dataManager.poll.register).not.toHaveBeenCalled();
       expect(dataManager.update).not.toHaveBeenCalled();
     });
 
@@ -469,7 +472,7 @@ describe('Instance', () => {
       });
       node.update();
 
-      expect(dataManager.poll.start).not.toHaveBeenCalled();
+      expect(dataManager.poll.register).not.toHaveBeenCalled();
       expect(dataManager.update).not.toHaveBeenCalled();
     });
 
@@ -500,7 +503,7 @@ describe('Instance', () => {
       });
       node.update();
 
-      expect(dataManager.poll.start).toHaveBeenCalled();
+      expect(dataManager.poll.register).toHaveBeenCalled();
       expect(dataManager.update).toHaveBeenCalled();
 
       dataManager.publish({
@@ -512,10 +515,10 @@ describe('Instance', () => {
       expect(node.instance().state.isPollActive).toBe(true);
       // second time a subscription comes in, there is no new timer started
       // while waiting for the response data which will be more fresh.
-      expect(dataManager.poll.start).toHaveBeenCalledTimes(1);
+      expect(dataManager.poll.register).toHaveBeenCalledTimes(1);
     });
 
-    it('should stop any timer when component unmounts', () => {
+    it('should unregister when component unmounts', () => {
       //given
       const {dataManager} = node.instance().props;
 
@@ -523,7 +526,7 @@ describe('Instance', () => {
       node.unmount();
 
       //then
-      expect(dataManager.poll.clear).toHaveBeenCalled();
+      expect(dataManager.poll.unregister).toHaveBeenCalled();
     });
   });
 
