@@ -4,11 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useState, useContext} from 'react';
-import {DataContext} from 'modules/DataManager';
+import {useState} from 'react';
+import useDataManager from 'modules/hooks/useDataManager';
 
-export default function useDataManager() {
-  const {dataManager} = useContext(DataContext);
+export default function useSubscription() {
+  const dataManager = useDataManager();
   const [subscriptions, setSubscription] = useState({});
 
   function sanitizeStates(statehooks) {

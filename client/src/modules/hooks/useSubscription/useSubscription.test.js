@@ -6,21 +6,19 @@
 
 import {renderHook, act} from '@testing-library/react-hooks';
 
-import {DataManagerProvider} from 'modules/DataManager';
-import useDataManager from './';
+import useSubscription from './';
 
-import {DataManager} from 'modules/DataManager/core';
-jest.mock('modules/DataManager/core');
-jest.mock('modules/utils/bpmn');
+import useDataManager from 'modules/hooks/useDataManager';
+jest.mock('modules/hooks/useDataManager');
 
 const mockFunctions = {
   subscribe: jest.fn(),
   unsubscribe: jest.fn()
 };
 
-describe('useDataManager', () => {
+describe('useSubscription', () => {
   beforeEach(() => {
-    DataManager.mockImplementation(() => mockFunctions);
+    useDataManager.mockImplementation(() => mockFunctions);
   });
 
   it('should sanatize incoming statehooks', () => {
@@ -30,9 +28,7 @@ describe('useDataManager', () => {
       //some logic
     };
 
-    const {result} = renderHook(() => useDataManager(), {
-      wrapper: DataManagerProvider
-    });
+    const {result} = renderHook(() => useSubscription(), {});
 
     act(() => {
       result.current.subscribe(topic, singleStateHook, callback);
@@ -48,9 +44,7 @@ describe('useDataManager', () => {
       //some logic
     };
 
-    const {result} = renderHook(() => useDataManager(), {
-      wrapper: DataManagerProvider
-    });
+    const {result} = renderHook(() => useSubscription(), {});
 
     act(() => {
       result.current.subscribe(topic, multipleStateHooks, callback);
