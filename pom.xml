@@ -49,7 +49,7 @@
     <junit.platform.version>1.6.0</junit.platform.version>
     <quartz.version>2.3.2</quartz.version>
 
-    <lombok.version>1.18.10</lombok.version>
+    <lombok.version>1.18.12</lombok.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.30</slf4j.version>
 
