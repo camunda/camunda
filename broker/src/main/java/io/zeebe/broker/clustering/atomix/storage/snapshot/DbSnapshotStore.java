@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
-import org.slf4j.helpers.NOPLogger;
 
 public final class DbSnapshotStore implements SnapshotStore {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStore.class);
@@ -55,7 +54,7 @@ public final class DbSnapshotStore implements SnapshotStore {
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
 
-    this.positionSupplier = new StatePositionSupplier(-1, NOPLogger.NOP_LOGGER);
+    this.positionSupplier = new StatePositionSupplier(-1, LOGGER);
     this.lowerBoundId = new ReusableSnapshotId(Long.MIN_VALUE);
     this.upperBoundId = new ReusableSnapshotId(Long.MAX_VALUE);
     this.listeners = new CopyOnWriteArraySet<>();
@@ -133,7 +132,14 @@ public final class DbSnapshotStore implements SnapshotStore {
 
     // as a fallback, read the position from the DB; Atomix does not propagate position information
     // when replicating, so this is necessary
-    final var position = positionSupplier.getLowestPosition(directory);
+    final var position = positionSupplier.getLastProcessedPosition(directory);
+    if (position < 0) {
+      LOGGER.warn(
+          "Could not read position from snapshot {}, discarding instead of committing...",
+          directory);
+      return null;
+    }
+
     return put(directory, new DbSnapshotMetadata(index, term, timestamp, position));
   }
 
