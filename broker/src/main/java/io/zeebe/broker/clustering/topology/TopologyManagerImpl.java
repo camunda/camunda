@@ -18,6 +18,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.Actor;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,7 @@ public final class TopologyManagerImpl extends Actor
         .setPartitionsCount(clusterCfg.getPartitionsCount())
         .setReplicationFactor(clusterCfg.getReplicationFactor());
 
-    final String version = getClass().getPackage().getImplementationVersion();
+    final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
       localBroker.setVersion(version);
     }

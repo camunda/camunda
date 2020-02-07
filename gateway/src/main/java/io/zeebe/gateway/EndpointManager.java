@@ -55,6 +55,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
+import io.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -249,7 +250,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
           .setPartitionsCount(topology.getPartitionsCount())
           .setReplicationFactor(topology.getReplicationFactor());
 
-      final String gatewayVersion = getClass().getPackage().getImplementationVersion();
+      final String gatewayVersion = VersionUtil.getVersion();
       if (gatewayVersion != null && !gatewayVersion.isBlank()) {
         topologyResponseBuilder.setGatewayVersion(gatewayVersion);
       }

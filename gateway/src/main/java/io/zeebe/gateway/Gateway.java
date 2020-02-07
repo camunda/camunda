@@ -19,6 +19,7 @@ import io.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.util.DurationUtil;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
@@ -31,15 +32,9 @@ import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
 public final class Gateway {
-  private static final String VERSION;
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
       cfg -> setNetworkConfig(cfg.getNetwork());
-
-  static {
-    final String version = Gateway.class.getPackage().getImplementationVersion();
-    VERSION = version != null ? version : "development";
-  }
 
   private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
   private final Function<GatewayCfg, BrokerClient> brokerClientFactory;
@@ -88,7 +83,7 @@ public final class Gateway {
 
   public void start() throws IOException {
     if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VERSION);
+      LOG.info("Version: {}", VersionUtil.getVersion());
       LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
     }
 
