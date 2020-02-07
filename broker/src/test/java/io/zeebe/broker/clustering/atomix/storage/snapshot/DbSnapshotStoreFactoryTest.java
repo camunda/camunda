@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.protocols.raft.storage.snapshot.Snapshot;
 import io.atomix.utils.time.WallClockTimestamp;
 import java.util.ArrayList;
+import org.agrona.IoUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -55,9 +56,9 @@ public final class DbSnapshotStoreFactoryTest {
     final var directory =
         store
             .getPath()
-            .resolveSibling(DbSnapshotStoreFactory.PENDING_DIRECTORY)
+            .resolveSibling(DbSnapshotStoreFactory.SNAPSHOTS_DIRECTORY)
             .resolve(String.format("%d-1-1-1", index));
-    store.newPendingSnapshot(index, 1, WallClockTimestamp.from(1), directory).commit();
-    return store.getCurrentSnapshot();
+    IoUtil.ensureDirectoryExists(directory.toFile(), "snapshot directory " + index);
+    return store.newSnapshot(index, 1, WallClockTimestamp.from(1), directory);
   }
 }
