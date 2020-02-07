@@ -27,7 +27,7 @@ public class UpgradeExecutionPlanTest {
     final UpgradeExecutionPlan underTest = new UpgradeExecutionPlan();
     final List<IndexMappingCreator> mappings = underTest.getMappings();
 
-    assertThat(mappings.size(), is(26));
+    assertThat(mappings.size(), is(27));
   }
 
   @Test

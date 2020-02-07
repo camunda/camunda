@@ -26,8 +26,8 @@ public class CompletedProcessInstanceElasticsearchImportJob extends Elasticsearc
   }
 
   @Override
-  protected void persistEntities(List<ProcessInstanceDto> newOptimizeEntities) throws Exception {
-    completedProcessInstanceWriter.importProcessInstances(newOptimizeEntities);
-    camundaEventService.importCompletedProcessInstancesToCamundaActivityEvents(newOptimizeEntities);
+  protected void persistEntities(List<ProcessInstanceDto> processInstances) throws Exception {
+    completedProcessInstanceWriter.importProcessInstances(processInstances);
+    camundaEventService.importCompletedProcessInstances(processInstances);
   }
 }

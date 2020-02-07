@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.CamundaActivityEventIndex;
+import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -34,7 +35,54 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.camunda.bpm.engine.ActivityTypes.*;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_CANCEL;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_COMPENSATION;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_CONDITIONAL;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_ERROR;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_ESCALATION;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_MESSAGE;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_SIGNAL;
+import static org.camunda.bpm.engine.ActivityTypes.BOUNDARY_TIMER;
+import static org.camunda.bpm.engine.ActivityTypes.CALL_ACTIVITY;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_CANCEL;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_COMPENSATION;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_ERROR;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_ESCALATION;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_MESSAGE;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_NONE;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_SIGNAL;
+import static org.camunda.bpm.engine.ActivityTypes.END_EVENT_TERMINATE;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_CATCH;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_COMPENSATION_THROW;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_CONDITIONAL;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_ESCALATION_THROW;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_LINK;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_MESSAGE;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_MESSAGE_THROW;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_NONE_THROW;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_SIGNAL;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_SIGNAL_THROW;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_THROW;
+import static org.camunda.bpm.engine.ActivityTypes.INTERMEDIATE_EVENT_TIMER;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_COMPENSATION;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_CONDITIONAL;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_ERROR;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_ESCALATION;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_MESSAGE;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_SIGNAL;
+import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_TIMER;
+import static org.camunda.bpm.engine.ActivityTypes.SUB_PROCESS;
+import static org.camunda.bpm.engine.ActivityTypes.SUB_PROCESS_AD_HOC;
+import static org.camunda.bpm.engine.ActivityTypes.TASK;
+import static org.camunda.bpm.engine.ActivityTypes.TASK_BUSINESS_RULE;
+import static org.camunda.bpm.engine.ActivityTypes.TASK_MANUAL_TASK;
+import static org.camunda.bpm.engine.ActivityTypes.TASK_RECEIVE_TASK;
+import static org.camunda.bpm.engine.ActivityTypes.TASK_SCRIPT;
+import static org.camunda.bpm.engine.ActivityTypes.TASK_SEND_TASK;
+import static org.camunda.bpm.engine.ActivityTypes.TASK_SERVICE;
+import static org.camunda.bpm.engine.ActivityTypes.TASK_USER_TASK;
+import static org.camunda.bpm.engine.ActivityTypes.TRANSACTION;
 
 @AllArgsConstructor
 @Component
@@ -74,29 +122,40 @@ public class CamundaEventService {
 
   private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
   private final CamundaActivityEventWriter camundaActivityEventWriter;
+  private final BusinessKeyWriter businessKeyWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final ConfigurationService configurationService;
 
   public void importRunningActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> runningActivityInstances) {
-    importEngineEntityToCamundaActivityEvents(runningActivityInstances, FlowNodeEventDto::getProcessDefinitionKey,
-                                              this::convertRunningActivityToCamundaActivityEvents);
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      importEngineEntityToCamundaActivityEvents(runningActivityInstances, FlowNodeEventDto::getProcessDefinitionKey,
+                                                this::convertRunningActivityToCamundaActivityEvents);
+    }
   }
 
   public void importCompletedActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> completedActivityInstances) {
-    importEngineEntityToCamundaActivityEvents(completedActivityInstances, FlowNodeEventDto::getProcessDefinitionKey,
-                                              this::convertCompletedActivityToCamundaActivityEvents);
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      importEngineEntityToCamundaActivityEvents(completedActivityInstances, FlowNodeEventDto::getProcessDefinitionKey,
+                                                this::convertCompletedActivityToCamundaActivityEvents);
+    }
   }
 
-  public void importRunningProcessInstancesToCamundaActivityEvents(List<ProcessInstanceDto> runningProcessInstances) {
-    importEngineEntityToCamundaActivityEvents(runningProcessInstances, ProcessInstanceDto::getProcessDefinitionKey,
-                                              this::convertRunningProcessInstanceToCamundaActivityEvents);
+  public void importRunningProcessInstances(List<ProcessInstanceDto> runningProcessInstances) {
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      importEngineEntityToCamundaActivityEvents(runningProcessInstances, ProcessInstanceDto::getProcessDefinitionKey,
+                                                this::convertRunningProcessInstanceToCamundaActivityEvents);
+      businessKeyWriter.importBusinessKeysForProcessInstances(runningProcessInstances);
+    }
   }
 
-  public void importCompletedProcessInstancesToCamundaActivityEvents(List<ProcessInstanceDto> completedProcessInstances) {
-    importEngineEntityToCamundaActivityEvents(completedProcessInstances, ProcessInstanceDto::getProcessDefinitionKey,
-                                              this::convertCompletedProcessInstanceToCamundaActivityEvents);
+  public void importCompletedProcessInstances(List<ProcessInstanceDto> completedProcessInstances) {
+    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+      importEngineEntityToCamundaActivityEvents(completedProcessInstances, ProcessInstanceDto::getProcessDefinitionKey,
+                                                this::convertCompletedProcessInstanceToCamundaActivityEvents);
+      businessKeyWriter.importBusinessKeysForProcessInstances(completedProcessInstances);
+    }
   }
 
   public void importVariableUpdateInstances(final List<ProcessVariableDto> variableUpdates) {
@@ -108,19 +167,17 @@ public class CamundaEventService {
   private <T> void importEngineEntityToCamundaActivityEvents(List<T> activitiesToImport,
                                                              Function<T, String> processDefinitionKeyExtractor,
                                                              Function<T, Stream<CamundaActivityEventDto>> eventExtractor) {
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      List<String> processDefinitionKeysInBatch = activitiesToImport
-        .stream()
-        .map(processDefinitionKeyExtractor)
-        .collect(Collectors.toList());
-      createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
-      final List<CamundaActivityEventDto> camundaActivityEventDtos = activitiesToImport
-        .stream()
-        .flatMap(eventExtractor)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
-      camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
-    }
+    List<String> processDefinitionKeysInBatch = activitiesToImport
+      .stream()
+      .map(processDefinitionKeyExtractor)
+      .collect(Collectors.toList());
+    createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
+    final List<CamundaActivityEventDto> camundaActivityEventDtos = activitiesToImport
+      .stream()
+      .flatMap(eventExtractor)
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
+    camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
   }
 
   private Stream<CamundaActivityEventDto> convertRunningActivityToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {

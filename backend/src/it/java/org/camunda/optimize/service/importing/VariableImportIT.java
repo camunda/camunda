@@ -129,7 +129,6 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(storedVariableUpdateInstances).isEmpty();
   }
 
-
   @Test
   public void variableUpdateImport() throws JsonProcessingException {
     //given
