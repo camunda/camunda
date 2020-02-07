@@ -1,4 +1,0 @@
-label: "JIRA"
-url: "https://app.camunda.com/jira/browse/$issuePrefix"
-message: "$issuePrefix"
-color: "0052CC"
