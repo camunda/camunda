@@ -58,13 +58,11 @@
   },
   "lint-staged": {
     "src/**/*.scss": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ],
     "src/**/*.js": [
       "eslint --fix",
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   },
   "jest-junit": {
