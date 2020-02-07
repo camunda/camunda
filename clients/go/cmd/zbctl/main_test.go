@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -168,20 +167,7 @@ func buildZbctl() ([]byte, error) {
 		return nil, fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
 
-	files, err := ioutil.ReadDir("dist")
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return err
-	}
-
-	var alreadyBuilt bool
-	for _, file := range files {
-		alreadyBuilt = file.Name() == zbctl
-		if alreadyBuilt {
-			break
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
