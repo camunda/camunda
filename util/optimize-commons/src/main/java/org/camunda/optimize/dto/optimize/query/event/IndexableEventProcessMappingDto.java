@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
@@ -33,6 +34,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
   private String lastModifier;
   private List<IndexableEventMappingDto> mappings;
   private List<EventSourceEntryDto> eventSources;
+  private List<EventProcessRoleDto<IdentityDto>> roles;
 
   public static IndexableEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
     return IndexableEventProcessMappingDto.builder()
@@ -53,6 +55,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
           .orElse(null)
       )
       .eventSources(eventMappingDto.getEventSources())
+      .roles(eventMappingDto.getRoles())
       .build();
 
   }
@@ -75,8 +78,8 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
             ))).orElse(null)
       )
       .eventSources(this.eventSources)
+      .roles(this.roles)
       .build();
   }
-
 
 }

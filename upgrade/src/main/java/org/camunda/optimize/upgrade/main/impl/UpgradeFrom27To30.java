@@ -34,12 +34,25 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .toVersion(TO_VERSION)
       .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
       .addUpgradeStep(new UpdateIndexStep(new EventSequenceCountIndex(), null))
-      .addUpgradeStep(addEventSourcesField())
+      .addUpgradeStep(addEventSourcesAndRolesField())
       .build();
   }
 
-  private UpdateIndexStep addEventSourcesField() {
-    final String script = "ctx._source.eventSources = new ArrayList();";
+  private UpdateIndexStep addEventSourcesAndRolesField() {
+    //@formatter:off
+    final String script =
+      "ctx._source.eventSources = new ArrayList();\n" +
+       // initialize last role based on last modifier
+      "Map identity = new HashMap();\n " +
+      "String lastModifier = ctx._source.lastModifier;\n " +
+      "identity.put(\"id\", lastModifier);\n " +
+      "identity.put(\"type\", \"user\");\n " +
+      "Map roleEntry = new HashMap();\n " +
+      "roleEntry.put(\"id\", \"USER:\" + lastModifier);\n " +
+      "roleEntry.put(\"identity\", identity);\n " +
+      "ctx._source.roles = new ArrayList();\n " +
+      "ctx._source.roles.add(roleEntry);\n";
+    //@formatter:on
 
     return new UpdateIndexStep(
       new EventProcessMappingIndex(),

@@ -22,12 +22,11 @@ import static java.util.stream.Collectors.collectingAndThen;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
-public class UserDto extends IdentityRestDto {
+public class UserDto extends IdentityWithMetadataDto {
   private String firstName;
   private String lastName;
-  private String name;
   private String email;
 
   public UserDto(final String id) {
@@ -43,11 +42,15 @@ public class UserDto extends IdentityRestDto {
                  @JsonProperty(required = false, value = "firstName") final String firstName,
                  @JsonProperty(required = false, value = "lastName") final String lastName,
                  @JsonProperty(required = false, value = "email") final String email) {
-    super(id, IdentityType.USER);
+    super(id, IdentityType.USER, mergeToFullName(firstName, lastName));
     this.firstName = firstName;
     this.lastName = lastName;
-    this.name = Stream.of(firstName, lastName).filter(Objects::nonNull)
-      .collect(collectingAndThen(Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : null));
     this.email = email;
+  }
+
+  private static String mergeToFullName(final String firstName, final String lastName) {
+    return Stream.of(firstName, lastName)
+      .filter(Objects::nonNull)
+      .collect(collectingAndThen(Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : null));
   }
 }

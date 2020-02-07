@@ -8,12 +8,13 @@ package org.camunda.optimize.service;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityRestDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.SessionListener;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -51,7 +52,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     initUserGroupCache();
   }
 
-  public void addIdentity(final IdentityRestDto identity) {
+  public void addIdentity(final IdentityWithMetadataDto identity) {
 
     syncedIdentityCache.addIdentity(identity);
   }
@@ -64,13 +65,13 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     return userGroupsCache.get(userId);
   }
 
-  public Optional<IdentityType> getTypeForId(final String userOrGroupId) {
-    if (getUserById(userOrGroupId).isPresent()) {
-      return Optional.of(IdentityType.USER);
-    } else if (getGroupById(userOrGroupId).isPresent()) {
-      return Optional.of(IdentityType.GROUP);
+  public Optional<? extends IdentityWithMetadataDto> getIdentityWithMetadataForId(final String userOrGroupId) {
+    final Optional<UserDto> userById = getUserById(userOrGroupId);
+    if (userById.isPresent()) {
+      return userById;
+    } else {
+      return getGroupById(userOrGroupId);
     }
-    return Optional.empty();
   }
 
   public Optional<UserDto> getUserById(final String userId) {
@@ -99,6 +100,25 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   public IdentitySearchResultDto searchForIdentities(final String searchString, final int maxResults) {
     return syncedIdentityCache.searchIdentities(searchString, maxResults);
+  }
+
+  public boolean doesIdentityExists(final IdentityDto identity) {
+    return resolveToIdentityWithMetadata(identity).isPresent();
+  }
+
+  public Optional<? extends IdentityWithMetadataDto> resolveToIdentityWithMetadata(final IdentityDto identity) {
+    Optional<? extends IdentityWithMetadataDto> identityRestDtoOpt;
+    switch (identity.getType()) {
+      case GROUP:
+        identityRestDtoOpt = getGroupById(identity.getId());
+        break;
+      case USER:
+        identityRestDtoOpt = getUserById(identity.getId());
+        break;
+      default:
+        throw new OptimizeRuntimeException("Unsupported identity type " + identity.getType());
+    }
+    return identityRestDtoOpt;
   }
 
   @Override

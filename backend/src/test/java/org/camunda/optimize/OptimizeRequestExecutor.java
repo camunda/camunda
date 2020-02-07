@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -22,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountSuggestionsRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -986,6 +988,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildUpdateEventProcessRolesRequest(String eventProcessId,
+                                                                     List<EventProcessRoleDto<IdentityDto>> roleRestDtos) {
+    this.path = "eventBasedProcess/" + eventProcessId + "/role";
+    this.method = PUT;
+    this.body = getBody(roleRestDtos);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildPublishEventProcessMappingRequest(String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId + "/_publish";
     this.method = POST;
@@ -1007,6 +1017,12 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildDeleteEventProcessMappingRequest(String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId;
     this.method = DELETE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetEventProcessMappingRolesRequest(String eventProcessId) {
+    this.path = "eventBasedProcess/" + eventProcessId + "/role";
+    this.method = GET;
     return this;
   }
 

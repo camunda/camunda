@@ -14,9 +14,12 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,4 +38,7 @@ public class EventProcessMappingRequestDto {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @Valid
   private Map<String, EventMappingDto> mappings;
+
+  @Builder.Default
+  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
 }

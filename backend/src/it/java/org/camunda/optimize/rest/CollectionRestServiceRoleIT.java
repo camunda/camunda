@@ -9,8 +9,8 @@ import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityRestDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -99,7 +99,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     UserDto missPiggyUserDto = new UserDto(USER_MISS_PIGGY, USER_MISS_PIGGY);
     UserDto demoUserDto = new UserDto(DEFAULT_USERNAME, DEFAULT_USERNAME);
 
-    List<IdentityRestDto> identities = new ArrayList<>();
+    List<IdentityWithMetadataDto> identities = new ArrayList<>();
     identities.add(testGroupDto);
     identities.add(anotherTestGroupDto);
     identities.add(kermitUserDto);
@@ -131,11 +131,11 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // expected order(groups first, user second, then by name ascending):
     // anotherTestGroupRole, testGroupRole, demoManagerRole, kermitRole, missPiggyRole
     assertThat(roles.size(), is(identities.size() + 1)); // +1 for demo manager role
-    assertThat(roles.get(0).getIdentity(), is(anotherTestGroupDto));
-    assertThat(roles.get(1).getIdentity(), is(testGroupDto));
-    assertThat(roles.get(2).getIdentity(), is(demoUserDto));
-    assertThat(roles.get(3).getIdentity(), is(kermitUserDto));
-    assertThat(roles.get(4).getIdentity(), is(missPiggyUserDto));
+    assertThat(roles.get(0).getIdentity().getId(), is(anotherTestGroupDto.getId()));
+    assertThat(roles.get(1).getIdentity().getId(), is(testGroupDto.getId()));
+    assertThat(roles.get(2).getIdentity().getId(), is(demoUserDto.getId()));
+    assertThat(roles.get(3).getIdentity().getId(), is(kermitUserDto.getId()));
+    assertThat(roles.get(4).getIdentity().getId(), is(missPiggyUserDto.getId()));
   }
 
   @Test
@@ -153,7 +153,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     // then
     assertThat(roles.size(), is(1));
-    final IdentityRestDto identityRestDto = roles.get(0).getIdentity();
+    final IdentityWithMetadataDto identityRestDto = roles.get(0).getIdentity();
     assertThat(identityRestDto, is(instanceOf(UserDto.class)));
     final UserDto userDto = (UserDto) identityRestDto;
     assertThat(userDto.getFirstName(), is(expectedUserDtoWithData.getFirstName()));
@@ -175,7 +175,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     // then
     assertThat(roles.size(), is(1));
-    final IdentityRestDto identityRestDto = roles.get(0).getIdentity();
+    final IdentityWithMetadataDto identityRestDto = roles.get(0).getIdentity();
     assertThat(identityRestDto, is(instanceOf(UserDto.class)));
     final UserDto userDto = (UserDto) identityRestDto;
     assertThat(userDto.getId(), is(DEFAULT_USERNAME));
@@ -208,7 +208,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     List<CollectionRoleRestDto> roles = getRoles(collectionId);
 
     // then
-    final List<IdentityRestDto> groupIdentities = roles.stream()
+    final List<IdentityWithMetadataDto> groupIdentities = roles.stream()
       .map(CollectionRoleRestDto::getIdentity)
       .filter(identityDto -> identityDto instanceof GroupDto)
       .collect(Collectors.toList());
@@ -235,7 +235,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     List<CollectionRoleRestDto> roles = getRoles(collectionId);
 
     // then
-    final List<IdentityRestDto> groupIdentities = roles.stream()
+    final List<IdentityWithMetadataDto> groupIdentities = roles.stream()
       .map(CollectionRoleRestDto::getIdentity)
       .filter(identityDto -> identityDto instanceof GroupDto)
       .collect(Collectors.toList());

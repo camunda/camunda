@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.IdentityRestDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,5 +14,5 @@ import java.util.List;
 @Data
 public class IdentitySearchResultDto {
   private long total;
-  private List<IdentityRestDto> result = new ArrayList<>();
+  private List<IdentityWithMetadataDto> result = new ArrayList<>();
 }

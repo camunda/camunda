@@ -10,18 +10,21 @@ import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.service.engine.importing.BpmnModelUtility;
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
@@ -87,13 +90,32 @@ public class EventProcessService {
     return configurationService.getEventBasedProcessConfiguration().isEnabled();
   }
 
-  public IdDto createEventProcessMapping(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
+  public IdDto createEventProcessMapping(final String userId, final EventProcessMappingRequestDto createRequestDto) {
+    final EventProcessRoleDto defaultRoleEntry = new EventProcessRoleDto(new IdentityDto(userId, IdentityType.USER));
+    final EventProcessMappingDto eventProcessMappingDto = EventProcessMappingDto.builder()
+      .name(createRequestDto.getName())
+      .xml(createRequestDto.getXml())
+      .mappings(createRequestDto.getMappings())
+      .lastModifier(userId)
+      .eventSources(createRequestDto.getEventSources())
+      .roles(Collections.singletonList(defaultRoleEntry))
+      .build();
     validateMappingsForProvidedXml(eventProcessMappingDto);
     validateEventSources(userId, eventProcessMappingDto);
     return eventProcessMappingWriter.createEventProcessMapping(eventProcessMappingDto);
   }
 
-  public void updateEventProcessMapping(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
+  public void updateEventProcessMapping(final String userId,
+                                        final String eventProcessId,
+                                        final EventProcessMappingRequestDto updateRequest) {
+    final EventProcessMappingDto eventProcessMappingDto = EventProcessMappingDto.builder()
+      .id(eventProcessId)
+      .name(updateRequest.getName())
+      .xml(updateRequest.getXml())
+      .mappings(updateRequest.getMappings())
+      .lastModifier(userId)
+      .eventSources(updateRequest.getEventSources())
+      .build();
     validateMappingsForProvidedXml(eventProcessMappingDto);
     validateEventSources(userId, eventProcessMappingDto);
     eventProcessMappingWriter.updateEventProcessMapping(eventProcessMappingDto);

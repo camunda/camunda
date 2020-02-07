@@ -12,8 +12,8 @@ import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityRestDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 
@@ -25,7 +25,7 @@ public class CollectionRoleRestDto implements Comparable<CollectionRoleRestDto> 
 
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
-  private IdentityRestDto identity;
+  private IdentityWithMetadataDto identity;
   private RoleType role;
   private Boolean hasFullScopeAuthorizations;
 
@@ -47,7 +47,7 @@ public class CollectionRoleRestDto implements Comparable<CollectionRoleRestDto> 
     this.id = convertIdentityToRoleId(this.identity);
   }
 
-  public CollectionRoleRestDto(IdentityRestDto identity, RoleType role) {
+  public CollectionRoleRestDto(IdentityWithMetadataDto identity, RoleType role) {
     this.identity = identity;
     this.id = convertIdentityToRoleId(this.identity);
     this.role = role;
@@ -64,7 +64,7 @@ public class CollectionRoleRestDto implements Comparable<CollectionRoleRestDto> 
     }
   }
 
-  private String convertIdentityToRoleId(final IdentityRestDto identity) {
+  private String convertIdentityToRoleId(final IdentityWithMetadataDto identity) {
     return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
   }
 }

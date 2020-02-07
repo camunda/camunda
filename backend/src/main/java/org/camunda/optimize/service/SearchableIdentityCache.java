@@ -40,8 +40,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityRestDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -87,7 +88,7 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
-  public void addIdentity(@NonNull final IdentityRestDto identity) throws MaxEntryLimitHitException {
+  public void addIdentity(@NonNull final IdentityWithMetadataDto identity) throws MaxEntryLimitHitException {
     doWithWriteLock(() -> {
       enforceMaxEntryLimit(1);
       try (final IndexWriter indexWriter =
@@ -100,7 +101,7 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
-  public void addIdentities(@NonNull final List<? extends IdentityRestDto> identities) throws MaxEntryLimitHitException {
+  public void addIdentities(@NonNull final List<? extends IdentityWithMetadataDto> identities) throws MaxEntryLimitHitException {
     if (identities.isEmpty()) {
       return;
     }
@@ -137,7 +138,7 @@ public class SearchableIdentityCache implements AutoCloseable {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
         final IndexSearcher searcher = new IndexSearcher(indexReader);
 
-        final SortField nameSort = new SortField(IdentityRestDto.Fields.name.name(), SortField.Type.STRING, false);
+        final SortField nameSort = new SortField(IdentityWithMetadataDto.Fields.name, SortField.Type.STRING, false);
         nameSort.setMissingValue(STRING_LAST);
         final Sort scoreThanNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
         final TopDocs topDocs = searcher.search(
@@ -147,7 +148,7 @@ public class SearchableIdentityCache implements AutoCloseable {
         result.setTotal(topDocs.totalHits.value);
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
           final Document document = searcher.doc(scoreDoc.doc);
-          final IdentityRestDto identityRestDto = mapDocumentToIdentityDto(document);
+          final IdentityWithMetadataDto identityRestDto = mapDocumentToIdentityDto(document);
           result.getResult().add(identityRestDto);
         }
       } catch (IOException e) {
@@ -206,20 +207,20 @@ public class SearchableIdentityCache implements AutoCloseable {
     }
   }
 
-  private <T extends IdentityRestDto> Optional<T> getTypedIdentityDtoById(final String id,
-                                                                          final IdentityType identityType,
-                                                                          final Function<Document, T> mapperFunction) {
+  private <T extends IdentityWithMetadataDto> Optional<T> getTypedIdentityDtoById(final String id,
+                                                                                  final IdentityType identityType,
+                                                                                  final Function<Document, T> mapperFunction) {
     AtomicReference<T> result = new AtomicReference<>();
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
         final IndexSearcher searcher = new IndexSearcher(indexReader);
         final BooleanQuery.Builder searchBuilder = new BooleanQuery.Builder();
         searchBuilder.add(
-          new TermQuery(new Term(IdentityRestDto.Fields.id.name(), id)),
+          new TermQuery(new Term(IdentityDto.Fields.id, id)),
           BooleanClause.Occur.MUST
         );
         searchBuilder.add(
-          new TermQuery(new Term(IdentityRestDto.Fields.type.name(), identityType.name())), BooleanClause.Occur.MUST
+          new TermQuery(new Term(IdentityDto.Fields.type, identityType.name())), BooleanClause.Occur.MUST
         );
         final TopDocs topDocs = searcher.search(searchBuilder.build(), 1);
         if (topDocs.totalHits.value > 0) {
@@ -233,9 +234,9 @@ public class SearchableIdentityCache implements AutoCloseable {
   }
 
   @SneakyThrows
-  private long writeIdentityDto(final IndexWriter indexWriter, final IdentityRestDto identity) {
+  private long writeIdentityDto(final IndexWriter indexWriter, final IdentityWithMetadataDto identity) {
     return indexWriter.updateDocument(
-      new Term(IdentityRestDto.Fields.id.name(), identity.getId()), mapIdentityDtoToDocument(identity)
+      new Term(IdentityDto.Fields.id, identity.getId()), mapIdentityDtoToDocument(identity)
     );
   }
 
@@ -249,7 +250,7 @@ public class SearchableIdentityCache implements AutoCloseable {
       searchBuilder.setMinimumNumberShouldMatch(1);
 
       // explicit to lowercase field ofr id for exact match ignoring case
-      final String allLowerCaseIdField = getAllLowerCaseFieldForDtoField(IdentityRestDto.Fields.id.name());
+      final String allLowerCaseIdField = getAllLowerCaseFieldForDtoField(IdentityDto.Fields.id);
       searchBuilder.add(
         new PrefixQuery(new Term(allLowerCaseIdField, searchQuery.toLowerCase())),
         BooleanClause.Occur.SHOULD
@@ -266,14 +267,14 @@ public class SearchableIdentityCache implements AutoCloseable {
       // do phrase query on name as it may consist of multiple terms and phrase matches are to be preferred
       // boost it by 3 as it is more important than a prefix email and prefix id match
       searchBuilder.add(
-        new BoostQuery(new PhraseQuery(getNgramFieldForDtoField(IdentityRestDto.Fields.name.name()), termsArray), 3),
+        new BoostQuery(new PhraseQuery(getNgramFieldForDtoField(IdentityWithMetadataDto.Fields.name), termsArray), 3),
         BooleanClause.Occur.SHOULD
       );
 
       searchBuilder.add(
         // explicit to lowercase as we also do to lowercase on insert, for cheap case insensitivity
         new PrefixQuery(
-          new Term(getAllLowerCaseFieldForDtoField(UserDto.Fields.email.name()), searchQuery.toLowerCase())
+          new Term(getAllLowerCaseFieldForDtoField(UserDto.Fields.email), searchQuery.toLowerCase())
         ),
         BooleanClause.Occur.SHOULD
       );
@@ -312,43 +313,43 @@ public class SearchableIdentityCache implements AutoCloseable {
       .build();
   }
 
-  private static Document mapIdentityDtoToDocument(final IdentityRestDto identity) {
+  private static Document mapIdentityDtoToDocument(final IdentityWithMetadataDto identity) {
     final Document document = new Document();
 
-    document.add(new StringField(IdentityRestDto.Fields.id.name(), identity.getId(), Field.Store.YES));
+    document.add(new StringField(IdentityDto.Fields.id, identity.getId(), Field.Store.YES));
     // this all lowercase id field is used for cheap case insensitive full term/prefix search
     document.add(new StringField(
-      getAllLowerCaseFieldForDtoField(IdentityRestDto.Fields.id.name()), identity.getId().toLowerCase(), Field.Store.NO)
+      getAllLowerCaseFieldForDtoField(IdentityDto.Fields.id), identity.getId().toLowerCase(), Field.Store.NO)
     );
-    document.add(new StringField(IdentityRestDto.Fields.type.name(), identity.getType().name(), Field.Store.YES));
+    document.add(new StringField(IdentityDto.Fields.type, identity.getType().name(), Field.Store.YES));
     Optional.ofNullable(identity.getName()).ifPresent(name -> {
       // as we want to use custom sorting based on name we need to store the name value as sorted doc field
-      document.add(new SortedDocValuesField(IdentityRestDto.Fields.name.name(), new BytesRef(name.toLowerCase())));
-      document.add(new StringField(IdentityRestDto.Fields.name.name(), name, Field.Store.YES));
+      document.add(new SortedDocValuesField(IdentityWithMetadataDto.Fields.name, new BytesRef(name.toLowerCase())));
+      document.add(new StringField(IdentityWithMetadataDto.Fields.name, name, Field.Store.YES));
       document.add(
-        new TextField(getNgramFieldForDtoField(IdentityRestDto.Fields.name.name()), name.toLowerCase(), Field.Store.YES)
+        new TextField(getNgramFieldForDtoField(IdentityWithMetadataDto.Fields.name), name.toLowerCase(), Field.Store.YES)
       );
     });
 
     if (identity instanceof UserDto) {
       final UserDto userDto = (UserDto) identity;
       Optional.ofNullable(userDto.getFirstName()).ifPresent(
-        firstName -> document.add(new StringField(UserDto.Fields.firstName.name(), firstName, Field.Store.YES))
+        firstName -> document.add(new StringField(UserDto.Fields.firstName, firstName, Field.Store.YES))
       );
       Optional.ofNullable(userDto.getLastName()).ifPresent(
-        lastName -> document.add(new StringField(UserDto.Fields.lastName.name(), lastName, Field.Store.YES))
+        lastName -> document.add(new StringField(UserDto.Fields.lastName, lastName, Field.Store.YES))
       );
       Optional.ofNullable(userDto.getEmail()).ifPresent(email -> {
-        document.add(new StringField(UserDto.Fields.email.name(), email, Field.Store.YES));
+        document.add(new StringField(UserDto.Fields.email, email, Field.Store.YES));
         // this all lowercase id field is used for cheap case insensitive full term/prefix search
         document.add(new StringField(
-          getAllLowerCaseFieldForDtoField(UserDto.Fields.email.name()), email.toLowerCase(), Field.Store.NO)
+          getAllLowerCaseFieldForDtoField(UserDto.Fields.email), email.toLowerCase(), Field.Store.NO)
         );
       });
     } else if (identity instanceof GroupDto) {
       final GroupDto groupDto = (GroupDto) identity;
       Optional.ofNullable(groupDto.getMemberCount()).ifPresent(
-        memberCount -> document.add(new StoredField(GroupDto.Fields.memberCount.name(), memberCount))
+        memberCount -> document.add(new StoredField(GroupDto.Fields.memberCount, memberCount))
       );
     }
     return document;
@@ -362,8 +363,8 @@ public class SearchableIdentityCache implements AutoCloseable {
     return fieldName + ".ngram";
   }
 
-  private static IdentityRestDto mapDocumentToIdentityDto(final Document document) {
-    final IdentityType identityType = IdentityType.valueOf(document.get(IdentityRestDto.Fields.type.name()));
+  private static IdentityWithMetadataDto mapDocumentToIdentityDto(final Document document) {
+    final IdentityType identityType = IdentityType.valueOf(document.get(IdentityDto.Fields.type));
     switch (identityType) {
       case USER:
         return mapDocumentToUserDto(document);
@@ -376,18 +377,18 @@ public class SearchableIdentityCache implements AutoCloseable {
 
   private static GroupDto mapDocumentToGroupDto(final Document document) {
     return new GroupDto(
-      document.get(IdentityRestDto.Fields.id.name()),
-      document.get(IdentityRestDto.Fields.name.name()),
-      Optional.ofNullable(document.get(GroupDto.Fields.memberCount.name())).map(Long::valueOf).orElse(null)
+      document.get(IdentityDto.Fields.id),
+      document.get(IdentityWithMetadataDto.Fields.name),
+      Optional.ofNullable(document.get(GroupDto.Fields.memberCount)).map(Long::valueOf).orElse(null)
     );
   }
 
   private static UserDto mapDocumentToUserDto(final Document document) {
     return new UserDto(
-      document.get(IdentityRestDto.Fields.id.name()),
-      document.get(UserDto.Fields.firstName.name()),
-      document.get(UserDto.Fields.lastName.name()),
-      document.get(UserDto.Fields.email.name())
+      document.get(IdentityDto.Fields.id),
+      document.get(UserDto.Fields.firstName),
+      document.get(UserDto.Fields.lastName),
+      document.get(UserDto.Fields.email)
     );
   }
 

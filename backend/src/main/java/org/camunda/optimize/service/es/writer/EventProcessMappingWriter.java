@@ -31,6 +31,8 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -43,6 +45,7 @@ public class EventProcessMappingWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final DateTimeFormatter formatter;
 
   public IdDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     String id = IdGenerator.getNextId();
@@ -54,8 +57,9 @@ public class EventProcessMappingWriter {
       final IndexRequest request = new IndexRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
         .id(id)
         .source(
-          objectMapper.writeValueAsString(IndexableEventProcessMappingDto.fromEventProcessMappingDto(
-            eventProcessMappingDto)),
+          objectMapper.writeValueAsString(
+            IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto)
+          ),
           XContentType.JSON
         )
         .setRefreshPolicy(IMMEDIATE);
@@ -74,42 +78,17 @@ public class EventProcessMappingWriter {
   }
 
   public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
-    String id = eventProcessMappingDto.getId();
-    log.debug("Updating event based process [{}] in elasticsearch.", id);
-    eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    UpdateResponse updateResponse;
-    try {
-      Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-        Sets.newHashSet(
-          EventProcessMappingIndex.NAME, EventProcessMappingIndex.XML, EventProcessMappingIndex.LAST_MODIFIED,
-          EventProcessMappingIndex.LAST_MODIFIER, EventProcessMappingIndex.MAPPINGS, EventProcessMappingIndex.EVENT_SOURCES
-        ),
-        IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
-        objectMapper
-      );
-      final UpdateRequest request = new UpdateRequest()
-        .index(EVENT_PROCESS_MAPPING_INDEX_NAME)
-        .id(id)
-        .script(updateScript)
-        .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-      updateResponse = esClient.update(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String errorMessage = String.format("There was a problem updating the event based process [%s].", id);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (ElasticsearchStatusException e) {
-      String errorMessage = String.format(
-        "Was not able to update event based process with id [%s]. Event based process does not exist!", id);
-      log.error(errorMessage, e);
-      throw new NotFoundException(errorMessage, e);
-    }
+    updateOfEventProcessMappingWithScript(eventProcessMappingDto, Sets.newHashSet(
+      EventProcessMappingIndex.NAME, EventProcessMappingIndex.XML, EventProcessMappingIndex.MAPPINGS,
+      EventProcessMappingIndex.LAST_MODIFIED, EventProcessMappingIndex.LAST_MODIFIER,
+      EventProcessMappingIndex.EVENT_SOURCES
+    ));
+  }
 
-    if (!updateResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
-      String errorMessage = String.format("Could not update event based process [%s] to Elasticsearch.", id);
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
+  public void updateRoles(final EventProcessMappingDto eventProcessMappingDto) {
+    updateOfEventProcessMappingWithScript(eventProcessMappingDto, Sets.newHashSet(
+      EventProcessMappingIndex.ROLES, EventProcessMappingIndex.LAST_MODIFIED, EventProcessMappingIndex.LAST_MODIFIER
+    ));
   }
 
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
@@ -128,5 +107,41 @@ public class EventProcessMappingWriter {
     }
 
     return deleteResponse.getResult().equals(DeleteResponse.Result.DELETED);
+  }
+
+  private void updateOfEventProcessMappingWithScript(final EventProcessMappingDto eventProcessMappingDto,
+                                                     final HashSet<String> fieldsToUpdate) {
+    final String id = eventProcessMappingDto.getId();
+    log.debug("Updating event based process [{}] in elasticsearch.", id);
+    eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    try {
+      final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+        fieldsToUpdate,
+        IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
+        objectMapper
+      );
+
+      final UpdateRequest request = new UpdateRequest()
+        .index(EVENT_PROCESS_MAPPING_INDEX_NAME)
+        .id(id)
+        .script(updateScript)
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+      if (!updateResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
+        String errorMessage = String.format("Could not update event based process [%s] to Elasticsearch.", id);
+        log.error(errorMessage);
+        throw new OptimizeRuntimeException(errorMessage);
+      }
+    } catch (IOException e) {
+      final String errorMessage = String.format("There was a problem updating the event based process [%s].", id);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    } catch (ElasticsearchStatusException e) {
+      String errorMessage = String.format(
+        "Was not able to update event based process with id [%s]. Event based process does not exist!", id);
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
+    }
   }
 }

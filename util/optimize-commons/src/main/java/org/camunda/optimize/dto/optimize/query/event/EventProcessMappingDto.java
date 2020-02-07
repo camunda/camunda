@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import javax.validation.Valid;
@@ -43,6 +44,8 @@ public class EventProcessMappingDto implements OptimizeDto {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @Valid
   private Map<String, EventMappingDto> mappings;
+
+  private List<EventProcessRoleDto<IdentityDto>> roles;
 
   private EventProcessState state;
 

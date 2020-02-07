@@ -9,14 +9,15 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
+@ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
-public class GroupDto extends IdentityRestDto {
-  private String name;
+public class GroupDto extends IdentityWithMetadataDto {
   private Long memberCount;
 
   public GroupDto(final String id) {
@@ -28,8 +29,7 @@ public class GroupDto extends IdentityRestDto {
   }
 
   public GroupDto(final String id, final String name, final Long memberCount) {
-    super(id, IdentityType.GROUP);
-    this.name = name;
+    super(id, IdentityType.GROUP, name);
     this.memberCount = memberCount;
   }
 }

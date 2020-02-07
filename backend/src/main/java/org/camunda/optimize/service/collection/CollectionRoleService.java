@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityRestDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
@@ -17,17 +15,16 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -42,7 +39,15 @@ public class CollectionRoleService {
                                                final CollectionRoleDto roleDto) throws
                                                                                 OptimizeCollectionConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    verifyIdentityExists(roleDto.getIdentity());
+    if (!identityService.doesIdentityExists(roleDto.getIdentity())) {
+      throw new OptimizeValidationException(
+        String.format(
+          "%s with id %s does not exist in Optimize",
+          roleDto.getIdentity().getType(),
+          roleDto.getIdentity().getId()
+        )
+      );
+    }
     return collectionWriter.addRoleToCollection(collectionId, roleDto, userId);
   }
 
@@ -89,49 +94,13 @@ public class CollectionRoleService {
     return roles;
   }
 
-  private void verifyIdentityExists(final IdentityDto identity) {
-    final boolean identityFound;
-    switch (identity.getType()) {
-      case USER:
-        identityFound = identityService.getUserById(identity.getId()).isPresent();
-        break;
-      case GROUP:
-        identityFound = identityService.getGroupById(identity.getId()).isPresent();
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unsupported identity type: " + identity.getType());
-    }
-    if (!identityFound) {
-      throw new BadRequestException(
-        String.format("%s with id %s does not exist in Optimize", identity.getType(), identity.getId())
-      );
-    }
+  private CollectionRoleRestDto mapRoleDtoToRoleRestDto(final CollectionRoleDto roleDto) {
+    return identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
+      .map(identityDto -> new CollectionRoleRestDto(identityDto, roleDto.getRole()))
+      .orElseThrow(() -> new OptimizeRuntimeException(
+        "Could not map CollectionRoleDto to CollectionRoleRestDto, identity ["
+          + roleDto.getIdentity().toString() + "] could not be found."
+      ));
   }
 
-  private CollectionRoleRestDto mapRoleDtoToRoleRestDto(final CollectionRoleDto roleDto) {
-    Optional<? extends IdentityRestDto> identityRestDtoOpt = Optional.empty();
-    final IdentityDto roleIdentity = roleDto.getIdentity();
-    switch (roleIdentity.getType()) {
-      case GROUP:
-        // Note: Method reference cannot be used here as it might trigger
-        // a compilation AssertionError on newer JDK's.
-        // See https://bugs.openjdk.java.net/browse/JDK-8210734
-        identityRestDtoOpt = identityService.getGroupById(roleIdentity.getId());
-        break;
-      case USER:
-        // Note: Method reference cannot be used here as it might trigger
-        // a compilation AssertionError on newer JDK's.
-        // See https://bugs.openjdk.java.net/browse/JDK-8210734
-        identityRestDtoOpt = identityService.getUserById(roleIdentity.getId());
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unsupported identity type " + roleIdentity.getType());
-    }
-    if (identityRestDtoOpt.isPresent()) {
-      return new CollectionRoleRestDto(identityRestDtoOpt.get(), roleDto.getRole());
-    } else {
-      throw new OptimizeRuntimeException(
-        "Could not map CollectionRoleDto to CollectionRoleRestDto due to missing identity with ID " + roleIdentity.getId());
-    }
-  }
 }

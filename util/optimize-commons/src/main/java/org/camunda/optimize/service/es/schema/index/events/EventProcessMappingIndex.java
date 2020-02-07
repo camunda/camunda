@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
@@ -47,6 +49,12 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
   public static final String EVENT_SOURCE_TRACE_VARIABLE = EventSourceEntryDto.Fields.traceVariable;
   public static final String EVENT_SOURCE_EVENT_SCOPE = EventSourceEntryDto.Fields.eventScope;
 
+  public static final String ROLES = IndexableEventProcessMappingDto.Fields.roles;
+  public static final String ROLE_ID = EventProcessRoleDto.Fields.id;
+  public static final String ROLE_IDENTITY = EventProcessRoleDto.Fields.identity;
+  public static final String ROLE_IDENTITY_ID = IdentityDto.Fields.id;
+  public static final String ROLE_IDENTITY_TYPE = IdentityDto.Fields.type;
+
   @Override
   public String getIndexName() {
     return ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
@@ -87,13 +95,19 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(EVENT_SOURCES)
         .field("type", "nested");
-        addEventSourcesField(newXContentBuilder)
+         addEventSourcesField(newXContentBuilder)
+      .endObject()
+      .startObject(ROLES)
+        .field("type", "object")
+        .startObject("properties");
+          addNestedRolesFields(newXContentBuilder)
+        .endObject()
       .endObject();
     // @formatter:on
     return newXContentBuilder;
   }
 
-  private XContentBuilder addNestedFlowNodeMappingsFields(XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addNestedFlowNodeMappingsFields(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     XContentBuilder newXContentBuilder = xContentBuilder
       .startObject(FLOWNODE_ID)
@@ -115,7 +129,7 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
     return newXContentBuilder;
   }
 
-  private XContentBuilder addEventMappingFields(XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addEventMappingFields(final XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       // @formatter:off
       .startObject(GROUP)
@@ -154,6 +168,26 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
         .endObject()
         .startObject(EVENT_SOURCE_EVENT_SCOPE)
           .field("type", "keyword")
+        .endObject()
+      .endObject();
+    // @formatter:on
+  }
+
+  private XContentBuilder addNestedRolesFields(final XContentBuilder xContentBuilder) throws IOException {
+    return xContentBuilder
+      // @formatter:off
+      .startObject(ROLE_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ROLE_IDENTITY)
+        .field("type", "object")
+        .startObject("properties")
+          .startObject(ROLE_IDENTITY_ID)
+            .field("type", "keyword")
+          .endObject()
+          .startObject(ROLE_IDENTITY_TYPE)
+            .field("type", "keyword")
+          .endObject()
         .endObject()
       .endObject();
     // @formatter:on

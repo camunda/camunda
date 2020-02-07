@@ -11,6 +11,7 @@ import org.apache.http.HttpStatus;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
@@ -22,6 +23,8 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.event.AbstractEventProcessIT;
@@ -72,11 +75,17 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       Arguments.of(HttpMethod.GET, "/eventBasedProcess/someId/delete-conflicts", null),
       Arguments.of(HttpMethod.POST, "/eventBasedProcess", null),
       Arguments.of(
-        HttpMethod.PUT, "/eventBasedProcess/someId", EventProcessMappingDto.builder().name("someName").build()
+        HttpMethod.PUT, "/eventBasedProcess/someId", EventProcessMappingRequestDto.builder().name("someName").build()
       ),
       Arguments.of(HttpMethod.POST, "/eventBasedProcess/someId/_publish", null),
       Arguments.of(HttpMethod.POST, "/eventBasedProcess/someId/_cancelPublish", null),
-      Arguments.of(HttpMethod.DELETE, "/eventBasedProcess/someId", null)
+      Arguments.of(HttpMethod.DELETE, "/eventBasedProcess/someId", null),
+      Arguments.of(HttpMethod.GET, "/eventBasedProcess/someId/role", null),
+      Arguments.of(
+        HttpMethod.PUT,
+        "/eventBasedProcess/someId/role",
+        Collections.singleton(new EventProcessRoleRestDto(new UserDto("someId")))
+      )
     );
   }
 
@@ -255,7 +264,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // then
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
-  
+
   @Test
   public void createEventProcessMappingWithInvalidEventMappings() {
     // given event mappings but mapped events have fields missing
@@ -299,14 +308,15 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(expectedId);
 
-    // then the report is returned with expect
+    // then
     assertThat(actual.getId()).isEqualTo(expectedId);
     assertThat(actual).isEqualToIgnoringGivenFields(
       eventProcessMappingDto,
       EventProcessMappingDto.Fields.id,
       EventProcessMappingDto.Fields.lastModified,
       EventProcessMappingDto.Fields.lastModifier,
-      EventProcessMappingDto.Fields.state
+      EventProcessMappingDto.Fields.state,
+      EventProcessMappingDto.Fields.roles
     );
     assertThat(actual.getLastModified()).isEqualTo(now);
     assertThat(actual.getLastModifier()).isEqualTo("demo");
@@ -442,7 +452,8 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
         EventProcessMappingDto.Fields.id,
         EventProcessMappingDto.Fields.lastModified,
         EventProcessMappingDto.Fields.lastModifier,
-        EventProcessMappingDto.Fields.state
+        EventProcessMappingDto.Fields.state,
+        EventProcessMappingDto.Fields.roles
       )
       .extracting("id").isEqualTo(storedEventProcessMappingId);
     assertThat(storedDto.getLastModified()).isEqualTo(updatedTime);
@@ -756,12 +767,23 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    collectionClient.addScopeEntryToCollection(collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey));
+    collectionClient.addScopeEntryToCollection(
+      collectionId,
+      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
+    );
 
     String conflictedReportId = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, eventProcessDefinitionKey, Collections.emptyList()));
+      reportClient.createSingleProcessReportDefinitionDto(
+        collectionId,
+        eventProcessDefinitionKey,
+        Collections.emptyList()
+      ));
     String nonConflictedReportId = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
+      reportClient.createSingleProcessReportDefinitionDto(
+        collectionId,
+        DEFAULT_DEFINITION_KEY,
+        Collections.emptyList()
+      ));
     String conflictedCombinedReportId =
       reportClient.createCombinedReport(collectionId, Arrays.asList(conflictedReportId, nonConflictedReportId));
 
@@ -845,15 +867,29 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    collectionClient.addScopeEntryToCollection(collectionId, new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey));
+    collectionClient.addScopeEntryToCollection(
+      collectionId,
+      new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
+    );
 
     String reportWithEventProcessDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, eventProcessDefinitionKey, Collections.emptyList()));
+      reportClient.createSingleProcessReportDefinitionDto(
+        collectionId,
+        eventProcessDefinitionKey,
+        Collections.emptyList()
+      ));
     String reportIdWithDefaultDefKey = reportClient.createSingleProcessReport(
-      reportClient.createSingleProcessReportDefinitionDto(collectionId, DEFAULT_DEFINITION_KEY, Collections.emptyList()));
+      reportClient.createSingleProcessReportDefinitionDto(
+        collectionId,
+        DEFAULT_DEFINITION_KEY,
+        Collections.emptyList()
+      ));
     String reportIdWithNoDefKey = reportClient.createSingleProcessReport(
       reportClient.createSingleProcessReportDefinitionDto(collectionId, null, Collections.emptyList()));
-    reportClient.createCombinedReport(collectionId, Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey));
+    reportClient.createCombinedReport(
+      collectionId,
+      Arrays.asList(reportWithEventProcessDefKey, reportIdWithDefaultDefKey)
+    );
 
     alertClient.createAlertForReport(reportWithEventProcessDefKey);
     String alertIdToRemain = alertClient.createAlertForReport(reportIdWithDefaultDefKey);
@@ -944,7 +980,8 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .stream(searchResponse.getHits().getHits())
       .map(doc -> {
         try {
-          return elasticSearchIntegrationTestExtension.getObjectMapper().readValue(doc.getSourceAsString(), CollectionDefinitionDto.class);
+          return elasticSearchIntegrationTestExtension.getObjectMapper()
+            .readValue(doc.getSourceAsString(), CollectionDefinitionDto.class);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

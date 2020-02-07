@@ -7,6 +7,8 @@ package org.camunda.optimize.upgrade.version27;
 
 import lombok.SneakyThrows;
 import org.assertj.core.util.Lists;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom27To30;
@@ -64,6 +66,27 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
     assertThat(eventProcessMappingRestDtos)
       .extracting(EventProcessMappingDto::getEventSources)
       .allMatch(List::isEmpty);
+  }
+
+  @Test
+  public void initializeRolesField() {
+    // given
+    final UpgradePlan upgradePlan = new UpgradeFrom27To30().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final List<EventProcessMappingDto> eventProcessMappingRestDtos = getEventProcessMappings();
+    assertThat(eventProcessMappingRestDtos)
+      .hasSize(2)
+      .extracting(EventProcessMappingDto::getRoles)
+      .flatExtracting(eventProcessRoleDtos -> eventProcessRoleDtos)
+      .allSatisfy(eventProcessRoleDto -> {
+        assertThat(eventProcessRoleDto.getId()).isEqualTo("USER:demo");
+        assertThat(eventProcessRoleDto.getIdentity())
+          .isEqualTo(new IdentityDto("demo", IdentityType.USER));
+      });
   }
 
   @SneakyThrows

@@ -11,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 @JsonTypeInfo(
@@ -22,17 +23,22 @@ import lombok.experimental.FieldNameConstants;
 })
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants(asEnum = true)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public abstract class IdentityRestDto {
-  @EqualsAndHashCode.Include
-  private String id;
-  @EqualsAndHashCode.Include
-  private IdentityType type;
-  protected String name;
+@FieldNameConstants
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public abstract class IdentityWithMetadataDto extends IdentityDto {
+  private String name;
 
-  public IdentityRestDto(final String id, final IdentityType type) {
-    this.id = id;
-    this.type = type;
+  public IdentityWithMetadataDto(final String id, final IdentityType type) {
+    this(id, type, null);
+  }
+
+  public IdentityWithMetadataDto(final String id, final IdentityType type, final String name) {
+    super(id, type);
+    this.name = name;
+  }
+
+  public IdentityDto toIdentityDto() {
+    return new IdentityDto(getId(), getType());
   }
 }

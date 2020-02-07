@@ -8,7 +8,7 @@ package org.camunda.optimize.service;
 import com.google.common.collect.Iterables;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityRestDto;
+import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.AuthorizedIdentitiesResult;
@@ -119,7 +119,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     }
   }
 
-  public void addIdentity(final IdentityRestDto identity) {
+  public void addIdentity(final IdentityWithMetadataDto identity) {
     try {
       activeIdentityCache.addIdentity(identity);
     } catch (MaxEntryLimitHitException e) {
@@ -177,7 +177,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     // collect all members of revoked groups to exclude them when adding all other users
     final Set<String> userIdsOfRevokedGroupMembers = authorizedIdentities.getRevokedGroupIds().stream()
       .flatMap(revokedGroupId -> {
-        final Set<IdentityRestDto> currentGroupIdentities = new HashSet<>();
+        final Set<IdentityWithMetadataDto> currentGroupIdentities = new HashSet<>();
         consumeIdentitiesInBatches(
           currentGroupIdentities::addAll,
           (pageStartIndex, pageLimit) -> engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, revokedGroupId),
@@ -185,7 +185,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
         );
         return currentGroupIdentities.stream();
       })
-      .map(IdentityRestDto::getId)
+      .map(IdentityWithMetadataDto::getId)
       .collect(Collectors.toSet());
 
     // then iterate all users... that's the price you pay for global access
@@ -248,16 +248,16 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     }
   }
 
-  private <T extends IdentityRestDto> void consumeIdentitiesInBatches(final Consumer<List<IdentityRestDto>> identityBatchConsumer,
-                                                                      final GetIdentityPageMethod<T> getIdentityPage,
-                                                                      final Predicate<T> identityFilter) {
+  private <T extends IdentityWithMetadataDto> void consumeIdentitiesInBatches(final Consumer<List<IdentityWithMetadataDto>> identityBatchConsumer,
+                                                                              final GetIdentityPageMethod<T> getIdentityPage,
+                                                                              final Predicate<T> identityFilter) {
     final int maxPageSize = getIdentitySyncConfiguration().getMaxPageSize();
     int currentIndex = 0;
     List<T> currentPage;
     do {
       currentPage = getIdentityPage.getPageOfIdentities(currentIndex, maxPageSize);
       currentIndex += currentPage.size();
-      final List<IdentityRestDto> identities = currentPage.stream()
+      final List<IdentityWithMetadataDto> identities = currentPage.stream()
         .filter(identityFilter)
         .collect(Collectors.toList());
       identityBatchConsumer.accept(identities);
@@ -281,7 +281,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   }
 
   @FunctionalInterface
-  private interface GetIdentityPageMethod<T extends IdentityRestDto> {
+  private interface GetIdentityPageMethod<T extends IdentityWithMetadataDto> {
     List<T> getPageOfIdentities(int pageStartIndex, int pageLimit);
   }
 }

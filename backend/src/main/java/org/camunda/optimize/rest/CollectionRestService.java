@@ -204,22 +204,18 @@ public class CollectionRestService {
   public IdDto addRole(@Context ContainerRequestContext requestContext,
                        @PathParam("id") String collectionId,
                        @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final IdentityDto identityDto = roleDtoRequest.getIdentity();
-    if (identityDto.getType() == null) {
-      IdentityType type = identityService.getTypeForId(identityDto.getId())
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final IdentityDto requestIdentityDto = roleDtoRequest.getIdentity();
+    if (requestIdentityDto.getType() == null) {
+      final IdentityDto resolvedIdentityDto = identityService.getIdentityWithMetadataForId(requestIdentityDto.getId())
         .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
-          String.format("No user or group with ID %s exists in Optimize.", identityDto.getId())
-        ));
-      roleDtoRequest = new CollectionRoleDto(
-        new IdentityDto(identityDto.getId(), type),
-        roleDtoRequest.getRole()
-      );
+          String.format("No user or group with ID %s exists in Optimize.", requestIdentityDto.getId())
+        ))
+        .toIdentityDto();
+      roleDtoRequest = new CollectionRoleDto(resolvedIdentityDto, roleDtoRequest.getRole());
     }
     CollectionRoleDto collectionRoleDto = collectionRoleService.addRoleToCollection(
-      userId,
-      collectionId,
-      roleDtoRequest
+      userId, collectionId, roleDtoRequest
     );
     return new IdDto(collectionRoleDto.getId());
   }

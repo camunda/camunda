@@ -8,7 +8,14 @@ package org.camunda.optimize.service.exceptions;
 
 public class OptimizeValidationException extends OptimizeRuntimeException {
 
+  public static final String ERROR_CODE = "badRequestError";
+
   public OptimizeValidationException(String message) {
     super(message);
+  }
+
+  @Override
+  public String getErrorCode() {
+    return ERROR_CODE;
   }
 }

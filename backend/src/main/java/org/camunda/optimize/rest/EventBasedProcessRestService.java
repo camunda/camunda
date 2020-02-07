@@ -7,21 +7,31 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
+import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
+import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.EventProcessService;
+import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.EventProcessAuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.ForbiddenException;
@@ -47,9 +57,11 @@ import static java.util.stream.Collectors.toList;
 public class EventBasedProcessRestService {
 
   private final EventProcessService eventProcessService;
+  private final EventProcessRoleService eventProcessRoleService;
   private final EventProcessAuthenticationService authenticationService;
   private final SessionService sessionService;
   private final DefinitionService definitionService;
+  private final IdentityService identityService;
 
   @GET
   @Path("/isEnabled")
@@ -88,15 +100,11 @@ public class EventBasedProcessRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createEventProcessMapping(@Valid final EventProcessMappingDto eventProcessMappingDto,
+  public IdDto createEventProcessMapping(@Valid final EventProcessMappingRequestDto createRequestDto,
                                          @Context final ContainerRequestContext requestContext) {
-    validateAccessToEventProcessManagement(
-      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
-    );
-
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    eventProcessMappingDto.setLastModifier(userId);
-    return eventProcessService.createEventProcessMapping(userId, eventProcessMappingDto);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateAccessToEventProcessManagement(userId);
+    return eventProcessService.createEventProcessMapping(userId, createRequestDto);
   }
 
   @PUT
@@ -105,12 +113,10 @@ public class EventBasedProcessRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateEventProcessMapping(@PathParam("id") final String eventProcessId,
                                         @Context final ContainerRequestContext requestContext,
-                                        @Valid final EventProcessMappingDto eventProcessMappingDto) {
+                                        @Valid final EventProcessMappingRequestDto updateRequestDto) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateAccessToEventProcessManagement(userId);
-    eventProcessMappingDto.setId(eventProcessId);
-    eventProcessMappingDto.setLastModifier(userId);
-    eventProcessService.updateEventProcessMapping(userId, eventProcessMappingDto);
+    eventProcessService.updateEventProcessMapping(userId, eventProcessId, updateRequestDto);
   }
 
   @POST
@@ -160,6 +166,56 @@ public class EventBasedProcessRestService {
       );
       throw new NotFoundException(errorMessage);
     }
+  }
+
+  @GET
+  @Path("/{id}/role/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<EventProcessRoleRestDto> getRoles(@PathParam("id") final String eventProcessId,
+                                                @Context final ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    return eventProcessRoleService.getRoles(eventProcessId)
+      .stream()
+      .map(this::mapToEventProcessRoleRestDto)
+      .collect(toList());
+  }
+
+  @PUT
+  @Path("/{id}/role/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public void updateRoles(@PathParam("id") final String eventProcessId,
+                          @NotNull final List<EventProcessRoleDto<IdentityDto>> rolesDtoRequest,
+                          @Context final ContainerRequestContext requestContext) throws OptimizeConflictException {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateAccessToEventProcessManagement(userId);
+    final List<EventProcessRoleDto<IdentityDto>> eventRoleDtos = rolesDtoRequest.stream()
+      .map(this::resolveToEventProcessRoleDto)
+      .collect(toList());
+    eventProcessRoleService.updateRoles(eventProcessId, eventRoleDtos, userId);
+  }
+
+  private EventProcessRoleDto<IdentityDto> resolveToEventProcessRoleDto(final EventProcessRoleDto<IdentityDto> eventProcessRoleRestDto) {
+    IdentityDto simpleIdentityDto = eventProcessRoleRestDto.getIdentity();
+    if (simpleIdentityDto.getType() == null) {
+      final String identityId = simpleIdentityDto.getId();
+      simpleIdentityDto = identityService.getIdentityWithMetadataForId(identityId)
+        .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
+          String.format("No user or group with ID %s exists in Optimize.", identityId)
+        ))
+        .toIdentityDto();
+    }
+    return new EventProcessRoleDto<>(simpleIdentityDto);
+  }
+
+  private EventProcessRoleRestDto mapToEventProcessRoleRestDto(final EventProcessRoleDto<IdentityDto> roleDto) {
+    return identityService.resolveToIdentityWithMetadata(roleDto.getIdentity())
+      .map(EventProcessRoleRestDto::new)
+      .orElseThrow(() -> new OptimizeRuntimeException(
+        "Could not map EventProcessRoleDto to EventProcessRoleRestDto, identity ["
+          + roleDto.getIdentity().toString() + "] could not be found."
+      ));
   }
 
   private void validateAccessToEventProcessManagement(final String userId) {
