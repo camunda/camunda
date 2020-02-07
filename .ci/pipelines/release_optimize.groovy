@@ -1,7 +1,6 @@
 #!/usr/bin/env groovy
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
-
 boolean slaveDisconnected() {
   return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
 }
@@ -13,7 +12,10 @@ static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE() { return "optimize.registry.camunda.cloud/optimize" }
-
+static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_URL() {
+  def envPrefix = env.JENKINS_URL.contains('stage') ? 'stage-' : ''
+  "gs://${envPrefix}downloads-camunda-cloud-enterprise-release"
+}
 static boolean isMajorOrMinorRelease(releaseVersion) {
   def version = releaseVersion.tokenize('.')
   def patchVersion = version[2]
@@ -224,6 +226,25 @@ pipeline {
                 scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \${file} jenkins_camunda_web@vm29.camunda.com:/var/www/camunda/camunda.org/enterprise-release/optimize/${params.RELEASE_VERSION}/
               done
             """)
+          }
+        }
+    }
+    stage('Upload to DownloadCenter storage bucket') {
+      steps {
+        container('jnlp') {
+          withCredentials([file('downloadcenter_upload_gcloud_key', 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+            def sourcePath = "target/checkout/distro/target/*.{tar.gz,zip}"
+            def targetPath = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_URL()}/optimize/${params.RELEASE_VERSION}/"
+            def gsutilCmd = "gsutil cp ${sourcePath} ${targetPath}"
+
+            if (!pushChanges) {
+              gsutilCmd = "echo [skipping] ${gsutilCmd}"
+            }
+
+            sh """#!/bin/bash -xe
+            gcloud auth activate-service-account --key-file \${GOOGLE_APPLICATION_CREDENTIALS}
+            ${gsutilCmd}
+            """
           }
         }
       }
