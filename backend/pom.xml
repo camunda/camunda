@@ -390,13 +390,6 @@
         <targetPath>webapp</targetPath>
       </resource>
       <resource>
-        <directory>src/main/java</directory>
-        <includes>
-          <include>**/*.java</include>
-          <include>**/*.xml</include>
-        </includes>
-      </resource>
-      <resource>
         <directory>src/main/resources</directory>
       </resource>
       <resource>
