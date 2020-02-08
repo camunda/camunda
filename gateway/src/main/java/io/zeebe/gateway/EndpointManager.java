@@ -9,6 +9,7 @@ package io.zeebe.gateway;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.zeebe.gateway.cmd.BrokerErrorException;
@@ -301,6 +302,11 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       return;
     }
 
+    final ServerCallStreamObserver<GrpcResponseT> serverObserver =
+        (ServerCallStreamObserver<GrpcResponseT>) streamObserver;
+    serverObserver.setOnCancelHandler(
+        () -> Loggers.GATEWAY_LOGGER.trace("gRPC {} request cancelled", grpcRequest.getClass()));
+
     brokerClient.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
@@ -319,6 +325,11 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     if (brokerRequest == null) {
       return;
     }
+
+    final ServerCallStreamObserver<GrpcResponseT> serverObserver =
+        (ServerCallStreamObserver<GrpcResponseT>) streamObserver;
+    serverObserver.setOnCancelHandler(
+        () -> Loggers.GATEWAY_LOGGER.trace("gRPC {} request cancelled", grpcRequest.getClass()));
 
     brokerClient.sendRequest(
         brokerRequest,
@@ -391,7 +402,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     return convertedThrowable;
   }
 
-  public static Status mapBrokerErrorToStatus(final BrokerError error) {
+  private static Status mapBrokerErrorToStatus(final BrokerError error) {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
@@ -405,7 +416,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
   }
 
-  public static Status mapRejectionToStatus(final BrokerRejection rejection) {
+  private static Status mapRejectionToStatus(final BrokerRejection rejection) {
     final String description =
         String.format(
             "Command rejected with code '%s': %s", rejection.getIntent(), rejection.getReason());
