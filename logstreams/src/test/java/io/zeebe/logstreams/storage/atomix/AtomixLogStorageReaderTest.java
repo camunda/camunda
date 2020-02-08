@@ -140,6 +140,57 @@ public final class AtomixLogStorageReaderTest {
     assertThat(buffer.getInt(0, BYTE_ORDER)).isEqualTo(1);
   }
 
+  @Test
+  public void shouldReturnEmptyIfLogIsEmpty() {
+    // given
+    final var reader = storageRule.get().newReader();
+
+    // when
+    final var isEmpty = reader.isEmpty();
+
+    // then
+    assertThat(isEmpty).isTrue();
+  }
+
+  @Test
+  public void shouldReturnEmptyIfLogContainsNonZeebeEntries() {
+    // given
+    final var reader = storageRule.get().newReader();
+
+    // when
+    final var entry =
+        storageRule
+            .getRaftLog()
+            .writer()
+            .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
+    final var isEmpty = reader.isEmpty();
+
+    // then
+    assertThat(entry).isNotNull();
+    assertThat(isEmpty).isTrue();
+  }
+
+  @Test
+  public void shouldNotReturnEmptyIfAtLeastOneZeebeEntryPresent() {
+    // given
+    final var reader = storageRule.get().newReader();
+
+    // when
+    final var entry =
+        storageRule
+            .getRaftLog()
+            .writer()
+            .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
+    final var expected = append(1, 4, allocateData(1));
+
+    final var isEmpty = reader.isEmpty();
+
+    // then
+    assertThat(entry).isNotNull();
+    assertThat(expected).isNotNull();
+    assertThat(isEmpty).isFalse();
+  }
+
   private Indexed<ZeebeEntry> append(
       final long lowestPosition, final long highestPosition, final ByteBuffer data) {
     final var future = new CompletableFuture<Indexed<ZeebeEntry>>();
