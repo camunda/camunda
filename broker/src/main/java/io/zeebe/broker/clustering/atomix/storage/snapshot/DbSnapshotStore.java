@@ -69,8 +69,8 @@ public final class DbSnapshotStore implements SnapshotStore {
    */
   @Override
   public Snapshot getSnapshot(final long index) {
-    // compute a map of all snapshots with index equal to the given index, and pick the one with the
-    // highest position
+    // it's possible (though unlikely) to have more than one snapshot per index, so we fallback to
+    // the one with the highest position
     final var indexBoundedSet =
         snapshots.subMap(lowerBoundId.setIndex(index), false, upperBoundId.setIndex(index), false);
     if (indexBoundedSet.isEmpty()) {
@@ -242,7 +242,7 @@ public final class DbSnapshotStore implements SnapshotStore {
         final var name = file.getFileName().toString();
         final var parts = name.split("-", 3);
         final var index = Long.parseLong(parts[0]);
-        if (cutoffId.getIndex() < index) {
+        if (cutoffId.getIndex() > index) {
           FileUtil.deleteFolder(file);
           LOGGER.debug("Delete not completed (orphaned) snapshot {}", file);
         }
