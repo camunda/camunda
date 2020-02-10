@@ -27,7 +27,7 @@ describe('Poll', () => {
 
     // when
     poll.register('TOPIC', topicCallback);
-    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(POLL_DELAY);
 
     // then
     expect(topicCallback).toHaveBeenCalledTimes(1);
@@ -42,7 +42,7 @@ describe('Poll', () => {
     poll.register('TOPIC_1', topic1Callback);
     poll.register('TOPIC_2', topic2Callback);
 
-    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(POLL_DELAY);
 
     // then
     expect(Object.values(poll.callbacks)).toHaveLength(2);
@@ -56,7 +56,7 @@ describe('Poll', () => {
 
     // when
     poll.register('TOPIC', topicCallback);
-    jest.advanceTimersByTime(50000);
+    jest.advanceTimersByTime(10 * POLL_DELAY);
 
     // then
     expect(topicCallback).toHaveBeenCalledTimes(10);
@@ -69,7 +69,7 @@ describe('Poll', () => {
     // when
     poll.register('TOPIC', topicCallback);
     poll.register('TOPIC', topicCallback);
-    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(POLL_DELAY);
 
     //then
     expect(Object.values(poll.callbacks)).toHaveLength(1);
@@ -82,7 +82,7 @@ describe('Poll', () => {
     poll.register('TOPIC', topicCallback);
     poll.unregister('TOPIC');
 
-    jest.advanceTimersByTime(50000);
+    jest.advanceTimersByTime(10 * POLL_DELAY);
 
     expect(topicCallback).not.toHaveBeenCalled();
     expect(poll.callbacks).toEqual({});

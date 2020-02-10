@@ -4,26 +4,54 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {isBatchOperationRunning} from './service';
+import {isBatchOperationRunning, hasRunningBatchOperations} from './service';
+import {
+  mockOperationFinished,
+  mockOperationRunning
+} from './OperationsPanel.setup';
 
 describe('isBatchOperationRunning', () => {
-  it('should validate true', () => {
-    const isRunning = isBatchOperationRunning({
-      id: '123',
-      type: 'RESOLVE_INCIDENT',
-      endDate: null
-    });
+  it('should be true when operation is running', () => {
+    const isRunning = isBatchOperationRunning(mockOperationRunning);
 
     expect(isRunning).toBe(true);
   });
 
-  it('should validate false', () => {
-    const isRunning = isBatchOperationRunning({
-      id: '123',
-      type: 'RESOLVE_INCIDENT',
-      endDate: '2020-02-04T10:08:32.059+0100'
-    });
+  it('should be false when operation is finished', () => {
+    const isRunning = isBatchOperationRunning(mockOperationFinished);
 
     expect(isRunning).toBe(false);
+  });
+
+  it('should be false when no param', () => {
+    const isRunning = isBatchOperationRunning();
+
+    expect(isRunning).toBe(false);
+  });
+});
+
+describe('hasRunningBatchOperations', () => {
+  it('should be true if it contains running operation', () => {
+    const hasRunning = hasRunningBatchOperations([
+      mockOperationFinished,
+      mockOperationRunning
+    ]);
+
+    expect(hasRunning).toBe(true);
+  });
+
+  it('should be false if it only contains finished operations', () => {
+    const hasRunning = hasRunningBatchOperations([
+      mockOperationFinished,
+      mockOperationFinished
+    ]);
+
+    expect(hasRunning).toBe(false);
+  });
+
+  it('should be false if it does not contain anything', () => {
+    const hasRunning = hasRunningBatchOperations([]);
+
+    expect(hasRunning).toBe(false);
   });
 });
