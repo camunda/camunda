@@ -68,7 +68,7 @@ func TestTopologyCommand(t *testing.T) {
 		},
 	}
 
-	client.EXPECT().Topology(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().Topology(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewTopologyCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 

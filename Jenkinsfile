@@ -33,6 +33,9 @@ pipeline {
                 container('maven-jdk8') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
+                container('golang') {
+                    sh '.ci/scripts/distribution/prepare-go.sh'
+                }
             }
         }
 

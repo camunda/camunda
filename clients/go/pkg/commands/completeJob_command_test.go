@@ -34,7 +34,7 @@ func TestCompleteJobCommand(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	response, err := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
 		return false
@@ -63,7 +63,7 @@ func TestCompleteJobCommandWithVariablesFromString(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
@@ -97,7 +97,7 @@ func TestCompleteJobCommandWithVariablesFromStringer(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool {
 		return false
@@ -133,7 +133,7 @@ func TestCompleteJobCommandWithVariablesFromObject(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
@@ -167,7 +167,7 @@ func TestCompleteJobCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
@@ -201,7 +201,7 @@ func TestCompleteJobCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) 
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 
@@ -237,7 +237,7 @@ func TestCompleteJobCommandWithVariablesFromMap(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout, func(context.Context, error) bool { return false })
 

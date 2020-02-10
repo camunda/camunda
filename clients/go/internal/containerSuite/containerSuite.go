@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"google.golang.org/grpc/codes"
@@ -120,10 +121,7 @@ func sanitizeDockerLogs(log string) string {
 }
 
 func (s zeebeWaitStrategy) waitForTopology(zbClient zbc.Client) error {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
-	defer cancel()
-
-	res, err := zbClient.NewTopologyCommand().Send(ctx)
+	res, err := zbClient.NewTopologyCommand().Send()
 	for (err != nil && status.Code(err) == codes.Unavailable) || !isStable(res) {
 		time.Sleep(s.waitTime)
 		res, err = zbClient.NewTopologyCommand().Send()
