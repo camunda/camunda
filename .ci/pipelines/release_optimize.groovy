@@ -12,9 +12,8 @@ static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE() { return "optimize.registry.camunda.cloud/optimize" }
-static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_URL() {
-  "gs://${env.JENKINS_URL.contains('stage') ? 'stage-' : ''}downloads-camunda-cloud-enterprise-release"
-}
+static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME() { return 'downloads-camunda-cloud-enterprise-release' }
+
 static boolean isMajorOrMinorRelease(releaseVersion) {
   def version = releaseVersion.tokenize('.')
   def patchVersion = version[2]
@@ -230,20 +229,20 @@ pipeline {
       }
     }
     stage('Upload to DownloadCenter storage bucket') {
+      when {
+        expression { params.PUSH_CHANGES == true }
+      }
+      environment {
+        SOURCE_PATH = "target/checkout/distro/target/*.{tar.gz,zip}"
+        TARGET_PATH = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME()}/optimize/${params.RELEASE_VERSION}/"
+      }
       steps {
         container('jnlp') {
-          withCredentials([file('downloadcenter_upload_gcloud_key', 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-            def sourcePath = "target/checkout/distro/target/*.{tar.gz,zip}"
-            def targetPath = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_URL()}/optimize/${params.RELEASE_VERSION}/"
-            def gsutilCmd = "gsutil cp ${sourcePath} ${targetPath}"
-
-            if (!pushChanges) {
-              gsutilCmd = "echo [skipping] ${gsutilCmd}"
-            }
-
+          withCredentials([file(credentialsId: 'downloadcenter_upload_gcloud_key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
             sh """#!/bin/bash -xe
             gcloud auth activate-service-account --key-file \${GOOGLE_APPLICATION_CREDENTIALS}
-            ${gsutilCmd}
+            ENV_PREFIX=\$([[ \$JENKINS_URL == *stage* ]] && echo stage- || echo '')
+            gsutil cp \${SOURCE_PATH} gs://\${ENV_PREFIX}\${TARGET_PATH}
             """
           }
         }
