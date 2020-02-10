@@ -7,7 +7,7 @@
     "@ibm/plex": "^4.0.2",
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.1.0",
-    "bpmn-js": "6.2.1",
+    "bpmn-js": "6.3.0",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.1",
     "chart.js": "2.9.3",
     "classnames": "^2.2.6",
