@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/status"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -83,13 +84,31 @@ func (s zeebeWaitStrategy) WaitUntilReady(ctx context.Context, target wait.Strat
 			_, _ = fmt.Fprintln(os.Stderr, "=====================================")
 			_, _ = fmt.Fprintln(os.Stderr, "Container logs")
 			_, _ = fmt.Fprintln(os.Stderr, "=====================================")
-			_, _ = fmt.Fprintf(os.Stderr, "%s", bytes)
+			_, _ = fmt.Fprint(os.Stderr, sanitizeDockerLogs(string(bytes)))
 
 			return errors.New("timed out awaiting container")
 		}
 
 		return fmt.Errorf("timed out awaiting container, but failed to read container logs: %w", err)
 	}
+}
+
+// remove the message header (8 bytes) from the docker logs
+// https://docs.docker.com/engine/api/v1.26/#operation/ContainerAttach
+func sanitizeDockerLogs(log string) string {
+	lines := strings.Split(log, "\n")
+	builder := strings.Builder{}
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		builder.WriteString(line[8:])
+		builder.WriteString("\n")
+	}
+
+	return builder.String()
 }
 
 func (s zeebeWaitStrategy) waitForTopology(zbClient zbc.Client) error {
@@ -126,7 +145,6 @@ type ContainerSuite struct {
 	WaitTime time.Duration
 	// ContainerImage is the ID of docker image to be used
 	ContainerImage string
-
 	// GatewayAddress is the contact point of the spawned Zeebe container specified in the format 'host:port'
 	GatewayAddress string
 
