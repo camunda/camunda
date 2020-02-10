@@ -267,7 +267,7 @@ const Header = function(props) {
   const listHasFinishedInstances = filter.canceled || filter.completed;
   return (
     <THead {...props}>
-      <TR>
+      <Styled.TR>
         <TH>
           <React.Fragment>
             <Styled.CheckAll>
@@ -326,7 +326,7 @@ const Header = function(props) {
         <Styled.ActionsTH>
           <ColumnHeader disabled={isListEmpty} label="Actions" />
         </Styled.ActionsTH>
-      </TR>
+      </Styled.TR>
     </THead>
   );
 };

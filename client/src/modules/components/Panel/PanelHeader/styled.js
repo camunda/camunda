@@ -16,6 +16,13 @@ export const Header = themed(styled.div`
     dark: '#ffffff',
     light: Colors.uiLight06
   })};
+
+  border-bottom: solid 1px
+    ${themeStyle({
+      dark: Colors.uiDark04,
+      light: Colors.uiLight05
+    })};
+
   font-size: 15px;
   font-weight: bold;
   padding: 9px 10px;

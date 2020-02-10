@@ -15,6 +15,10 @@ export const List = styled.div`
   position: relative;
 `;
 
+export const TR = styled(Table.TR)`
+  border-top: none;
+`;
+
 export const TableContainer = styled.div`
   position: absolute;
   opacity: 0.9;
