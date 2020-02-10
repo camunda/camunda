@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,7 +58,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(authorizedEntities.size(), is(1));
@@ -88,7 +89,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(authorizedEntities.size(), is(5));
@@ -119,7 +120,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(authorizedEntities.size(), is(0));
@@ -141,7 +142,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(authorizedEntities.size(), is(0));
@@ -151,7 +152,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -177,7 +178,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -203,7 +204,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -211,7 +212,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

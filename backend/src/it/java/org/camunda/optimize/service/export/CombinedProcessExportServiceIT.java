@@ -59,7 +59,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -89,7 +89,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -118,7 +118,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -147,7 +147,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -182,7 +182,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -208,7 +208,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
@@ -233,7 +233,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     String actualContent = getResponseContentAsString(response);
     assertThat(actualContent.trim(), isEmptyString());
   }
@@ -244,14 +244,14 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .buildUpdateCombinedProcessReportRequest(id, updatedReport)
       .execute();
 
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private String createNewCombinedReport() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -310,7 +310,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

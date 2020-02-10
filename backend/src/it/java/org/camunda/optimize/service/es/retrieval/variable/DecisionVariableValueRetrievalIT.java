@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -581,7 +582,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDecisionInputVariableValuesRequest(variableValueRequestDto)
-      .executeAndReturnList(String.class, 200);
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
   private List<String> getOutputVariableValues(final DecisionDefinitionEngineDto decisionDefinitionEngineDto,
@@ -600,7 +601,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDecisionOutputVariableValuesRequest(variableRequest)
-      .executeAndReturnList(String.class, 200);
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
 }

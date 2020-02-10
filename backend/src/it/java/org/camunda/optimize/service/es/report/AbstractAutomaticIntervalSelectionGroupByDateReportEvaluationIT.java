@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
@@ -320,7 +321,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

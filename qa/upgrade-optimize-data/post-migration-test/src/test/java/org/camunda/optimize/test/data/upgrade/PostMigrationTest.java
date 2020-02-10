@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRest
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -90,7 +89,7 @@ public class PostMigrationTest {
     List<AlertDefinitionDto> objects = response.readEntity(new GenericType<List<AlertDefinitionDto>>() {});
     // @formatter:on
     assertThat(objects.size() > 0, is(true));
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -139,7 +138,7 @@ public class PostMigrationTest {
       .request()
       .cookie(OPTIMIZE_AUTHORIZATION, authHeader);
     try (Response reportEvaluationResponse = evaluateReportRequest.get()) {
-      assertThat(reportEvaluationResponse.getStatus(), is(200));
+      assertThat(reportEvaluationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
       final JsonNode response = reportEvaluationResponse.readEntity(JsonNode.class);
       assertThat(response.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name()), is(true));
     }
@@ -150,7 +149,7 @@ public class PostMigrationTest {
       .request()
       .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
       .get();
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     return response.readEntity(new GenericType<AuthorizedCollectionDefinitionRestDto>() {
     });

@@ -325,7 +325,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(createResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -341,7 +341,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(createResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -357,7 +357,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(createResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -373,7 +373,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(createResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -470,7 +470,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute();
-    assertThat(getCollectionByIdResponse.getStatus()).isEqualTo(404);
+    assertThat(getCollectionByIdResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 
     assertDashboardIsDeleted(dashboardId);
     assertReportIsDeleted(singleReportId);
@@ -591,7 +591,7 @@ public class CollectionHandlingIT extends AbstractIT {
     CombinedReportDefinitionDto combinedReportDefinition = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest(combinedReportId)
-      .execute(CombinedReportDefinitionDto.class, 200);
+      .execute(CombinedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     combinedReportDefinition.getData()
       .setReports(Collections.singletonList(new CombinedReportItemDto(originalReportId)));
@@ -688,7 +688,7 @@ public class CollectionHandlingIT extends AbstractIT {
     CollectionDefinitionRestDto copy = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCopyCollectionRequest(originalId)
-      .execute(CollectionDefinitionRestDto.class, 200);
+      .execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
 
     // then
     List<AuthorizedReportDefinitionDto> copiedReports = collectionClient.getReportsForCollection(copy.getId());
@@ -723,7 +723,7 @@ public class CollectionHandlingIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), true)
       .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
@@ -747,7 +747,7 @@ public class CollectionHandlingIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), true)
       .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(collectionClient.getReportsForCollection(collectionId))
@@ -784,7 +784,7 @@ public class CollectionHandlingIT extends AbstractIT {
         true
       )
       .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(collectionClient.getReportsForCollection(collectionId))
@@ -826,7 +826,7 @@ public class CollectionHandlingIT extends AbstractIT {
         true
       )
       .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(dashboardClient.getDashboard(dashboardId).getReports())
@@ -850,14 +850,14 @@ public class CollectionHandlingIT extends AbstractIT {
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetReportRequest(singleReportIdToDelete)
       .execute();
-    assertThat(response.getStatus()).isEqualTo(404);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private void assertDashboardIsDeleted(final String dashboardIdToDelete) {
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(dashboardIdToDelete)
       .execute();
-    assertThat(response.getStatus()).isEqualTo(404);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private String createNewSingleProcessReportInCollection(final String collectionId) {

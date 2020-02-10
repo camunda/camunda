@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.frequency;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -13,9 +14,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -200,7 +201,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -214,7 +215,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test

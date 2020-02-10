@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.SingleReportEvaluator;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -63,7 +63,7 @@ public class ExportLimitsIT extends AbstractIT {
       .execute();
 
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     byte[] result = getResponseContentAsByteArray(response);
     CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
 
@@ -91,7 +91,7 @@ public class ExportLimitsIT extends AbstractIT {
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     byte[] result = getResponseContentAsByteArray(response);
     CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
 
@@ -121,7 +121,7 @@ public class ExportLimitsIT extends AbstractIT {
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     byte[] result = getResponseContentAsByteArray(response);
     CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(result)));
 
@@ -187,7 +187,7 @@ public class ExportLimitsIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

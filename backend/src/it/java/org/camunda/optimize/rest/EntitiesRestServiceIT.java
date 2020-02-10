@@ -49,7 +49,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -102,7 +102,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication("kermit", "kermit")
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(kermitUserEntities.size(), is(1));
@@ -152,7 +152,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication("kermit", "kermit")
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(kermitUserEntities.size(), is(1));
@@ -216,7 +216,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> entities = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(entities.size(), is(6));
@@ -451,7 +451,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -466,7 +466,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private String addCollection(final String collectionName) {
@@ -488,7 +488,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String addSingleReportToOptimize(String name, ReportType reportType) {
@@ -505,7 +505,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
           .getRequestExecutor()
           .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
           .withUserAuthentication(user, user)
-          .execute(IdDto.class, 200)
+          .execute(IdDto.class, Response.Status.OK.getStatusCode())
           .getId();
       case DECISION:
         SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
@@ -515,7 +515,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
           .getRequestExecutor()
           .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
           .withUserAuthentication(user, user)
-          .execute(IdDto.class, 200)
+          .execute(IdDto.class, Response.Status.OK.getStatusCode())
           .getId();
       default:
         throw new IllegalStateException("ReportType not allowed!");
@@ -534,7 +534,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .withUserAuthentication(user, user)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -550,7 +550,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute(IdDto.class, 200).getId();
+      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
   private String addEventProcessMappingToOptimize(String name) {
@@ -559,14 +559,14 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildCreateEventProcessMappingRequest(eventBasedProcessDto)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute(IdDto.class, 200).getId();
+      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
   private List<EntityDto> getEntities() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
   }
 
   private EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId,
@@ -574,14 +574,14 @@ public class EntitiesRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
-      .execute(EntityNameDto.class, 200);
+      .execute(EntityNameDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String addEmptyCollectionToOptimize() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -590,6 +590,6 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, renameCollection)
       .execute();
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 }

@@ -11,6 +11,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +37,7 @@ public class ProcessEngineImportRestServiceIT extends AbstractIT {
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildGetProcessDefinitionsRequest()
-            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
     //then
     assertThat(definitions).isNotNull().hasSize(1);
     assertThat(definitions.get(0).getId()).isNotNull();

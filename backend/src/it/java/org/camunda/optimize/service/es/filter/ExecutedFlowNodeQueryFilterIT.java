@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -430,7 +431,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportAndReturnResponse(filterDtos);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -447,7 +448,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportAndReturnResponse(filterDtos);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   private void assertResults(RawDataProcessReportResultDto resultDto, int piCount) {

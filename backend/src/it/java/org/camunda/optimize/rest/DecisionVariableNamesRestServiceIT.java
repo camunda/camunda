@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -37,7 +38,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -49,7 +50,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
 
     // when
     List responseList = getExecutor(inputOutput, request)
-      .executeAndReturnList(String.class, 200);
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList.isEmpty(), is(true));
@@ -67,7 +68,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -82,7 +83,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private DecisionVariableNameRequestDto generateDefaultVariableRequest() {

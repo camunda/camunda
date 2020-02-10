@@ -592,7 +592,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpServletResponse.SC_FORBIDDEN));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -615,7 +615,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest(name = "If no single tenant is authorized do not allow access to definition of type {0}")
@@ -642,7 +642,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpServletResponse.SC_FORBIDDEN));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest(name = "On partial tenant authorization only authorized tenants are returned of type {0}")
@@ -670,7 +670,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionByTypeAndKeyRequest(definitionType.getId(), definitionKey)
-      .execute(DefinitionWithTenantsDto.class, 200);
+      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definition, is(is(notNullValue())));
@@ -698,7 +698,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(0));
@@ -721,7 +721,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -748,7 +748,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(0));
@@ -779,7 +779,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -806,7 +806,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitionsGroupedByTenant.size(), is(0));
@@ -829,7 +829,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitionsGroupedByTenant.size(), is(1));
@@ -856,7 +856,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitionsGroupedByTenant.size(), is(0));
@@ -886,7 +886,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitionsGroupedByTenant.size(), is(1));
@@ -913,7 +913,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitionsGroupedByTenant.size(), is(1));
@@ -951,7 +951,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitionsGroupedByTenant.size(), is(1));
@@ -1013,7 +1013,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .withUserAuthentication(name, password)
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
   }
 
   private List<DecisionDefinitionOptimizeDto> retrieveDecisionDefinitionsAsUser(String name, String password) {
@@ -1021,7 +1021,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetDecisionDefinitionsRequest()
       .withUserAuthentication(name, password)
-      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String deployAndImportDefinition(final DefinitionType type, final String key, String tenantId) {

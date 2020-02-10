@@ -34,7 +34,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -43,7 +43,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest()
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
@@ -55,7 +55,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(generateDashboardDefinitionDto())
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
@@ -70,7 +70,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
@@ -102,7 +102,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("name", testDashboardCopyName)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     DashboardDefinitionDto oldDashboard = getDashboard(dashboardId);
@@ -121,7 +121,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -145,7 +145,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     String response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDashboardRequest("fooid")
-      .execute(String.class, 404);
+      .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
     assertThat(response.contains("Dashboard does not exist!"), is(true));
@@ -161,7 +161,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -173,7 +173,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -188,7 +188,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -220,7 +220,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -235,7 +235,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -247,7 +247,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   private String createEmptyPrivateDashboard() {
@@ -258,7 +258,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -266,14 +266,14 @@ public class DashboardRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, 200);
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String createEmptyCollectionToOptimize() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -286,14 +286,14 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboard)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private DashboardDefinitionDto getDashboardWithId(final String id) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDashboardRequest(id)
-      .execute(DashboardDefinitionDto.class, 200);
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private void createEmptyReportToDashboard(final String dashboardId) {
@@ -307,7 +307,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionDto())
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

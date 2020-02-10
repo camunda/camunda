@@ -53,7 +53,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(200))
+    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
     );
   }
 
@@ -72,7 +72,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition, Collections.singletonList(null));
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(200))
+    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
     );
   }
 
@@ -123,7 +123,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     ).forEach(response ->
                 assertThat(
                   response.getStatus(),
-                  is(401)
+                  is(Response.Status.UNAUTHORIZED.getStatusCode())
                 )
     );
   }
@@ -145,7 +145,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(200))
+    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
     );
   }
 
@@ -165,7 +165,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(403))
+    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()))
     );
   }
 
@@ -192,7 +192,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     );
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(403))
+    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()))
     );
   }
 

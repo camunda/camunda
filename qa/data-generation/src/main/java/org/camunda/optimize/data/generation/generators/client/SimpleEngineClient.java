@@ -43,6 +43,7 @@ import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.elasticsearch.common.io.Streams;
 
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -138,7 +139,7 @@ public class SimpleEngineClient {
     createUserRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(userDto), StandardCharsets.UTF_8));
 
     try (CloseableHttpResponse createResponse = client.execute(createUserRequest)) {
-      if (createResponse.getStatusLine().getStatusCode() != 204) {
+      if (createResponse.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         log.warn("Failed to create user with id {}", userDto.getProfile().getId());
       }
     }
@@ -211,7 +212,7 @@ public class SimpleEngineClient {
     post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
     try (CloseableHttpResponse response = client.execute(post)) {
       post.setURI(new URI(post.getURI().toString()));
-      if (response.getStatusLine().getStatusCode() != 200) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         throw new RuntimeException("Could not start the process definition " + procDefId +
                                      ". Reason: " + response.getStatusLine().getReasonPhrase());
       }
@@ -233,7 +234,7 @@ public class SimpleEngineClient {
       post.setEntity(content);
       try (CloseableHttpResponse response = client.execute(post)) {
         int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 204) {
+        if (statusCode != Response.Status.NO_CONTENT.getStatusCode()) {
           log.warn("Response code for correlating message should be 204, got " + statusCode + " instead");
           final String reponseBody = Streams.copyToString(new InputStreamReader(
             response.getEntity().getContent(), StandardCharsets.UTF_8
@@ -277,7 +278,7 @@ public class SimpleEngineClient {
     claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
     claimPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse claimResponse = client.execute(claimPost)) {
-      if (claimResponse.getStatusLine().getStatusCode() != 204) {
+      if (claimResponse.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException("Wrong error code when claiming user tasks!");
       }
     }
@@ -311,7 +312,7 @@ public class SimpleEngineClient {
     completePost.setEntity(new StringEntity("{}", StandardCharsets.UTF_8));
     completePost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = client.execute(completePost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException("Wrong error code when completing user tasks!");
       }
     } catch (Exception e) {
@@ -325,7 +326,7 @@ public class SimpleEngineClient {
     return deploymentRequest.stream().map(d -> {
       DeploymentDto deployment = new DeploymentDto();
       try (CloseableHttpResponse response = client.execute(d)) {
-        if (response.getStatusLine().getStatusCode() != 200) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
           throw new RuntimeException("Something really bad happened during deployment, " +
                                        "could not create a deployment!");
         }
@@ -384,7 +385,7 @@ public class SimpleEngineClient {
       DeploymentDto deployment = new DeploymentDto();
       try (CloseableHttpResponse response = client.execute(d)) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        if (response.getStatusLine().getStatusCode() != 200) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
           throw new RuntimeException("Something really bad happened during deployment, " +
                                        "could not create a deployment!\n" +
                                        responseString);
@@ -503,7 +504,7 @@ public class SimpleEngineClient {
         resourceType,
         userId
       );
-      if (createUserResponse.getStatusLine().getStatusCode() != 200) {
+      if (createUserResponse.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         log.warn(IOUtils.toString(createUserResponse.getEntity().getContent(), StandardCharsets.UTF_8));
       }
     }

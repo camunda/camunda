@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.processinstance.duration.groupby.none;
 
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -500,7 +501,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -514,7 +515,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {

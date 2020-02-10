@@ -207,7 +207,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private Optional<String> authenticateDemoUser() {
     Response tokenResponse = authenticateDemo();
-    if (tokenResponse.getStatus() == HttpServletResponse.SC_OK) {
+    if (tokenResponse.getStatus() == Response.Status.OK.getStatusCode()) {
       return Optional.of(tokenResponse.readEntity(String.class));
     }
     return Optional.empty();

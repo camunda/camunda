@@ -11,7 +11,6 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -405,7 +404,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
         true
       )
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     assertThat(collectionClient.getReportsForCollection(collectionId))
@@ -496,7 +495,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
 
     // then
     assertThat(response)
-      .satisfies(r -> assertThat(r.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN))
+      .satisfies(r -> assertThat(r.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()))
       .extracting(r -> r.readEntity(ErrorResponseDto.class))
       .extracting(ErrorResponseDto::getDetailedMessage)
       .isEqualTo(String.format(SCOPE_NOT_AUTHORIZED_MESSAGE, KERMIT_USER, unauthorizedScope.get(0).getId()));
@@ -531,7 +530,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
 
     // then
     assertThat(response)
-      .satisfies(r -> assertThat(r.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN))
+      .satisfies(r -> assertThat(r.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()))
       .extracting(r -> r.readEntity(ErrorResponseDto.class))
       .extracting(ErrorResponseDto::getDetailedMessage)
       .isEqualTo(String.format(SCOPE_NOT_AUTHORIZED_MESSAGE, KERMIT_USER, scopeToAdd.getId()));
@@ -564,7 +563,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -589,7 +588,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(response.getStatus()).isEqualTo(403);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private void deployAndImportDefinition(int definitionResourceType, final String definitionKey,
@@ -645,7 +644,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   private EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {

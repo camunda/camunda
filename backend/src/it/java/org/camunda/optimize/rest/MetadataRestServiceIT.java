@@ -10,6 +10,8 @@ import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
 import org.camunda.optimize.service.metadata.Version;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -22,7 +24,7 @@ public class MetadataRestServiceIT extends AbstractIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetOptimizeVersionRequest()
-        .execute(OptimizeVersionDto.class, 200);
+        .execute(OptimizeVersionDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(optimizeVersionDto.getOptimizeVersion(), is(Version.RAW_VERSION));

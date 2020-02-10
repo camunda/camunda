@@ -33,7 +33,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     AuthorizedCollectionDefinitionRestDto collection = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedCollectionDefinitionRestDto.class, 200);
+      .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
@@ -59,7 +59,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedCollectionDefinitionRestDto.class, 200);
+      .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
@@ -68,7 +68,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionEntitiesRequest(collectionId)
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(entities.size(), is(2));
     assertThat(
@@ -98,7 +98,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -117,7 +117,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private String createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
@@ -126,7 +126,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -136,7 +136,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

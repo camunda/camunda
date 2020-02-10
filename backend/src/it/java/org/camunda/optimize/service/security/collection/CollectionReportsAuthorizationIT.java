@@ -81,7 +81,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     List<AuthorizedReportDefinitionDto> reports =
       getReportsForCollectionRequestAsKermit(collectionId1).executeAndReturnList(
         AuthorizedReportDefinitionDto.class,
-        200
+        Response.Status.OK.getStatusCode()
       );
 
     // then
@@ -111,7 +111,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     List<AuthorizedReportDefinitionDto> allAlerts =
       getReportsForCollectionRequestAsKermit(collectionId1).executeAndReturnList(
         AuthorizedReportDefinitionDto.class,
-        200
+        Response.Status.OK.getStatusCode()
       );
 
     // then
@@ -136,7 +136,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     Response response = getReportsForCollectionRequestAsKermit(collectionId1).execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private String createReportForCollection(final String collectionId, final int resourceType) {
@@ -189,7 +189,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildCreateSingleDecisionReportRequest(decReport)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -198,7 +198,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildCreateSingleProcessReportRequest(procReport)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -207,7 +207,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getReportsForCollectionRequestAsKermit(final String collectionId) {

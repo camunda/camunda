@@ -717,7 +717,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(null);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -735,7 +735,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -751,7 +751,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -767,7 +767,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -784,7 +784,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {

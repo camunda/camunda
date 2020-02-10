@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -272,7 +273,7 @@ public class ReportConflictIT extends AbstractIT {
       .forEach(dashboardId -> {
         final DashboardDefinitionDto dashboard = embeddedOptimizeExtension.getRequestExecutor()
           .buildGetDashboardRequest(dashboardId)
-          .execute(DashboardDefinitionDto.class, 200);
+          .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
         assertThat(dashboard).isNotNull();
         assertThat(dashboard.getReports()).extracting(ReportLocationDto::getId).contains(reportId);
       });
@@ -313,7 +314,7 @@ public class ReportConflictIT extends AbstractIT {
       embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
-      .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
     assertThat(reportDefinitionDtos)
       .extracting(ReportDefinitionDto::getId)
       .contains(reportId);
@@ -331,7 +332,7 @@ public class ReportConflictIT extends AbstractIT {
     String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     final DashboardDefinitionDto dashboardUpdateDto = new DashboardDefinitionDto();
@@ -344,7 +345,7 @@ public class ReportConflictIT extends AbstractIT {
       .buildUpdateDashboardRequest(id, dashboardUpdateDto)
       .execute();
 
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     return id;
   }
@@ -363,7 +364,7 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(alertCreationDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -371,14 +372,14 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String creatCombinedReport(CombinedReportDefinitionDto definitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(definitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -397,14 +398,14 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest(id)
-      .execute(ReportDefinitionDto.class, 200);
+      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ConflictResponseDto getReportDeleteConflicts(String id) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportDeleteConflictsRequest(id)
-      .execute(ConflictResponseDto.class, 200);
+      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String createAndStoreProcessReportWithDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
@@ -444,7 +445,7 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteReportRequest(reportId, force)
-      .execute(ConflictResponseDto.class, 409);
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
   }
 
@@ -452,7 +453,7 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -462,7 +463,7 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(id, updatedReport, force)
-      .execute(ConflictResponseDto.class, 409);
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
   }
 
   private ConflictResponseDto updateReportFailWithConflict(String id,
@@ -471,14 +472,14 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateSingleDecisionReportRequest(id, updatedReport, force)
-      .execute(ConflictResponseDto.class, 409);
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
   }
 
   private String createNewCollection() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -486,7 +487,7 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -494,7 +495,7 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -502,7 +503,7 @@ public class ReportConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private static Stream<Boolean> provideForceParameterAsBoolean() {

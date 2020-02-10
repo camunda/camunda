@@ -62,6 +62,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -180,7 +181,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     ));
     completePost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(completePost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException(
           "Could not create user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
@@ -207,7 +208,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     addCandidateGroupPost.setEntity(new StringEntity(bodyAsString));
     addCandidateGroupPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = httpClient.execute(addCandidateGroupPost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException(
           "Could not add candidate group! Status-code: " + response.getStatusLine().getStatusCode()
         );
@@ -238,7 +239,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     addCandidateGroupPost.setEntity(new StringEntity(bodyAsString));
     addCandidateGroupPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = httpClient.execute(addCandidateGroupPost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException(
           "Could not add candidate group! Status-code: " + response.getStatusLine().getStatusCode()
         );
@@ -313,7 +314,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     claimPost.setEntity(new StringEntity("{ \"userId\" : \"" + userId + "\" }"));
     claimPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = authenticatingClient.execute(claimPost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException(
           "Could not unclaim user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
@@ -382,7 +383,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     claimPost.setEntity(new StringEntity("{ \"userId\" : \"" + userId + "\" }"));
     claimPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = authenticatingClient.execute(claimPost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException(
           "Could not claim user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
@@ -396,7 +397,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     completePost.setEntity(new StringEntity("{}"));
     completePost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = authenticatingClient.execute(completePost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException(
           "Could not complete user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
@@ -565,7 +566,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     HttpDelete delete = new HttpDelete(getHistoricGetProcessInstanceUri(processInstanceId));
     try {
       CloseableHttpResponse response = HTTP_CLIENT.execute(delete);
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         log.error(
           "Could not delete process definition for process instance [{}]. Reason: wrong response code [{}]",
           processInstanceId,
@@ -616,7 +617,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     HttpDelete delete = new HttpDelete(getGetProcessInstanceUri(processInstanceId));
     try {
       CloseableHttpResponse response = HTTP_CLIENT.execute(delete);
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         log.error(
           "Could not cancel process definition for process instance [{}]. Reason: wrong response code [{}]",
           processInstanceId,
@@ -632,7 +633,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     HttpDelete delete = new HttpDelete(getVariableDeleteUri(variableName, processInstanceId));
     try {
       CloseableHttpResponse response = HTTP_CLIENT.execute(delete);
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         log.error(
           "Could not delete variable [{}] for process instance [{}]. Reason: wrong response code [{}]",
           variableName,
@@ -667,7 +668,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     DeploymentDto deployment = new DeploymentDto();
     try {
       CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(deploymentRequest);
-      if (response.getStatusLine().getStatusCode() != 200) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         throw new RuntimeException("Something really bad happened during deployment, " +
                                      "could not create a deployment!");
       }
@@ -698,7 +699,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
       requestBodyAsJson = OBJECT_MAPPER.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
       try (final CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
-        if (response.getStatusLine().getStatusCode() != 200) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
           String body = "";
           if (response.getEntity() != null) {
             body = EntityUtils.toString(response.getEntity());
@@ -880,7 +881,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
       requestBodyAsJson = OBJECT_MAPPER.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
       try (CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(post)) {
-        if (response.getStatusLine().getStatusCode() != 200) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
           String body = "";
           if (response.getEntity() != null) {
             body = EntityUtils.toString(response.getEntity());
@@ -997,7 +998,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
       httpPost.addHeader("Content-Type", "application/json");
       httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
       try (CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost)) {
-        if (response.getStatusLine().getStatusCode() != 204) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
           throw new OptimizeIntegrationTestException("Wrong status code when trying to create tenant!");
         }
       }
@@ -1016,7 +1017,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
       httpPut.addHeader("Content-Type", "application/json");
       httpPut.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(tenantDto), ContentType.APPLICATION_JSON));
       try (CloseableHttpResponse response = HTTP_CLIENT.execute(httpPut)) {
-        if (response.getStatusLine().getStatusCode() != 204) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
           throw new OptimizeIntegrationTestException("Wrong status code when trying to update tenant!");
         }
       }
@@ -1037,7 +1038,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
       httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(userDto), ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new OptimizeIntegrationTestException("Wrong status code when trying to add user!");
       }
       response.close();
@@ -1056,7 +1057,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     }
     request.addHeader("Content-Type", "application/json");
     try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new OptimizeIntegrationTestException("Wrong status code when trying to unlock user!");
       }
     }
@@ -1071,7 +1072,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
         new StringEntity(OBJECT_MAPPER.writeValueAsString(authorizationDto), ContentType.APPLICATION_JSON)
       );
       CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
-      assertThat(response.getStatusLine().getStatusCode(), is(200));
+      assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.OK.getStatusCode()));
       response.close();
     } catch (IOException e) {
       log.error("Could not create authorization", e);
@@ -1107,7 +1108,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
         httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(values), ContentType.APPLICATION_JSON));
         CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
-        assertThat(response.getStatusLine().getStatusCode(), is(200));
+        assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.OK.getStatusCode()));
         response.close();
       } catch (Exception e) {
         log.error("error creating authorization", e);
@@ -1146,7 +1147,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
       httpPost.setEntity(new StringEntity(OBJECT_MAPPER.writeValueAsString(groupDto), ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = HTTP_CLIENT.execute(httpPost);
-      assertThat(response.getStatusLine().getStatusCode(), is(204));
+      assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.NO_CONTENT.getStatusCode()));
       response.close();
     } catch (Exception e) {
       log.error("error creating group", e);
@@ -1160,7 +1161,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
 
       put.setEntity(new StringEntity("", ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = HTTP_CLIENT.execute(put);
-      assertThat(response.getStatusLine().getStatusCode(), is(204));
+      assertThat(response.getStatusLine().getStatusCode(), is(Response.Status.NO_CONTENT.getStatusCode()));
       response.close();
     } catch (Exception e) {
       log.error("error creating group members", e);
@@ -1238,7 +1239,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
     HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
     try (CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(deploymentRequest)) {
-      if (response.getStatusLine().getStatusCode() != 200) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         String responseErrorMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
         String exceptionMessage = String.format(
           "Something really bad happened during deployment! Expected response code 200 but got [%d]. The following " +

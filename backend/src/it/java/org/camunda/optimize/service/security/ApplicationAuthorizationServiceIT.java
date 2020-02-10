@@ -333,11 +333,11 @@ public class ApplicationAuthorizationServiceIT extends AbstractIT {
   private void validateUserIsNotAuthorized(String user, String password) {
     Response response = embeddedOptimizeExtension.authenticateUserRequest(user, password);
 
-    assertThat(response.getStatus(),is(403));
+    assertThat(response.getStatus(),is(Response.Status.FORBIDDEN.getStatusCode()));
   }
   private void validateThatUserCanBeAuthenticated(String user, String password) {
     Response response = embeddedOptimizeExtension.authenticateUserRequest(user, password);
 
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(),is(Response.Status.OK.getStatusCode()));
   }
 }

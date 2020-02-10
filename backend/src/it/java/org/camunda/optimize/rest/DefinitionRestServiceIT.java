@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
@@ -58,7 +59,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
         definitionType.getId(),
         expectedDefinition.getKey()
       )
-      .execute(DefinitionWithTenantsDto.class, 200);
+      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -79,7 +80,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
         PROCESS.getId(),
         expectedDefinition.getKey()
       )
-      .execute(DefinitionWithTenantsDto.class, 200);
+      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -100,7 +101,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .execute();
 
     assertThat(response).isNotNull();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -114,7 +115,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .execute();
 
     assertThat(response).isNotNull();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -129,7 +130,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .execute();
 
     assertThat(response).isNotNull();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
@@ -155,7 +156,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
         definitionType.getId(),
         expectedDefinition.getKey()
       )
-      .execute(DefinitionWithTenantsDto.class, 200);
+      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -187,7 +188,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
         definitionType.getId(),
         expectedDefinition.getKey()
       )
-      .execute(DefinitionWithTenantsDto.class, 200);
+      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -221,7 +222,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
         definitionType.getId(),
         expectedDefinition.getKey()
       )
-      .execute(DefinitionWithTenantsDto.class, 200);
+      .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definition).isNotNull();
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -268,7 +269,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions)
       .isNotEmpty()
@@ -359,7 +360,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions)
       .isNotEmpty()
@@ -412,7 +413,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions)
       .isNotEmpty()
@@ -497,7 +498,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
-      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions)
       .isNotEmpty()
@@ -549,7 +550,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .execute();
 
     assertThat(response).isNotNull();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -599,7 +600,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -661,7 +662,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -751,7 +752,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitionsGroupedByTenant()
-      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+      .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
@@ -807,7 +808,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .execute();
 
     assertThat(response).isNotNull();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   private DefinitionOptimizeDto createEventBasedDefinition(final String key, final String version, final String name) {

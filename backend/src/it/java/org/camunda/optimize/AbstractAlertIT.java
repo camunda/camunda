@@ -70,7 +70,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -235,7 +235,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -249,7 +249,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateSingleDecisionReportRequest(decReport)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -366,7 +366,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildUpdateSingleProcessReportRequest(id, updatedReport, true)
       .execute();
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   protected ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess() {

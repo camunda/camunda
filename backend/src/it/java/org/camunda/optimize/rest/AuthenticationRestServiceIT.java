@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest("admin", "admin");
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     String responseEntity = response.readEntity(String.class);
     assertThat(responseEntity, is(notNullValue()));
   }
@@ -53,7 +54,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(200));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
     String responseEntity = logoutResponse.readEntity(String.class);
     assertThat(responseEntity, is("OK"));
   }
@@ -69,7 +70,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(401));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -82,7 +83,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(401));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -94,7 +95,7 @@ public class AuthenticationRestServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(200));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test

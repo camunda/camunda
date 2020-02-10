@@ -70,6 +70,6 @@ public class NoCachingIT extends AbstractIT {
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 }

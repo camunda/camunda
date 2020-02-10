@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.plugin.security.authentication;
 
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -72,7 +73,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
 
@@ -91,7 +92,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertThat(response.getCookies().get(OPTIMIZE_AUTHORIZATION), is(notNullValue()));
   }
 
@@ -138,7 +139,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     optimizeAuthCookieIsBeingDeleted(response);
   }
 
@@ -157,7 +158,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
     optimizeAuthCookieIsBeingDeleted(response);
   }
 
@@ -174,7 +175,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .buildGetProcessDefinitionsRequest()
       .addSingleCookie(newCookie.getName(), newCookie.getValue())
       .withoutAuthentication()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then there are not definitions since kermit is not authorized to see definitions
     assertThat(definitions.isEmpty(), is(true));
@@ -189,7 +190,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .buildGetProcessDefinitionsRequest()
       .addSingleCookie(newCookie.getName(), newCookie.getValue())
       .withoutAuthentication()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions.size(), is(1));
   }

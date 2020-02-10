@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -456,7 +457,7 @@ public class ProcessVariableNameIT extends AbstractIT {
     return embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
+            .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {

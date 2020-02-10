@@ -63,7 +63,7 @@ public class AuthenticationRestService {
   @GET
   @Path("test")
   public Response testAuthentication() {
-    return Response.status(200).entity("OK").build();
+    return Response.status(Response.Status.OK).entity("OK").build();
   }
 
   /**
@@ -76,7 +76,7 @@ public class AuthenticationRestService {
   @Path("logout")
   public Response logout(@Context ContainerRequestContext requestContext) {
     sessionService.invalidateSession(requestContext);
-    return Response.status(200)
+    return Response.status(Response.Status.OK)
       .entity("OK")
       .cookie(authCookieService.createDeleteOptimizeAuthCookie())
       .build();

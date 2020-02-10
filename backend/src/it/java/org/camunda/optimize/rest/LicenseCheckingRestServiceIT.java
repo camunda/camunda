@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.license.LicenseManager;
@@ -46,7 +47,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertResult(response, CUSTOMER_ID, VALID_UNTIL, false);
   }
 
@@ -62,7 +63,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertResult(response, CUSTOMER_ID, VALID_UNTIL, false);
   }
 
@@ -79,7 +80,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertResult(response, CUSTOMER_ID, null, true);
   }
 
@@ -91,7 +92,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // when
     response = embeddedOptimizeExtension
@@ -100,7 +101,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -113,7 +114,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("License Key has wrong format."), is(true));
@@ -129,7 +130,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("Your license has expired."), is(true));
@@ -143,7 +144,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildValidateLicenseRequest()
-      .execute(String.class, 400);
+      .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(
@@ -164,7 +165,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -180,7 +181,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -196,7 +197,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -209,7 +210,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("Your license is invalid."), is(true));
@@ -225,7 +226,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("Your license is invalid."), is(true));
@@ -241,7 +242,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("Your license is invalid."), is(true));
@@ -257,7 +258,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("Your license is invalid."), is(true));
@@ -273,7 +274,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("Your license has expired."), is(true));
@@ -289,7 +290,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     String errorMessage =
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 400);
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorMessage.contains("Your license has expired."), is(true));

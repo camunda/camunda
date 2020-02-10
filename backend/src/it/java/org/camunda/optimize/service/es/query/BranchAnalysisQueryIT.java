@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -903,7 +904,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     //when
     Response response = getResponse(null);
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @Test
@@ -911,7 +912,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     //when
     Response response = getResponse(new BranchAnalysisQueryDto());
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -922,7 +923,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     //when
     Response response = getResponse(new BranchAnalysisQueryDto());
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -934,7 +935,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     Response response = getResponse(request);
 
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -947,7 +948,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     Response response = getResponse(request);
 
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private void startBypassProcessAndTakeLongWayWithoutTask(ProcessDefinitionEngineDto processDefinition) {

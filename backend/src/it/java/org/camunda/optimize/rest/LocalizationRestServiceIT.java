@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -34,7 +35,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final JsonNode localeJson = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(localeCode)
-      .execute(JsonNode.class, 200);
+      .execute(JsonNode.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(localeJson, is(expectedLocaleJson));
@@ -52,7 +53,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final JsonNode localeJson = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(localeCode)
-      .execute(JsonNode.class, 200);
+      .execute(JsonNode.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(localeJson, is(expectedLocaleJson));
@@ -69,7 +70,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final JsonNode localeJson = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(null)
-      .execute(JsonNode.class, 200);
+      .execute(JsonNode.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(localeJson, is(expectedLocaleJson));
@@ -88,7 +89,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -101,7 +102,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final String localeMarkdown = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
@@ -119,7 +120,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final String localeMarkdown = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizedWhatsNewMarkdownRequest(localeCode)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
@@ -135,7 +136,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
     final String localeMarkdown = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizedWhatsNewMarkdownRequest(null)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(localeMarkdown, is(expectedLocalizedMarkdown));
@@ -155,7 +156,7 @@ public class LocalizationRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @SneakyThrows

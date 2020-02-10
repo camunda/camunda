@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
@@ -37,7 +38,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     List<DecisionDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDecisionDefinitionsRequest()
-      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(definitions, is(notNullValue()));
@@ -62,7 +63,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetDecisionDefinitionsRequest()
-      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then we only get 1 definition, the one kermit is authorized to see
     assertThat(definitions, is(notNullValue()));
@@ -80,7 +81,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -94,7 +95,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
-        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions, is(notNullValue()));
@@ -113,7 +114,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(expectedDefinitionDto.getKey(), expectedDefinitionDto.getVersion())
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(expectedDefinitionDto.getDmn10Xml()));
@@ -133,7 +134,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(key, ALL_VERSIONS_STRING)
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(expectedDto2.getDmn10Xml()));
@@ -156,7 +157,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .buildGetDecisionDefinitionXmlRequest(
           firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), firstTenantDefinition.getTenantId()
         )
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(firstTenantDefinition.getDmn10Xml()));
@@ -178,7 +179,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .buildGetDecisionDefinitionXmlRequest(
           firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), null
         )
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(secondTenantDefinition.getDmn10Xml()));
@@ -198,7 +199,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .buildGetDecisionDefinitionXmlRequest(
           sharedDecisionDefinition.getKey(), sharedDecisionDefinition.getVersion(), firstTenantId
         )
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(sharedDecisionDefinition.getDmn10Xml()));
@@ -216,7 +217,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -234,7 +235,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .execute();
 
     // then the status code is forbidden
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -248,7 +249,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(expectedDefinitionDto.getKey(), "nonsenseVersion")
-        .execute(String.class, 404);
+        .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertThat(message, containsString("Could not find xml for decision definition with key"));
@@ -265,7 +266,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest("nonsenseKey", expectedDefinitionDto.getVersion())
-        .execute(String.class, 404);
+        .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertThat(message, containsString("Could not find xml for decision definition with key"));
@@ -277,7 +278,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .getRequestExecutor()
       .withUserAuthentication(userId, userId)
       .buildGetDecisionDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   @Override

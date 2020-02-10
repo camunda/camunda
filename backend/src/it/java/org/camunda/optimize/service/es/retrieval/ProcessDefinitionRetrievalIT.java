@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -40,7 +41,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions.size(), is(11));
   }
@@ -60,7 +61,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -94,7 +95,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -119,7 +120,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -141,7 +142,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -172,7 +173,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), processDefinition.getVersion())
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
@@ -210,7 +211,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), ALL_VERSIONS)
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
@@ -244,7 +245,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(definitionKey, ALL_VERSIONS)
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then: we get the latest version xml
     assertThat(actualXml, is(Bpmn.convertToString(latestModelInstance)));

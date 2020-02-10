@@ -8,7 +8,6 @@ package org.camunda.optimize.service.security.collection;
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
@@ -63,7 +62,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
 
     // when
     final Response response = copyDashboardToCollection(dashboardId, collectionId);
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     final List<EntityDto> entities = getEntities();
 
     // then
@@ -95,7 +94,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     final Response response = copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
   }
 
   @ParameterizedTest(name = "raise a conflict if one of the contained reports tenants is not in scope with {0}")
@@ -118,14 +117,14 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     final Response response = copyDashboardToCollection(dashboardId, collectionId);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
   }
 
   private List<EntityDto> getEntities() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
   }
 
   private void createScopeWithTenants(final String collectionId, final String definitionKey,
@@ -137,7 +136,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
   private void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildAddScopeEntriesToCollectionRequest(collectionId, singletonList(entry))
-      .execute(IdDto.class, 204);
+      .execute(IdDto.class, Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private Response addSingleReportToDashboard(final String dashboardId, final String privateReportId) {
@@ -171,7 +170,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
           final IdDto combinedReportId = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-            .execute(IdDto.class, HttpStatus.SC_OK);
+            .execute(IdDto.class, Response.Status.OK.getStatusCode());
           addSingleReportToCombinedReport(combinedReportId.getId(), singleReportId.getId());
           return combinedReportId;
         } else {
@@ -182,7 +181,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
           return embeddedOptimizeExtension
             .getRequestExecutor()
             .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-            .execute(IdDto.class, HttpStatus.SC_OK);
+            .execute(IdDto.class, Response.Status.OK.getStatusCode());
         }
       case DECISION:
         SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
@@ -192,7 +191,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-          .execute(IdDto.class, HttpStatus.SC_OK);
+          .execute(IdDto.class, Response.Status.OK.getStatusCode());
       default:
         throw new OptimizeIntegrationTestException("Unsupported reportType: " + reportScenario.reportType);
     }
@@ -211,7 +210,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(null)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -226,7 +225,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

@@ -18,6 +18,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -174,7 +175,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     return embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
+            .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws

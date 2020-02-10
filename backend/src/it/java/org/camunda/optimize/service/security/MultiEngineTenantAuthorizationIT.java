@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -245,14 +246,14 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
           .getRequestExecutor()
           .withUserAuthentication(KERMIT_USER, KERMIT_USER)
           .buildGetProcessDefinitionVersionsWithTenants()
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
         definitions = embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(KERMIT_USER, KERMIT_USER)
           .buildGetDecisionDefinitionVersionsWithTenants()
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
         break;
       default:
         throw new OptimizeIntegrationTestException("Unsupported resource type: " + definitionResourceType);

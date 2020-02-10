@@ -68,7 +68,7 @@ public class EventIngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     assertEventDtosArePersisted(eventDtos);
   }
@@ -105,7 +105,7 @@ public class EventIngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     assertEventDtosArePersisted(eventDtos);
   }
@@ -126,7 +126,7 @@ public class EventIngestionRestIT extends AbstractIT {
 
     // then
     assertThat(response).satisfies(httpResponse -> {
-      assertThat(httpResponse.getStatus()).isEqualTo(429);
+      assertThat(httpResponse.getStatus()).isEqualTo(Response.Status.TOO_MANY_REQUESTS.getStatusCode());
       assertThat(httpResponse.getHeaderString(HttpHeaders.RETRY_AFTER)).isEqualTo(IngestionQoSFilter.RETRY_AFTER_SECONDS);
     });
   }
@@ -145,7 +145,7 @@ public class EventIngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     assertEventDtosArePersisted(Collections.singletonList(eventDto));
   }
@@ -181,7 +181,7 @@ public class EventIngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_UNAUTHORIZED);
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 
     assertEventDtosArePersisted(Collections.emptyList());
   }
@@ -198,7 +198,7 @@ public class EventIngestionRestIT extends AbstractIT {
     // when
     final ErrorResponseDto ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getAccessToken())
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+      .execute(ErrorResponseDto.class, Response.Status.REQUEST_ENTITY_TOO_LARGE.getStatusCode());
 
     // then
     assertThat(ingestResponse.getErrorMessage()).contains("Request too large");
@@ -219,7 +219,7 @@ public class EventIngestionRestIT extends AbstractIT {
       final CloseableHttpResponse response = httpClient.execute(httpPut);
 
       // then
-      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(HttpStatus.SC_LENGTH_REQUIRED);
+      assertThat(response.getStatusLine().getStatusCode()).isEqualTo(Response.Status.LENGTH_REQUIRED.getStatusCode());
       final ErrorResponseDto errorResponseDto = embeddedOptimizeExtension.getObjectMapper()
         .readValue(response.getEntity().getContent(), ErrorResponseDto.class);
 
@@ -245,7 +245,7 @@ public class EventIngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     assertEventDtosArePersisted(Collections.singletonList(eventDto));
   }
@@ -263,7 +263,7 @@ public class EventIngestionRestIT extends AbstractIT {
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(Collections.singletonList(eventDto), getAccessToken())
-      .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ValidationErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
@@ -297,7 +297,7 @@ public class EventIngestionRestIT extends AbstractIT {
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(Collections.singletonList(eventDto), getAccessToken())
-      .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ValidationErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);
@@ -332,7 +332,7 @@ public class EventIngestionRestIT extends AbstractIT {
     // when
     final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getAccessToken())
-      .execute(ValidationErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ValidationErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(ingestErrorResponse.getErrorMessage()).isEqualTo(THE_REQUEST_BODY_WAS_INVALID);

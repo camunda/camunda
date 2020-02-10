@@ -6,7 +6,6 @@
 package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -22,7 +21,7 @@ public class SharingClient {
   public DashboardDefinitionDto evaluateDashboard(final String dashboardShareId) {
     return getRequestExecutor()
       .buildEvaluateSharedDashboardRequest(dashboardShareId)
-      .execute(DashboardDefinitionDto.class, HttpStatus.SC_OK);
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   public Response getDashboardShareResponse(final String dashboardId) {
@@ -35,7 +34,7 @@ public class SharingClient {
                                                                  final String reportId) {
     return getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
-      .execute(ReportDefinitionDto.class, HttpStatus.SC_OK);
+      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

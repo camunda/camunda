@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -1071,7 +1072,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -1090,7 +1091,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -1110,7 +1111,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -1127,7 +1128,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
 

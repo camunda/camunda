@@ -18,6 +18,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -90,7 +91,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -218,7 +219,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     triggerAndCompleteCheckJob(id);
@@ -243,7 +244,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     triggerAndCompleteCheckJob(id);

@@ -241,7 +241,7 @@ public class DashboardHandlingIT extends AbstractIT {
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", "null")
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
@@ -275,7 +275,7 @@ public class DashboardHandlingIT extends AbstractIT {
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", newCollectionId)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
@@ -344,7 +344,7 @@ public class DashboardHandlingIT extends AbstractIT {
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
 
     // then
-    assertThat(updateResponse.getStatus(), is(204));
+    assertThat(updateResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -359,7 +359,7 @@ public class DashboardHandlingIT extends AbstractIT {
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
 
     // then
-    assertThat(updateResponse.getStatus(), is(400));
+    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -373,7 +373,7 @@ public class DashboardHandlingIT extends AbstractIT {
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
 
     // then
-    assertThat(updateResponse.getStatus(), is(400));
+    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -387,7 +387,7 @@ public class DashboardHandlingIT extends AbstractIT {
     final Response updateResponse = addSingleReportToDashboard(dashboardId, privateReportId);
 
     // then
-    assertThat(updateResponse.getStatus(), is(400));
+    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -400,14 +400,14 @@ public class DashboardHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     // when
     final Response updateResponse = addSingleReportToDashboard(dashboardId, reportId);
 
     // then
-    assertThat(updateResponse.getStatus(), is(403));
+    assertThat(updateResponse.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -459,7 +459,7 @@ public class DashboardHandlingIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private String addEmptyPrivateDashboard() {
@@ -472,7 +472,7 @@ public class DashboardHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -481,14 +481,14 @@ public class DashboardHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
       .execute();
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private String createNewSingleReport() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -511,7 +511,7 @@ public class DashboardHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

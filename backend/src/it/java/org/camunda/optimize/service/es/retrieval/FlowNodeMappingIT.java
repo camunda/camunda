@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +48,7 @@ public class FlowNodeMappingIT extends AbstractIT {
             embeddedOptimizeExtension
             .getRequestExecutor()
             .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-            .execute(FlowNodeNamesResponseDto.class, 200);
+            .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(result, is(notNullValue()));
@@ -96,7 +97,7 @@ public class FlowNodeMappingIT extends AbstractIT {
             embeddedOptimizeExtension
                     .getRequestExecutor()
                     .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
-                    .execute(FlowNodeNamesResponseDto.class, 200);
+                    .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(result, is(notNullValue()));

@@ -90,7 +90,7 @@ public class CollectionClient {
   public String createNewCollection() {
     return getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -98,20 +98,20 @@ public class CollectionClient {
     return getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
   public void updateCollection(String collectionId, PartialCollectionDefinitionDto updatedCollection) {
     getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, updatedCollection)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public CollectionDefinitionRestDto getCollectionById(final String collectionId) {
     return getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(CollectionDefinitionRestDto.class, 200);
+      .execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
@@ -132,7 +132,7 @@ public class CollectionClient {
   public List<EntityDto> getEntitiesForCollection(final String collectionId){
     return getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId)
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
   }
 
   public void updateCollectionScopeAsKermit(final String collectionId,
@@ -145,7 +145,7 @@ public class CollectionClient {
         new CollectionScopeEntryUpdateDto(tenants)
       )
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public void createScopeForCollection(final String collectionId,
@@ -192,7 +192,7 @@ public class CollectionClient {
   public void addScopeEntriesToCollection(final String collectionId, final List<CollectionScopeEntryDto> entries) {
     getRequestExecutor()
       .buildAddScopeEntriesToCollectionRequest(collectionId, entries)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public void addScopeEntryToCollectionWithUser(final String collectionId, final CollectionScopeEntryDto entry,
@@ -200,13 +200,13 @@ public class CollectionClient {
     getRequestExecutor()
       .buildAddScopeEntriesToCollectionRequest(collectionId, singletonList(entry))
       .withUserAuthentication(user, password)
-      .execute(IdDto.class, 204);
+      .execute(IdDto.class, Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public IdDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto) {
     return getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   public OptimizeRequestExecutor getAlertsRequest(final String userId, final String password,
@@ -220,14 +220,14 @@ public class CollectionClient {
     return getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
       .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(CollectionRoleRestDto.class, 200);
+      .executeAndReturnList(CollectionRoleRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   public List<IdDto> getCollectionRoleIdDtos(final String collectionId) {
     return getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
       .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(IdDto.class, 200);
+      .executeAndReturnList(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   public IdDto copyCollection(String collectionId) {
@@ -243,7 +243,7 @@ public class CollectionClient {
     }
 
     return executor
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

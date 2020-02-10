@@ -63,7 +63,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
     final List<CollectionRoleRestDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
     assertThat(actualRoles, is(expectedRoles));
   }
@@ -377,7 +377,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(addRoleResponse.getStatus(), is(400));
+    assertThat(addRoleResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -396,7 +396,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(addRoleResponse.getStatus(), is(400));
+    assertThat(addRoleResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -434,7 +434,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(addRoleResponse.getStatus(), is(400));
+    assertThat(addRoleResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -455,7 +455,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+    assertThat(response.getStatus(), is(Response.Status.CONFLICT.getStatusCode()));
     final ConflictResponseDto conflictResponseDto = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponseDto.getErrorMessage(), is(notNullValue()));
 
@@ -498,7 +498,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+    assertThat(response.getStatus(), is(Response.Status.CONFLICT.getStatusCode()));
     final ConflictResponseDto conflictResponseDto = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponseDto.getErrorMessage(), is(notNullValue()));
 
@@ -520,7 +520,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpStatus.SC_NOT_FOUND));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
 
     assertThat(collectionClient.getCollectionRoles(collectionId), is(expectedRoles));
   }
@@ -558,7 +558,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpStatus.SC_CONFLICT));
+    assertThat(response.getStatus(), is(Response.Status.CONFLICT.getStatusCode()));
 
     final List<CollectionRoleRestDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
     assertThat(actualRoles, is(expectedRoles));
@@ -571,7 +571,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleEntryId, updateDto)
       .execute();
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private void deleteRoleFromCollection(final String collectionId,
@@ -580,7 +580,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .getRequestExecutor()
       .buildDeleteRoleToCollectionRequest(collectionId, roleEntryId)
       .execute();
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private List<CollectionRoleRestDto> getRoles(final String collectionId) {
@@ -592,6 +592,6 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(userId, password)
       .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(CollectionRoleRestDto.class, 200);
+      .executeAndReturnList(CollectionRoleRestDto.class, Response.Status.OK.getStatusCode());
   }
 }

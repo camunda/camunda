@@ -9,7 +9,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -150,7 +149,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(response.getStatus(), is(HttpStatus.SC_BAD_REQUEST));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -171,7 +170,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     IdDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, HttpStatus.SC_OK);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     //then
     AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
@@ -400,7 +399,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
 
     // then
-    assertThat(updateResponse.getStatus(), anyOf(equalTo(HttpStatus.SC_OK), equalTo(204)));
+    assertThat(updateResponse.getStatus(), anyOf(equalTo(Response.Status.OK.getStatusCode()), equalTo(Response.Status.NO_CONTENT.getStatusCode())));
   }
 
   @ParameterizedTest
@@ -415,7 +414,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId1));
 
     // then
-    assertThat(updateResponse.getStatus(), is(400));
+    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -429,7 +428,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, null));
 
     // then
-    assertThat(updateResponse.getStatus(), is(400));
+    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -443,7 +442,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Response updateResponse = scenario.apply(new CombinedReportUpdateData(singleReportId, collectionId));
 
     // then
-    assertThat(updateResponse.getStatus(), is(400));
+    assertThat(updateResponse.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -457,7 +456,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, HttpStatus.SC_OK)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     // when
@@ -465,7 +464,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
 
     // then
-    assertThat(updateResponse.getStatus(), is(403));
+    assertThat(updateResponse.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -484,7 +483,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     ErrorResponseDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReport, true)
-      .execute(ErrorResponseDto.class, HttpStatus.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(response.getErrorCode(), is("reportsNotCombinable"));
@@ -1119,7 +1118,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       evaluateUnsavedCombinedReportAndReturnResponse(createCombinedReportData(combinedReportId, singleReportId2));
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -1279,7 +1278,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, HttpStatus.SC_OK)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -1313,20 +1312,20 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, HttpStatus.SC_OK)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
   private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport, Boolean force) {
     Response response = getUpdateSingleProcessReportResponse(id, updatedReport, force);
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private void updateReport(String id, CombinedReportDefinitionDto updatedReport) {
@@ -1335,7 +1334,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   private void updateReport(String id, CombinedReportDefinitionDto updatedReport, Boolean force) {
     Response response = getUpdateCombinedProcessReportResponse(id, updatedReport, force);
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport,
@@ -1388,7 +1387,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .addQueryParams(queryParams)
       .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(ReportDefinitionDto.class, HttpStatus.SC_OK);
+      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String addEmptySingleProcessReportToCollection(final String collectionId) {
@@ -1397,7 +1396,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, HttpStatus.SC_OK)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -1405,7 +1404,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, HttpStatus.SC_OK)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

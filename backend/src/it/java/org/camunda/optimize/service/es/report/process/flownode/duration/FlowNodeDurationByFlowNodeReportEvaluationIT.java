@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.flownode.duration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.apache.http.HttpStatus;
 import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -921,7 +922,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -935,7 +936,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -949,7 +950,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() {

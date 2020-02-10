@@ -125,7 +125,7 @@ public class EngineContext {
         .resolveTemplate("id", userId)
         .request(MediaType.APPLICATION_JSON)
         .get();
-      if (response.getStatus() == 200) {
+      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         engineUserDto = response.readEntity(EngineListUserDto.class);
       }
     } catch (Exception e) {
@@ -172,7 +172,7 @@ public class EngineContext {
       .path(USER_ENDPOINT)
       .request(MediaType.APPLICATION_JSON)
       .get();
-    if (response.getStatus() == 200) {
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       // @formatter:off
       return response.readEntity(new GenericType<List<EngineListUserDto>>() {})
       // @formatter:on
@@ -207,7 +207,7 @@ public class EngineContext {
         .resolveTemplate("id", groupId)
         .request(MediaType.APPLICATION_JSON)
         .get();
-      if (response.getStatus() == 200) {
+      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         groupDto = response.readEntity(EngineGroupDto.class);
       }
     } catch (Exception e) {
@@ -229,7 +229,7 @@ public class EngineContext {
         .path(USER_COUNT_ENDPOINT)
         .request(MediaType.APPLICATION_JSON)
         .get();
-      if (response.getStatus() == 200) {
+      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         return Optional.of(response.readEntity(CountDto.class).getCount());
       }
     } catch (Exception e) {
@@ -248,7 +248,7 @@ public class EngineContext {
       .path(GROUP_ENDPOINT)
       .request(MediaType.APPLICATION_JSON)
       .get();
-    if (response.getStatus() == 200) {
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       // @formatter:off
       return response.readEntity(new GenericType<List<EngineGroupDto>>() {}).stream()
         .map(engineGroupDto -> new GroupDto(engineGroupDto.getId(),
@@ -273,7 +273,7 @@ public class EngineContext {
         .path(GROUP_ENDPOINT)
         .request(MediaType.APPLICATION_JSON)
         .get();
-      if (response.getStatus() == 200) {
+      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         // @formatter:off
         return response.readEntity(new GenericType<List<EngineGroupDto>>() {})
           .stream()
@@ -339,7 +339,7 @@ public class EngineContext {
       .queryParam(RESOURCE_TYPE, resourceType)
       .request(MediaType.APPLICATION_JSON)
       .get();
-    if (response.getStatus() == 200) {
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       // @formatter:off
       return response.readEntity(new GenericType<List<AuthorizationDto>>() {});
       // @formatter:on

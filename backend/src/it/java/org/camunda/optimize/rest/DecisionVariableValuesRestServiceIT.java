@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
@@ -33,7 +34,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest(name = "get variable values for type {0}")
@@ -44,7 +45,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
 
     // when
     List responseList = getExecutor(inputOutput, request)
-      .executeAndReturnList(String.class, 200);
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList.isEmpty(), is(true));
@@ -62,7 +63,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest(name = "missing variable type query param throws error for type {0}")
@@ -77,7 +78,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest(name = "missing decision definition key query param throws error for type {0}")
@@ -92,7 +93,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest(name = "missing decision definition version query param throws error for type {0}")
@@ -107,7 +108,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private static Stream<String> getInputOutputArgs() {

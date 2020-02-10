@@ -27,6 +27,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public class ForceReimportIT extends AbstractIT {
     final String dashboardId = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
     addLicense();
 
@@ -120,7 +121,7 @@ public class ForceReimportIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private void addLicense() {
@@ -151,7 +152,7 @@ public class ForceReimportIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -199,14 +200,14 @@ public class ForceReimportIT extends AbstractIT {
   private DashboardDefinitionDto getDashboardById(final String dashboardId) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, 200);
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private List<AuthorizedReportDefinitionDto> getAllReportsInCollection(String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
-      .executeAndReturnList(AuthorizedReportDefinitionDto.class, 200);
+      .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {

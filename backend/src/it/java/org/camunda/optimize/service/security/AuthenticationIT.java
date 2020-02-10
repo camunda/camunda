@@ -31,7 +31,7 @@ public class AuthenticationIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -45,7 +45,7 @@ public class AuthenticationIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
 
     //then
-    assertThat(response.getStatus(),is(401));
+    assertThat(response.getStatus(),is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -58,7 +58,7 @@ public class AuthenticationIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "wrong");
 
     //then
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -67,7 +67,7 @@ public class AuthenticationIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
 
     //then
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -77,7 +77,7 @@ public class AuthenticationIT extends AbstractIT {
 
     // then
     Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -97,7 +97,7 @@ public class AuthenticationIT extends AbstractIT {
         .execute();
 
     //then
-    assertThat(testResponse.getStatus(), is(200));
+    assertThat(testResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
     String responseEntity = testResponse.readEntity(String.class);
     assertThat(responseEntity, is("OK"));
   }
@@ -121,7 +121,7 @@ public class AuthenticationIT extends AbstractIT {
         .execute();
 
     //then
-    assertThat(logoutResponse.getStatus(), is(401));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test

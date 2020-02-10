@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -675,7 +676,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -690,7 +691,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -705,7 +706,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -720,7 +721,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
@@ -749,7 +750,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     return embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableValuesRequest(valueRequestDto)
-            .executeAndReturnList(String.class, 200);
+            .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
   private Response getVariableValueResponse(ProcessVariableValueRequestDto valueRequestDto) {

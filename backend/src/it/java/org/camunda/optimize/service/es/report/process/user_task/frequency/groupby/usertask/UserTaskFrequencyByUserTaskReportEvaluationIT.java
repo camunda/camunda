@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process.user_task.frequency.group
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -649,7 +650,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -662,7 +663,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -675,7 +676,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {

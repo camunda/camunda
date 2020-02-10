@@ -142,7 +142,7 @@ public class ESIndexAdjuster {
       try {
         final Response response = restClient.getLowLevelClient()
           .performRequest(new Request(HttpGet.METHOD_NAME, "/" + TASKS_ENDPOINT + "/" + taskId));
-        if (response.getStatusLine().getStatusCode() == 200) {
+        if (response.getStatusLine().getStatusCode() == javax.ws.rs.core.Response.Status.OK.getStatusCode()) {
           TaskResponse taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
           if (taskResponse.getError() != null) {
             logger.error(

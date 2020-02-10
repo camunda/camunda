@@ -64,7 +64,7 @@ public class StatusCheckingService {
         .getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()) + EngineConstantsUtil.VERSION_ENDPOINT;
       try (final Response response = engineContext.getEngineClient()
         .target(engineEndpoint).request(MediaType.APPLICATION_JSON).get()) {
-        isConnected = response.getStatus() == HttpStatus.SC_OK;
+        isConnected = response.getStatus() == Response.Status.OK.getStatusCode();
       }
     } catch (Exception ignored) {
       // do nothing
@@ -79,7 +79,7 @@ public class StatusCheckingService {
       ClusterHealthResponse healthResponse = esClient.getHighLevelClient().cluster()
         .health(request, RequestOptions.DEFAULT);
 
-      isConnected = healthResponse.status().getStatus() == HttpStatus.SC_OK
+      isConnected = healthResponse.status().getStatus() == Response.Status.OK.getStatusCode()
         && healthResponse.getStatus() != ClusterHealthStatus.RED;
     } catch (Exception ignored) {
       // do nothing

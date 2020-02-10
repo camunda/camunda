@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.jetty;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -57,7 +58,7 @@ public class RedirectToLicensePageIT extends AbstractIT {
       embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -70,7 +71,7 @@ public class RedirectToLicensePageIT extends AbstractIT {
       embeddedOptimizeExtension.rootTarget(LOGIN_PAGE).request().get();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertThat(response.getLocation(), is(nullValue()));
   }
 
@@ -96,7 +97,7 @@ public class RedirectToLicensePageIT extends AbstractIT {
       embeddedOptimizeExtension.rootTarget(INDEX_PAGE).request().get();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -133,7 +134,7 @@ public class RedirectToLicensePageIT extends AbstractIT {
         .rootTarget("/process/leadQualification:2:7f0f82b8-5255-11e7-99a3-02421525a25c/none").request().get();
 
     // then first redirect request should be the root page
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // when I now redirect to root page
     response =
@@ -141,7 +142,7 @@ public class RedirectToLicensePageIT extends AbstractIT {
         .rootTarget(INDEX_PAGE).request().get();
 
     // then I shouldn't get a redirect to the license page
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -166,7 +167,7 @@ public class RedirectToLicensePageIT extends AbstractIT {
       embeddedOptimizeExtension.rootTarget(INDEX_HTML_PAGE).request().get();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
 }

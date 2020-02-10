@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
@@ -688,7 +689,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     Response response = evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @Test
@@ -705,7 +706,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     Response response = evaluateReportAndReturnResponse(reportData);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   private DecisionDefinitionEngineDto deployDefaultDecisionDefinitionWithDifferentKey(final String key) {

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -50,7 +51,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(307));
+    assertThat(response.getStatus(), is(Response.Status.TEMPORARY_REDIRECT.getStatusCode()));
     assertThat(response.getLocation().getPath(), is("/login"));
   }
 
@@ -70,7 +71,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -89,7 +90,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertThat(getResponseContentAsString(response).length(), is(greaterThan(0)));
   }
 
@@ -109,7 +110,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     IOUtils.copy(response.readEntity(InputStream.class), bos);
     byte[] result = bos.toByteArray();
@@ -132,7 +133,7 @@ public class ExportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
 
@@ -145,7 +146,7 @@ public class ExportRestServiceIT extends AbstractIT {
         .buildCsvExportRequest("UFUK", "IGDE.csv")
         .execute();
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   private String createAndStoreDefaultValidRawProcessReportDefinition(String processDefinitionKey,
@@ -206,7 +207,7 @@ public class ExportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -214,7 +215,7 @@ public class ExportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

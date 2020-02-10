@@ -86,7 +86,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
       .executeAndReturnList(
         AlertDefinitionDto.class,
-        200
+        Response.Status.OK.getStatusCode()
       )
       .stream()
       .map(AlertDefinitionDto::getId)
@@ -120,7 +120,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
       .executeAndReturnList(
         AlertDefinitionDto.class,
-        200
+        Response.Status.OK.getStatusCode()
       )
       .stream()
       .map(AlertDefinitionDto::getId)
@@ -145,7 +145,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     Response response = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1).execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest(name = "viewers of a collection are not allowed to edit, delete or create alerts for reports of " +
@@ -172,9 +172,9 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     // then
     SoftAssertions softly = new SoftAssertions();
-    softly.assertThat(createResponse.getStatus()).isEqualTo(403);
-    softly.assertThat(editResponse.getStatus()).isEqualTo(403);
-    softly.assertThat(deleteResponse.getStatus()).isEqualTo(403);
+    softly.assertThat(createResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    softly.assertThat(editResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    softly.assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest(name = "Editors and managers of a collection are allowed to edit, delete and create alerts for " +
@@ -220,13 +220,13 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     // then
     SoftAssertions softly = new SoftAssertions();
 
-    softly.assertThat(managerCreateResponse.getStatus()).isEqualTo(200);
-    softly.assertThat(managerEditResponse.getStatus()).isEqualTo(204);
-    softly.assertThat(managerDeleteResponse.getStatus()).isEqualTo(204);
+    softly.assertThat(managerCreateResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    softly.assertThat(managerEditResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    softly.assertThat(managerDeleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
-    softly.assertThat(editorCreateResponse.getStatus()).isEqualTo(200);
-    softly.assertThat(editorEditResponse.getStatus()).isEqualTo(204);
-    softly.assertThat(editorDeleteResponse.getStatus()).isEqualTo(204);
+    softly.assertThat(editorCreateResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    softly.assertThat(editorEditResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    softly.assertThat(editorDeleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
@@ -234,7 +234,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
 }

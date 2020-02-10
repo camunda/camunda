@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import com.google.common.collect.Lists;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -53,7 +54,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -71,7 +72,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition, Collections.singletonList(null));
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -91,7 +92,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
       )
       .execute();
 
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -113,7 +114,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -133,7 +134,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -158,7 +159,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition1, Lists.newArrayList(tenantId1, tenantId2));
 
     //then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -178,7 +179,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     final Response response = executeBranchAnalysisAsKermit(processDefinition, Lists.newArrayList(tenantId));
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition) {

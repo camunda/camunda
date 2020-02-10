@@ -15,6 +15,7 @@ import org.camunda.optimize.service.util.configuration.ui.TextColorType;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
@@ -174,7 +175,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildGetUIConfigurationRequest()
-      .execute(UIConfigurationDto.class, 200);
+      .execute(UIConfigurationDto.class, Response.Status.OK.getStatusCode());
   }
 
   private void setWebappsEndpoint(String webappsEndpoint) {

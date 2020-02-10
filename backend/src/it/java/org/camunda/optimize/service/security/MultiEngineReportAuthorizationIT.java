@@ -12,8 +12,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -71,8 +71,8 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(200));
-    assertThat(responseSecondEngineKey.getStatus(), is(200));
+    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -101,7 +101,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(200));
+    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -130,7 +130,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(403));
+    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -157,7 +157,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(200));
+    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -184,7 +184,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(403));
+    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -223,7 +223,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(200));
+    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -261,7 +261,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(403));
+    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -299,7 +299,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(403));
+    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -350,8 +350,8 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseDefaultEngineKey.getStatus(), is(200));
-    assertThat(responseSecondEngineKey.getStatus(), is(403));
+    assertThat(responseDefaultEngineKey.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -391,7 +391,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(403));
+    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -431,7 +431,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
       .execute();
 
     // then
-    assertThat(responseSecondEngineKey.getStatus(), is(403));
+    assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {

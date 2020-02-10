@@ -66,7 +66,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
         .buildCreateAlertRequest(simpleAlert)
         .execute();
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // when
     SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
@@ -86,7 +86,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetAllAlertsRequest()
-        .executeAndReturnList(AlertDefinitionDto.class, 200);
+        .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(alertDefinitionDtos.size(), is(0));
   }
@@ -101,7 +101,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       .buildCreateAlertRequest(simpleAlert)
       .execute();
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // when
     response =
@@ -111,7 +111,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
         .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
@@ -122,7 +122,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       .buildGetAllAlertsRequest()
       .execute();
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     List<AlertDefinitionDto> alertDefinitionDtos = response.readEntity(
       new GenericType<List<AlertDefinitionDto>>() {
       }
@@ -140,7 +140,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildCreateAlertRequest(simpleAlert)
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(id, is(notNullValue()));
@@ -161,7 +161,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildCreateAlertRequest(simpleAlert)
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
@@ -175,7 +175,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     String alertId = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     // when
@@ -185,7 +185,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
@@ -201,7 +201,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildCreateAlertRequest(simpleAlert)
-        .execute(IdDto.class, 200)
+        .execute(IdDto.class, Response.Status.OK.getStatusCode())
         .getId();
 
     Trigger trigger = embeddedOptimizeExtension.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
@@ -221,7 +221,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
 
     List<AlertDefinitionDto> allAlerts = getAllAlerts();
     assertThat(allAlerts.get(0).isTriggered(), is(false));
@@ -411,6 +411,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 }

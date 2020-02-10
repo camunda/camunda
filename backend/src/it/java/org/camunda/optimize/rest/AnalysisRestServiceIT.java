@@ -52,7 +52,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -74,7 +74,7 @@ public class AnalysisRestServiceIT extends AbstractIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(response)
       .extracting(resp -> resp.readEntity(BranchAnalysisDto.class))
       .isNotNull()

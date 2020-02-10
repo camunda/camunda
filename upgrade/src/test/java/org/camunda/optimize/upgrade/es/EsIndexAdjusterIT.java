@@ -154,7 +154,7 @@ public class EsIndexAdjusterIT {
 
     final Response mockedReindexResponse = mock(Response.class);
     when(mockedReindexResponse.getStatusLine())
-      .thenReturn(new BasicStatusLine(protocolVersion, 200, "OK"));
+      .thenReturn(new BasicStatusLine(protocolVersion, javax.ws.rs.core.Response.Status.OK.getStatusCode(), "OK"));
 
     final HttpEntity httpEntity = mock(HttpEntity.class);
     when(httpEntity.getContent()).thenReturn(new ByteArrayInputStream(OBJECT_MAPPER.writeValueAsBytes(taskResponse)));

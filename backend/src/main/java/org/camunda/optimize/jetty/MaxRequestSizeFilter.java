@@ -20,6 +20,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -53,13 +54,13 @@ public class MaxRequestSizeFilter implements Filter {
           "Request too large [%s], maximum content length is [%s].", contentLength, maxContentLength
         );
         logWarnWithUrlPath(httpRequest, errorMessage);
-        writeErrorResponse(httpResponse, errorMessage, HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
+        writeErrorResponse(httpResponse, errorMessage, Response.Status.REQUEST_ENTITY_TOO_LARGE.getStatusCode());
       } else {
         chain.doFilter(httpRequest, httpResponse);
       }
     } else {
       logWarnWithUrlPath(httpRequest, MESSAGE_NO_CONTENT_LENGTH);
-      writeErrorResponse(httpResponse, MESSAGE_NO_CONTENT_LENGTH, HttpServletResponse.SC_LENGTH_REQUIRED);
+      writeErrorResponse(httpResponse, MESSAGE_NO_CONTENT_LENGTH, Response.Status.LENGTH_REQUIRED.getStatusCode());
     }
   }
 

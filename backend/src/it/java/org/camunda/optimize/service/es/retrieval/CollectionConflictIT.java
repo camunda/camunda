@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -220,7 +221,7 @@ public class CollectionConflictIT extends AbstractIT {
                                                            final Boolean force) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeId, force)
-      .execute(ConflictResponseDto.class, 409);
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
   }
 
   private ConflictResponseDto updateScopeFailsWithConflict(final String collectionId,
@@ -234,14 +235,14 @@ public class CollectionConflictIT extends AbstractIT {
         new CollectionScopeEntryUpdateDto(tenants),
         force
       )
-      .execute(ConflictResponseDto.class, 409);
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
   }
 
   private ConflictResponseDto getScopeDeletionConflicts(final String collectionId, final String scopeEntryId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetScopeDeletionConflictsRequest(collectionId, scopeEntryId)
-      .execute(ConflictResponseDto.class, 200);
+      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String createNewDashboardAndAddItToCollection(String collectionId) {
@@ -250,7 +251,7 @@ public class CollectionConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -260,7 +261,7 @@ public class CollectionConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -268,6 +269,6 @@ public class CollectionConflictIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionDeleteConflictsRequest(id)
-      .execute(ConflictResponseDto.class, 200);
+      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
   }
 }

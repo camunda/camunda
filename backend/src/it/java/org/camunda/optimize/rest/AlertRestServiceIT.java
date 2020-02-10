@@ -42,7 +42,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -54,7 +54,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
@@ -74,7 +74,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @ParameterizedTest(name = "cannot create for private reports with definition type {0}")
@@ -91,7 +91,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @ParameterizedTest(name = "create new report with report definition type {0}")
@@ -106,7 +106,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(alert)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(id, is(notNullValue()));
@@ -125,7 +125,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(alert)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(id, is(notNullValue()));
@@ -141,7 +141,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest(name = "update existing alert for report with definition type {0}")
@@ -158,7 +158,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then 
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @ParameterizedTest(name = "update alert for report with definition type {0}")
@@ -179,7 +179,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -192,7 +192,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -222,7 +222,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -241,7 +241,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
     assertThat(getAllAlerts().size(), is(0));
   }
 
@@ -254,7 +254,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   private String addAlertToOptimize(AlertCreationDto creationDto) {
@@ -268,7 +268,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateAlertRequest(creationDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -276,6 +276,6 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 }

@@ -19,8 +19,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 
-import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
-import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ONBOARDING_INDEX_NAME;
@@ -51,7 +49,7 @@ public class OnboardingRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -65,7 +63,7 @@ public class OnboardingRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -77,7 +75,7 @@ public class OnboardingRestIT extends AbstractIT {
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildSetOnboardingStateForKey(KEY_WHATSNEW, true)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     final OnboardingStateRestDto onboardingStateRestDto = getOnboardingState(KEY_WHATSNEW);
@@ -103,7 +101,7 @@ public class OnboardingRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
     assertThat(getOnboardingStateFromElasticsearch(DEFAULT_USERNAME, invalidKey)).isEmpty();
   }
 
@@ -118,14 +116,14 @@ public class OnboardingRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   private OnboardingStateRestDto getOnboardingState(final String key) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetOnboardingStateForKey(key)
-      .execute(OnboardingStateRestDto.class, 200);
+      .execute(OnboardingStateRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   @SneakyThrows

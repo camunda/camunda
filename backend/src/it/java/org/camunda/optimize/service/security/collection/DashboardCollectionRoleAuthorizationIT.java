@@ -37,7 +37,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = createDashboardInCollectionAsKermit(collectionId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -54,7 +54,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = createDashboardInCollectionAsKermit(collectionId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -73,7 +73,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = createDashboardInCollectionAsKermit(collectionId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -89,7 +89,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = createDashboardInCollectionAsKermit(collectionId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -108,7 +108,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = createDashboardInCollectionAsKermit(collectionId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -123,7 +123,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = createDashboardInCollectionAsKermit(collectionId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -141,7 +141,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardAsKermit(resourceId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsDefaultUser(copyId);
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
@@ -162,7 +162,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardAsKermit(resourceId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -180,7 +180,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsDefaultUser(copyId);
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
@@ -201,7 +201,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -217,7 +217,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -234,7 +234,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsDefaultUser(copyId);
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
@@ -255,7 +255,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardAsPrivateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsKermit(copyId).getDefinitionDto();
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
@@ -275,7 +275,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardAsPrivateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -291,7 +291,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = copyDashboardAsPrivateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -309,7 +309,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -328,7 +328,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -382,7 +382,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -397,7 +397,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = updateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -413,7 +413,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = updateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -431,7 +431,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = updateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -449,7 +449,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = updateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -466,7 +466,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = updateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -482,7 +482,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = updateDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -497,7 +497,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = deleteDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -513,7 +513,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = deleteDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -531,7 +531,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = deleteDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -549,7 +549,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = deleteDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -566,7 +566,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = deleteDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -582,7 +582,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final Response response = deleteDashboardAsKermit(dashboardId);
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private String createPrivateDashboardAsDefaultUser() {
@@ -598,7 +598,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateDashboardRequest(null)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -608,7 +608,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -642,14 +642,14 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   private DashboardDefinitionDto getDashboardByIdAsDefaultUser(final String dashboardId) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, 200);
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private AuthorizedDashboardDefinitionDto getDashboardByIdAsKermit(final String dashboardId) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDashboardRequest(dashboardId)
-      .execute(AuthorizedDashboardDefinitionDto.class, 200);
+      .execute(AuthorizedDashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private Response updateDashboardAsKermit(final String dashboardId) {

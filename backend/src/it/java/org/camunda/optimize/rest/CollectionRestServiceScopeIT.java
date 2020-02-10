@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
-import org.apache.http.HttpStatus;
 import org.assertj.core.api.Condition;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
@@ -57,7 +56,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     final List<CollectionScopeEntryRestDto> collectionScope = collectionClient.getCollectionScope(collectionId);
     assertThat(collectionScope).isEqualTo(expectedCollectionScope);
   }
@@ -270,7 +269,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -304,7 +303,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     entry.setTenants(Lists.newArrayList(null, tenant1));
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
@@ -332,7 +331,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     entry.setTenants(Collections.singletonList(null));
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
@@ -359,7 +358,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute();
 
     // then not found is thrown
-    assertThat(response.getStatus()).isEqualTo(404);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -375,7 +374,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     entry.setTenants(Lists.newArrayList(null, tenant1, "fooTenant"));
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     // then
     List<CollectionScopeEntryRestDto> scope = collectionClient.getCollectionScope(collectionId);
@@ -408,7 +407,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 
     assertThat(collectionClient.getCollectionScope(collectionId)).isEqualTo(expectedScope);
   }
@@ -426,7 +425,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     scope = collectionClient.getCollectionScope(collectionId);
 
@@ -447,7 +446,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
-      .execute(ConflictResponseDto.class, 409);
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     assertThat(conflictResponseDto.getConflictedItems())
       .extracting(ConflictedItemDto::getId)
@@ -460,7 +459,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
-      .execute(404);
+      .execute(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private void addDecisionDefinitionToElasticsearch(final String key,
@@ -505,7 +504,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

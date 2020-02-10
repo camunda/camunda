@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -29,7 +30,7 @@ public class IdentityRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), CoreMatchers.is(401));
+    assertThat(response.getStatus(), CoreMatchers.is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -42,7 +43,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
       .buildSearchForIdentities("frodo")
-      .execute(IdentitySearchResultDto.class, 200);
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(searchResult.getTotal(), is(1L));
     assertThat(searchResult.getResult().size(), is(1));
@@ -57,7 +58,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
       .buildSearchForIdentities("hobbit")
-      .execute(IdentitySearchResultDto.class, 200);
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(searchResult.getTotal(), is(1L));
     assertThat(searchResult.getResult().size(), is(1));
@@ -77,7 +78,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
       .buildSearchForIdentities("baggins")
-      .execute(IdentitySearchResultDto.class, 200);
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(searchResult.getTotal(), is(2L));
     assertThat(searchResult.getResult().size(), is(2));
@@ -97,7 +98,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
       .buildSearchForIdentities("")
-      .execute(IdentitySearchResultDto.class, 200);
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(searchResult.getTotal(), is(3L));
     assertThat(searchResult.getResult().size(), is(3));
@@ -116,7 +117,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
       .buildSearchForIdentities("", 1)
-      .execute(IdentitySearchResultDto.class, 200);
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
     ;
 
     assertThat(searchResult.getTotal(), is(3L));

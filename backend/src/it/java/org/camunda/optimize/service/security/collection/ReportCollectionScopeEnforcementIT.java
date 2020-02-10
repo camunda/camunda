@@ -323,7 +323,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
   private String copyAndMoveReport(final String reportId, final String collectionId) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(reportId, collectionId)
-      .execute(IdDto.class, 200).getId();
+      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
   private Response copyAndMoveReportRequest(final String reportId, final String collectionId) {
@@ -354,7 +354,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -380,14 +380,14 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-          .execute(IdDto.class, 200).getId();
+          .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
       case DECISION:
         SingleDecisionReportDefinitionDto decisionDefinition = new SingleDecisionReportDefinitionDto();
         decisionDefinition.setCollectionId(collectionId);
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildCreateSingleDecisionReportRequest(decisionDefinition)
-          .execute(IdDto.class, 200)
+          .execute(IdDto.class, Response.Status.OK.getStatusCode())
           .getId();
       default:
         throw new IllegalStateException("Uncovered definitionType: " + definitionType);
@@ -415,7 +415,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(decisionDefinition)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -556,7 +556,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

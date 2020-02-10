@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.apache.http.HttpStatus;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Dispatcher;
@@ -18,6 +17,7 @@ import org.eclipse.jetty.util.log.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 
 public class NotFoundErrorHandler extends ErrorHandler {
@@ -34,8 +34,8 @@ public class NotFoundErrorHandler extends ErrorHandler {
     boolean notApiOrPage = !requestUri.startsWith(API_PATH) &&
         (requestUri.endsWith(".html") || requestUri.split("\\.").length == 1);
 
-    if (notApiOrPage && HttpServletResponse.SC_NOT_FOUND == response.getStatus()) {
-      response.setStatus(HttpStatus.SC_OK);
+    if (notApiOrPage && Response.Status.NOT_FOUND.getStatusCode() == response.getStatus()) {
+      response.setStatus(Response.Status.OK.getStatusCode());
       response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
       Dispatcher dispatcher = (Dispatcher) ((Request) request).getErrorContext().getRequestDispatcher(INDEX_PAGE);
       

@@ -15,6 +15,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -84,7 +85,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
                            .buildList());
 
 
-    assertThat(evaluateReportAndReturnResponse(reportData).getStatus(),is(500));
+    assertThat(evaluateReportAndReturnResponse(reportData).getStatus(),is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
 }

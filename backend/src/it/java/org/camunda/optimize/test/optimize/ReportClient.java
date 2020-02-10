@@ -17,11 +17,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 
+import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +75,7 @@ public class ReportClient {
   public void updateSingleProcessReport(final String reportId, final SingleProcessReportDefinitionDto updatedReport) {
     getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(reportId, updatedReport)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private String createNewCombinedReport(CombinedReportDefinitionDto combinedReportDefinitionDto) {
@@ -232,7 +233,7 @@ public class ReportClient {
   public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId) {
     return getRequestExecutor()
       .buildGetReportRequest(originalReportId)
-      .execute(SingleProcessReportDefinitionDto.class, 200);
+      .execute(SingleProcessReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   public void deleteReport(final String reportId) {
@@ -242,7 +243,7 @@ public class ReportClient {
   public void deleteReport(final String reportId, final boolean force) {
     getRequestExecutor()
       .buildDeleteReportRequest(reportId, force)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

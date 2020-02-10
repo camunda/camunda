@@ -31,7 +31,7 @@ public class AlertClient {
   public String createAlert(final AlertCreationDto creationDto) {
     return getRequestExecutor()
       .buildCreateAlertRequest(creationDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -62,7 +62,7 @@ public class AlertClient {
     return getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private AlertCreationDto createSimpleAlert(String reportId) {

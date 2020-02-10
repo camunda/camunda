@@ -67,13 +67,13 @@ public class DashboardClient {
   public IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
     return getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   public void deleteDashboard(final String dashboardId, final boolean force) {
     getRequestExecutor()
       .buildDeleteDashboardRequest(dashboardId, force)
-      .execute(204);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private DashboardDefinitionDto createSimpleDashboardDefinition(String collectionId, List<String> reportIds) {

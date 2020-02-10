@@ -286,7 +286,7 @@ public class OutlierAnalysisIT extends AbstractIT {
         Collections.singletonList(null),
         FLOW_NODE_ID_TEST
       )
-      .executeAndReturnList(DurationChartEntryDto.class, 200);
+      .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
@@ -325,7 +325,7 @@ public class OutlierAnalysisIT extends AbstractIT {
         lowerOutlierBound,
         higherOutlierBound
       )
-      .executeAndReturnList(DurationChartEntryDto.class, 200);
+      .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
@@ -358,7 +358,7 @@ public class OutlierAnalysisIT extends AbstractIT {
         Collections.singletonList(null),
         FLOW_NODE_ID_TEST
       )
-      .executeAndReturnList(DurationChartEntryDto.class, 200);
+      .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(durationChart.get(0).getValue(), is(1L));
@@ -387,7 +387,7 @@ public class OutlierAnalysisIT extends AbstractIT {
         null,
         SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND
       )
-      .executeAndReturnList(VariableTermDto.class, 200);
+      .executeAndReturnList(VariableTermDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(variableTermDtosActivity.size(), is(1));
@@ -419,7 +419,7 @@ public class OutlierAnalysisIT extends AbstractIT {
         null,
         activityHigherOutlierBound
       )
-      .executeAndReturnList(VariableTermDto.class, 200);
+      .executeAndReturnList(VariableTermDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(variableTermDtosActivity.size(), is(0));
@@ -455,7 +455,7 @@ public class OutlierAnalysisIT extends AbstractIT {
         activityHigherOutlierBound
       )
       // then
-      .executeAndReturnList(VariableTermDto.class, 404);
+      .executeAndReturnList(VariableTermDto.class, Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -487,7 +487,7 @@ public class OutlierAnalysisIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String csvContent = getResponseContentAsString(response);
     final String[] lines = csvContent.split("\\r\\n");
     assertThat(lines.length, is(4));

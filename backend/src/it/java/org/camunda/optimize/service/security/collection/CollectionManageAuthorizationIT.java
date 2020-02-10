@@ -51,7 +51,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -71,7 +71,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -89,7 +89,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -106,7 +106,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -128,7 +128,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -150,7 +150,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -171,7 +171,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -192,7 +192,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -213,7 +213,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .buildUpdateRoleToCollectionRequest(collectionId, roleId, new CollectionRoleUpdateDto(RoleType.MANAGER))
       .execute();
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -233,7 +233,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -254,7 +254,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -275,7 +275,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -295,7 +295,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -315,7 +315,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -335,7 +335,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -353,7 +353,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -374,7 +374,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -394,7 +394,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntry.getId(), createScopeUpdate())
       .execute();
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -414,7 +414,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -435,7 +435,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -456,7 +456,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -476,7 +476,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -492,13 +492,13 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .getRequestExecutor()
       .buildCopyCollectionRequest(collectionId)
       .withUserAuthentication("gonzo", "gonzo")
-      .execute(200);
+      .execute(Response.Status.OK.getStatusCode());
 
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCopyCollectionRequest(collectionId)
       .withUserAuthentication("kermit", "kermit")
-      .execute(403);
+      .execute(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private CollectionScopeEntryUpdateDto createScopeUpdate() {

@@ -31,7 +31,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -45,7 +45,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -58,7 +58,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -71,7 +71,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(share);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     String id =
         response.readEntity(String.class);
     assertThat(id, is(notNullValue()));
@@ -88,7 +88,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(share);
 
     // then
-    assertThat(response.getStatus(), is(400));
+    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
@@ -103,7 +103,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     Response response = createDashboardShareResponse(sharingDto);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     String id =
       response.readEntity(String.class);
     assertThat(id, is(notNullValue()));
@@ -119,7 +119,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -131,7 +131,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
             .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -144,7 +144,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -156,7 +156,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
             .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -173,7 +173,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
     assertThat(getShareForReport(FAKE_REPORT_ID), is(nullValue()));
   }
 
@@ -192,7 +192,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
     assertThat(getShareForReport(reportId), is(nullValue()));
   }
 
@@ -223,7 +223,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -252,7 +252,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSharedDashboardRequest(dashboardShareId)
-      .execute(DashboardDefinitionDto.class, 200);
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     //then
     assertThat(dashboardShareDto, is(notNullValue()));
@@ -266,7 +266,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportShareId)
-        .execute(HashMap.class, 200);
+        .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     // then
     assertReportData(reportId, evaluatedReportAsMap);
@@ -287,7 +287,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -300,7 +300,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     //then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @Test
@@ -314,7 +314,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -331,7 +331,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -351,7 +351,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private Response findShareForDashboard(String dashboardId) {

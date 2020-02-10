@@ -16,11 +16,13 @@ import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +36,7 @@ public class EventProcessClient {
   public boolean getIsEventBasedProcessEnabled() {
     return getRequestExecutor()
       .buildGetIsEventProcessEnabledRequest()
-      .execute(Boolean.class, 200);
+      .execute(Boolean.class, Response.Status.OK.getStatusCode());
   }
 
   public OptimizeRequestExecutor createCreateEventProcessMappingRequest(final EventProcessMappingDto eventProcessMappingDto) {
@@ -42,7 +44,7 @@ public class EventProcessClient {
   }
 
   public String createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
-    return createCreateEventProcessMappingRequest(eventProcessMappingDto).execute(IdDto.class, 200).getId();
+    return createCreateEventProcessMappingRequest(eventProcessMappingDto).execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
   public OptimizeRequestExecutor createGetEventProcessMappingRequest(final String eventProcessMappingId) {
@@ -50,7 +52,7 @@ public class EventProcessClient {
   }
 
   public EventProcessMappingRestDto getEventProcessMapping(final String eventProcessMappingId) {
-    return createGetEventProcessMappingRequest(eventProcessMappingId).execute(EventProcessMappingRestDto.class, 200);
+    return createGetEventProcessMappingRequest(eventProcessMappingId).execute(EventProcessMappingRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest() {
@@ -59,7 +61,7 @@ public class EventProcessClient {
 
   public List<EventProcessMappingDto> getAllEventProcessMappings() {
     return createGetAllEventProcessMappingsRequest()
-      .executeAndReturnList(EventProcessMappingDto.class, HttpServletResponse.SC_OK);
+      .executeAndReturnList(EventProcessMappingDto.class, Response.Status.OK.getStatusCode());
   }
 
 
@@ -70,7 +72,7 @@ public class EventProcessClient {
   }
 
   public void updateEventProcessMapping(final String eventProcessMappingId, final EventProcessMappingDto updateDto) {
-    createUpdateEventProcessMappingRequest(eventProcessMappingId, updateDto).execute(HttpServletResponse.SC_NO_CONTENT);
+    createUpdateEventProcessMappingRequest(eventProcessMappingId, updateDto).execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public OptimizeRequestExecutor createPublishEventProcessMappingRequest(final String eventProcessMappingId) {
@@ -78,7 +80,7 @@ public class EventProcessClient {
   }
 
   public void publishEventProcessMapping(final String eventProcessMappingId) {
-    createPublishEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
+    createPublishEventProcessMappingRequest(eventProcessMappingId).execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public OptimizeRequestExecutor createCancelPublishEventProcessMappingRequest(final String eventProcessMappingId) {
@@ -87,7 +89,7 @@ public class EventProcessClient {
   }
 
   public void cancelPublishEventProcessMapping(final String eventProcessMappingId) {
-    createCancelPublishEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
+    createCancelPublishEventProcessMappingRequest(eventProcessMappingId).execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public OptimizeRequestExecutor createDeleteEventProcessMappingRequest(final String eventProcessMappingId) {
@@ -96,7 +98,7 @@ public class EventProcessClient {
 
   public ConflictResponseDto getDeleteConflictsForEventProcessMapping(String eventProcessMappingId) {
     return createGetDeleteConflictsForEventProcessMappingRequest(eventProcessMappingId)
-      .execute(ConflictResponseDto.class, HttpServletResponse.SC_OK);
+      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public OptimizeRequestExecutor createGetDeleteConflictsForEventProcessMappingRequest(final String eventProcessMappingId) {
@@ -104,7 +106,7 @@ public class EventProcessClient {
   }
 
   public void deleteEventProcessMapping(final String eventProcessMappingId) {
-    createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
+    createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public EventProcessMappingDto buildEventProcessMappingDto(final String xmlPath) {
@@ -128,7 +130,7 @@ public class EventProcessClient {
   public void updateEventProcessMappingRoles(final String eventProcessMappingId,
                                              final List<EventProcessRoleDto<IdentityDto>> roleRestDtos) {
     createUpdateEventProcessMappingRolesRequest(eventProcessMappingId, roleRestDtos)
-      .execute(HttpServletResponse.SC_NO_CONTENT);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public OptimizeRequestExecutor createUpdateEventProcessMappingRolesRequest(final String eventProcessMappingId,

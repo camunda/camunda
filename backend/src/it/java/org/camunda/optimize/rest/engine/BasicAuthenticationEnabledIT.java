@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.engine;
 
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -81,7 +82,7 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   private void createRequiredAuthorizationsForBasicAuth() {

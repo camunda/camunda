@@ -97,7 +97,7 @@ public class EventRestServiceIT extends AbstractIT {
   public void getEventCounts() {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestParameters(new EventCountRequestDto())
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all events are sorted using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -121,7 +121,7 @@ public class EventRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -131,7 +131,7 @@ public class EventRestServiceIT extends AbstractIT {
 
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestParameters(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -153,7 +153,7 @@ public class EventRestServiceIT extends AbstractIT {
 
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestParameters(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -172,7 +172,7 @@ public class EventRestServiceIT extends AbstractIT {
 
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestParameters(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
     assertThat(eventCountDtos)
@@ -198,7 +198,7 @@ public class EventRestServiceIT extends AbstractIT {
 
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestParameters(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
     assertThat(eventCountDtos)
@@ -225,7 +225,7 @@ public class EventRestServiceIT extends AbstractIT {
     Response response = createPostEventCountsQueryWithRequestParameters(eventCountRequestDto).execute();
 
     // then validation exception is thrown
-    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -239,7 +239,7 @@ public class EventRestServiceIT extends AbstractIT {
 
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestParameters(eventCountRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then matching events are returned with ordering parameters respected
     assertThat(eventCountDtos)
@@ -272,7 +272,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then events that are sequenced with mapped events are first and marked as suggested
     assertThat(eventCountDtos)
@@ -301,7 +301,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then events that are sequenced with mapped events are first and marked as suggested
     assertThat(eventCountDtos)
@@ -335,7 +335,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then only the event in sequence before closest neighbour is suggested, non-suggestions use default ordering
     assertThat(eventCountDtos)
@@ -368,7 +368,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos =
       createPostEventCountsQueryWithSuggestionsParameters(eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then no suggestions returned as matching sequence event has already been mapped
     assertThat(eventCountDtos)
@@ -401,7 +401,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then event count list contains suggestions and already mapped target event is included
     assertThat(eventCountDtos)
@@ -435,7 +435,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestAndSuggestionsParams(
       eventCountRequestDto, eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then counts that are not suggestions respect custom ordering
     assertThat(eventCountDtos)
@@ -466,7 +466,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestAndSuggestionsParams(
       eventCountRequestDto, eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then only results matching search term are returned
     assertThat(eventCountDtos)
@@ -495,7 +495,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithRequestAndSuggestionsParams(
       eventCountRequestDto, eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then suggested and non-suggested counts are filtered out by search term
     assertThat(eventCountDtos)
@@ -519,7 +519,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all events are returned with no suggested using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -550,7 +550,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all unmapped events are returned with no suggested using default group case-insensitive ordering
     assertThat(eventCountDtos)
@@ -581,7 +581,7 @@ public class EventRestServiceIT extends AbstractIT {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 200);
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all unmapped events are returned and only event sequenced to the mapped end event is suggested
     assertThat(eventCountDtos)
@@ -607,7 +607,7 @@ public class EventRestServiceIT extends AbstractIT {
     // then the correct status code is returned
     createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 400);
+      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -622,7 +622,7 @@ public class EventRestServiceIT extends AbstractIT {
     // then the correct status code is returned
     createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 400);
+      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest(name = "event counts with suggestions is invalid with xml: {0}")
@@ -638,7 +638,7 @@ public class EventRestServiceIT extends AbstractIT {
     // then the correct status code is returned
     createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 400);
+      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest(name = "event counts with suggestions is invalid with targetFlowNodeId: {0}")
@@ -654,7 +654,7 @@ public class EventRestServiceIT extends AbstractIT {
     // then the correct status code is returned
     createPostEventCountsQueryWithSuggestionsParameters(
       eventCountSuggestionsRequestDto)
-      .executeAndReturnList(EventCountDto.class, 400);
+      .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   private static Stream<String> invalidParameters() {

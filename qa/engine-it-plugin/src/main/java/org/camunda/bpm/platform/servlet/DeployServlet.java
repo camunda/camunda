@@ -14,6 +14,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 
 import static org.camunda.bpm.engine.ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE;
@@ -33,11 +34,11 @@ public class DeployServlet extends HttpServlet {
 
     if (engineWithNameExistsAlready) {
       resp.getWriter().println(String.format("{\"error\":\"Engine with name %s already exists.\"}", engineName));
-      resp.setStatus(HttpServletResponse.SC_CONFLICT);
+      resp.setStatus(Response.Status.CONFLICT.getStatusCode());
     } else {
       final ProcessEngine processEngine = createProcessEngine(engineName);
       resp.getWriter().println(String.format("{\"name\":\"%s\"}", processEngine.getName()));
-      resp.setStatus(HttpServletResponse.SC_OK);
+      resp.setStatus(Response.Status.OK.getStatusCode());
     }
 
     resp.setContentType("application/json");

@@ -98,7 +98,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -148,7 +148,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest()
@@ -165,7 +165,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -185,7 +185,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -198,7 +198,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -216,7 +216,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -231,7 +231,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -247,7 +247,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -262,7 +262,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -283,7 +283,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then a bad request exception is thrown
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -294,7 +294,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -345,7 +345,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .createGetEventProcessMappingRequest(IdGenerator.getNextId()).execute();
 
     // then the report is returned with expect
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -358,7 +358,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -415,7 +415,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -442,7 +442,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto).execute();
 
     // then the update response code is correct
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // then the fields have been updated
     EventProcessMappingRestDto storedDto = eventProcessClient.getEventProcessMapping(storedEventProcessMappingId);
@@ -469,7 +469,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     ).execute();
 
     // then the report is returned with expect
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -488,7 +488,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto).execute();
 
     // then the update response code is correct
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -517,7 +517,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then a bad request exception is thrown
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -538,7 +538,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the update response code is correct
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -628,7 +628,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     final ErrorResponseDto errorResponse = eventProcessClient
       .createPublishEventProcessMappingRequest(eventProcessId)
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     final EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
 
@@ -653,7 +653,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     final ErrorResponseDto errorResponse = eventProcessClient
       .createPublishEventProcessMappingRequest(eventProcessId)
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     final EventProcessMappingRestDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
 
@@ -674,7 +674,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     final ErrorResponseDto errorResponse = eventProcessClient
       .createPublishEventProcessMappingRequest("notExistingId")
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_NOT_FOUND);
+      .execute(ErrorResponseDto.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertThat(errorResponse.getErrorCode()).isEqualTo("notFoundError");
@@ -710,7 +710,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     final ErrorResponseDto errorResponse = eventProcessClient
       .createPublishEventProcessMappingRequest(eventProcessId)
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
@@ -725,7 +725,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     final ErrorResponseDto errorResponse = eventProcessClient
       .createCancelPublishEventProcessMappingRequest(eventProcessId)
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
@@ -738,7 +738,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     // when
     final ErrorResponseDto errorResponse = eventProcessClient
       .createCancelPublishEventProcessMappingRequest("notExistingId")
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_NOT_FOUND);
+      .execute(ErrorResponseDto.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertThat(errorResponse.getErrorCode()).isEqualTo("notFoundError");
@@ -753,7 +753,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -818,7 +818,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -833,12 +833,12 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .createDeleteEventProcessMappingRequest(storedEventProcessMappingId).execute();
 
     // then the delete response code is correct
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     // then the process no longer exists
     Response getResponse = eventProcessClient
       .createGetEventProcessMappingRequest(storedEventProcessMappingId).execute();
-    assertThat(getResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(getResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -902,7 +902,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     eventProcessClient.deleteEventProcessMapping(eventProcessDefinitionKey);
 
     // then the event process is deleted and the associated resources are cleaned up
-    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey).execute(HttpStatus.SC_NOT_FOUND);
+    eventProcessClient.createGetEventProcessMappingRequest(eventProcessDefinitionKey).execute(Response.Status.NOT_FOUND.getStatusCode());
     assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting("definitionDto.id")
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
@@ -927,7 +927,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {

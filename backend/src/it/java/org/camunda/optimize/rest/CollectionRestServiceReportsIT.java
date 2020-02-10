@@ -86,7 +86,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   @Test
   public void getReportsForNonExistentCollection() {
     // when
-    String response = getReportsForCollectionRequest("someId").execute(String.class, 404);
+    String response = getReportsForCollectionRequest("someId").execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertTrue(response.contains("Collection does not exist!"));
@@ -111,8 +111,8 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     Response report2Response = getReportByIdRequest(reportId2);
 
     // then
-    assertThat(report1Response.getStatus(), is(404));
-    assertThat(report2Response.getStatus(), is(404));
+    assertThat(report1Response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(report2Response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   private String createReportForCollection(final String collectionId, final DefinitionType definitionType) {
@@ -172,7 +172,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildCreateSingleDecisionReportRequest(decReport)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -181,7 +181,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildCreateSingleProcessReportRequest(procReport)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

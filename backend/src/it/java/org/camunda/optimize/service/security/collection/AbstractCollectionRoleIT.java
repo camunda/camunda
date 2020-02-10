@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 
+import javax.ws.rs.core.Response;
 import java.util.Arrays;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
@@ -140,7 +141,7 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

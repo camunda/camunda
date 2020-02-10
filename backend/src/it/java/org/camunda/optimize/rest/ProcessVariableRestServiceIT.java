@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -35,7 +36,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
             .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -50,7 +51,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
         embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
-            .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
+            .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is not authorized
     assertThat(responseList.isEmpty(), is(true));
@@ -66,7 +67,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
             .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -82,7 +83,7 @@ public class ProcessVariableRestServiceIT extends AbstractIT {
     List responseList = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableValuesRequest(requestDto)
-            .executeAndReturnList(String.class, 200);
+            .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(responseList.isEmpty(), is(true));

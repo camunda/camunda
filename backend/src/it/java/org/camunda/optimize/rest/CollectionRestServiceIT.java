@@ -36,7 +36,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -45,7 +45,7 @@ public class CollectionRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
@@ -69,7 +69,7 @@ public class CollectionRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequestWithPartialDefinition(partialCollectionDefinitionDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
@@ -90,7 +90,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -102,7 +102,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // given
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -118,7 +118,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -131,7 +131,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -155,7 +155,7 @@ public class CollectionRestServiceIT extends AbstractIT {
     String response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest("fooid")
-      .execute(String.class, 404);
+      .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
     assertThat(response.contains("Collection does not exist!"), is(true));
@@ -171,7 +171,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -186,13 +186,13 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
 
     final Response getByIdResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(id)
       .execute();
-    assertThat(getByIdResponse.getStatus(), is(404));
+    assertThat(getByIdResponse.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -204,6 +204,6 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 }

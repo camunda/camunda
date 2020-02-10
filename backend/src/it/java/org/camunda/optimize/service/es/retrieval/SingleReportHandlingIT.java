@@ -223,7 +223,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
 
     final String variableName = "variableName";
@@ -263,7 +263,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     Response updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(204));
+    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
 
     //when
     ProcessReportDataDto data = new ProcessReportDataDto();
@@ -272,7 +272,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(204));
+    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
 
     //when
     data = new ProcessReportDataDto();
@@ -281,7 +281,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(204));
+    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
 
     //when
     data = new ProcessReportDataDto();
@@ -291,7 +291,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     updateReportResponse = getUpdateSingleProcessReportResponse(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(204));
+    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -416,7 +416,7 @@ public class SingleReportHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -600,18 +600,18 @@ public class SingleReportHandlingIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
   private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = getUpdateSingleProcessReportResponse(id, updatedReport);
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
     Response response = getUpdateSingleDecisionReportResponse(id, updatedReport);
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {
@@ -646,6 +646,6 @@ public class SingleReportHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .addQueryParams(queryParams)
-      .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 }

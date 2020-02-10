@@ -13,6 +13,7 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -357,7 +358,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
       .getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .withUserAuthentication(name, password)
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
   }
 
   private List<DecisionDefinitionOptimizeDto> retrieveDecisionDefinitionsAsUser(String name, String password) {
@@ -365,7 +366,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
       .getRequestExecutor()
       .buildGetDecisionDefinitionsRequest()
       .withUserAuthentication(name, password)
-      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
   }
 
 }

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -60,7 +61,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     }
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @ParameterizedTest
@@ -249,12 +250,12 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildGetProcessDefinitionVersionsWithTenants(collectionId)
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
       case DECISION:
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildGetDecisionDefinitionVersionsWithTenants(collectionId)
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + type);
     }
@@ -264,7 +265,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

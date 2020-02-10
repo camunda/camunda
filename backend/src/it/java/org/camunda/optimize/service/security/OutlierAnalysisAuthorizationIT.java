@@ -72,7 +72,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -98,7 +98,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -126,7 +126,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -152,7 +152,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -183,7 +183,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -213,7 +213,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -248,7 +248,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private Response executeRequest(final ProcessDefinitionEngineDto processDefinition,

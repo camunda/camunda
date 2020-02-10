@@ -15,7 +15,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 
-import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 
 @AllArgsConstructor
@@ -36,12 +36,14 @@ public class EnginePluginClient {
         .build()
     );
     try (CloseableHttpResponse response = httpClient.execute(deployRequest)) {
-      final int statusCode = response.getStatusLine().getStatusCode();
+      final Response.Status statusCode = Response.Status.fromStatusCode(
+        response.getStatusLine().getStatusCode()
+      );
       switch (statusCode) {
-        case HttpServletResponse.SC_OK:
+        case OK:
           log.info("Finished deploying engine {}.", engineName);
           break;
-        case HttpServletResponse.SC_CONFLICT:
+        case CONFLICT:
           log.info("Engine with name {} was already deployed.", engineName);
           break;
         default:
@@ -64,7 +66,7 @@ public class EnginePluginClient {
         .build()
     );
     try (CloseableHttpResponse response = httpClient.execute(purgeRequest)) {
-      if (response.getStatusLine().getStatusCode() != 200) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         throw new RuntimeException("Something really bad happened during purge, please check the logs.");
       }
       log.info("Finished cleaning engine");

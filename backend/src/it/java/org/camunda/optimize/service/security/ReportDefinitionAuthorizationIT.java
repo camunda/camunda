@@ -78,7 +78,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -102,7 +102,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -129,7 +129,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -159,7 +159,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest
@@ -179,7 +179,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -198,7 +198,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -220,7 +220,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -240,7 +240,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -262,7 +262,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest
@@ -281,7 +281,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when
     Response otherUserResponse = embeddedOptimizeExtension
@@ -291,7 +291,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(otherUserResponse.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(otherUserResponse.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -326,7 +326,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -348,7 +348,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -370,7 +370,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -390,7 +390,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -410,7 +410,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -431,7 +431,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(reportDefinitionDto)
       .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -450,7 +450,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -469,7 +469,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -490,7 +490,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -509,7 +509,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private String getDefinitionKey(final int definitionResourceType) {
@@ -615,14 +615,14 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildCreateSingleProcessReportRequest()
-          .execute(IdDto.class, HttpStatus.SC_OK)
+          .execute(IdDto.class, Response.Status.OK.getStatusCode())
           .getId();
       case RESOURCE_TYPE_DECISION_DEFINITION:
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildCreateSingleDecisionReportRequest()
-          .execute(IdDto.class, HttpStatus.SC_OK)
+          .execute(IdDto.class, Response.Status.OK.getStatusCode())
           .getId();
     }
   }
@@ -630,7 +630,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   private void updateReportAsUser(String id, ReportDefinitionDto updatedReport, final String user,
                                   final String password) {
     Response response = getUpdateReportResponse(id, updatedReport, user, password);
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   private ReportDefinitionDto constructReportWithDefinition(int resourceType) {

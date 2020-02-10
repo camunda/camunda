@@ -52,7 +52,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     //then
     responses.forEach(response ->
-                        assertThat(response.getStatus(), is(200))
+                        assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
     );
   }
 
@@ -72,7 +72,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     //then
     responses.forEach(response ->
-                        assertThat(response.getStatus(), is(200))
+                        assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
     );
   }
 
@@ -104,7 +104,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     Arrays.asList(variableNameResponse, variableValueResponse).forEach(response ->
                                                                          assertThat(
                                                                            response.getStatus(),
-                                                                           is(401)
+                                                                           is(Response.Status.UNAUTHORIZED.getStatusCode())
                                                                          )
     );
   }
@@ -127,7 +127,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     //then
     responses.forEach(response ->
-                        assertThat(response.getStatus(), is(200))
+                        assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
     );
   }
 
@@ -148,7 +148,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     //then
     responses.forEach(response ->
-                        assertThat(response.getStatus(), is(403))
+                        assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()))
     );
   }
 
@@ -176,7 +176,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
     //then
     responses.forEach(response ->
-                        assertThat(response.getStatus(), is(403))
+                        assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()))
     );
   }
 

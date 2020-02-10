@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -40,7 +41,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
-        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions.size(), is(11));
   }
@@ -61,7 +62,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
-        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -86,7 +87,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
-        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -113,7 +114,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
-        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions.size(), is(1));
@@ -137,7 +138,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         decisionDefinitionEngineDto.getKey(),
         decisionDefinitionEngineDto.getVersion()
       )
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(Dmn.convertToString(modelInstance)));
@@ -165,7 +166,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final String actualXml = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDecisionDefinitionXmlRequest(decisionDefinitionEngineDto1.getKey(), ALL_VERSIONS)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(Dmn.convertToString(modelInstance2)));
@@ -195,7 +196,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(decisionDefinitionKey, ALL_VERSIONS)
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then: we get the latest version xml
     assertThat(actualXml, is(Dmn.convertToString(latestModelInstance)));

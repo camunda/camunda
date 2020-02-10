@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUND_ERROR_CODE;
@@ -48,7 +49,7 @@ public class LocalizedErrorResponseRestIT extends AbstractIT {
   private ErrorResponseDto executeInvalidPathRequest() {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildGenericRequest(HttpMethod.GET, "/api/doesNotExist", null)
-      .execute(ErrorResponseDto.class, 404);
+      .execute(ErrorResponseDto.class, Response.Status.NOT_FOUND.getStatusCode());
   }
 
 }

@@ -93,12 +93,12 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(reportShareId)
-            .execute(HashMap.class, HttpStatus.SC_OK);
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     // then
     assertReportData(reportId2, evaluatedReportAsMap);
@@ -116,7 +116,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createDashboardShareResponse(share);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -130,20 +130,20 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     Response response = sharingClient.getDashboardShareResponse(dashboardId);
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // then
     HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
-            .execute(HashMap.class, HttpStatus.SC_OK);
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     assertReportData(reportId, evaluatedReportAsMap);
 
     evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId2)
-            .execute(HashMap.class, HttpStatus.SC_OK);
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     assertReportData(reportId2, evaluatedReportAsMap);
   }
@@ -164,7 +164,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedReportRequest(reportId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -184,7 +184,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -204,7 +204,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardReportRequest("fakedashboardshareid", reportId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -232,7 +232,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     //then
     response =
@@ -241,7 +241,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId2);
 
@@ -280,7 +280,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = dashboardClient.updateDashboard(dashboardWithReport, fullBoard);
 
     //then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -369,14 +369,14 @@ public class SharingServiceIT extends AbstractSharingIT {
       .getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportIdToStayInDashboard)
       .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // and then
     response = embeddedOptimizeExtension
         .getRequestExecutor()
         .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportIdToBeRemovedFromDashboard)
         .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -413,7 +413,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     //then
     response =
@@ -421,12 +421,12 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(dashboardReportShareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(reportShareId)
-            .execute(HashMap.class, HttpStatus.SC_OK);
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     assertReportData(reportId, evaluatedReportAsMap);
   }
@@ -446,7 +446,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .execute();
 
     //then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -456,7 +456,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(createReportShare());
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -469,7 +469,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(sharingDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -482,7 +482,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createDashboardShareResponse(dashboardShare);
 
     // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -495,7 +495,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(share);
 
     // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String id =
         response.readEntity(String.class);
     assertThat(id).isNotNull();
@@ -517,7 +517,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedReportRequest(FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -530,7 +530,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardRequest(FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -544,7 +544,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     //when
     response =
@@ -553,7 +553,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteReportShareRequest(shareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     //then
     response =
@@ -561,7 +561,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -576,7 +576,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteReportShareRequest(reportShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     String newShareId = this.addShareForReport(reportId);
     assertThat(reportShareId).isNotEqualTo(newShareId);
@@ -607,7 +607,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
-            .execute(HashMap.class, HttpStatus.SC_OK);
+            .execute(HashMap.class, Response.Status.OK.getStatusCode());
 
     //then
     assertReportData(reportId, evaluatedReportAsMap);
@@ -632,7 +632,7 @@ public class SharingServiceIT extends AbstractSharingIT {
       embeddedOptimizeExtension
             .getRequestExecutor()
             .buildCheckSharingStatusRequest(statusRequest)
-            .execute(ShareSearchResultDto.class, HttpStatus.SC_OK);
+            .execute(ShareSearchResultDto.class, Response.Status.OK.getStatusCode());
 
     //then
     assertThat(result.getDashboards().size()).isEqualTo(2);
@@ -658,7 +658,7 @@ public class SharingServiceIT extends AbstractSharingIT {
         embeddedOptimizeExtension
           .getRequestExecutor()
           .buildCheckSharingStatusRequest(statusRequest)
-          .execute(ShareSearchResultDto.class, HttpStatus.SC_OK);
+          .execute(ShareSearchResultDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(result.getReports().size()).isEqualTo(2);
@@ -714,7 +714,7 @@ public class SharingServiceIT extends AbstractSharingIT {
                     dashboardShareId,
                     dashboardShareDto.getReports().get(0).getId()
             )
-            .execute(ReportEvaluationException.class, HttpStatus.SC_BAD_REQUEST);
+            .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     //then
     AbstractSharingIT.assertErrorFields(errorResponse);
@@ -743,7 +743,7 @@ public class SharingServiceIT extends AbstractSharingIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -771,7 +771,7 @@ public class SharingServiceIT extends AbstractSharingIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
 }

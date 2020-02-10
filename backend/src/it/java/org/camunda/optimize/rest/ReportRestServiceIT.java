@@ -72,7 +72,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -103,7 +103,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -112,7 +112,7 @@ public class ReportRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
     // then
     assertThat(idDto, is(notNullValue()));
   }
@@ -125,7 +125,7 @@ public class ReportRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
     // then
     assertThat(idDto, is(notNullValue()));
   }
@@ -140,7 +140,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -152,7 +152,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -165,7 +165,7 @@ public class ReportRestServiceIT extends AbstractIT {
     Response response = updateReportRequest(id, reportType);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -178,7 +178,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final Response response = updateReportWithValidXml(id, reportType);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   @Test
@@ -209,7 +209,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -295,7 +295,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -319,7 +319,7 @@ public class ReportRestServiceIT extends AbstractIT {
     String response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest("fooId")
-      .execute(String.class, 404);
+      .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
     assertThat(response.contains("Report does not exist."), is(true));
@@ -359,7 +359,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -375,7 +375,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
     assertThat(getAllPrivateReports().size(), is(0));
   }
 
@@ -388,7 +388,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -401,7 +401,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -417,7 +417,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -437,7 +437,7 @@ public class ReportRestServiceIT extends AbstractIT {
     ReportEvaluationException response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, 400);
+      .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     AbstractSharingIT.assertErrorFields(response);
@@ -453,7 +453,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -489,7 +489,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -502,7 +502,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -515,7 +515,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -530,7 +530,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -540,7 +540,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto report = getReport(copyId.getId());
@@ -555,7 +555,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId())
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     ReportDefinitionDto oldReport = getReport(id.getId());
     ReportDefinitionDto report = getReport(copyId.getId());
@@ -577,7 +577,7 @@ public class ReportRestServiceIT extends AbstractIT {
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, collectionId)
       .addSingleQueryParam("name", testReportCopyName)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -596,7 +596,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, collectionId)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -620,7 +620,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), collectionId)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id.getId());
@@ -654,7 +654,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, "null")
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -678,7 +678,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), "null")
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id.getId());
@@ -714,7 +714,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, newCollectionId)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -741,7 +741,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), newCollectionId)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id.getId());
@@ -799,7 +799,7 @@ public class ReportRestServiceIT extends AbstractIT {
     ReportEvaluationException response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, 400);
+      .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     AbstractSharingIT.assertErrorFields(response);
@@ -829,7 +829,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest(id)
-      .execute(ReportDefinitionDto.class, 200);
+      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String createSingleReport(final ReportType reportType) {
@@ -855,7 +855,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, 200);
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType) {
@@ -905,7 +905,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -919,7 +919,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -942,7 +942,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -950,7 +950,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest()
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 
@@ -958,7 +958,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   @SneakyThrows

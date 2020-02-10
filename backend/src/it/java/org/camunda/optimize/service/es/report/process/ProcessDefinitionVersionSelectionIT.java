@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.process;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -145,7 +146,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
       Response response = evaluateReportWithResponse(report);
 
       // then
-      assertThat(response.getStatus(), is(400));
+      assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
     }
   }
 

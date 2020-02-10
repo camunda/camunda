@@ -148,7 +148,7 @@ public class SharingRestService {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     sharingService.validateAndCheckAuthorization(dashboardId, userId);
     // if no error was thrown
-    return Response.status(200).entity("OK").build();
+    return Response.status(Response.Status.OK).entity("OK").build();
   }
 
   @POST

@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
@@ -36,7 +37,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .withoutAuthentication()
       .execute();
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -54,7 +55,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .withoutAuthentication()
       .execute();
 
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -73,7 +74,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
-      .execute(FlowNodeNamesResponseDto.class, 200);
+      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(response.getFlowNodeNames().size(), is(1));
@@ -99,7 +100,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
-      .execute(FlowNodeNamesResponseDto.class, 200);
+      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(response.getFlowNodeNames().size(), is(2));
@@ -123,7 +124,7 @@ public class FlowNodeRestServiceIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
-      .execute(FlowNodeNamesResponseDto.class, 200);
+      .execute(FlowNodeNamesResponseDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(response.getFlowNodeNames().size(), is(1));

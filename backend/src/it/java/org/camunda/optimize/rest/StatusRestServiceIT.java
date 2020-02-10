@@ -9,6 +9,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.Map;
 
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -24,7 +25,7 @@ public class StatusRestServiceIT extends AbstractIT {
     final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
-      .execute(StatusWithProgressDto.class, 200);
+      .execute(StatusWithProgressDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(statusWithProgressDto.getConnectionStatus().isConnectedToElasticsearch(), is(true));
     assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().size(), is(1));
@@ -36,7 +37,7 @@ public class StatusRestServiceIT extends AbstractIT {
     final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
-      .execute(StatusWithProgressDto.class, 200);
+      .execute(StatusWithProgressDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(statusWithProgressDto.getIsImporting().keySet(), contains(DEFAULT_ENGINE_ALIAS));
   }
@@ -50,7 +51,7 @@ public class StatusRestServiceIT extends AbstractIT {
     final StatusWithProgressDto status = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
-      .execute(StatusWithProgressDto.class, 200);
+      .execute(StatusWithProgressDto.class, Response.Status.OK.getStatusCode());
 
     // then
     final Map<String, Boolean> isImportingMap = status.getIsImporting();
@@ -64,7 +65,7 @@ public class StatusRestServiceIT extends AbstractIT {
     final StatusWithProgressDto status = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
-      .execute(StatusWithProgressDto.class, 200);
+      .execute(StatusWithProgressDto.class, Response.Status.OK.getStatusCode());
 
     // then
     final Map<String, Boolean> isImportingMap = status.getIsImporting();

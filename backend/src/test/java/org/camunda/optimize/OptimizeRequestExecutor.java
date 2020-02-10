@@ -217,7 +217,7 @@ public class OptimizeRequestExecutor {
 
   public <T> T execute(TypeReference<T> classToExtractFromResponse) {
     Response response = execute();
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     String jsonString = response.readEntity(String.class);
     try {

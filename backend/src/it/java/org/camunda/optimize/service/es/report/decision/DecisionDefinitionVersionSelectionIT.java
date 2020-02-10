@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.decision;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
@@ -133,7 +134,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       Response response = evaluateReportWithResponse(report);
 
       // then
-      assertThat(response.getStatus(), is(400));
+      assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
     }
   }
 

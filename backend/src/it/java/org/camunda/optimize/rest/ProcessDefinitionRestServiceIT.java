@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
@@ -60,7 +61,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
     assertThat(definitions, is(notNullValue()));
@@ -89,7 +90,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetProcessDefinitionsRequest()
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then we only get 3 definitions, the one kermit is authorized to see and all event based definitions
     assertThat(definitions, is(notNullValue()));
@@ -117,7 +118,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetProcessDefinitionsRequest()
-      .executeAndReturnList(IdDto.class, 200);
+      .executeAndReturnList(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions, is(notNullValue()));
@@ -134,7 +135,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @ParameterizedTest(name = "Get {0} process definitions with XML.")
@@ -152,7 +153,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
-        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(definitions, is(notNullValue()));
@@ -171,7 +172,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(expectedDto.getKey(), expectedDto.getVersion())
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(expectedDto.getBpmn20Xml()));
@@ -189,7 +190,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(KEY, ALL_VERSIONS_STRING)
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(expectedDto2.getBpmn20Xml()));
@@ -207,11 +208,11 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     final String actualXmlFirstTenant = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionXmlRequest(KEY, "1", firstTenantId)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
     final String actualXmlSecondTenant = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionXmlRequest(KEY, "1", secondTenantId)
-      .execute(String.class, 200);
+      .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXmlFirstTenant, is(firstTenantDefinition.getBpmn20Xml()));
@@ -238,7 +239,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .buildGetProcessDefinitionXmlRequest(
           secondTenantDefinition.getKey(), secondTenantDefinition.getVersion(), null
         )
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(secondTenantDefinition.getBpmn20Xml()));
@@ -258,7 +259,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .buildGetProcessDefinitionXmlRequest(
           sharedTenantDefinition.getKey(), sharedTenantDefinition.getVersion(), firstTenantId
         )
-        .execute(String.class, 200);
+        .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(actualXml, is(sharedTenantDefinition.getBpmn20Xml()));
@@ -277,7 +278,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .execute();
 
     // then the status code is not found
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test
@@ -292,7 +293,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -314,7 +315,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       ).execute();
 
     // then the status code is forbidden
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
@@ -333,7 +334,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetProcessDefinitionXmlRequest(
         expectedDefinition.getKey(), expectedDefinition.getVersion()
-      ).execute(String.class, 200);
+      ).execute(String.class, Response.Status.OK.getStatusCode());
 
     // then the event based definition's xml is returned despite missing authorisation
     assertThat(actualXml, is(expectedDefinition.getBpmn20Xml()));
@@ -354,7 +355,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(processDefinitionOptimizeDto.getKey(), "nonsenseVersion")
-        .execute(String.class, 404);
+        .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertThat(message.contains(EXPECTED_404_MESSAGE), is(true));
@@ -375,7 +376,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest("nonsense", processDefinitionOptimizeDto.getVersion())
-        .execute(String.class, 404);
+        .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     assertThat(message.contains(EXPECTED_404_MESSAGE), is(true));
   }
@@ -524,7 +525,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .getRequestExecutor()
       .withUserAuthentication(userId, userId)
       .buildGetProcessDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
+      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   @Override

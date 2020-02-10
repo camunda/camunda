@@ -74,7 +74,7 @@ public class SessionServiceIT extends AbstractIT {
         .buildLogOutRequest()
         .withGivenAuthToken(firstToken)
         .execute();
-    assertThat(logoutResponse.getStatus(), is(200));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // then
     final Response getPrivateReportsResponse =
@@ -84,7 +84,7 @@ public class SessionServiceIT extends AbstractIT {
         .withGivenAuthToken(secondToken)
         .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus(), is(200));
+    assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -115,7 +115,7 @@ public class SessionServiceIT extends AbstractIT {
         .buildLogOutRequest()
         .withGivenAuthToken(token)
         .execute();
-    assertThat(logoutResponse.getStatus(), is(200));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // then
     final Response getPrivateReportsResponse =
@@ -125,7 +125,7 @@ public class SessionServiceIT extends AbstractIT {
         .withGivenAuthToken(token)
         .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus(), is(401));
+    assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -146,7 +146,7 @@ public class SessionServiceIT extends AbstractIT {
       .withGivenAuthToken(firstToken)
       .execute();
 
-    assertThat(getNewAuthTokenForSameSessionResponse.getStatus(), is(200));
+    assertThat(getNewAuthTokenForSameSessionResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
     LocalDateUtil.reset();
 
     final NewCookie newAuthCookie = getNewAuthTokenForSameSessionResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
@@ -158,7 +158,7 @@ public class SessionServiceIT extends AbstractIT {
         .buildLogOutRequest()
         .withGivenAuthToken(firstToken)
         .execute();
-    assertThat(logoutResponse.getStatus(), is(200));
+    assertThat(logoutResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     //then
     final Response getPrivateReportsResponse =
@@ -168,7 +168,7 @@ public class SessionServiceIT extends AbstractIT {
         .withGivenAuthToken(newToken)
         .execute();
 
-    assertThat(getPrivateReportsResponse.getStatus(), is(401));
+    assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -184,7 +184,7 @@ public class SessionServiceIT extends AbstractIT {
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
       .execute();
-    assertThat(testAuthenticationResponse.getStatus(), is(200));
+    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // when
     LocalDateUtil.setCurrentTime(get1MinuteAfterExpiryTime(expiryTime));
@@ -195,7 +195,7 @@ public class SessionServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(testAuthenticationResponse.getStatus(), is(401));
+    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -211,7 +211,7 @@ public class SessionServiceIT extends AbstractIT {
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
       .execute();
-    assertThat(testAuthenticationResponse.getStatus(), is(200));
+    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     // when
     final OffsetDateTime dateTimeBeforeRefresh = LocalDateUtil.getCurrentDateTime();
@@ -223,7 +223,7 @@ public class SessionServiceIT extends AbstractIT {
       .execute();
 
     //then
-    assertThat(testAuthenticationResponse.getStatus(), is(200));
+    assertThat(testAuthenticationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
     assertThat(testAuthenticationResponse.getCookies().keySet(), hasItem(OPTIMIZE_AUTHORIZATION));
     final NewCookie newAuthCookie = testAuthenticationResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
     final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
@@ -256,7 +256,7 @@ public class SessionServiceIT extends AbstractIT {
 
       // then
 
-      assertThat(getPrivateReportsResponse.getStatus(), is(200));
+      assertThat(getPrivateReportsResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
     } finally {
       embeddedOptimizeExtension.getElasticSearchSchemaManager().initializeSchema(
         embeddedOptimizeExtension.getOptimizeElasticClient()

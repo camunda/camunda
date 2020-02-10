@@ -42,6 +42,6 @@ public abstract class AbstractConnectToElasticsearchIT {
         .execute();
 
     // then Optimize should be able to successfully perform the underlying request to elasticsearch
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
   }
 }

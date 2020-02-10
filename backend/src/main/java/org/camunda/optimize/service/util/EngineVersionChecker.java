@@ -49,9 +49,9 @@ public class EngineVersionChecker {
 
 
     int status = response.getStatus();
-    if (status != 200) {
+    if (status != Response.Status.OK.getStatusCode()) {
       String errorMessageTemplate = "While checking the Engine version, following error occurred:";
-      if (status == 404) {
+      if (status == Response.Status.NOT_FOUND.getStatusCode()) {
         String errorMessage = "While checking the Engine version, following error occurred: Status code: 404,\n this " +
           "means you either configured a wrong endpoint or you have an unsupported engine version < " + supportedEngines.get(0);
         throw new OptimizeRuntimeException(errorMessage);

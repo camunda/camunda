@@ -24,6 +24,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -207,7 +208,7 @@ public class VariableImportIT extends AbstractImportIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, 200);
+        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -246,7 +247,7 @@ public class VariableImportIT extends AbstractImportIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, 200);
+        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -262,7 +263,7 @@ public class VariableImportIT extends AbstractImportIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, 200);
+        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -305,7 +306,7 @@ public class VariableImportIT extends AbstractImportIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, 200);
+        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -339,7 +340,7 @@ public class VariableImportIT extends AbstractImportIT {
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
-        .executeAndReturnList(String.class, 200);
+        .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     //then
     assertThat(variableValues.size(), is(0));
@@ -352,7 +353,7 @@ public class VariableImportIT extends AbstractImportIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildProcessVariableNamesRequest(variableRequestDto)
-      .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
+      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {

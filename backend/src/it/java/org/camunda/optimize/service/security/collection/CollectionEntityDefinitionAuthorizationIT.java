@@ -22,6 +22,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -61,12 +62,12 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedCollectionDefinitionRestDto.class, 200);
+      .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
 
     final List<EntityDto> entities = embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionEntitiesRequest(collectionId)
-      .executeAndReturnList(EntityDto.class, 200);
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
@@ -89,7 +90,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
   }
 

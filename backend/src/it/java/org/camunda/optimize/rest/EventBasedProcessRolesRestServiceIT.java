@@ -21,7 +21,7 @@ import org.camunda.optimize.service.importing.event.AbstractEventProcessIT;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 
-import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
@@ -172,7 +172,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     // when
     final ErrorResponseDto updateResponse = eventProcessClient
       .createUpdateEventProcessMappingRolesRequest(eventProcessMappingId, Collections.emptyList())
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(updateResponse.getErrorCode()).isEqualTo(OptimizeValidationException.ERROR_CODE);
@@ -190,7 +190,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
         eventProcessMappingId,
         Collections.singletonList(new EventProcessRoleDto<>(new UserDto("invalid")))
       )
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(updateResponse.getErrorCode()).isEqualTo(OptimizeValidationException.ERROR_CODE);
@@ -211,7 +211,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
           new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))
         )
       )
-      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
     // then
     assertThat(updateResponse.getErrorCode()).isEqualTo(OptimizeValidationException.ERROR_CODE);
