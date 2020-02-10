@@ -49,6 +49,7 @@ import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
@@ -65,18 +66,12 @@ import org.slf4j.Logger;
 public final class Broker implements AutoCloseable {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final String VERSION;
 
   private static final CollectorRegistry METRICS_REGISTRY = CollectorRegistry.defaultRegistry;
 
   static {
     // enable hotspot prometheus metric collection
     DefaultExports.initialize();
-  }
-
-  static {
-    final String version = Broker.class.getPackage().getImplementationVersion();
-    VERSION = version != null ? version : "development";
   }
 
   private final SystemContext brokerContext;
@@ -150,7 +145,7 @@ public final class Broker implements AutoCloseable {
             clusterCfg.getNodeId(), networkCfg.getCommandApi().getAdvertisedAddress().toString());
 
     if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VERSION);
+      LOG.info("Version: {}", VersionUtil.getVersion());
       LOG.info(
           "Starting broker {} with configuration {}", localBroker.getNodeId(), brokerCfg.toJson());
     }
