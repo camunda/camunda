@@ -25,6 +25,7 @@ import (
 
 const DefaultTestTimeout = 5 * time.Second
 const DefaultTestTimeoutInMs = int64(DefaultTestTimeout / time.Millisecond)
+const DefaultContainerWaitTimeout = 2 * time.Minute
 
 // RpcTestMsg implements the gomock.Matcher interface
 type RpcTestMsg struct {
