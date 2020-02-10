@@ -73,8 +73,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 4
-          memory: 4Gi
+          cpu: 8
+          memory: 16Gi
         requests:
           cpu: 1
           memory: 1Gi
