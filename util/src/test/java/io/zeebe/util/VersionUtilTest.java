@@ -18,4 +18,11 @@ public final class VersionUtilTest {
     final String version = VersionUtil.getVersion();
     assertThat(version).isNotNull();
   }
+
+  @Test
+  public void shouldGetVersionLowerCase() {
+    final String version = VersionUtil.getVersion();
+    final String versionLowerCase = VersionUtil.getVersionLowerCase();
+    assertThat(version.toLowerCase()).isEqualTo(versionLowerCase);
+  }
 }

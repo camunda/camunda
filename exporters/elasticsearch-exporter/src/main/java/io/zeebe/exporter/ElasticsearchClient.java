@@ -10,6 +10,7 @@ package io.zeebe.exporter;
 import io.prometheus.client.Histogram;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -43,6 +44,7 @@ public class ElasticsearchClient {
 
   public static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
   public static final String INDEX_DELIMITER = "_";
+  public static final String ALIAS_DELIMITER = "-";
   protected final RestHighLevelClient client;
   private final ElasticsearchExporterConfiguration configuration;
   private final Logger log;
@@ -125,13 +127,14 @@ public class ElasticsearchClient {
   /** @return true if request was acknowledged */
   public boolean putIndexTemplate(final ValueType valueType) {
     final String templateName = indexPrefixForValueType(valueType);
+    final String aliasName = aliasNameForValueType(valueType);
     final String filename = indexTemplateForValueType(valueType);
-    return putIndexTemplate(templateName, filename, INDEX_DELIMITER);
+    return putIndexTemplate(templateName, aliasName, filename);
   }
 
   /** @return true if request was acknowledged */
   public boolean putIndexTemplate(
-      final String templateName, final String filename, final String indexDelimiter) {
+      final String templateName, final String aliasName, final String filename) {
     final Map<String, Object> template;
     try (final InputStream inputStream =
         ElasticsearchExporter.class.getResourceAsStream(filename)) {
@@ -147,10 +150,10 @@ public class ElasticsearchClient {
     }
 
     // update prefix in template in case it was changed in configuration
-    template.put("index_patterns", Collections.singletonList(templateName + indexDelimiter + "*"));
+    template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
 
     // update alias in template in case it was changed in configuration
-    template.put("aliases", Collections.singletonMap(templateName, Collections.EMPTY_MAP));
+    template.put("aliases", Collections.singletonMap(aliasName, Collections.EMPTY_MAP));
 
     final PutIndexTemplateRequest request =
         new PutIndexTemplateRequest(templateName).source(template);
@@ -229,8 +232,17 @@ public class ElasticsearchClient {
     return indexPrefixForValueType(valueType) + INDEX_DELIMITER;
   }
 
+  private String aliasNameForValueType(final ValueType valueType) {
+    return configuration.index.prefix + ALIAS_DELIMITER + valueTypeToString(valueType);
+  }
+
   private String indexPrefixForValueType(final ValueType valueType) {
-    return configuration.index.prefix + "-" + valueTypeToString(valueType);
+    final String version = VersionUtil.getVersionLowerCase();
+    return configuration.index.prefix
+        + INDEX_DELIMITER
+        + valueTypeToString(valueType)
+        + INDEX_DELIMITER
+        + version;
   }
 
   private static String valueTypeToString(final ValueType valueType) {

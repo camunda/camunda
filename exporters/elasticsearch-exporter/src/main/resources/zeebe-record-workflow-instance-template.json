@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-workflow-instance_*"
+    "zeebe-record_workflow-instance_*"
   ],
   "order": 20,
   "settings": {

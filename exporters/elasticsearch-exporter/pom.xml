@@ -99,7 +99,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-util</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

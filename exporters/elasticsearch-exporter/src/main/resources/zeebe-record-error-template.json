@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-error_*"
+    "zeebe-record_error_*"
   ],
   "order": 20,
   "aliases": {

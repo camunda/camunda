@@ -21,6 +21,7 @@ public final class VersionUtil {
   private static final String VERSION_DEV = "development";
 
   private static String version;
+  private static String versionLowerCase;
 
   public static String getVersion() {
     if (version == null) {
@@ -44,5 +45,12 @@ public final class VersionUtil {
       }
     }
     return version;
+  }
+
+  public static String getVersionLowerCase() {
+    if (versionLowerCase == null) {
+      versionLowerCase = getVersion().toLowerCase();
+    }
+    return versionLowerCase;
   }
 }
