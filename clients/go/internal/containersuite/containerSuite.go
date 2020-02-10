@@ -77,6 +77,8 @@ func (s zeebeWaitStrategy) WaitUntilReady(ctx context.Context, target wait.Strat
 		if err != nil {
 			return fmt.Errorf("timed out awaiting container, and failed to obtain container logs: %w", err)
 		}
+
+		defer reader.Close()
 		if bytes, err := ioutil.ReadAll(reader); err == nil {
 			_, _ = fmt.Fprintln(os.Stderr, "=====================================")
 			_, _ = fmt.Fprintln(os.Stderr, "Container logs")
