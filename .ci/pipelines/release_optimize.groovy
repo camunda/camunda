@@ -13,8 +13,7 @@ static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE() { return "optimize.registry.camunda.cloud/optimize" }
 static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_URL() {
-  def envPrefix = env.JENKINS_URL.contains('stage') ? 'stage-' : ''
-  "gs://${envPrefix}downloads-camunda-cloud-enterprise-release"
+  "gs://${env.JENKINS_URL.contains('stage') ? 'stage-' : ''}downloads-camunda-cloud-enterprise-release"
 }
 static boolean isMajorOrMinorRelease(releaseVersion) {
   def version = releaseVersion.tokenize('.')
@@ -220,7 +219,7 @@ pipeline {
       steps {
         container('jnlp') {
           sshagent(['jenkins-camunda-web']) {
-            sh ("""#!/bin/bash -xe
+            sh("""#!/bin/bash -xe
               ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no jenkins_camunda_web@vm29.camunda.com "mkdir -p /var/www/camunda/camunda.org/enterprise-release/optimize/${params.RELEASE_VERSION}/"
               for file in target/checkout/distro/target/*.{tar.gz,zip}; do
                 scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \${file} jenkins_camunda_web@vm29.camunda.com:/var/www/camunda/camunda.org/enterprise-release/optimize/${params.RELEASE_VERSION}/
@@ -228,6 +227,7 @@ pipeline {
             """)
           }
         }
+      }
     }
     stage('Upload to DownloadCenter storage bucket') {
       steps {
