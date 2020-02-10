@@ -1083,6 +1083,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetIdentityById(final String identityId) {
+    this.path = "identity/" + identityId;
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms) {
     return buildSearchForIdentities(searchTerms, null);
   }

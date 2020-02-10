@@ -102,7 +102,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     return syncedIdentityCache.searchIdentities(searchString, maxResults);
   }
 
-  public boolean doesIdentityExists(final IdentityDto identity) {
+  public boolean doesIdentityExist(final IdentityDto identity) {
     return resolveToIdentityWithMetadata(identity).isPresent();
   }
 

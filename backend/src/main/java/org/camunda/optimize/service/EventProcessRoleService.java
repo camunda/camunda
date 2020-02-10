@@ -45,7 +45,7 @@ public class EventProcessRoleService {
       .filter(identityDto -> identityDto == null
         || identityDto.getId() == null
         || identityDto.getType() == null
-        || !identityService.doesIdentityExists(identityDto)
+        || !identityService.doesIdentityExist(identityDto)
       )
       .collect(Collectors.toSet());
     if (!invalidIdentities.isEmpty()) {

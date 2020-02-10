@@ -39,7 +39,7 @@ public class CollectionRoleService {
                                                final CollectionRoleDto roleDto) throws
                                                                                 OptimizeCollectionConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    if (!identityService.doesIdentityExists(roleDto.getIdentity())) {
+    if (!identityService.doesIdentityExist(roleDto.getIdentity())) {
       throw new OptimizeValidationException(
         String.format(
           "%s with id %s does not exist in Optimize",
