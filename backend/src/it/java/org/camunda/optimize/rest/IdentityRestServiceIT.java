@@ -22,10 +22,12 @@ import javax.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 
 public class IdentityRestServiceIT extends AbstractIT {
@@ -201,6 +203,26 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     // then
     assertThat(errorResponseDto.getErrorCode()).isEqualTo(GenericExceptionMapper.NOT_FOUND_ERROR_CODE);
+  }
+
+  @Test
+  public void getCurrentUserIdentity() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    // when
+    final UserDto currentUserDto = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCurrentUserIdentity()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute(UserDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(currentUserDto).isEqualTo(new UserDto(
+      KERMIT_USER,
+      DEFAULT_FIRSTNAME,
+      DEFAULT_LASTNAME,
+      DEFAULT_USERNAME + DEFAULT_EMAIL_DOMAIN
+    ));
   }
 
   private static Stream<IdentityWithMetadataDto> identities() {

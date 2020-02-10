@@ -63,6 +63,9 @@ import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
+import static org.camunda.optimize.rest.IdentityRestService.CURRENT_USER_IDENTITY_SUB_PATH;
+import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_RESOURCE_PATH;
+import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
@@ -1084,7 +1087,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetIdentityById(final String identityId) {
-    this.path = "identity/" + identityId;
+    this.path =  IDENTITY_RESOURCE_PATH + "/" + identityId;
+    this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCurrentUserIdentity() {
+    this.path = IDENTITY_RESOURCE_PATH + CURRENT_USER_IDENTITY_SUB_PATH;
     this.method = GET;
     return this;
   }
@@ -1094,7 +1103,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms, final Integer limit) {
-    this.path = "identity/search";
+    this.path = IDENTITY_RESOURCE_PATH + IDENTITY_SEARCH_SUB_PATH;
     this.method = GET;
     addSingleQueryParam("terms", searchTerms);
     Optional.ofNullable(limit).ifPresent(limitValue -> addSingleQueryParam("limit", limitValue));
