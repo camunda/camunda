@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export const OPERATION_TYPES = {
-  EDIT: 'EDIT',
-  RETRY: 'RETRY',
-  CANCEL: 'CANCEL'
-};
+export function isBatchOperationRunning(batchOperation) {
+  return !batchOperation.endDate;
+}

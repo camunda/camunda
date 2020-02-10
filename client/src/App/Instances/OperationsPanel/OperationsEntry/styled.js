@@ -21,7 +21,7 @@ const finishedEntryStyles = css`
   })};
 `;
 
-export const Entry = themed(styled.div`
+export const Entry = themed(styled.li`
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
     light: 'rgba(98, 98, 110, 0.9)'
@@ -34,7 +34,7 @@ export const Entry = themed(styled.div`
     light: `solid 1px ${Colors.uiLight05}`
   })};
 
-  height: 130px;
+  min-height: 130px;
   padding: 17px 27px;
 `);
 

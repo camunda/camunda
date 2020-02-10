@@ -6,12 +6,20 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {OPERATION_TYPES} from '../constants';
+import {OPERATION_TYPES} from './constants';
 import * as Styled from './styled';
 
-const {RETRY, CANCEL, EDIT} = OPERATION_TYPES;
+const {
+  UPDATE_VARIABLE,
+  RESOLVE_INCIDENT,
+  CANCEL_WORKFLOW_INSTANCE
+} = OPERATION_TYPES;
 
-const TYPE_LABELS = {[RETRY]: 'Retry', [CANCEL]: 'Cancel', [EDIT]: 'Edit'};
+const TYPE_LABELS = {
+  [UPDATE_VARIABLE]: 'Edit',
+  [RESOLVE_INCIDENT]: 'Retry',
+  [CANCEL_WORKFLOW_INSTANCE]: 'Cancel'
+};
 
 const OperationsEntry = ({id, type, isRunning}) => {
   return (
@@ -23,7 +31,7 @@ const OperationsEntry = ({id, type, isRunning}) => {
 };
 
 OperationsEntry.propTypes = {
-  id: PropTypes.number.isRequired,
+  id: PropTypes.string.isRequired,
   type: PropTypes.oneOf(Object.values(OPERATION_TYPES)).isRequired,
   isRunning: PropTypes.bool.isRequired
 };
