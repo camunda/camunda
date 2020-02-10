@@ -303,14 +303,12 @@ pipeline {
         VERSION = readMavenPom().getVersion()
       }
       steps {
-        retry(2) {
-          container('maven') {
-            runMaven('install -Pdocs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
-          }
-          stash name: "optimize-stash-client", includes: "client/build/**,client/src/**/*.css"
-          stash name: "optimize-stash-backend", includes: "backend/target/*.jar,backend/target/lib/*"
-          stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
+        container('maven') {
+          runMaven('install -Pdocs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
         }
+        stash name: "optimize-stash-client", includes: "client/build/**,client/src/**/*.css"
+        stash name: "optimize-stash-backend", includes: "backend/target/*.jar,backend/target/lib/*"
+        stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
       }
       post {
         success {
@@ -322,10 +320,8 @@ pipeline {
       parallel {
         stage('Backend') {
           steps {
-            retry(2) {
-              container('maven') {
-                runMaven('test -Dskip.fe.build -Dskip.docker -T\$LIMITS_CPU')
-              }
+            container('maven') {
+              runMaven('test -Dskip.fe.build -Dskip.docker -T\$LIMITS_CPU')
             }
           }
           post {
@@ -336,13 +332,11 @@ pipeline {
         }
         stage('Frontend') {
           steps {
-            retry(2) {
-              container('node') {
-                sh('''
-                  cd ./client
-                  yarn test:ci
-                ''')
-              }
+            container('node') {
+              sh('''
+                cd ./client
+                yarn test:ci
+              ''')
             }
           }
           post {
@@ -369,11 +363,9 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              unstash name: "optimize-stash-distro"
-              unstash name: "optimize-stash-client"
-              migrationTestSteps()
-            }
+            unstash name: "optimize-stash-distro"
+            unstash name: "optimize-stash-client"
+            migrationTestSteps()
           }
           post {
             always {
@@ -391,10 +383,8 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              unstash name: "optimize-stash-distro"
-              dataUpgradeTestSteps()
-            }
+            unstash name: "optimize-stash-distro"
+            dataUpgradeTestSteps()
           }
         }
         stage('IT Latest') {
@@ -407,10 +397,8 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              unstash name: "optimize-stash-client"
-              integrationTestSteps('latest')
-            }
+            unstash name: "optimize-stash-client"
+            integrationTestSteps('latest')
           }
           post {
             always {
@@ -447,10 +435,8 @@ pipeline {
             branch 'master'
           }
           steps {
-            retry(2) {
-              container('maven') {
-                runMaven('deploy -Dskip.fe.build -DskipTests -Dskip.docker')
-              }
+            container('maven') {
+              runMaven('deploy -Dskip.fe.build -DskipTests -Dskip.docker')
             }
           }
         }
@@ -465,29 +451,27 @@ pipeline {
             GCR_REGISTRY = credentials('docker-registry-ci3')
           }
           steps {
-            retry(2) {
-              container('docker') {
-                configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                  sh("""
-                  cp \$MAVEN_SETTINGS_XML settings.xml
-                  echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+            container('docker') {
+              configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh("""
+                cp \$MAVEN_SETTINGS_XML settings.xml
+                echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
 
-                  docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
-                    --build-arg SKIP_DOWNLOAD=true \
-                    --build-arg VERSION=${VERSION} \
-                    --build-arg SNAPSHOT=${SNAPSHOT} \
-                    .
+                docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                  --build-arg SKIP_DOWNLOAD=true \
+                  --build-arg VERSION=${VERSION} \
+                  --build-arg SNAPSHOT=${SNAPSHOT} \
+                  .
 
-                  docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
+                docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
 
-                  if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                    docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
-                    docker push ${PROJECT_DOCKER_IMAGE()}:latest
-                  fi
-                """)
-                }
+                if [ "${env.BRANCH_NAME}" = 'master' ]; then
+                  docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
+                  docker push ${PROJECT_DOCKER_IMAGE()}:latest
+                fi
+              """)
               }
-            }
+              }
           }
         }
       }

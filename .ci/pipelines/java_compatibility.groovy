@@ -216,9 +216,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -236,9 +234,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -256,9 +252,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -276,9 +270,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -296,9 +288,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {
@@ -316,9 +306,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps()
-            }
+            integrationTestSteps()
           }
           post {
             always {

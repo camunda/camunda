@@ -260,9 +260,7 @@ pipeline {
         }
       }
       steps {
-        retry(2) {
-          securityTestSteps()
-        }
+        securityTestSteps()
       }
       post {
         always {

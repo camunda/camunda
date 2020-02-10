@@ -230,9 +230,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps('7.10')
-            }
+            integrationTestSteps('7.10')
           }
           post {
             always {
@@ -250,9 +248,7 @@ pipeline {
             }
           }
           steps {
-            retry(2) {
-              integrationTestSteps('7.11')
-            }
+            integrationTestSteps('7.11')
           }
           post {
             always {

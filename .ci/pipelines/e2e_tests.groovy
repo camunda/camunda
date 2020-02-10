@@ -279,24 +279,20 @@ pipeline {
       stages {
         stage('Build') {
           steps {
-            retry(2) {
-              cloneGitRepo()
-              container('maven') {
-                runMaven('install -Pengine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
-              }
+            cloneGitRepo()
+            container('maven') {
+              runMaven('install -Pengine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
             }
           }
         }
         stage('Restore Test Data') {
           steps {
-            retry(2) {
-              timeout(20) {
-                container('gcloud') {
-                  sh 'gsutil -q -m cp gs://optimize-data/optimize_large_data-e2e.sqlc /db_dump/dump.sqlc'
-                }
-                container('postgresql') {
-                  sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc'
-                }
+            timeout(20) {
+              container('gcloud') {
+                sh 'gsutil -q -m cp gs://optimize-data/optimize_large_data-e2e.sqlc /db_dump/dump.sqlc'
+              }
+              container('postgresql') {
+                sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc'
               }
             }
           }
