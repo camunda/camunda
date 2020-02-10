@@ -35,24 +35,11 @@ public class ZeebeCallActivityTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .callActivity("call", c -> c.zeebeProcessId(null).zeebeProcessIdExpression(null))
+            .callActivity("call", c -> c.zeebeProcessId(null))
             .endEvent()
             .done(),
         singletonList(
-            expect(
-                ZeebeCalledElement.class,
-                "Either 'processId' or 'processIdExpression' attribute must be present and not empty"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .callActivity("call", c -> c.zeebeProcessId("x").zeebeProcessIdExpression("y"))
-            .endEvent()
-            .done(),
-        singletonList(
-            expect(
-                ZeebeCalledElement.class,
-                "Either 'processId' or 'processIdExpression' attribute must be present and not empty"))
+            expect(ZeebeCalledElement.class, "Attribute 'processId' must be present and not empty"))
       },
       {
         Bpmn.createExecutableProcess("process")

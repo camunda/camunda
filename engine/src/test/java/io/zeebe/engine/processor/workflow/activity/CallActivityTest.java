@@ -281,9 +281,7 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "wf-parent.bpmn",
-            parentWorkflow(
-                callActivity ->
-                    callActivity.zeebeProcessId(null).zeebeProcessIdExpression("processId")))
+            parentWorkflow(callActivity -> callActivity.zeebeProcessIdExpression("processId")))
         .deploy();
 
     // when

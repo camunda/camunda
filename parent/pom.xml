@@ -81,6 +81,7 @@
     <version.testcontainers>1.12.5</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>0.31.0</version.zeebe-test-container>
+    <version.feel-scala>1.10.1</version.feel-scala>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
@@ -539,6 +540,12 @@
         <groupId>com.netflix.concurrency-limits</groupId>
         <artifactId>concurrency-limits-core</artifactId>
         <version>${version.netflix.concurrency}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.bpm.extension.feel.scala</groupId>
+        <artifactId>feel-engine</artifactId>
+        <version>${version.feel-scala}</version>
       </dependency>
 
     </dependencies>

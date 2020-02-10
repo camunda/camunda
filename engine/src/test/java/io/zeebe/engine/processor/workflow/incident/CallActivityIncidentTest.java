@@ -34,7 +34,7 @@ public final class CallActivityIncidentTest {
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
 
-  private static final String PROCESS_ID_VARIABLE = "wf-child";
+  private static final String PROCESS_ID_VARIABLE = "wfChild";
 
   private static final BpmnModelInstance WORKFLOW_PARENT =
       Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
@@ -132,9 +132,11 @@ public final class CallActivityIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected call activity process id variable '"
+            "failed to evaluate expression '"
                 + PROCESS_ID_VARIABLE
-                + "' to be a STRING, but not found.");
+                + "': no variable found for name '"
+                + PROCESS_ID_VARIABLE
+                + "'");
   }
 
   @Test
@@ -160,9 +162,9 @@ public final class CallActivityIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected call activity process id variable '"
+            "Expected result of the expression '"
                 + PROCESS_ID_VARIABLE
-                + "' to be a STRING, but found 'INTEGER'.");
+                + "' to be 'STRING', but was 'NUMBER'.");
   }
 
   @Test

@@ -45,6 +45,7 @@
     <module>protocol-impl</module>
     <module>zb-db</module>
     <module>upgrade-tests</module>
+    <module>expression-language</module>
   </modules>
 
   <scm>
