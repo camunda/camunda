@@ -401,7 +401,6 @@ public final class ZeebePartition extends Actor
   }
 
   private CompletableActorFuture<Void> closePartition() {
-
     Collections.reverse(closeables);
     final var closeActorsFuture = new CompletableActorFuture<Void>();
     stepByStepClosing(closeActorsFuture, closeables);
@@ -554,6 +553,9 @@ public final class ZeebePartition extends Actor
             closePartition()
                 .onComplete(
                     (v, t) -> {
+                      atomixRaftPartition.removeRoleChangeListener(this);
+                      atomixRaftPartition.getServer().removeCommitListener(this);
+
                       final ActorFuture<Void> logStreamCloseFuture = logStream.closeAsync();
                       if (t == null) {
                         logStreamCloseFuture.onComplete(closeFuture);
