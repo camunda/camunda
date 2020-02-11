@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.security;
 
 import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +26,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 
 @Component
+@Slf4j
 public class ApplicationAuthorizationService extends AbstractCachingAuthorizationService<List<String>> {
   private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, ACCESS_PERMISSION);
 
@@ -69,8 +72,12 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   protected List<String> fetchAuthorizationsForUserId(final String userId) {
     final List<String> result = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      if (isUserAuthorizedToAccessOptimizeOnEngine(userId, engineContext)) {
-        result.add(engineContext.getEngineAlias());
+      try {
+        if (isUserAuthorizedToAccessOptimizeOnEngine(userId, engineContext)) {
+          result.add(engineContext.getEngineAlias());
+        }
+      } catch (OptimizeRuntimeException e) {
+        log.warn(String.format("Unable to check user [%s] authorization for engine [%s}", userId, engineContext.getEngineAlias()));
       }
     }
     return result;
@@ -80,8 +87,12 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   protected List<String> fetchAuthorizationsForGroupId(final String groupId) {
     final List<String> result = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      if (isGroupAuthorizedToAccessOptimizeOnEngine(groupId, engineContext)) {
-        result.add(engineContext.getEngineAlias());
+      try {
+        if (isGroupAuthorizedToAccessOptimizeOnEngine(groupId, engineContext)) {
+          result.add(engineContext.getEngineAlias());
+        }
+      } catch (OptimizeRuntimeException e) {
+        log.warn(String.format("Unable to check group [%s] authorization for engine [%s}", groupId, engineContext.getEngineAlias()));
       }
     }
     return result;
@@ -90,7 +101,17 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   private static boolean isUserAuthorizedToAccessOptimizeOnEngine(final String username,
                                                                   final EngineContext engineContext) {
     final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    final List<AuthorizationDto> allAuthorizations = engineContext.getAllApplicationAuthorizations();
+    final List<AuthorizationDto> allAuthorizations;
+    try {
+      allAuthorizations = engineContext.getAllApplicationAuthorizations();
+    } catch (OptimizeRuntimeException e) {
+      log.info(
+        "Could not fetch application authorizations from the Engine [{}] to check User [{}] authorizations.",
+        engineContext.getEngineAlias(),
+        username
+      );
+      throw e;
+    }
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
       engineContext.getEngineAlias(),
       allAuthorizations,
@@ -105,7 +126,17 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(final String groupId,
                                                                   final EngineContext engineContext) {
     final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
-    final List<AuthorizationDto> allAuthorizations = engineContext.getAllApplicationAuthorizations();
+    final List<AuthorizationDto> allAuthorizations;
+    try {
+      allAuthorizations = engineContext.getAllApplicationAuthorizations();
+    } catch (OptimizeRuntimeException e) {
+      log.info(
+        "Could not fetch application authorizations from the Engine [{}] to check Group [{}] authorizations.",
+        engineContext.getEngineAlias(),
+        groupId
+      );
+      throw e;
+    }
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
       engineContext.getEngineAlias(),
       allAuthorizations,

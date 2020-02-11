@@ -14,16 +14,22 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.AuthorizedIdentitiesResult;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.time.Instant;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -48,15 +54,19 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
 
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
+  private final BackoffCalculator backoffCalculator;
 
   private List<SyncedIdentityCacheListener> syncedIdentityCacheListeners;
+  private CronSequenceGenerator cronSequenceGenerator;
 
   public SyncedIdentityCacheService(final ConfigurationService configurationService,
                                     final EngineContextFactory engineContextFactory,
-                                    final List<SyncedIdentityCacheListener> syncedIdentityCacheListeners) {
+                                    final List<SyncedIdentityCacheListener> syncedIdentityCacheListeners,
+                                    final BackoffCalculator backoffCalculator) {
     this.configurationService = configurationService;
     this.engineContextFactory = engineContextFactory;
     this.syncedIdentityCacheListeners = syncedIdentityCacheListeners;
+    this.backoffCalculator = backoffCalculator;
     this.activeIdentityCache = new SearchableIdentityCache(getIdentitySyncConfiguration().getMaxEntryLimit());
   }
 
@@ -70,6 +80,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     log.info("Initializing user sync.");
     final IdentitySyncConfiguration identitySyncConfiguration = getIdentitySyncConfiguration();
     identitySyncConfiguration.validate();
+    this.cronSequenceGenerator = new CronSequenceGenerator(identitySyncConfiguration.getCronTrigger());
     startSchedulingUserSync();
   }
 
@@ -77,7 +88,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     log.info("Scheduling User Sync");
     final boolean wasScheduled = startScheduling();
     if (wasScheduled) {
-      this.taskScheduler.submit(this::synchronizeIdentities);
+      this.taskScheduler.submit(this::syncIdentitiesWithRetry);
     }
   }
 
@@ -89,7 +100,39 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
 
   @Override
   protected void run() {
-    synchronizeIdentities();
+    try {
+      syncIdentitiesWithRetry();
+    } catch (Exception ex) {
+      log.error("Could not sync identities with the engine, there was an error.", ex);
+    }
+  }
+
+  private synchronized void syncIdentitiesWithRetry() {
+    Instant stopRetryingTime = cronSequenceGenerator.next(new Date(LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli()))
+      .toInstant()
+      .minusSeconds(backoffCalculator.getMaximumBackoffSeconds());
+    boolean shouldRetry = true;
+    while (shouldRetry) {
+      try {
+        synchronizeIdentities();
+        log.info("Engine identity sync complete");
+        shouldRetry = false;
+      } catch (final Exception e) {
+        if (LocalDateUtil.getCurrentDateTime().toInstant().isAfter(stopRetryingTime)) {
+          log.error("Could not sync identities with the engine. Will stop retrying as next scheduled sync is approaching", e);
+          shouldRetry = false;
+        } else {
+          long timeToSleep = backoffCalculator.calculateSleepTime();
+          log.error("Error while syncing identities with the engine. Will retry in {} millis", timeToSleep, e);
+          try {
+            Thread.sleep(timeToSleep);
+          } catch (InterruptedException ex) {
+            log.debug("Thread interrupted during sleep. Continuing.", ex);
+          }
+        }
+      }
+    }
+    backoffCalculator.resetBackoff();
   }
 
   public synchronized void synchronizeIdentities() {
@@ -116,6 +159,10 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
           + ERROR_INCREASE_CACHE_LIMIT,
         IdentitySyncConfiguration.Fields.maxEntryLimit.name()
       ));
+      throw e;
+    } catch (OptimizeRuntimeException e) {
+      log.error("Could not synchronize identity cache as there was a problem receiving authorizations from the engine.");
+      throw e;
     }
   }
 

@@ -60,4 +60,9 @@ public class BackoffCalculator {
     currentTimeToWait = initialBackoff;
     nextRetryTime = OffsetDateTime.now().minusMinutes(1L);
   }
+
+  public long getMaximumBackoffSeconds() {
+    return maximumBackoff;
+  }
+
 }

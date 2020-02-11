@@ -88,7 +88,6 @@ public class EngineContext {
       .filter(authorizationDto -> AUTHORIZATION_TYPE_GLOBAL != authorizationDto.getType())
       .collect(toList());
 
-
     optimizeGrantAndRevokeAuthorizations.stream()
       .sorted(
         // as users authorization win over group authorizations, we order by having group first
@@ -299,9 +298,10 @@ public class EngineContext {
     try {
       return getAuthorizationsForType(RESOURCE_TYPE_APPLICATION);
     } catch (Exception e) {
-      log.error("Could not fetch application authorizations from the Engine to check the access permissions.", e);
+      String errorMessage = "Could not fetch application authorizations from the Engine to check the access permissions.";
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage);
     }
-    return new ArrayList<>();
   }
 
   public List<AuthorizationDto> getAllProcessDefinitionAuthorizations() {

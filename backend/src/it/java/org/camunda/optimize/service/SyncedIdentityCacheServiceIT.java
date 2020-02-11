@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
@@ -99,9 +100,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       authorizationClient.addUserAndGrantOptimizeAccess(userIdJohn);
       // we have at least two users, but limit is now 1
       getIdentitySyncConfiguration().setMaxEntryLimit(1L);
-      getSyncedIdentityCacheService().synchronizeIdentities();
 
       // then
+      assertThatThrownBy(() -> getSyncedIdentityCacheService().synchronizeIdentities())
+        .isInstanceOf(MaxEntryLimitHitException.class);
       assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
       assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn).isPresent(), is(false));
     } finally {

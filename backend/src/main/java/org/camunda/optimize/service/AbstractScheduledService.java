@@ -32,7 +32,6 @@ public abstract class AbstractScheduledService {
     if (this.scheduledTrigger == null) {
       this.scheduledTrigger = this.taskScheduler.schedule(this::run, getScheduleTrigger());
     }
-
     return wasScheduled;
   }
 

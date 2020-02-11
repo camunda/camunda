@@ -59,7 +59,7 @@ public class CollectionRoleCleanupService implements SyncedIdentityCacheListener
         final HashSet<String> roleIds = e.getValue();
         for (String roleId : roleIds) {
           try {
-            log.debug("Removing role with ID [{}] from collection with ID [{}].", roleId, collectionId);
+            log.info("Removing role with ID [{}] from collection with ID [{}].", roleId, collectionId);
             collectionWriter.removeRoleFromCollection(collectionId, roleId);
           } catch (Exception ex) {
             log.error("Could not remove role with ID [{}] from collection with ID [{}]", roleId, collectionId);
