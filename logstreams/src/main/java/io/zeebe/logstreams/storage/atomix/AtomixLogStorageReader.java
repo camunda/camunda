@@ -24,7 +24,18 @@ public final class AtomixLogStorageReader implements LogStorageReader {
 
   @Override
   public boolean isEmpty() {
-    return reader.isEmpty();
+    if (!reader.isEmpty()) {
+      // although seemingly inefficient, the log will contain mostly ZeebeEntry entries and a few
+      // InitialEntry, so this should be rather fast in practice
+      reader.reset();
+      while (reader.hasNext()) {
+        if (reader.next().type() == ZeebeEntry.class) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   @Override
