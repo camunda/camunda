@@ -203,7 +203,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
       - name: http.port
         value: ${httpPort}
       - name: cluster.name
-        value: elasticsearch      
+        value: elasticsearch
       - name: path.repo
         value: /var/lib/elasticsearch/snapshots
    """
@@ -340,7 +340,6 @@ pipeline {
               container('node') {
                 sh('''
                   cd ./client
-                  yarn run eslint src/
                   yarn test:ci
                 ''')
               }
@@ -470,7 +469,7 @@ pipeline {
               container('docker') {
                 configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
                   sh("""
-                  cp \$MAVEN_SETTINGS_XML settings.xml 
+                  cp \$MAVEN_SETTINGS_XML settings.xml
                   echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
 
                   docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
