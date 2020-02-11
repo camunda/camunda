@@ -14,7 +14,6 @@ public interface ConfigurationServiceConstants {
   String TOKEN_SECRET = "$.auth.token.secret";
   String SAME_SITE_COOKIE_FLAG_ENABLED = "$.auth.cookie.same-site.enabled";
   String SUPER_USER_IDS = "$.auth.superUserIds";
-  String EVENT_PROCESS_ACCESS_USER_IDS = "$.auth.eventProcessManagementAccessUserIds";
 
   String CONFIGURED_ENGINES = "$.engines";
 
@@ -32,13 +31,18 @@ public interface ConfigurationServiceConstants {
 
   String IMPORT_CURRENT_TIME_BACKOFF_MILLISECONDS = "$.import.currentTimeBackoffMilliseconds";
   String ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.process-definition-xml.maxPageSize";
+  String ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE = "$.import.data.process-definition.maxPageSize";
   String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.maxPageSize";
   String ENGINE_IMPORT_USER_TASK_INSTANCE_MAX_PAGE_SIZE = "$.import.data.user-task-instance.maxPageSize";
   String ENGINE_IMPORT_IDENTITY_LING_LOG_MAX_PAGE_SIZE = "$.import.data.identity-link-log.maxPageSize";
   String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.maxPageSize";
   String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.maxPageSize";
+  String ENGINE_IMPORT_DECISION_DEFINITION_MAX_PAGE_SIZE = "$.import.data.decision-definition.maxPageSize";
   String ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.decision-definition-xml.maxPageSize";
   String ENGINE_IMPORT_DECISION_INSTANCE_MAX_PAGE_SIZE = "$.import.data.decision-instance.maxPageSize";
+  String ENGINE_IMPORT_TENANT_MAX_PAGE_SIZE = "$.import.data.tenant.maxPageSize";
+  String ENGINE_IMPORT_GROUP_MAX_PAGE_SIZE = "$.import.data.group.maxPageSize";
+  String ENGINE_IMPORT_AUTHORIZATION_MAX_PAGE_SIZE = "$.import.data.authorization.maxPageSize";
   String IMPORT_DMN_DATA = "$.import.data.dmn.enabled";
   String IMPORT_USER_TASK_WORKER_DATA = "$.import.data.user-task-worker.enabled";
 

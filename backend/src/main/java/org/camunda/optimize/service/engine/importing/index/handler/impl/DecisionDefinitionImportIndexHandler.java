@@ -47,6 +47,11 @@ public class DecisionDefinitionImportIndexHandler extends AllEntitiesBasedImport
   }
 
   @Override
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportDecisionDefinitionMaxPageSize();
+  }
+
+  @Override
   public void resetImportIndex() {
     super.resetImportIndex();
     alreadyImportedIds.clear();

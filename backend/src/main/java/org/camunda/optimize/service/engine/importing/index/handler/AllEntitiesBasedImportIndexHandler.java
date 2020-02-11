@@ -62,9 +62,11 @@ public abstract class AllEntitiesBasedImportIndexHandler
   public AllEntitiesBasedImportPage getNextPage() {
     AllEntitiesBasedImportPage page = new AllEntitiesBasedImportPage();
     page.setIndexOfFirstResult(0);
-    page.setPageSize(Integer.MAX_VALUE);
+    page.setPageSize(getMaxPageSize());
     return page;
   }
+
+  protected abstract int getMaxPageSize();
 
   protected abstract String getElasticsearchImportIndexType();
 

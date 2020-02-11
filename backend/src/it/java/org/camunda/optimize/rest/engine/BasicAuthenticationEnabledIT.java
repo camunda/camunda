@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest.engine;
 
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;

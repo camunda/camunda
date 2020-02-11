@@ -102,6 +102,7 @@ public class IdentityLinkLogInstanceFetcher extends RetryBackoffEngineEntityFetc
     // @formatter:off
     return createIdentityLinkLogWebTarget()
       .queryParam(OCCURRED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportIdentityLinkLogsMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricIdentityLinkLogDto>>() {});

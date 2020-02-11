@@ -35,6 +35,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.GROUP_BY_ID_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.GROUP_ENDPOINT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MEMBER;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MEMBER_OF_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
@@ -128,6 +130,7 @@ public class EngineContext {
       if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         engineUserDto = response.readEntity(EngineListUserDto.class);
       }
+      response.close();
     } catch (Exception e) {
       log.error("Could not fetch user with id [{}]", userId, e);
     }
@@ -164,11 +167,11 @@ public class EngineContext {
   public List<UserDto> fetchPageOfUsers(final int pageStartIndex, final int pageLimit, final String groupId) {
     Response response = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .queryParam("maxResults", pageLimit)
+      .queryParam(MAX_RESULTS_TO_RETURN, pageLimit)
       .queryParam("sortBy", "userId")
       .queryParam("sortOrder", "asc")
       .queryParam("memberOfGroup", groupId)
-      .queryParam("firstResult", pageStartIndex)
+      .queryParam(INDEX_OF_FIRST_RESULT, pageStartIndex)
       .path(USER_ENDPOINT)
       .request(MediaType.APPLICATION_JSON)
       .get();
@@ -184,6 +187,7 @@ public class EngineContext {
       final String message = String.format(
         "Failed querying users from engine, response status: %s.", response.getStatus()
       );
+      response.close();
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
@@ -210,6 +214,7 @@ public class EngineContext {
       if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         groupDto = response.readEntity(EngineGroupDto.class);
       }
+      response.close();
     } catch (Exception e) {
       log.error("Could not fetch group with id [{}]", groupId, e);
     }
@@ -232,6 +237,7 @@ public class EngineContext {
       if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         return Optional.of(response.readEntity(CountDto.class).getCount());
       }
+      response.close();
     } catch (Exception e) {
       log.error("Could not get user count for user group [{}]", userGroupId, e);
     }
@@ -241,10 +247,10 @@ public class EngineContext {
   public List<GroupDto> fetchPageOfGroups(final int pageStartIndex, final int pageLimit) {
     Response response = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .queryParam("maxResults", pageLimit)
+      .queryParam(MAX_RESULTS_TO_RETURN, pageLimit)
       .queryParam("sortBy", "id")
       .queryParam("sortOrder", "asc")
-      .queryParam("firstResult", pageStartIndex)
+      .queryParam(INDEX_OF_FIRST_RESULT, pageStartIndex)
       .path(GROUP_ENDPOINT)
       .request(MediaType.APPLICATION_JSON)
       .get();
@@ -260,6 +266,7 @@ public class EngineContext {
       final String message = String.format(
         "Failed querying groups from engine, response status: %s.", response.getStatus()
       );
+      response.close();
       log.error(message);
       throw new OptimizeRuntimeException(message);
     }
@@ -270,6 +277,7 @@ public class EngineContext {
       Response response = getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .queryParam(MEMBER, userId)
+        .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportGroupMaxPageSize())
         .path(GROUP_ENDPOINT)
         .request(MediaType.APPLICATION_JSON)
         .get();
@@ -333,19 +341,34 @@ public class EngineContext {
   }
 
   private List<AuthorizationDto> getAuthorizationsForType(final int resourceType) {
-    final Response response = getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(AUTHORIZATION_ENDPOINT)
-      .queryParam(RESOURCE_TYPE, resourceType)
-      .request(MediaType.APPLICATION_JSON)
-      .get();
-    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-      // @formatter:off
-      return response.readEntity(new GenericType<List<AuthorizationDto>>() {});
+    int pageSize = configurationService.getEngineImportAuthorizationMaxPageSize();
+    List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
+    List<AuthorizationDto> pageOfAuthorizations;
+    boolean shouldContinue = true;
+    do {
+      pageOfAuthorizations = new ArrayList<>();
+      final Response response = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(AUTHORIZATION_ENDPOINT)
+        .queryParam(RESOURCE_TYPE, resourceType)
+        .queryParam(INDEX_OF_FIRST_RESULT, totalAuthorizations.size())
+        .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
+        .request(MediaType.APPLICATION_JSON)
+        .get();
+      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+        // @formatter:off
+        pageOfAuthorizations = response.readEntity(new GenericType<List<AuthorizationDto>>() {});
+        totalAuthorizations.addAll(pageOfAuthorizations);
       // @formatter:on
-    } else {
-      return new ArrayList<>();
-    }
+      } else {
+        if (log.isDebugEnabled()) {
+          log.debug("Could not fetch authorizations! Error from engine: {}", response.readEntity(String.class));
+        }
+        shouldContinue = false;
+      }
+      response.close();
+    } while (pageOfAuthorizations.size() >= pageSize && shouldContinue);
+    return totalAuthorizations;
   }
 
 }

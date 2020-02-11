@@ -95,6 +95,7 @@ public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetch
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(VARIABLE_UPDATE_ENDPOINT)
       .queryParam(OCCURRED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportVariableInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricVariableUpdateInstanceDto>>() {

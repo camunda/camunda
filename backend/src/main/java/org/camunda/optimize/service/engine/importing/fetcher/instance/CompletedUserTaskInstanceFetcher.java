@@ -102,6 +102,7 @@ public class CompletedUserTaskInstanceFetcher extends RetryBackoffEngineEntityFe
     // @formatter:off
     return createUserTaskInstanceWebTarget()
       .queryParam(FINISHED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportUserTaskInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricUserTaskInstanceDto>>() {});

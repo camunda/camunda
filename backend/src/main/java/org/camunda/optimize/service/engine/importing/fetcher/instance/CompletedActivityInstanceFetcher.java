@@ -96,6 +96,7 @@ public class CompletedActivityInstanceFetcher
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(COMPLETED_ACTIVITY_INSTANCE_ENDPOINT)
       .queryParam(FINISHED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportActivityInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {

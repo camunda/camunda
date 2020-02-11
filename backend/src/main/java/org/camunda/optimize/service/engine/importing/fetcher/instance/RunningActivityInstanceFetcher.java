@@ -96,6 +96,7 @@ public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetc
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(RUNNING_ACTIVITY_INSTANCE_ENDPOINT)
       .queryParam(STARTED_AT, dateTimeFormatter.format(startTimeOfLastInstance))
+      .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportActivityInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {

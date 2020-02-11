@@ -33,7 +33,6 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationParse
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_INDEX_ROLLOVER_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
@@ -104,11 +103,16 @@ public class ConfigurationService {
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
+  private Integer engineImportProcessDefinitionMaxPageSize;
   private Integer engineImportActivityInstanceMaxPageSize;
   private Integer engineImportUserTaskInstanceMaxPageSize;
   private Integer engineImportIdentityLinkLogsMaxPageSize;
   private Integer engineImportDecisionDefinitionXmlMaxPageSize;
+  private Integer engineImportDecisionDefinitionMaxPageSize;
   private Integer engineImportDecisionInstanceMaxPageSize;
+  private Integer engineImportTenantMaxPageSize;
+  private Integer engineImportGroupMaxPageSize;
+  private Integer engineImportAuthorizationMaxPageSize;
   private Integer importIndexAutoStorageIntervalInSec;
   private Boolean importDmnDataEnabled;
   private Boolean importUserTaskWorkerDataEnabled;
@@ -445,7 +449,18 @@ public class ConfigurationService {
         ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE, Integer.class
       );
     }
+    ensureGreaterThanZero(engineImportProcessDefinitionXmlMaxPageSize);
     return engineImportProcessDefinitionXmlMaxPageSize;
+  }
+
+  public int getEngineImportProcessDefinitionMaxPageSize() {
+    if (engineImportProcessDefinitionMaxPageSize == null) {
+      engineImportProcessDefinitionMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_MAX_PAGE_SIZE, Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportProcessDefinitionMaxPageSize);
+    return engineImportProcessDefinitionMaxPageSize;
   }
 
   private String getProcessDefinitionXmlEndpoint() {
@@ -479,7 +494,18 @@ public class ConfigurationService {
         ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE, Integer.class
       );
     }
+    ensureGreaterThanZero(engineImportDecisionDefinitionXmlMaxPageSize);
     return engineImportDecisionDefinitionXmlMaxPageSize;
+  }
+
+  public int getEngineImportDecisionDefinitionMaxPageSize() {
+    if (engineImportDecisionDefinitionMaxPageSize == null) {
+      engineImportDecisionDefinitionMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_DEFINITION_MAX_PAGE_SIZE, Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportDecisionDefinitionMaxPageSize);
+    return engineImportDecisionDefinitionMaxPageSize;
   }
 
   public int getEngineImportDecisionInstanceMaxPageSize() {
@@ -490,6 +516,37 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportDecisionInstanceMaxPageSize);
     return engineImportDecisionInstanceMaxPageSize;
+  }
+
+
+  public int getEngineImportTenantMaxPageSize() {
+    if (engineImportTenantMaxPageSize == null) {
+      engineImportTenantMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_TENANT_MAX_PAGE_SIZE, Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportTenantMaxPageSize);
+    return engineImportTenantMaxPageSize;
+  }
+
+  public int getEngineImportGroupMaxPageSize() {
+    if (engineImportGroupMaxPageSize == null) {
+      engineImportGroupMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_GROUP_MAX_PAGE_SIZE, Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportGroupMaxPageSize);
+    return engineImportGroupMaxPageSize;
+  }
+
+  public int getEngineImportAuthorizationMaxPageSize() {
+    if (engineImportAuthorizationMaxPageSize == null) {
+      engineImportAuthorizationMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_AUTHORIZATION_MAX_PAGE_SIZE, Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportAuthorizationMaxPageSize);
+    return engineImportAuthorizationMaxPageSize;
   }
 
   public int getEngineImportActivityInstanceMaxPageSize() {

@@ -119,6 +119,9 @@ import:
       # fetching. Should be a low value, as large models will lead to
       # memory or timeout problems.
       maxPageSize: 2
+    process-definition:
+      # Determines the page size for process definition fetching.
+      maxPageSize: 10000
     process-instance:
       # Determines the maximum page size for historic process instance fetching.
       maxPageSize: 10000
@@ -136,8 +139,20 @@ import:
       # fetching. Should be a low value, as large models will lead to
       # memory or timeout problems.
       maxPageSize: 2
+    decision-definition:
+      # Determines the page size for decision definition fetching.
+      maxPageSize: 10000
     decision-instance:
       # Determines the page size for historic decision instance fetching.
+      maxPageSize: 10000
+    tenant:
+      # Determines the page size for tenants fetching.
+      maxPageSize: 10000
+    group:
+      # Determines the page size for groups fetching.
+      maxPageSize: 10000
+    authorization:
+      # Determines the page size for authorizations fetching.
       maxPageSize: 10000
     dmn:
       # Determines if the DMN/decision data, such as decision definitions and instances

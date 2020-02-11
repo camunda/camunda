@@ -55,6 +55,14 @@ public class DeployServlet extends HttpServlet {
     configuration.setAuthorizationEnabled(true);
     configuration.setJobExecutorDeploymentAware(true);
     configuration.getProcessEnginePlugins().add(new SpinProcessEnginePlugin());
+
+    // For the details of what this config parameter does:
+    // https://docs.camunda.org/manual/latest/reference/deployment-descriptors/tags/process-engine/#queryMaxResultsLimit
+    //
+    // We're adding this by default, because there are customers who restrict the result size of queries
+    // against the engine. By setting it to the value of 10 000 we make sure that the limit works with
+    // the Optimize default max page size.
+    configuration.setQueryMaxResultsLimit(10_000);
     return configuration.buildProcessEngine();
   }
 }

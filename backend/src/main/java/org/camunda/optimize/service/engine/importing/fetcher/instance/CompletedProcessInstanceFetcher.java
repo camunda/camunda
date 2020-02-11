@@ -95,6 +95,7 @@ public class CompletedProcessInstanceFetcher extends
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(COMPLETED_PROCESS_INSTANCE_ENDPOINT)
       .queryParam(FINISHED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(MAX_RESULTS_TO_RETURN, configurationService.getEngineImportProcessInstanceMaxPageSize())
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricProcessInstanceDto>>() {

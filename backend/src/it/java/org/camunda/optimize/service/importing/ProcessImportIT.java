@@ -509,7 +509,8 @@ public class ProcessImportIT extends AbstractImportIT {
     // given
     int originalMaxPageSize = embeddedOptimizeExtension.getConfigurationService()
       .getEngineImportProcessInstanceMaxPageSize();
-    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(1);
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(2);
+    startTwoProcessInstancesWithSameEndTime();
     startTwoProcessInstancesWithSameEndTime();
 
     // when
@@ -518,7 +519,7 @@ public class ProcessImportIT extends AbstractImportIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 2L, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 4L, PROCESS_INSTANCE_NULLABLE_FIELDS);
     embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
   }
 
