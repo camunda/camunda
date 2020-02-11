@@ -11,14 +11,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.service.util.IdGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @FieldNameConstants
@@ -26,8 +27,9 @@ import java.util.List;
 public class EventSourceEntryDto {
 
   @EqualsAndHashCode.Include
-  @Setter(value = AccessLevel.PROTECTED)
-  private String id;
+  @NonNull
+  @Builder.Default
+  private String id = IdGenerator.getNextId();
   private String processDefinitionKey;
   @Builder.Default
   private List<String> versions = new ArrayList<>();
@@ -36,4 +38,5 @@ public class EventSourceEntryDto {
   private Boolean tracedByBusinessKey;
   private String traceVariable;
   private EventScopeType eventScope;
+
 }

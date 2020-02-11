@@ -82,7 +82,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
   }
 
   private EventSourceEntryDto createEventSourceEntry(final String processDefinitionKey) {
-    return new EventSourceEntryDto().builder()
+    return EventSourceEntryDto.builder()
       .processDefinitionKey(processDefinitionKey)
       .versions(ImmutableList.of(ALL_VERSIONS))
       .tracedByBusinessKey(true)
@@ -91,7 +91,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
   }
 
   private EventSourceEntryDto createEventSourceEntry(final String processDefinitionKey, final String tenantId) {
-    return new EventSourceEntryDto().builder()
+    return EventSourceEntryDto.builder()
       .processDefinitionKey(processDefinitionKey)
       .versions(ImmutableList.of(ALL_VERSIONS))
       .tenants(ImmutableList.of(tenantId))

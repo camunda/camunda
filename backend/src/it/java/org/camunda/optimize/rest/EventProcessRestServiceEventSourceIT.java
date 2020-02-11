@@ -54,7 +54,10 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     // then
     assertThat(eventSources)
       .usingElementComparatorIgnoringFields("id")
-      .containsExactly(expectedEventSourceEntryRestDto);
+      .containsExactly(expectedEventSourceEntryRestDto)
+      .allSatisfy(eventSourceEntryRestDto -> {
+        assertThat(eventSourceEntryRestDto.getId()).isNotBlank();
+      });
   }
 
   @Test
@@ -141,7 +144,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   }
 
   private EventSourceEntryDto createEventSourceEntry(final String processDefinitionKey) {
-    return new EventSourceEntryDto().builder()
+    return EventSourceEntryDto.builder()
       .processDefinitionKey(processDefinitionKey)
       .versions(ImmutableList.of(ALL_VERSIONS))
       .tracedByBusinessKey(true)
