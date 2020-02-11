@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.command;
 
+import io.zeebe.client.api.response.UpdateRetriesJobResponse;
+
 public interface UpdateRetriesJobCommandStep1 {
   /**
    * Set the retries of this job.
@@ -28,7 +30,7 @@ public interface UpdateRetriesJobCommandStep1 {
    */
   UpdateRetriesJobCommandStep2 retries(int retries);
 
-  interface UpdateRetriesJobCommandStep2 extends FinalCommandStep<Void> {
+  interface UpdateRetriesJobCommandStep2 extends FinalCommandStep<UpdateRetriesJobResponse> {
     // the place for new optional parameters
   }
 }

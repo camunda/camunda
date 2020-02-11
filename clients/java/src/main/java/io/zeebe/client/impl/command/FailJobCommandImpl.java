@@ -20,11 +20,12 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.zeebe.client.api.command.FinalCommandStep;
+import io.zeebe.client.api.response.FailJobResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -61,16 +62,16 @@ public final class FailJobCommandImpl implements FailJobCommandStep1, FailJobCom
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<FailJobResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ZeebeFuture<Void> send() {
+  public ZeebeFuture<FailJobResponse> send() {
     final FailJobRequest request = builder.build();
 
-    final RetriableClientFutureImpl<Void, FailJobResponse> future =
+    final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =
         new RetriableClientFutureImpl<>(
             retryPredicate, streamObserver -> send(request, streamObserver));
 
@@ -79,7 +80,8 @@ public final class FailJobCommandImpl implements FailJobCommandStep1, FailJobCom
   }
 
   private void send(
-      final FailJobRequest request, final StreamObserver<FailJobResponse> streamObserver) {
+      final FailJobRequest request,
+      final StreamObserver<GatewayOuterClass.FailJobResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .failJob(request, streamObserver);

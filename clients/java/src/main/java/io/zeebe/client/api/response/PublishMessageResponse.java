@@ -15,7 +15,4 @@
  */
 package io.zeebe.client.api.response;
 
-public interface JobEvent {
-  /** Unique key of the created job on the partition */
-  long getKey();
-}
+public interface PublishMessageResponse {}

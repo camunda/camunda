@@ -13,10 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.command;
+package io.zeebe.client.api.response;
 
-import io.zeebe.client.api.response.ResolveIncidentResponse;
-
-public interface ResolveIncidentCommandStep1 extends FinalCommandStep<ResolveIncidentResponse> {
-  // the place for new optional parameters
-}
+public interface ResolveIncidentResponse {}
