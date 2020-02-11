@@ -16,8 +16,7 @@ jest.mock('./service', () => ({
   updateUsers: jest.fn(),
   getUsers: jest.fn().mockReturnValue([
     {
-      id: 'user:kermit',
-      isOwner: true,
+      id: 'USER:kermit',
       identity: {
         id: 'kermit',
         type: 'user' // or group
@@ -32,7 +31,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
 
-it('should add/remove user/group from the list', () => {
+it('should add user/group to the list', () => {
   const node = shallow(<UsersModal {...props} />);
 
   expect(node.find('.confirm').props('disabled')).toBeTruthy();
@@ -47,13 +46,18 @@ it('should add/remove user/group from the list', () => {
   node.find('.confirm').simulate('click');
 
   expect(node.find('EntityList').props('data').data).toMatchSnapshot();
+});
+
+it('should disable the save button if the user list is empty', () => {
+  const node = shallow(<UsersModal {...props} />);
 
   node
     .find('EntityList')
     .props('data')
-    .data[1].meta3.props.onClick();
+    .data[0].meta3.props.onClick();
 
-  expect(node.find('EntityList').props('data').data.length).toBe(1);
+  expect(node.find('EntityList').props('data').data.length).toBe(0);
+  expect(node.find({variant: 'primary'})).toBeDisabled();
 });
 
 it('should show an error when adding already existing user/group', () => {
@@ -72,5 +76,7 @@ it('should update the event with the selected users', () => {
   node.find({variant: 'primary'}).simulate('click');
 
   expect(updateUsers).toHaveBeenCalled();
-  expect(props.onClose).toHaveBeenCalledWith(true);
+  expect(props.onClose).toHaveBeenCalledWith([
+    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}}
+  ]);
 });

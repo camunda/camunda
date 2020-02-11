@@ -14,6 +14,7 @@ import {showError, addNotification} from 'notifications';
 import {publish, getUsers} from './service';
 import UsersModal from './UsersModal';
 import './PublishModal.scss';
+import {getCurrentUser} from 'config';
 
 export default withErrorHandling(
   class PublishModal extends React.Component {
@@ -24,12 +25,16 @@ export default withErrorHandling(
     };
 
     componentDidMount() {
+      this.props.mightFail(getUsers(this.props.id), users => this.updatePrivate(users), showError);
+    }
+
+    updatePrivate = users => {
       this.props.mightFail(
-        getUsers(this.props.id),
-        users => this.setState({isPrivate: users.length <= 1}),
+        getCurrentUser(),
+        ({id}) => this.setState({isPrivate: users.length === 1 && users[0].identity.id === id}),
         showError
       );
-    }
+    };
 
     publish = () => {
       const {mightFail, id, onPublish, onClose} = this.props;
@@ -49,8 +54,12 @@ export default withErrorHandling(
       );
     };
 
-    closeUsersModal = isPrivate =>
-      this.setState({isPrivate: isPrivate === true, editingAccess: null});
+    closeUsersModal = users => {
+      this.setState({editingAccess: null});
+      if (users) {
+        this.updatePrivate(users);
+      }
+    };
 
     render() {
       const {id, onClose, republish} = this.props;

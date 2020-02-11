@@ -25,22 +25,18 @@ export default withErrorHandling(
     };
 
     componentDidMount() {
-      this.getUsers();
+      this.props.mightFail(getUsers(this.props.id), users => this.setState({users}), showError);
     }
 
-    getUsers = () => {
-      this.props.mightFail(getUsers(this.props.id), users => this.setState({users}), showError);
-    };
-
-    isUserExist = id => this.state.users.some(user => user.id === id);
+    isUserAlreadyAdded = id => this.state.users.some(user => user.id === id);
 
     addUser = () => {
       const {id, type, name, memberCount} = this.state.selectedIdentity;
 
-      const newId = `${type}:${id}`;
+      const newId = `${type.toUpperCase()}:${id}`;
       const newIdentity = {id: newId, identity: {id, name, type, memberCount}};
 
-      if (!this.isUserExist(newId)) {
+      if (!this.isUserAlreadyAdded(newId)) {
         this.setState(({users}) => ({
           users: update(users, {$push: [newIdentity]}),
           selectedIdentity: null
@@ -61,7 +57,7 @@ export default withErrorHandling(
         updateUsers(this.props.id, this.state.users),
         () => {
           this.setState({loading: false});
-          this.props.onClose(this.state.users.length <= 1);
+          this.props.onClose(this.state.users);
         },
         error => {
           showError(error);
@@ -70,12 +66,15 @@ export default withErrorHandling(
       );
     };
 
+    close = () => this.props.onClose();
+
     render() {
-      const {id, onClose} = this.props;
+      const {id} = this.props;
       const {loading, users, selectedIdentity, alreadyExists} = this.state;
+      const isValid = users && users.length > 0;
 
       return (
-        <Modal open={id} onClose={onClose} onConfirm={this.onConfirm} className="UsersModal">
+        <Modal open={id} onClose={this.close} onConfirm={this.onConfirm} className="UsersModal">
           <Modal.Header>{t('common.editAccess')}</Modal.Header>
           <Modal.Content>
             <p className="description">{t('events.permissions.description')}</p>
@@ -100,12 +99,12 @@ export default withErrorHandling(
             )}
             <EntityList
               name={t('events.permissions.whoHasAccess')}
-              empty={t('common.notFound')}
+              empty={t('events.permissions.noUsers')}
               isLoading={!users}
               data={
                 users &&
                 users.map(user => {
-                  const {id, identity, isOwner} = user;
+                  const {id, identity} = user;
 
                   return {
                     className: identity.type,
@@ -118,7 +117,7 @@ export default withErrorHandling(
                         {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
                       </>
                     ),
-                    meta3: !isOwner && (
+                    meta3: (
                       <Button onClick={() => this.removeUser(id)}>
                         <Icon type="delete" />
                       </Button>
@@ -129,10 +128,15 @@ export default withErrorHandling(
             />
           </Modal.Content>
           <Modal.Actions>
-            <Button disabled={loading} onClick={onClose}>
+            <Button disabled={loading} onClick={this.close}>
               {t('common.cancel')}
             </Button>
-            <Button disabled={loading} variant="primary" color="blue" onClick={this.onConfirm}>
+            <Button
+              disabled={loading || !isValid}
+              variant="primary"
+              color="blue"
+              onClick={this.onConfirm}
+            >
               {t('common.save')}
             </Button>
           </Modal.Actions>

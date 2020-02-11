@@ -15,3 +15,11 @@ export const getHeader = () => ({
   backgroundColor: '#FFFFFF',
   logo: ''
 });
+export const getCurrentUser = () => ({
+  id: 'demo',
+  firstName: 'Demo',
+  lastName: 'Demo',
+  email: 'demo@camunda.org',
+  type: 'user',
+  name: 'Demo Demo'
+});

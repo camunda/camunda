@@ -151,6 +151,7 @@
     },
     "permissions": {
       "private": "Privat - Nur Sie",
+      "noUsers": "Es wurden keine Benutzer hinzugefügt",
       "whoHasAccess": "Wer kann diesen Prozess nutzen?",
       "userGranted": "Benutzerzugriff gewährt",
       "description": "Ermöglichen Sie den folgenden Benutzern und Gruppen die Erstellung von Berichten, die auf diesem Prozess basieren..."

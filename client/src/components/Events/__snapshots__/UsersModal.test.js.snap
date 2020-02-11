@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should add/remove user/group from the list 1`] = `
+exports[`should add user/group to the list 1`] = `
 Array [
   Object {
     "className": "user",
@@ -9,7 +9,13 @@ Array [
       type="user"
     />,
     "meta1": false,
-    "meta3": false,
+    "meta3": <ForwardRef(Button)
+      onClick={[Function]}
+    >
+      <Icon
+        type="delete"
+      />
+    </ForwardRef(Button)>,
     "name": "kermit",
     "type": "User",
   },

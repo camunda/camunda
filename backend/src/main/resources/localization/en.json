@@ -151,6 +151,7 @@
     },
     "permissions": {
       "private": "Private - Only you",
+      "noUsers": "There are no users added",
       "whoHasAccess": "Who can use this process?",
       "userGranted": "User access granted",
       "description": "Enable the following users and groups to create Reports based on this process..."

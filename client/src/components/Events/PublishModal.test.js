@@ -16,7 +16,14 @@ const PublishModal = PublishModalWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
   publish: jest.fn(),
-  getUsers: jest.fn().mockReturnValue([])
+  getUsers: jest.fn().mockReturnValue([
+    {
+      id: 'USER:demo',
+      identity: {
+        id: 'demo'
+      }
+    }
+  ])
 }));
 
 jest.mock('notifications', () => ({
