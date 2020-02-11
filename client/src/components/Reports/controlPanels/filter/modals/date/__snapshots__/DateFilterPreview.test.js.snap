@@ -61,7 +61,7 @@ exports[`should create correct last... with custom preview 1`] = `
   </span>
   occurs
   : 
-  In the last
+  in the last
    
   <span
     className="previewItemValue"

@@ -617,8 +617,8 @@
         "to": "to",
         "invalidDate": "Please enter a valid date",
         "preview": {
-          "this": "In the current",
-          "last": "In the last",
+          "this": "in the current",
+          "last": "in the last",
           "completed": "completed"
         },
         "unit": {
@@ -627,8 +627,9 @@
           "fixed": "Fixed Date",
           "this": "This...",
           "last": "Last...",
-          "custom": "custom number"
-        }
+          "custom": "Rolling"
+        },
+        "rollingInfo": "Note: rolling range is calculated up to the current time"
       },
       "variableModal": {
         "inputLabel": "Variable Name",

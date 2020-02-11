@@ -47,16 +47,15 @@ it('should render preview if the filter is valid', async () => {
 
 it('should reset the unit selection when changing the date type', () => {
   const node = shallow(<DateFilter {...props} />);
-  dateTypeSelect(node).prop('onChange')('last');
-  unitSelect(node).prop('onChange')('custom');
+  dateTypeSelect(node).prop('onChange')('this');
+  unitSelect(node).prop('onChange')('week');
   dateTypeSelect(node).prop('onChange')('last');
   expect(unitSelect(node).prop('value')).toBe('');
 });
 
 it('should have isInvalid prop on the input if value is invalid', async () => {
   const node = shallow(<DateFilter {...props} />);
-  dateTypeSelect(node).prop('onChange')('last');
-  unitSelect(node).prop('onChange')('custom');
+  dateTypeSelect(node).prop('onChange')('custom');
   node.find('.number').simulate('change', {target: {value: '-1'}});
 
   expect(node.find({error: true})).toExist();

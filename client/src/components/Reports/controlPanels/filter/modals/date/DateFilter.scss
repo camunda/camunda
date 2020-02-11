@@ -3,36 +3,36 @@
     padding-left: 20%;
     padding-right: 10%;
 
-    .number {
-      max-width: 50px;
-      margin-right: 10px;
-    }
-
     .selectGroup {
       align-items: flex-start;
+      position: relative;
     }
 
     .unitSelection {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
+
+      .Input.number {
+        max-width: 50px;
+        margin: 0 10px;
+      }
 
       .Select {
         flex: 1;
-
-        &:first-child {
-          flex-basis: 100%;
-          margin-bottom: 10px;
-        }
-      }
-
-      > .Message {
-        position: absolute;
-        top: 140px;
       }
 
       .customDate {
         border-top: 1px solid #bbb;
       }
+    }
+
+    .Message {
+      margin-top: 10px;
+    }
+
+    .previewContainer {
+      min-height: 50px;
     }
   }
 

@@ -21,9 +21,8 @@ export const pickerDate = number =>
   Selector('.DateFields .rdr-Calendar:first-child .rdr-Day').withText(number);
 export const infoText = Selector('.Modal__content .tip');
 export const dateTypeSelect = Selector('.selectGroup > .Select');
-export const unitSelect = Selector('.unitSelection .Select:first-child');
+export const unitSelect = Selector('.unitSelection .Select');
 export const customDateInput = Selector('.unitSelection').find('input');
-export const customDateDropdown = Selector('.unitSelection .Select:nth-of-type(2)');
 export const durationFilterOperator = Selector('.DurationFilter .Select');
 export const durationFilterInput = Selector('.DurationFilter input[type="text"]');
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');

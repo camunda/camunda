@@ -627,8 +627,9 @@
           "fixed": "Festes Datum",
           "this": "Diese...",
           "last": "Letzte...",
-          "custom": "Individuelle Nummer"
-        }
+          "custom": "Laufendes"
+        },
+        "rollingInfo": "Hinweis: Der laufende Zeitraum wird bis zum aktuellen Zeitpunkt berechnet"
       },
       "variableModal": {
         "inputLabel": "Variablenname",

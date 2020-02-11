@@ -10,7 +10,7 @@ import {convertFilterToState} from './service';
 import './DateFilterPreview.scss';
 
 export default function DateFilterPreview({filter, filterType}) {
-  const {dateType, unit, customUnit, customNum, startDate, endDate} = convertFilterToState(filter);
+  const {dateType, unit, customNum, startDate, endDate} = convertFilterToState(filter);
 
   const highlight = text => <span className="previewItemValue">{text}</span>;
 
@@ -18,7 +18,7 @@ export default function DateFilterPreview({filter, filterType}) {
 
   if (['today', 'yesterday'].includes(dateType)) {
     previewText = highlight(t(`common.filter.dateModal.unit.${dateType}`));
-  } else if (['this', 'last'].includes(dateType) && unit !== 'custom') {
+  } else if (['this', 'last'].includes(dateType)) {
     previewText = (
       <>
         {t(`common.filter.dateModal.preview.${dateType}`)}{' '}
@@ -26,13 +26,13 @@ export default function DateFilterPreview({filter, filterType}) {
         {highlight(t(`common.unit.${makeSingular(unit)}.label`))}
       </>
     );
-  } else if (dateType === 'last' && unit === 'custom') {
+  } else if (dateType === 'custom') {
     const highlighted = `${+customNum} ${t(
-      `common.unit.${makeSingular(customUnit)}.${+customNum === 1 ? 'label' : 'label-plural'}`
+      `common.unit.${makeSingular(unit)}.${+customNum === 1 ? 'label' : 'label-plural'}`
     )}`;
     previewText = (
       <>
-        {t(`common.filter.dateModal.preview.${dateType}`)} {highlight(highlighted)}
+        {t(`common.filter.dateModal.preview.last`)} {highlight(highlighted)}
       </>
     );
   } else if (dateType === 'fixed') {

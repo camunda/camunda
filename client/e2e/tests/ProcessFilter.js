@@ -176,7 +176,7 @@ test('add relative current month start date filter', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add relative last 5 days end date filter', async t => {
+test('add rolling last 5 days end date filter', async t => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
@@ -184,12 +184,10 @@ test('add relative last 5 days end date filter', async t => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('End Date'));
   await t.click(Filter.dateTypeSelect);
-  await t.click(Report.option('Last...'));
+  await t.click(Report.option('Rolling'));
   await t.click(Filter.unitSelect);
-  await t.click(Report.option('custom number'));
-  await t.typeText(Filter.customDateInput, '5', {replace: true});
-  await t.click(Filter.customDateDropdown);
   await t.click(Report.option('days'));
+  await t.typeText(Filter.customDateInput, '5', {replace: true});
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();

@@ -19,7 +19,6 @@ export default class DateFilter extends React.Component {
     pickerValid: true,
     dateType: '',
     unit: '',
-    customUnit: 'days',
     customNum: '2',
     startDate: moment(),
     endDate: moment()
@@ -35,12 +34,12 @@ export default class DateFilter extends React.Component {
   }
 
   confirm = () => {
-    const {dateType, unit, customUnit, customNum, startDate, endDate} = this.state;
+    const {dateType, unit, customNum, startDate, endDate} = this.state;
     const {addFilter, filterType} = this.props;
 
     return addFilter({
       type: filterType,
-      data: convertStateToFilter({dateType, unit, customUnit, customNum, startDate, endDate})
+      data: convertStateToFilter({dateType, unit, customNum, startDate, endDate})
     });
   };
 
@@ -53,19 +52,20 @@ export default class DateFilter extends React.Component {
       case 'today':
       case 'yesterday':
         return true;
-      case 'fixed':
-        return pickerValid;
       case 'this':
       case 'last':
-        const customNumberValid = numberParser.isPostiveInt(customNum);
-        return unit && (unit !== 'custom' || customNumberValid);
+        return unit;
+      case 'fixed':
+        return pickerValid;
+      case 'custom':
+        return numberParser.isPostiveInt(customNum);
       default:
         return false;
     }
   };
 
   render() {
-    const {dateType, unit, customUnit, customNum, startDate, endDate} = this.state;
+    const {dateType, unit, customNum, startDate, endDate} = this.state;
     const {close, filterData, filterType} = this.props;
 
     return (
@@ -86,7 +86,12 @@ export default class DateFilter extends React.Component {
             />
             <Form.Group>
               <Form.InputGroup className="selectGroup">
-                <Select onChange={dateType => this.setState({dateType, unit: ''})} value={dateType}>
+                <Select
+                  onChange={dateType =>
+                    this.setState({dateType, unit: dateType === 'custom' ? 'days' : ''})
+                  }
+                  value={dateType}
+                >
                   <Select.Option value="today">
                     {t('common.filter.dateModal.unit.today')}
                   </Select.Option>
@@ -102,77 +107,74 @@ export default class DateFilter extends React.Component {
                   <Select.Option value="fixed">
                     {t('common.filter.dateModal.unit.fixed')}
                   </Select.Option>
+                  <Select.Option className="customDate" value="custom">
+                    {t('common.filter.dateModal.unit.custom')}
+                  </Select.Option>
                 </Select>
                 <div className="unitSelection">
-                  {dateType === 'fixed' ? (
-                    <DatePicker onDateChange={this.onDateChange} />
-                  ) : (
+                  {dateType !== 'fixed' && dateType !== 'custom' && (
+                    <Select
+                      disabled={dateType !== 'this' && dateType !== 'last'}
+                      onChange={unit => this.setState({unit})}
+                      value={unit}
+                    >
+                      <Select.Option value="weeks">{t('common.unit.week.label')}</Select.Option>
+                      <Select.Option value="months">{t('common.unit.month.label')}</Select.Option>
+                      <Select.Option value="years">{t('common.unit.year.label')}</Select.Option>
+                      <Select.Option value="quarters">
+                        {t('common.unit.quarter.label')}
+                      </Select.Option>
+                    </Select>
+                  )}
+                  {dateType === 'fixed' && <DatePicker onDateChange={this.onDateChange} />}
+                  {dateType === 'custom' && (
                     <>
-                      <Select
-                        disabled={dateType !== 'this' && dateType !== 'last'}
-                        onChange={unit => this.setState({unit})}
-                        value={unit}
-                      >
-                        <Select.Option value="weeks">{t('common.unit.week.label')}</Select.Option>
-                        <Select.Option value="months">{t('common.unit.month.label')}</Select.Option>
-                        <Select.Option value="years">{t('common.unit.year.label')}</Select.Option>
-                        <Select.Option value="quarters">
-                          {t('common.unit.quarter.label')}
+                      last
+                      <Input
+                        className="number"
+                        value={customNum}
+                        onChange={({target: {value}}) => this.setState({customNum: value})}
+                      />
+                      <Select onChange={unit => this.setState({unit})} value={unit}>
+                        <Select.Option value="minutes">
+                          {t('common.unit.minute.label-plural')}
                         </Select.Option>
-                        {dateType === 'last' && (
-                          <Select.Option className="customDate" value="custom">
-                            {t('common.filter.dateModal.unit.custom')}
-                          </Select.Option>
-                        )}
+                        <Select.Option value="hours">
+                          {t('common.unit.hour.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="days">
+                          {t('common.unit.day.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="weeks">
+                          {t('common.unit.week.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="months">
+                          {t('common.unit.month.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="years">
+                          {t('common.unit.year.label-plural')}
+                        </Select.Option>
                       </Select>
-                      {unit === 'custom' && (
-                        <>
-                          <Input
-                            className="number"
-                            value={customNum}
-                            onChange={({target: {value}}) => this.setState({customNum: value})}
-                          />
-                          <Select
-                            onChange={customUnit => this.setState({customUnit})}
-                            value={customUnit}
-                          >
-                            <Select.Option value="minutes">
-                              {t('common.unit.minute.label-plural')}
-                            </Select.Option>
-                            <Select.Option value="hours">
-                              {t('common.unit.hour.label-plural')}
-                            </Select.Option>
-                            <Select.Option value="days">
-                              {t('common.unit.day.label-plural')}
-                            </Select.Option>
-                            <Select.Option value="weeks">
-                              {t('common.unit.week.label-plural')}
-                            </Select.Option>
-                            <Select.Option value="months">
-                              {t('common.unit.month.label-plural')}
-                            </Select.Option>
-                            <Select.Option value="years">
-                              {t('common.unit.year.label-plural')}
-                            </Select.Option>
-                          </Select>
-                          {!numberParser.isPostiveInt(customNum) && (
-                            <Message error>{t('common.filter.dateModal.invalidInput')}</Message>
-                          )}
-                        </>
+                      {!numberParser.isPostiveInt(customNum) && (
+                        <Message error>{t('common.filter.dateModal.invalidInput')}</Message>
                       )}
                     </>
                   )}
                 </div>
               </Form.InputGroup>
+              {dateType === 'custom' && (
+                <Message className="rollingInfo">
+                  {t('common.filter.dateModal.rollingInfo')}
+                </Message>
+              )}
             </Form.Group>
-            <Form.Group>
+            <Form.Group className="previewContainer">
               {this.isValid() && (
                 <DateFilterPreview
                   filterType={filterType}
                   filter={convertStateToFilter({
                     dateType,
                     unit,
-                    customUnit,
                     customNum,
                     startDate,
                     endDate

@@ -16,9 +16,8 @@ export function convertFilterToState(filter) {
     const {value, unit} = start;
     if (type === 'relative') {
       state = {
-        dateType: 'last',
-        unit: 'custom',
-        customUnit: unit,
+        dateType: 'custom',
+        unit: unit,
         customNum: value
       };
     } else if (value === 0) {
@@ -33,7 +32,7 @@ export function convertFilterToState(filter) {
   return state;
 }
 
-export function convertStateToFilter({dateType, unit, customUnit, customNum, startDate, endDate}) {
+export function convertStateToFilter({dateType, unit, customNum, startDate, endDate}) {
   let filter = {type: 'rolling', end: null};
   switch (dateType) {
     case 'today':
@@ -46,24 +45,23 @@ export function convertStateToFilter({dateType, unit, customUnit, customNum, sta
       filter.start = {value: 0, unit};
       break;
     case 'last':
-      if (unit === 'custom') {
-        filter = {
-          type: 'relative',
-          start: {value: customNum, unit: customUnit},
-          end: null
-        };
-      } else {
-        filter.start = {
-          value: 1,
-          unit: unit
-        };
-      }
+      filter.start = {
+        value: 1,
+        unit: unit
+      };
       break;
     case 'fixed':
       filter = {
         type: 'fixed',
         start: startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
         end: endDate.endOf('day').format('YYYY-MM-DDTHH:mm:ss')
+      };
+      break;
+    case 'custom':
+      filter = {
+        type: 'relative',
+        start: {value: customNum, unit},
+        end: null
       };
       break;
     default:
