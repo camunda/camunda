@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -120,7 +121,10 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				}
 			}
 
-			cmdOut, _ := s.runCommand(test.cmd, test.envVars...)
+			cmdOut, err := s.runCommand(test.cmd, test.envVars...)
+			if errors.Is(err, context.DeadlineExceeded) {
+				t.Fatal(fmt.Errorf("timed out while executing command '%s': %w", test.cmd, err))
+			}
 
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
 			if err != nil {
@@ -150,7 +154,7 @@ func compareStrIgnoreNumbers(x, y string) bool {
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
 func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	args := append(strings.Fields(command), "--address", s.GatewayAddress)

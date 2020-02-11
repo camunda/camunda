@@ -16,6 +16,11 @@ package containerSuite
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/suite"
@@ -25,7 +30,6 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
 type zeebeWaitStrategy struct {
@@ -56,7 +60,70 @@ func (s zeebeWaitStrategy) WaitUntilReady(ctx context.Context, target wait.Strat
 		return err
 	}
 
-	res, err := zbClient.NewTopologyCommand().Send()
+	defer func() {
+		_ = zbClient.Close()
+	}()
+
+	finishedChan := make(chan error, 1)
+	go func() {
+		finishedChan <- s.waitForTopology(zbClient)
+	}()
+
+	select {
+	case err = <-finishedChan:
+		return err
+	case <-time.After(utils.DefaultContainerWaitTimeout):
+		return fmt.Errorf("timed out awaiting container: %w", printFailedContainerLogs(target))
+	}
+}
+
+func printFailedContainerLogs(target wait.StrategyTarget) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	reader, err := target.Logs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to obtain container logs: %w", err)
+	}
+
+	defer func() { _ = reader.Close() }()
+	if bytes, err := ioutil.ReadAll(reader); err == nil {
+		_, _ = fmt.Fprintln(os.Stderr, "=====================================")
+		_, _ = fmt.Fprintln(os.Stderr, "Container logs")
+		_, _ = fmt.Fprintln(os.Stderr, "NOTE: these logs are for all tests in the same suite!")
+		_, _ = fmt.Fprintln(os.Stderr, "=====================================")
+		_, _ = fmt.Fprint(os.Stderr, sanitizeDockerLogs(string(bytes)))
+		_, _ = fmt.Fprintln(os.Stderr, "=====================================")
+
+		return nil
+
+	}
+	return fmt.Errorf("failed to read container logs: %w", err)
+}
+
+// remove the message header (8 bytes) from the docker logs
+// https://docs.docker.com/engine/api/v1.26/#operation/ContainerAttach
+func sanitizeDockerLogs(log string) string {
+	lines := strings.Split(log, "\n")
+	builder := strings.Builder{}
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		builder.WriteString(line[8:])
+		builder.WriteString("\n")
+	}
+
+	return builder.String()
+}
+
+func (s zeebeWaitStrategy) waitForTopology(zbClient zbc.Client) error {
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	res, err := zbClient.NewTopologyCommand().Send(ctx)
 	for (err != nil && status.Code(err) == codes.Unavailable) || !isStable(res) {
 		time.Sleep(s.waitTime)
 		res, err = zbClient.NewTopologyCommand().Send()
@@ -93,6 +160,14 @@ type ContainerSuite struct {
 
 	suite.Suite
 	container testcontainers.Container
+}
+
+func (s *ContainerSuite) AfterTest(suiteName, testName string) {
+	if s.T().Failed() {
+		if err := printFailedContainerLogs(s.container); err != nil {
+			_, _ = fmt.Fprint(os.Stderr, err)
+		}
+	}
 }
 
 func (s *ContainerSuite) SetupSuite() {
