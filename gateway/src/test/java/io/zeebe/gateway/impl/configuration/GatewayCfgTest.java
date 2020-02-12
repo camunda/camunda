@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.gateway.configuration;
+package io.zeebe.gateway.impl.configuration;
 
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CERTIFICATE_PATH;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
@@ -25,15 +25,14 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PRIVATE_KEY_PATH;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_SECURITY_ENABLED;
-import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.TomlConfigurationReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public final class GatewayCfgTest {
@@ -68,7 +67,7 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readDefaultConfig();
 
     // then
-    assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
+    Assertions.assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
   }
 
   @Test
@@ -77,7 +76,7 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readEmptyConfig();
 
     // then
-    assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
+    Assertions.assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
   }
 
   @Test
@@ -86,7 +85,7 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readCustomConfig();
 
     // then
-    assertThat(gatewayCfg).isEqualTo(CUSTOM_CFG);
+    Assertions.assertThat(gatewayCfg).isEqualTo(CUSTOM_CFG);
   }
 
   @Test
@@ -146,7 +145,7 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readCustomConfig();
 
     // then
-    assertThat(gatewayCfg).isEqualTo(expected);
+    Assertions.assertThat(gatewayCfg).isEqualTo(expected);
   }
 
   private void setEnv(final String key, final String value) {
