@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
@@ -190,18 +189,17 @@ public class ProcessDefinitionReader {
     return fetchProcessDefinitions(fullyImported, withXml, matchAllQuery());
   }
 
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromFirstTenantIfAvailable(
-    final ProcessReportDataDto reportData) {
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromFirstTenantIfAvailable(final String definitionKey,
+                                                                                               final List<String> definitionVersions,
+                                                                                               final List<String> tenantIds) {
 
-    String mostRecentValidVersion = convertToValidDefinitionVersion(
-      reportData.getDefinitionKey(),
-      reportData.getDefinitionVersions(),
-      this::getLatestVersionToKey
+    final String mostRecentValidVersion = convertToValidDefinitionVersion(
+      definitionKey, definitionVersions, this::getLatestVersionToKey
     );
     return this.getFullyImportedProcessDefinition(
-      reportData.getProcessDefinitionKey(),
+      definitionKey,
       mostRecentValidVersion,
-      reportData.getTenantIds().stream()
+      tenantIds.stream()
         // to get a null value if the first element is either absent or null
         .map(Optional::ofNullable).findFirst().flatMap(Function.identity())
         .orElse(null)

@@ -26,9 +26,11 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_END_TYPE;
-import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_START_TYPE;
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceEndEventSuffix;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
 
 public class CamundaEventTraceStateImportIT extends AbstractIT {
 
@@ -47,7 +49,7 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
     final String definitionKey = "myCamundaProcess";
-    deployAndStartServiceTaskProcessWithName(definitionKey);
+    deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -73,8 +75,8 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
     // given
     final String definitionKey1 = "myCamundaProcess1";
     final String definitionKey2 = "myCamundaProcess2";
-    final ProcessInstanceEngineDto processInstanceEngineDto1 = deployAndStartServiceTaskProcessWithName(definitionKey1);
-    final ProcessInstanceEngineDto processInstanceEngineDto2 = deployAndStartServiceTaskProcessWithName(definitionKey2);
+    final ProcessInstanceEngineDto processInstanceEngineDto1 = deployAndStartUserTaskProcessWithName(definitionKey1);
+    final ProcessInstanceEngineDto processInstanceEngineDto2 = deployAndStartUserTaskProcessWithName(definitionKey2);
     engineIntegrationExtension.finishAllRunningUserTasks();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -102,12 +104,12 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
           })
           .extracting(TracedEventDto::getEventName)
           .containsExactlyInAnyOrder(
-            createProcessInstanceStartEventName(definitionKey),
+            applyCamundaProcessInstanceStartEventSuffix(definitionKey),
             START_EVENT,
-            createTaskStartEventName(),
-            createTaskEndEventName(),
+            applyCamundaTaskStartEventSuffix(USER_TASK),
+            applyCamundaTaskEndEventSuffix(USER_TASK),
             END_EVENT,
-            createProcessInstanceEndEventName(definitionKey)
+            applyCamundaProcessInstanceEndEventSuffix(definitionKey)
           )
         ;
       });
@@ -123,23 +125,7 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
       .isEqualTo(findMostRecentEventTimestamp(definitionKey));
   }
 
-  private String createProcessInstanceEndEventName(final String definitionKey) {
-    return definitionKey + "_" + PROCESS_END_TYPE;
-  }
-
-  private String createTaskEndEventName() {
-    return USER_TASK + "_end";
-  }
-
-  private String createTaskStartEventName() {
-    return USER_TASK + "_start";
-  }
-
-  private String createProcessInstanceStartEventName(final String definitionKey) {
-    return definitionKey + "_" + PROCESS_START_TYPE;
-  }
-
-  private ProcessInstanceEngineDto deployAndStartServiceTaskProcessWithName(String processName) {
+  private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
       .startEvent(START_EVENT)

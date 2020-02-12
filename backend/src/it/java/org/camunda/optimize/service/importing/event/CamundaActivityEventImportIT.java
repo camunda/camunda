@@ -28,10 +28,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.camunda.optimize.service.CamundaEventImportService.END_MAPPED_SUFFIX;
-import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_END_TYPE;
-import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_START_TYPE;
-import static org.camunda.optimize.service.CamundaEventImportService.START_MAPPED_SUFFIX;
+import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
+import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceEndEventSuffix;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
+import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {
 
@@ -70,25 +72,25 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
         createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, processInstanceEngineDto),
         createAssertionEvent(END_EVENT, END_EVENT, END_EVENT, processInstanceEngineDto),
         createAssertionEvent(
-          addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
-          addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          applyCamundaTaskStartEventSuffix(USER_TASK),
           USER_TASK,
           processInstanceEngineDto
         ),
         createAssertionEvent(
-          addDelimiterForStrings(USER_TASK, END_MAPPED_SUFFIX),
-          addDelimiterForStrings(USER_TASK, END_MAPPED_SUFFIX),
+          applyCamundaTaskEndEventSuffix(USER_TASK),
+          applyCamundaTaskEndEventSuffix(USER_TASK),
           USER_TASK,
           processInstanceEngineDto
         ),
         createAssertionEvent(
-          addDelimiterForStrings(processInstanceEngineDto.getProcessDefinitionKey(), PROCESS_START_TYPE),
+          applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
           PROCESS_START_TYPE,
           PROCESS_START_TYPE,
           processInstanceEngineDto
         ),
         createAssertionEvent(
-          addDelimiterForStrings(processInstanceEngineDto.getProcessDefinitionKey(), PROCESS_END_TYPE),
+          applyCamundaProcessInstanceEndEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
           PROCESS_END_TYPE,
           PROCESS_END_TYPE,
           processInstanceEngineDto
@@ -119,15 +121,15 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       )
       .containsExactlyInAnyOrder(
         createAssertionEvent(
-          addDelimiterForStrings(processInstanceEngineDto.getProcessDefinitionKey(), PROCESS_START_TYPE),
+          applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
           PROCESS_START_TYPE,
           PROCESS_START_TYPE,
           processInstanceEngineDto
         ),
         createAssertionEvent(START_EVENT, START_EVENT, START_EVENT, processInstanceEngineDto),
         createAssertionEvent(
-          addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
-          addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
+          applyCamundaTaskStartEventSuffix(USER_TASK),
+          applyCamundaTaskStartEventSuffix(USER_TASK),
           USER_TASK,
           processInstanceEngineDto
         )
@@ -148,11 +150,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .extracting(CamundaActivityEventDto::getActivityId)
       .containsExactlyInAnyOrder(
         START_EVENT,
-        addDelimiterForStrings(USER_TASK, START_MAPPED_SUFFIX),
-        addDelimiterForStrings(
-          processInstanceEngineDto.getProcessDefinitionKey(),
-          PROCESS_START_TYPE
-        )
+        applyCamundaTaskStartEventSuffix(USER_TASK),
+        applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getProcessDefinitionKey())
       );
 
     // when the feature is disabled
@@ -281,10 +280,6 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       storedEvents.add(camundaActivityEventDto);
     }
     return storedEvents;
-  }
-
-  private static String addDelimiterForStrings(String... strings) {
-    return String.join("_", strings);
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {

@@ -5,25 +5,19 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import java.util.Map;
-
 @Data
-@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@NoArgsConstructor
-public class EventCountSuggestionsRequestDto {
-
-  @NotBlank
-  String targetFlowNodeId;
-  @NotBlank
-  String xml;
-  Map<String, EventMappingDto> mappings;
-
+@Builder
+public class LabeledEventTypeDto {
+  private String group;
+  private String source;
+  private String eventName;
+  private String eventLabel;
 }
