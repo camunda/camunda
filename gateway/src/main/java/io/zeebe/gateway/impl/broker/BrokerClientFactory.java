@@ -10,6 +10,7 @@ package io.zeebe.gateway.impl.broker;
 import io.opentracing.Tracer;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 
+@FunctionalInterface
 public interface BrokerClientFactory {
   BrokerClient newClient(GatewayCfg config, Tracer tracer);
 }
