@@ -60,7 +60,7 @@ camunda.operate:
 
 # Zeebe Elasticsearch Exporter
 
-Operate imports data from Elasticsearch indices created and filled in by [Zeebe Elasticsearch Exporter](https://github.com/zeebe-io/zeebe/tree/f81fc87e5122d89c4850b844054eee48f26c4b29/exporters/elasticsearch-exporter).
+Operate imports data from Elasticsearch indices created and filled in by [Zeebe Elasticsearch Exporter](https://github.com/zeebe-io/zeebe/tree/{{commit}}/exporters/elasticsearch-exporter).
 Therefore settings for this Elasticsearch connection must be defined and must correspond to the settings on Zeebe side.
 
 ## Settings to connect and import:
