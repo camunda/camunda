@@ -7,22 +7,25 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
+import io.opentracing.Span;
+import io.opentracing.noop.NoopSpan;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public interface CommandTracer {
-  void start(DirectBuffer parentContext, int partitionId, long requestId);
+  Span start(DirectBuffer parentContext, int partitionId, long requestId);
 
-  void finish(int partitionId, long requestId, boolean failed);
+  void finish(int partitionId, long requestId, final Consumer<Span> spanConsumer);
 
   final class NoopCommandTracer implements CommandTracer {
 
     @Override
-    public void start(DirectBuffer parentContext, int partitionId, long requestId) {
-      // noop
+    public Span start(DirectBuffer parentContext, int partitionId, long requestId) {
+      return NoopSpan.INSTANCE;
     }
 
     @Override
-    public void finish(int partitionId, long requestId, boolean failed) {
+    public void finish(int partitionId, long requestId, final Consumer<Span> spanConsumer) {
       // noop
     }
   }

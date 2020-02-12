@@ -21,6 +21,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.impl.ServerResponseImpl;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
@@ -103,7 +104,12 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
 
     try {
       response.reset().setPartitionId(remoteStreamId).setRequestId(requestId).writer(this);
-      tracer.finish(remoteStreamId, requestId, false);
+      tracer.finish(remoteStreamId, requestId, s -> {
+        if (rejectionType != RejectionType.NULL_VAL) {
+          s.setTag("rejectionType", rejectionType.name());
+          s.log(BufferUtil.bufferAsString(rejectionReason));
+        }
+      });
       output.sendResponse(response);
     } finally {
       reset();

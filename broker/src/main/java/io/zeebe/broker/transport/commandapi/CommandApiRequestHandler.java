@@ -91,7 +91,7 @@ final class CommandApiRequestHandler implements RequestHandler {
     final ValueType eventType = requestWrapper.getValueType();
     final Intent eventIntent = requestWrapper.getIntent();
 
-    tracer.start(requestWrapper.getSpanContext(), partitionId, requestId);
+    final var span = tracer.start(requestWrapper.getSpanContext(), partitionId, requestId);
 
     final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
     if (logStreamWriter == null) {
@@ -127,6 +127,11 @@ final class CommandApiRequestHandler implements RequestHandler {
     eventMetadata.intent(eventIntent);
     eventMetadata.valueType(eventType);
 
+    span.setTag("io.zeebe.recordType", eventMetadata.getRecordType().name());
+    span.setTag("io.zeebe.intent", eventMetadata.getIntent().name());
+    span.setTag("io.zeebe.valueType", eventMetadata.getValueType().name());
+    span.setTag("io.zeebe.key", key);
+
     metrics.receivedRequest(partitionId);
     final RequestLimiter<Intent> limiter = partitionLimiters.get(partitionId);
     if (!limiter.tryAcquire(partitionId, requestId, eventIntent)) {
@@ -148,7 +153,10 @@ final class CommandApiRequestHandler implements RequestHandler {
       LOG.error("Unexpected error on writing {} command", eventIntent, ex);
     } finally {
       if (!written) {
-        tracer.finish(partitionId, requestId, true);
+        tracer.finish(
+            partitionId,
+            requestId,
+            s -> s.setTag("error", true).log("io.zeebe: failed to write command to dispatcher"));
         limiter.onIgnore(partitionId, requestId);
       }
     }

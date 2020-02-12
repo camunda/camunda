@@ -156,7 +156,13 @@ public final class ErrorResponseWriter implements BufferWriter {
     try {
       response.reset().setPartitionId(partitionId).writer(this).setRequestId(requestId);
 
-      tracer.finish(partitionId, requestId, true);
+      tracer.finish(
+          partitionId,
+          requestId,
+          s ->
+              s.setTag("error", true)
+                  .setTag("errorCode", errorCode.name())
+                  .log(new String(errorMessage)));
       output.sendResponse(response);
     } finally {
       reset();

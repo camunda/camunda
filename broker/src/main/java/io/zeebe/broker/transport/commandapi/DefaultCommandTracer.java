@@ -8,13 +8,18 @@
 package io.zeebe.broker.transport.commandapi;
 
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.Tracer.SpanBuilder;
 import io.opentracing.propagation.Format.Builtin;
 import io.zeebe.broker.Loggers;
 import io.zeebe.protocol.impl.tracing.SbeTracingAdapter;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public class DefaultCommandTracer implements CommandTracer {
@@ -27,35 +32,52 @@ public class DefaultCommandTracer implements CommandTracer {
   }
 
   @Override
-  public void start(final DirectBuffer serialized, final int partitionId, final long requestId) {
+  public Span start(final DirectBuffer serialized, final int partitionId, final long requestId) {
     final var adapter = new SbeTracingAdapter(serialized);
     final var builder =
         tracer
             .buildSpan("io.zeebe.engine.processing")
             .withTag("span.kind", "server")
             .withTag("component", "io.zeebe.broker")
-            .withTag("message_bus.destination", partitionId);
+            .withTag("message_bus.destination", partitionId)
+            .withTag("io.zeebe.partitionId", partitionId);
 
-    final var context = tracer.extract(Builtin.BINARY, adapter);
+    final var context = extractContext(adapter);
     if (context != null) {
       builder.asChildOf(context);
     }
 
-    spans.put(new Id(partitionId, requestId), builder.start());
+    final var span = builder.start();
+    spans.put(new Id(partitionId, requestId), span);
+    return span;
   }
 
   @Override
-  public void finish(final int partitionId, final long requestId, final boolean failed) {
+  public void finish(final int partitionId, final long requestId, final Consumer<Span> spanConsumer) {
     final var span = spans.get(new Id(partitionId, requestId));
 
     if (span != null) {
-      span.setTag("error", failed);
+      spanConsumer.accept(span);
       span.finish();
     } else {
       // at the moment it's fine that we have no spans available
       Loggers.TRANSPORT_LOGGER.debug(
           "No such span for stream {} and request {}", partitionId, requestId);
     }
+  }
+
+  private SpanContext extractContext(final SbeTracingAdapter adapter) {
+    if (adapter.extractionBuffer().capacity() > 0) {
+      try {
+        return tracer.extract(Builtin.BINARY, adapter);
+      } catch (final BufferOverflowException | BufferUnderflowException e) {
+        Loggers.TRANSPORT_LOGGER.debug(
+            "Failed to extract tracing context from non-zero span context", e);
+        return null;
+      }
+    }
+
+    return null;
   }
 
   private static final class Id {
