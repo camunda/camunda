@@ -8,6 +8,8 @@ package org.camunda.operate.webapp.rest.dto;
 
 public class HealthStateDto {
 
+  public static final String HEALTH_STATUS_OK = "OK";
+
   private String state;
 
   public HealthStateDto() {

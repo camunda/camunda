@@ -21,8 +21,8 @@ import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -45,10 +45,10 @@ public class ElasticsearchSchemaManager {
   private List<TemplateDescriptor> templateDescriptors;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  protected RestHighLevelClient esClient;
 
   @Autowired
-  private OperateProperties operateProperties;
+  protected OperateProperties operateProperties;
     
   @PostConstruct
   public boolean initializeSchema() {
@@ -111,10 +111,10 @@ public class ElasticsearchSchemaManager {
       if (inputStream != null) {
         result = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
       } else {
-        throw new OperateRuntimeException("Failed to find "+filename+" in classpath ");
+        throw new OperateRuntimeException("Failed to find " + filename + " in classpath ");
       }
     } catch (IOException e) {
-      throw new OperateRuntimeException("Failed to load file "+filename+" from classpath ", e);
+      throw new OperateRuntimeException("Failed to load file " + filename + " from classpath ", e);
     }
     return result;
   }
