@@ -126,7 +126,15 @@ export default class DateFilter extends React.Component {
                       </Select.Option>
                     </Select>
                   )}
-                  {dateType === 'fixed' && <DatePicker onDateChange={this.onDateChange} />}
+                  {dateType === 'fixed' && (
+                    <DatePicker
+                      onDateChange={this.onDateChange}
+                      initialDates={{
+                        startDate,
+                        endDate
+                      }}
+                    />
+                  )}
                   {dateType === 'custom' && (
                     <>
                       last
@@ -134,6 +142,7 @@ export default class DateFilter extends React.Component {
                         className="number"
                         value={customNum}
                         onChange={({target: {value}}) => this.setState({customNum: value})}
+                        maxLength="8"
                       />
                       <Select onChange={unit => this.setState({unit})} value={unit}>
                         <Select.Option value="minutes">

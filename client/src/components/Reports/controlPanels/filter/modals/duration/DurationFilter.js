@@ -63,7 +63,12 @@ export default class DurationFilter extends React.Component {
                 </Select>
               </div>
               <Form.InputGroup>
-                <Input isInvalid={!isValidInput} value={value} onChange={this.setValue} />
+                <Input
+                  isInvalid={!isValidInput}
+                  value={value}
+                  onChange={this.setValue}
+                  maxLength="8"
+                />
                 <Select value={unit} onChange={this.setUnit}>
                   <Select.Option value="millis">
                     {t('common.unit.milli.label-plural')}

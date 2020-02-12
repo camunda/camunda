@@ -279,6 +279,7 @@ export default class AlertModal extends React.Component {
                     onChange={({target: {value}}) =>
                       this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
                     }
+                    maxLength="8"
                   />
                   <Select
                     value={checkInterval.unit}
@@ -337,6 +338,7 @@ export default class AlertModal extends React.Component {
                       onChange={({target: {value}}) =>
                         this.setState(update(this.state, {reminder: {value: {$set: value}}}))
                       }
+                      maxLength="8"
                     />
                     <Select
                       value={reminder.unit}

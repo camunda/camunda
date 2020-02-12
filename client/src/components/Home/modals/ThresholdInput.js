@@ -18,6 +18,7 @@ export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
           value={value.value}
           isInvalid={isInvalid}
           onChange={({target}) => onChange({...value, value: target.value})}
+          maxLength="8"
         />
         <Select value={value.unit} onChange={unit => onChange({...value, unit})}>
           <Select.Option value="millis">{t('common.unit.milli.label-plural')}</Select.Option>
