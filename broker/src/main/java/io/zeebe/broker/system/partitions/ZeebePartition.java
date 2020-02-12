@@ -46,6 +46,11 @@ import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.util.health.CriticalComponentsHealthMonitor;
+import io.zeebe.util.health.FailureListener;
+import io.zeebe.util.health.HealthMonitor;
+import io.zeebe.util.health.HealthMonitorable;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
@@ -59,7 +64,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
-    implements RaftCommitListener, RaftRoleChangeListener {
+    implements RaftCommitListener, RaftRoleChangeListener, HealthMonitorable, FailureListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;
@@ -86,6 +91,9 @@ public final class ZeebePartition extends Actor
   private StateSnapshotController snapshotController;
   private ZeebeDb zeebeDb;
   private final String actorName;
+  private FailureListener failureListener;
+  private volatile HealthStatus healthStatus = HealthStatus.UNHEALTHY;
+  private final HealthMonitor criticalComponentsHealthMonitor;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -118,6 +126,7 @@ public final class ZeebePartition extends Actor
     }
 
     this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
+    criticalComponentsHealthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
   }
 
   /**
@@ -163,6 +172,7 @@ public final class ZeebePartition extends Actor
               } else {
                 LOG.error("Failed to install leader partition {}", partitionId, error);
                 // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                onFailure();
               }
             });
   }
@@ -178,6 +188,7 @@ public final class ZeebePartition extends Actor
                 LOG.error("Failed to install follower partition {}", partitionId, error);
                 // TODO https://github.com/zeebe-io/zeebe/issues/3499
                 // we should probably retry here
+                onFailure();
               }
             });
   }
@@ -273,6 +284,7 @@ public final class ZeebePartition extends Actor
       zeebeDb = snapshotController.openDb();
     } catch (final Exception e) {
       // TODO https://github.com/zeebe-io/zeebe/issues/3499
+      onFailure();
       throw new IllegalStateException(
           String.format(
               "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
@@ -532,6 +544,7 @@ public final class ZeebePartition extends Actor
                 this.logStream = log;
                 atomixRaftPartition.getServer().addCommitListener(this);
                 atomixRaftPartition.addRoleChangeListener(this);
+                onRecovered();
                 onRoleChange(atomixRaftPartition.getRole(), atomixRaftPartition.term());
               } else {
                 LOG.error(
@@ -539,8 +552,15 @@ public final class ZeebePartition extends Actor
                     atomixRaftPartition.id().id(),
                     error);
                 actor.close();
+                onFailure();
               }
             });
+  }
+
+  @Override
+  protected void onActorStarted() {
+    criticalComponentsHealthMonitor.startMonitoring();
+    criticalComponentsHealthMonitor.addFailureListener(this);
   }
 
   @Override
@@ -567,5 +587,42 @@ public final class ZeebePartition extends Actor
     closeFuture.join();
 
     super.close();
+  }
+
+  public void onFailure() {
+    actor.run(() -> updateHealthStatus(HealthStatus.UNHEALTHY));
+  }
+
+  public void onRecovered() {
+    actor.run(() -> updateHealthStatus(HealthStatus.HEALTHY));
+  }
+
+  private void updateHealthStatus(final HealthStatus newStatus) {
+    if (healthStatus != newStatus) {
+      healthStatus = newStatus;
+      if (failureListener != null) {
+        switch (newStatus) {
+          case HEALTHY:
+            failureListener.onRecovered();
+            break;
+          case UNHEALTHY:
+            failureListener.onFailure();
+            break;
+          default:
+            LOG.warn("Unknown health status {}", newStatus);
+            break;
+        }
+      }
+    }
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return healthStatus;
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(() -> this.failureListener = failureListener);
   }
 }
