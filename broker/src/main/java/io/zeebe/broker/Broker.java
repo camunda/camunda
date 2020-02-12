@@ -16,6 +16,7 @@ import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.opentracing.Tracer;
 import io.opentracing.contrib.tracerresolver.TracerResolver;
+import io.opentracing.noop.NoopTracerFactory;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.bootstrap.CloseProcess;
@@ -62,6 +63,7 @@ import io.zeebe.util.sched.clock.ActorClock;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -232,7 +234,9 @@ public final class Broker implements AutoCloseable {
     CommandTracer commandTracer = new CommandTracer.NoopCommandTracer();
 
     if (brokerCfg.getMonitoring().isTracing()) {
-      final Tracer tracer = TracerResolver.resolveTracer(getClass().getClassLoader());
+      final Tracer tracer =
+          Optional.ofNullable(TracerResolver.resolveTracer()).orElse(NoopTracerFactory.create());
+      LOG.debug("Command API tracing configured for: {}", tracer);
       commandTracer = new DefaultCommandTracer(tracer);
     }
 
