@@ -170,7 +170,8 @@
       "flownodeEvents": "Start and End Flownode Events",
       "allEvents": "All Flownode Events",
       "selectProcess": "Please select a Process Definition",
-      "display": "Select events to display"
+      "display": "Select events to display",
+      "deleteWarning": "Removing the events from this process will delete any mapping that had been created."
     }
   },
   "report": {
@@ -725,7 +726,8 @@
         "group": "Group",
         "source": "Data Source",
         "collection": "Collection",
-        "process": "Process"
+        "process": "Process",
+        "processEvents": "process events"
       },
       "permanent": "The '{name}' {type} will be permanently deleted.",
       "noUndo": "Warning: This action cannot be undone.",

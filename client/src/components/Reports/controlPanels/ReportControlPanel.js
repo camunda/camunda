@@ -24,6 +24,7 @@ import {Configuration} from './Configuration';
 
 import './ReportControlPanel.scss';
 import {t} from 'translation';
+import {showError} from 'notifications';
 
 const {process: processConfig} = reportConfig;
 
@@ -59,12 +60,13 @@ export default withErrorHandling(
       }
     };
 
-    loadVariables = async () => {
+    loadVariables = () => {
       const {processDefinitionKey, processDefinitionVersions, tenantIds} = this.props.report.data;
       if (processDefinitionKey && processDefinitionVersions && tenantIds) {
         this.props.mightFail(
           loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
-          variables => this.setState({variables})
+          variables => this.setState({variables}),
+          showError
         );
       }
     };

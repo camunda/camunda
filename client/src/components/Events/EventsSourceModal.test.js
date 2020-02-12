@@ -25,12 +25,11 @@ const testSource = {
   tenants: ['a', 'b'],
   eventScope: 'start_end',
   tracedByBusinessKey: false,
-  variables: [{name: 'var'}, {name: 'boolVar'}],
   traceVariable: 'var'
 };
 
 const props = {
-  source: {},
+  initialSource: {},
   existingSources: [],
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
@@ -42,7 +41,7 @@ it('should disable the submit button if no definition selected', () => {
 });
 
 it('should disable definition selection in editing mode', () => {
-  const node = shallow(<EventsSourceModal {...props} source={testSource} />);
+  const node = shallow(<EventsSourceModal {...props} initialSource={testSource} />);
 
   expect(node.find(DefinitionSelection).props('disabledDefinition')).toBeTruthy();
 });
@@ -58,16 +57,16 @@ it('load variables after selecting a process definition', () => {
   });
 
   expect(loadVariables).toHaveBeenCalledWith({
-    processDefinitionKey: 'foo',
+    processDefinitionKey: 'test',
     processDefinitionVersions: ['1'],
     tenantIds: ['a', 'b']
   });
 });
 
 it('should apply the source to the state when editing a source', () => {
-  const node = shallow(<EventsSourceModal {...props} source={testSource} />);
+  const node = shallow(<EventsSourceModal {...props} initialSource={testSource} />);
 
-  expect(node.state()).toMatchSnapshot();
+  expect(node.state().source).toMatchSnapshot();
 });
 
 it('should edit a source when clicking confirm', () => {
@@ -76,7 +75,7 @@ it('should edit a source when clicking confirm', () => {
     <EventsSourceModal
       {...props}
       existingSources={[testSource]}
-      source={testSource}
+      initialSource={testSource}
       onConfirm={spy}
     />
   );

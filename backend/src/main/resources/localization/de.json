@@ -170,7 +170,8 @@
       "flownodeEvents": "Start und Ende der Prozessknotenevents",
       "allEvents": "Alle Prozessknotenevents",
       "selectProcess": "Bitte wählen Sie eine Prozessdefinition aus",
-      "display": "Wählen Sie die anzuzeigenden Events aus"
+      "display": "Wählen Sie die anzuzeigenden Events aus",
+      "deleteWarning": "Durch das Entfernen der Events aus diesem Prozess werden alle erstellten Mappings gelöscht."
     }
   },
   "report": {
@@ -725,7 +726,8 @@
         "group": "Gruppe",
         "source": "Datenquelle",
         "collection": "Sammlung",
-        "process": "Prozess"
+        "process": "Prozess",
+        "processEvents": "Prozessevents"
       },
       "permanent": "'{name}' {type} wird entgültig gelöscht.",
       "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",

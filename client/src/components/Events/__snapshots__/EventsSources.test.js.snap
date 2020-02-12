@@ -39,5 +39,13 @@ exports[`should match snapshot 1`] = `
     />
     Add Process
   </ForwardRef(Button)>
+  <DeleterErrorHandler
+    deleteEntity={[Function]}
+    deleteText="Remove"
+    descriptionText="Removing the events from this process will delete any mapping that had been created."
+    entity={null}
+    onClose={[Function]}
+    type="processEvents"
+  />
 </div>
 `;

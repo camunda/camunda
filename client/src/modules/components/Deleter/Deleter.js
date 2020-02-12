@@ -20,7 +20,8 @@ export default withErrorHandling(
   class Deleter extends React.Component {
     static defaultProps = {
       deleteEntity: ({entityType, id}) => deleteEntity(entityType, id),
-      getName: ({name}) => name
+      getName: ({name}) => name,
+      onDelete: () => {}
     };
 
     cancelButton = React.createRef();

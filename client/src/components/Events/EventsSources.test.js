@@ -38,6 +38,8 @@ it('should remove a source from the list', () => {
     .at(1)
     .simulate('click');
 
+  node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
+
   expect(spy).toHaveBeenCalledWith([]);
 });
 
@@ -49,5 +51,7 @@ it('should edit a source from the list', () => {
     .at(0)
     .simulate('click');
 
-  expect(node.find(EventsSourceModal).prop('source')).toEqual({processDefinitionKey: 'src1'});
+  expect(node.find(EventsSourceModal).prop('initialSource')).toEqual({
+    processDefinitionKey: 'src1'
+  });
 });

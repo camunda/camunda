@@ -47,7 +47,8 @@ const props = {
   },
   onMappingChange: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  xml: 'some xml'
+  xml: 'some xml',
+  eventSources: []
 };
 
 it('should match snapshot', () => {
@@ -104,7 +105,8 @@ it('should pass payload to backend when loading events for suggestions', () => {
     {
       targetFlowNodeId: 'a',
       xml: 'some xml',
-      mappings: props.mappings
+      mappings: props.mappings,
+      eventSources: []
     },
     ''
   );
@@ -154,4 +156,10 @@ it('should mark suggested events', () => {
   const events = node.find(Table).prop('body');
   expect(events[0].props.className).toContain('suggested');
   expect(events[1].props.className).not.toContain('suggested');
+});
+
+it('should disable events Suggestion if there are any event sources', () => {
+  const node = shallow(<EventTable {...props} eventSources={[{}]} />);
+
+  expect(node.find('Switch')).toBeDisabled();
 });

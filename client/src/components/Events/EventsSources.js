@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {Dropdown, Button, Icon} from 'components';
+import {Dropdown, Button, Icon, Deleter} from 'components';
 import './EventsSources.scss';
 import classnames from 'classnames';
 import EventsSourceModal from './EventsSourceModal';
@@ -13,13 +13,14 @@ import {t} from 'translation';
 
 export default class EventSources extends React.Component {
   state = {
-    editing: null
+    editing: null,
+    deleting: null
   };
 
   openAddSourceModal = () => this.setState({editing: {}});
   openEditSourceModal = editing => this.setState({editing});
   closeSourceModal = () => this.setState({editing: null});
-  removeSource = processDefinitionKey => {
+  removeSource = ({processDefinitionKey}) => {
     const {sources} = this.props;
     const filteredSources = sources.filter(
       source => source.processDefinitionKey !== processDefinitionKey
@@ -28,7 +29,7 @@ export default class EventSources extends React.Component {
   };
 
   render() {
-    const {editing} = this.state;
+    const {editing, deleting} = this.state;
     const {sources} = this.props;
 
     return (
@@ -46,7 +47,7 @@ export default class EventSources extends React.Component {
                 <Dropdown.Option onClick={() => this.openEditSourceModal(source)}>
                   {t('events.sources.editSource')}
                 </Dropdown.Option>
-                <Dropdown.Option onClick={() => this.removeSource(processDefinitionKey)}>
+                <Dropdown.Option onClick={() => this.setState({deleting: source})}>
                   {t('common.remove')}
                 </Dropdown.Option>
               </Dropdown>
@@ -57,9 +58,17 @@ export default class EventSources extends React.Component {
           <Icon type="plus" size="14" />
           {t('events.sources.add')}
         </Button>
+        <Deleter
+          type="processEvents"
+          deleteText={t('common.remove')}
+          entity={deleting}
+          deleteEntity={this.removeSource}
+          onClose={() => this.setState({deleting: null})}
+          descriptionText={t('events.sources.deleteWarning')}
+        />
         {editing && (
           <EventsSourceModal
-            source={editing}
+            initialSource={editing}
             existingSources={sources}
             onConfirm={sources => {
               this.props.onChange(sources);

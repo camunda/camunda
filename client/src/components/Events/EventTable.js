@@ -144,13 +144,15 @@ export default withErrorHandling(
       const numberOfPotentialMappings = this.getNumberOfPotentialMappings(selection);
 
       const disabled = numberOfPotentialMappings <= numberOfMappings;
+      const disableSuggestions = eventSources.length;
 
       return (
         <div className="EventTable" ref={this.container}>
           <div className="header">
             <b>{t('events.list')}</b>
             <Switch
-              checked={showSuggested}
+              disabled={disableSuggestions}
+              checked={!disableSuggestions && showSuggested}
               onChange={({target: {checked}}) =>
                 this.setState({showSuggested: checked}, () => this.loadEvents(searchQuery))
               }
