@@ -8,6 +8,7 @@ import React from 'react';
 import {Route} from 'react-router-dom';
 import classnames from 'classnames';
 import {addHandler, removeHandler, request} from 'request';
+import {loadCurrentUser} from 'config';
 
 import {Header, Footer} from '..';
 
@@ -45,6 +46,7 @@ export default class PrivateRoute extends React.Component {
   handleLoginSuccess = () => {
     this.setState({showLogin: false});
     redoOutstandingRequests();
+    loadCurrentUser();
   };
 
   render() {

@@ -41,10 +41,13 @@ export const areTenantsAvailable = createAccessorFunction('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction('optimizeVersion');
 export const getWebappEndpoints = createAccessorFunction('webappsEndpoints');
 export const getHeader = createAccessorFunction('header');
-export async function getCurrentUser() {
-  if (currentUser) {
-    return currentUser;
-  }
+export async function loadCurrentUser() {
   const response = await get('api/identity/current/user');
-  return await response.json();
+  currentUser = await response.json();
+}
+export async function getCurrentUser() {
+  if (!currentUser) {
+    await loadCurrentUser();
+  }
+  return currentUser;
 }
