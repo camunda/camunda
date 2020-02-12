@@ -30,6 +30,12 @@ public class EventSourceEntryDto {
   @NonNull
   @Builder.Default
   private String id = IdGenerator.getNextId();
+  @Builder.Default
+  private EventSourceType type = EventSourceType.CAMUNDA;
+  @Builder.Default
+  private EventScopeType eventScope = EventScopeType.ALL;
+
+  // camunda source specific properties
   private String processDefinitionKey;
   @Builder.Default
   private List<String> versions = new ArrayList<>();
@@ -37,6 +43,5 @@ public class EventSourceEntryDto {
   private List<String> tenants = new ArrayList<>();
   private Boolean tracedByBusinessKey;
   private String traceVariable;
-  private EventScopeType eventScope;
 
 }

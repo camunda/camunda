@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -51,6 +52,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -232,24 +234,24 @@ public class EventProcessService {
   }
 
   private void validateEventSources(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
-    validateAccessToEventSources(userId, eventProcessMappingDto);
-    validateNoDuplicateEventSources(eventProcessMappingDto);
+    validateAccessToCamundaEventSources(userId, eventProcessMappingDto);
+    validateNoDuplicateCamundaEventSources(eventProcessMappingDto);
+    validateNoDuplicateExternalEventSources(eventProcessMappingDto);
   }
 
-  private void validateAccessToEventSources(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
-    final Set<String> notAuthorizedProcesses = new HashSet<>();
-    for (EventSourceEntryDto eventSource : eventProcessMappingDto.getEventSources()) {
-      final boolean hasAccessToDefinition = definitionAuthorizationService.isAuthorizedToSeeDefinition(
+  private void validateAccessToCamundaEventSources(final String userId,
+                                                   final EventProcessMappingDto eventProcessMappingDto) {
+    final Set<String> notAuthorizedProcesses = eventProcessMappingDto.getEventSources().stream()
+      .filter(eventSourceEntryDto -> EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getType()))
+      .filter(eventSource -> !definitionAuthorizationService.isAuthorizedToSeeDefinition(
         userId,
         IdentityType.USER,
         eventSource.getProcessDefinitionKey(),
         PROCESS,
         eventSource.getTenants()
-      );
-      if (!hasAccessToDefinition) {
-        notAuthorizedProcesses.add(eventSource.getProcessDefinitionKey());
-      }
-    }
+      ))
+      .map(EventSourceEntryDto::getProcessDefinitionKey)
+      .collect(Collectors.toSet());
     if (!notAuthorizedProcesses.isEmpty()) {
       final String errorMessage = String.format(
         "The user is not authorized to access the following process definitions in the event sources: %s",
@@ -259,19 +261,36 @@ public class EventProcessService {
     }
   }
 
-  private void validateNoDuplicateEventSources(final EventProcessMappingDto eventProcessMappingDto) {
+  private void validateNoDuplicateCamundaEventSources(final EventProcessMappingDto eventProcessMappingDto) {
     Set<String> processDefinitionKeys = new HashSet<>();
     final Set<String> duplicates = eventProcessMappingDto.getEventSources()
       .stream()
-      .map(source -> source.getProcessDefinitionKey())
+      .filter(eventSourceEntryDto -> EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getType()))
+      .map(EventSourceEntryDto::getProcessDefinitionKey)
+      .filter(Objects::nonNull)
       .filter(key -> !processDefinitionKeys.add(key))
       .collect(toSet());
     if (!duplicates.isEmpty()) {
       final String errorMessage = String.format(
-        "The process definitions with keys %s already exist as event sources for the mapping with ID [%s]",
-        duplicates, eventProcessMappingDto
+        "Only one event source for each process definition can exist for an Event Process Mapping." +
+          "Mapping with id [%s] contains duplicates for process definition keys [%s]",
+        eventProcessMappingDto.getId(), duplicates
       );
       throw new OptimizeConflictException(errorMessage);
+    }
+  }
+
+  private void validateNoDuplicateExternalEventSources(final EventProcessMappingDto eventProcessMappingDto) {
+    final long numberOfExternalEventSources = eventProcessMappingDto.getEventSources()
+      .stream()
+      .filter(eventSourceEntryDto -> EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getType()))
+      .count();
+    if (numberOfExternalEventSources > 1) {
+
+      throw new OptimizeConflictException(String.format(
+        "Mapping can only contain one external event sources but %s were provided.",
+        numberOfExternalEventSources
+      ));
     }
   }
 

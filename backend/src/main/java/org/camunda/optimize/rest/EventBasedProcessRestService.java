@@ -256,6 +256,7 @@ public class EventBasedProcessRestService {
 
       EventSourceEntryRestDto sourceRestDto = EventSourceEntryRestDto.builder()
         .id(sourceDto.getId())
+        .type(sourceDto.getType())
         .eventScope(sourceDto.getEventScope())
         .processDefinitionKey(sourceDto.getProcessDefinitionKey())
         .processDefinitionName(definitionName)

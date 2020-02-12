@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
@@ -42,6 +42,7 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
 
   public static final String EVENT_SOURCE_ID = EventSourceEntryDto.Fields.id;
+  public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.Fields.type;
   public static final String EVENT_SOURCE_PROC_DEF_KEY = EventSourceEntryDto.Fields.processDefinitionKey;
   public static final String EVENT_SOURCE_VERSIONS = EventSourceEntryDto.Fields.versions;
   public static final String EVENT_SOURCE_TENANTS = EventSourceEntryDto.Fields.tenants;
@@ -149,6 +150,9 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
     return xContentBuilder
       .startObject("properties")
         .startObject(EVENT_SOURCE_ID)
+          .field("type", "keyword")
+        .endObject()
+        .startObject(EVENT_SOURCE_TYPE)
           .field("type", "keyword")
         .endObject()
         .startObject(EVENT_SOURCE_PROC_DEF_KEY)

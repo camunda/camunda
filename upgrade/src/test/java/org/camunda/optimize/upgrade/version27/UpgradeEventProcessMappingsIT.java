@@ -10,6 +10,8 @@ import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom27To30;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -53,7 +55,7 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void addEventSourcesListField() {
+  public void addEventSourcesListFieldWithDefaultExternalEventsEntry() {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom27To30().buildUpgradePlan();
 
@@ -65,7 +67,15 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
     assertThat(eventProcessMappingRestDtos.size()).isEqualTo(2);
     assertThat(eventProcessMappingRestDtos)
       .extracting(EventProcessMappingDto::getEventSources)
-      .allMatch(List::isEmpty);
+      .allSatisfy(eventSourceEntryDtos -> {
+        assertThat(eventSourceEntryDtos)
+          .hasSize(1)
+          .allSatisfy(eventSourceEntryDto -> {
+            assertThat(eventSourceEntryDto.getId()).isNotBlank();
+            assertThat(eventSourceEntryDto.getType()).isEqualTo(EventSourceType.EXTERNAL);
+            assertThat(eventSourceEntryDto.getEventScope()).isEqualTo(EventScopeType.ALL);
+          });
+      });
   }
 
   @Test

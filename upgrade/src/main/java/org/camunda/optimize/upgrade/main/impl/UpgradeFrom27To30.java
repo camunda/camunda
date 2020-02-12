@@ -46,7 +46,12 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
   private UpdateIndexStep addEventSourcesAndRolesField() {
     //@formatter:off
     final String script =
+      "Map externalEventSource = new HashMap();\n" +
+      "externalEventSource.put(\"id\", ctx._id);\n" +
+      "externalEventSource.put(\"type\", \"external\");\n" +
+      "externalEventSource.put(\"eventScope\", \"all\");\n" +
       "ctx._source.eventSources = new ArrayList();\n" +
+      "ctx._source.eventSources.add(externalEventSource);\n" +
        // initialize last role based on last modifier
       "Map identity = new HashMap();\n " +
       "String lastModifier = ctx._source.lastModifier;\n " +
