@@ -16,6 +16,11 @@ for (let i = 0; i < buttons.length; i++) {
   buttons[i].addEventListener('click', onClickHandler);
 }
 
+document.getElementById("generateDataButton").addEventListener(
+  "click",
+  () => fetch("api/generateNewData")
+);
+
 const socket = new WebSocket('ws://' + window.location.host);
 
 socket.onmessage = function(evt) {
@@ -39,5 +44,9 @@ socket.onmessage = function(evt) {
     logContainer = document.querySelector('#' + content.type);
   }
 
+  const scrolledToBottom = logContainer.scrollTop >= (logContainer.scrollHeight - logContainer.offsetHeight);
   logContainer.appendChild(entry);
+  if (logContainer.classList.contains("active") && scrolledToBottom) {
+    logContainer.scrollBy(0, Number.MAX_SAFE_INTEGER)
+  }
 };

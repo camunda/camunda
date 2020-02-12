@@ -7,7 +7,7 @@ button:focus {
 }
 
 body {
-  border-top: 3px solid #b5152b;
+  border-top: 3px solid #ea3f4e;
   margin: 0;
 }
 
@@ -80,4 +80,22 @@ p {
 
 .log.active {
   z-index: 2;
+}
+
+.actionButton {
+  background-color: #0998c8;
+  border: none;
+  color: white;
+  padding: 10px 12px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.logsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }

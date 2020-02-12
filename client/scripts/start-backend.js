@@ -26,6 +26,7 @@ let seenStateInitializationComplete = false;
 let backendProcess;
 let buildBackendProcess;
 let dockerProcess;
+let dataGeneratorProcess;
 
 fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
   xml2js.parseString(data, {explicitArray: false}, (err, data) => {
@@ -43,7 +44,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     function buildAndStartOptimize() {
       buildBackend().then(() => {
         if (!dockerProcess) {
-          startDocker().then(generateDemoData);
+          startDocker().then(restoreSqlDump);
         }
         startBackend().then(postStartupActions).catch(() => {
           console.log("Optimize process killed, restarting...")
@@ -69,17 +70,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     function buildBackend() {
       return new Promise((resolve, reject) => {
-        buildBackendProcess = spawn(
-          'mvn',
-          [
-            'clean',
-            'install',
-            '-DskipTests',
-            '-Dskip.docker',
-            '-Dskip.fe.build',
-            '-pl backend,qa/data-generation',
-            '-am'
-          ],
+        buildBackendProcess = spawnWithArgs(
+          'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl backend,qa/data-generation -am',
           {
             cwd: path.resolve(__dirname, '..', '..'),
             shell: true
@@ -102,20 +94,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     function startBackend() {
       return new Promise((resolve, reject) => {
         const eventUserIds = users.join(',') + ',demo';
-        backendProcess = spawn(
-          'java',
-          [
-            '-cp',
-            `../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar`,
-            '-Xms1g',
-            '-Xmx1g',
-            '-XX:MetaspaceSize=256m',
-            '-XX:MaxMetaspaceSize=256m',
-            '-DOPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret',
-            '-DOPTIMIZE_EVENT_BASED_PROCESSES_ENABLED=true',
-            `-DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}]`,
-            'org.camunda.optimize.Main'
-          ],
+        backendProcess = spawnWithArgs(
+          `java -cp ../src/main/resources/:./lib/*:optimize-backend-${backendVersion}.jar -Xms1g -Xmx1g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m -DOPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret -DOPTIMIZE_EVENT_BASED_PROCESSES_ENABLED=true -DOPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[${eventUserIds}] org.camunda.optimize.Main`,
           {
             cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
             shell: true
@@ -140,15 +120,19 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     function startDocker() {
       return new Promise(resolve => {
-        dockerProcess = spawn('docker-compose', ['up', '--force-recreate', '--no-color'], {
-          cwd: path.resolve(__dirname, '..'),
-          shell: true,
-          env: {
-            ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
-            ES_VERSION: elasticSearchVersion,
-            CAMBPM_VERSION: cambpmVersion
-          }
-        });
+        // this directory should be mounted by docker, on Linux this results in root bering the owner of that directory
+        // we create it with the current user to ensure we have write permissions
+        fs.mkdirSync("databaseDumps");
+        dockerProcess = spawnWithArgs('docker-compose up --force-recreate --no-color',
+          {
+            cwd: path.resolve(__dirname, '..'),
+            shell: true,
+            env: {
+              ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
+              ES_VERSION: elasticSearchVersion,
+              CAMBPM_VERSION: cambpmVersion
+            }
+          });
 
         dockerProcess.stdout.on('data', data => addLog(data, 'docker'));
         dockerProcess.stderr.on('data', data => addLog(data, 'docker', true));
@@ -172,11 +156,42 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       }, 1000);
     }
 
-    function generateDemoData() {
-      const dataGenerator = runDataGenerationProcess('generate-data');
+    async function restoreSqlDump() {
+      await downloadFile("https://storage.googleapis.com/optimize-data/optimize_large_data-e2e.sqlc", "databaseDumps/dump.sqlc");
 
-      dataGenerator.on('exit', () => {
+      dataGeneratorProcess = spawnWithArgs("docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc");
+
+      dataGeneratorProcess.stdout.on("data", data => {
+        addLog(data.toString(), "dataGenerator")
+      });
+
+      dataGeneratorProcess.stderr.on('data', data => {
+        addLog(data.toString(), "dataGenerator", true)
+      });
+
+      dataGeneratorProcess.on("exit", () => {
+        dataGeneratorProcess = null;
+        spawnWithArgs("rm -rf databaseDumps/");
+      })
+    }
+
+    function downloadFile(downloadUrl, filePath) {
+      return new Promise(resolve => {
+        const file = fs.createWriteStream(filePath);
+        request.get(downloadUrl)
+          .pipe(file)
+          .on('finish', () => {
+            resolve();
+          })
+      })
+    }
+
+    function generateDemoData() {
+      dataGeneratorProcess = runDataGenerationProcess('generate-data');
+
+      dataGeneratorProcess.on('exit', () => {
         engineDataGenerationComplete = true;
+        dataGeneratorProcess = null;
       });
     }
 
@@ -202,7 +217,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function runDataGenerationProcess(scriptName) {
-      const startedProcess = spawn('node', ['scripts/' + scriptName]);
+      const startedProcess = spawnWithArgs('node scripts/' + scriptName);
 
       startedProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
       startedProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
@@ -214,7 +229,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function startManagementServer() {
-      const server = http.createServer(function(request, response) {
+      const server = http.createServer(function (request, response) {
         if (request.url === '/api/dataGenerationComplete') {
           response.writeHead(200, {'Content-Type': 'text/plain'});
           response.end(
@@ -237,6 +252,20 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           return;
         }
 
+        if (request.url === '/api/generateNewData') {
+          if (dataGeneratorProcess) {
+            response.statusCode = 400;
+            response.end("Data is currently being generated", "utf-8");
+            return;
+          }
+          addLog("--------- DATA GENERATION INITIATED ---------", "dataGenerator");
+          generateDemoData();
+          response.statusCode = 200;
+          response.end("Data generation initiated", "utd-8");
+          return;
+        }
+
+
         var filePath = __dirname + '/managementServer' + request.url;
         if (request.url === '/') {
           filePath += 'index.html';
@@ -251,7 +280,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
         var contentType = mimeTypes[extname] || 'application/octet-stream';
 
-        fs.readFile(filePath, function(error, content) {
+        fs.readFile(filePath, function (error, content) {
           if (error) {
             if (error.code === 'ENOENT') {
               response.writeHead(404, {'Content-Type': contentType});
@@ -330,7 +359,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 });
 
 function stopDocker() {
-  const dockerStopProcess = spawn('docker-compose', ['rm', '-sfv'], {
+  const dockerStopProcess = spawnWithArgs('docker-compose rm -sfv', {
     cwd: path.resolve(__dirname, '..'),
     shell: true
   });
@@ -339,4 +368,10 @@ function stopDocker() {
     process.exit();
     dockerProcess = null;
   });
+}
+
+function spawnWithArgs(commandString, options) {
+  const args = commandString.split(" ");
+  const command = args.splice(0, 1)[0];
+  return spawn(command, args, options);
 }

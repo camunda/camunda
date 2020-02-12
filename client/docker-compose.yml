@@ -28,17 +28,40 @@ services:
     image: camunda/camunda-bpm-platform:${CAMBPM_VERSION:-7.12.0}
     container_name: cambpm
     environment:
+      - DB_DRIVER=org.postgresql.Driver
+      - DB_USERNAME=camunda
+      - DB_URL=jdbc:postgresql://postgres:5432/engine
       - TZ=Europe/Berlin
-      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
+      - JAVA_OPTS=-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m
     ports:
       - 8080:8080
       - 9092:9092
     restart: always
-    cpu_count: 1
-    mem_limit: 2g
+    mem_limit: 3g
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/engine-rest/engine | grep -q default"]
       interval: 30s
       timeout: 5s
       retries: 3
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:11.2
+    container_name: postgres
+    command: ["postgres", "-c", "max_connections=200", "-c", "effective_cache_size=4GB", "-c", "shared_buffers=2GB", "-c", "synchronous_commit=off", "-c", "log_statement=none", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
+    environment:
+      - POSTGRES_USER=camunda
+      - POSTGRES_DB=engine
+      - TZ=Europe/Berlin
+    ports:
+      - 5432:5432
+    restart: always
+    mem_limit: 4g
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=$${POSTGRES_PASSWORD} psql --username=$${POSTGRES_USER} --host=localhost --dbname=$${POSTGRES_DB} --command='\\q'"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./databaseDumps:/dump/
 

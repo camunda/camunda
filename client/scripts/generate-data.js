@@ -20,7 +20,7 @@ const generateDataProcess = spawn(
   [
     'exec:java',
     '-f ./qa/data-generation/pom.xml',
-    `-Dexec.args="--numberOfProcessInstances ${e2ePresets.numberOfProcessInstances} --removeDeployments false --definitions ${e2ePresets.definitions}"`
+    `-Dexec.args="--numberOfProcessInstances ${e2ePresets.numberOfProcessInstances} --definitions ${e2ePresets.definitions}"`
   ],
   {
     cwd: path.resolve(__dirname, '..', '..'),
