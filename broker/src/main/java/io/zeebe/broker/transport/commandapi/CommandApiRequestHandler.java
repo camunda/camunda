@@ -10,7 +10,6 @@ package io.zeebe.broker.transport.commandapi;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.zeebe.broker.transport.commandapi.CommandTracer.NoopCommandTracer;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
@@ -59,10 +58,6 @@ final class CommandApiRequestHandler implements RequestHandler {
   private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
   private final CommandTracer tracer;
-
-  public CommandApiRequestHandler() {
-    this(new NoopCommandTracer());
-  }
 
   public CommandApiRequestHandler(final CommandTracer tracer) {
     this.metrics = new BackpressureMetrics();

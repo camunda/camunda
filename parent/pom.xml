@@ -57,7 +57,6 @@
     <version.httpclient>4.5.11</version.httpclient>
     <version.httpcomponents>4.4.13</version.httpcomponents>
     <version.jackson>2.10.2.20200130</version.jackson>
-    <version.jaeger>0.35.2</version.jaeger>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>4.13</version.junit>
     <version.log4j>2.13.0</version.log4j>
@@ -69,6 +68,7 @@
     <version.objenesis>3.1</version.objenesis>
     <version.opentracing>0.33.0</version.opentracing>
     <version.opentracing.grpc>0.2.1</version.opentracing.grpc>
+    <version.opentracing.resolver>0.1.8</version.opentracing.resolver>
     <version.prometheus>0.8.1</version.prometheus>
     <version.protobuf>3.11.4</version.protobuf>
     <version.rocksdbjni>6.5.3</version.rocksdbjni>
@@ -557,12 +557,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.opentracing</groupId>
-        <artifactId>opentracing-util</artifactId>
-        <version>${version.opentracing}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.opentracing.contrib</groupId>
         <artifactId>opentracing-grpc</artifactId>
         <version>${version.opentracing.grpc}</version>
@@ -575,15 +569,9 @@
       </dependency>
 
       <dependency>
-        <groupId>io.jaegertracing</groupId>
-        <artifactId>jaeger-client</artifactId>
-        <version>${version.jaeger}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.jaegertracing</groupId>
-        <artifactId>jaeger-core</artifactId>
-        <version>${version.jaeger}</version>
+        <groupId>io.opentracing.contrib</groupId>
+        <artifactId>opentracing-tracerresolver</artifactId>
+        <version>${version.opentracing.resolver}</version>
       </dependency>
 
     </dependencies>

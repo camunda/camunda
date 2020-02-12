@@ -14,8 +14,8 @@ import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
-import io.jaegertracing.Configuration;
 import io.opentracing.Tracer;
+import io.opentracing.contrib.tracerresolver.TracerResolver;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.bootstrap.CloseProcess;
@@ -50,7 +50,6 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.protocol.impl.tracing.SbeTracingCodec;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.LogUtil;
@@ -233,12 +232,7 @@ public final class Broker implements AutoCloseable {
     CommandTracer commandTracer = new CommandTracer.NoopCommandTracer();
 
     if (brokerCfg.getMonitoring().isTracing()) {
-      final Tracer tracer =
-          Configuration.fromEnv("io.zeebe.broker")
-              .getTracerBuilder()
-              .registerInjector(SbeTracingCodec.format(), SbeTracingCodec.codec())
-              .registerExtractor(SbeTracingCodec.format(), SbeTracingCodec.codec())
-              .build();
+      final Tracer tracer = TracerResolver.resolveTracer(getClass().getClassLoader());
       commandTracer = new DefaultCommandTracer(tracer);
     }
 
