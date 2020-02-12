@@ -143,7 +143,7 @@ export default themed(
       componentDidMount() {
         this.importXML(this.props.xml);
 
-        const dashboardObject = this.container.closest('.DashboardObject');
+        const dashboardObject = this.container.closest('.grid-entry');
         if (dashboardObject) {
           // if the diagram is on a dashboard, react to changes of the dashboard objects size
           new MutationObserver(this.fitDiagram).observe(dashboardObject, {attributes: true});
@@ -155,10 +155,12 @@ export default themed(
       }
 
       fitDiagram = () => {
-        const canvas = this.viewer.get('canvas');
+        if (this.viewer) {
+          const canvas = this.viewer.get('canvas');
 
-        canvas.resized();
-        canvas.zoom('fit-viewport', 'auto');
+          canvas.resized();
+          canvas.zoom('fit-viewport', 'auto');
+        }
       };
     }
   )

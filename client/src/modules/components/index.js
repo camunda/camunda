@@ -23,7 +23,7 @@ export {ActionItem} from './ActionItem';
 export {ShareEntity} from './ShareEntity';
 export {Switch} from './Switch';
 export {Popover} from './Popover';
-export {DashboardRenderer, DashboardObject} from './DashboardRenderer';
+export {DashboardRenderer} from './DashboardRenderer';
 export {DefinitionSelection} from './DefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';
 export {ErrorPage} from './ErrorPage';

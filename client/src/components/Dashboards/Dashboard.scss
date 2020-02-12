@@ -2,6 +2,19 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
+
+  .DashboardEdit {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    .content {
+      overflow-y: auto;
+      width: 100vw;
+      margin-left: -20px;
+    }
+  }
 
   .header {
     margin-bottom: 1em;

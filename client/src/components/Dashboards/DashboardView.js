@@ -18,7 +18,6 @@ import {t} from 'translation';
 
 import {getSharedDashboard, shareDashboard, revokeDashboardSharing} from './service';
 
-import {DimensionSetter} from './DimensionSetter';
 import {AutoRefreshBehavior, AutoRefreshIcon} from './AutoRefresh';
 
 import './DashboardView.scss';
@@ -210,14 +209,12 @@ export default themed(
             <DashboardRenderer
               loadReport={evaluateReport}
               reports={reports}
-              reportAddons={
+              addons={
                 autoRefreshInterval && [
                   <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />
                 ]
               }
-            >
-              <DimensionSetter reports={reports} />
-            </DashboardRenderer>
+            />
           </div>
         </Fullscreen>
       );

@@ -24,7 +24,7 @@ export default class EntityNameForm extends React.Component {
   }
 
   render() {
-    const {entity, name, isNew, disabledButtons, onCancel, onSave, onChange} = this.props;
+    const {entity, name, isNew, disabledButtons, onCancel, onSave, onChange, children} = this.props;
 
     const homeLink = entity === 'Process' ? '../' : '../../';
 
@@ -43,6 +43,7 @@ export default class EntityNameForm extends React.Component {
           />
         </div>
         <div className="tools">
+          {children}
           <Button
             className="tool-button save-button"
             disabled={!name || disabledButtons}

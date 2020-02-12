@@ -85,7 +85,7 @@ it('should add an autorefresh addon when autorefresh mode is active', () => {
   const node = shallow(<DashboardView />);
   node.setState({autoRefreshInterval: 1000});
 
-  expect(node.find('DashboardRenderer').prop('reportAddons')).toMatchSnapshot();
+  expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
 });
 
 it('should have a toggle theme button that is only visible in fullscreen mode', () => {

@@ -130,7 +130,7 @@ export default class Table extends React.Component {
     this.fixColumnAlignment();
 
     // on dashboards
-    const resizableContainer = this.tableRef && this.tableRef.closest('.DashboardObject');
+    const resizableContainer = this.tableRef && this.tableRef.closest('.grid-entry');
     if (resizableContainer) {
       new MutationObserver(this.fixColumnAlignment).observe(resizableContainer, {
         attributes: true

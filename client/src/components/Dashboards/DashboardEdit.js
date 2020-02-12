@@ -15,11 +15,8 @@ import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
 
 import {AddButton} from './AddButton';
-import {Grid} from './Grid';
-import {DimensionSetter} from './DimensionSetter';
 import {DeleteButton} from './DeleteButton';
-import {DragBehavior} from './DragBehavior';
-import {ResizeHandle} from './ResizeHandle';
+import DragOverlay from './DragOverlay';
 
 export default class DashboardEdit extends React.Component {
   constructor(props) {
@@ -32,17 +29,19 @@ export default class DashboardEdit extends React.Component {
     };
   }
 
-  updateReport = ({report, ...changes}) => {
-    const reportIdx = this.state.reports.indexOf(report);
+  updateLayout = layout => {
+    this.setState(({reports}) => {
+      const newReports = reports.map((oldReport, idx) => {
+        const newPosition = layout[idx];
 
-    Object.keys(changes).forEach(prop => {
-      changes[prop] = {$set: changes[prop]};
-    });
+        return {
+          ...oldReport,
+          position: {x: newPosition.x, y: newPosition.y},
+          dimensions: {height: newPosition.h, width: newPosition.w}
+        };
+      });
 
-    this.setState({
-      reports: update(this.state.reports, {
-        [reportIdx]: changes
-      })
+      return {reports: newReports};
     });
   };
 
@@ -50,20 +49,32 @@ export default class DashboardEdit extends React.Component {
     this.setState({name: value});
   };
 
-  showAddButton = () => {
-    this.setState({
-      addButtonVisible: true
-    });
-  };
-
-  hideAddButton = () => {
-    this.setState({
-      addButtonVisible: false
-    });
-  };
-
   addReport = newReport => {
-    this.setState({reports: update(this.state.reports, {$push: [newReport]})});
+    this.setState({reports: update(this.state.reports, {$push: [newReport]})}, () => {
+      const node = document.querySelector('.react-grid-layout').lastChild;
+      const nodePos = node.getBoundingClientRect();
+
+      // dispatch a mouse event to automatically grab the new report for positioning
+      node.dispatchEvent(
+        new MouseEvent('mousedown', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          clientX: nodePos.x + nodePos.width / 2,
+          clientY: nodePos.y + nodePos.height / 2
+        })
+      );
+
+      // prevent the next mousedown event (it confuses the grid library)
+      node.addEventListener(
+        'mousedown',
+        evt => {
+          evt.preventDefault();
+          evt.stopPropagation();
+        },
+        {capture: true, once: true}
+      );
+    });
   };
 
   deleteReport = ({report: reportToRemove}) => {
@@ -107,7 +118,9 @@ export default class DashboardEdit extends React.Component {
             onChange={this.updateName}
             onSave={this.save}
             onCancel={nowPristine}
-          />
+          >
+            <AddButton addReport={this.addReport} />
+          </EntityNameForm>
           <div className="subHead">
             <div className="metadata">
               {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
@@ -115,32 +128,18 @@ export default class DashboardEdit extends React.Component {
             </div>
           </div>
         </div>
-        <DashboardRenderer
-          disableReportScrolling
-          loadReport={evaluateReport}
-          reports={reports}
-          reportAddons={[
-            <DragBehavior
-              key="DragBehavior"
-              reports={reports}
-              updateReport={this.updateReport}
-              onDragStart={this.hideAddButton}
-              onDragEnd={this.showAddButton}
-            />,
-            <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />,
-            <ResizeHandle
-              key="ResizeHandle"
-              reports={reports}
-              updateReport={this.updateReport}
-              onResizeStart={this.hideAddButton}
-              onResizeEnd={this.showAddButton}
-            />
-          ]}
-        >
-          <Grid reports={reports} />
-          <DimensionSetter emptyRows={9} reports={reports} />
-          <AddButton addReport={this.addReport} visible={this.state.addButtonVisible} />
-        </DashboardRenderer>
+        <div className="content">
+          <DashboardRenderer
+            disableReportInteractions
+            reports={reports}
+            loadReport={evaluateReport}
+            addons={[
+              <DragOverlay key="DragOverlay" />,
+              <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />
+            ]}
+            onChange={this.updateLayout}
+          />
+        </div>
       </div>
     );
   }

@@ -6,74 +6,93 @@
 
 import React from 'react';
 
+import {Responsive, WidthProvider} from 'react-grid-layout';
+
 import {DashboardReport} from './DashboardReport';
-import {DashboardObject} from './DashboardObject';
 
 import './DashboardRenderer.scss';
 
+const GridLayout = WidthProvider(Responsive);
+
 const columns = 18;
-const tileAspectRatio = 1;
-const tileMargin = 8;
+const rowHeight = 94;
+const cellMargin = 10;
 
-export default class DashboardRenderer extends React.Component {
-  render() {
-    return (
-      <div className="DashboardRenderer" ref={node => (this.container = node)}>
-        {this.state &&
-          this.props.reports.map((report, idx) => (
-            <DashboardObject
-              key={idx + '_' + report.id}
-              tileDimensions={this.state.tileDimensions}
-              {...report.position}
-              {...report.dimensions}
-            >
-              <DashboardReport
-                disableReportScrolling={this.props.disableReportScrolling}
-                loadReport={this.props.loadReport}
-                report={report}
-                tileDimensions={this.state.tileDimensions}
-                addons={this.props.reportAddons || []}
-                disableNameLink={this.props.disableNameLink}
-              />
-            </DashboardObject>
-          ))}
-        {this.state &&
-          React.Children.map(this.props.children, child =>
-            React.cloneElement(child, {
-              container: this.container,
-              tileDimensions: this.state.tileDimensions,
-              reports: this.props.reports
-            })
-          )}
-      </div>
+const cols = {lg: columns, md: columns, sm: columns};
+
+export default function DashboardRenderer({
+  disableReportInteractions,
+  disableNameLink,
+  reports,
+  loadReport,
+  addons,
+  onChange
+}) {
+  const style = {};
+
+  if (disableReportInteractions) {
+    // in edit mode, we add the background grid
+    const lowerEdge = Math.max(
+      0,
+      ...reports.map(({position, dimensions}) => position.y + dimensions.height)
     );
+
+    style.backgroundImage = constructBackgroundGrid();
+    style.minHeight = (lowerEdge + 9) * (rowHeight + cellMargin) + 'px';
   }
 
-  updateDimensions = () => {
-    if (this.container) {
-      this.container.style.width = '100%';
+  return (
+    <GridLayout
+      cols={cols}
+      rowHeight={rowHeight}
+      onLayoutChange={onChange}
+      className="DashboardRenderer"
+      style={style}
+      isDraggable={!!disableReportInteractions}
+      isResizable={!!disableReportInteractions}
+    >
+      {reports.map((report, idx) => {
+        return (
+          <div
+            className="grid-entry"
+            key={idx + '_' + report.id}
+            data-grid={{
+              x: report.position.x,
+              y: report.position.y,
+              w: report.dimensions.width,
+              h: report.dimensions.height
+            }}
+          >
+            <DashboardReport
+              disableReportScrolling={disableReportInteractions}
+              disableNameLink={disableReportInteractions || disableNameLink}
+              loadReport={loadReport}
+              report={report}
+              addons={addons}
+            />
+          </div>
+        );
+      })}
+    </GridLayout>
+  );
+}
 
-      const availableWidth = this.container.clientWidth;
-      const outerWidth = ~~(availableWidth / columns); // make sure we are working with round values
-      const innerWidth = outerWidth - tileMargin;
-      const innerHeight = innerWidth / tileAspectRatio;
+function constructBackgroundGrid() {
+  const outerWidth = (document.documentElement.clientWidth - 20) / 18;
+  const outerHeight = rowHeight + cellMargin;
+  const innerWidth = outerWidth - cellMargin;
+  const innerHeight = outerHeight - cellMargin;
 
-      const outerHeight = innerHeight + tileMargin;
+  const margin = outerWidth - innerWidth;
 
-      const tileDimensions = {outerWidth, innerWidth, outerHeight, innerHeight, columns};
-
-      this.setState({
-        tileDimensions
-      });
-    }
-  };
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.updateDimensions);
-  }
-
-  componentDidMount() {
-    this.updateDimensions();
-    window.addEventListener('resize', this.updateDimensions);
-  }
+  return (
+    'url("data:image/svg+xml;base64,' +
+    btoa(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='${outerWidth}' height='${outerHeight}'>` +
+        `<rect stroke='rgba(0, 0, 0, 0.2)' stroke-width='1' fill='none' x='${margin / 2 +
+          1}' y='${margin / 2 + 1}' width='${innerWidth - 3}' height='${innerHeight - 3}'/>` +
+        `</svg>`
+    ) +
+    '")'
+  );
 }

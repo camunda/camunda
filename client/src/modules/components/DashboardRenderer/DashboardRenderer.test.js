@@ -6,16 +6,9 @@
 
 import React from 'react';
 
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import DashboardRenderer from './DashboardRenderer';
-
-jest.mock('./DashboardReport', () => {
-  return {DashboardReport: ({report}) => <div>Report {report.id}</div>};
-});
-jest.mock('./DashboardObject', () => {
-  return {DashboardObject: ({children}) => <div>{children}</div>};
-});
 
 const reports = [
   {
@@ -36,35 +29,7 @@ const reports = [
 ];
 
 it('should render a Dashboard Report for every Report in the props', () => {
-  const node = mount(<DashboardRenderer reports={reports} />);
+  const node = shallow(<DashboardRenderer reports={reports} />);
 
-  expect(node).toIncludeText('Report 1');
-  expect(node).toIncludeText('Report 2');
-  expect(node).toIncludeText('Report 3');
-});
-
-it('should render additional child components', () => {
-  const AdditionalContent = () => <div>Additional Content</div>;
-
-  const node = mount(
-    <DashboardRenderer reports={reports}>
-      <AdditionalContent />
-    </DashboardRenderer>
-  );
-
-  expect(node).toIncludeText('Additional Content');
-});
-
-it('should provide child components with the container, tileDimensions and reports', () => {
-  const PropertyPrinter = props => <div>{Object.keys(props)}</div>;
-
-  const node = mount(
-    <DashboardRenderer reports={reports}>
-      <PropertyPrinter />
-    </DashboardRenderer>
-  );
-
-  expect(node).toIncludeText('container');
-  expect(node).toIncludeText('tileDimensions');
-  expect(node).toIncludeText('reports');
+  expect(node).toMatchSnapshot();
 });

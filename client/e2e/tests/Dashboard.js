@@ -99,6 +99,7 @@ test('remove a report from a dashboard', async t => {
   await u.createNewDashboard(t);
   await u.addReportToDashboard(t, 'New Report');
 
+  await t.click(e.report);
   await t.click(e.reportDeleteButton);
   await u.save(t);
 

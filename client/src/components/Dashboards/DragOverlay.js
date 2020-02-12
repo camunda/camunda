@@ -4,4 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default as Grid} from './Grid';
+import React from 'react';
+
+import './DragOverlay.scss';
+
+export default function DragOverlay() {
+  return <div className="DragOverlay" />;
+}

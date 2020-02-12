@@ -5,4 +5,3 @@
  */
 
 export {default as DashboardRenderer} from './DashboardRenderer';
-export {DashboardObject} from './DashboardObject';

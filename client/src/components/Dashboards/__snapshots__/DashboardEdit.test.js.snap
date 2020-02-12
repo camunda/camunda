@@ -2,18 +2,36 @@
 
 exports[`should editing report addons 1`] = `
 Array [
-  <DragBehavior
-    onDragEnd={[Function]}
-    onDragStart={[Function]}
-    updateReport={[Function]}
-  />,
+  <DragOverlay />,
   <DeleteButton
     deleteReport={[Function]}
   />,
-  <ResizeHandle
-    onResizeEnd={[Function]}
-    onResizeStart={[Function]}
-    updateReport={[Function]}
-  />,
+]
+`;
+
+exports[`should react to layout changes 1`] = `
+Array [
+  Object {
+    "dimensions": Object {
+      "height": 4,
+      "width": 2,
+    },
+    "id": "1",
+    "position": Object {
+      "x": 0,
+      "y": 0,
+    },
+  },
+  Object {
+    "dimensions": Object {
+      "height": 4,
+      "width": 3,
+    },
+    "id": "2",
+    "position": Object {
+      "x": 3,
+      "y": 2,
+    },
+  },
 ]
 `;

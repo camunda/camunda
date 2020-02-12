@@ -13,12 +13,6 @@ import DashboardEdit from './DashboardEdit';
 
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 
-it('should contain a Grid', () => {
-  const node = shallow(<DashboardEdit />);
-
-  expect(node.find('Grid')).toExist();
-});
-
 it('should contain an AddButton', () => {
   const node = shallow(<DashboardEdit />);
 
@@ -28,14 +22,7 @@ it('should contain an AddButton', () => {
 it('should editing report addons', () => {
   const node = shallow(<DashboardEdit />);
 
-  expect(node.find('DashboardRenderer').prop('reportAddons')).toMatchSnapshot();
-});
-
-it('should hide the AddButton based on the state', () => {
-  const node = shallow(<DashboardEdit />);
-  node.setState({addButtonVisible: false});
-
-  expect(node.find('AddButton').prop('visible')).toBe(false);
+  expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
 });
 
 it('should pass the isNew prop to the EntityNameForm', () => {
@@ -47,7 +34,33 @@ it('should pass the isNew prop to the EntityNameForm', () => {
 it('should notify the saveGuard of changes', () => {
   const node = shallow(<DashboardEdit initialReports={[]} />);
 
-  node.find('AddButton').prop('addReport')({});
+  node.setState({reports: ['someReport']});
 
   expect(nowDirty).toHaveBeenCalled();
+});
+
+it('should react to layout changes', () => {
+  const node = shallow(
+    <DashboardEdit
+      initialReports={[
+        {
+          id: '1',
+          position: {x: 0, y: 0},
+          dimensions: {height: 2, width: 2}
+        },
+        {
+          id: '2',
+          position: {x: 3, y: 0},
+          dimensions: {height: 4, width: 3}
+        }
+      ]}
+    />
+  );
+
+  node.find('DashboardRenderer').prop('onChange')([
+    {x: 0, y: 0, h: 4, w: 2},
+    {x: 3, y: 2, h: 4, w: 3}
+  ]);
+
+  expect(node.state('reports')).toMatchSnapshot();
 });

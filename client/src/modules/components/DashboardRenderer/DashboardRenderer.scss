@@ -1,3 +1,22 @@
 .DashboardRenderer {
-  position: relative;
+  background-position: 6px 6px;
+  background-size: calc(5.5556% - 0.5px) 104px;
+
+  .grid-entry {
+    overflow: auto;
+    background-color: white;
+    border: 1px solid lightgray;
+    display: flex;
+    border-radius: 4px;
+    flex-grow: 1;
+  }
+}
+
+.dark {
+  .DashboardRenderer {
+    .grid-entry {
+      background-color: #333;
+      border: 1px solid #555;
+    }
+  }
 }

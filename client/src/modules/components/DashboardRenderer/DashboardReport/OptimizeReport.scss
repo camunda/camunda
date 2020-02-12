@@ -10,6 +10,10 @@
 
 .OptimizeReport__visualization--unscrollable {
   overflow: hidden;
+
+  .component {
+    overflow: hidden;
+  }
 }
 
 .OptimizeReport__header {
