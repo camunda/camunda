@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import me.dinowernli.grpc.prometheus.Configuration;
@@ -100,7 +101,9 @@ public final class Gateway {
       interceptors.add(MonitoringServerInterceptor.create(Configuration.allMetrics()));
 
       if (gatewayCfg.getMonitoring().isTracing()) {
-        tracer = TracerResolver.resolveTracer(getClass().getClassLoader());
+        tracer =
+            Optional.ofNullable(TracerResolver.resolveTracer()).orElse(NoopTracerFactory.create());
+        LOG.debug("Gateway tracing configured for: {}", tracer);
         interceptors.add(
             TracingServerInterceptor.newBuilder().withTracer(tracer).withStreaming().build());
       }
