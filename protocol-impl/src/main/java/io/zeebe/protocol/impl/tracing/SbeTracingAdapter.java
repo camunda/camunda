@@ -9,6 +9,7 @@ package io.zeebe.protocol.impl.tracing;
 
 import io.opentracing.propagation.Binary;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 
 public class SbeTracingAdapter implements Binary {
@@ -23,19 +24,15 @@ public class SbeTracingAdapter implements Binary {
     final var offset = view.wrapAdjustment();
     final var buffer = view.byteBuffer();
     if (buffer == null) {
-      return ByteBuffer.wrap(view.byteArray(), offset, view.capacity());
+      return ByteBuffer.wrap(view.byteArray(), offset, view.capacity()).order(ByteOrder.BIG_ENDIAN).slice();
     }
 
-    final var position = buffer.position();
-    final var extractionBuffer = buffer.position(offset).slice();
-    buffer.position(position);
-
-    return extractionBuffer.limit(view.capacity());
+    return buffer.position(offset).slice().order(ByteOrder.BIG_ENDIAN);
   }
 
   @Override
   public ByteBuffer injectionBuffer(final int length) {
-    final var buffer = ByteBuffer.allocateDirect(length);
+    final var buffer = ByteBuffer.allocateDirect(length).order(ByteOrder.BIG_ENDIAN);
     view.wrap(buffer, 0, length);
     return buffer;
   }
