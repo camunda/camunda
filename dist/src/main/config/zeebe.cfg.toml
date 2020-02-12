@@ -123,10 +123,6 @@
 # Sets the maximum size of the incoming and outgoing messages (i.e. commands and events).
 # maxMessageSize = "4M"
 
-# Sets the maximum number of the incoming and outgoing messages (i.e. commands and events) with
-# the maximum size which can be buffered.
-# maxMessageCount = 16
-
 [network.commandApi]
 # Overrides the host used for gateway-to-broker communication
 # host = "localhost"
