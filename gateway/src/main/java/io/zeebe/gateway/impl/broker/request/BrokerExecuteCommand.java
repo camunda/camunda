@@ -98,6 +98,14 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   @Override
   public void injectTrace(final Tracer tracer) {
     if (activeSpan != null) {
+      activeSpan.setTag("io.zeebe.key", getKey());
+      activeSpan.setTag("io.zeebe.recordType", RecordType.COMMAND.name());
+      activeSpan.setTag("io.zeebe.valueType", getValueType().name());
+      activeSpan.setTag("io.zeebe.intent", getIntent().name());
+      activeSpan.setTag("component", "io.zeebe.gateway");
+      activeSpan.setTag("message_bus.destination", getPartitionId());
+      activeSpan.setTag("io.zeebe.partitionId", getPartitionId());
+
       tracer.inject(activeSpan.context(), Builtin.BINARY, request.getSpanContextAdapter());
     }
   }
