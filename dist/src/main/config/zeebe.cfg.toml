@@ -62,10 +62,6 @@
 # minKeepAliveInterval = "30s"
 
 [gateway.cluster]
-# Sets the broker the gateway should initial contact.
-# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CONTACT_POINT.
-# contactPoint = "127.0.0.1:26501"
-
 # Sets the timeout of requests send to the broker cluster
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_REQUEST_TIMEOUT.
 # requestTimeout = "15s"
