@@ -96,7 +96,7 @@
     "opn": "^6.0.0",
     "prettier": "1.19.1",
     "react-scripts": "3.2.0",
-    "request": "^2.88.0",
+    "request": "^2.88.2",
     "shelljs": "^0.8.3",
     "tarball-extract": "^0.0.6",
     "testcafe": "^1.8.1",
