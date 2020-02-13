@@ -80,7 +80,7 @@
     <version.asm>7.3.1</version.asm>
     <version.testcontainers>1.12.5</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>0.30.0</version.zeebe-test-container>
+    <version.zeebe-test-container>0.31.0</version.zeebe-test-container>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
