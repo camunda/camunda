@@ -24,7 +24,9 @@ public class SbeTracingAdapter implements Binary {
     final var offset = view.wrapAdjustment();
     final var buffer = view.byteBuffer();
     if (buffer == null) {
-      return ByteBuffer.wrap(view.byteArray(), offset, view.capacity()).order(ByteOrder.BIG_ENDIAN).slice();
+      return ByteBuffer.wrap(view.byteArray(), offset, view.capacity())
+          .order(ByteOrder.BIG_ENDIAN)
+          .slice();
     }
 
     return buffer.position(offset).slice().order(ByteOrder.BIG_ENDIAN);
