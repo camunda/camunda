@@ -77,6 +77,7 @@ Availible processes are:
 * DocumentCheckHandling  
 * ReviewCase  
 * AnalysisTesting
+* GroupElements
 
 ### Data generation progress
 Once the data generation is started, it will print out the progress of
