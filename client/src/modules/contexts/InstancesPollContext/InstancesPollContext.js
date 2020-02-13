@@ -7,7 +7,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
-import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
+import {
+  LOADING_STATE,
+  SUBSCRIPTION_TOPIC,
+  POLL_TOPICS
+} from 'modules/constants';
 
 // Creates a context for polling for updates on instances with active operations
 const InstancesPollContext = React.createContext();
@@ -61,6 +65,7 @@ class InstancesPollProviderComp extends React.Component {
 
   componentDidMount() {
     this.props.dataManager.subscribe(this.subscriptions);
+    this.getWorkFlowInstances();
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -71,12 +76,12 @@ class InstancesPollProviderComp extends React.Component {
     const hasCompletedOperations = Boolean(complete.size);
 
     if (hasActiveOperation) {
-      dataManager.poll.start(() =>
-        dataManager.getWorkflowInstancesByIds(
-          [...active],
-          SUBSCRIPTION_TOPIC.LOAD_SELECTION_INSTANCES
-        )
+      dataManager.poll.register(
+        POLL_TOPICS.INSTANCES_LIST,
+        this.getWorkFlowInstances
       );
+    } else {
+      dataManager.poll.unregister(POLL_TOPICS.INSTANCES_LIST);
     }
 
     if (hasCompletedOperations) {
@@ -88,6 +93,13 @@ class InstancesPollProviderComp extends React.Component {
   componentWillUnmount() {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
+
+  getWorkFlowInstances = () => {
+    this.props.dataManager.getWorkflowInstancesByIds(
+      [...this.state.active],
+      SUBSCRIPTION_TOPIC.LOAD_SELECTION_INSTANCES
+    );
+  };
 
   triggerDataUpdates(completedInstances) {
     const {

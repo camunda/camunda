@@ -4,10 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function isBatchOperationRunning(batchOperation) {
-  return !!batchOperation && !batchOperation.endDate;
-}
+export const mockOperationRunning = {
+  id: '1234',
+  type: 'RESOLVE_INCIDENT',
+  endDate: null
+};
 
-export function hasRunningBatchOperations(batchOperations) {
-  return batchOperations.some(isBatchOperationRunning);
-}
+export const mockOperationFinished = {
+  id: '5678',
+  type: 'CANCEL_WORKFLOW_INSTANCE',
+  endDate: '2020-02-06T15:37:29.699+0100'
+};

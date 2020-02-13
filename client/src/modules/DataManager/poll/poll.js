@@ -4,33 +4,42 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/**
+ * This class exposes methods for registering and unregistering callbacks
+ * which will then be called in a given interval.
+ */
 export default class Poll {
   constructor(pollDelay) {
     this.pollTimer = null;
-    this.POLL_DELAY = pollDelay;
+    this.pollDelay = pollDelay;
+    this.callbacks = {};
   }
 
-  _resetTimer() {
-    clearTimeout(this.pollTimer);
-  }
+  register = (topic, callback) => {
+    this.callbacks[topic] = callback;
+    this._start();
+  };
 
-  _setTimer(callback) {
-    this.pollTimer = setTimeout(() => {
+  unregister = topic => {
+    delete this.callbacks[topic];
+    if (this.callbacks.length === 0) {
+      this._stop();
+    }
+  };
+
+  _fire = () => {
+    Object.values(this.callbacks).forEach(callback => {
       callback();
-    }, this.POLL_DELAY);
+    });
+  };
+
+  _start() {
+    if (this.pollTimer) return;
+    this.pollTimer = setInterval(this._fire, this.pollDelay);
   }
 
-  _clearPolling() {
-    this.pollTimer && this._resetTimer();
-    this.pollTimer = null;
-  }
-
-  clear() {
-    this._clearPolling();
-  }
-
-  start(callback) {
-    this._clearPolling();
-    this._setTimer(callback);
+  _stop() {
+    if (!this.pollTimer) return;
+    clearInterval(this.pollTimer);
   }
 }

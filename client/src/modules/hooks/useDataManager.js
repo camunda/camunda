@@ -4,10 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function isBatchOperationRunning(batchOperation) {
-  return !!batchOperation && !batchOperation.endDate;
-}
+import {useContext} from 'react';
+import {DataContext} from 'modules/DataManager';
 
-export function hasRunningBatchOperations(batchOperations) {
-  return batchOperations.some(isBatchOperationRunning);
+export default function useDataManager() {
+  const {dataManager} = useContext(DataContext);
+  return dataManager;
 }

@@ -8,37 +8,51 @@ import {mount} from 'enzyme';
 import React from 'react';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-import {DataManagerProvider} from 'modules/DataManager';
 
 import OperationsPanel from './OperationsPanel';
 
-import useDataManager from 'modules/hooks/useDataManager';
+import {
+  mockOperationFinished,
+  mockOperationRunning
+} from './OperationsPanel.setup';
 
-jest.mock('modules/hooks/useDataManager');
+import useBatchOperations from './useBatchOperations';
+jest.mock('./useBatchOperations');
 
 const mountOperationsPanel = () => {
   return mount(
-    <DataManagerProvider>
-      <CollapsablePanelProvider>
-        <OperationsPanel />
-      </CollapsablePanelProvider>
-    </DataManagerProvider>
+    <CollapsablePanelProvider>
+      <OperationsPanel />
+    </CollapsablePanelProvider>
   );
 };
 
 describe('OperationsPanel', () => {
   beforeEach(() => {
-    createMockDataManager();
+    useBatchOperations.mockReturnValue({
+      batchOperations: [],
+      requestBatchOperations: jest.fn()
+    });
   });
 
-  it('should display fetched data', () => {
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('should display empty panel on mount', () => {
+    // when
+    const node = mountOperationsPanel();
+
+    // then
+    const entry = node.find('[data-test="operations-entry"]');
+    expect(entry).toHaveLength(0);
+  });
+
+  it('should render operation entries', () => {
     // given
-    const response = [{id: 'MyOperationId', type: 'RESOLVE_INCIDENT'}];
-    useDataManager.mockReturnValue({
-      subscribe: jest.fn((topic, statehooks, cb) => {
-        cb(response);
-      })
+    useBatchOperations.mockReturnValue({
+      batchOperations: [mockOperationRunning, mockOperationFinished],
+      requestBatchOperations: jest.fn()
     });
 
     // when
@@ -46,8 +60,31 @@ describe('OperationsPanel', () => {
 
     // then
     const entry = node.find('[data-test="operations-entry"]');
-    expect(entry.html()).toContain('MyOperationId');
-    expect(entry.html()).toContain('Retry');
+
+    const firstEntry = entry.at(0).html();
+    const secondEntry = entry.at(1).html();
+
+    expect(entry).toHaveLength(2);
+    expect(firstEntry).toContain(mockOperationRunning.id);
+    expect(firstEntry).toContain('Retry');
+    expect(secondEntry).toContain(mockOperationFinished.id);
+    expect(secondEntry).toContain('Cancel');
+  });
+
+  it('should request batch operations on mount', () => {
+    // given
+    useBatchOperations.mockReturnValue({
+      batchOperations: [],
+      requestBatchOperations: jest.fn()
+    });
+
+    // when
+    mountOperationsPanel();
+
+    // then
+    expect(useBatchOperations().requestBatchOperations).toHaveBeenCalledTimes(
+      1
+    );
   });
 
   it('should expand', () => {

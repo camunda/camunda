@@ -8,7 +8,7 @@ import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 
 import {PILL_TYPE, LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
-import useDataManager from 'modules/hooks/useDataManager';
+import useSubscription from 'modules/hooks/useSubscription';
 import {withFlowNodeTimeStampContext} from 'modules/contexts/FlowNodeTimeStampContext';
 
 import * as Styled from './styled';
@@ -17,7 +17,7 @@ function TimeStampPill(props) {
   const {showTimeStamp, onTimeStampToggle} = props;
   const [isTreeLoaded, setIsTreeLoaded] = useState(false);
   const [isDefLoaded, setIsDefLoaded] = useState(false);
-  const {subscribe, unsubscribe} = useDataManager();
+  const {subscribe, unsubscribe} = useSubscription();
 
   useEffect(() => {
     subscribe(SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE, LOADING_STATE.LOADED, () =>

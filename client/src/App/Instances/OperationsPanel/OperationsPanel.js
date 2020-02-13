@@ -4,43 +4,22 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useState, useCallback} from 'react';
+import React, {useEffect} from 'react';
 import PropTypes from 'prop-types';
 
-import {
-  PANEL_POSITION,
-  SUBSCRIPTION_TOPIC,
-  LOADING_STATE
-} from 'modules/constants';
-import {withData} from 'modules/DataManager';
+import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
-import useDataManager from 'modules/hooks/useDataManager';
+import useBatchOperations from './useBatchOperations';
 
 import * as Styled from './styled';
 import {isBatchOperationRunning} from './service';
 import OperationsEntry from './OperationsEntry';
 
-function OperationsPanel({
-  isOperationsCollapsed,
-  toggleOperations,
-  dataManager
-}) {
-  const [batchOperations, setBatchOperations] = useState([]);
-  const {subscribe, unsubscribe} = useDataManager();
+function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
+  const {batchOperations, requestBatchOperations} = useBatchOperations();
 
-  const handleSubscription = useCallback(() => {
-    subscribe(
-      SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
-      LOADING_STATE.LOADED,
-      data => setBatchOperations(data)
-    );
-
-    dataManager.getBatchOperations({pageSize: 20});
-    return () => unsubscribe();
-  }, [subscribe, unsubscribe, dataManager]);
-
-  useEffect(handleSubscription, []);
+  useEffect(requestBatchOperations, []);
 
   return (
     <CollapsablePanel
@@ -73,4 +52,4 @@ OperationsPanel.propTypes = {
   dataManager: PropTypes.object
 };
 
-export default withData(withCollapsablePanel(OperationsPanel));
+export default withCollapsablePanel(OperationsPanel);

@@ -16,7 +16,8 @@ import {
   SUBSCRIPTION_TOPIC,
   STATE,
   TYPE,
-  LOADING_STATE
+  LOADING_STATE,
+  POLL_TOPICS
 } from 'modules/constants';
 
 import {compactObject, immutableArraySet} from 'modules/utils';
@@ -194,17 +195,20 @@ class Instance extends Component {
       isRunningInstance(this.state.instance)
     ) {
       this.setState({isPollActive: true}, () => {
-        this.props.dataManager.poll.start(() => this.handlePoll());
+        this.props.dataManager.poll.register(
+          POLL_TOPICS.INSTANCE,
+          this.handlePoll
+        );
       });
     }
   }
 
   componentWillUnmount() {
     this.props.dataManager.unsubscribe(this.subscriptions);
-    this.props.dataManager.poll.clear();
+    this.props.dataManager.poll.unregister(POLL_TOPICS.INSTANCE);
   }
 
-  handlePoll() {
+  handlePoll = () => {
     let updateParams = {
       topic: SUBSCRIPTION_TOPIC.CONSTANT_REFRESH,
       endpoints: [
@@ -226,7 +230,7 @@ class Instance extends Component {
       ];
     }
     this.props.dataManager.update(updateParams);
-  }
+  };
 
   isAllDataLoaded = () => {
     const {

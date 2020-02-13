@@ -266,3 +266,9 @@ export const POPOVER_SIDE = {
 };
 
 export const INCIDENTS_BAR_HEIGHT = 42;
+
+export const POLL_TOPICS = {
+  INSTANCE: 'INSTANCE',
+  INSTANCES_LIST: 'INSTANCES_LIST',
+  OPERATIONS: 'OPERATIONS'
+};
