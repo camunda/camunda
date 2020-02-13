@@ -9,6 +9,8 @@ import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngines;
 import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
 import org.camunda.spin.plugin.impl.SpinProcessEnginePlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -16,12 +18,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import static org.camunda.bpm.engine.ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE;
 import static org.camunda.bpm.engine.ProcessEngineConfiguration.HISTORY_FULL;
 
 @WebServlet(name = "DeployEngineServlet", urlPatterns = {"/deploy"})
 public class DeployServlet extends HttpServlet {
+
+  private static Logger logger = LoggerFactory.getLogger(DeployServlet.class);
 
   @Override
   protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
@@ -62,7 +68,15 @@ public class DeployServlet extends HttpServlet {
     // We're adding this by default, because there are customers who restrict the result size of queries
     // against the engine. By setting it to the value of 10 000 we make sure that the limit works with
     // the Optimize default max page size.
-    configuration.setQueryMaxResultsLimit(10_000);
+    // Note: this can only be set from Camunda 7.12 onwards.
+    try {
+      Method setQueryMaxResultsLimit
+        = StandaloneInMemProcessEngineConfiguration.class.getMethod("setQueryMaxResultsLimit", int.class);
+      setQueryMaxResultsLimit.invoke(configuration, 10_000);
+    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+      logger.debug("You are using a version of the Camunda BPM runtime platform prior to 7.12, where" +
+                     "it's not possible to set the query max result limit.", e);
+    }
     return configuration.buildProcessEngine();
   }
 }
