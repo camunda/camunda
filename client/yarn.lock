@@ -5733,14 +5733,14 @@ discontinuous-range@1.0.0:
   resolved "https://registry.yarnpkg.com/discontinuous-range/-/discontinuous-range-1.0.0.tgz#e38331f0844bba49b9a9cb71c771585aab1bc65a"
   integrity sha1-44Mx8IRLukm5qctxx3FYWqsbxlo=
 
-dmn-js-decision-table@^7.4.1:
-  version "7.4.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-7.4.1.tgz#75b3af9a203faf149d0fb4d7a8daa4275f70e1c7"
-  integrity sha512-X5QHe9jF7s7TWHw4LiYK91NWK5wMA250/0maaCX7947jujuueZla5cMjNUmOA1xtOto89RgDa89YGl7R4B22HA==
+dmn-js-decision-table@^7.4.2:
+  version "7.4.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-7.4.2.tgz#5453edf3b1ef0ca44f54e864b5fb121f9cc26be2"
+  integrity sha512-3l7UgKrGbPAxv39WwW4pw7jEGhf9MJsDljRtOHCkFNIyQI0FN+A9A/M35EovkE/1m0OVh/F9KXo4ROJXFE5wtQ==
   dependencies:
     css.escape "^1.5.1"
     diagram-js "^6.3.0"
-    dmn-js-shared "^7.4.1"
+    dmn-js-shared "^7.4.2"
     escape-html "^1.0.3"
     inferno "~5.0.5"
     min-dash "^3.0.0"
@@ -5748,35 +5748,35 @@ dmn-js-decision-table@^7.4.1:
     selection-ranges "^3.0.2"
     table-js "^6.0.3"
 
-dmn-js-drd@^7.4.1:
-  version "7.4.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-7.4.1.tgz#5305e0a2c3ce9b13979370d9df5817b376d2e095"
-  integrity sha512-y+9/jvxEmM+k6mOGacr5iU+dTTaVc3Brcq/g6pWS8UhSDPV0kdDurefdmUjaj6+J4OIn5V1+F+UCaA/JSciO4Q==
+dmn-js-drd@^7.4.2:
+  version "7.4.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-7.4.2.tgz#ab89e5600b785254f162d223fcae96a9947e8a78"
+  integrity sha512-zkMB8OC/+mCaObHDyynd/th/zwf5QxXE9F1fulo2JFAY+WDNp4VC6Ok6HM4ogAln21CBBqzvDakSheqd3K0mYg==
   dependencies:
     diagram-js "^6.3.0"
     diagram-js-direct-editing "^1.5.0"
-    dmn-js-shared "^7.4.1"
+    dmn-js-shared "^7.4.2"
     inherits "^2.0.1"
     min-dash "^3.0.0"
     min-dom "^3.1.1"
     tiny-svg "^2.2.1"
 
-dmn-js-literal-expression@^7.4.1:
-  version "7.4.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-7.4.1.tgz#d422929d0456237caf67a3983f7d08d15ea35234"
-  integrity sha512-mzEkoR5II9ey/+Z3kJHsaFtldJMNJ+X+nasPe6wuXwqUnLpUg5af2nzhHZYNhVr7aHWvLS/Mk6cCGnnVPGvxYw==
+dmn-js-literal-expression@^7.4.2:
+  version "7.4.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-7.4.2.tgz#82c53632535e491b441fdef370f21032b87f8562"
+  integrity sha512-J1BAt8WLVii4HkFMi7RAjiOf8gyaojfbYKRqAuxL4DXBfiTtZVwH1MuI8awlW+QbKAGM8mF5OMm0p57SwQmtUw==
   dependencies:
     diagram-js "^6.3.0"
-    dmn-js-shared "^7.4.1"
+    dmn-js-shared "^7.4.2"
     escape-html "^1.0.3"
     inferno "~5.0.5"
     min-dash "^3.0.0"
     min-dom "^3.1.1"
 
-dmn-js-shared@^7.4.1:
-  version "7.4.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-7.4.1.tgz#8ebbeb50da89b8ed8bdcbf84ed493ce7438a3bff"
-  integrity sha512-xUCAvIyPQfR1KHJZ9DuvWaL8+VNBp3u7EWmqOBCImhcE53sEwgi/caIDid2VUHRcAdsehAo+7osBCksCNT/xaw==
+dmn-js-shared@^7.4.2:
+  version "7.4.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-7.4.2.tgz#eee7ecd0277a053e567c28ae152bcda733e8fbb8"
+  integrity sha512-Rpc9wigGCLh56Wrxm5Ya6xuDQbUtqObEezSfkVQyde0b3mlL3vQ3jAilpDuBscCrT3To2m9/FolU0RUhKv8j1A==
   dependencies:
     diagram-js "^6.3.0"
     dmn-moddle "^5.0.0"
@@ -5788,15 +5788,15 @@ dmn-js-shared@^7.4.1:
     selection-update "^0.1.2"
     table-js "^6.0.3"
 
-dmn-js@^7.4.1:
-  version "7.4.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-7.4.1.tgz#d292a0416a69721c3f0132a0dedfdb0faa24b114"
-  integrity sha512-YrDkvPsiPu7F/j0yE/2EX8RMNRDOEx4YOYtKV0liVvdvu9YrY4gz06aCnFdWtH6jtMMsdrps+lkK66DREWLW2A==
+dmn-js@^7.4.2:
+  version "7.4.2"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-7.4.2.tgz#8d1555723f92173bc09b3f0d017a364d1c9c03a1"
+  integrity sha512-7+6QQGM+YQpr2Z9jRFgf2dkp2n+2kUb3p7/zXk49WJP4g4/Q8firb5QXA/KdCUJUvHa/PnQaCOVXtJ8Iqmd5fA==
   dependencies:
-    dmn-js-decision-table "^7.4.1"
-    dmn-js-drd "^7.4.1"
-    dmn-js-literal-expression "^7.4.1"
-    dmn-js-shared "^7.4.1"
+    dmn-js-decision-table "^7.4.2"
+    dmn-js-drd "^7.4.2"
+    dmn-js-literal-expression "^7.4.2"
+    dmn-js-shared "^7.4.2"
 
 dmn-moddle@^5.0.0:
   version "5.0.0"
