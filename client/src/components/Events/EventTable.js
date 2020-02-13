@@ -175,10 +175,10 @@ export default withErrorHandling(
           <Table
             head={[
               'checked',
-              t('events.table.group'),
               t('events.table.mapping'),
-              t('events.table.source'),
               t('events.table.name'),
+              t('events.table.group'),
+              t('events.table.source'),
               t('events.table.count')
             ]}
             body={
@@ -206,7 +206,6 @@ export default withErrorHandling(
                               onMappingChange(eventAsMapping, checked)
                             }
                           />,
-                          group,
                           mappedAs ? (
                             <Select
                               value={mappedAs}
@@ -241,8 +240,9 @@ export default withErrorHandling(
                           ) : (
                             '--'
                           ),
-                          source,
                           eventName,
+                          group,
+                          source,
                           count
                         ],
                         props: {
