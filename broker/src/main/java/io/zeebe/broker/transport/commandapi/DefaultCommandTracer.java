@@ -10,7 +10,6 @@ package io.zeebe.broker.transport.commandapi;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
-import io.opentracing.Tracer.SpanBuilder;
 import io.opentracing.propagation.Format.Builtin;
 import io.zeebe.broker.Loggers;
 import io.zeebe.protocol.impl.tracing.SbeTracingAdapter;
@@ -53,7 +52,8 @@ public class DefaultCommandTracer implements CommandTracer {
   }
 
   @Override
-  public void finish(final int partitionId, final long requestId, final Consumer<Span> spanConsumer) {
+  public void finish(
+      final int partitionId, final long requestId, final Consumer<Span> spanConsumer) {
     final var span = spans.get(new Id(partitionId, requestId));
 
     if (span != null) {

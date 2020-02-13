@@ -104,12 +104,15 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
 
     try {
       response.reset().setPartitionId(remoteStreamId).setRequestId(requestId).writer(this);
-      tracer.finish(remoteStreamId, requestId, s -> {
-        if (rejectionType != RejectionType.NULL_VAL) {
-          s.setTag("rejectionType", rejectionType.name());
-          s.log(BufferUtil.bufferAsString(rejectionReason));
-        }
-      });
+      tracer.finish(
+          remoteStreamId,
+          requestId,
+          s -> {
+            if (rejectionType != RejectionType.NULL_VAL) {
+              s.setTag("rejectionType", rejectionType.name());
+              s.log(BufferUtil.bufferAsString(rejectionReason));
+            }
+          });
       output.sendResponse(response);
     } finally {
       reset();
