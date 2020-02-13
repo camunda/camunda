@@ -19,14 +19,18 @@ const INSTANCE_IDS = {
   B: '2737113845035996'
 };
 
+const TOTAL_COUNT = Object.values(INSTANCE_IDS).length;
+
 describe('InstanceSelectionContext', () => {
   it('should return false when there is no selection', () => {
     // when
     const {result} = renderHook(() => useInstanceSelection());
 
     // then
-    expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(false);
-    expect(result.current.selectedIds).toEqual([]);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(false);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(false);
+    expect(result.current.isAllChecked).toBe(false);
+    expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(0);
   });
 
   it('should add id to selection and return true', () => {
@@ -35,13 +39,14 @@ describe('InstanceSelectionContext', () => {
 
     // when
     act(() => {
-      result.current.handleSelect(INSTANCE_IDS.A)();
+      result.current.handleCheckInstance(INSTANCE_IDS.A)();
     });
 
     // then
-    expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(true);
-    expect(result.current.isIdSelected(INSTANCE_IDS.B)).toBe(false);
-    expect(result.current.selectedIds).toEqual([INSTANCE_IDS.A]);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(true);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(false);
+    expect(result.current.isAllChecked).toBe(false);
+    expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(1);
   });
 
   it('should add two ids', () => {
@@ -50,20 +55,18 @@ describe('InstanceSelectionContext', () => {
 
     // when
     act(() => {
-      result.current.handleSelect(INSTANCE_IDS.A)();
+      result.current.handleCheckInstance(INSTANCE_IDS.A)();
     });
 
     act(() => {
-      result.current.handleSelect(INSTANCE_IDS.B)();
+      result.current.handleCheckInstance(INSTANCE_IDS.B)();
     });
 
     // then
-    expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(true);
-    expect(result.current.isIdSelected(INSTANCE_IDS.B)).toBe(true);
-    expect(result.current.selectedIds).toEqual([
-      INSTANCE_IDS.A,
-      INSTANCE_IDS.B
-    ]);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(true);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
+    expect(result.current.isAllChecked).toBe(false);
+    expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
   });
 
   it('should add and remove selection and return false', () => {
@@ -72,27 +75,90 @@ describe('InstanceSelectionContext', () => {
 
     // when
     act(() => {
-      result.current.handleSelect(INSTANCE_IDS.A)();
+      result.current.handleCheckInstance(INSTANCE_IDS.A)();
     });
     act(() => {
-      result.current.handleSelect(INSTANCE_IDS.A)();
+      result.current.handleCheckInstance(INSTANCE_IDS.A)();
     });
 
     // then
-    expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(false);
-    expect(result.current.selectedIds).toEqual([]);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(false);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(false);
+    expect(result.current.isAllChecked).toBe(false);
+    expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(0);
+  });
+
+  it('should select all', () => {
+    // given
+    const {result} = renderHook(() => useInstanceSelection());
+
+    // when
+    act(() => {
+      result.current.handleCheckAll();
+    });
+
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(true);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
+    expect(result.current.isAllChecked).toBe(true);
+    expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
+  });
+
+  it('should select all, unselect one', () => {
+    // given
+    const {result} = renderHook(() => useInstanceSelection());
+
+    // when
+    act(() => {
+      result.current.handleCheckAll();
+    });
+
+    act(() => {
+      result.current.handleCheckInstance(INSTANCE_IDS.A)();
+    });
+
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(false);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
+    expect(result.current.isAllChecked).toBe(false);
+    expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(1);
+  });
+
+  it('should check all when checking single instances', () => {
+    // given
+    const {result} = renderHook(() => useInstanceSelection());
+    act(() => {
+      result.current.handleCheckAll();
+    });
+
+    // when
+    // uncheck one
+    act(() => {
+      result.current.handleCheckInstance(INSTANCE_IDS.A)();
+    });
+    // check one again
+    act(() => {
+      result.current.handleCheckInstance(INSTANCE_IDS.A)();
+    });
+
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(true);
+    expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
+    expect(result.current.isAllChecked).toBe(true);
+    expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
   });
 
   it('should be consumable with useContext', () => {
     // given
     const Component = () => {
-      const {isIdSelected, handleSelect} = useContext(InstanceSelectionContext);
+      const {isInstanceChecked, handleCheckInstance} = useContext(
+        InstanceSelectionContext
+      );
 
       useEffect(() => {
-        handleSelect(INSTANCE_IDS.A)();
+        handleCheckInstance(INSTANCE_IDS.A)();
       }, []);
 
-      return <>{isIdSelected(INSTANCE_IDS.A) ? 'selected' : 'not selected'}</>;
+      return (
+        <>{isInstanceChecked(INSTANCE_IDS.A) ? 'selected' : 'not selected'}</>
+      );
     };
 
     // when

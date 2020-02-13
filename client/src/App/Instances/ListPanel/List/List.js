@@ -67,92 +67,6 @@ class List extends React.Component {
     }
   }
 
-  // TODO (paddy): this is likely to be reused somewhere else.
-  //
-  // handleSelectAll = (_, isChecked) => {
-  //   this.props.onSelectedInstancesUpdate({
-  //     all: isChecked,
-  //     ids: [],
-  //     excludeIds: []
-  //   });
-  // };
-
-  // handleSelectInstance = instance => (_, isChecked) => {
-  //   const {selectedInstances, filterCount} = this.props;
-
-  //   let {all} = selectedInstances;
-  //   let ids = [...selectedInstances.ids];
-  //   let excludeIds = [...selectedInstances.excludeIds];
-
-  //   let selectedIdArray = undefined;
-  //   let checked = undefined;
-
-  //   // isChecked === true => instance has been selected
-  //   // isChecked === false => instance has been deselected
-
-  //   if (all) {
-  //     // reverse logic:
-  //     // if (isChecked) => excludeIds.remove(instance) (include in selection)
-  //     // if (!isChecked) => excludeIds.add(instance) (exclude from selection)
-  //     checked = !isChecked;
-  //     selectedIdArray = excludeIds; // use reference to excludeIds
-  //   } else {
-  //     // if (isChecked) => ids.add(instance) (include in selection)
-  //     // if (!isChecked) => ids.remove(instance) (exclude from selection)
-  //     checked = isChecked;
-  //     selectedIdArray = ids; // use reference to ids
-  //   }
-
-  //   this.handleSelection(selectedIdArray, instance, checked);
-
-  //   if (selectedIdArray.length === filterCount) {
-  //     // selected array contains all filtered instances
-
-  //     // (1) reset arrays in selection
-  //     ids = [];
-  //     excludeIds = [];
-
-  //     // (2) determine 'all' state
-  //     // if (!all) => all = true
-  //     // if (all) => all = false
-  //     all = !all;
-  //   }
-
-  //   this.props.onSelectedInstancesUpdate({all, ids, excludeIds});
-  // };
-
-  // handleSelection = (selectedIds = [], {id}, isChecked) => {
-  //   if (isChecked) {
-  //     selectedIds.push(id);
-  //   } else {
-  //     remove(selectedIds, elem => elem === id);
-  //   }
-  // };
-
-  // isSelected = id => {
-  //   const {selectedInstances} = this.props;
-  //   const {all} = selectedInstances;
-  //   return all ? !this.isExcluded(id) : this.isIncluded(id);
-  // };
-
-  // isExcluded = id => {
-  //   const {selectedInstances} = this.props;
-  //   const {excludeIds = []} = selectedInstances;
-  //   return excludeIds.indexOf(id) >= 0;
-  // };
-
-  // isIncluded = id => {
-  //   const {selectedInstances} = this.props;
-  //   const {ids = []} = selectedInstances;
-  //   return ids.indexOf(id) >= 0;
-  // };
-
-  // areAllInstancesSelected = () => {
-  //   const {selectedInstances} = this.props;
-  //   const {all, excludeIds = []} = selectedInstances;
-  //   return all && excludeIds.length === 0;
-  // };
-
   recalculateHeight() {
     if (this.containerRef.current) {
       const rows = ~~(this.containerRef.current.clientHeight / 38) - 1;
@@ -217,12 +131,14 @@ Message.propTypes = {
 
 const Body = function(props) {
   const {data, rowsToDisplay, handleActionButtonClick} = useListContext();
-  const {isIdSelected, handleSelect} = useContext(InstanceSelectionContext);
+  const {isInstanceChecked, handleCheckInstance} = useContext(
+    InstanceSelectionContext
+  );
 
   return (
     <TBody {...props}>
       {data.slice(0, rowsToDisplay).map((instance, idx) => {
-        const isSelected = isIdSelected(instance.id);
+        const isSelected = isInstanceChecked(instance.id);
         return (
           <TR key={idx}>
             <TD>
@@ -231,7 +147,7 @@ const Body = function(props) {
                 <Checkbox
                   type="selection"
                   isChecked={isSelected}
-                  onChange={handleSelect(instance.id)}
+                  onChange={handleCheckInstance(instance.id)}
                   title={`Select instance ${instance.id}`}
                 />
 
@@ -268,6 +184,7 @@ const Body = function(props) {
 
 const Header = function(props) {
   const {data, filter, sorting, onSort, isDataLoaded} = useListContext();
+  const {handleCheckAll, isAllChecked} = useContext(InstanceSelectionContext);
 
   const isListEmpty = !isDataLoaded || data.length === 0;
   const listHasFinishedInstances = filter.canceled || filter.completed;
@@ -279,8 +196,8 @@ const Header = function(props) {
             <Styled.CheckAll>
               <Checkbox
                 disabled={isListEmpty}
-                isChecked={false}
-                onChange={() => {}}
+                isChecked={isAllChecked}
+                onChange={handleCheckAll}
                 title="Select all instances"
               />
             </Styled.CheckAll>
