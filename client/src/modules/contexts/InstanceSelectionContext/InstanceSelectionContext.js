@@ -31,7 +31,7 @@ export const useInstanceSelection = () => {
     isIdSelected(id) ? removeFromSelection(id) : addToSelection(id);
   };
 
-  return {isIdSelected, handleSelect};
+  return {isIdSelected, handleSelect, selectedIds};
 };
 
 const InstanceSelectionProvider = ({children}) => {

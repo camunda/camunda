@@ -4,55 +4,66 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useContext} from 'react';
 import PropTypes from 'prop-types';
+
+import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
+import Button from 'modules/components/Button';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 
 import Paginator from './Paginator';
 import {getMaxPage} from './service';
 import * as Styled from './styled';
 
-export default class ListFooter extends React.Component {
-  static propTypes = {
-    onFirstElementChange: PropTypes.func.isRequired,
-    perPage: PropTypes.number.isRequired,
-    firstElement: PropTypes.number.isRequired,
-    filterCount: PropTypes.number.isRequired,
-    hasContent: PropTypes.bool.isRequired
-  };
+function ListFooter({
+  filterCount,
+  perPage,
+  firstElement,
+  onFirstElementChange,
+  hasContent
+}) {
+  const {selectedIds} = useContext(InstanceSelectionContext);
+  const maxPage = getMaxPage(filterCount, perPage);
 
-  isPaginationRequired = (maxPage, total) => {
+  const isPaginationRequired = (maxPage, total) => {
     return !(maxPage === 1 || total === 0);
   };
 
-  render() {
-    const {
-      filterCount,
-      perPage,
-      firstElement,
-      onFirstElementChange,
-      hasContent
-    } = this.props;
-    const maxPage = getMaxPage(filterCount, perPage);
-
-    return (
-      <Styled.Footer>
-        {hasContent && (
-          <>
-            <Styled.OperationButtonContainer />
-            <div>
-              {this.isPaginationRequired(maxPage, filterCount) ? (
-                <Paginator
-                  firstElement={firstElement}
-                  perPage={perPage}
-                  maxPage={maxPage}
-                  onFirstElementChange={onFirstElementChange}
-                />
-              ) : null}
-            </div>
-          </>
-        )}
-        <Styled.Copyright />
-      </Styled.Footer>
-    );
-  }
+  return (
+    <Styled.Footer>
+      {hasContent && (
+        <>
+          <Styled.OperationButtonContainer>
+            {selectedIds.length > 0 && (
+              <Button color="primary" size="small">
+                Apply Operation on{' '}
+                {pluralSuffix(selectedIds.length, 'Instance')}
+              </Button>
+            )}
+          </Styled.OperationButtonContainer>
+          <div>
+            {isPaginationRequired(maxPage, filterCount) ? (
+              <Paginator
+                firstElement={firstElement}
+                perPage={perPage}
+                maxPage={maxPage}
+                onFirstElementChange={onFirstElementChange}
+              />
+            ) : null}
+          </div>
+        </>
+      )}
+      <Styled.Copyright />
+    </Styled.Footer>
+  );
 }
+
+ListFooter.propTypes = {
+  onFirstElementChange: PropTypes.func.isRequired,
+  perPage: PropTypes.number.isRequired,
+  firstElement: PropTypes.number.isRequired,
+  filterCount: PropTypes.number.isRequired,
+  hasContent: PropTypes.bool.isRequired
+};
+
+export default ListFooter;

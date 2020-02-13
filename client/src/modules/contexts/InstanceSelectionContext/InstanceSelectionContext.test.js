@@ -26,6 +26,7 @@ describe('InstanceSelectionContext', () => {
 
     // then
     expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(false);
+    expect(result.current.selectedIds).toEqual([]);
   });
 
   it('should add id to selection and return true', () => {
@@ -39,6 +40,30 @@ describe('InstanceSelectionContext', () => {
 
     // then
     expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(true);
+    expect(result.current.isIdSelected(INSTANCE_IDS.B)).toBe(false);
+    expect(result.current.selectedIds).toEqual([INSTANCE_IDS.A]);
+  });
+
+  it('should add two ids', () => {
+    // given
+    const {result} = renderHook(() => useInstanceSelection());
+
+    // when
+    act(() => {
+      result.current.handleSelect(INSTANCE_IDS.A)();
+    });
+
+    act(() => {
+      result.current.handleSelect(INSTANCE_IDS.B)();
+    });
+
+    // then
+    expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(true);
+    expect(result.current.isIdSelected(INSTANCE_IDS.B)).toBe(true);
+    expect(result.current.selectedIds).toEqual([
+      INSTANCE_IDS.A,
+      INSTANCE_IDS.B
+    ]);
   });
 
   it('should add and remove selection and return false', () => {
@@ -55,19 +80,7 @@ describe('InstanceSelectionContext', () => {
 
     // then
     expect(result.current.isIdSelected(INSTANCE_IDS.A)).toBe(false);
-  });
-
-  it('should return false when there is a different selection', () => {
-    // given
-    const {result} = renderHook(() => useInstanceSelection());
-
-    // when
-    act(() => {
-      result.current.handleSelect(INSTANCE_IDS.A)();
-    });
-
-    // then
-    expect(result.current.isIdSelected(INSTANCE_IDS.B)).toBe(false);
+    expect(result.current.selectedIds).toEqual([]);
   });
 
   it('should be consumable with useContext', () => {
