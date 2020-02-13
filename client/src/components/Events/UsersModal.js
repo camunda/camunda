@@ -9,7 +9,7 @@ import React from 'react';
 import {Modal, Button, UserTypeahead, EntityList, Icon, Message, Labeled} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
-import {getUsers, updateUsers} from './service';
+import {getUsers, getUser, updateUsers} from './service';
 import {showError} from 'notifications';
 import update from 'immutability-helper';
 import './UsersModal.scss';
@@ -31,19 +31,28 @@ export default withErrorHandling(
     isUserAlreadyAdded = id => this.state.users.some(user => user.id === id);
 
     addUser = () => {
-      const {id, type, name, memberCount} = this.state.selectedIdentity;
+      this.getSelectedUser(({id, type, name, memberCount}) => {
+        const newId = `${type.toUpperCase()}:${id}`;
+        const newIdentity = {id: newId, identity: {id, name, type, memberCount}};
 
-      const newId = `${type.toUpperCase()}:${id}`;
-      const newIdentity = {id: newId, identity: {id, name, type, memberCount}};
+        if (!this.isUserAlreadyAdded(newId)) {
+          this.setState(({users}) => ({
+            users: update(users, {$push: [newIdentity]}),
+            selectedIdentity: null
+          }));
+        } else {
+          this.setState({alreadyExists: true});
+        }
+      });
+    };
 
-      if (!this.isUserAlreadyAdded(newId)) {
-        this.setState(({users}) => ({
-          users: update(users, {$push: [newIdentity]}),
-          selectedIdentity: null
-        }));
-      } else {
-        this.setState({alreadyExists: true});
+    getSelectedUser = cb => {
+      const {id, name} = this.state.selectedIdentity;
+      if (!name) {
+        return this.props.mightFail(getUser(id), cb, showError);
       }
+
+      cb(this.state.selectedIdentity);
     };
 
     removeUser = id =>

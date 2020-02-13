@@ -57,3 +57,8 @@ export async function getUsers(id) {
 export async function updateUsers(id, newUsers) {
   return await put(`api/eventBasedProcess/${id}/role`, newUsers);
 }
+
+export async function getUser(id) {
+  const response = await get(`api/identity/${id}`);
+  return await response.json();
+}

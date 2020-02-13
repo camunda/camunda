@@ -8,12 +8,13 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import UsersModalWithErrorHandling from './UsersModal';
 
-import {updateUsers} from './service';
+import {updateUsers, getUser} from './service';
 
 const UsersModal = UsersModalWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
   updateUsers: jest.fn(),
+  getUser: jest.fn().mockReturnValue({id: 'USER:test', type: 'user', name: 'Test'}),
   getUsers: jest.fn().mockReturnValue([
     {
       id: 'USER:kermit',
@@ -64,6 +65,7 @@ it('should show an error when adding already existing user/group', () => {
   const node = shallow(<UsersModal {...props} />);
   node.find('UserTypeahead').prop('onChange')({
     id: 'kermit',
+    name: 'Kermit',
     type: 'user'
   });
   node.find('.confirm').simulate('click');
@@ -79,4 +81,14 @@ it('should update the event with the selected users', () => {
   expect(props.onClose).toHaveBeenCalledWith([
     {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}}
   ]);
+});
+
+it('should load non imported user before adding it to the list', () => {
+  const node = shallow(<UsersModal {...props} />);
+  node.find('UserTypeahead').prop('onChange')({
+    id: 'test'
+  });
+  node.find('.confirm').simulate('click');
+  expect(getUser).toHaveBeenCalledWith('test');
+  expect(node.find('EntityList').props('data').data[1].name).toBe('Test');
 });
