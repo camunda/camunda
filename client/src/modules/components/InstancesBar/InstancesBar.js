@@ -19,12 +19,18 @@ function InstancesBar(props) {
   return (
     <div className={props.className}>
       <Styled.Wrapper size={size}>
-        <Styled.IncidentsCount hasIncidents={hasIncidents}>
+        <Styled.IncidentsCount
+          data-test="incident-instances-badge"
+          hasIncidents={hasIncidents}
+        >
           {incidentsCount}
         </Styled.IncidentsCount>
         <Styled.Label>{label}</Styled.Label>
         {activeCount >= 0 && (
-          <Styled.ActiveCount hasActive={hasActive}>
+          <Styled.ActiveCount
+            data-test="active-instances-badge"
+            hasActive={hasActive}
+          >
             {activeCount}
           </Styled.ActiveCount>
         )}

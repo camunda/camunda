@@ -15,3 +15,9 @@ export const activeInstancesLink = Selector(
 export const incidentInstancesLink = Selector(
   '[data-test="incident-instances-link"]'
 );
+export const activeInstancesBadge = Selector(
+  '[data-test="active-instances-badge"]'
+);
+export const incidentInstancesBadge = Selector(
+  '[data-test="incident-instances-badge"]'
+);
