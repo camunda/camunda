@@ -4,7 +4,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "testcafe chrome tests/*.js"
+    "test": "testcafe chrome:headless tests/*.js"
   },
   "devDependencies": {
     "testcafe": "^1.7.1",
