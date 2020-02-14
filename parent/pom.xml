@@ -68,7 +68,7 @@
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.8.1</version.prometheus>
     <version.protobuf>3.11.3</version.protobuf>
-    <version.rocksdbjni>6.5.3</version.rocksdbjni>
+    <version.rocksdbjni>6.6.4</version.rocksdbjni>
     <version.sbe>1.16.1</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.1</version.scala>
@@ -80,7 +80,7 @@
     <version.asm>7.3.1</version.asm>
     <version.testcontainers>1.12.5</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>0.30.0</version.zeebe-test-container>
+    <version.zeebe-test-container>0.31.0</version.zeebe-test-container>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
