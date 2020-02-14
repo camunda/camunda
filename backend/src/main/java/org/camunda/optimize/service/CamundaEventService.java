@@ -14,14 +14,9 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.index.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -124,36 +119,38 @@ public class CamundaEventService {
   private final CamundaActivityEventWriter camundaActivityEventWriter;
   private final BusinessKeyWriter businessKeyWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
-  private final OptimizeElasticsearchClient elasticsearchClient;
-  private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final ConfigurationService configurationService;
 
   public void importRunningActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> runningActivityInstances) {
     if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      importEngineEntityToCamundaActivityEvents(runningActivityInstances, FlowNodeEventDto::getProcessDefinitionKey,
-                                                this::convertRunningActivityToCamundaActivityEvents);
+      importEngineEntityToCamundaActivityEvents(
+        runningActivityInstances, this::convertRunningActivityToCamundaActivityEvents
+      );
     }
   }
 
   public void importCompletedActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> completedActivityInstances) {
     if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      importEngineEntityToCamundaActivityEvents(completedActivityInstances, FlowNodeEventDto::getProcessDefinitionKey,
-                                                this::convertCompletedActivityToCamundaActivityEvents);
+      importEngineEntityToCamundaActivityEvents(
+        completedActivityInstances, this::convertCompletedActivityToCamundaActivityEvents
+      );
     }
   }
 
   public void importRunningProcessInstances(List<ProcessInstanceDto> runningProcessInstances) {
     if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      importEngineEntityToCamundaActivityEvents(runningProcessInstances, ProcessInstanceDto::getProcessDefinitionKey,
-                                                this::convertRunningProcessInstanceToCamundaActivityEvents);
+      importEngineEntityToCamundaActivityEvents(
+        runningProcessInstances, this::convertRunningProcessInstanceToCamundaActivityEvents
+      );
       businessKeyWriter.importBusinessKeysForProcessInstances(runningProcessInstances);
     }
   }
 
   public void importCompletedProcessInstances(List<ProcessInstanceDto> completedProcessInstances) {
     if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      importEngineEntityToCamundaActivityEvents(completedProcessInstances, ProcessInstanceDto::getProcessDefinitionKey,
-                                                this::convertCompletedProcessInstanceToCamundaActivityEvents);
+      importEngineEntityToCamundaActivityEvents(
+        completedProcessInstances, this::convertCompletedProcessInstanceToCamundaActivityEvents
+      );
       businessKeyWriter.importBusinessKeysForProcessInstances(completedProcessInstances);
     }
   }
@@ -165,19 +162,14 @@ public class CamundaEventService {
   }
 
   private <T> void importEngineEntityToCamundaActivityEvents(List<T> activitiesToImport,
-                                                             Function<T, String> processDefinitionKeyExtractor,
                                                              Function<T, Stream<CamundaActivityEventDto>> eventExtractor) {
-    List<String> processDefinitionKeysInBatch = activitiesToImport
-      .stream()
-      .map(processDefinitionKeyExtractor)
-      .collect(Collectors.toList());
-    createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
+
     final List<CamundaActivityEventDto> camundaActivityEventDtos = activitiesToImport
       .stream()
       .flatMap(eventExtractor)
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
-    camundaActivityEventWriter.importActivityInstancesToCamundaActivityEvents(camundaActivityEventDtos);
+    camundaActivityEventWriter.importCamundaActivityEvents(camundaActivityEventDtos);
   }
 
   private Stream<CamundaActivityEventDto> convertRunningActivityToCamundaActivityEvents(FlowNodeEventDto flowNodeEventDto) {
@@ -236,14 +228,24 @@ public class CamundaEventService {
   private Stream<CamundaActivityEventDto> convertRunningProcessInstanceToCamundaActivityEvents(ProcessInstanceDto processInstanceDto) {
     String processDefinitionName = processDefinitionResolverService.getDefinitionForProcessDefinitionId(
       processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
-    return Stream.of(toProcessActivity(processInstanceDto, processDefinitionName, PROCESS_START_TYPE, processInstanceDto.getStartDate()));
+    return Stream.of(toProcessActivity(
+      processInstanceDto,
+      processDefinitionName,
+      PROCESS_START_TYPE,
+      processInstanceDto.getStartDate()
+    ));
   }
 
   private Stream<CamundaActivityEventDto> convertCompletedProcessInstanceToCamundaActivityEvents(ProcessInstanceDto processInstanceDto) {
     String processDefinitionName = processDefinitionResolverService.getDefinitionForProcessDefinitionId(
       processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
     return Stream.of(
-      toProcessActivity(processInstanceDto, processDefinitionName, PROCESS_START_TYPE, processInstanceDto.getStartDate()),
+      toProcessActivity(
+        processInstanceDto,
+        processDefinitionName,
+        PROCESS_START_TYPE,
+        processInstanceDto.getStartDate()
+      ),
       toProcessActivity(processInstanceDto, processDefinitionName, PROCESS_END_TYPE, processInstanceDto.getEndDate())
     );
   }
@@ -267,37 +269,6 @@ public class CamundaEventService {
       .build();
   }
 
-  private void createMissingActivityIndicesForProcessDefinitions(List<String> processDefinitionKeys) {
-    final List<IndexMappingCreator> activityIndicesToCheck = processDefinitionKeys.stream()
-      .distinct()
-      .map(CamundaActivityEventIndex::new)
-      .collect(Collectors.toList());
-    try {
-      // We make this check first to see if we can avoid checking individually for each definition key in the batch
-      if (elasticSearchSchemaManager.indicesExist(elasticsearchClient, activityIndicesToCheck)) {
-        return;
-      }
-    } catch (OptimizeRuntimeException ex) {
-      log.warn(
-        "Failed to check if camunda activity event indices exist for process definition keys {}",
-        processDefinitionKeys
-      );
-    }
-    activityIndicesToCheck.forEach(activityIndex -> {
-      try {
-        final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
-          elasticsearchClient, activityIndex
-        );
-        if (!indexAlreadyExists) {
-          elasticSearchSchemaManager.createOptimizeIndex(
-            elasticsearchClient, activityIndex);
-        }
-      } catch (final Exception e) {
-        log.error("Failed ensuring camunda activity event index is present: {}", activityIndex.getIndexName(), e);
-        throw e;
-      }
-    });
-  }
 
   private static String addDelimiterForStrings(String... strings) {
     return String.join("_", strings);
