@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.when;
 public class CompletedActivityInstanceEngineImportMediatorTest extends TimestampBasedImportMediatorTest {
 
   @Mock
-  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   @Mock
   private BeanFactory beanFactory;
@@ -49,7 +50,7 @@ public class CompletedActivityInstanceEngineImportMediatorTest extends Timestamp
       .thenReturn(engineEntityFetcher);
 
     this.underTest = new CompletedActivityInstanceEngineImportMediator(engineContext);
-    this.underTest.importIndexHandlerRegistry = importIndexHandlerRegistry;
+    ((CompletedActivityInstanceEngineImportMediator) this.underTest).setImportIndexHandlerRegistry(importIndexHandlerRegistry);
     this.underTest.beanFactory = beanFactory;
     this.underTest.configurationService = configurationService;
     this.underTest.init();

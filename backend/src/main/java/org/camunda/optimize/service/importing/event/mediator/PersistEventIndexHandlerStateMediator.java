@@ -3,14 +3,16 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.event;
+package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.EngineImportMediator;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
+import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +21,13 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
 
 @Component
 @Slf4j
-public class StoreEventProcessingProgressMediator implements EngineImportMediator {
+public class PersistEventIndexHandlerStateMediator implements EngineImportMediator {
 
   @Autowired
   private ImportIndexWriter importIndexWriter;
@@ -32,7 +36,7 @@ public class StoreEventProcessingProgressMediator implements EngineImportMediato
   @Autowired
   protected ConfigurationService configurationService;
   @Autowired
-  protected ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  protected EventImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private StoreIndexesEngineImportService importService;
 
@@ -55,11 +59,13 @@ public class StoreEventProcessingProgressMediator implements EngineImportMediato
   public void runImport() {
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
-      importService.executeImport(Collections.singletonList(
-        importIndexHandlerRegistry.getExternalEventTraceImportIndexHandler().createIndexInformationForStoring()
-      ));
+      final List<ImportIndexDto> importIndices = importIndexHandlerRegistry.getAllHandlers()
+        .stream()
+        .map(ImportIndexHandler::createIndexInformationForStoring)
+        .collect(toList());
+      importService.executeImport(importIndices);
     } catch (Exception e) {
-      log.error("Could not execute import for storing event processing progress!", e);
+      log.error("Could not execute import for storing event processing index handlers!", e);
     }
   }
 

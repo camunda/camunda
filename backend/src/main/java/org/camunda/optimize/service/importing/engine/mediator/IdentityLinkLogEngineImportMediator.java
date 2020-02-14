@@ -10,6 +10,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.IdentityLinkLogInstanceFetcher;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.IdentityLinkLogImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.IdentityLinkLogImportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,8 @@ public class IdentityLinkLogEngineImportMediator
 
   @Autowired
   private IdentityLinkLogWriter identityLinkLogWriter;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private final EngineContext engineContext;
 

@@ -12,7 +12,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -42,7 +42,7 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
   @Autowired
   protected ConfigurationService configurationService;
   @Autowired
-  protected ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  protected EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private StoreIndexesEngineImportService importService;
 

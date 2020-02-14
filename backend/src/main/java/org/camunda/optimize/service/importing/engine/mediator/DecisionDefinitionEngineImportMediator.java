@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionImportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -27,6 +28,8 @@ public class DecisionDefinitionEngineImportMediator
 
   @Autowired
   private DecisionDefinitionWriter processDefinitionWriter;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private DecisionDefinitionFetcher engineEntityFetcher;
   private DecisionDefinitionImportService definitionImportService;

@@ -45,10 +45,9 @@ public class ElasticsearchConstants {
   public static final String METADATA_INDEX_NAME = "metadata";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
   public static final String TENANT_INDEX_NAME = "tenant";
-  public static final String EVENT_INDEX_NAME = "event";
+  public static final String EXTERNAL_EVENTS_INDEX_NAME = "event";
   public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
-  public static final String EVENT_SEQUENCE_COUNT_INDEX_NAME = "event-sequence-count";
-  public static final String EVENT_TRACE_STATE_INDEX_NAME = "event-trace-state";
+
   public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
   public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX = "event-process-publish-state";
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
@@ -60,7 +59,11 @@ public class ElasticsearchConstants {
 
   public static final String INDEX_SUFFIX_PRE_ROLLOVER = "-000001";
 
-  public static final String EVENT_PROCESSING_IMPORT_REFERENCE = "eventStateProcessing";
+  public static final String EVENT_SEQUENCE_COUNT_INDEX_PREFIX = "event-sequence-count-";
+  public static final String EVENT_TRACE_STATE_INDEX_PREFIX = "event-trace-state-";
+  public static final String EXTERNAL_EVENTS_INDEX_SUFFIX = "external";
+
+  public static final String EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX = "eventStateProcessing-";
   public static final String EVENT_PROCESSING_ENGINE_REFERENCE = "optimize";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";

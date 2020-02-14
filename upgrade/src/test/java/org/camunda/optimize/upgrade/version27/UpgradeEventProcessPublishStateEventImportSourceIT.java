@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublis
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom27To30;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -37,7 +36,6 @@ public class UpgradeEventProcessPublishStateEventImportSourceIT extends Abstract
     initSchema(Lists.newArrayList(
       METADATA_INDEX,
       EVENT_INDEX_V1,
-      EVENT_SEQUENCE_COUNT_INDEX_V1,
       EVENT_PROCESS_MAPPING_INDEX_V1,
       EVENT_PROCESS_PUBLISH_STATE_INDEX_V1
     ));

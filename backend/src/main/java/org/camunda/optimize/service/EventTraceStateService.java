@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.service.es.reader.EventTraceStateReader;
 import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.es.writer.EventTraceStateWriter;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,13 +28,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
-@Component
 public class EventTraceStateService {
-
   private final EventTraceStateWriter eventTraceStateWriter;
   private final EventTraceStateReader eventTraceStateReader;
-
   private final EventSequenceCountWriter eventSequenceCountWriter;
+
+  public List<EventTraceStateDto> getEventTraceStatesForIds(List<String> traceIds) {
+    return eventTraceStateReader.getEventTraceStateForTraceIds(traceIds);
+  }
+
+  public void upsertEventStateTraces(final List<EventTraceStateDto> eventTraceStateDtos) {
+    eventTraceStateWriter.upsertEventTraceStates(eventTraceStateDtos);
+  }
 
   public void updateTracesAndCountsForEvents(final List<EventDto> eventsToProcess) {
     Map<String, EventTraceStateDto> eventTraceStatesForUpdate = getEventTraceStatesForIds(
@@ -80,15 +84,22 @@ public class EventTraceStateService {
       .filter(adjustment -> sequenceAdjustmentsRequired.get(adjustment).getCount() != 0L)
       .map(sequenceAdjustmentsRequired::get)
       .collect(Collectors.toList());
+    updateEventSequenceWithAdjustments(adjustmentsToWrite);
+  }
+
+  protected void updateEventSequenceWithAdjustments(final List<EventSequenceCountDto> adjustmentsToWrite) {
     eventSequenceCountWriter.updateEventSequenceCountsWithAdjustments(adjustmentsToWrite);
   }
 
-  public List<EventTraceStateDto> getEventTraceStatesForIds(List<String> traceIds) {
-    return eventTraceStateReader.getEventTraceStateForTraceIds(traceIds);
-  }
-
-  public void upsertEventStateTraces(final List<EventTraceStateDto> eventTraceStateDtos) {
-    eventTraceStateWriter.upsertEventTraceStates(eventTraceStateDtos);
+  protected TracedEventDto getExistingTracedEventToBeReplaced(final List<TracedEventDto> eventTrace,
+                                                              final EventDto newEventDto) {
+    return eventTrace.stream()
+      .filter(tracedEvent -> Objects.equals(tracedEvent.getEventId(), newEventDto.getId())
+        && Objects.equals(tracedEvent.getGroup(), newEventDto.getGroup())
+        && Objects.equals(tracedEvent.getSource(), newEventDto.getSource())
+        && Objects.equals(tracedEvent.getEventName(), newEventDto.getEventName()))
+      .findAny()
+      .orElse(null);
   }
 
   private void addOrUpdateNewTraceState(final Map<String, EventTraceStateDto> eventTraceStatesToCreate,
@@ -155,17 +166,6 @@ public class EventTraceStateService {
     eventTrace.remove(tracedEventToRemove);
   }
 
-  private TracedEventDto getExistingTracedEventToBeReplaced(final List<TracedEventDto> eventTrace,
-                                                            final EventDto newEventDto) {
-    return eventTrace.stream()
-      .filter(tracedEvent -> Objects.equals(tracedEvent.getEventId(), newEventDto.getId())
-        && Objects.equals(tracedEvent.getGroup(), newEventDto.getGroup())
-        && Objects.equals(tracedEvent.getSource(), newEventDto.getSource())
-        && Objects.equals(tracedEvent.getEventName(), newEventDto.getEventName()))
-      .findAny()
-      .orElse(null);
-  }
-
   private void decrementSequenceAdjustment(EventSequenceCountDto adjustment,
                                            Map<String, EventSequenceCountDto> adjustments) {
     addOrUpdateAdjustmentInList(adjustment, adjustments, -1L);
@@ -201,5 +201,4 @@ public class EventTraceStateService {
     eventSequenceCountDto.generateIdForEventSequenceCountDto();
     return eventSequenceCountDto;
   }
-
 }

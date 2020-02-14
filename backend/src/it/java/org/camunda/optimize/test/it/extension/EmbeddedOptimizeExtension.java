@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.CamundaEventService;
+import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
@@ -29,15 +29,15 @@ import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
-import org.camunda.optimize.service.importing.event.EventProcessingScheduler;
+import org.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.AuthCookieService;
@@ -175,7 +175,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
     RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
-    CamundaEventService camundaEventService = getApplicationContext().getBean(CamundaEventService.class);
+    CamundaEventImportService camundaEventService = getApplicationContext().getBean(CamundaEventImportService.class);
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       RunningActivityInstanceImportService service =
@@ -469,8 +469,8 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     }
   }
 
-  public ImportIndexHandlerRegistry getIndexHandlerRegistry() {
-    return getApplicationContext().getBean(ImportIndexHandlerRegistry.class);
+  public EngineImportIndexHandlerRegistry getIndexHandlerRegistry() {
+    return getApplicationContext().getBean(EngineImportIndexHandlerRegistry.class);
   }
 
   public AlertService getAlertService() {
@@ -486,7 +486,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
   }
 
   public void processEvents() {
-    EventProcessingScheduler eventProcessingScheduler = getEventProcessingScheduler();
+    EventTraceStateProcessingScheduler eventProcessingScheduler = getEventProcessingScheduler();
 
     // run one cycle
     eventProcessingScheduler.getImportMediators().forEach(EngineImportMediator::resetBackoff);
@@ -502,8 +502,8 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     return getApplicationContext().getBean(ExternalEventService.class);
   }
 
-  public EventProcessingScheduler getEventProcessingScheduler() {
-    return getApplicationContext().getBean(EventProcessingScheduler.class);
+  public EventTraceStateProcessingScheduler getEventProcessingScheduler() {
+    return getApplicationContext().getBean(EventTraceStateProcessingScheduler.class);
   }
 
   public EventBasedProcessesInstanceImportScheduler getEventBasedProcessesInstanceImportScheduler() {
@@ -534,7 +534,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     this.resetImportOnStart = resetImportOnStart;
   }
 
-  private void waitForEventProcessingRoundToComplete(final EventProcessingScheduler eventProcessingScheduler) {
+  private void waitForEventProcessingRoundToComplete(final EventTraceStateProcessingScheduler eventProcessingScheduler) {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
     eventProcessingScheduler.getImportMediators()
       .stream()

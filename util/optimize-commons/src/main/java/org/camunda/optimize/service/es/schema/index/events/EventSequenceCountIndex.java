@@ -5,16 +5,14 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
 public class EventSequenceCountIndex extends StrictIndexMappingCreator {
 
   public static final int VERSION = 2;
@@ -31,9 +29,15 @@ public class EventSequenceCountIndex extends StrictIndexMappingCreator {
   public static final String N_GRAM_FIELD = "nGramField";
   public static final String LOWERCASE_FIELD = "lowercase";
 
+  private final String indexName;
+
+  public EventSequenceCountIndex(final String indexKey) {
+    this.indexName = ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey;
+  }
+
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
+    return indexName;
   }
 
   @Override

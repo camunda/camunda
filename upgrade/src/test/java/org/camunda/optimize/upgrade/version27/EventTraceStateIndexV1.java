@@ -3,17 +3,16 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.events;
+package org.camunda.optimize.upgrade.version27;
 
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class EventTraceStateIndex extends StrictIndexMappingCreator {
+public class EventTraceStateIndexV1 extends StrictIndexMappingCreator {
 
   public static final int VERSION = 1;
 
@@ -26,15 +25,9 @@ public class EventTraceStateIndex extends StrictIndexMappingCreator {
   public static final String EVENT_NAME = TracedEventDto.Fields.eventName;
   public static final String TIMESTAMP = TracedEventDto.Fields.timestamp;
 
-  private final String indexName;
-
-  public EventTraceStateIndex(final String indexKey) {
-    this.indexName= ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX + indexKey;
-  }
-
   @Override
   public String getIndexName() {
-    return indexName;
+    return "event-trace-state";
   }
 
   @Override

@@ -20,19 +20,18 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 
 @AllArgsConstructor
-@Component
 @Slf4j
 public class EventSequenceCountWriter {
 
+  private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -66,13 +65,13 @@ public class EventSequenceCountWriter {
   private UpdateRequest createEventSequenceCountUpsertRequest(final EventSequenceCountDto eventSequenceCountDto) {
     IndexRequest indexRequest = null;
     try {
-      indexRequest = new IndexRequest(EVENT_SEQUENCE_COUNT_INDEX_NAME).id(eventSequenceCountDto.getId())
+      indexRequest = new IndexRequest(getIndexName()).id(eventSequenceCountDto.getId())
         .source(objectMapper.writeValueAsString(eventSequenceCountDto), XContentType.JSON);
     } catch (JsonProcessingException e) {
       e.printStackTrace();
     }
     UpdateRequest updateRequest;
-    updateRequest = new UpdateRequest().index(EVENT_SEQUENCE_COUNT_INDEX_NAME).id(eventSequenceCountDto.getId())
+    updateRequest = new UpdateRequest().index(getIndexName()).id(eventSequenceCountDto.getId())
       .script(new Script(
         ScriptType.INLINE,
         Script.DEFAULT_SCRIPT_LANG,
@@ -81,6 +80,10 @@ public class EventSequenceCountWriter {
       ))
       .upsert(indexRequest);
     return updateRequest;
+  }
+
+  private String getIndexName() {
+    return EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey;
   }
 
 }

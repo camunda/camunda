@@ -17,20 +17,19 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
-@Component
 @Slf4j
 public class EventTraceStateReader {
 
+  private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -41,7 +40,7 @@ public class EventTraceStateReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(EVENT_TRACE_STATE_INDEX_NAME).source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -54,5 +53,8 @@ public class EventTraceStateReader {
 
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
   }
-
+  
+  private String getIndexName() {
+    return EVENT_TRACE_STATE_INDEX_PREFIX + indexKey;
+  }
 }

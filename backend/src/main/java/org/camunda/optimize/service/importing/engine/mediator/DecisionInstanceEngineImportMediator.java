@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,8 @@ public class DecisionInstanceEngineImportMediator
   private DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
   @Autowired
   private DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private final EngineContext engineContext;
 

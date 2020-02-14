@@ -49,12 +49,12 @@ public class CamundaActivityEventWriter {
       esClient,
       importItemName,
       camundaActivityEvents,
-      this::addActivityInstancesToCamundaActivityEvents
+      this::addCamundaActivityEventsToBulk
     );
   }
 
-  private void addActivityInstancesToCamundaActivityEvents(BulkRequest addCompletedActivityInstancesBulkRequest,
-                                                           CamundaActivityEventDto camundaActivityEventDto) {
+  private void addCamundaActivityEventsToBulk(BulkRequest addCompletedActivityInstancesBulkRequest,
+                                              CamundaActivityEventDto camundaActivityEventDto) {
     try {
       final IndexRequest request = new IndexRequest(
         CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + camundaActivityEventDto.getProcessDefinitionKey()
@@ -72,30 +72,22 @@ public class CamundaActivityEventWriter {
       .distinct()
       .map(CamundaActivityEventIndex::new)
       .collect(Collectors.toList());
-    try {
-      // We make this check first to see if we can avoid checking individually for each definition key in the batch
-      if (elasticSearchSchemaManager.indicesExist(esClient, activityIndicesToCheck)) {
-        return;
+    if (!activityIndicesToCheck.isEmpty()) {
+      try {
+        // We make this check first to see if we can avoid checking individually for each definition key in the batch
+        if (elasticSearchSchemaManager.indicesExist(esClient, activityIndicesToCheck)) {
+          return;
+        }
+      } catch (OptimizeRuntimeException ex) {
+        log.warn(
+          "Failed to check if camunda activity event indices exist for process definition keys {}",
+          processDefinitionKeys
+        );
       }
-    } catch (OptimizeRuntimeException ex) {
-      log.warn(
-        "Failed to check if camunda activity event indices exist for process definition keys {}",
-        processDefinitionKeys
+      activityIndicesToCheck.forEach(
+        activityIndex -> elasticSearchSchemaManager.createIndexIfMissing(esClient, activityIndex)
       );
     }
-    activityIndicesToCheck.forEach(activityIndex -> {
-      try {
-        final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
-          esClient, activityIndex
-        );
-        if (!indexAlreadyExists) {
-          elasticSearchSchemaManager.createOptimizeIndex(esClient, activityIndex);
-        }
-      } catch (final Exception e) {
-        log.error("Failed ensuring camunda activity event index is present: {}", activityIndex.getIndexName(), e);
-        throw e;
-      }
-    });
   }
 
 }

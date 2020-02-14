@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator;
 
+import lombok.Setter;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
@@ -31,6 +33,9 @@ public class DecisionDefinitionXmlEngineImportMediator
   private DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
   @Autowired
   private DecisionDefinitionResolverService decisionDefinitionResolverService;
+  @Autowired
+  @Setter
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private DecisionDefinitionXmlFetcher engineEntityFetcher;
 

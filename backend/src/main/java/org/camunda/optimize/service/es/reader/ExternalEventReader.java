@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
@@ -34,7 +34,7 @@ import static org.elasticsearch.search.sort.SortOrder.ASC;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class EventReader {
+public class ExternalEventReader {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -61,7 +61,7 @@ public class EventReader {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(rangeQuery(EventIndex.INGESTION_TIMESTAMP).lte(ingestTimestamp));
 
-    final CountRequest countRequest = new CountRequest(EVENT_INDEX_NAME)
+    final CountRequest countRequest = new CountRequest(EXTERNAL_EVENTS_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {
@@ -78,7 +78,7 @@ public class EventReader {
       .sort(SortBuilders.fieldSort(EventIndex.INGESTION_TIMESTAMP).order(ASC))
       .size(limit);
 
-    final SearchRequest searchRequest = new SearchRequest(EVENT_INDEX_NAME)
+    final SearchRequest searchRequest = new SearchRequest(EXTERNAL_EVENTS_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {

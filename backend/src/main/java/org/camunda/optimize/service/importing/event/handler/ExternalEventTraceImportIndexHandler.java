@@ -3,18 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.event;
+package org.camunda.optimize.service.importing.event.handler;
 
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.springframework.stereotype.Component;
+
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 
 @Component
 public class ExternalEventTraceImportIndexHandler extends TimestampBasedImportIndexHandler {
 
-  public static final String EXTERNAL_EVENT_TRACE_IMPORT_INDEX_DOC_ID =
-    ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE;
+  private static final String EXTERNAL_EVENT_TRACE_IMPORT_INDEX_DOC_ID =
+    EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX;
 
   @Override
   protected String getElasticsearchDocID() {
@@ -23,6 +26,6 @@ public class ExternalEventTraceImportIndexHandler extends TimestampBasedImportIn
 
   @Override
   public String getEngineAlias() {
-    return ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
+    return EVENT_PROCESSING_ENGINE_REFERENCE;
   }
 }

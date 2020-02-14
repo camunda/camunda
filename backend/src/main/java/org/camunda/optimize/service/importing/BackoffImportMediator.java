@@ -13,12 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 
 import javax.annotation.PostConstruct;
 
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class BackoffImportMediator<T extends ImportIndexHandler> implements EngineImportMediator {
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -28,8 +25,6 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   protected ConfigurationService configurationService;
   @Autowired
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  @Autowired
-  protected ImportIndexHandlerRegistry importIndexHandlerRegistry;
   @Autowired
   private BackoffCalculator idleBackoffCalculator;
 

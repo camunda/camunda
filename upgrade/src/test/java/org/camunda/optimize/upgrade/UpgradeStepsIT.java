@@ -25,7 +25,7 @@ import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
-import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
@@ -302,7 +302,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
     // then
     assertThat(
-      prefixAwareClient.exists(new GetIndexRequest(getTestIndexName(TEST_INDEX_V2)), RequestOptions.DEFAULT),
+      prefixAwareClient.exists(new GetIndexRequest(TEST_INDEX_V2.getIndexName()), RequestOptions.DEFAULT),
       is(false)
     );
   }
@@ -437,8 +437,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
   }
 
-  private DeleteIndexStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
-    return new DeleteIndexStep(indexMapping);
+  private DeleteIndexIfExistsStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
+    return new DeleteIndexIfExistsStep(indexMapping);
   }
 
   private Map<String, Set<AliasMetaData>> getAliasMap(final String aliasName) {

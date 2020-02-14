@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
@@ -37,7 +38,7 @@ import static org.mockito.Mockito.when;
 public class ScrollBasedImportMediatorTest {
 
   @Mock
-  private ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   @Mock
   private BeanFactory beanFactory;
@@ -65,7 +66,7 @@ public class ScrollBasedImportMediatorTest {
       .thenReturn(engineEntityFetcher);
 
     this.underTest = new DecisionDefinitionXmlEngineImportMediator(engineContext);
-    this.underTest.importIndexHandlerRegistry = importIndexHandlerRegistry;
+    this.underTest.setImportIndexHandlerRegistry(importIndexHandlerRegistry);
     this.underTest.beanFactory = beanFactory;
     this.underTest.configurationService = configurationService;
     this.underTest.init();

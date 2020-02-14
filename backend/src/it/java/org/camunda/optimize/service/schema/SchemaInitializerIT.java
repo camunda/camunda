@@ -100,7 +100,7 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size()).isEqualTo(27);
+    assertThat(mappings.size()).isEqualTo(25);
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }
@@ -244,9 +244,8 @@ public class SchemaInitializerIT extends AbstractIT {
   }
 
   private void assertIndexExists(String indexName) throws IOException {
-    final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
-    GetIndexRequest request = new GetIndexRequest(indexAlias);
+    GetIndexRequest request = new GetIndexRequest(indexName);
     final boolean indexExists = esClient.exists(request, RequestOptions.DEFAULT);
 
     assertThat(indexExists).isEqualTo(true);

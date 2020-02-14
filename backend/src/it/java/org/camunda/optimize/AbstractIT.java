@@ -46,5 +46,5 @@ public abstract class AbstractIT {
   protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
   protected EventProcessClient eventProcessClient = new EventProcessClient(optimizeRequestExecutorSupplier);
   protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
-  protected EventClient eventClient = new EventClient(embeddedOptimizeExtension, elasticSearchIntegrationTestExtension);
+  protected EventClient eventClient = new EventClient(embeddedOptimizeExtension);
 }

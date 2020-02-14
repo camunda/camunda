@@ -40,7 +40,8 @@ import static org.camunda.optimize.service.es.schema.index.events.EventSequenceC
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -55,7 +56,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class EventSequenceCountReader {
+public class ExternalEventSequenceCountReader {
 
   private static final String GROUP_AGG = EventCountDto.Fields.group;
   private static final String SOURCE__AGG = EventCountDto.Fields.source;
@@ -78,7 +79,7 @@ public class EventSequenceCountReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(buildSequencedEventsQuery(incomingEvents, outgoingEvents))
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(EVENT_SEQUENCE_COUNT_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(getIndexName())
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -99,7 +100,8 @@ public class EventSequenceCountReader {
     searchSourceBuilder.aggregation(createAggregationBuilder());
     searchSourceBuilder.size(0);
 
-    final SearchRequest searchRequest = new SearchRequest(EVENT_SEQUENCE_COUNT_INDEX_NAME).source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(getIndexName())
+      .source(searchSourceBuilder);
     List<EventCountDto> eventCountDtos = new ArrayList<>();
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -194,6 +196,10 @@ public class EventSequenceCountReader {
             .build()));
     }
     return eventCountsForGroup;
+  }
+
+  private String getIndexName() {
+    return EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX;
   }
 
   private String getNgramSearchField(final String searchFieldName) {

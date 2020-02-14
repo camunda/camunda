@@ -11,14 +11,13 @@ import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.common.unit.TimeValue;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -47,7 +46,7 @@ public class EventIndexRolloverService extends AbstractScheduledService {
     if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
       return ElasticsearchHelper.triggerRollover(
         esClient,
-        EVENT_INDEX_NAME,
+        EXTERNAL_EVENTS_INDEX_NAME,
         configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB()
       );
     }

@@ -14,6 +14,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -47,6 +49,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -58,18 +61,23 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -183,9 +191,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     addEntryToTracker(indexName, id);
   }
 
-  public OffsetDateTime getLastProcessedEventTimestamp() throws IOException {
+  public OffsetDateTime getLastProcessedEventTimestampForEventIndexSuffix(final String eventIndexSuffix) throws
+                                                                                                         IOException {
     return getLastImportTimestampOfTimestampBasedImportIndex(
-      ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE,
+      ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + eventIndexSuffix.toLowerCase(),
       ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE
     );
   }
@@ -194,8 +203,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return getLastImportTimestampOfTimestampBasedImportIndex(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME, "1");
   }
 
-  private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(String esType, String engine) throws
-                                                                                                         IOException {
+  private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine)
+    throws IOException {
     GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
     GetResponse response = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT);
     if (response.isExists()) {
@@ -477,19 +486,56 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       refreshAllOptimizeIndices();
       deleteAllOptimizeData();
       deleteAllEventProcessInstanceIndices();
+      deleteCamundaEventIndicesAndEventCountsAndTraces();
     } catch (Exception e) {
       //nothing to do
       log.error("can't clean optimize indexes", e);
     }
   }
 
-  public void deleteAllEventIndices() {
-    DeleteIndexRequest request = new DeleteIndexRequest(
-      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_INDEX_NAME + "_*")
+  public List<EventDto> getAllStoredExternalEvents() {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(EXTERNAL_EVENTS_INDEX_NAME);
+    return mapHits(response.getHits(), EventDto.class, getObjectMapper());
+  }
+
+  @SneakyThrows
+  public List<CamundaActivityEventDto> getAllStoredCamundaActivityEvents(final String processDefinitionKey) {
+    SearchResponse response = getSearchResponseForAllDocumentsOfIndex(
+      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey);
+    List<CamundaActivityEventDto> storedEvents = new ArrayList<>();
+    for (SearchHit searchHitFields : response.getHits()) {
+      final CamundaActivityEventDto camundaActivityEventDto = getObjectMapper().readValue(
+        searchHitFields.getSourceAsString(), CamundaActivityEventDto.class);
+      storedEvents.add(camundaActivityEventDto);
+    }
+    return storedEvents;
+  }
+
+  public void deleteAllExternalEventIndices() {
+    final DeleteIndexRequest deleteEventIndicesRequest = new DeleteIndexRequest(
+      getIndexNameService().getOptimizeIndexAliasForIndex(EXTERNAL_EVENTS_INDEX_NAME + "_*")
     );
 
     try {
-      getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
+      getOptimizeElasticClient().getHighLevelClient()
+        .indices()
+        .delete(deleteEventIndicesRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not delete all external event indices.", e);
+    }
+  }
+
+  public void deleteCamundaEventIndicesAndEventCountsAndTraces() {
+    final DeleteIndexRequest deleteEventIndicesRequest = new DeleteIndexRequest(
+      getIndexNameService().getOptimizeIndexAliasForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"),
+      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"),
+      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_TRACE_STATE_INDEX_PREFIX + "*")
+    );
+
+    try {
+      getOptimizeElasticClient().getHighLevelClient()
+        .indices()
+        .delete(deleteEventIndicesRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not delete all event indices.", e);
     }

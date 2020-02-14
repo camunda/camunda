@@ -64,7 +64,7 @@ public class EventIndexRolloverIT extends AbstractIT {
     addEvents();
     final boolean isRolledOver2 = getEventIndexRolloverService().triggerRollover();
     List<String> indicesWithEventWriteAlias = getAllIndicesWithEventWriteAlias();
-    final int eventCount = eventClient.getAllStoredEvents().size();
+    final int eventCount = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents().size();
 
     // then
     assertThat(isRolledOver1).isTrue();
@@ -112,7 +112,7 @@ public class EventIndexRolloverIT extends AbstractIT {
     getEventIndexRolloverService().triggerRollover();
 
     // then
-    final int eventCount = eventClient.getAllStoredEvents().size();
+    final int eventCount = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents().size();
     assertThat(eventCount).isEqualTo(EXPECTED_NUMBER_OF_EVENTS);
   }
 
@@ -127,7 +127,7 @@ public class EventIndexRolloverIT extends AbstractIT {
     addEvents();
 
     // then there are 2 * EXPECTED_NUMBER_OF_EVENTS present (half in the old index and half in the new)
-    final int eventCount = eventClient.getAllStoredEvents().size();
+    final int eventCount = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents().size();
     assertThat(eventCount).isEqualTo(EXPECTED_NUMBER_OF_EVENTS * 2);
   }
 
@@ -143,7 +143,7 @@ public class EventIndexRolloverIT extends AbstractIT {
     // then
     assertThat(isRolledOver).isFalse();
   }
-  
+
   private EventIndexRolloverService getEventIndexRolloverService() {
     return embeddedOptimizeExtension.getEventIndexRolloverService();
   }
@@ -172,7 +172,7 @@ public class EventIndexRolloverIT extends AbstractIT {
     final String eventAliasNameWithPrefix = embeddedOptimizeExtension.getOptimizeElasticClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(
-        ElasticsearchConstants.EVENT_INDEX_NAME);
+        ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME);
 
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(eventAliasNameWithPrefix);
     Map<String, Set<AliasMetaData>> aliasMap = embeddedOptimizeExtension.getOptimizeElasticClient()
@@ -189,11 +189,12 @@ public class EventIndexRolloverIT extends AbstractIT {
 
   @AfterEach
   public void cleanUpEventIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllEventIndices();
+    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
 
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndex()
     );
   }
+
 }

@@ -12,7 +12,7 @@ import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventService;
+import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
@@ -33,11 +33,11 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private ImportAdapterProvider importAdapterProvider;
   protected EngineContext engineContext;
   private ProcessVariableUpdateWriter variableWriter;
-  private CamundaEventService camundaEventService;
+  private CamundaEventImportService camundaEventService;
 
   public VariableUpdateInstanceImportService(
     ProcessVariableUpdateWriter variableWriter,
-    CamundaEventService camundaEventService,
+    CamundaEventImportService camundaEventService,
     ImportAdapterProvider importAdapterProvider,
     ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
     EngineContext engineContext

@@ -40,7 +40,6 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
     initSchema(Lists.newArrayList(
       METADATA_INDEX,
       EVENT_INDEX_V1,
-      EVENT_SEQUENCE_COUNT_INDEX_V1,
       EVENT_PROCESS_MAPPING_INDEX_V1,
       EVENT_PROCESS_PUBLISH_STATE_INDEX_V1
     ));

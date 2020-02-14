@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.service.CamundaEventService;
+import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedActivityInstanceWriter;
 
@@ -15,10 +15,10 @@ import java.util.List;
 public class CompletedActivityInstanceElasticsearchImportJob extends ElasticsearchImportJob<FlowNodeEventDto> {
 
   private CompletedActivityInstanceWriter completedActivityInstanceWriter;
-  private CamundaEventService camundaEventService;
+  private CamundaEventImportService camundaEventService;
 
   public CompletedActivityInstanceElasticsearchImportJob(CompletedActivityInstanceWriter completedActivityInstanceWriter,
-                                                         CamundaEventService camundaEventService,
+                                                         CamundaEventImportService camundaEventService,
                                                          Runnable callback) {
     super(callback);
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;

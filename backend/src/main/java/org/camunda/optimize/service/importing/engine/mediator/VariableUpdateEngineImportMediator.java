@@ -8,10 +8,11 @@ package org.camunda.optimize.service.importing.engine.mediator;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventService;
+import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.VariableUpdateInstanceFetcher;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +32,13 @@ public class VariableUpdateEngineImportMediator
   private VariableUpdateInstanceFetcher engineEntityFetcher;
 
   @Autowired
-  private CamundaEventService camundaEventService;
+  private CamundaEventImportService camundaEventService;
   @Autowired
   private ProcessVariableUpdateWriter variableWriter;
   @Autowired
   private ImportAdapterProvider importAdapterProvider;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private final EngineContext engineContext;
 

@@ -92,12 +92,10 @@ public class ElasticSearchSchemaManager {
   }
 
   public boolean indicesExist(final OptimizeElasticsearchClient esClient,
-                               final List<IndexMappingCreator> mappings) {
+                              final List<IndexMappingCreator> mappings) {
     final List<String> indices = mappings.stream().map(IndexMappingCreator::getIndexName)
-      .map(indexNameService::getOptimizeIndexAliasForIndex)
       .collect(Collectors.toList());
     final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
-
     try {
       return esClient.exists(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -106,6 +104,19 @@ public class ElasticSearchSchemaManager {
         String.join(",", indices)
       );
       throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public void createIndexIfMissing(final OptimizeElasticsearchClient esClient,
+                                   final IndexMappingCreator indexMapping) {
+    try {
+      final boolean indexAlreadyExists = indexExists(esClient, indexMapping);
+      if (!indexAlreadyExists) {
+        createOptimizeIndex(esClient, indexMapping);
+      }
+    } catch (final Exception e) {
+      log.error("Failed ensuring index is present: {}", indexMapping.getIndexName(), e);
+      throw e;
     }
   }
 

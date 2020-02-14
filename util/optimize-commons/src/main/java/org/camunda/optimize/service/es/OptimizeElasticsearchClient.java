@@ -10,6 +10,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.rollover.Condition;
 import org.elasticsearch.action.admin.indices.rollover.MaxAgeCondition;
 import org.elasticsearch.action.admin.indices.rollover.MaxDocsCondition;
@@ -31,6 +32,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -71,14 +73,18 @@ public class OptimizeElasticsearchClient {
     this.indexNameService = indexNameService;
   }
 
+  public final void close() throws IOException {
+    highLevelClient.close();
+  }
+
+  public final RestClient getLowLevelClient() {
+    return getHighLevelClient().getLowLevelClient();
+  }
+
   public final BulkResponse bulk(final BulkRequest bulkRequest, final RequestOptions options) throws IOException {
     bulkRequest.requests().forEach(this::applyIndexPrefix);
 
     return highLevelClient.bulk(bulkRequest, options);
-  }
-
-  public final void close() throws IOException {
-    highLevelClient.close();
   }
 
   public final CountResponse count(final CountRequest countRequest, final RequestOptions options) throws IOException {
@@ -101,18 +107,22 @@ public class OptimizeElasticsearchClient {
     return highLevelClient.deleteByQuery(deleteByQueryRequest, options);
   }
 
+  public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest, final RequestOptions options)
+    throws IOException {
+    getAliasesRequest.indices(convertToPrefixedIndexNames(getAliasesRequest.indices()));
+    getAliasesRequest.aliases(convertToPrefixedIndexNames(getAliasesRequest.aliases()));
+    return highLevelClient.indices().getAlias(getAliasesRequest, options);
+  }
+
   public final boolean exists(final GetIndexRequest getRequest, final RequestOptions options) throws IOException {
-    return highLevelClient.indices().exists(getRequest, options);
+    final GetIndexRequest prefixedGetRequest = new GetIndexRequest(convertToPrefixedIndexNames(getRequest.indices()));
+    return highLevelClient.indices().exists(prefixedGetRequest, options);
   }
 
   public final GetResponse get(final GetRequest getRequest, final RequestOptions options) throws IOException {
     getRequest.index(indexNameService.getOptimizeIndexAliasForIndex(getRequest.index()));
 
     return highLevelClient.get(getRequest, options);
-  }
-
-  public final RestClient getLowLevelClient() {
-    return getHighLevelClient().getLowLevelClient();
   }
 
   public final IndexResponse index(final IndexRequest indexRequest, final RequestOptions options) throws IOException {
@@ -124,9 +134,7 @@ public class OptimizeElasticsearchClient {
   public final GetMappingsResponse getMapping(final GetMappingsRequest getMappingsRequest,
                                               final RequestOptions options) throws IOException {
     getMappingsRequest.indices(
-      Arrays.stream(getMappingsRequest.indices())
-        .map(indexNameService::getOptimizeIndexAliasForIndex)
-        .toArray(String[]::new)
+      convertToPrefixedIndexNames(getMappingsRequest.indices())
     );
     return highLevelClient.indices().getMapping(getMappingsRequest, options);
   }
@@ -181,11 +189,16 @@ public class OptimizeElasticsearchClient {
   }
 
   private void applyIndexPrefixes(final IndicesRequest.Replaceable request) {
+    final String[] indices = request.indices();
     request.indices(
-      Arrays.stream(request.indices())
-        .map(indexNameService::getOptimizeIndexAliasForIndex)
-        .toArray(String[]::new)
+      convertToPrefixedIndexNames(indices)
     );
+  }
+
+  private String[] convertToPrefixedIndexNames(final String[] indices) {
+    return Arrays.stream(indices)
+      .map(indexNameService::getOptimizeIndexAliasForIndex)
+      .toArray(String[]::new);
   }
 
   private RolloverRequest applyAliasPrefix(final RolloverRequest request) {

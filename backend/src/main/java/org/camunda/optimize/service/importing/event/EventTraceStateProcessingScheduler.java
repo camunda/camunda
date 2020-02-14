@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.event.mediator.PersistEventIndexHandlerStateMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
 import org.camunda.optimize.service.util.configuration.EventImportConfiguration;
@@ -27,11 +28,12 @@ import java.util.stream.Stream;
 @AllArgsConstructor
 @Slf4j
 @Component
-public class EventProcessingScheduler extends AbstractScheduledService {
+public class EventTraceStateProcessingScheduler extends AbstractScheduledService {
   private final ConfigurationService configurationService;
-  private final ExternalEventTraceImportMediator externalEventTraceImportMediator;
+
+  private final EventTraceImportMediatorManager eventTraceImportMediatorManager;
   @Getter
-  private final StoreEventProcessingProgressMediator eventProcessingProgressMediator;
+  private final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator;
 
   @PostConstruct
   public void init() {
@@ -63,7 +65,10 @@ public class EventProcessingScheduler extends AbstractScheduledService {
   }
 
   public List<EngineImportMediator> getImportMediators() {
-    return Stream.of(eventProcessingProgressMediator, externalEventTraceImportMediator).collect(Collectors.toList());
+    return Stream.concat(
+      Stream.of(eventProcessingProgressMediator),
+      eventTraceImportMediatorManager.getEventTraceImportMediators().stream()
+    ).collect(Collectors.toList());
   }
 
   @Override

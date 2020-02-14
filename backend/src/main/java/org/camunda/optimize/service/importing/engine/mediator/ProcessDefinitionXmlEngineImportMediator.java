@@ -10,6 +10,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionXmlFetcher;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
@@ -30,6 +31,8 @@ public class ProcessDefinitionXmlEngineImportMediator
 
   @Autowired
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private final EngineContext engineContext;
 

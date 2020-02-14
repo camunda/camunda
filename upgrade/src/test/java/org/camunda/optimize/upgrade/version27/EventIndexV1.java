@@ -31,7 +31,7 @@ public class EventIndexV1 extends StrictIndexMappingCreator {
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EVENT_INDEX_NAME;
+    return ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
   }
 
   @Override

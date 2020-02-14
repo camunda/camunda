@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedUserTaskInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.CompletedUserTaskInstanceImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.CompletedUserTaskInstanceImportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -30,6 +31,8 @@ public class CompletedUserTaskEngineImportMediator
 
   @Autowired
   private CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   private final EngineContext engineContext;
 

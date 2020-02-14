@@ -28,6 +28,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
@@ -82,6 +83,16 @@ public class ESIndexAdjuster {
       destinationIndex,
       null
     );
+  }
+
+  public boolean indexExists(final String indexName) {
+    logger.debug("Checking if index exists [{}].", indexName);
+    try {
+      return restClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String errorMessage = String.format("Could not validate whether index exists [%s]!", indexName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
   }
 
   public void deleteIndex(final String indexName) {

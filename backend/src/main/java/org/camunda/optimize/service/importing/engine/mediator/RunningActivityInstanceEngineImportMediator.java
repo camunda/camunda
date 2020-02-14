@@ -7,10 +7,11 @@ package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventService;
+import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningActivityInstanceFetcher;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.RunningActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +33,10 @@ public class RunningActivityInstanceEngineImportMediator
   @Autowired
   private RunningActivityInstanceWriter runningActivityInstanceWriter;
   @Autowired
-  private CamundaEventService camundaEventService;
+  private CamundaEventImportService camundaEventService;
+  @Autowired
+  private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
+
   private RunningActivityInstanceImportService runningActivityInstanceImportService;
 
   private final EngineContext engineContext;

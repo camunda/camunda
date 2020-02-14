@@ -15,19 +15,18 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 
 @AllArgsConstructor
-@Component
 @Slf4j
 public class EventTraceStateWriter {
 
+  private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -59,10 +58,14 @@ public class EventTraceStateWriter {
 
   private UpdateRequest createEventTraceStateUpsertRequest(final EventTraceStateDto eventTraceStateDto) {
     return new UpdateRequest()
-      .index(EVENT_TRACE_STATE_INDEX_NAME)
+      .index(getIndexName())
       .id(eventTraceStateDto.getTraceId())
       .doc(objectMapper.convertValue(eventTraceStateDto, Map.class))
       .docAsUpsert(true);
+  }
+
+  private String getIndexName() {
+    return EVENT_TRACE_STATE_INDEX_PREFIX + indexKey;
   }
 
 }

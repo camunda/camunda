@@ -3,26 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing;
+package org.camunda.optimize.service.importing.engine.handler;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.service.importing.engine.handler.CompletedActivityInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.CompletedProcessInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.CompletedUserTaskInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.DecisionInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerProvider;
-import org.camunda.optimize.service.importing.engine.handler.IdentityLinkLogImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.RunningActivityInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.RunningUserTaskInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.TenantImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.VariableUpdateInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.event.ExternalEventTraceImportIndexHandler;
-import org.springframework.beans.factory.BeanFactory;
+import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -32,9 +18,7 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @Component
-public class ImportIndexHandlerRegistry {
-
-  private final BeanFactory beanFactory;
+public class EngineImportIndexHandlerRegistry {
 
   private Map<String, EngineImportIndexHandlerProvider> engineImportIndexHandlerProviderMap = new HashMap<>();
 
@@ -157,7 +141,6 @@ public class ImportIndexHandlerRegistry {
     for (EngineImportIndexHandlerProvider provider : engineImportIndexHandlerProviderMap.values()) {
       result.addAll(provider.getAllHandlers());
     }
-    result.add(getExternalEventTraceImportIndexHandler());
     return result;
   }
 
@@ -209,10 +192,6 @@ public class ImportIndexHandlerRegistry {
       result = engineImportIndexHandlerProvider.getImportIndexHandler(TenantImportIndexHandler.class);
     }
     return result;
-  }
-
-  public ExternalEventTraceImportIndexHandler getExternalEventTraceImportIndexHandler() {
-    return beanFactory.getBean(ExternalEventTraceImportIndexHandler.class);
   }
 
   public void reloadConfiguration() {

@@ -10,13 +10,12 @@ import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
 public class UpgradeFrom27To30 extends UpgradeProcedure {
@@ -39,7 +38,8 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new UpdateIndexStep(new EventIndex(), null))
-      .addUpgradeStep(new UpdateIndexStep(new EventSequenceCountIndex(), null))
+      .addUpgradeStep(new DeleteIndexIfExistsStep("event-sequence-count", 1))
+      .addUpgradeStep(new DeleteIndexIfExistsStep("event-trace-state", 1))
       .addUpgradeStep(addEventSourcesAndRolesField())
       .addUpgradeStep(new CreateIndexStep(new VariableUpdateInstanceIndex()))
       .addUpgradeStep(new CreateIndexStep(new BusinessKeyIndex()))

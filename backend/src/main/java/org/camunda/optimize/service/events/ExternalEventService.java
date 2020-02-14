@@ -18,9 +18,9 @@ import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.service.es.reader.EventReader;
-import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
-import org.camunda.optimize.service.es.writer.EventWriter;
+import org.camunda.optimize.service.es.reader.ExternalEventReader;
+import org.camunda.optimize.service.es.reader.ExternalEventSequenceCountReader;
+import org.camunda.optimize.service.es.writer.ExternalEventWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.springframework.stereotype.Component;
 
@@ -42,11 +42,11 @@ import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
 
 @AllArgsConstructor
 @Component
-public class ExternalEventService {
+public class ExternalEventService implements EventFetcherService {
 
-  private final EventReader eventReader;
-  private final EventWriter eventWriter;
-  private final EventSequenceCountReader eventSequenceCountReader;
+  private final ExternalEventReader eventReader;
+  private final ExternalEventWriter eventWriter;
+  private final ExternalEventSequenceCountReader eventSequenceCountReader;
 
   private static final Comparator<EventCountDto> SUGGESTED_COMPARATOR =
     Comparator.comparing(EventCountDto::isSuggested, nullsFirst(naturalOrder())).reversed();
@@ -59,10 +59,12 @@ public class ExternalEventService {
     eventWriter.upsertEvents(eventDtos);
   }
 
+  @Override
   public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
     return eventReader.getEventsIngestedAfter(ingestTimestamp, limit);
   }
 
+  @Override
   public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
     return eventReader.getEventsIngestedAt(ingestTimestamp);
   }

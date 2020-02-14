@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.engine.service;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventService;
+import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
@@ -26,10 +26,10 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
   private RunningActivityInstanceWriter runningActivityInstanceWriter;
-  private CamundaEventService camundaEventService;
+  private CamundaEventImportService camundaEventService;
 
   public RunningActivityInstanceImportService(RunningActivityInstanceWriter runningActivityInstanceWriter,
-                                              CamundaEventService camundaEventService,
+                                              CamundaEventImportService camundaEventService,
                                               ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               EngineContext engineContext
   ) {

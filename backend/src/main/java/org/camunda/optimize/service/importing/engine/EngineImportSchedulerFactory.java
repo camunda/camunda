@@ -9,8 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.importing.EngineImportMediator;
-import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerProvider;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
@@ -43,7 +44,7 @@ import java.util.List;
 public class EngineImportSchedulerFactory implements ConfigurationReloadable {
   private static final Logger logger = LoggerFactory.getLogger(EngineImportSchedulerFactory.class);
 
-  private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
+  private final EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
   private final BeanFactory beanFactory;
   private final EngineContextFactory engineContextFactory;
   private final ConfigurationService configurationService;

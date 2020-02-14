@@ -24,7 +24,6 @@ import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -371,7 +370,7 @@ public class EventIngestionRestIT extends AbstractIT {
         .build()
       )
       .collect(Collectors.toList());
-    final List<EventDto> indexedEventDtos = eventClient.getAllStoredEvents();
+    final List<EventDto> indexedEventDtos = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
     assertThat(indexedEventDtos).containsExactlyInAnyOrderElementsOf(expectedEventDtos);
   }
 

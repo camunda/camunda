@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,13 +20,16 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_NAME;
+import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class EventTraceStateImportIT extends AbstractIT {
+public class ExternalEventTraceStateImportIT extends AbstractIT {
 
   @BeforeEach
   public void init() {
@@ -38,8 +42,14 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(EVENT_TRACE_STATE_INDEX_NAME)).isEqualTo(0);
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(EVENT_SEQUENCE_COUNT_INDEX_NAME)).isEqualTo(0);
+    assertThat(
+      elasticSearchIntegrationTestExtension
+        .getDocumentCountOf(EVENT_TRACE_STATE_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX)
+    ).isEqualTo(0);
+    assertThat(
+      elasticSearchIntegrationTestExtension
+        .getDocumentCountOf(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX)
+    ).isEqualTo(0);
   }
 
   @Test
@@ -58,7 +68,7 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace states are stored and sequence counts reflect traces
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(
         eventDtoTraceOne.getTraceid(),
         Collections.singletonList(mapToTracedEventDto(eventDtoTraceOne))
@@ -72,7 +82,7 @@ public class EventTraceStateImportIT extends AbstractIT {
         Collections.singletonList(mapToTracedEventDto(eventDtoTraceThree))
       )
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventDtoTraceOne, null, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoTraceTwo, null, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoTraceThree, null, 1)
@@ -99,7 +109,7 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state is stored in correct order and sequence counts reflect traces
-    assertThat(eventClient.getAllStoredEventTraceStates())
+    assertThat(getAllStoredExternalEventTraceStates())
       .containsExactly(
         new EventTraceStateDto(traceId, Arrays.asList(
           mapToTracedEventDto(eventDtoOne),
@@ -107,7 +117,7 @@ public class EventTraceStateImportIT extends AbstractIT {
           mapToTracedEventDto(eventDtoThree)
         ))
       );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventDtoOne, eventDtoTwo, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoTwo, eventDtoThree, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoThree, null, 1)
@@ -152,7 +162,7 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceIdOne, Arrays.asList(
         mapToTracedEventDto(eventDtoTraceOneEventOne),
         mapToTracedEventDto(eventDtoTraceOneEventTwo)
@@ -166,7 +176,7 @@ public class EventTraceStateImportIT extends AbstractIT {
         mapToTracedEventDto(eventDtoTraceThreeEventTwo)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventDtoTraceOneEventOne, eventDtoTraceOneEventTwo, 2),
       createSequenceFromSourceAndTargetEvents(eventDtoTraceOneEventTwo, null, 2),
       createSequenceFromSourceAndTargetEvents(eventDtoTraceThreeEventOne, eventDtoTraceThreeEventTwo, 1),
@@ -193,12 +203,12 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after initial batch
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceIdOne, Collections.singletonList(mapToTracedEventDto(eventOneTraceOne))),
       new EventTraceStateDto(traceIdTwo, Collections.singletonList(mapToTracedEventDto(eventOneTraceTwo))),
       new EventTraceStateDto(traceIdThree, Collections.singletonList(mapToTracedEventDto(eventOneTraceThree)))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventOneTraceOne, null, 3)
     );
     assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
@@ -214,7 +224,7 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after processing
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceIdOne, Arrays.asList(
         mapToTracedEventDto(eventOneTraceOne),
         mapToTracedEventDto(eventTwoTraceOne),
@@ -229,7 +239,7 @@ public class EventTraceStateImportIT extends AbstractIT {
       ),
       new EventTraceStateDto(traceIdThree, Collections.singletonList(mapToTracedEventDto(eventOneTraceThree)))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventOneTraceOne, eventTwoTraceOne, 2),
       createSequenceFromSourceAndTargetEvents(eventTwoTraceOne, eventThreeTraceOne, 1),
       createSequenceFromSourceAndTargetEvents(eventThreeTraceOne, null, 1),
@@ -256,14 +266,14 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after initial batch
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
         mapToTracedEventDto(eventDtoOne),
         mapToTracedEventDto(eventDtoTwo),
         mapToTracedEventDto(eventDtoThree)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventDtoOne, eventDtoTwo, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoTwo, eventDtoThree, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoThree, null, 1)
@@ -284,14 +294,14 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after modification
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
         mapToTracedEventDto(eventDtoOne),
         mapToTracedEventDto(eventDtoThreeModified),
         mapToTracedEventDto(eventDtoTwo)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventDtoOne, eventDtoTwo, 0),
       createSequenceFromSourceAndTargetEvents(eventDtoTwo, eventDtoThree, 0),
       createSequenceFromSourceAndTargetEvents(eventDtoThree, null, 0),
@@ -318,14 +328,14 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after initial batch
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
         mapToTracedEventDto(eventOne),
         mapToTracedEventDto(eventTwo),
         mapToTracedEventDto(eventThree)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventOne, eventTwo, 1),
       createSequenceFromSourceAndTargetEvents(eventTwo, eventThree, 1),
       createSequenceFromSourceAndTargetEvents(eventThree, null, 1)
@@ -340,14 +350,14 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts remain correct after processing
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
         mapToTracedEventDto(eventOne),
         mapToTracedEventDto(eventTwo),
         mapToTracedEventDto(eventThree)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventOne, eventTwo, 1),
       createSequenceFromSourceAndTargetEvents(eventTwo, eventThree, 1),
       createSequenceFromSourceAndTargetEvents(eventThree, null, 1)
@@ -372,14 +382,14 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts are correct after initial batch
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
         mapToTracedEventDto(eventTaskA),
         mapToTracedEventDto(eventTaskB),
         mapToTracedEventDto(eventTaskC)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventTaskA, eventTaskB, 1),
       createSequenceFromSourceAndTargetEvents(eventTaskB, eventTaskC, 1),
       createSequenceFromSourceAndTargetEvents(eventTaskC, null, 1)
@@ -398,7 +408,7 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts remain correct after processing and loop is correctly traced
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
         mapToTracedEventDto(eventTaskA),
         mapToTracedEventDto(eventTaskB),
@@ -407,7 +417,7 @@ public class EventTraceStateImportIT extends AbstractIT {
         mapToTracedEventDto(eventTaskBSecondOccurrence)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventTaskA, eventTaskB, 1),
       createSequenceFromSourceAndTargetEvents(eventTaskB, eventTaskC, 1),
       createSequenceFromSourceAndTargetEvents(eventTaskC, eventTaskD, 1),
@@ -437,7 +447,7 @@ public class EventTraceStateImportIT extends AbstractIT {
     processEventCountAndTraces();
 
     // then trace state and sequence counts remain correct after processing and loop is correct traced
-    assertThat(eventClient.getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceId, Arrays.asList(
         mapToTracedEventDto(eventTaskA),
         mapToTracedEventDto(eventTaskB),
@@ -450,7 +460,7 @@ public class EventTraceStateImportIT extends AbstractIT {
         mapToTracedEventDto(eventTaskE)
       ))
     );
-    assertThat(eventClient.getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
+    assertThat(getAllStoredExternalEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventTaskA, eventTaskB, 1),
       createSequenceFromSourceAndTargetEvents(eventTaskB, eventTaskC, 2),
       createSequenceFromSourceAndTargetEvents(eventTaskC, eventTaskD, 2),
@@ -468,11 +478,14 @@ public class EventTraceStateImportIT extends AbstractIT {
   }
 
   private Long getLastProcessedEntityTimestampFromElasticsearch() throws IOException {
-    return elasticSearchIntegrationTestExtension.getLastProcessedEventTimestamp().toInstant().toEpochMilli();
+    return elasticSearchIntegrationTestExtension
+      .getLastProcessedEventTimestampForEventIndexSuffix(EXTERNAL_EVENTS_INDEX_SUFFIX)
+      .toInstant()
+      .toEpochMilli();
   }
 
   private Long findMostRecentEventTimestamp() {
-    return eventClient.getAllStoredEvents().stream()
+    return getAllStoredExternalEvents().stream()
       .map(EventDto::getIngestionTimestamp)
       .mapToLong(e -> e).max().getAsLong();
   }
@@ -524,8 +537,32 @@ public class EventTraceStateImportIT extends AbstractIT {
   }
 
   private void processEventCountAndTraces() {
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.processEvents();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  public List<EventDto> getAllStoredExternalEvents() {
+    return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+  }
+
+  public List<EventTraceStateDto> getAllStoredExternalEventTraceStates() {
+    return getAllStoredDocumentsForIndexAsClass(
+      EVENT_TRACE_STATE_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX,
+      EventTraceStateDto.class
+    );
+  }
+
+  public List<EventSequenceCountDto> getAllStoredExternalEventSequenceCounts() {
+    return getAllStoredDocumentsForIndexAsClass(
+      EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX,
+      EventSequenceCountDto.class
+    );
+  }
+
+  private <T> List<T> getAllStoredDocumentsForIndexAsClass(String indexName, Class<T> dtoClass) {
+    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName);
+    return mapHits(response.getHits(), dtoClass, elasticSearchIntegrationTestExtension.getObjectMapper());
   }
 
 }

@@ -5,9 +5,10 @@
  */
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.service.importing.page.ImportPage;
 
-public interface ImportIndexHandler<PAGE extends ImportPage, INDEX> {
+public interface ImportIndexHandler<PAGE extends ImportPage, INDEX extends ImportIndexDto> {
 
   /**
    * Retrieves all information to import a new page from the engine. With

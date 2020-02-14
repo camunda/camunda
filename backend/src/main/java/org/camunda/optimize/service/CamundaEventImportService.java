@@ -82,7 +82,7 @@ import static org.camunda.bpm.engine.ActivityTypes.TRANSACTION;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class CamundaEventService {
+public class CamundaEventImportService {
 
   public static final String START_MAPPED_SUFFIX = "start";
   public static final String END_MAPPED_SUFFIX = "end";
@@ -115,8 +115,8 @@ public class CamundaEventService {
                     TASK_USER_TASK, TASK_SEND_TASK, TASK_RECEIVE_TASK
     );
 
-  private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
   private final CamundaActivityEventWriter camundaActivityEventWriter;
+  private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
   private final BusinessKeyWriter businessKeyWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;

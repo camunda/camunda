@@ -27,7 +27,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Slf4j
 @Component
-public class EventWriter {
+public class ExternalEventWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
@@ -61,7 +61,7 @@ public class EventWriter {
 
   private UpdateRequest createEventUpsert(final EventDto eventDto) {
     return new UpdateRequest()
-      .index(ElasticsearchConstants.EVENT_INDEX_NAME)
+      .index(ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME)
       .id(IdGenerator.getNextId())
       .doc(objectMapper.convertValue(eventDto, Map.class))
       .docAsUpsert(true);
