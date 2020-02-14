@@ -6,6 +6,7 @@ exports[`InstancesBar should display the right data 1`] = `
     size="small"
   >
     <Themed(styled.div)
+      data-test="incident-instances-badge"
       hasIncidents={true}
     >
       10
@@ -14,6 +15,7 @@ exports[`InstancesBar should display the right data 1`] = `
       someLabel
     </Themed(styled.div)>
     <Themed(styled.div)
+      data-test="active-instances-badge"
       hasActive={true}
     >
       8
