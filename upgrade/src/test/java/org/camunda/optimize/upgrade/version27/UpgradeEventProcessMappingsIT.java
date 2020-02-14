@@ -19,8 +19,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -37,7 +37,7 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
   private static final EventSequenceCountIndexV1 EVENT_SEQUENCE_COUNT_INDEX = new EventSequenceCountIndexV1();
   private static final EventProcessMappingIndexV1 EVENT_PROCESS_MAPPING_INDEX = new EventProcessMappingIndexV1();
 
-  @Before
+  @BeforeEach
   @Override
   public void setUp() throws Exception {
     super.setUp();
