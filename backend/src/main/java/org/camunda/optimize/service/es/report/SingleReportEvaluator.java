@@ -13,13 +13,13 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
@@ -27,19 +27,18 @@ public class SingleReportEvaluator {
 
   public static final Integer DEFAULT_RECORD_LIMIT = 1_000;
 
-  private static Map<String, Command> commandSuppliers = new HashMap<>();
-
   protected final NotSupportedCommand notSupportedCommand;
   protected final ApplicationContext applicationContext;
+  protected final Map<String, Command> commandSuppliers;
 
-  protected final List<Command> commands;
-
-  @PostConstruct
-  public void init() {
-    commands.forEach(
-      c -> commandSuppliers.put(
-        c.createCommandKey(), applicationContext.getBean(c.getClass())
-      )
+  @Autowired
+  public SingleReportEvaluator(final NotSupportedCommand notSupportedCommand,
+                               final ApplicationContext applicationContext, final Collection<Command> commands) {
+    this(
+      notSupportedCommand,
+      applicationContext,
+      commands.stream()
+        .collect(Collectors.toMap(Command::createCommandKey, c -> applicationContext.getBean(c.getClass())))
     );
   }
 

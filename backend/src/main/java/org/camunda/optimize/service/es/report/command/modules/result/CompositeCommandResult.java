@@ -12,8 +12,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
@@ -21,6 +19,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
@@ -53,7 +53,11 @@ public class CompositeCommandResult {
     private String label;
     private List<DistributedByResult> distributions;
 
-    public static GroupByResult createResultWithEmptyValue(final String key) {
+    public static GroupByResult createResultWithNoDistributedBy(final String key) {
+      return new GroupByResult(key, null, new ArrayList<>());
+    }
+
+    public static GroupByResult createResultWithEmptyDistributedBy(final String key) {
       return new GroupByResult(key, null, singletonList(DistributedByResult.createResultWithEmptyValue(null)));
     }
 
@@ -86,6 +90,10 @@ public class CompositeCommandResult {
 
     public static DistributedByResult createResultWithEmptyValue(String key) {
       return new DistributedByResult(key, null, new ViewResult());
+    }
+
+    public static DistributedByResult createResultWithEmptyValue(String key, String label) {
+      return new DistributedByResult(key, label, new ViewResult());
     }
 
     public static DistributedByResult createEmptyDistributedBy(ViewResult viewResult) {
@@ -213,7 +221,7 @@ public class CompositeCommandResult {
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        valueToSortByExtractor = keyIsOfNumericType?
+        valueToSortByExtractor = keyIsOfNumericType ?
           entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
         break;
       case SortingDto.SORT_BY_VALUE:

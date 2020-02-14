@@ -12,12 +12,12 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +55,7 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
     final List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (isUserTaskCommand(viewDto) && isGroupByAssigneeOrCandidateGroup(groupByDto)) {
+    if (isUserTaskCommand(viewDto) && isGroupByAssigneeOrCandidateGroupOrFlowNode(groupByDto)) {
       configsToConsiderForCommand.add(this.distributedBy.getId());
     }
     if (getProcessPart().isPresent()) {
@@ -81,10 +81,11 @@ public class SingleReportConfigurationDto implements Combinable {
       viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
   }
 
-  private boolean isGroupByAssigneeOrCandidateGroup(ProcessGroupByDto groupByDto) {
+  private boolean isGroupByAssigneeOrCandidateGroupOrFlowNode(ProcessGroupByDto groupByDto) {
     return nonNull(groupByDto) && (
       ProcessGroupByType.ASSIGNEE.equals(groupByDto.getType()) ||
-        ProcessGroupByType.CANDIDATE_GROUP.equals(groupByDto.getType())
+        ProcessGroupByType.CANDIDATE_GROUP.equals(groupByDto.getType()) ||
+        ProcessGroupByType.FLOW_NODES.equals(groupByDto.getType())
     );
   }
 

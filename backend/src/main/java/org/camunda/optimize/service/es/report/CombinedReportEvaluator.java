@@ -103,7 +103,7 @@ public class CombinedReportEvaluator {
       super(
         evaluator.notSupportedCommand,
         evaluator.applicationContext,
-        evaluator.commands
+        evaluator.commandSuppliers.values()
       );
     }
 

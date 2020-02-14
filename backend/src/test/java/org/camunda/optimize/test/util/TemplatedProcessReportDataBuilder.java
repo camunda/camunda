@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -222,6 +223,28 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .build();
         break;
+      case USER_TASK_FREQUENCY_GROUP_BY_FLOW_NODE_BY_ASSIGNEE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+
+        reportData.getConfiguration().setDistributedBy(DistributedBy.ASSIGNEE);
+        break;
+      case USER_TASK_FREQUENCY_GROUP_BY_FLOW_NODE_BY_CANDIDATE_GROUP:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+
+        reportData.getConfiguration().setDistributedBy(DistributedBy.CANDIDATE_GROUP);
+        break;
       case USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
@@ -241,7 +264,7 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .build();
 
-          reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+        reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -274,6 +297,34 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .build();
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+        setUserTaskDurationTimeIfConfigured(reportData);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_FLOW_NODE_BY_ASSIGNEE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+
+        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+        reportData.getConfiguration().setDistributedBy(DistributedBy.ASSIGNEE);
+        setUserTaskDurationTimeIfConfigured(reportData);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_FLOW_NODE_BY_CANDIDATE_GROUP:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+
+        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+        reportData.getConfiguration().setDistributedBy(DistributedBy.CANDIDATE_GROUP);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_ASSIGNEE:
@@ -329,6 +380,9 @@ public class TemplatedProcessReportDataBuilder {
         reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
+      default:
+        String errorMessage = String.format("Unknown ProcessReportDataType: [%s]", reportDataType.name());
+        throw new OptimizeRuntimeException(errorMessage);
     }
     reportData.setTenantIds(tenantIds);
     reportData.setFilter(this.filter);

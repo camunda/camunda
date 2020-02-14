@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.user_task;
+package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.user_task.distributed_by.none;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -282,7 +282,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     // then
     assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(2));
+    assertThat(resultDto.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
     assertThat(resultDto.getIsComplete(), is(false));
   }
@@ -484,7 +484,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
   }
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
     //given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
@@ -517,7 +517,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
   }
 
   @Test
-  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
     //given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     deployTwoUserTasksDefinition();

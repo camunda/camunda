@@ -112,7 +112,7 @@ public class ProcessGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
 
     // enrich data with flow nodes that haven't been executed, but should still show up in the result
     flowNodeNames.keySet().forEach(flowNodeKey -> {
-      GroupByResult emptyResult = GroupByResult.createResultWithEmptyValue(flowNodeKey);
+      GroupByResult emptyResult = GroupByResult.createResultWithEmptyDistributedBy(flowNodeKey);
       emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
       groupedData.add(emptyResult);
     });

@@ -61,8 +61,7 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
   @Override
   public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    return new ViewResult().setNumber(
-      getAggregationStrategy(context.getReportData()).getValue(aggs)
-    );
+    Long number = getAggregationStrategy(context.getReportData()).getValue(aggs);
+    return new ViewResult().setNumber(number);
   }
 }

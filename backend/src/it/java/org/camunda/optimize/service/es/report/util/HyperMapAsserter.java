@@ -43,46 +43,109 @@ public class HyperMapAsserter {
   public void doAssert(ReportHyperMapResultDto actualResult) {
     // this is done by hand since it's otherwise really hard to see where the
     // assert failed.
-    assertThat(actualResult.getInstanceCount(), is(expectedResult.getInstanceCount()));
-    assertThat(actualResult.getIsComplete(), is(expectedResult.getIsComplete()));
-    assertThat(actualResult.getData(), is(notNullValue()));
+    assertThat(
+      String.format(
+        "Instance count should be [%s] but is [%s].",
+        expectedResult.getInstanceCount(),
+        actualResult.getInstanceCount()
+      ),
+      actualResult.getInstanceCount(),
+      is(expectedResult.getInstanceCount())
+    );
+    assertThat(
+      String.format(
+        "IsComplete status should be [%s] but is [%s].",
+        expectedResult.getIsComplete(),
+        actualResult.getIsComplete()
+      ),
+      actualResult.getIsComplete(),
+      is(expectedResult.getIsComplete())
+    );
+    assertThat("Data should not be null.", actualResult.getData(), is(notNullValue()));
     assertThat(
       "The number of group by keys does not match!",
       actualResult.getData().size(),
       is(expectedResult.getData().size())
     );
+
     actualResult.getData().forEach(actualGroupByEntry -> {
       Optional<HyperMapResultEntryDto> expectedGroupBy =
         expectedResult.getDataEntryForKey(actualGroupByEntry.getKey());
-      assertThat(
-        String.format("Group by key [%s] should be present!", actualGroupByEntry.getKey()),
-        expectedGroupBy.isPresent(),
-        is(true)
-      );
-      assertThat(actualGroupByEntry.getValue().size(), is(expectedGroupBy.get().getValue().size()));
-      assertThat(actualGroupByEntry.getLabel(), is(expectedGroupBy.get().getLabel()));
+      doAssertsOnGroupByEntries(actualGroupByEntry, expectedGroupBy);
+
       actualGroupByEntry.getValue().forEach(actualDistributedBy -> {
-        Optional<MapResultEntryDto> expectedDistributedBy = expectedGroupBy.get()
-          .getDataEntryForKey(actualDistributedBy.getKey());
-        assertThat(
-          String.format("Distributed by key [%s] should be present!", actualDistributedBy.getKey()),
-          expectedDistributedBy.isPresent(),
-          is(true)
-        );
-        final String valueMsg = String.format(
-          "Value for key [%s] - [%s] should be [%s], but is [%s]",
-          actualGroupByEntry.getKey(),
-          expectedDistributedBy.get().getKey(),
-          expectedDistributedBy.get().getValue(),
-          actualDistributedBy.getValue()
-        );
-        assertThat(valueMsg, actualDistributedBy.getValue(), is(expectedDistributedBy.get().getValue()));
-        assertThat(actualDistributedBy.getLabel(), is(expectedDistributedBy.get().getLabel()));
+        doAssertsOnGroupByEntryValue(actualDistributedBy, expectedGroupBy, actualGroupByEntry);
       });
     });
+
     // this line is just to make sure that no new fields have been added that
     // should be compared and that the ordering of the lists matches.
     assertThat(actualResult, is(expectedResult));
+  }
+
+  private void doAssertsOnGroupByEntries(final HyperMapResultEntryDto actualGroupByEntry,
+                                         final Optional<HyperMapResultEntryDto> expectedGroupByEntry) {
+    assertThat(
+      String.format("Group by key [%s] should be present!", actualGroupByEntry.getKey()),
+      expectedGroupByEntry.isPresent(),
+      is(true)
+    );
+    assertThat(
+      String.format(
+        "Size of value of GroupByEntry with key [%s] should be [%s] but is [%s].",
+        actualGroupByEntry.getKey(),
+        expectedGroupByEntry.get().getValue().size(),
+        actualGroupByEntry.getValue().size()
+      ),
+      actualGroupByEntry.getValue().size(),
+      is(expectedGroupByEntry.get().getValue().size())
+    );
+    assertThat(
+      String.format(
+        "Label of GroupByEntry with key [%s] should be [%s] but is [%s].",
+        actualGroupByEntry.getKey(),
+        expectedGroupByEntry.get().getLabel(),
+        actualGroupByEntry.getLabel()
+      ),
+      actualGroupByEntry.getLabel(),
+      is(expectedGroupByEntry.get().getLabel())
+    );
+  }
+
+  private void doAssertsOnGroupByEntryValue(final MapResultEntryDto actualDistributedBy,
+                                            final Optional<HyperMapResultEntryDto> expectedGroupByEntry,
+                                            final HyperMapResultEntryDto actualGroupByEntry) {
+    Optional<MapResultEntryDto> expectedDistributedBy = expectedGroupByEntry.get()
+      .getDataEntryForKey(actualDistributedBy.getKey());
+    assertThat(
+      String.format(
+        "DistributedBy key [%s] should be present under GroupByEntry with key [%s].",
+        actualDistributedBy.getKey(),
+        expectedGroupByEntry.get().getKey()
+      ),
+      expectedDistributedBy.isPresent(),
+      is(true)
+    );
+    assertThat(
+      String.format(
+        "Value for key [%s] - [%s] should be [%s], but is [%s]",
+        actualGroupByEntry.getKey(),
+        expectedDistributedBy.get().getKey(),
+        expectedDistributedBy.get().getValue(),
+        actualDistributedBy.getValue()
+      ),
+      actualDistributedBy.getValue(),
+      is(expectedDistributedBy.get().getValue())
+    );
+    assertThat(
+      String.format(
+        "Label of DistributedByEntry with key [%s] should be [%s] but is [%s].",
+        actualDistributedBy.getKey(),
+        expectedDistributedBy.get().getLabel(),
+        actualDistributedBy.getLabel()
+      ),
+      actualDistributedBy.getLabel(), is(expectedDistributedBy.get().getLabel())
+    );
   }
 
   private void addEntryToHyperMap(HyperMapResultEntryDto entry) {

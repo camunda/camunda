@@ -79,7 +79,6 @@ public class ProcessReportDataBuilderHelper {
       case CANDIDATE_GROUP:
         return createGroupByCandidateGroup();
       case FLOW_NODES:
-      case USER_TASKS:
         return createGroupByFlowNode();
     }
   }
@@ -138,7 +137,7 @@ public class ProcessReportDataBuilderHelper {
     this.processPartEnd = processPartEnd;
     return this;
   }
-  
+
   public static CombinedReportDataDto createCombinedReportData(String... reportIds) {
     CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
     combinedReportDataDto.setReports(

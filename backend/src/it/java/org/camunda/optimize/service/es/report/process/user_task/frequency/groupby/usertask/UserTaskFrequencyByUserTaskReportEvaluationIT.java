@@ -155,7 +155,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // then
     assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(2));
+    assertThat(resultDto.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
     assertThat(resultDto.getIsComplete(), is(false));
   }
@@ -223,7 +223,6 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       contains(resultLabels.stream().sorted(Comparator.reverseOrder()).toArray())
     );
   }
-
 
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
