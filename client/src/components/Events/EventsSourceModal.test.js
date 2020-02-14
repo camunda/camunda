@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import EventsSourceModalWithErrorHandling from './EventsSourceModal';
-import {DefinitionSelection} from 'components';
+import {DefinitionSelection, Button} from 'components';
 import {loadVariables} from 'services';
 
 jest.mock('services', () => {
@@ -143,4 +143,30 @@ it('should show an error when adding already existing source', async () => {
   });
 
   expect(node.find({error: true})).toExist();
+});
+
+it('should add external sources', () => {
+  const spy = jest.fn();
+  const node = shallow(<EventsSourceModal {...props} onConfirm={spy} />);
+
+  node
+    .find('ButtonGroup')
+    .find(Button)
+    .at(1)
+    .simulate('click');
+
+  node.find({variant: 'primary'}).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith([{type: 'external'}]);
+});
+
+it('should disable external source if already added', () => {
+  const node = shallow(<EventsSourceModal {...props} existingSources={[{type: 'external'}]} />);
+
+  expect(
+    node
+      .find('ButtonGroup')
+      .find(Button)
+      .at(1)
+  ).toBeDisabled();
 });

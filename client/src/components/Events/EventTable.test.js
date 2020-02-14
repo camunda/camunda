@@ -158,8 +158,8 @@ it('should mark suggested events', () => {
   expect(events[1].props.className).not.toContain('suggested');
 });
 
-it('should disable events Suggestion if there are any event sources', () => {
-  const node = shallow(<EventTable {...props} eventSources={[{}]} />);
+it('should disable events Suggestion if there are any camunda event sources', () => {
+  const node = shallow(<EventTable {...props} eventSources={[{type: 'camunda'}]} />);
 
   expect(node.find('Switch')).toBeDisabled();
 });

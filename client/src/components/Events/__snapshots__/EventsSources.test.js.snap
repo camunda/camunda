@@ -7,11 +7,6 @@ exports[`should match snapshot 1`] = `
   <div
     className="sourcesList"
   >
-    <div
-      className="external"
-    >
-      External Events
-    </div>
     <Dropdown
       className="isActive"
       key="src1"
@@ -28,6 +23,17 @@ exports[`should match snapshot 1`] = `
         Remove
       </ForwardRef(DropdownOption)>
     </Dropdown>
+    <Dropdown
+      className="isActive"
+      key="externalEvents"
+      label="External Events"
+    >
+      <ForwardRef(DropdownOption)
+        onClick={[Function]}
+      >
+        Remove
+      </ForwardRef(DropdownOption)>
+    </Dropdown>
   </div>
   <ForwardRef(Button)
     className="addProcess"
@@ -37,12 +43,12 @@ exports[`should match snapshot 1`] = `
       size="14"
       type="plus"
     />
-    Add Process
+    Add Event Source
   </ForwardRef(Button)>
   <DeleterErrorHandler
     deleteEntity={[Function]}
     deleteText="Remove"
-    descriptionText="Removing the events from this process will delete any mapping that had been created."
+    descriptionText="Removing the events from this event source will delete any mapping that had been created."
     entity={null}
     onClose={[Function]}
     type="processEvents"

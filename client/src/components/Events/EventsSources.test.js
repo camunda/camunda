@@ -12,7 +12,7 @@ import EventsSources from './EventsSources';
 import {Dropdown} from 'components';
 
 const props = {
-  sources: [{processDefinitionKey: 'src1'}]
+  sources: [{type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}]
 };
 
 it('should match snapshot', () => {
@@ -40,7 +40,7 @@ it('should remove a source from the list', () => {
 
   node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
 
-  expect(spy).toHaveBeenCalledWith([]);
+  expect(spy).toHaveBeenCalledWith([{type: 'external'}]);
 });
 
 it('should edit a source from the list', () => {
@@ -52,6 +52,7 @@ it('should edit a source from the list', () => {
     .simulate('click');
 
   expect(node.find(EventsSourceModal).prop('initialSource')).toEqual({
-    processDefinitionKey: 'src1'
+    processDefinitionKey: 'src1',
+    type: 'camunda'
   });
 });

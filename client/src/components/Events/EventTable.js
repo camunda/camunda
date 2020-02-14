@@ -13,7 +13,6 @@ import {Table, LoadingIndicator, Input, Select, Switch, Icon} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {getOptimizeVersion} from 'config';
 
 import {loadEvents} from './service';
 
@@ -28,18 +27,12 @@ export default withErrorHandling(
 
     state = {
       events: null,
-      version: 'latest',
       searchQuery: '',
       showSuggested: true
     };
 
     async componentDidMount() {
       this.loadEvents(this.state.searchQuery);
-
-      const version = (await getOptimizeVersion()).split('.');
-      version.length = 2;
-
-      this.setState({version: version.join('.')});
     }
 
     loadEvents = searchQuery => {
@@ -136,7 +129,7 @@ export default withErrorHandling(
     };
 
     render() {
-      const {events, searchQuery, version, showSuggested} = this.state;
+      const {events, searchQuery, showSuggested} = this.state;
       const {selection, onMappingChange, mappings, eventSources} = this.props;
 
       const {start, end} = (selection && mappings[selection.id]) || {};
@@ -144,7 +137,9 @@ export default withErrorHandling(
       const numberOfPotentialMappings = this.getNumberOfPotentialMappings(selection);
 
       const disabled = numberOfPotentialMappings <= numberOfMappings;
-      const disableSuggestions = eventSources.length;
+      const camundaSource = eventSources.filter(src => src.type !== 'external');
+      const externalEvents = eventSources.some(src => src.type === 'external');
+      const disableSuggestions = camundaSource.length;
 
       return (
         <div className="EventTable" ref={this.container}>
@@ -262,19 +257,11 @@ export default withErrorHandling(
                 {!events && <LoadingIndicator />}
                 {events && searchQuery && t('events.table.noResults')}
                 {events && !!events.length && !searchQuery && t('events.table.allMapped')}
-                {events && !events.length && !searchQuery && (
-                  <>
-                    {t('events.table.seeDocs')}
-                    <a
-                      href={`https://docs.camunda.org/optimize/${version}/technical-guide/setup/configuration/#ingestion-configuration`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {t('events.table.documentation')}
-                    </a>
-                    .
-                  </>
-                )}
+                {events &&
+                  !events.length &&
+                  !searchQuery &&
+                  !externalEvents &&
+                  t('events.sources.empty')}
               </>
             }
             noHighlight={disabled}

@@ -157,7 +157,7 @@
       "description": "Enable the following users and groups to create Reports based on this process..."
     },
     "sources": {
-      "add": "Add Process",
+      "add": "Add Event Source",
       "externalEvents": "External Events",
       "editSource": "Edit Event Selection",
       "addEvents": "Add Process Events",
@@ -171,7 +171,11 @@
       "allEvents": "All Flownode Events",
       "selectProcess": "Please select a Process Definition",
       "display": "Select events to display",
-      "deleteWarning": "Removing the events from this process will delete any mapping that had been created."
+      "deleteWarning": "Removing the events from this event source will delete any mapping that had been created.",
+      "camundaEvents": "Camunda Events",
+      "empty": "There are no event sources added",
+      "selectExternal": "Select external events",
+      "allExternal": "all events"
     }
   },
   "report": {

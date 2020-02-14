@@ -7,35 +7,28 @@
 
   .sourcesList {
     flex-grow: 1;
-    border-right: 1px solid #ddd;
     border-left: 1px solid #ddd;
     margin: 4px 10px;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
 
-    .external {
-      padding: 2px 15px;
-    }
-
-    .Dropdown,
-    .external {
+    .Dropdown {
       margin: 2px 0px 2px 10px;
-    }
 
-    .Dropdown .Button {
-      padding: 2px 40px 2px 10px;
-      background: #f8f8f8;
-      color: $text-disabled;
-    }
+      .Button {
+        padding: 2px 40px 2px 10px;
+        background: #f8f8f8;
+        color: $text-disabled;
+      }
 
-    .external,
-    .Dropdown.isActive .Button {
-      background: $blue;
-      color: #fff;
-      border-radius: 20px;
-      font-size: 0.875em;
-      white-space: nowrap;
+      &.isActive .Button {
+        background: $blue;
+        color: #fff;
+        border-radius: 20px;
+        font-size: 0.875em;
+        white-space: nowrap;
+      }
     }
   }
 

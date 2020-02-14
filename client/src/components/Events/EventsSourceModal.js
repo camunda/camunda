@@ -14,7 +14,8 @@ import {
   LabeledInput,
   Typeahead,
   Form,
-  Message
+  Message,
+  ButtonGroup
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -22,6 +23,8 @@ import {loadVariables} from 'services';
 
 import './EventsSourceModal.scss';
 import {showError} from 'notifications';
+import ExternalSource from './ExternalSource';
+import {loadEvents} from './service';
 
 export default withErrorHandling(
   class EventsSourceModal extends React.Component {
@@ -35,7 +38,9 @@ export default withErrorHandling(
         tracedByBusinessKey: false,
         traceVariable: null
       },
-      variables: null
+      variables: null,
+      type: 'camunda',
+      externalExist: false
     };
 
     componentDidMount = () => {
@@ -44,28 +49,36 @@ export default withErrorHandling(
         const {processDefinitionKey, versions, tenants} = this.props.initialSource;
         this.loadVariables(processDefinitionKey, versions, tenants);
       }
+
+      this.props.mightFail(
+        loadEvents({eventSources: [{type: 'external'}]}),
+        events => this.setState({externalExist: !!events.length}),
+        showError
+      );
     };
 
     updateSources = () => {
       const {existingSources} = this.props;
-      const {source} = this.state;
+      const {source, type} = this.state;
       let updatedSources;
-
-      const newSource = {
-        ...source,
-        traceVariable: source.tracedByBusinessKey ? null : source.traceVariable
-      };
-
-      if (this.isEditing()) {
-        const sourceIndex = existingSources.findIndex(
-          ({processDefinitionKey}) => processDefinitionKey === source.processDefinitionKey
-        );
-
-        updatedSources = update(existingSources, {[sourceIndex]: {$set: newSource}});
+      if (type === 'external') {
+        updatedSources = update(existingSources, {$push: [{type: 'external'}]});
       } else {
-        updatedSources = update(existingSources, {$push: [newSource]});
-      }
+        const newSource = {
+          ...source,
+          traceVariable: source.tracedByBusinessKey ? null : source.traceVariable
+        };
 
+        if (this.isEditing()) {
+          const sourceIndex = existingSources.findIndex(
+            ({processDefinitionKey}) => processDefinitionKey === source.processDefinitionKey
+          );
+
+          updatedSources = update(existingSources, {[sourceIndex]: {$set: newSource}});
+        } else {
+          updatedSources = update(existingSources, {$push: [newSource]});
+        }
+      }
       this.props.onConfirm(updatedSources);
     };
 
@@ -77,12 +90,17 @@ export default withErrorHandling(
       );
 
     isValid = () => {
-      const {processDefinitionKey, tracedByBusinessKey, traceVariable} = this.state.source;
-      return (
-        processDefinitionKey &&
-        (tracedByBusinessKey || traceVariable) &&
-        (this.isEditing() || !this.alreadyExists())
-      );
+      const {source, type, externalExist} = this.state;
+      if (type === 'external') {
+        return externalExist;
+      } else {
+        const {processDefinitionKey, tracedByBusinessKey, traceVariable} = source;
+        return (
+          processDefinitionKey &&
+          (tracedByBusinessKey || traceVariable) &&
+          (this.isEditing() || !this.alreadyExists())
+        );
+      }
     };
 
     loadVariables = (processDefinitionKey, processDefinitionVersions, tenantIds) => {
@@ -104,8 +122,8 @@ export default withErrorHandling(
     };
 
     render() {
-      const {onClose} = this.props;
-      const {source, variables} = this.state;
+      const {onClose, existingSources} = this.props;
+      const {source, variables, type, externalExist} = this.state;
       const {
         processDefinitionKey,
         versions,
@@ -115,88 +133,107 @@ export default withErrorHandling(
         traceVariable
       } = source;
 
+      const externalAlreadyAdded = existingSources.some(src => src.type === 'external');
+
       return (
         <Modal open onClose={onClose} onConfirm={this.updateSources} className="EventsSourceModal">
           <Modal.Header>
             {this.isEditing() ? t('events.sources.editEvents') : t('events.sources.addEvents')}
           </Modal.Header>
           <Modal.Content>
-            <DefinitionSelection
-              type="process"
-              definitionKey={processDefinitionKey}
-              versions={versions}
-              tenants={tenants}
-              disableDefinition={this.isEditing()}
-              expanded
-              onChange={({key, name, versions, tenantIds}) => {
-                this.loadVariables(key, versions, tenantIds);
-                this.setState({
-                  source: update(this.state.source, {
-                    $merge: {
-                      processDefinitionName: name,
-                      processDefinitionKey: key,
-                      versions,
-                      tenants: tenantIds,
-                      traceVariable: null
-                    }
-                  })
-                });
-              }}
-            />
-            {!this.isEditing() && this.alreadyExists() && (
-              <Message error>{t('events.sources.alreadyExists')}</Message>
+            <ButtonGroup>
+              <Button active={type === 'camunda'} onClick={() => this.setState({type: 'camunda'})}>
+                {t('events.sources.camundaEvents')}
+              </Button>
+              <Button
+                active={type === 'external'}
+                onClick={() => this.setState({type: 'external'})}
+                disabled={this.isEditing() || externalAlreadyAdded}
+              >
+                {t('events.sources.externalEvents')}
+              </Button>
+            </ButtonGroup>
+            {type === 'camunda' && (
+              <>
+                <DefinitionSelection
+                  type="process"
+                  definitionKey={processDefinitionKey}
+                  versions={versions}
+                  tenants={tenants}
+                  disableDefinition={this.isEditing()}
+                  expanded
+                  onChange={({key, name, versions, tenantIds}) => {
+                    this.loadVariables(key, versions, tenantIds);
+                    this.setState({
+                      source: update(this.state.source, {
+                        $merge: {
+                          processDefinitionName: name,
+                          processDefinitionKey: key,
+                          versions,
+                          tenants: tenantIds,
+                          traceVariable: null
+                        }
+                      })
+                    });
+                  }}
+                />
+                {!this.isEditing() && this.alreadyExists() && (
+                  <Message error>{t('events.sources.alreadyExists')}</Message>
+                )}
+                <Form className="sourceOptions">
+                  <Form.Group>
+                    <h4>{t('events.sources.defineTrace')}</h4>
+                    <LabeledInput
+                      checked={!tracedByBusinessKey}
+                      onChange={() => this.updateSource('tracedByBusinessKey', false)}
+                      type="radio"
+                      label={t('events.sources.byVariable')}
+                    />
+                    <Typeahead
+                      value={variables && traceVariable}
+                      noValuesMessage={getDisabledMessage(tracedByBusinessKey, variables)}
+                      disabled={tracedByBusinessKey}
+                      onChange={traceVariable => this.updateSource('traceVariable', traceVariable)}
+                    >
+                      {variables &&
+                        variables.map(({name}) => (
+                          <Typeahead.Option key={name} value={name}>
+                            {name}
+                          </Typeahead.Option>
+                        ))}
+                    </Typeahead>
+                    <LabeledInput
+                      checked={tracedByBusinessKey}
+                      onChange={() => this.updateSource('tracedByBusinessKey', true)}
+                      type="radio"
+                      label={t('events.sources.byKey')}
+                    />
+                  </Form.Group>
+                  <Form.Group>
+                    <h4>{t('events.sources.display')}</h4>
+                    <LabeledInput
+                      checked={eventScope === 'start_end'}
+                      onChange={() => this.updateSource('eventScope', 'start_end')}
+                      label={t('events.sources.startAndEnd')}
+                      type="radio"
+                    />
+                    <LabeledInput
+                      checked={eventScope === 'process_instance'}
+                      onChange={() => this.updateSource('eventScope', 'process_instance')}
+                      label={t('events.sources.flownodeEvents')}
+                      type="radio"
+                    />
+                    <LabeledInput
+                      label={t('events.sources.allEvents')}
+                      checked={eventScope === 'all'}
+                      onChange={() => this.updateSource('eventScope', 'all')}
+                      type="radio"
+                    />
+                  </Form.Group>
+                </Form>
+              </>
             )}
-            <Form className="sourceOptions">
-              <Form.Group>
-                <h4>{t('events.sources.defineTrace')}</h4>
-                <LabeledInput
-                  checked={!tracedByBusinessKey}
-                  onChange={() => this.updateSource('tracedByBusinessKey', false)}
-                  type="radio"
-                  label={t('events.sources.byVariable')}
-                />
-                <Typeahead
-                  value={variables && traceVariable}
-                  noValuesMessage={getDisabledMessage(tracedByBusinessKey, variables)}
-                  disabled={tracedByBusinessKey}
-                  onChange={traceVariable => this.updateSource('traceVariable', traceVariable)}
-                >
-                  {variables &&
-                    variables.map(({name}) => (
-                      <Typeahead.Option key={name} value={name}>
-                        {name}
-                      </Typeahead.Option>
-                    ))}
-                </Typeahead>
-                <LabeledInput
-                  checked={tracedByBusinessKey}
-                  onChange={() => this.updateSource('tracedByBusinessKey', true)}
-                  type="radio"
-                  label={t('events.sources.byKey')}
-                />
-              </Form.Group>
-              <Form.Group>
-                <h4>{t('events.sources.display')}</h4>
-                <LabeledInput
-                  checked={eventScope === 'start_end'}
-                  onChange={() => this.updateSource('eventScope', 'start_end')}
-                  label={t('events.sources.startAndEnd')}
-                  type="radio"
-                />
-                <LabeledInput
-                  checked={eventScope === 'process_instance'}
-                  onChange={() => this.updateSource('eventScope', 'process_instance')}
-                  label={t('events.sources.flownodeEvents')}
-                  type="radio"
-                />
-                <LabeledInput
-                  label={t('events.sources.allEvents')}
-                  checked={eventScope === 'all'}
-                  onChange={() => this.updateSource('eventScope', 'all')}
-                  type="radio"
-                />
-              </Form.Group>
-            </Form>
+            {type === 'external' && <ExternalSource empty={!externalExist} />}
           </Modal.Content>
           <Modal.Actions>
             <Button className="close" onClick={onClose}>

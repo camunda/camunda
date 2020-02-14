@@ -157,7 +157,7 @@
       "description": "Ermöglichen Sie den folgenden Benutzern und Gruppen die Erstellung von Berichten, die auf diesem Prozess basieren..."
     },
     "sources": {
-      "add": "Prozess hinzufügen",
+      "add": "Eventquelle hinzufügen",
       "externalEvents": "Externe Events",
       "editSource": "Eventauswahl bearbeiten",
       "addEvents": "Prozessevents hinzufügen",
@@ -171,7 +171,11 @@
       "allEvents": "Alle Prozessknotenevents",
       "selectProcess": "Bitte wählen Sie eine Prozessdefinition aus",
       "display": "Wählen Sie die anzuzeigenden Events aus",
-      "deleteWarning": "Durch das Entfernen der Events aus diesem Prozess werden alle erstellten Mappings gelöscht."
+      "deleteWarning": "Durch das Entfernen der Events aus dieser Eventquelle werden alle erstellten Mappings gelöscht.",
+      "camundaEvents": "Camunda Events",
+      "empty": "Es wurden keine Eventquellen hinzugefügt",
+      "selectExternal": "Wählen Sie Externe Events aus",
+      "allExternal": "Alle Events"
     }
   },
   "report": {

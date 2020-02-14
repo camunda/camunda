@@ -20,12 +20,15 @@ export default class EventSources extends React.Component {
   openAddSourceModal = () => this.setState({editing: {}});
   openEditSourceModal = editing => this.setState({editing});
   closeSourceModal = () => this.setState({editing: null});
-  removeSource = ({processDefinitionKey}) => {
-    const {sources} = this.props;
-    const filteredSources = sources.filter(
-      source => source.processDefinitionKey !== processDefinitionKey
-    );
-    this.props.onChange(filteredSources);
+  removeSource = ({processDefinitionKey, type}) => {
+    let filter;
+    if (type === 'external') {
+      filter = src => src.type !== 'external';
+    } else {
+      filter = src => src.processDefinitionKey !== processDefinitionKey;
+    }
+
+    this.props.onChange(this.props.sources.filter(filter));
   };
 
   render() {
@@ -35,23 +38,36 @@ export default class EventSources extends React.Component {
     return (
       <div className="EventsSources">
         <div className="sourcesList">
-          <div className="external">{t('events.sources.externalEvents')}</div>
           {sources.map(source => {
-            const {processDefinitionKey, processDefinitionName} = source;
-            return (
-              <Dropdown
-                className={classnames({isActive: true})}
-                key={processDefinitionKey}
-                label={processDefinitionName || processDefinitionKey}
-              >
-                <Dropdown.Option onClick={() => this.openEditSourceModal(source)}>
-                  {t('events.sources.editSource')}
-                </Dropdown.Option>
-                <Dropdown.Option onClick={() => this.setState({deleting: source})}>
-                  {t('common.remove')}
-                </Dropdown.Option>
-              </Dropdown>
-            );
+            if (source.type === 'external') {
+              return (
+                <Dropdown
+                  className={classnames({isActive: true})}
+                  label={t('events.sources.externalEvents')}
+                  key="externalEvents"
+                >
+                  <Dropdown.Option onClick={() => this.setState({deleting: {type: 'external'}})}>
+                    {t('common.remove')}
+                  </Dropdown.Option>
+                </Dropdown>
+              );
+            } else {
+              const {processDefinitionKey, processDefinitionName} = source;
+              return (
+                <Dropdown
+                  className={classnames({isActive: true})}
+                  key={processDefinitionKey}
+                  label={processDefinitionName || processDefinitionKey}
+                >
+                  <Dropdown.Option onClick={() => this.openEditSourceModal(source)}>
+                    {t('events.sources.editSource')}
+                  </Dropdown.Option>
+                  <Dropdown.Option onClick={() => this.setState({deleting: source})}>
+                    {t('common.remove')}
+                  </Dropdown.Option>
+                </Dropdown>
+              );
+            }
           })}
         </div>
         <Button className="addProcess" onClick={this.openAddSourceModal}>

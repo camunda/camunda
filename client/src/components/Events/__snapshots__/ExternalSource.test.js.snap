@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`display empty state with link to docs 1`] = `
+<div
+  className="ExternalSource empty"
+>
+  No Events available. To add events, see 
+  <a
+    href="https://docs.camunda.org/optimize/latest/technical-guide/setup/configuration/#ingestion-configuration"
+    rel="noopener noreferrer"
+    target="_blank"
+  >
+    Documentation
+  </a>
+  .
+</div>
+`;
+
+exports[`should match snapshot 1`] = `
+<div
+  className="ExternalSource"
+>
+  <Labeled
+    label="Select external events"
+  >
+    <Typeahead
+      initialValue="all"
+      onChange={[Function]}
+      onClose={[Function]}
+      onOpen={[Function]}
+      onSearch={[Function]}
+    >
+      <ForwardRef(DropdownOption)
+        value="all"
+      >
+        all events
+      </ForwardRef(DropdownOption)>
+    </Typeahead>
+  </Labeled>
+</div>
+`;
