@@ -67,7 +67,7 @@
     <version.netty-tcnative>2.0.28.Final</version.netty-tcnative>
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.8.1</version.prometheus>
-    <version.protobuf>3.11.3</version.protobuf>
+    <version.protobuf>3.11.4</version.protobuf>
     <version.rocksdbjni>6.6.4</version.rocksdbjni>
     <version.sbe>1.16.1</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
