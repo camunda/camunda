@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.importing.event.AbstractEventProcessIT;
+import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 

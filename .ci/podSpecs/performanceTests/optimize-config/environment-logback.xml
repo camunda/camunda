@@ -8,7 +8,7 @@
   </appender>
 
   <logger name="org.camunda.optimize" level="debug" />
-  <logger name="org.camunda.optimize.service.engine.importing.service.VariableUpdateInstanceImportService" level="warn" />
+  <logger name="org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService" level="warn" />
   <logger name="org.elasticsearch" level="warn" />
 
   <root level="info">

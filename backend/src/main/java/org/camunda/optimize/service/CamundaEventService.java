@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
-import org.camunda.optimize.service.engine.importing.service.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -23,6 +22,7 @@ import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 

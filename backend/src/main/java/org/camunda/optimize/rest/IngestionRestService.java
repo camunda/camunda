@@ -11,7 +11,7 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
-import org.camunda.optimize.service.events.EventService;
+import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -46,7 +46,7 @@ public class IngestionRestService {
   public static final String QUERY_PARAMETER_ACCESS_TOKEN = "access_token";
 
   private final ConfigurationService configurationService;
-  private final EventService eventService;
+  private final ExternalEventService eventService;
 
   @POST
   @Path(EVENT_BATCH_SUB_PATH)

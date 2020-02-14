@@ -7,7 +7,7 @@ package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
-import org.camunda.optimize.service.engine.importing.service.ImportObserver;
+import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

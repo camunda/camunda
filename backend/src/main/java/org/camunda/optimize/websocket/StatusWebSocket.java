@@ -8,7 +8,7 @@ package org.camunda.optimize.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.web.socket.server.standard.SpringConfigurator;

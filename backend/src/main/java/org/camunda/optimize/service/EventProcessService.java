@@ -26,7 +26,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
-import org.camunda.optimize.service.engine.importing.BpmnModelUtility;
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
@@ -39,6 +38,7 @@ import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.REPORT;
-import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtility.extractFlowNodeNames;
 
 @RequiredArgsConstructor
 @Component

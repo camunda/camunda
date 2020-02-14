@@ -82,7 +82,7 @@ public class TenantImportIT extends AbstractImportIT {
 
     // then
     assertThat(
-      embeddedOptimizeExtension.getIndexProvider().getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS).getImportIndex(),
+      embeddedOptimizeExtension.getIndexHandlerRegistry().getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS).getImportIndex(),
       is(2L)
     );
   }

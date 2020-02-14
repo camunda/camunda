@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountServiceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountSuggestionsRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.events.EventService;
+import org.camunda.optimize.service.events.ExternalEventService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -29,7 +29,7 @@ import java.util.List;
 @Secured
 public class EventRestService {
 
-  private final EventService eventService;
+  private final ExternalEventService eventService;
 
   @POST
   @Path("/count")

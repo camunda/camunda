@@ -44,11 +44,6 @@ public class EventClient {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  public void processEventTracesAndStates() {
-    embeddedOptimizeExtension.getEventStateProcessingService().processUncountedEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
   public List<EventTraceStateDto> getAllStoredEventTraceStates() {
     return getAllStoredDocumentsForIndexAsClass(EVENT_TRACE_STATE_INDEX_NAME, EventTraceStateDto.class);
   }
@@ -63,7 +58,7 @@ public class EventClient {
 
   private <T> List<T> getAllStoredDocumentsForIndexAsClass(String indexName, Class<T> dtoClass) {
     SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName);
-    return mapHits(response.getHits(), dtoClass, embeddedOptimizeExtension.getObjectMapper());
+    return mapHits(response.getHits(), dtoClass, elasticSearchIntegrationTestExtension.getObjectMapper());
   }
 
   public CloudEventDto createCloudEventDto() {
@@ -85,4 +80,5 @@ public class EventClient {
       .traceid(RandomStringUtils.randomAlphabetic(10))
       .build();
   }
+
 }

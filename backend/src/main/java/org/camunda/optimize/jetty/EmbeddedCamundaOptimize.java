@@ -7,9 +7,9 @@ package org.camunda.optimize.jetty;
 
 import org.camunda.optimize.CamundaOptimize;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
-import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
-import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.websocket.StatusWebSocket;

@@ -14,11 +14,11 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
-import org.camunda.optimize.service.engine.importing.service.mediator.CompletedProcessInstanceEngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.CompletedUserTaskEngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.IdentityLinkLogEngineImportMediator;
+import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
+import org.camunda.optimize.service.importing.engine.mediator.CompletedProcessInstanceEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.CompletedUserTaskEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.IdentityLinkLogEngineImportMediator;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
@@ -115,7 +115,7 @@ public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
         .sorted(Comparator.comparingInt(o -> mediatorOrder.indexOf(o.getClass())))
         .collect(toList());
 
-      sortedMediators.forEach(EngineImportMediator::importNextPage);
+      sortedMediators.forEach(EngineImportMediator::runImport);
     }
     embeddedOptimizeExtension.makeSureAllScheduledJobsAreFinished();
   }

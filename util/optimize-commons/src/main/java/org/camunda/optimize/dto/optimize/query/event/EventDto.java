@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -26,7 +27,7 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @FieldNameConstants()
-public class EventDto {
+public class EventDto implements OptimizeDto {
   @NotBlank
   @EqualsAndHashCode.Include
   @ToString.Include

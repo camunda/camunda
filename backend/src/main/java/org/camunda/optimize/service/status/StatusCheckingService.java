@@ -6,13 +6,12 @@
 package org.camunda.optimize.service.status;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;

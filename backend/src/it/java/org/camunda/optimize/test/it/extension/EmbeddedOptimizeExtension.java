@@ -21,25 +21,25 @@ import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
-import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
-import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
-import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
-import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
-import org.camunda.optimize.service.engine.importing.service.ImportObserver;
-import org.camunda.optimize.service.engine.importing.service.RunningActivityInstanceImportService;
-import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.ScrollBasedImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
-import org.camunda.optimize.service.events.EventService;
+import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
-import org.camunda.optimize.service.events.stateprocessing.EventStateProcessingService;
-import org.camunda.optimize.service.importing.event.IngestedEventImportScheduler;
+import org.camunda.optimize.service.importing.EngineImportMediator;
+import org.camunda.optimize.service.importing.ImportIndexHandler;
+import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
+import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.service.ImportObserver;
+import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
+import org.camunda.optimize.service.importing.event.EventProcessingScheduler;
+import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
+import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -179,8 +179,12 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       RunningActivityInstanceImportService service =
-        new RunningActivityInstanceImportService(writer,
-                                                 camundaEventService, getElasticsearchImportJobExecutor(), configuredEngine);
+        new RunningActivityInstanceImportService(
+          writer,
+          camundaEventService,
+          getElasticsearchImportJobExecutor(),
+          configuredEngine
+        );
       service.executeImport(activities, () -> {
       });
     }
@@ -226,9 +230,9 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
           StoreIndexesEngineImportMediator.class,
           engineContext
         );
-      storeIndexesEngineImportJobFactory.disableBlocking();
+      storeIndexesEngineImportJobFactory.resetBackoff();
 
-      storeIndexesEngineImportJobFactory.importNextPage();
+      storeIndexesEngineImportJobFactory.runImport();
 
       makeSureAllScheduledJobsAreFinished();
     }
@@ -395,11 +399,11 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     List<Long> indexes = new LinkedList<>();
 
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
-      getIndexProvider()
+      getIndexHandlerRegistry()
         .getAllEntitiesBasedHandlers(engineAlias)
         .forEach(handler -> indexes.add(handler.getImportIndex()));
-      getIndexProvider()
-        .getDefinitionBasedHandlers(engineAlias)
+      getIndexHandlerRegistry()
+        .getTimestampBasedHandlers(engineAlias)
         .forEach(handler -> {
           TimestampBasedImportPage page = handler.getNextPage();
           indexes.add(page.getTimestampOfLastEntity().toEpochSecond());
@@ -410,7 +414,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
   }
 
   public void resetImportStartIndexes() {
-    for (ImportIndexHandler importIndexHandler : getIndexProvider().getAllHandlers()) {
+    for (ImportIndexHandler importIndexHandler : getIndexHandlerRegistry().getAllHandlers()) {
       importIndexHandler.resetImportIndex();
     }
   }
@@ -456,8 +460,8 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
    */
   public void updateImportIndex() {
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
-      if (getIndexProvider().getDefinitionBasedHandlers(engineAlias) != null) {
-        for (TimestampBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(
+      if (getIndexHandlerRegistry().getTimestampBasedHandlers(engineAlias) != null) {
+        for (TimestampBasedImportIndexHandler importIndexHandler : getIndexHandlerRegistry().getTimestampBasedHandlers(
           engineAlias)) {
           importIndexHandler.updateImportIndex();
         }
@@ -465,8 +469,8 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     }
   }
 
-  public ImportIndexHandlerProvider getIndexProvider() {
-    return getApplicationContext().getBean(ImportIndexHandlerProvider.class);
+  public ImportIndexHandlerRegistry getIndexHandlerRegistry() {
+    return getApplicationContext().getBean(ImportIndexHandlerRegistry.class);
   }
 
   public AlertService getAlertService() {
@@ -481,16 +485,29 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     return getApplicationContext().getBean(IdentityService.class);
   }
 
-  public EventStateProcessingService getEventStateProcessingService() {
-    return getApplicationContext().getBean(EventStateProcessingService.class);
+  public void processEvents() {
+    EventProcessingScheduler eventProcessingScheduler = getEventProcessingScheduler();
+
+    // run one cycle
+    eventProcessingScheduler.getImportMediators().forEach(EngineImportMediator::resetBackoff);
+    eventProcessingScheduler.runImportCycle();
+    waitForEventProcessingRoundToComplete(eventProcessingScheduler);
+
+    // do final progress update
+    eventProcessingScheduler.getEventProcessingProgressMediator().runImport();
+    waitForEventProcessingRoundToComplete(eventProcessingScheduler);
   }
 
-  public EventService getEventService() {
-    return getApplicationContext().getBean(EventService.class);
+  public ExternalEventService getEventService() {
+    return getApplicationContext().getBean(ExternalEventService.class);
   }
 
-  public IngestedEventImportScheduler getIngestedEventImportScheduler() {
-    return getApplicationContext().getBean(IngestedEventImportScheduler.class);
+  public EventProcessingScheduler getEventProcessingScheduler() {
+    return getApplicationContext().getBean(EventProcessingScheduler.class);
+  }
+
+  public EventBasedProcessesInstanceImportScheduler getEventBasedProcessesInstanceImportScheduler() {
+    return getApplicationContext().getBean(EventBasedProcessesInstanceImportScheduler.class);
   }
 
   public ElasticSearchSchemaManager getElasticSearchSchemaManager() {
@@ -515,5 +532,19 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public void setResetImportOnStart(final boolean resetImportOnStart) {
     this.resetImportOnStart = resetImportOnStart;
+  }
+
+  private void waitForEventProcessingRoundToComplete(final EventProcessingScheduler eventProcessingScheduler) {
+    final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
+    eventProcessingScheduler.getImportMediators()
+      .stream()
+      .map(EngineImportMediator::getImportJobExecutor)
+      .forEach(importJobExecutor -> {
+        final CompletableFuture<Void> toComplete = new CompletableFuture<>();
+        synchronizationCompletables.add(toComplete);
+        importJobExecutor.executeImportJob(new SynchronizationElasticsearchImportJob(toComplete));
+      });
+
+    CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
   }
 }

@@ -70,8 +70,8 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
-import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractProcessDefinitionName;
-import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extractDecisionDefinitionName;
+import static org.camunda.optimize.service.util.BpmnModelUtility.extractProcessDefinitionName;
+import static org.camunda.optimize.service.util.DmnModelUtility.extractDecisionDefinitionName;
 
 @RequiredArgsConstructor
 @Component
