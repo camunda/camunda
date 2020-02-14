@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.system;
+package io.zeebe.broker.system.configuration;
 
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CLUSTER_SIZE;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
@@ -34,14 +34,7 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
-import io.zeebe.broker.system.configuration.BackpressureCfg;
 import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
@@ -58,7 +51,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class ConfigurationTest {
+public final class BrokerCfgTest {
 
   public static final String BROKER_BASE = "test";
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -497,7 +490,7 @@ public final class ConfigurationTest {
 
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
-    final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
+    final InputStream resourceAsStream = BrokerCfgTest.class.getResourceAsStream(configPath);
     assertThat(resourceAsStream)
         .withFailMessage("Unable to read configuration file %s", configPath)
         .isNotNull();
