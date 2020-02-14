@@ -9,7 +9,7 @@ import {mount} from 'enzyme';
 
 import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
 
-import Button from 'modules/components/Button';
+import Dropdown from 'modules/components/Dropdown';
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
 import {Copyright} from './styled';
@@ -45,7 +45,7 @@ describe('ListFooter', () => {
   it('should show pagination', () => {
     const node = renderFooter({props: {filterCount: 11}});
 
-    expect(node.find(Button).exists()).toBe(false);
+    expect(node.find(Dropdown).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(true);
     expect(node.find(Copyright).exists()).toBe(true);
   });
@@ -53,7 +53,7 @@ describe('ListFooter', () => {
   it('should not show pagination', () => {
     const node = renderFooter({props: {filterCount: 9}});
 
-    expect(node.find(Button).exists()).toBe(false);
+    expect(node.find(Dropdown).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });
@@ -63,14 +63,14 @@ describe('ListFooter', () => {
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
-  it('should show Button when there is selection', () => {
+  it('should show Dropdown when there is selection', () => {
     const node = renderFooter({
       context: {getSelectedCount: () => 2}
     });
 
-    const button = node.find(Button);
+    const button = node.find(Dropdown);
     expect(button.exists()).toBe(true);
-    expect(button.text()).toEqual('Apply Operation on 2 Instances...');
+    expect(button.text()).toContain('Apply Operation on 2 Instances...');
   });
 
   it('should not show Paginator when hasContent is false', () => {
@@ -79,7 +79,7 @@ describe('ListFooter', () => {
       context: {getSelectedCount: () => 2}
     });
 
-    expect(node.find(Button).exists()).toBe(false);
+    expect(node.find(Dropdown).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });
