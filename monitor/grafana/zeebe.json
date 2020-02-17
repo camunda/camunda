@@ -58,7 +58,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1579873290265,
+  "iteration": 1581944106544,
   "links": [],
   "panels": [
     {
@@ -2390,7 +2390,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (pod_name) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=\"\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name=~\"zeebe\", container_name!=\"POD\"}[1m]))",
+              "expr": "sum by (pod_name) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=\"\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
               "legendFormat": "{{pod_name}}",
               "refId": "A"
             }
