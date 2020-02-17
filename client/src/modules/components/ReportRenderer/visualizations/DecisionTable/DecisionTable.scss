@@ -29,6 +29,10 @@
   .dmn-decision-table-container {
     color: inherit;
 
+    .tjs-table tbody tr:nth-child(2n) {
+      background-color: #444;
+    }
+
     .decision-table-properties {
       color: inherit;
       background-color: inherit;
