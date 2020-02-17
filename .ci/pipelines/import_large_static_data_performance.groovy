@@ -138,16 +138,22 @@ pipeline {
                
                 # note: each call here is followed by `|| error=true` to not let the whole script fail if one assert fails
                 # a final if block checks if there was an error and will let the script fail
+                export EXPECTED_NUMBER_OF_PROCESS_INSTANCES=`gsutil ls -L gs://optimize-data | grep expected_number_of_process_instances | cut -f2 -d':'`
+                export EXPECTED_NUMBER_OF_USER_TASKS=`gsutil ls -L gs://optimize-data | grep expected_number_of_user_tasks | cut -f2 -d':'`
+                export EXPECTED_NUMBER_OF_VARIABLES=`gsutil ls -L gs://optimize-data | grep expected_number_of_variables | cut -f2 -d':'`
+                export EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES=`gsutil ls -L gs://optimize-data | grep expected_number_of_activity_instances | cut -f2 -d':'`
+                export EXPECTED_NUMBER_OF_DECISION_INSTANCES=`gsutil ls -L gs://optimize-data | grep expected_number_of_decision_instances | cut -f2 -d':'`
+                
                 echo "NUMBER_OF_PROCESS_INSTANCES"
-                test "\$NUMBER_OF_PROCESS_INSTANCES" = "${EXPECTED_NUMBER_OF_PROCESS_INSTANCES}" || error=true
+                test "\$NUMBER_OF_PROCESS_INSTANCES" = "\${EXPECTED_NUMBER_OF_PROCESS_INSTANCES}" || error=true
                 echo "NUMBER_OF_ACTIVITY_INSTANCES"
-                test "\$NUMBER_OF_ACTIVITY_INSTANCES" = "${EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES}" || error=true
+                test "\$NUMBER_OF_ACTIVITY_INSTANCES" = "\${EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES}" || error=true
                 echo "NUMBER_OF_USER_TASKS"
-                test "\$NUMBER_OF_USER_TASKS" = "${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true
+                test "\$NUMBER_OF_USER_TASKS" = "\${EXPECTED_NUMBER_OF_USER_TASKS}" || error=true
                 echo "NUMBER_OF_VARIABLES"
-                test "\$NUMBER_OF_VARIABLES" = "${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
+                test "\$NUMBER_OF_VARIABLES" = "\${EXPECTED_NUMBER_OF_VARIABLES}" || error=true
                 echo "NUMBER_OF_DECISION_INSTANCES"
-                test "\$NUMBER_OF_DECISION_INSTANCES" = "${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true 
+                test "\$NUMBER_OF_DECISION_INSTANCES" = "\${EXPECTED_NUMBER_OF_DECISION_INSTANCES}" || error=true 
 
                 #Fail the build if there was an error
                 if [ \$error ]

@@ -262,6 +262,13 @@ pipeline {
                 stage('Dump Data') {
                     steps {
                         container('postgres') {
+                            script {
+                                env.EXPECTED_NUMBER_OF_PROCESS_INSTANCES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_procinst;"', returnStdout: true).trim()
+                                env.EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_actinst;"', returnStdout: true).trim()
+                                env.EXPECTED_NUMBER_OF_USER_TASKS = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) as total from act_hi_taskinst;"', returnStdout: true).trim()
+                                env.EXPECTED_NUMBER_OF_VARIABLES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_varinst where var_type_ in (\'string\', \'double\', \'integer\', \'long\', \'short\', \'date\', \'boolean\' ) and CASE_INST_ID_  is  null;"', returnStdout: true).trim()
+                                env.EXPECTED_NUMBER_OF_DECISION_INSTANCES = sh(script: 'psql -qAt -h localhost -U camunda -d engine -c "select count(*) from act_hi_decinst;"', returnStdout: true).trim()
+                            }
                             // Export dump
                             sh("pg_dump -h localhost -U camunda -n public --format=c --file=\"/export/${SQL_DUMP}\" engine")
                         }
@@ -273,9 +280,21 @@ pipeline {
                             // Upload data
                             sh("""
                               if [ "${USE_E2E_PRESETS}" = true ]; then
-                                gsutil -h "x-goog-meta-NUM_INSTANCES: \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" cp "/export/${SQL_DUMP}" gs://optimize-data/
+                                gsutil -h "x-goog-meta-NUM_INSTANCES:\\\$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\\$EXPECTED_NUMBER_OF_USER_TASKS" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_VARIABLES:\\$EXPECTED_NUMBER_OF_VARIABLES" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_DECISION_INSTANCES:\\$EXPECTED_NUMBER_OF_DECISION_INSTANCES" \\
+                                       cp "/export/${SQL_DUMP}" gs://optimize-data/
                               else
-                                gsutil -h "x-goog-meta-NUM_INSTANCES: ${NUM_INSTANCES}" cp "/export/${SQL_DUMP}" gs://optimize-data/
+                                gsutil -h "x-goog-meta-NUM_INSTANCES:${NUM_INSTANCES}" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\\$EXPECTED_NUMBER_OF_USER_TASKS" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_VARIABLES:\\$EXPECTED_NUMBER_OF_VARIABLES" \\
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_DECISION_INSTANCES:\\$EXPECTED_NUMBER_OF_DECISION_INSTANCES" \\
+                                       cp "/export/${SQL_DUMP}" gs://optimize-data/
                               fi
                                 """)
                             // Cleanup
