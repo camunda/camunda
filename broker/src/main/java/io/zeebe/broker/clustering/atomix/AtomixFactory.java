@@ -25,6 +25,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.ByteValueParser;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -118,7 +119,7 @@ public final class AtomixFactory {
     partitionGroupBuilder.withMaxEntrySize((int) maxMessageSize.toBytes());
 
     Optional.ofNullable(dataCfg.getLogSegmentSize())
-        .map(ByteValue::new)
+        .map(ByteValueParser::fromString)
         .ifPresent(
             segmentSize -> {
               if (segmentSize.toBytes() < maxMessageSize.toBytes()) {

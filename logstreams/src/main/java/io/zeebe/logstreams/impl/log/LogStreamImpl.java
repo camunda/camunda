@@ -17,7 +17,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -41,7 +40,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   private final ActorConditions onCommitPositionUpdatedConditions;
   private final String logName;
   private final int partitionId;
-  private final ByteValue maxFrameLength;
+  private final int maxFrameLength;
   private final ActorScheduler actorScheduler;
   private final List<LogStreamReader> readers;
   private final LogStreamReaderImpl reader;
@@ -63,7 +62,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
       final String logName,
       final int partitionId,
       final int nodeId,
-      final ByteValue maxFrameLength,
+      final int maxFrameLength,
       final LogStorage logStorage) {
     this.actorScheduler = actorScheduler;
     this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
@@ -322,7 +321,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
                         partitionId,
                         logStorage,
                         subscription,
-                        (int) maxFrameLength.toBytes());
+                        maxFrameLength);
 
                 actorScheduler
                     .submitActor(appender)

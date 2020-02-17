@@ -15,6 +15,7 @@ import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.ByteValueParser;
 import io.zeebe.util.Environment;
 import java.util.Optional;
 
@@ -75,7 +76,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   }
 
   public ByteValue getMaxMessageSize() {
-    return new ByteValue(maxMessageSize);
+    return ByteValueParser.fromString(maxMessageSize);
   }
 
   public void setMaxMessageSize(final String maxMessageSize) {

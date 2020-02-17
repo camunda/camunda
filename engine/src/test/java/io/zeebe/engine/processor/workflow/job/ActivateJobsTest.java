@@ -381,13 +381,13 @@ public final class ActivateJobsTest {
     final int jobCount = 3;
     final int expectedJobsInBatch = 2;
 
-    final ByteValue maxMessageSize = ByteValue.ofMegabytes(4);
-    final ByteValue headerSize = ByteValue.ofKilobytes(2);
-    final int maxRecordSize = (int) maxMessageSize.toBytes() - (int) headerSize.toBytes();
+    final long maxMessageSize = ByteValue.ofMegabytes(4);
+    final long headerSize = ByteValue.ofKilobytes(2);
+    final long maxRecordSize = maxMessageSize - headerSize;
     // the variable size only the half of the record size because two events are written on creation
-    final int maxVariableSize = maxRecordSize / 2;
+    final long maxVariableSize = maxRecordSize / 2;
 
-    final int variablesSize = maxVariableSize / expectedJobsInBatch;
+    final int variablesSize = (int) maxVariableSize / expectedJobsInBatch;
     final String variables = "{'key': '" + "x".repeat(variablesSize) + "'}";
 
     // when

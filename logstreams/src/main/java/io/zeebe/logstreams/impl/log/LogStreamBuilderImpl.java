@@ -10,7 +10,6 @@ package io.zeebe.logstreams.impl.log;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -73,7 +72,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
             logName,
             partitionId,
             nodeId,
-            ByteValue.ofBytes(maxFragmentSize),
+            maxFragmentSize,
             logStorage);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();

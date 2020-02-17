@@ -24,7 +24,7 @@ import org.agrona.BitUtil;
 /** Builder for a {@link Dispatcher} */
 public final class DispatcherBuilder {
 
-  private static final int DEFAULT_BUFFER_SIZE = (int) ByteValue.ofMegabytes(1).toBytes();
+  private static final int DEFAULT_BUFFER_SIZE = (int) ByteValue.ofMegabytes(1);
 
   private int bufferSize = -1;
   private int maxFragmentLength = -1;
@@ -49,8 +49,8 @@ public final class DispatcherBuilder {
    * The number of bytes the buffer is be able to contain. Represents the size of the data section.
    * Additional space will be allocated for the meta-data sections
    */
-  public DispatcherBuilder bufferSize(final ByteValue byteValue) {
-    bufferSize = (int) byteValue.toBytes();
+  public DispatcherBuilder bufferSize(final int bufferSize) {
+    this.bufferSize = bufferSize;
     return this;
   }
 
@@ -60,8 +60,8 @@ public final class DispatcherBuilder {
   }
 
   /** The max length of the data section of a frame */
-  public DispatcherBuilder maxFragmentLength(final ByteValue maxFragmentLength) {
-    this.maxFragmentLength = (int) maxFragmentLength.toBytes();
+  public DispatcherBuilder maxFragmentLength(final int maxFragmentLength) {
+    this.maxFragmentLength = maxFragmentLength;
     return this;
   }
 

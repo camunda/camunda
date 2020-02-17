@@ -24,6 +24,7 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.ByteValueParser;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
 import java.time.Duration;
@@ -32,6 +33,7 @@ import java.util.Objects;
 public final class ClusterCfg {
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
   private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
+
   private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
@@ -109,7 +111,7 @@ public final class ClusterCfg {
   }
 
   public ByteValue getMaxMessageSize() {
-    return new ByteValue(maxMessageSize);
+    return ByteValueParser.fromString(maxMessageSize);
   }
 
   public ClusterCfg setMaxMessageSize(final String maxMessageSize) {
