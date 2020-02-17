@@ -18,7 +18,6 @@ import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
-import io.zeebe.util.DurationUtil;
 import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
@@ -116,7 +115,7 @@ public final class Gateway {
   }
 
   private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
-    final Duration minKeepAliveInterval = DurationUtil.parse(cfg.getMinKeepAliveInterval());
+    final Duration minKeepAliveInterval = cfg.getMinKeepAliveIntervalAsDuration();
 
     if (minKeepAliveInterval.isNegative() || minKeepAliveInterval.isZero()) {
       throw new IllegalArgumentException("Minimum keep alive interval must be positive.");

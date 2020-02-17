@@ -13,7 +13,9 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
 
 import io.zeebe.transport.impl.SocketAddress;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
+import java.time.Duration;
 import java.util.Objects;
 
 public final class NetworkCfg {
@@ -50,11 +52,18 @@ public final class NetworkCfg {
     return this;
   }
 
+  public Duration getMinKeepAliveIntervalAsDuration() {
+    return DurationUtil.parse(minKeepAliveInterval);
+  }
+
   public String getMinKeepAliveInterval() {
     return minKeepAliveInterval;
   }
 
   public NetworkCfg setMinKeepAliveInterval(final String keepAlive) {
+    // call parsing logic to provoke any exceptions that might happen during parsing
+    DurationUtil.parse(keepAlive);
+
     this.minKeepAliveInterval = keepAlive;
     return this;
   }

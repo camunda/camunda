@@ -46,7 +46,6 @@ import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
@@ -366,7 +365,7 @@ public final class ZeebePartition extends Actor
 
   private ActorFuture<Void> installSnapshotDirector(
       final StreamProcessor streamProcessor, final DataCfg dataCfg) {
-    final Duration snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
+    final Duration snapshotPeriod = dataCfg.getSnapshotPeriodAsDuration();
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             localBroker.getNodeId(),

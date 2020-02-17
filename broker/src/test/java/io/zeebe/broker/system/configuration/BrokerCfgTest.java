@@ -32,6 +32,7 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_A
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
@@ -40,6 +41,7 @@ import io.zeebe.util.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,6 +85,32 @@ public final class BrokerCfgTest {
   public void shouldUseStepTimeoutFromEnv() {
     environment.put(ENV_STEP_TIMEOUT, "1m");
     assertDefaultStepTimeout("1m");
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenTryingToSetInvalidStepTimeout() {
+    // given
+    final var sutBrokerCfg = new BrokerCfg();
+
+    // when
+    final var catchedThrownBy = assertThatThrownBy(() -> sutBrokerCfg.setStepTimeout("invalid"));
+
+    // then
+    catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldConvertStepTimeoutToDuration() {
+    // given
+    final Duration expected = Duration.ofMinutes(13);
+    final var sutBrokerCfg = new BrokerCfg();
+    sutBrokerCfg.setStepTimeout("13m");
+
+    // when
+    final Duration actual = sutBrokerCfg.getStepTimeoutAsDuration();
+
+    // then
+    assertThat(actual).isEqualTo(expected);
   }
 
   @Test

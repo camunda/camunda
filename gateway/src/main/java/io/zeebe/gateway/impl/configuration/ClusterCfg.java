@@ -92,6 +92,9 @@ public final class ClusterCfg {
   }
 
   public ClusterCfg setRequestTimeout(final String requestTimeout) {
+    // call parsing logic to provoke any exceptions that might occur during parsing
+    DurationUtil.parse(requestTimeout);
+
     this.requestTimeout = requestTimeout;
     return this;
   }

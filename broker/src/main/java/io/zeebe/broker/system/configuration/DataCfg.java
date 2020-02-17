@@ -7,7 +7,9 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,7 +58,14 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   public void setSnapshotPeriod(final String snapshotPeriod) {
+    // call parsing to provoke any exceptions that might occur during parsing
+    DurationUtil.parse(snapshotPeriod);
+
     this.snapshotPeriod = snapshotPeriod;
+  }
+
+  public Duration getSnapshotPeriodAsDuration() {
+    return DurationUtil.parse(snapshotPeriod);
   }
 
   public int getMaxSnapshots() {

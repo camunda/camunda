@@ -9,7 +9,9 @@ package io.zeebe.broker.system.configuration;
 
 import com.google.gson.GsonBuilder;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -107,11 +109,18 @@ public final class BrokerCfg {
     return this;
   }
 
+  public Duration getStepTimeoutAsDuration() {
+    return DurationUtil.parse(stepTimeout);
+  }
+
   public String getStepTimeout() {
     return stepTimeout;
   }
 
   public void setStepTimeout(final String stepTimeout) {
+    // call parsing code to provoke any exceptions that might occur during parsing
+    DurationUtil.parse(stepTimeout);
+
     this.stepTimeout = stepTimeout;
   }
 
