@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.entities;
 
-public class VariableEntity extends OperateZeebeEntity {
+public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
 
   private String name;
   private String value;

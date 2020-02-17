@@ -45,9 +45,7 @@ jest.mock(
 const mockCollapsablePanelProps = {
   getStateLocally: () => ({}),
   isFiltersCollapsed: false,
-  isSelectionsCollapsed: false,
-  expandFilters: jest.fn(),
-  expandSelections: jest.fn()
+  expandFilters: jest.fn()
 };
 
 const mountComponent = props => {
@@ -84,7 +82,7 @@ describe('Header', () => {
 
       expect(node.find(Styled.Menu)).toExist();
       expect(node.find(Styled.Menu).props().role).toBe('navigation');
-      expect(node.find(Styled.Menu).find('li').length).toBe(6);
+      expect(node.find(Styled.Menu).find('li').length).toBe(5);
 
       const BrandLinkNode = node.find('[data-test="header-link-brand"]');
       expect(BrandLinkNode).toExist();
@@ -119,13 +117,6 @@ describe('Header', () => {
       expect(IncidentsLinkNode).toExist();
       expect(IncidentsLinkNode.text()).toContain('Incidents');
       expect(IncidentsLinkNode.find(Badge).props().type).toBe('INCIDENTS');
-
-      const SelectionsLinkNode = node.find(
-        '[data-test="header-link-selections"]'
-      );
-      expect(SelectionsLinkNode).toExist();
-      expect(SelectionsLinkNode.text()).toContain('Selections');
-      expect(SelectionsLinkNode.find(Badge).length).toBe(2);
     });
 
     it('should render skeletons', () => {
@@ -146,23 +137,10 @@ describe('Header', () => {
       const IncidentsLinkNode = node.find(
         '[data-test="header-link-incidents"]'
       );
-      const SelectionsLinkNode = node.find(
-        '[data-test="header-link-selections"]'
-      );
 
       expect(InstancesLinkNode.find(Badge).text()).toBe(skeletonBadge);
       expect(FiltersLinkNode.find(Badge).text()).toBe(skeletonBadge);
       expect(IncidentsLinkNode.find(Badge).text()).toBe('');
-      expect(
-        SelectionsLinkNode.find(Badge)
-          .at(0)
-          .text()
-      ).toBe('');
-      expect(
-        SelectionsLinkNode.find(Badge)
-          .at(1)
-          .text()
-      ).toBe('');
     });
 
     it('should render values', () => {
@@ -186,9 +164,6 @@ describe('Header', () => {
       const IncidentsLinkNode = node.find(
         '[data-test="header-link-incidents"]'
       );
-      const SelectionsLinkNode = node.find(
-        '[data-test="header-link-selections"]'
-      );
 
       expect(InstancesLinkNode.find(Badge).text()).toBe(
         countStoreWithCount.running.toString()
@@ -199,16 +174,6 @@ describe('Header', () => {
       expect(IncidentsLinkNode.find(Badge).text()).toBe(
         countStoreWithCount.withIncidents.toString()
       );
-      expect(
-        SelectionsLinkNode.find(Badge)
-          .at(0)
-          .text()
-      ).toBe(countStoreWithCount.selectionCount.toString());
-      expect(
-        SelectionsLinkNode.find(Badge)
-          .at(1)
-          .text()
-      ).toBe(countStoreWithCount.instancesInSelectionsCount.toString());
     });
 
     it('should render user element', () => {

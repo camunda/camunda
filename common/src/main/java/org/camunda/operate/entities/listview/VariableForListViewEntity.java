@@ -11,7 +11,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 
 
-public class VariableForListViewEntity extends OperateZeebeEntity {
+public class VariableForListViewEntity extends OperateZeebeEntity<VariableForListViewEntity> {
 
   private Long workflowInstanceKey;
   private Long scopeKey;

@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-user_"
+			"operate-user-${schema.previous_version}_"
 		]
 	},
 	"dest": {

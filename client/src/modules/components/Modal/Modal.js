@@ -222,7 +222,11 @@ class ModalPrimaryButton extends React.Component {
   }
 }
 
-class ModalSecondatyButton extends React.Component {
+ModalPrimaryButton.propTypes = {
+  onModalClose: PropTypes.func
+};
+
+class ModalSecondaryButton extends React.Component {
   static propTypes = {
     addKeyHandler: PropTypes.func.isRequired,
     className: PropTypes.string,
@@ -235,5 +239,9 @@ class ModalSecondatyButton extends React.Component {
   }
 }
 
+ModalSecondaryButton.propTypes = {
+  onModalClose: PropTypes.func
+};
+
 Modal.PrimaryButton = withModal(ModalPrimaryButton);
-Modal.SecondaryButton = withModal(ModalSecondatyButton);
+Modal.SecondaryButton = withModal(ModalSecondaryButton);

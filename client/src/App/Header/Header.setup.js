@@ -11,9 +11,7 @@ export const countStore = {
   running: 0,
   active: 0,
   withIncidents: 0,
-  filterCount: null,
-  instancesInSelectionsCount: 0,
-  selectionCount: 0
+  filterCount: null
 };
 
 export const countStoreWithCount = {
@@ -21,8 +19,6 @@ export const countStoreWithCount = {
   active: 80,
   withIncidents: 20,
   filterCount: null,
-  instancesInSelectionsCount: 0,
-  selectionCount: 0,
   isLoaded: true
 };
 

@@ -6,7 +6,12 @@
 
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
-export function concatUrl({bpmnProcessId, versions, hasFinishedInstances}) {
+export function concatUrl({
+  bpmnProcessId,
+  versions,
+  hasFinishedInstances,
+  name
+}) {
   const versionId = versions.length === 1 ? versions[0].version : 'all';
 
   const filter = {
@@ -23,7 +28,9 @@ export function concatUrl({bpmnProcessId, versions, hasFinishedInstances}) {
     });
   }
 
-  return `/instances?filter=${JSON.stringify(filter)}`;
+  return `/instances?filter=${JSON.stringify(filter)}&name=${JSON.stringify(
+    name
+  )}`;
 }
 
 export function concatGroupTitle(workflowName, instancesCount, versionsCount) {

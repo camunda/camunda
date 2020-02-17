@@ -26,7 +26,7 @@ function ValidationTextInput({
     setIsValid(checkIsValid(value));
 
     if (checkIsComplete(value)) setIsComplete(true);
-  }, [value]);
+  }, [checkIsComplete, checkIsValid, value]);
 
   const handleChange = async event => {
     const {value} = event.target;

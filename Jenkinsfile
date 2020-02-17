@@ -5,7 +5,7 @@
 def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
 
 String getBranchSlug() {
-  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').minus('-deploy')
+  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
 }
 
 String getGitCommitMsg() {
@@ -41,7 +41,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(daysToKeepStr:'14', numToKeepStr:'50'))
     timestamps()
-    timeout(time: 45, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
   }
 
   stages {
@@ -131,7 +131,9 @@ pipeline {
         }
         stage('Deploy - Docker Image') {
           when {
-            expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+            not {
+                expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
+            }
           }
           environment {
             IMAGE_TAG = getImageTag()
@@ -181,7 +183,9 @@ pipeline {
     }
     stage ('Deploy to K8s') {
       when {
-        expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+        not {
+            expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
+        }
       }
       steps {
         build job: '/deploy-branch-to-k8s',

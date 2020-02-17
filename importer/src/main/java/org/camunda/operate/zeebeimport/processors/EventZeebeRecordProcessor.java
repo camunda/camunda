@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -48,6 +49,8 @@ public class EventZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(EventZeebeRecordProcessor.class);
 
+  private static final String ID_PATTERN = "%s_%s";
+
   private static final Set<String> INCIDENT_EVENTS = new HashSet<>();
   private final static Set<String> JOB_EVENTS = new HashSet<>();
   private static final Set<String> WORKFLOW_INSTANCE_STATES = new HashSet<>();
@@ -77,17 +80,24 @@ public class EventZeebeRecordProcessor {
   @Autowired
   private EventTemplate eventTemplate;
 
-  public void processIncidentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
-    IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
-    final String intentStr = record.getIntent().name();
-
-    if (INCIDENT_EVENTS.contains(intentStr)) {
-      processIncident(record, recordValue, bulkRequest);
+  public void processIncidentRecords(Map<Long, List<RecordImpl<IncidentRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+    for (Map.Entry<Long, List<RecordImpl<IncidentRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
+      //we need only last event of the processed type
+      List<RecordImpl<IncidentRecordValueImpl>> incidentRecords = wiRecordsEntry.getValue();
+      if (incidentRecords.size() >= 1) {
+        for (int i = incidentRecords.size() - 1; i>=0; i-- ) {
+          final String intentStr = incidentRecords.get(i).getIntent().name();
+          if (INCIDENT_EVENTS.contains(intentStr)) {
+            IncidentRecordValueImpl recordValue = incidentRecords.get(i).getValue();
+            processIncident(incidentRecords.get(i), recordValue, bulkRequest);
+            break;
+          }
+        }
+      }
     }
-
   }
 
-  public void processJobRecord(Map<Long, List<RecordImpl<JobRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+  public void processJobRecords(Map<Long, List<RecordImpl<JobRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
     for (Map.Entry<Long, List<RecordImpl<JobRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       //we need only last event of the processed type
       List<RecordImpl<JobRecordValueImpl>> jobRecords = wiRecordsEntry.getValue();
@@ -104,8 +114,7 @@ public class EventZeebeRecordProcessor {
     }
   }
 
-
-  public void processWorkflowInstanceRecord(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
+  public void processWorkflowInstanceRecords(Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> records, BulkRequest bulkRequest) throws PersistenceException {
     for (Map.Entry<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>> wiRecordsEntry: records.entrySet()) {
       //we need only last event of the processed type
       List<RecordImpl<WorkflowInstanceRecordValueImpl>> wiRecords = wiRecordsEntry.getValue();
@@ -124,27 +133,33 @@ public class EventZeebeRecordProcessor {
 
   private void processWorkflowInstance(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequest bulkRequest)
     throws PersistenceException {
-    EventEntity eventEntity = new EventEntity();
+    if (!isProcessEvent(recordValue)) {   //we do not need to store process level events
+      EventEntity eventEntity = new EventEntity();
 
-    loadEventGeneralData(record, eventEntity);
+      eventEntity.setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), record.getKey()));
 
-    eventEntity.setWorkflowKey(recordValue.getWorkflowKey());
-    eventEntity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+      loadEventGeneralData(record, eventEntity);
 
-    if (recordValue.getElementId() != null) {
-      eventEntity.setActivityId(recordValue.getElementId());
+      eventEntity.setWorkflowKey(recordValue.getWorkflowKey());
+      eventEntity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+      eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+
+      if (recordValue.getElementId() != null) {
+        eventEntity.setActivityId(recordValue.getElementId());
+      }
+
+      if (record.getKey() != recordValue.getWorkflowInstanceKey()) {
+        eventEntity.setFlowNodeInstanceKey(record.getKey());
+      }
+
+      persistEvent(eventEntity, bulkRequest);
     }
-
-    if (record.getKey() != recordValue.getWorkflowInstanceKey()) {
-      eventEntity.setFlowNodeInstanceKey(record.getKey());
-    }
-
-    persistEvent(eventEntity, bulkRequest);
   }
 
   private void processJob(Record record, JobRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
+
+    eventEntity.setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
@@ -191,6 +206,8 @@ public class EventZeebeRecordProcessor {
   private void processIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
     EventEntity eventEntity = new EventEntity();
 
+    eventEntity.setId(String.format(ID_PATTERN, recordValue.getWorkflowInstanceKey(), recordValue.getElementInstanceKey()));
+
     loadEventGeneralData(record, eventEntity);
 
     if (recordValue.getWorkflowInstanceKey() > 0) {
@@ -213,9 +230,20 @@ public class EventZeebeRecordProcessor {
     persistEvent(eventEntity, bulkRequest);
   }
 
+  private boolean isProcessEvent(WorkflowInstanceRecordValueImpl recordValue) {
+    return isOfType(recordValue, BpmnElementType.PROCESS);
+  }
+
+  private boolean isOfType(WorkflowInstanceRecordValueImpl recordValue, BpmnElementType type) {
+    final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
+    if (bpmnElementType == null) {
+      return false;
+    }
+    return bpmnElementType.equals(type);
+  }
 
   private void loadEventGeneralData(Record record, EventEntity eventEntity) {
-    eventEntity.setId(String.valueOf(record.getPosition()));
+//    eventEntity.setId(String.valueOf(record.getPosition()));
     eventEntity.setKey(record.getKey());
     eventEntity.setPartitionId(record.getPartitionId());
     eventEntity.setEventSourceType(EventSourceType.fromZeebeValueType(record.getValueType()));

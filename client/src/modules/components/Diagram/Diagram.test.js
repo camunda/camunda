@@ -109,7 +109,7 @@ describe('Diagram', () => {
     );
   });
 
-  it('should reset Zoom-levels when expandState changes', () => {
+  it('should reinitiate the Viewer when expandState changes', () => {
     // given
     const node = shallowRenderNode({
       definitions: mockProps.definitions,
@@ -117,12 +117,14 @@ describe('Diagram', () => {
       expandState: 'DEFAULT'
     });
     const resetZoom = jest.spyOn(node.instance(), 'handleZoomReset');
+    const oldViewer = node.instance().Viewer;
 
     // when
     node.setProps({expandState: 'EXPANDED'});
 
     // then
-    expect(resetZoom).toHaveBeenCalled();
+    const newViewer = node.instance().Viewer;
+    expect(newViewer).not.toBe(oldViewer);
   });
 
   describe("viewer's theme", () => {

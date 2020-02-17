@@ -285,12 +285,12 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       for (JobWorker jobWorker: jobWorkers) {
         jobWorker.close();
       }
-    }, 90, TimeUnit.SECONDS);
+    }, 500, TimeUnit.SECONDS);
 
     //there is a bug in Zeebe, when cancel happens concurrently with job worker running -> we're canceling after the job workers are stopped
     scheduler.schedule(() ->
         cancelSomeInstances(),
-      100, TimeUnit.SECONDS);
+      510, TimeUnit.SECONDS);
 
   }
 

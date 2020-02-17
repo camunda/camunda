@@ -5,6 +5,11 @@
  */
 package org.camunda.operate.it;
 
+import static org.camunda.operate.util.CollectionUtil.filter;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.AbstractArchiverJob;
@@ -22,12 +28,14 @@ import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
+import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
@@ -41,15 +49,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-
-import static org.camunda.operate.util.CollectionUtil.*;
-
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
@@ -88,6 +91,14 @@ public class OperateTester {
   private Predicate<Object[]> incidentIsActiveCheck;
   
   @Autowired
+  @Qualifier("activityIsActiveCheck")
+  private Predicate<Object[]> activityIsActiveCheck;
+  
+  @Autowired
+  @Qualifier("activityIsCompletedCheck")
+  private Predicate<Object[]> activityIsCompletedCheck;
+  
+  @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
   
@@ -108,6 +119,8 @@ public class OperateTester {
   protected IncidentReader incidentReader;
   
   private boolean operationExecutorEnabled = true;
+
+  private Long jobKey;
 
   public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
@@ -170,13 +183,33 @@ public class OperateTester {
   }
   
   public OperateTester failTask(String taskName, String errorMessage) {
-    /*jobKey =*/ ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
+    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
     return this;
   }
- 
+  
+  public OperateTester throwError(String taskName,String errorCode,String errorMessage) {
+    ZeebeTestUtil.throwErrorInTask(zeebeClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
+    return this;
+  }
+  
   public OperateTester incidentIsActive() {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return this;
+  }
+  
+  public OperateTester activityIsActive(String activityId) {
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey,activityId);
+    return this;
+  }
+  
+  public OperateTester activityIsCompleted(String activityId) {
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
+    return this;
+  }
+  
+  public OperateTester completeTask(String activityId) {
+    ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), null);
+    return activityIsCompleted(activityId);
   }
   
   public OperateTester and() {
@@ -193,7 +226,7 @@ public class OperateTester {
     op.setName(varName);
     op.setValue(varValue);
     op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
-//    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+//    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
 //    op.setVariableName(varName);
 //    op.setVariableValue(varValue);
 //    op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
@@ -219,8 +252,8 @@ public class OperateTester {
     final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
 
-    org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto batchOperationDto
-        = new org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
+    CreateBatchOperationRequestDto batchOperationDto
+        = new CreateBatchOperationRequestDto(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     postOperation(batchOperationDto);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -233,7 +266,7 @@ public class OperateTester {
     return this;
   }
 
-  private MvcResult postOperation(org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto operationRequest) throws Exception {
+  private MvcResult postOperation(CreateBatchOperationRequestDto operationRequest) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
       post(String.format( "/api/workflow-instances/%s/operation", workflowInstanceKey))
         .content(mockMvcTestRule.json(operationRequest))
@@ -280,7 +313,7 @@ public class OperateTester {
   public OperateTester archive() {
     try {
       WorkflowInstancesArchiverJob.ArchiveBatch finishedAtDateIds = new AbstractArchiverJob.ArchiveBatch("_test_archived", Arrays.asList(workflowInstanceKey));
-      WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, null);
+      WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class);
       archiverJob.archiveBatch(finishedAtDateIds);
     } catch (ArchiverException e) {
       return this;

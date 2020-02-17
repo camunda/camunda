@@ -14,7 +14,7 @@ export const Footer = styled.div`
   width: 100%;
   height: 100%;
 
-  padding: 0 20px;
+  padding-left: 20px;
   margin-bottom: 1px;
 
   div {
@@ -26,7 +26,7 @@ export const Copyright = styled(BasicCopyright)`
   text-align: right;
 `;
 
-export const SelectionContainer = styled.div`
+export const OperationButtonContainer = styled.div`
   height: 100%;
   padding: 5px 0 6px 0;
 `;

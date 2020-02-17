@@ -100,6 +100,7 @@ export const TD = themed(styled.td`
 `);
 
 export const SkeletonTD = styled.td`
+  height: 100%;
   padding-top: 44px;
 `;
 
@@ -216,7 +217,7 @@ const inputMargin = css`
 export const TextInput = styled(BasicInput)`
   height: 30px;
 
-  padding-top: 6px;
+  padding-top: 7px;
   ${inputMargin};
 
   font-size: 14px;

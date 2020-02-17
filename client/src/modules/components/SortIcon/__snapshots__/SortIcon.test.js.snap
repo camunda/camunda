@@ -4,7 +4,7 @@ exports[`SortIcon should render a Down icon if order is desc 1`] = `
 <styled.span
   sortOrder="desc"
 >
-  <Themed(Styled(withStrippedProps(ReactComponent)))
+  <Themed(Styled(withStrippedProps(Component)))
     sortOrder="desc"
   />
 </styled.span>
@@ -14,7 +14,7 @@ exports[`SortIcon should render a Down icon if order is null 1`] = `
 <styled.span
   sortOrder={null}
 >
-  <Themed(Styled(withStrippedProps(ReactComponent)))
+  <Themed(Styled(withStrippedProps(Component)))
     sortOrder={null}
   />
 </styled.span>
@@ -24,7 +24,7 @@ exports[`SortIcon should render an Up icon if order is asc 1`] = `
 <styled.span
   sortOrder="asc"
 >
-  <Themed(Styled(withStrippedProps(ReactComponent)))
+  <Themed(Styled(withStrippedProps(Component)))
     sortOrder="asc"
   />
 </styled.span>

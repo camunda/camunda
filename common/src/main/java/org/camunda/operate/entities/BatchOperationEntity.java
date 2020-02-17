@@ -6,9 +6,11 @@
 package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class BatchOperationEntity extends OperateEntity {
+public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
 
   private String name;
   private OperationType type;
@@ -20,68 +22,88 @@ public class BatchOperationEntity extends OperateEntity {
   private Integer operationsTotalCount = 0;
   private Integer operationsFinishedCount = 0;
 
+  @JsonIgnore
+  private Object[] sortValues;
+
   public String getName() {
     return name;
   }
 
-  public void setName(String name) {
+  public BatchOperationEntity setName(String name) {
     this.name = name;
+    return this;
   }
 
   public OperationType getType() {
     return type;
   }
 
-  public void setType(OperationType type) {
+  public BatchOperationEntity setType(OperationType type) {
     this.type = type;
+    return this;
   }
 
   public OffsetDateTime getStartDate() {
     return startDate;
   }
 
-  public void setStartDate(OffsetDateTime startDate) {
+  public BatchOperationEntity setStartDate(OffsetDateTime startDate) {
     this.startDate = startDate;
+    return this;
   }
 
   public OffsetDateTime getEndDate() {
     return endDate;
   }
 
-  public void setEndDate(OffsetDateTime endDate) {
+  public BatchOperationEntity setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
+    return this;
   }
 
   public String getUsername() {
     return username;
   }
 
-  public void setUsername(String username) {
+  public BatchOperationEntity setUsername(String username) {
     this.username = username;
+    return this;
   }
 
   public Integer getInstancesCount() {
     return instancesCount;
   }
 
-  public void setInstancesCount(Integer instancesCount) {
+  public BatchOperationEntity setInstancesCount(Integer instancesCount) {
     this.instancesCount = instancesCount;
+    return this;
   }
 
   public Integer getOperationsTotalCount() {
     return operationsTotalCount;
   }
 
-  public void setOperationsTotalCount(Integer operationsTotalCount) {
+  public BatchOperationEntity setOperationsTotalCount(Integer operationsTotalCount) {
     this.operationsTotalCount = operationsTotalCount;
+    return this;
   }
 
   public Integer getOperationsFinishedCount() {
     return operationsFinishedCount;
   }
 
-  public void setOperationsFinishedCount(Integer operationsFinishedCount) {
+  public BatchOperationEntity setOperationsFinishedCount(Integer operationsFinishedCount) {
     this.operationsFinishedCount = operationsFinishedCount;
+    return this;
+  }
+
+  public Object[] getSortValues() {
+    return sortValues;
+  }
+
+  public BatchOperationEntity setSortValues(Object[] sortValues) {
+    this.sortValues = sortValues;
+    return this;
   }
 
   public void generateId() {
@@ -101,7 +123,7 @@ public class BatchOperationEntity extends OperateEntity {
 
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
-    if (type != null ? !type.equals(that.type) : that.type != null)
+    if (type != that.type)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
@@ -113,7 +135,10 @@ public class BatchOperationEntity extends OperateEntity {
       return false;
     if (operationsTotalCount != null ? !operationsTotalCount.equals(that.operationsTotalCount) : that.operationsTotalCount != null)
       return false;
-    return operationsFinishedCount != null ? operationsFinishedCount.equals(that.operationsFinishedCount) : that.operationsFinishedCount == null;
+    if (operationsFinishedCount != null ? !operationsFinishedCount.equals(that.operationsFinishedCount) : that.operationsFinishedCount != null)
+      return false;
+    // Probably incorrect - comparing Object[] arrays with Arrays.equals
+    return Arrays.equals(sortValues, that.sortValues);
 
   }
 
@@ -128,6 +153,7 @@ public class BatchOperationEntity extends OperateEntity {
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
     result = 31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
+    result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 }

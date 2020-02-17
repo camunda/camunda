@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-import-position_"
+			"operate-import-position-${schema.previous_version}_"
 		]
 	},
 	"dest": {

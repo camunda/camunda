@@ -34,8 +34,8 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
@@ -142,7 +142,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
-    final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(operationResponse.getCount()).isEqualTo(10);
     assertThat(operationResponse.getBatchOperationId()).isEqualTo(batchOperationEntity.getId());
 
@@ -160,7 +160,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final Long workflowInstanceKey = startDemoWorkflowInstance();
 
     //when
-    final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));
+    final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));
 
     //then
 
@@ -178,7 +178,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
-    final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<OperationResponseDto>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
     assertThat(operationResponse.getCount()).isEqualTo(1);
     assertThat(operationResponse.getBatchOperationId()).isEqualTo(batchOperationEntity.getId());
 
@@ -198,7 +198,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final List<IncidentEntity> incidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
 
     //when
-    final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
+    final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     //then
     //TODO replace this with REST API call - OPE-790
@@ -215,7 +215,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
 
-    final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(operationResponse.getCount()).isEqualTo(2);
     assertThat(operationResponse.getBatchOperationId()).isEqualTo(batchOperationEntity.getId());
     final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
@@ -237,10 +237,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final Long workflowInstanceKey = startDemoWorkflowInstance();
 
     //when
-    final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
+    final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     //then
-    final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<OperationResponseDto>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
     assertThat(operationResponse.getCount()).isEqualTo(0);
     assertThat(operationResponse.getReason()).isEqualTo("No incidents found.");
     final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
@@ -265,7 +265,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final MvcResult mvcResult = postBatchOperationWithOKResponse(ListViewQueryDto.createAllRunning(), OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
-    final OperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<OperationResponseDto>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
     assertThat(operationResponse.getCount()).isEqualTo(0);
     assertThat(operationResponse.getReason()).isEqualTo("No operations were scheduled.");
 
@@ -281,7 +281,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call RESOLVE_INCIDENT operation on instance
-    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
+    postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     //and execute the operation
     executeOneBatch();
@@ -588,8 +588,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when we call RESOLVE_INCIDENT operation two times on one instance
-    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#1
-    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
+    postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#1
+    postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
 
     //and execute the operation
     executeOneBatch();
@@ -632,10 +632,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //when we call CANCEL_WORKFLOW_INSTANCE and then RESOLVE_INCIDENT operation on one instance
     final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
-    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
+    postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
     executeOneBatch();
 
-    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
+    postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
     executeOneBatch();
 
     //then
@@ -661,7 +661,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final Long workflowInstanceKey = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "some error");
     //we call RESOLVE_INCIDENT operation on instance
-    postOperationWithOKResponse(workflowInstanceKey, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
+    postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
     //resolve the incident before the operation is executed
     final IncidentEntity incident = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey).get(0);
     ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobKey(), incident.getKey());

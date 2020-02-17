@@ -8,7 +8,6 @@ import styled, {css} from 'styled-components';
 import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import ComboBadgeComponent from 'modules/components/ComboBadge';
 import {ReactComponent as Logo} from 'modules/components/Icon/logo.svg';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
@@ -78,13 +77,6 @@ export const ListLink = themed(styled(
   }
 `);
 
-export const SelectionBadgeLeft = themed(styled(ComboBadgeComponent.Left)`
-  border-color: ${themeStyle({
-    dark: Colors.uiDark01,
-    light: Colors.uiLight01
-  })};
-`);
-
 export const Detail = themed(styled.span`
   display: flex;
   align-items: center;
@@ -111,15 +103,15 @@ const colors = css`
 `;
 
 export const SkeletonBlock = themed(styled.div`
-  height: 12px;
+  height: 14px;
   width: 120px;
   ${colors};
 `);
 
 export const SkeletonCircle = themed(styled.div`
   border-radius: 50%;
-  margin-right: 5px;
-  height: 16px;
-  width: 16px;
+  margin-right: 11px;
+  height: 14px;
+  width: 14px;
   ${colors};
 `);

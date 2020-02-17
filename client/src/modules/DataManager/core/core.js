@@ -6,7 +6,6 @@
 
 import {
   fetchWorkflowInstancesStatistics,
-  fetchWorkflowInstancesBySelection,
   fetchWorkflowCoreStatistics,
   fetchWorkflowInstancesByIds,
   fetchWorkflowInstance,
@@ -26,6 +25,8 @@ import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {fetchEvents} from 'modules/api/events';
 
+import {fetchBatchOperations} from 'modules/api/batchOperations';
+
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
@@ -37,7 +38,8 @@ const {
   LOAD_CORE_STATS,
   LOAD_LIST_INSTANCES,
   LOAD_STATE_STATISTICS,
-  LOAD_STATE_DEFINITIONS
+  LOAD_STATE_DEFINITIONS,
+  LOAD_BATCH_OPERATIONS
 } = SUBSCRIPTION_TOPIC;
 
 export class DataManager {
@@ -54,11 +56,6 @@ export class DataManager {
 
   unsubscribe(subscriptions) {
     this.publisher.unsubscribe(subscriptions);
-  }
-
-  // THIS IS A TEMPORARY ENDPOINT, to hack the outdated selections badge.
-  publishing(topic, value) {
-    this.publisher.publish(topic, value);
   }
 
   subscriptions() {
@@ -157,29 +154,6 @@ export class DataManager {
     );
   }
 
-  async getWorkflowInstancesBySelection(params, topic, selectionId) {
-    const cachedParams = this.cache.update(
-      'workflowInstancesBySelection',
-      fetchWorkflowInstancesBySelection,
-      params
-    );
-
-    this.publisher.publish(topic, {state: LOADING_STATE.LOADING});
-    const response = await fetchWorkflowInstancesBySelection(cachedParams);
-
-    if (response.error) {
-      this.publisher.publish(topic, {
-        state: LOADING_STATE.LOAD_FAILED,
-        response
-      });
-    } else {
-      this.publisher.publish(topic, {
-        state: LOADING_STATE.LOADED,
-        response: {...response, selectionId}
-      });
-    }
-  }
-
   getWorkflowXML(params, staticContent) {
     const fetchDiagramModel = async params => {
       const xml = await fetchWorkflowXML(params);
@@ -201,6 +175,10 @@ export class DataManager {
 
   getWorkflowInstancesByIds(params, topic) {
     this.fetchAndPublish(topic, fetchWorkflowInstancesByIds, params);
+  }
+
+  getBatchOperations(params) {
+    this.fetchAndPublish(LOAD_BATCH_OPERATIONS, fetchBatchOperations, params);
   }
 
   /** Update Data */

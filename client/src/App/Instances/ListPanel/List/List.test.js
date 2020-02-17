@@ -74,13 +74,13 @@ ListContext.useListContext.mockImplementation(() => {
 describe('List', () => {
   describe('Table', () => {
     it('should have by default rowsToDisplay 9', () => {
-      const node = shallow(<List.WrappedComponent {...mockProps} />);
+      const node = shallow(<List {...mockProps} />);
       expect(node.instance().state.rowsToDisplay).toBe(9);
     });
 
     it('should render table container with innerRef', () => {
       // given
-      const node = shallow(<List.WrappedComponent {...mockProps} />);
+      const node = shallow(<List {...mockProps} />);
 
       const containerNode = node.find(Styled.TableContainer);
 
@@ -91,10 +91,10 @@ describe('List', () => {
       it('should be called on mount', () => {
         // given
         const recalculateHeightSpy = jest.spyOn(
-          List.WrappedComponent.prototype,
+          List.prototype,
           'recalculateHeight'
         );
-        shallow(<List.WrappedComponent {...mockProps} />);
+        shallow(<List {...mockProps} />);
 
         // then
         expect(recalculateHeightSpy).toBeCalled();
@@ -103,10 +103,10 @@ describe('List', () => {
       it('should only be called when needed', () => {
         // given
         const recalculateHeightSpy = jest.spyOn(
-          List.WrappedComponent.prototype,
+          List.prototype,
           'recalculateHeight'
         );
-        const node = shallow(<List.WrappedComponent {...mockProps} />);
+        const node = shallow(<List {...mockProps} />);
         recalculateHeightSpy.mockClear();
 
         // when component updates but expandState does not change
@@ -127,7 +127,7 @@ describe('List', () => {
 
       it('should set state.rowsToDisplay', () => {
         // given
-        const node = shallow(<List.WrappedComponent {...mockProps} />);
+        const node = shallow(<List {...mockProps} />);
         node.instance().myRef.current = {clientHeight: 38};
         const expectedRows = 0;
 
@@ -149,7 +149,7 @@ describe('List', () => {
 
     beforeEach(() => {
       mockProps.data = instances;
-      node = shallow(<List.WrappedComponent {...mockProps} />);
+      node = shallow(<List {...mockProps} />);
     });
 
     describe('highlight', () => {
@@ -305,9 +305,7 @@ describe('List', () => {
     let node;
     beforeEach(() => {
       const message = 'some message';
-      node = shallow(
-        <List.WrappedComponent.Message {...mockProps} {...{message}} />
-      );
+      node = shallow(<List.Message {...mockProps} {...{message}} />);
     });
 
     it('should be wrapped correctly', () => {
@@ -317,14 +315,14 @@ describe('List', () => {
 
   describe('Skeleton & Spinners', () => {
     it('Skeleton should be wrapped correctly', () => {
-      const node = shallow(<List.WrappedComponent.Skeleton {...mockProps} />);
+      const node = shallow(<List.Skeleton {...mockProps} />);
       expect(node).toMatchSnapshot();
     });
   });
 
   describe('Body', () => {
     it('should render semantic html table body', () => {
-      const node = shallow(<List.WrappedComponent.Body {...mockProps} />);
+      const node = shallow(<List.Body {...mockProps} />);
 
       // then
       // TBody
@@ -380,7 +378,7 @@ describe('List', () => {
     // context needs to be mocked fist.
     describe.only('Action button handler', () => {
       it('should pass the onActionButtonClick prop to Actions', () => {
-        const node = shallow(<List.WrappedComponent.Body {...mockProps} />);
+        const node = shallow(<List.Body {...mockProps} />);
         const ActionsNode = node.find(Actions).at(0); // first row
         const onButtonClick = ActionsNode.prop('onButtonClick');
 
@@ -397,7 +395,7 @@ describe('List', () => {
   });
 
   describe('Header', () => {
-    const node = shallow(<List.WrappedComponent.Header {...mockProps} />);
+    const node = shallow(<List.Header {...mockProps} />);
 
     // then
 

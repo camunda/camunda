@@ -35,6 +35,10 @@ public abstract class CollectionUtil {
     return listOfNotNulls;
   }
   
+  public static <T> List<T> emptyListWhenNull(List<T> aList){
+    return aList == null ? Collections.emptyList() : aList;
+  }
+
   @SuppressWarnings("unchecked")
   public static <T> List<T> withoutNulls(Collection<T> aCollection){
     if(aCollection!=null) {
@@ -64,7 +68,7 @@ public abstract class CollectionUtil {
   }
   
   public static <S,T> List<T> map(S[] sourceArray, Function<S, T> mapper) {
-    return map(Arrays.stream(sourceArray).parallel(),mapper);
+    return map(Arrays.stream(sourceArray).parallel(), mapper);
   }
   
   public static <S,T> List<T> map(Stream<S> sequenceStream, Function<S, T> mapper) {
@@ -141,4 +145,12 @@ public abstract class CollectionUtil {
     return items.get(new Random().nextInt(items.size()));
   }
 
+  public static <T> boolean allElementsAreOfType(Class clazz, T... array) {
+    for (T element: array) {
+      if (!clazz.isInstance(element)) {
+        return false;
+      }
+    }
+    return true;
+  }
 }

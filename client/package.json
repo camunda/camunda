@@ -1,6 +1,6 @@
 {
   "name": "camunda-operate",
-  "version": "1.2.0-SNAPSHOT",
+  "version": "0.23.0-SNAPSHOT",
   "private": true,
   "dependencies": {
     "bpmn-js": "^6.0.2",
@@ -8,8 +8,8 @@
     "lodash": "^4.17.15",
     "prop-types": "^15.6.2",
     "react": "^16.12.0",
-    "react-contenteditable": "^3.3.2",
-    "react-dom": "^16.9.0",
+    "react-contenteditable": "^3.3.3",
+    "react-dom": "^16.12.0",
     "react-router-dom": "^5.1.2",
     "react-textarea-autosize": "^7.1.2",
     "react-transition-group": "^4.3.0",
@@ -20,7 +20,8 @@
     "build": "react-scripts build && node license-build.js",
     "test": "react-scripts test --env=jsdom",
     "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint ./src"
   },
   "jest-junit": {
     "suiteName": "client",
@@ -34,21 +35,22 @@
     "@testing-library/react-hooks": "^3.2.1",
     "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.15.1",
-    "eslint-config-react-app": "^3.0.5",
+    "eslint": "^6.8.0",
     "eslint-plugin-camunda-licensed": "^0.4.3",
     "eslint-plugin-prettier": "^3.1.1",
     "glob": "^7.1.6",
     "husky": "^3.1.0",
-    "jest-enzyme": "^7.1.1",
+    "jest-enzyme": "^7.1.2",
     "jest-junit": "^9.0.0",
-    "lint-staged": "^9.4.3",
+    "jest-styled-components": "^6.3.4",
+    "lint-staged": "^9.5.0",
     "prettier": "^1.18.2",
-    "react-scripts": "2.1.2",
+    "react-scripts": "^3.3.1",
     "react-test-renderer": "^16.12.0"
   },
   "lint-staged": {
     "src/**/*.js": [
-      "eslint --fix",
+      "eslint",
       "prettier --write",
       "git add"
     ]

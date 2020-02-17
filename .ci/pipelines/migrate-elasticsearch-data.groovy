@@ -2,7 +2,7 @@
 
 // TODO: Use parameters for different migrations 
 // Defaults:
-//  elasticsearch-6.8.3
+//  elasticsearch-6.8.6
 //  zeebe-0.21.1
 //  operate-1.1.0 
 //  maven-3.6.1 - Used for migration, test and validation
@@ -23,7 +23,7 @@ spec:
       effect: "NoSchedule"
   initContainers:
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       command:
       - "sh"
       args:
@@ -36,7 +36,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       command:
       - "sh"
       args:
@@ -75,7 +75,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms512m -Xmx512m'
@@ -112,7 +112,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:0.21.1
+      image: camunda/zeebe:0.22.0
       env:
       volumeMounts:
         - name: zeebe-configuration
@@ -126,10 +126,12 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: operate
-      image: camunda/operate:1.1.0
+      image: camunda/operate:1.2.0
       env:
         - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
           value: false
+        - name: CAMUNDA_OPERATE_ARCHIVER_WAIT_PERIOD_BEFORE_ARCHIVING
+          value: 1m
       resources:
         limits:
           cpu: 1
@@ -210,7 +212,7 @@ pipeline {
 	stage('Migrate data') {
 		steps {
 		   container('maven') {
-			 // migrate from 1.1.0 to 1.2.0
+		   	 // Migrate 
 			 sh("cd ./els-schema/target/classes && sh ./migrate.sh")
 		 }
 	  }

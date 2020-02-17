@@ -97,7 +97,7 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
   }
 
   private SearchRequest createFinishedInstancesSearchRequest(AggregationBuilder agg) {
-    final QueryBuilder endDateQ = rangeQuery(ListViewTemplate.END_DATE).lte("now-1h");
+    final QueryBuilder endDateQ = rangeQuery(ListViewTemplate.END_DATE).lte(operateProperties.getArchiver().getArchivingTimepoint());
     final TermQueryBuilder isWorkflowInstanceQ = termQuery(ListViewTemplate.JOIN_RELATION, ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
     final TermsQueryBuilder partitionQ = termsQuery(ListViewTemplate.PARTITION_ID, partitionIds);
     final ConstantScoreQueryBuilder q = constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isWorkflowInstanceQ, partitionQ));

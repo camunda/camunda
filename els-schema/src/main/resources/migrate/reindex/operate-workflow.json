@@ -1,7 +1,7 @@
 {
 	"source": {
 		"index": [
-			"operate-workflow_"
+			"operate-workflow-${schema.previous_version}_"
 		]
 	},
 	"dest": {

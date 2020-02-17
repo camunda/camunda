@@ -8,7 +8,7 @@ package org.camunda.operate.entities;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public class OperationEntity extends OperateEntity {
+public class OperationEntity extends OperateEntity<OperationEntity> {
 
   private Long workflowInstanceKey;
   private Long incidentKey;

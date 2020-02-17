@@ -10,7 +10,7 @@ import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
-public class ActivityInstanceForListViewEntity extends OperateZeebeEntity {
+public class ActivityInstanceForListViewEntity extends OperateZeebeEntity<ActivityInstanceForListViewEntity> {
 
   private Long workflowInstanceKey;
   private String activityId;

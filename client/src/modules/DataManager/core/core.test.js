@@ -30,6 +30,7 @@ instancesApi.fetchWorkflowInstances = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesByIds = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn();
+instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn({});
 
 diagramApi.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 
@@ -149,17 +150,6 @@ describe('DataManager', () => {
         expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
         );
-      });
-    });
-    describe('fetch workflow instances by selection', () => {
-      it('should publish loading states to topic', () => {
-        // when
-        dataManager.getWorkflowInstancesBySelection(mockParams, customTopic);
-
-        // then
-        expect(publishSpy).toHaveBeenCalledWith(customTopic, {
-          state: LOADING_STATE.LOADING
-        });
       });
     });
     describe('fetch workflow instances by Ids', () => {

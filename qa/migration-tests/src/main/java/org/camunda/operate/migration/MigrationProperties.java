@@ -33,6 +33,8 @@ public class MigrationProperties {
   private String elasticsearchHost = "localhost";
 
   private int elasticsearchPort = 9200;
+
+  private String archiverDateFormat = "yyyyMMdd";
   
   public void setFromOperateBaseUrl(String fromOperateBaseUrl) {
 	  this.fromOperateBaseUrl = fromOperateBaseUrl;
@@ -106,4 +108,11 @@ public class MigrationProperties {
     this.countOfCancelOperation = countOfCancelOperation;
   }
 
+  public String getArchiverDateFormat() {
+    return archiverDateFormat;
+  }
+
+  public void setArchiverDateFormat(String archiverDateFormat) {
+    this.archiverDateFormat = archiverDateFormat;
+  }
 }

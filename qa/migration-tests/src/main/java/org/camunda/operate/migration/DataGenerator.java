@@ -5,24 +5,38 @@
  */
 package org.camunda.operate.migration;
 
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+
 import java.io.IOException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
+import org.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import io.zeebe.client.ZeebeClient;
@@ -33,13 +47,15 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
  * It is considered that Zeebe and Elasticsearch are running.
  */
 @Component
-@Configuration
 public class DataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
 
   @Autowired
   private MigrationProperties migrationProperties;
+  
+  @Autowired
+  private OperateProperties operateProperties;
 
   @Autowired
   private ZeebeClient zeebeClient;
@@ -50,11 +66,24 @@ public class DataGenerator {
   @Autowired
   private RestClient operateRestClient;
 
+  @Autowired
+  public BeanFactory beanFactory;
+  
   private Random random = new Random();
 
   private List<Long> workflowInstanceKeys = new ArrayList<>();
-  
-  public void createData() {
+
+  private DateTimeFormatter archiverDateTimeFormatter;
+
+  private EntityReader entityReader;
+
+  @PostConstruct
+  public void init() {  
+    archiverDateTimeFormatter = DateTimeFormatter.ofPattern(migrationProperties.getArchiverDateFormat()).withZone(ZoneId.systemDefault());
+    entityReader = beanFactory.getBean(EntityReader.class,operateProperties.getPreviousSchemaVersion());
+  }
+
+  public void createData() throws Exception {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     logger.info("Starting generating data...");
 
@@ -64,12 +93,14 @@ public class DataGenerator {
     createIncidents("task2", migrationProperties.getIncidentCount());
 
     for(int i=0;i<migrationProperties.getCountOfCancelOperation();i++) {
-      createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE,workflowInstanceKeys.size() * 3);
+      createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE,workflowInstanceKeys.size() * 10);
     }
     for(int i=0;i<migrationProperties.getCountOfResolveOperation();i++) {
-      createOperation(OperationType.RESOLVE_INCIDENT,workflowInstanceKeys.size() * 21);
+      createOperation(OperationType.RESOLVE_INCIDENT,workflowInstanceKeys.size() * 10);
     }
-    
+
+    waitTillSomeInstancesAreArchived();
+
     try {
       esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -77,8 +108,50 @@ public class DataGenerator {
     }
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
-  
+
+  private void waitTillSomeInstancesAreArchived() throws IOException {
+    waitUntilAllDataAreImported();
+    
+    int count = 0, maxWait=30;
+    logger.info("Waiting for archived data (max: {} sec)",maxWait*10);
+    while (!someInstancesAreArchived() && count < maxWait) {
+      ThreadUtil.sleepFor(10 * 1000L);
+      count++;
+    }
+    if (count == maxWait ) {
+      logger.error("There must be some archived instances");
+      throw new RuntimeException("Data generation was not full: no archived instances");
+    }
+  }
+
+  private void waitUntilAllDataAreImported() throws IOException {
+    logger.info("Wait till data are imported.");
+    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(ListViewTemplate.INDEX_NAME));  
+    searchRequest.source().query(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
+    int loadedWorkflowInstances = 0;
+    int count = 0, maxWait = 101;
+    while(migrationProperties.getWorkflowInstanceCount() > loadedWorkflowInstances && count < maxWait) {
+      count++;
+      loadedWorkflowInstances = entityReader.searchEntitiesFor(searchRequest, WorkflowInstanceForListViewEntity.class).size();
+      ThreadUtil.sleepFor(1000L);
+    }
+    if(count == maxWait) {
+      throw new RuntimeException("Waiting for loading workflow instances failed: Timeout");
+    }
+  }
+
+  private boolean someInstancesAreArchived() {
+    try {
+      SearchResponse search = esClient.search(
+          new SearchRequest("operate-*_" + archiverDateTimeFormatter.format(Instant.now())), RequestOptions.DEFAULT);
+      return search.getHits().totalHits > 0;
+    } catch (IOException e) {
+      throw new RuntimeException("Exception occurred while checking archived indices: " + e.getMessage(), e);
+    }
+  }
+
   private void createOperation(OperationType operationType,int maxAttempts) {
+    logger.info("Try to create Operation {} ( {} attempts)", operationType.name(),maxAttempts);
     boolean operationStarted = false;
     int attempts = 0;
     while (!operationStarted && attempts < maxAttempts) {
@@ -89,7 +162,7 @@ public class DataGenerator {
     if (operationStarted) {
       logger.info("Operation {} started", operationType.name());
     } else {
-      logger.info("Operation {} could not started", operationType.name());
+      throw new RuntimeException(String.format("Operation %s could not started",operationType.name()));
     }
   }
   

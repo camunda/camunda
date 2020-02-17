@@ -6,7 +6,7 @@
 package org.camunda.operate.entities;
 
 
-public abstract class OperateEntity {
+public abstract class OperateEntity<T extends OperateEntity<T>> {
 
   private String id;
 
@@ -14,8 +14,9 @@ public abstract class OperateEntity {
     return id;
   }
 
-  public void setId(String id) {
+  public T setId(String id) {
     this.id = id;
+    return (T) this;
   }
   
   @Override
@@ -25,7 +26,7 @@ public abstract class OperateEntity {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    OperateEntity that = (OperateEntity) o;
+    OperateEntity<T> that = (OperateEntity<T>) o;
 
     return id != null ? id.equals(that.id) : that.id == null;
   }

@@ -48,6 +48,10 @@ import {ReactComponent as FlowNodeEventTimerStart} from 'modules/components/Icon
 import {ReactComponent as FlowNodeEventTimerBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-timer-boundary-interrupting.svg';
 import {ReactComponent as FlowNodeEventTimerBoundaryNonInerrupting} from 'modules/components/Icon/flow-node-event-timer-boundary-non-interrupting.svg';
 
+import {ReactComponent as FlowNodeEventErrorStart} from 'modules/components/Icon/flownode-event-error-start.svg';
+import {ReactComponent as FlowNodeEventErrorBoundary} from 'modules/components/Icon/flownode-event-error-boundary.svg';
+import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/flownode-event-end-error.svg';
+
 import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flownode-event-subprocess.svg';
 
 const newIconStyle = css`
@@ -161,6 +165,23 @@ export const EVENT_MESSAGE_START = themed(styled(FlowNodeEventMessageStart)`
 `);
 
 export const EVENT_MESSAGE_END = themed(styled(FlowNodeEventMessageEnd)`
+  ${newIconStyle}
+`);
+
+/**
+ * Error Event Icons
+ */
+export const EVENT_ERROR_START = themed(styled(FlowNodeEventErrorStart)`
+  ${newIconStyle}
+`);
+
+export const EVENT_ERROR_BOUNDARY_INTERRUPTING = themed(styled(
+  FlowNodeEventErrorBoundary
+)`
+  ${newIconStyle}
+`);
+
+export const EVENT_ERROR_END = themed(styled(FlowNodeEventErrorEnd)`
   ${newIconStyle}
 `);
 

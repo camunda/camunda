@@ -7,71 +7,78 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from './CollapsablePanel';
 
-const mockDefaultProps = {
-  onCollapse: jest.fn(),
-  expandButton: <button data-test="expand-button" />,
-  collapseButton: <button data-test="collapse-button" />,
-  maxWidth: 300
-};
-
-const CollapsablePanelHeader = () => <div>Header Content</div>;
-const CollapsablePanelBody = () => <div>Body Content</div>;
-
-const mountNode = mockCustomProps => {
-  return mount(
-    <ThemeProvider>
-      <CollapsablePanel {...mockDefaultProps} {...mockCustomProps}>
-        <CollapsablePanelHeader />
-        <CollapsablePanelBody />
-      </CollapsablePanel>
-    </ThemeProvider>
-  );
-};
-
 describe('CollapsablePanel', () => {
-  let node;
-  let CollapsablePanelNode;
-  beforeEach(() => {
-    node = mountNode();
-    CollapsablePanelNode = node.find(CollapsablePanel);
-  });
+  it('should render children when expanded', () => {
+    // when
+    const node = mount(
+      <CollapsablePanel
+        label="Cool Panel"
+        panelPosition={PANEL_POSITION.RIGHT}
+        isCollapsed={false}
+        toggle={() => {}}
+      >
+        <div data-test="cool-panel-content">Cool Panel Content</div>
+      </CollapsablePanel>
+    );
 
-  it('should render Panel in default state - expanded', () => {
-    expect(CollapsablePanelNode.instance().props.isCollapsed).toBe(false);
-  });
-
-  it('should render the CollapseButton/ExpandButton', () => {
     // then
-    // Collapse button
-    const CollapseButtonNode = CollapsablePanelNode.find(
-      '[data-test="collapse-button"]'
-    );
-    expect(CollapseButtonNode).toHaveLength(1);
-    expect(CollapseButtonNode.prop('onClick')).toBe(
-      CollapsablePanelNode.instance().handleButtonClick
-    );
-    // Expand button
-    const ExpandButtonNode = CollapsablePanelNode.find(
-      '[data-test="expand-button"]'
-    );
-    expect(ExpandButtonNode).toHaveLength(1);
-    expect(ExpandButtonNode.prop('onClick')).toBe(
-      CollapsablePanelNode.instance().handleButtonClick
-    );
+    const expandedPanel = node.find('[data-test="expanded-panel"]');
+    const collapsedPanel = node.find('[data-test="collapsed-panel"]');
+    const content = expandedPanel.find('[data-test="cool-panel-content"]');
+
+    expect(expandedPanel).toHaveStyleRule('visibility', 'visible');
+    expect(collapsedPanel).toHaveStyleRule('visibility', 'hidden');
+    expect(content).toExist();
+    expect(content.text()).toContain('Cool Panel Content');
   });
 
-  it('should call onCollapse when clicking the CollapseButton/ExpandButton', () => {
-    const CollapseButtonNode = node.find('[data-test="collapse-button"]');
+  it('should hide children when collapsed', () => {
+    // when
+    const node = mount(
+      <CollapsablePanel
+        label="Cool Panel"
+        panelPosition="RIGHT"
+        isCollapsed={true}
+        toggle={() => {}}
+      >
+        <div data-test="cool-panel-content">Cool Panel Content</div>
+      </CollapsablePanel>
+    );
 
-    CollapseButtonNode.simulate('click');
-    expect(CollapsablePanelNode.props().onCollapse).toHaveBeenCalled();
+    // then
+    const expandedPanel = node.find('[data-test="expanded-panel"]');
+    const collapsedPanel = node.find('[data-test="collapsed-panel"]');
 
-    const ExpandButtonNode = node.find('[data-test="expand-button"]');
-    ExpandButtonNode.simulate('click');
+    expect(collapsedPanel).toHaveStyleRule('visibility', 'visible');
+    expect(expandedPanel).toHaveStyleRule('visibility', 'hidden');
+  });
 
-    expect(CollapsablePanelNode.props().onCollapse).toHaveBeenCalled();
+  it('should trigger toggle on button clicks', () => {
+    // given
+    const toggleMock = jest.fn();
+
+    // when
+    const node = mount(
+      <CollapsablePanel
+        label="Cool Panel"
+        panelPosition="RIGHT"
+        isCollapsed={false}
+        toggle={toggleMock}
+      >
+        <div data-test="cool-panel-content">Cool Panel Content</div>
+      </CollapsablePanel>
+    );
+
+    // then
+    const collapseButton = node.find('[data-test="collapse-button"]').first();
+    const expandButton = node.find('[data-test="expand-button"]').first();
+
+    collapseButton.simulate('click');
+    expandButton.simulate('click');
+
+    expect(toggleMock).toHaveBeenCalledTimes(2);
   });
 });

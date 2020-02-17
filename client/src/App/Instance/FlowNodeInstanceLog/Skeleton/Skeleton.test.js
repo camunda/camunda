@@ -13,7 +13,7 @@ describe('Tree Skeleton', () => {
   it('should render rows according to properties', () => {
     const node = mount(<Skeleton rowsToDisplay={10} />);
 
-    // head row + x rows
-    expect(node.find('Row')).toHaveLength(11);
+    // x rows
+    expect(node.find('Row')).toHaveLength(10);
   });
 });

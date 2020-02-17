@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-public class IncidentEntity extends OperateZeebeEntity {
+public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private static final Map<ErrorType, String> ErrorType2Title;
   static {
@@ -21,6 +21,7 @@ public class IncidentEntity extends OperateZeebeEntity {
     ErrorType2Title.put(ErrorType.CONDITION_ERROR, "Condition error");
     ErrorType2Title.put(ErrorType.EXTRACT_VALUE_ERROR, "Extract value error");
     ErrorType2Title.put(ErrorType.CALLED_ELEMENT_ERROR, "Called element error");
+    ErrorType2Title.put(ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
   }
 
   private ErrorType errorType;

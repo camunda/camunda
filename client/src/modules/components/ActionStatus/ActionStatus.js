@@ -64,5 +64,6 @@ ActionStatus.propTypes = {
   operationState: PropTypes.string,
   operationType: PropTypes.string,
   selected: PropTypes.bool,
-  instance: PropTypes.object
+  instance: PropTypes.object,
+  forceSpinner: PropTypes.bool
 };

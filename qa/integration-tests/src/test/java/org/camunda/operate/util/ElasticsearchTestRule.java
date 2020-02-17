@@ -35,6 +35,7 @@ import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
@@ -57,7 +58,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.property.ElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 import static org.camunda.operate.util.ThreadUtil.*;
 
 public class ElasticsearchTestRule extends TestWatcher {
@@ -126,10 +126,12 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected void starting(Description description) {
     String indexPrefix = TestUtil.createRandomString(10) + "-operate";
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    elasticsearchSchemaManager.createSchema();
-    assertThat(areIndicesCreatedAfterChecks(indexPrefix,5, 5 * 60 /*sec*/))
-      .describedAs("Elasticsearch %s (min %d) indices are created",indexPrefix,5)
-      .isTrue();
+    if (operateProperties.getElasticsearch().isCreateSchema()) {
+      elasticsearchSchemaManager.createSchema();
+      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
+          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
+          .isTrue();
+    }
   }
 
   @Override
@@ -138,7 +140,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient,indexPrefix);
     }
-    operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
+    operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
   }
 
   public void refreshIndexesInElasticsearch() {
@@ -188,7 +190,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         if (supplier != null) {
           supplier.get();
         }
-        refreshZeebeESIndices();
+        refreshIndexesInElasticsearch(); 
         shouldImportCount +=  zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
@@ -199,7 +201,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
         waitForImports++;
         try {
-          refreshZeebeESIndices();
+          sleepFor(500);
           shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
         } catch (Exception e) {
           waitingRound = 1;

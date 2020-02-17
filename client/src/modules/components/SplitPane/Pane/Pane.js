@@ -9,7 +9,6 @@ import PropTypes from 'prop-types';
 import {isEqual} from 'lodash';
 
 import Panel from 'modules/components/Panel';
-import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 
 import * as Styled from './styled';
@@ -103,20 +102,10 @@ export default class Pane extends React.Component {
     const isBottomButtonVisible = expandState !== EXPAND_STATE.EXPANDED;
 
     return (
-      <CollapsablePanelConsumer>
-        {context => (
-          <Styled.ButtonsContainer
-            isShifted={
-              this.props.hasShiftableControls
-                ? !context.isSelectionsCollapsed
-                : false
-            }
-          >
-            {isTopButtonVisible && this.topButton}
-            {isBottomButtonVisible && this.bottomButton}
-          </Styled.ButtonsContainer>
-        )}
-      </CollapsablePanelConsumer>
+      <Styled.ButtonsContainer>
+        {isTopButtonVisible && this.topButton}
+        {isBottomButtonVisible && this.bottomButton}
+      </Styled.ButtonsContainer>
     );
   };
 

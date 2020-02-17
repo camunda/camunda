@@ -4,90 +4,119 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useRef, useEffect} from 'react';
 import PropTypes from 'prop-types';
 
+import {PANEL_POSITION} from 'modules/constants';
+import usePrevious from 'modules/hooks/usePrevious';
 import Panel from 'modules/components/Panel';
 import * as Styled from './styled';
+import {DIRECTION} from '../../constants';
 
-export default class CollapsablePanel extends React.Component {
-  static propTypes = {
-    children: PropTypes.oneOfType([
-      PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node
-    ]),
-    isCollapsed: PropTypes.bool,
-    onCollapse: PropTypes.func.isRequired,
-    expandButton: PropTypes.node.isRequired,
-    collapseButton: PropTypes.node.isRequired,
-    maxWidth: PropTypes.number.isRequired
-  };
+const TRANSITION_TIMEOUT = 200;
 
-  static defaultProps = {
-    isCollapsed: false
-  };
+function CollapsablePanel({
+  label,
+  panelPosition,
+  renderHeader,
+  renderFooter,
+  isOverlay,
+  children,
+  isCollapsed,
+  toggle,
+  verticalLabelOffset,
+  ...props
+}) {
+  const buttonDirection =
+    panelPosition === PANEL_POSITION.RIGHT ? DIRECTION.RIGHT : DIRECTION.LEFT;
 
-  constructor(props) {
-    super(props);
-    this.expandButtonRef = React.createRef();
-    this.collapseButtonRef = React.createRef();
-    this.transitionTimeout = 200;
-  }
+  const expandButtonRef = useRef(null);
+  const collapseButtonRef = useRef(null);
 
-  componentDidUpdate(prevProps) {
-    if (this.props.isCollapsed !== prevProps.isCollapsed) {
-      if (this.props.isCollapsed) {
-        setTimeout(
-          () => this.expandButtonRef.current.focus(),
-          this.transitionTimeout
-        );
+  const prevIsCollapsed = usePrevious(isCollapsed);
+
+  useEffect(() => {
+    if (prevIsCollapsed !== isCollapsed) {
+      if (isCollapsed) {
+        setTimeout(() => expandButtonRef.current.focus(), TRANSITION_TIMEOUT);
       } else {
-        setTimeout(
-          () => this.collapseButtonRef.current.focus(),
-          this.transitionTimeout
-        );
+        setTimeout(() => collapseButtonRef.current.focus(), TRANSITION_TIMEOUT);
       }
     }
-  }
+  }, [isCollapsed, prevIsCollapsed]);
 
-  handleButtonClick = () => {
-    this.props.onCollapse();
-  };
-
-  renderCollapseButton = () =>
-    React.cloneElement(this.props.collapseButton, {
-      onClick: this.handleButtonClick,
-      ref: this.collapseButtonRef
-    });
-
-  renderExpandButton = () =>
-    React.cloneElement(this.props.expandButton, {
-      onClick: this.handleButtonClick,
-      ref: this.expandButtonRef
-    });
-
-  render() {
-    const {isCollapsed, children} = this.props;
-
-    return (
-      <Styled.Collapsable {...this.props} isCollapsed={isCollapsed}>
-        <Styled.ExpandedPanel isCollapsed={isCollapsed} transitionTimeout={200}>
-          {this.renderCollapseButton()}
-          {children}
-        </Styled.ExpandedPanel>
-        <Styled.CollapsedPanel
-          isCollapsed={isCollapsed}
-          transitionTimeout={200}
+  return (
+    <Styled.Collapsable
+      {...props}
+      isCollapsed={isCollapsed}
+      panelPosition={panelPosition}
+      isOverlay={isOverlay}
+    >
+      <Styled.CollapsedPanel
+        isCollapsed={isCollapsed}
+        panelPosition={panelPosition}
+        transitionTimeout={TRANSITION_TIMEOUT}
+        data-test="collapsed-panel"
+      >
+        <Styled.ExpandButton
+          ref={expandButtonRef}
+          title={`Expand ${label}`}
+          onClick={toggle}
+          panelPosition={panelPosition}
+          data-test="expand-button"
         >
-          {this.renderExpandButton()}
-        </Styled.CollapsedPanel>
-      </Styled.Collapsable>
-    );
-  }
+          <Styled.Vertical offset={verticalLabelOffset}>
+            <span>{label}</span>
+            {renderHeader()}
+          </Styled.Vertical>
+        </Styled.ExpandButton>
+      </Styled.CollapsedPanel>
+
+      <Styled.ExpandedPanel
+        isCollapsed={isCollapsed}
+        panelPosition={panelPosition}
+        transitionTimeout={TRANSITION_TIMEOUT}
+        data-test="expanded-panel"
+      >
+        <Styled.Header panelPosition={panelPosition}>
+          <Styled.CollapseButton
+            ref={collapseButtonRef}
+            direction={buttonDirection}
+            isExpanded={true}
+            title={`Collapse ${label}`}
+            onClick={toggle}
+            data-test="collapse-button"
+          />
+          {label}
+          {renderHeader()}
+        </Styled.Header>
+        <Panel.Body>{children}</Panel.Body>
+        {renderFooter ? <Panel.Footer>{renderFooter()}</Panel.Footer> : ''}
+      </Styled.ExpandedPanel>
+    </Styled.Collapsable>
+  );
 }
 
-CollapsablePanel.Header = props => <Styled.Header {...props} />;
+CollapsablePanel.defaultProps = {
+  renderHeader: () => '',
+  isOverlay: false,
+  verticalLabelOffset: 0
+};
 
-CollapsablePanel.Body = Panel.Body;
+CollapsablePanel.propTypes = {
+  label: PropTypes.string.isRequired,
+  panelPosition: PropTypes.oneOf([PANEL_POSITION.RIGHT, PANEL_POSITION.LEFT])
+    .isRequired,
+  renderHeader: PropTypes.func,
+  renderFooter: PropTypes.func,
+  isOverlay: PropTypes.bool,
+  toggle: PropTypes.func.isRequired,
+  isCollapsed: PropTypes.bool.isRequired,
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node
+  ]),
+  verticalLabelOffset: PropTypes.number
+};
 
-CollapsablePanel.Footer = Panel.Footer;
+export default CollapsablePanel;

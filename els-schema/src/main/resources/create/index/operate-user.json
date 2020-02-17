@@ -4,49 +4,35 @@
 		}
 	},
 	"mappings": {
-			"dynamic": "strict",
-			"dynamic_templates": [
-				{
-					"string_template": {
-						"path_match": "*",
-						"match_mapping_type": "string",
-						"mapping": {
-							"index_options": "docs",
-							"norms": {
-								"enabled": false
-							},
-							"type": "string"
-						}
+		"dynamic": "strict",
+		"dynamic_templates": [
+			{
+				"string_template": {
+					"path_match": "*",
+					"match_mapping_type": "string",
+					"mapping": {
+						"index_options": "docs",
+						"norms": {
+							"enabled": false
+						},
+						"type": "string"
 					}
-				}
-			],
-			"properties": {
-				"id": {
-					"type": "keyword"
-				},
-				"password": {
-					"type": "keyword"
-				},
-				"role": {
-					"type": "keyword"
-				},
-				"username": {
-					"type": "keyword"
 				}
 			}
-	},
-	"settings": {
-		"index": {
-			"refresh_interval": "2s",
-			"number_of_shards": "1",
-			"analysis": {
-				"normalizer": {
-					"case_insensitive": {
-						"filter": "lowercase"
-					}
-				}
+		],
+		"properties": {
+			"id": {
+				"type": "keyword"
 			},
-			"number_of_replicas": "0"
+			"password": {
+				"type": "keyword"
+			},
+			"role": {
+				"type": "keyword"
+			},
+			"username": {
+				"type": "keyword"
+			}
 		}
 	}
 }

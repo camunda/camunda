@@ -4,75 +4,75 @@
 		"operate-operation-${schema.version}_*"
 	],
 	"mappings": {
-			"dynamic": "strict",
-			"dynamic_templates": [
-				{
-					"string_template": {
-						"path_match": "*",
-						"mapping": {
-							"norms": {
-								"enabled": false
-							},
-							"type": "string",
-							"index_options": "docs"
+		"dynamic": "strict",
+		"dynamic_templates": [
+			{
+				"string_template": {
+					"path_match": "*",
+					"mapping": {
+						"norms": {
+							"enabled": false
 						},
-						"match_mapping_type": "string"
-					}
-				}
-			],
-			"properties": {
-				"variableName": {
-					"type": "keyword"
-				},
-				"variableValue": {
-					"type": "keyword"
-				},
-				"endDate": {
-					"format": "date_time",
-					"type": "date"
-				},
-				"lockExpirationTime": {
-					"format": "date_time",
-					"type": "date"
-				},
-				"errorMessage": {
-					"type": "text"
-				},
-				"type": {
-					"type": "keyword"
-				},
-				"incidentKey": {
-					"type": "long"
-				},
-				"scopeKey": {
-					"type": "long"
-				},
-				"lockOwner": {
-					"type": "keyword"
-				},
-				"workflowInstanceKey": {
-					"type": "long"
-				},
-				"id": {
-					"type": "keyword"
-				},
-				"state": {
-					"type": "keyword"
-				},
-				"batchOperationId": {
-					"type": "keyword"
-				},
-				"zeebeCommandKey": {
-					"type": "keyword"
-				},
-				"startDate": {
-					"format": "date_time",
-					"type": "date"
-				},
-				"username": {
-					"type": "keyword"
+						"type": "string",
+						"index_options": "docs"
+					},
+					"match_mapping_type": "string"
 				}
 			}
+		],
+		"properties": {
+			"variableName": {
+				"type": "keyword"
+			},
+			"variableValue": {
+				"type": "keyword"
+			},
+			"endDate": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"lockExpirationTime": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"errorMessage": {
+				"type": "text"
+			},
+			"type": {
+				"type": "keyword"
+			},
+			"incidentKey": {
+				"type": "long"
+			},
+			"scopeKey": {
+				"type": "long"
+			},
+			"lockOwner": {
+				"type": "keyword"
+			},
+			"workflowInstanceKey": {
+				"type": "long"
+			},
+			"id": {
+				"type": "keyword"
+			},
+			"state": {
+				"type": "keyword"
+			},
+			"batchOperationId": {
+				"type": "keyword"
+			},
+			"zeebeCommandKey": {
+				"type": "keyword"
+			},
+			"startDate": {
+				"format": "date_time",
+				"type": "date"
+			},
+			"username": {
+				"type": "keyword"
+			}
+		}
 	},
 	"aliases": {
 		"operate-operation-${schema.version}_alias": {

@@ -5,20 +5,24 @@
  */
 package org.camunda.operate.property;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 /**
  * This class contains all project configuration parameters.
  */
 @Component
+@Configuration
 @ConfigurationProperties(OperateProperties.PREFIX)
+@PropertySource("classpath:version.properties")
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 10000L;
-  private static final String DEFAULT_VERSION = "1.2.0-SNAPSHOT";
 
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
@@ -40,8 +44,16 @@ public class OperateProperties {
    */
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
+  private boolean enterprise = false;
+
+  @Value("${camunda.operate.internal.schema.version}")
+  private String schemaVersion;
+  
+  @Value("${camunda.operate.internal.schema.previous_version}")
+  private String previousSchemaVersion;
+
   @NestedConfigurationProperty
-  private ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
+  private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
   @NestedConfigurationProperty
   private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
@@ -101,11 +113,11 @@ public class OperateProperties {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
 
-  public ElasticsearchProperties getElasticsearch() {
+  public OperateElasticsearchProperties getElasticsearch() {
     return elasticsearch;
   }
 
-  public void setElasticsearch(ElasticsearchProperties elasticsearch) {
+  public void setElasticsearch(OperateElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 
@@ -171,10 +183,29 @@ public class OperateProperties {
   public void setClusterNode(ClusterNodeProperties clusterNode) {
     this.clusterNode = clusterNode;
   }
-  
-  public static String getSchemaVersion() {
-    String versionFromManifest = OperateProperties.class.getPackage().getImplementationVersion();
-    String version = versionFromManifest==null?DEFAULT_VERSION:versionFromManifest;
-    return version.toLowerCase(); // elasticsearch accepts only lowercase index/template names 
+
+  public boolean isEnterprise() {
+    return enterprise;
   }
+
+  public void setEnterprise(boolean enterprise) {
+    this.enterprise = enterprise;
+  }
+
+  public String getSchemaVersion() {
+    return schemaVersion.toLowerCase();
+  }
+
+  public void setSchemaVersion(String schemaVersion) {
+    this.schemaVersion = schemaVersion;
+  }
+  
+  public String getPreviousSchemaVersion() {
+    return previousSchemaVersion.toLowerCase();
+  }
+
+  public void setPreviousSchemaVersion(String previousSchemaVersion) {
+    this.previousSchemaVersion = previousSchemaVersion;
+  }
+
 }

@@ -21,5 +21,5 @@ export const DiagramEmptyMessage = styled(EmptyMessage)`
 `;
 
 export const PaneHeader = styled(SplitPaneComponent.Pane.Header)`
-  border-radius: 3px 3px 0 0;
+  border-radius: inherit;
 `;

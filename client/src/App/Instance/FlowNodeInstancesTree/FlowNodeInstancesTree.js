@@ -20,7 +20,8 @@ export default class FlowNodeInstancesTree extends React.Component {
       type: PropTypes.string.isRequired,
       activityId: PropTypes.string,
       state: PropTypes.oneOf(Object.values(STATE)),
-      children: PropTypes.array
+      children: PropTypes.arrayOf(PropTypes.object),
+      isLastChild: PropTypes.bool
     }),
     selectedTreeRowIds: PropTypes.array.isRequired,
     treeDepth: PropTypes.number.isRequired,

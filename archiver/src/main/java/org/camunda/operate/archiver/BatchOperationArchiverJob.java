@@ -93,7 +93,7 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest(AggregationBuilder agg) {
-    final QueryBuilder endDateQ = rangeQuery(BatchOperationTemplate.END_DATE).lte("now-1h");
+    final QueryBuilder endDateQ = rangeQuery(BatchOperationTemplate.END_DATE).lte(operateProperties.getArchiver().getArchivingTimepoint());
     final ConstantScoreQueryBuilder q = constantScoreQuery(endDateQ);
 
     final SearchRequest searchRequest = new SearchRequest(batchOperationTemplate.getMainIndexName())

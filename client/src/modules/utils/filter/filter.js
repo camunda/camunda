@@ -12,12 +12,22 @@ import {trimValue} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
 
 /**
+ * Reduce a filter object down to the state properties
+ */
+export function reduceToStates(filter) {
+  const {active, incidents, completed, canceled} = filter;
+  return {active, incidents, completed, canceled};
+}
+
+/**
  * Returns a query string for the filter objects
  * removes keys with empty values (null, "", []) so that they don't appear in URL
  */
-export function getFilterQueryString(filter = {}) {
+export function getFilterQueryString(filter = {}, name) {
   const cleanedFilter = compactObject(filter);
-  return `?filter=${encodeURIComponent(JSON.stringify(cleanedFilter))}`;
+  const filterString = `?filter=${JSON.stringify(cleanedFilter)}`;
+  const nameString = `&name=${JSON.stringify(name)}`;
+  return name ? filterString + nameString : filterString;
 }
 
 export function parseQueryString(queryString = '') {
@@ -31,6 +41,7 @@ export function parseQueryString(queryString = '') {
   queries.forEach((item, index) => {
     const [paramKey, paramValue] = queries[index].split('=');
     const decodedValue = decodeURIComponent(paramValue);
+
     if (isValidJSON(decodedValue)) {
       params[paramKey] = JSON.parse(decodedValue);
     }

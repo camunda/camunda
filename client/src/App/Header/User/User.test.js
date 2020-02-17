@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
+
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {
   mockResolvedAsyncFn,
@@ -13,12 +14,22 @@ import {
   flushPromises
 } from 'modules/testUtils';
 
+import useLocalStorage from 'modules/hooks/useLocalStorage';
+
 import User from './User';
 import * as api from 'modules/api/header/header';
 
 import * as Styled from './styled';
 
+jest.mock('modules/hooks/useLocalStorage');
 jest.mock('modules/utils/bpmn');
+
+useLocalStorage.mockImplementation(() => {
+  return {
+    storedValue: mockUser,
+    setLocalState: jest.fn()
+  };
+});
 
 const defaultConsoleError = console.error;
 const defaultConsoleLog = console.log;
@@ -40,6 +51,25 @@ describe('User', () => {
   afterEach(() => {
     console.error = defaultConsoleError;
     console.log = defaultConsoleLog;
+    useLocalStorage.mockClear();
+  });
+
+  it('renders with locally stored User data', async () => {
+    useLocalStorage.mockImplementation(() => {
+      return {
+        storedValue: mockUser,
+        setLocalState: jest.fn()
+      };
+    });
+    const node = mount(
+      <ThemeProvider>
+        <User />
+      </ThemeProvider>
+    );
+
+    expect(node.find('User').text()).toContain(
+      `${(mockUser.firstname, ' ', mockUser.lastname)}`
+    );
   });
 
   it('renders with User data', async () => {
@@ -72,6 +102,12 @@ describe('User', () => {
   });
 
   it('renders without User data', async () => {
+    useLocalStorage.mockImplementation(() => {
+      return {
+        storedValue: {},
+        setLocalStorage: jest.fn()
+      };
+    });
     api.fetchUser = mockRejectedAsyncFn();
 
     const node = mount(
@@ -84,12 +120,18 @@ describe('User', () => {
   });
 
   it('should handle logout', async () => {
+    useLocalStorage.mockImplementation(() => {
+      return {
+        storedValue: {},
+        setLocalStorage: jest.fn()
+      };
+    });
     api.fetchUser = mockResolvedAsyncFn(mockUser);
     api.logout = mockResolvedAsyncFn();
 
     const node = mount(
       <ThemeProvider>
-        <User />
+        <User handleRedirect={() => {}} />
       </ThemeProvider>
     );
 

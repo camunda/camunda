@@ -9,7 +9,6 @@ import {shallow} from 'enzyme';
 
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
-import AddSelection from './AddSelection';
 import {Copyright} from './styled';
 
 jest.mock('modules/utils/bpmn');
@@ -19,14 +18,9 @@ describe('ListFooter', () => {
     return shallow(
       <ListFooter
         onFirstElementChange={jest.fn()}
-        onAddNewSelection={jest.fn()}
-        onAddToSelectionById={jest.fn()}
-        onAddToOpenSelection={jest.fn()}
         perPage={10}
         firstElement={0}
         filterCount={9}
-        selection={{ids: [], excludeIds: []}}
-        selections={[{selectionId: 0}, {selectionId: 1}]}
         dataManager={{}}
         hasContent={true}
         {...props}
@@ -42,10 +36,8 @@ describe('ListFooter', () => {
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
-  it('should render button if no selection exists', () => {
+  it('should render copyright note', () => {
     const node = renderFooter();
-    node.setProps({selections: []});
-    expect(node.find(AddSelection).exists()).toBe(true);
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
@@ -53,7 +45,6 @@ describe('ListFooter', () => {
     const node = renderFooter({hasContent: false});
 
     expect(node.find(Paginator).exists()).toBe(false);
-    expect(node.find(AddSelection).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });
 });

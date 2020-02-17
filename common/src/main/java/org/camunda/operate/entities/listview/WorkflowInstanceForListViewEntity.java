@@ -11,7 +11,7 @@ import java.util.List;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
-public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
+public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity<WorkflowInstanceForListViewEntity> {
   
   private Long workflowKey;
   private String workflowName;

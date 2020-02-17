@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import org.camunda.operate.exceptions.ArchiverException;
+import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
@@ -33,6 +34,9 @@ public abstract class AbstractArchiverJob implements Runnable {
   @Qualifier("archiverThreadPoolExecutor")
   private TaskScheduler archiverExecutor;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   public AbstractArchiverJob() {
   }
 
@@ -42,10 +46,10 @@ public abstract class AbstractArchiverJob implements Runnable {
 
   @Override
   public void run() {
-    long delay = 1;
+    long delay;
     try {
       int entitiesCount = archiveNextBatch();
-      delay = 1000;    //to wait till refresh
+      delay = operateProperties.getArchiver().getDelayBetweenRuns();
 
       if (entitiesCount == 0) {
         //TODO we can implement backoff strategy, if there is not enough data
@@ -55,7 +59,7 @@ public abstract class AbstractArchiverJob implements Runnable {
     } catch (Exception ex) {
       //retry
       logger.error("Error occurred while archiving data. Will be retried.", ex);
-      delay = 2000;
+      delay = operateProperties.getArchiver().getDelayBetweenRuns();
     }
     if (!shutdown) {
       archiverExecutor.schedule(this, Date.from(Instant.now().plus(delay, ChronoUnit.MILLIS)));

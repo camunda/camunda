@@ -27,6 +27,7 @@ describe('BottomPanel', () => {
   let node;
   let ChildNode;
   beforeEach(() => {
+    // eslint-disable-next-line react/prop-types
     ChildNode = ({expandState, ...props}) => (
       <div {...props} data-test="ChildNode" />
     );

@@ -17,7 +17,7 @@ spec:
       effect: "NoSchedule"
   initContainers:
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.1
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       command:
       - "sh"
       args:
@@ -30,7 +30,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.1
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       command:
       - "sh"
       args:
@@ -69,7 +69,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.1
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms4g -Xmx4g'
@@ -118,9 +118,11 @@ spec:
     - name: operate
       image: gcr.io/ci-30-162810/camunda-operate:latest
       env:
-        - name: camunda.operate.operationExecutor.executorEnabled
+        - name: CAMUNDA_OPERATE_OPERATIONEXECUTOR_EXECUTORENABLED
           value: false
-        - name: camunda.operate.batchOperationMaxSize
+        - name: CAMUNDA_OPERATE_ELASTICSEARCH_CREATESCHEMA
+          value: false
+        - name: CAMUNDA_OPERATE_BATCHOPERATIONMAXSIZE
           value: 1000000
       resources:
         limits:

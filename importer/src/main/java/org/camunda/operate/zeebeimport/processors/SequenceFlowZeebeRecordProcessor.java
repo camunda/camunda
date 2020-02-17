@@ -43,13 +43,16 @@ public class SequenceFlowZeebeRecordProcessor {
   }
 
   private void persistSequenceFlow(Record record, WorkflowInstanceRecordValueImpl recordValue, BulkRequest bulkRequest) throws PersistenceException {
-    SequenceFlowEntity entity = new SequenceFlowEntity();
-    entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
-    entity.setActivityId(recordValue.getElementId());
-    bulkRequest.add(getSequenceFlowInsertQuery(entity));
+    bulkRequest.add(
+          getSequenceFlowInsertQuery( 
+              new SequenceFlowEntity()
+                .setId( ConversionUtils.toStringOrNull(record.getKey()))
+                .setKey(record.getKey())
+                .setPartitionId(record.getPartitionId())
+                .setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey())
+                .setActivityId(recordValue.getElementId())
+          )
+    );
   }
 
   private IndexRequest getSequenceFlowInsertQuery(SequenceFlowEntity sequenceFlow) throws PersistenceException {

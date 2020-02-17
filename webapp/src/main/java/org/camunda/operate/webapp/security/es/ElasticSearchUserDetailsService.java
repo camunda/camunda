@@ -53,12 +53,14 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   }
 
   public void initializeUsers() {
-    String username = operateProperties.getUsername();
-    if(!userExists(username)) {
-      addUserWith(username, operateProperties.getPassword(), USER_ROLE);
-    }
-    if(!userExists(ACT_USERNAME)) {
-      addUserWith(ACT_USERNAME, ACT_PASSWORD, ACT_ADMIN_ROLE);
+    if (operateProperties.getElasticsearch().isCreateSchema()) {
+      String username = operateProperties.getUsername();
+      if (!userExists(username)) {
+        addUserWith(username, operateProperties.getPassword(), USER_ROLE);
+      }
+      if (!userExists(ACT_USERNAME)) {
+        addUserWith(ACT_USERNAME, ACT_PASSWORD, ACT_ADMIN_ROLE);
+      }
     }
   }
 

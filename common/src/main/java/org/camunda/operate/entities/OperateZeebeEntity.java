@@ -5,18 +5,20 @@
  */
 package org.camunda.operate.entities;
 
-public abstract class OperateZeebeEntity extends OperateEntity {
+public abstract class OperateZeebeEntity<T extends OperateZeebeEntity<T>> extends OperateEntity<T> {
 
   private long key;
 
   private int partitionId;
 
-  public void setKey(long key) {
+  public T setKey(long key) {
     this.key = key;
+    return (T) this;
   }
 
-  public void setPartitionId(int partitionId) {
+  public T setPartitionId(int partitionId) {
     this.partitionId = partitionId;
+    return (T) this;
   }
 
   public long getKey() {
@@ -36,7 +38,7 @@ public abstract class OperateZeebeEntity extends OperateEntity {
     if (!super.equals(o))
       return false;
 
-    OperateZeebeEntity that = (OperateZeebeEntity) o;
+    OperateZeebeEntity<T> that = (OperateZeebeEntity<T>) o;
 
     if (key != that.key)
       return false;

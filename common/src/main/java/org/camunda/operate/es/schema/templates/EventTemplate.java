@@ -25,7 +25,6 @@ public class EventTemplate extends AbstractTemplateDescriptor implements Workflo
   public static final String EVENT_SOURCE_TYPE = "eventSourceType";
   public static final String EVENT_TYPE = "eventType";
   public static final String DATE_TIME = "dateTime";
-  public static final String PAYLOAD = "payload";
 
   public static final String METADATA = "metadata";
 

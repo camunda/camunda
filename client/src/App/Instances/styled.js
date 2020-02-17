@@ -6,11 +6,8 @@
 
 import styled from 'styled-components';
 
-import BadgeComponent from 'modules/components/Badge';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
-import Panel from 'modules/components/Panel';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
-import CollapseButton from 'modules/components/CollapseButton';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -27,6 +24,7 @@ export const Content = styled.div`
   top: 0;
   left: 0;
   height: 100%;
+  width: 100%
   width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
@@ -35,42 +33,14 @@ export const FilterSection = styled.div`
 `;
 
 export const SplitPane = styled(SplitPaneComponent)`
+  border-radius: 3px 0 0 0;
   width: 100%;
 `;
 
-export const Selections = styled.div`
-  width: 479px;
-  display: flex;
-  margin-left: 1px;
-`;
-
-export const RightCollapseButton = styled(CollapseButton)`
-  position: absolute;
-  left: 0;
-  top: 0;
-  border-top: none;
-  border-bottom: none;
-  border-left: none;
-`;
-
-export const SelectionHeader = styled(Panel.Header)`
-  display: flex;
-  justify-content: flex-start;
-
-  padding-left: 45px;
-  display: flex;
-  flex-shrink: 0;
-`;
-
-export const Badge = styled(BadgeComponent)`
-  top: 2px;
-  margin-left: 13px;
-`;
-
 export const Pane = styled(SplitPane.Pane)`
-  border-radius: 3px 3px 0 0;
+  border-radius: inherit;
 `;
 
 export const PaneHeader = styled(SplitPane.Pane.Header)`
-  border-radius: 3px 3px 0 0;
+  border-radius: inherit;
 `;

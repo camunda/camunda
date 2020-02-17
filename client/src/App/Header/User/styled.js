@@ -9,6 +9,14 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import DefaultDropdown from 'modules/components/Dropdown';
 
 export const Dropdown = styled(DefaultDropdown)`
+  > button > div {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100px;
+    display: block;
+    overflow: hidden;
+  }
+
   > ul {
     z-index: 6;
   }

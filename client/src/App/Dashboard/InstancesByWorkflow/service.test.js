@@ -119,7 +119,8 @@ describe('service', () => {
       const url = concatUrl({
         bpmnProcessId: 'Process_1',
         versions: [{version: 1}],
-        hasFinishedInstances: true
+        hasFinishedInstances: true,
+        name: 'Process_1'
       });
 
       expect(url).toMatchSnapshot();
@@ -128,7 +129,8 @@ describe('service', () => {
     it('should get url - all versions, no finished instances', () => {
       const url = concatUrl({
         bpmnProcessId: 'Process_2',
-        versions: [{version: 1}, {version: 2}]
+        versions: [{version: 1}, {version: 2}],
+        name: 'Process_2'
       });
 
       expect(url).toMatchSnapshot();

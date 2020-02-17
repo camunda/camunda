@@ -241,9 +241,8 @@ describe('modules/utils/filter.js', () => {
 
   describe('getFilterQueryString', () => {
     it('should return a query string', () => {
-      const encodedFilter = encodeURIComponent(
-        '{"active":true,"incidents":true}'
-      );
+      const encodedFilter = '{"active":true,"incidents":true}';
+
       const queryString = `?filter=${encodedFilter}`;
 
       expect(getFilterQueryString(DEFAULT_FILTER)).toBe(queryString);
@@ -251,9 +250,8 @@ describe('modules/utils/filter.js', () => {
 
     it('should remove keys with false values', () => {
       const valueWithArray = {a: true, b: true, c: false, ids: ['a', 'b', 'c']};
-      const encodedFilter = encodeURIComponent(
-        '{"a":true,"b":true,"ids":["a","b","c"]}'
-      );
+      const encodedFilter = '{"a":true,"b":true,"ids":["a","b","c"]}';
+
       const output = `?filter=${encodedFilter}`;
 
       expect(getFilterQueryString(valueWithArray)).toBe(output);

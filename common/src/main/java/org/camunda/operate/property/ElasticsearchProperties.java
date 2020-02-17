@@ -11,10 +11,6 @@ public class ElasticsearchProperties {
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
   
-  public static final String DEFAULT_INDEX_PREFIX = "operate";
-
-  private String indexPrefix = DEFAULT_INDEX_PREFIX;
-
   private String clusterName= "elasticsearch";
 
   private String host = "localhost";
@@ -26,6 +22,8 @@ public class ElasticsearchProperties {
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
 
   private int batchSize = 2000;
+
+  private boolean createSchema = true;
 
   public String getClusterName() {
     return clusterName;
@@ -75,11 +73,11 @@ public class ElasticsearchProperties {
     this.batchSize = batchSize;
   }
 
-  public String getIndexPrefix() {
-    return indexPrefix;
+  public boolean isCreateSchema() {
+    return createSchema;
   }
 
-  public void setIndexPrefix(String indexPrefix) {
-    this.indexPrefix = indexPrefix;
+  public void setCreateSchema(boolean createSchema) {
+    this.createSchema = createSchema;
   }
 }

@@ -8,21 +8,31 @@ import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 
 import {PILL_TYPE, LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
-import useDataManager from 'modules/hooks/useDataManager';
+import useSubscription from 'modules/hooks/useSubscription';
 import {withFlowNodeTimeStampContext} from 'modules/contexts/FlowNodeTimeStampContext';
 
 import * as Styled from './styled';
 
 function TimeStampPill(props) {
   const {showTimeStamp, onTimeStampToggle} = props;
-  const [isDisabled, setDisabled] = useState(true);
-  const {subscribe} = useDataManager();
+  const [isTreeLoaded, setIsTreeLoaded] = useState(false);
+  const [isDefLoaded, setIsDefLoaded] = useState(false);
+  const {subscribe, unsubscribe} = useSubscription();
 
   useEffect(() => {
     subscribe(SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE, LOADING_STATE.LOADED, () =>
-      setDisabled(false)
+      setIsTreeLoaded(true)
     );
+    subscribe(
+      SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS,
+      LOADING_STATE.LOADED,
+      () => setIsDefLoaded(true)
+    );
+    return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const isDisabled = !isTreeLoaded && !isDefLoaded;
 
   return (
     <Styled.Pill

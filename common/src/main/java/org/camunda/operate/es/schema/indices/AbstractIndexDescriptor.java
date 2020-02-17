@@ -18,7 +18,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   protected OperateProperties operateProperties;
 
   public String getIndexName() {
-    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getMainIndexName(), OperateProperties.getSchemaVersion());
+    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getMainIndexName(), operateProperties.getSchemaVersion());
   }
 
   protected abstract String getMainIndexName();

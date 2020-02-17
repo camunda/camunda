@@ -19,12 +19,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
@@ -253,13 +253,6 @@ public abstract class TestUtil {
     return result;
   }
 
-  public static SequenceFlowEntity createSequenceFlow() {
-    SequenceFlowEntity sequenceFlowEntity = new SequenceFlowEntity();
-    sequenceFlowEntity.setId(UUID.randomUUID().toString());
-    sequenceFlowEntity.setActivityId("SequenceFlow_" + random.nextInt());
-    return sequenceFlowEntity;
-  }
-
   public static ListViewRequestDto createWorkflowInstanceQuery(Consumer<ListViewQueryDto> filtersSupplier) {
     ListViewQueryDto query = new ListViewQueryDto();
     filtersSupplier.accept(query);
@@ -367,6 +360,15 @@ public abstract class TestUtil {
 
   public static OperationEntity createOperationEntity(Long workflowInstanceKey, OperationState state) {
     return createOperationEntity(workflowInstanceKey, null, null, state, null, false);
+  }
+
+  public static BatchOperationEntity createBatchOperationEntity(OffsetDateTime startDate, OffsetDateTime endDate, String username) {
+    return new BatchOperationEntity()
+        .setId(UUID.randomUUID().toString())
+        .setStartDate(startDate)
+        .setEndDate(endDate)
+        .setUsername(username)
+        .setType(OperationType.CANCEL_WORKFLOW_INSTANCE);
   }
 
 }

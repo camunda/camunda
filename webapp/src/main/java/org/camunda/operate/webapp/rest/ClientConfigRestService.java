@@ -6,7 +6,7 @@
 package org.camunda.operate.webapp.rest;
 
 import org.camunda.operate.property.OperateProperties;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,12 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class ClientConfigRestService {
 
   public static final String CLIENT_CONFIG_RESOURCE = "/client-config.js";
-  @Value("${" + OperateProperties.PREFIX + ".enterprise:false}")
-  private boolean enterprise;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   @GetMapping(path = CLIENT_CONFIG_RESOURCE, produces = "text/javascript")
   public String getClientConfig() {
-    return String.format("window.clientConfig = { \"isEnterprise\": %s };", enterprise);
+    return String.format("window.clientConfig = { \"isEnterprise\": %s };", operateProperties.isEnterprise());
   }
 
 

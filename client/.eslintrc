@@ -3,8 +3,12 @@
   "rules": {
     "prettier/prettier": "warn",
     "react/sort-comp": [2],
-    "react/prop-types": [2],
-    "react/no-unused-prop-types": [2]
+    "react/prop-types": [2]
   },
-  "extends": ["react-app", "plugin:camunda-licensed/commercial"]
+  "extends": ["react-app", "plugin:camunda-licensed/commercial"],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
 }

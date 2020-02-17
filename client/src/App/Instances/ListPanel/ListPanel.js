@@ -31,7 +31,18 @@ class ListPanel extends React.Component {
     sorting: PropTypes.object.isRequired,
     onSort: PropTypes.func.isRequired,
     firstElement: PropTypes.number.isRequired,
-    onFirstElementChange: PropTypes.func.isRequired
+    onFirstElementChange: PropTypes.func.isRequired,
+    rowsToDisplay: PropTypes.number,
+    dataManager: PropTypes.shape({
+      subscribe: PropTypes.func,
+      unsubscribe: PropTypes.func,
+      update: PropTypes.func
+    }),
+    polling: PropTypes.shape({
+      active: PropTypes.object,
+      removeIds: PropTypes.func,
+      addIds: PropTypes.func
+    })
   };
 
   constructor(props) {
@@ -145,11 +156,11 @@ class ListPanel extends React.Component {
 
   renderContent(isListEmpty) {
     if (!isListEmpty) {
-      return <List.Item.Body />;
+      return <List.Body />;
     } else if (this.state.initialLoad) {
-      return <List.Item.Skeleton rowsToDisplay={this.props.rowsToDisplay} />;
+      return <List.Skeleton rowsToDisplay={this.props.rowsToDisplay} />;
     } else {
-      return <List.Item.Message message={this.getEmptyListMessage()} />;
+      return <List.Message message={this.getEmptyListMessage()} />;
     }
   }
 
@@ -192,7 +203,7 @@ class ListPanel extends React.Component {
             onActionButtonClick={this.handleActionButtonClick}
             Overlay={this.renderSpinner()}
           >
-            <List.Item.Header />
+            <List.Header />
             {this.renderContent(isListEmpty)}
           </List>
         </Styled.PaneBody>

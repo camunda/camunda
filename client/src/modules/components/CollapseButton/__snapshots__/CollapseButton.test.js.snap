@@ -2,24 +2,24 @@
 
 exports[`CollapseButton should render Down icon if icon direction is DOWN 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(ReactComponent)) />
+  <Themed(Styled(Component)) />
 </Themed(styled.button)>
 `;
 
 exports[`CollapseButton should render Left icon if icon direction is LEFT 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(ReactComponent)) />
+  <Themed(Styled(Component)) />
 </Themed(styled.button)>
 `;
 
 exports[`CollapseButton should render Right icon if icon direction is RIGHT 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(ReactComponent)) />
+  <Themed(Styled(Component)) />
 </Themed(styled.button)>
 `;
 
 exports[`CollapseButton should render Up icon if icon direction is UP 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(ReactComponent)) />
+  <Themed(Styled(Component)) />
 </Themed(styled.button)>
 `;

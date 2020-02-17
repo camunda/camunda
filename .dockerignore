@@ -13,4 +13,3 @@ client/build
 client/node_modules
 client/src/node_modules
 client/target
-distro/target

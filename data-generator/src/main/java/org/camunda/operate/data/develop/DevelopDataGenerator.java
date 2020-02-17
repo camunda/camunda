@@ -6,15 +6,20 @@
 package org.camunda.operate.data.develop;
 
 import io.zeebe.client.api.worker.JobWorker;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.camunda.operate.data.usertest.UserTestDataGenerator;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component("dataGenerator")
 @Profile("dev-data")
@@ -100,6 +105,13 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     jobWorkers.add(progressSimpleTask("subprocessTask"));
     jobWorkers.add(progressSimpleTask("subSubprocessTask"));
     jobWorkers.add(progressSimpleTask("eventSupbprocessTask"));
+
+    //big process
+    jobWorkers.add(progressBigProcessTaskA());
+    jobWorkers.add(progressBigProcessTaskB());
+
+    //error process
+    jobWorkers.add(progressErrorTask());
 
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
@@ -196,6 +208,47 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       .open();
   }
 
+  private JobWorker progressBigProcessTaskA() {
+    return client.newWorker()
+        .jobType("bigProcessTaskA")
+        .handler((jobClient, job) -> {
+          Map<String, Object> varMap = job.getVariablesAsMap();
+          //increment loop count
+          Integer i = (Integer)varMap.get("i");
+          varMap.put("i", i == null ? 1 : i+1);
+          jobClient.newCompleteCommand(job.getKey()).variables(varMap).send().join();
+        })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private JobWorker progressBigProcessTaskB() {
+    return client.newWorker()
+        .jobType("bigProcessTaskB")
+        .handler((jobClient, job) -> {
+          jobClient.newCompleteCommand(job.getKey()).send().join();
+        })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
+  private JobWorker progressErrorTask() {
+    return client.newWorker()
+        .jobType("errorTask")
+        .handler((jobClient, job) -> {
+          String errorCode = (String) job.getVariablesAsMap().getOrDefault("errorCode", "error");
+          jobClient.newThrowErrorCommand(job.getKey())
+              .errorCode(errorCode)
+              .errorMessage("Job worker throw error with error code: " + errorCode)
+              .send().join();
+        })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
   @Override
   protected void deployVersion1() {
     super.deployVersion1();
@@ -217,11 +270,19 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/eventSubProcess_v_1.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/bigProcess.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/errorProcess.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/error-end-event.bpmn");
   }
 
   @Override
   protected void startWorkflowInstances(int version) {
     super.startWorkflowInstances(version);
+    if (version == 1) {
+      createBigProcess(20, 50);
+    }
     final int instancesCount = random.nextInt(30) + 30;
     for (int i = 0; i < instancesCount; i++) {
 
@@ -235,6 +296,15 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
         //eventSubprocess
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "eventSubprocessWorkflow", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
+
+        // errorProcess
+        workflowInstanceKeys.add(ZeebeTestUtil
+            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"boundary\"}"));
+        workflowInstanceKeys.add(ZeebeTestUtil
+            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"subProcess\"}"));
+        workflowInstanceKeys.add(ZeebeTestUtil
+            .startWorkflowInstance(client, "errorProcess", "{\"errorCode\": \"unknown\"}"));
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "error-end-process", null));
       }
 
       if (version == 2) {
@@ -256,6 +326,27 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "complexProcess", "{\"goUp\": " + random.nextInt(10) + "}"));
       }
 
+    }
+  }
+
+  private void createBigProcess(int loopCardinality, int numberOfClients) {
+    XContentBuilder builder = null;
+    try {
+      builder = jsonBuilder()
+        .startObject()
+          .field("loopCardinality", loopCardinality)
+          .field("clients")
+          .startArray();
+      for (int j = 0; j <= numberOfClients; j++) {
+        builder
+            .value(j);
+      }
+      builder
+          .endArray()
+        .endObject();
+      ZeebeTestUtil.startWorkflowInstance(client, "bigProcess", Strings.toString(builder));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

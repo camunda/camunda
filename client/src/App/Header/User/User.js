@@ -6,7 +6,10 @@
 
 import React, {useState, useEffect} from 'react';
 import {ThemeConsumer} from 'modules/theme';
+
 import Dropdown from 'modules/components/Dropdown';
+import useLocalStorage from 'modules/hooks/useLocalStorage';
+
 import PropTypes from 'prop-types';
 
 import * as api from 'modules/api/header';
@@ -17,20 +20,25 @@ User.propTypes = {
 };
 
 export default function User({handleRedirect}) {
+  const {storedValue, setLocalStorage} = useLocalStorage('sharedState');
+  const {firstname, lastname} = storedValue;
   const [user, setUser] = useState({
-    firstname: null,
-    lastname: null
+    firstname,
+    lastname
   });
 
   useEffect(() => {
-    getUser();
+    !(firstname || lastname) && getUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getUser = async () => {
     try {
-      setUser(await api.fetchUser());
+      const {firstname, lastname} = await api.fetchUser();
+      setUser({firstname, lastname});
+      setLocalStorage({firstname, lastname});
     } catch (e) {
-      console.log('user could not be loaded');
+      console.log('new user could not set');
     }
   };
 

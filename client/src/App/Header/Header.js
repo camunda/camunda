@@ -11,7 +11,6 @@ import {withData} from 'modules/DataManager';
 import {withCountStore} from 'modules/contexts/CountContext';
 import {withRouter} from 'react-router';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
-import {withSelection} from 'modules/contexts/SelectionContext';
 
 import {wrapWithContexts} from 'modules/contexts/contextHelpers';
 import withSharedState from 'modules/components/withSharedState';
@@ -19,7 +18,6 @@ import {getFilterQueryString, parseQueryString} from 'modules/utils/filter';
 import {
   FILTER_SELECTION,
   BADGE_TYPE,
-  COMBO_BADGE_TYPE,
   LOADING_STATE,
   DEFAULT_FILTER
 } from 'modules/constants';
@@ -29,35 +27,24 @@ import {labels, createTitle, PATHNAME} from './constants';
 
 import User from './User';
 import InstanceDetail from './InstanceDetail';
-import {
-  DoubleBadgeNavElement,
-  NavElement,
-  BrandNavElement,
-  LinkElement
-} from './NavElements';
+import {NavElement, BrandNavElement, LinkElement} from './NavElements';
 import * as Styled from './styled.js';
 
 class Header extends React.Component {
   static propTypes = {
     dataManager: PropTypes.object,
     countStore: PropTypes.shape({
+      isLoaded: PropTypes.bool,
       running: PropTypes.number,
       active: PropTypes.number,
       filterCount: PropTypes.number,
-      withIncidents: PropTypes.number,
-      instancesInSelectionsCount: PropTypes.number,
-      selectionCount: PropTypes.number
+      withIncidents: PropTypes.number
     }),
     location: PropTypes.object,
-    selectionCount: PropTypes.number,
-    instancesInSelectionsCount: PropTypes.number,
     isFiltersCollapsed: PropTypes.bool.isRequired,
-    isSelectionsCollapsed: PropTypes.bool.isRequired,
     expandFilters: PropTypes.func.isRequired,
-    expandSelections: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func
   };
-  static labels = labels;
 
   constructor(props) {
     super(props);
@@ -189,24 +176,17 @@ class Header extends React.Component {
       return conditions[type];
     }
 
-    // Is 'dashboard', 'filters' or 'selections' active;
+    // Is 'dashboard' or 'filters' active;
     const conditions = {
       dashboard: currentView.isDashboard(),
-      filters: currentView.isInstances() && !this.props.isFiltersCollapsed,
-      selections: currentView.isInstances() && !this.props.isSelectionsCollapsed
+      filters: currentView.isInstances() && !this.props.isFiltersCollapsed
     };
 
     return conditions[type];
   }
 
   selectCount(type) {
-    const {
-      running,
-      withIncidents,
-      instancesInSelectionsCount,
-      selectionCount,
-      filterCount
-    } = this.props.countStore;
+    const {running, withIncidents, filterCount} = this.props.countStore;
 
     if (!this.state.isLoaded) {
       return '';
@@ -215,8 +195,7 @@ class Header extends React.Component {
     const conditions = {
       instances: running,
       filters: filterCount === null ? running : filterCount,
-      incidents: withIncidents,
-      selections: {instancesInSelectionsCount, selectionCount}
+      incidents: withIncidents
     };
 
     return conditions[type];
@@ -252,14 +231,11 @@ class Header extends React.Component {
       return <Redirect to="/login" />;
     }
 
-    const {filter} = this.state;
-
     const brand = this.getLinkProperties('brand');
     const dashboard = this.getLinkProperties('dashboard');
     const instances = this.getLinkProperties('instances');
     const incidents = this.getLinkProperties('incidents');
     const filters = this.getLinkProperties('filters');
-    const selections = this.getLinkProperties('selections');
 
     return (
       <Styled.Header role="banner">
@@ -268,20 +244,20 @@ class Header extends React.Component {
             to="/"
             dataTest={brand.dataTest}
             title={brand.title}
-            label={Header.labels['brand']}
+            label={labels['brand']}
           />
           <LinkElement
             dataTest={dashboard.dataTest}
             to="/"
             isActive={dashboard.isActive}
             title={dashboard.title}
-            label={Header.labels['dashboard']}
+            label={labels['dashboard']}
           />
           <NavElement
             dataTest={instances.dataTest}
             isActive={instances.isActive}
             title={instances.title}
-            label={Header.labels['instances']}
+            label={labels['instances']}
             count={instances.count}
             linkProps={instances.linkProps}
             type={BADGE_TYPE.RUNNING_INSTANCES}
@@ -290,7 +266,7 @@ class Header extends React.Component {
             dataTest={filters.dataTest}
             isActive={filters.isActive}
             title={filters.title}
-            label={Header.labels['filters']}
+            label={labels['filters']}
             count={filters.count}
             linkProps={filters.linkProps}
             type={BADGE_TYPE.FILTERS}
@@ -299,23 +275,10 @@ class Header extends React.Component {
             dataTest={incidents.dataTest}
             isActive={incidents.isActive}
             title={incidents.title}
-            label={Header.labels['incidents']}
+            label={labels['incidents']}
             count={incidents.count}
             linkProps={incidents.linkProps}
             type={BADGE_TYPE.INCIDENTS}
-          />
-          <DoubleBadgeNavElement
-            to={`/instances${filter ? getFilterQueryString(filter) : ''}`}
-            dataTest={selections.dataTest}
-            title={selections.title}
-            label={Header.labels['selections']}
-            isActive={selections.isActive}
-            expandSelections={this.props.expandSelections}
-            selectionCount={selections.count.selectionCount}
-            instancesInSelectionsCount={
-              selections.count.instancesInSelectionsCount
-            }
-            type={COMBO_BADGE_TYPE.SELECTIONS}
           />
         </Styled.Menu>
         {this.currentView().isInstance() && (
@@ -330,7 +293,6 @@ class Header extends React.Component {
 const contexts = [
   withCountStore,
   withData,
-  withSelection,
   withCollapsablePanel,
   withSharedState,
   withRouter,

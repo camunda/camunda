@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 import CollapseButton from 'modules/components/CollapseButton';
@@ -26,13 +26,7 @@ export const Pane = styled(
   ${({expandState}) => (isCollapsed(expandState) ? '' : `flex-grow: 1;`)};
 `;
 
-const collapsedStyle = css`
-  display: none;
-`;
-
-export const Body = styled(Panel.Body)`
-  ${({expandState}) => (isCollapsed(expandState) ? collapsedStyle : '')};
-`;
+export const Body = Panel.Body;
 
 export const Footer = Panel.Footer;
 
@@ -47,8 +41,6 @@ export const PaneCollapseButton = styled(CollapseButton)`
 export const ButtonsContainer = styled.div`
   position: absolute;
   top: 0;
-  right: ${({isShifted}) => (isShifted ? '422px' : 0)};
+  right: 0;
   display: flex;
-  z-index: 2;
-  transition: right 0.2s ease-out;
 `;

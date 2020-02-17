@@ -5,18 +5,8 @@
  */
 package org.camunda.operate.migration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.CollectionUtil.map;
-import static org.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import java.io.IOException;
 import java.util.List;
-
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.IncidentEntity;
@@ -43,48 +33,64 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestContextManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.camunda.operate.util.CollectionUtil.chooseOne;
+import static org.camunda.operate.util.CollectionUtil.map;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @ContextConfiguration(
 	classes = { 
-		Connector.class,ObjectMapper.class,
+		Connector.class,EntityReader.class,ObjectMapper.class,
 		OperateProperties.class,MigrationProperties.class
 	}
 )
 public class ValidationTest {
 
 	@Autowired
-	MigrationProperties config;
+	private MigrationProperties config;
+	
+	@Autowired
+	private RestHighLevelClient esClient;
 
 	@Autowired
-	OperateProperties operateProperties;
+	private OperateProperties operateProperties;
 	
 	@Autowired
-	ObjectMapper objectMapper;
-	
-	@Autowired
-	RestHighLevelClient esClient;
+	private BeanFactory beanFactory;
+
+  private EntityReader entityReader;
 	
 	@Before
 	public void setUp() {
-		setupContext();
+		TestContextManager testContextManager = new TestContextManager(getClass());
+    try {
+      testContextManager.prepareTestInstance(this);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to initialize context manager", e);
+    }
+	  entityReader = beanFactory.getBean(EntityReader.class,operateProperties.getSchemaVersion());
 	}
 	
 	@Test
 	public void testImportPositions() throws Throwable {
-		List<ImportPositionEntity> importPositions = getEntitiesFor("import-position", ImportPositionEntity.class);
+		List<ImportPositionEntity> importPositions = entityReader.getEntitiesFor("import-position", ImportPositionEntity.class);
 		assertThat(importPositions.isEmpty()).describedAs("There should exists at least 1 ImportPosition").isFalse();
 	}
 	
 	@Test
 	public void testEvents() throws Throwable {
-		List<EventEntity> events = getEntitiesFor("event", EventEntity.class);
+		List<EventEntity> events = entityReader.getEntitiesFor("event", EventEntity.class);
 		assertThat(events.isEmpty()).isFalse();
 		assertThat(events.stream().filter(e -> e.getMetadata() != null).count()).describedAs("At least one event has metadata").isGreaterThan(0);
 		assertThat(events.stream().allMatch(e -> e.getEventSourceType()!= null)).describedAs("All events have a EventSourceType").isTrue();
@@ -93,13 +99,13 @@ public class ValidationTest {
 	
 	@Test
 	public void testSequenceFlows() throws Throwable {
-		List<SequenceFlowEntity> sequenceFlows = getEntitiesFor("sequence-flow", SequenceFlowEntity.class);
+		List<SequenceFlowEntity> sequenceFlows = entityReader.getEntitiesFor("sequence-flow", SequenceFlowEntity.class);
 		assertThat(sequenceFlows.size()).isEqualTo(config.getWorkflowInstanceCount() * 2);
 	}
 	
 	@Test
 	public void testActivityInstances() throws Throwable {
-		List<ActivityInstanceEntity> activityInstances = getEntitiesFor("activity-instance", ActivityInstanceEntity.class);
+		List<ActivityInstanceEntity> activityInstances = entityReader.getEntitiesFor("activity-instance", ActivityInstanceEntity.class);
 		assertThat(activityInstances.size()).isEqualTo(config.getWorkflowInstanceCount() * 3);
 		assertThat(activityInstances.stream().allMatch( a -> a.getType() != null)).as("All activity instances have a type").isTrue();
 		assertThat(activityInstances.stream().allMatch( a -> a.getState()!= null)).as("All activity instances have a state").isTrue();
@@ -107,46 +113,46 @@ public class ValidationTest {
 	
 	@Test
 	public void testVariables() throws Throwable {
-		List<VariableEntity> variableEntities = getEntitiesFor("variable", VariableEntity.class);
+		List<VariableEntity> variableEntities = entityReader.getEntitiesFor("variable", VariableEntity.class);
 		assertThat(variableEntities.size()).isEqualTo(config.getWorkflowInstanceCount() * 4);
 	}
 	
 	@Test
 	public void testOperations() throws Throwable {
-		List<OperationEntity> operations = getEntitiesFor("operation", OperationEntity.class);
+		List<OperationEntity> operations = entityReader.getEntitiesFor("operation", OperationEntity.class);
 		assertThat(operations.size()).describedAs("At least one operation is active").isGreaterThan(0);
 	}
         	
 	@Test
 	public void testListViews() throws Throwable {
-		SearchRequest searchRequest = new SearchRequest(getIndexNameFor("list-view"));
+		SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(ListViewTemplate.INDEX_NAME));
 		int workflowInstancesCount = config.getWorkflowInstanceCount();
 		
 		// Workflow instances list
 		searchRequest.source().query(termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION));
-		List<WorkflowInstanceForListViewEntity> workflowInstancesList = searchEntitiesFor(searchRequest, WorkflowInstanceForListViewEntity.class);
+		List<WorkflowInstanceForListViewEntity> workflowInstancesList = entityReader.searchEntitiesFor(searchRequest, WorkflowInstanceForListViewEntity.class);
 		assertThat(workflowInstancesList.size()).isEqualTo(workflowInstancesCount * 1);
 		
 		//  Variables list
 		searchRequest.source().query(termQuery(JOIN_RELATION, VARIABLES_JOIN_RELATION));
-		List<VariableForListViewEntity> variablesList = searchEntitiesFor(searchRequest, VariableForListViewEntity.class);
+		List<VariableForListViewEntity> variablesList = entityReader.searchEntitiesFor(searchRequest, VariableForListViewEntity.class);
 		assertThat(variablesList.size()).isEqualTo(workflowInstancesCount * 4);
 		
 		// Activity instances list
 		searchRequest.source().query(termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION));
-		List<ActivityInstanceForListViewEntity> activitiesList = searchEntitiesFor(searchRequest, ActivityInstanceForListViewEntity.class);
+		List<ActivityInstanceForListViewEntity> activitiesList = entityReader.searchEntitiesFor(searchRequest, ActivityInstanceForListViewEntity.class);
 		assertThat(activitiesList.size()).isEqualTo(workflowInstancesCount * 3);
 	}
 	
 	@Test
 	public void testWorkflows() throws IOException {	
-		List<WorkflowEntity> workflows = getEntitiesFor("workflow", WorkflowEntity.class);
+		List<WorkflowEntity> workflows = entityReader.getEntitiesFor("workflow", WorkflowEntity.class);
 		assertThat(workflows.size()).isEqualTo(config.getWorkflowCount());
 	}
 	
 	@Test
 	public void testIncidents() throws IOException {
-		List<IncidentEntity> incidents = getEntitiesFor("incident", IncidentEntity.class);
+		List<IncidentEntity> incidents = entityReader.getEntitiesFor("incident", IncidentEntity.class);
 		assertThat(incidents.size()).isBetween(
 		    config.getIncidentCount() - (config.getCountOfCancelOperation() + config.getCountOfResolveOperation()),
 		    config.getIncidentCount() 
@@ -160,7 +166,7 @@ public class ValidationTest {
 	@Test
 	public void testCoreStatistics() throws IOException {
     final SearchRequest searchRequest = new SearchRequest(
-        getIndexNameFor(ListViewTemplate.INDEX_NAME))
+        entityReader.getAliasFor(ListViewTemplate.INDEX_NAME))
         .source(new SearchSourceBuilder().size(0)
             .aggregation(WorkflowInstanceReader.INCIDENTS_AGGREGATION)
             .aggregation(WorkflowInstanceReader.RUNNING_AGGREGATION)
@@ -169,12 +175,15 @@ public class ValidationTest {
      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
      long runningCount = getAggregationCountFor(response,"running");
      long incidentCount = getAggregationCountFor(response, "incidents");
+     
+     long maxNotRunning = config.getCountOfResolveOperation() + config.getCountOfCancelOperation();
+     // At least the canceled one are not running
      assertThat(runningCount).isBetween(
-       (long)config.getWorkflowInstanceCount() - config.getCountOfCancelOperation(),
-       (long) config.getWorkflowInstanceCount()
-     );
+         config.getWorkflowInstanceCount() - maxNotRunning, 
+         (long)config.getWorkflowInstanceCount() - config.getCountOfCancelOperation());
+     // Incidents resolved or Workflow instances are canceled
      assertThat(incidentCount).isBetween(
-        (long)config.getIncidentCount() - (config.getCountOfCancelOperation() + config.getCountOfResolveOperation()),
+        (long)config.getIncidentCount() - maxNotRunning,
         (long) config.getIncidentCount()
      );
   }
@@ -186,10 +195,10 @@ public class ValidationTest {
 	
   @Test
 	public void testIncidentsStatistics() throws IOException {
-	  List<Long> workflowsKeys = map(getEntitiesFor("workflow", WorkflowEntity.class),WorkflowEntity::getKey);
-	  long savedIncidents = getEntitiesFor("incident", IncidentEntity.class).size();
+	  List<Long> workflowsKeys = map(entityReader.getEntitiesFor("workflow", WorkflowEntity.class),WorkflowEntity::getKey);
+	  long savedIncidents = entityReader.getEntitiesFor("incident", IncidentEntity.class).size();
 	  
-    SearchRequest searchRequest = new SearchRequest(getIndexNameFor(ListViewTemplate.INDEX_NAME))
+    SearchRequest searchRequest = new SearchRequest(entityReader.getAliasFor(ListViewTemplate.INDEX_NAME))
         .source(new SearchSourceBuilder()
             .query(IncidentStatisticsReader.INCIDENTS_QUERY)
             .aggregation(IncidentStatisticsReader.COUNT_WORKFLOW_KEYS).size(0));
@@ -206,33 +215,5 @@ public class ValidationTest {
       }
       assertThat(incidentsCount).isEqualTo(savedIncidents);
   }
-
-	protected void setupContext() {
-		TestContextManager testContextManager = new TestContextManager(getClass());
-	    try {
-	      testContextManager.prepareTestInstance(this);
-	      objectMapper.registerModule(new JavaTimeModule());
-	    } catch (Exception e) {
-	      throw new RuntimeException("Failed to initialize context manager", e);
-	    }
-	}
-	
-	protected <T> List<T> getEntitiesFor(String index,Class<T> entityClass) throws IOException{
-		return searchEntitiesFor(new SearchRequest(getIndexNameFor(index)), entityClass);
-	}
-	
-	protected <T> List<T> searchEntitiesFor(SearchRequest searchRequest,Class<T> entityClass) throws IOException{
-		searchRequest.source().size(1000);
-		SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-		return mapSearchHits(searchResponse.getHits().getHits(), objectMapper, entityClass);	
-	}
-	
-	protected String getIndexNameFor(String index) {
-		return getIndexNameFor(index, OperateProperties.getSchemaVersion());
-	}
-	
-	protected String getIndexNameFor(String index,String version) {
-		return String.format("operate-%s-%s_", index,version);
-	}
 	
 }

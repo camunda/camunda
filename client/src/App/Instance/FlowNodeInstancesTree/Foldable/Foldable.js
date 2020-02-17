@@ -81,6 +81,7 @@ Foldable.Summary.propTypes = {
   toggleFold: PropTypes.func,
   isFoldable: PropTypes.bool,
   isFolded: PropTypes.bool,
+  indentation: PropTypes.number,
   isLastChild: PropTypes.bool,
   isSelected: PropTypes.bool,
   onSelection: PropTypes.func,
@@ -96,4 +97,8 @@ Foldable.Summary.defaultProps = {
 
 Foldable.Details = function Details({isFolded, ...props}) {
   return <Styled.Details {...props} showChildScope={!isFolded} />;
+};
+
+Foldable.Details.propTypes = {
+  isFolded: PropTypes.bool
 };

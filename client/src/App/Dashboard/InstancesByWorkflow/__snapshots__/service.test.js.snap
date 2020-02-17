@@ -30,6 +30,6 @@ exports[`service concatTitle should get title for no instances 1`] = `"View 0 In
 
 exports[`service concatTitle should get title for single instance 1`] = `"View 1 Instance in Version 2 of Workflow myProcessName"`;
 
-exports[`service concatUrl should get url - all versions, no finished instances 1`] = `"/instances?filter={\\"workflow\\":\\"Process_2\\",\\"version\\":\\"all\\",\\"incidents\\":true,\\"active\\":true}"`;
+exports[`service concatUrl should get url - all versions, no finished instances 1`] = `"/instances?filter={\\"workflow\\":\\"Process_2\\",\\"version\\":\\"all\\",\\"incidents\\":true,\\"active\\":true}&name=\\"Process_2\\""`;
 
-exports[`service concatUrl should get url - single version, finished instances 1`] = `"/instances?filter={\\"workflow\\":\\"Process_1\\",\\"version\\":\\"1\\",\\"incidents\\":true,\\"active\\":true,\\"completed\\":true,\\"canceled\\":true}"`;
+exports[`service concatUrl should get url - single version, finished instances 1`] = `"/instances?filter={\\"workflow\\":\\"Process_1\\",\\"version\\":\\"1\\",\\"incidents\\":true,\\"active\\":true,\\"completed\\":true,\\"canceled\\":true}&name=\\"Process_1\\""`;

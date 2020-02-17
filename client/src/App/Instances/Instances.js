@@ -13,17 +13,12 @@ import {
 } from 'modules/constants';
 
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-import {
-  SelectionProvider,
-  SelectionConsumer
-} from 'modules/contexts/SelectionContext';
-import {getInstancesIdsFromSelections} from 'modules/contexts/SelectionContext/service';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
 import DiagramPanel from './DiagramPanel';
 import ListPanel from './ListPanel';
 import Filters from './Filters';
-import Selections from './Selections';
+import OperationsPanel from './OperationsPanel';
 
 import {getWorkflowNameFromFilter} from './service';
 
@@ -75,68 +70,50 @@ export default class Instances extends Component {
     );
 
     return (
-      <SelectionProvider
-        groupedWorkflows={this.props.groupedWorkflows}
+      <InstancesPollProvider
+        visibleIdsInListPanel={this.props.workflowInstances.map(x => x.id)}
         filter={this.props.filter}
       >
-        <SelectionConsumer>
-          {selections => (
-            <InstancesPollProvider
-              visibleIdsInListPanel={this.props.workflowInstances.map(
-                x => x.id
-              )}
-              filter={this.props.filter}
-              visibleIdsInSelections={getInstancesIdsFromSelections(
-                selections.selections
-              )}
-            >
-              <Styled.Instances>
-                <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
-                <Styled.Content>
-                  <Styled.FilterSection>
-                    <Filters
-                      selectableFlowNodes={selectableFlowNodes}
-                      groupedWorkflows={this.props.groupedWorkflows}
-                      filter={{
-                        ...DEFAULT_FILTER_CONTROLLED_VALUES,
-                        ...this.props.filter
-                      }}
-                      onFilterReset={() =>
-                        this.props.onFilterReset(DEFAULT_FILTER)
-                      }
-                      onFilterChange={this.props.onFilterChange}
-                    />
-                  </Styled.FilterSection>
-                  <Styled.SplitPane
-                    titles={{top: 'Workflow', bottom: 'Instances'}}
-                  >
-                    <DiagramPanel
-                      workflowName={workflowName}
-                      onFlowNodeSelection={this.props.onFlowNodeSelection}
-                      noWorkflowSelected={!filter.workflow}
-                      noVersionSelected={filter.version === 'all'}
-                      definitions={this.props.diagramModel.definitions}
-                      flowNodesStatistics={this.props.statistics}
-                      selectedFlowNodeId={this.props.filter.activityId}
-                      selectableFlowNodes={selectableIds}
-                    />
-                    <ListPanel
-                      instances={this.props.workflowInstances}
-                      filter={this.props.filter}
-                      filterCount={this.props.filterCount}
-                      onSort={this.props.onSort}
-                      sorting={this.props.sorting}
-                      firstElement={this.props.firstElement}
-                      onFirstElementChange={this.props.onFirstElementChange}
-                    />
-                  </Styled.SplitPane>
-                </Styled.Content>
-                <Selections />
-              </Styled.Instances>
-            </InstancesPollProvider>
-          )}
-        </SelectionConsumer>
-      </SelectionProvider>
+        <Styled.Instances>
+          <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
+          <Styled.Content>
+            <Styled.FilterSection>
+              <Filters
+                selectableFlowNodes={selectableFlowNodes}
+                groupedWorkflows={this.props.groupedWorkflows}
+                filter={{
+                  ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                  ...this.props.filter
+                }}
+                onFilterReset={() => this.props.onFilterReset(DEFAULT_FILTER)}
+                onFilterChange={this.props.onFilterChange}
+              />
+            </Styled.FilterSection>
+            <Styled.SplitPane titles={{top: 'Workflow', bottom: 'Instances'}}>
+              <DiagramPanel
+                workflowName={workflowName}
+                onFlowNodeSelection={this.props.onFlowNodeSelection}
+                noWorkflowSelected={!filter.workflow}
+                noVersionSelected={filter.version === 'all'}
+                definitions={this.props.diagramModel.definitions}
+                flowNodesStatistics={this.props.statistics}
+                selectedFlowNodeId={this.props.filter.activityId}
+                selectableFlowNodes={selectableIds}
+              />
+              <ListPanel
+                instances={this.props.workflowInstances}
+                filter={this.props.filter}
+                filterCount={this.props.filterCount}
+                onSort={this.props.onSort}
+                sorting={this.props.sorting}
+                firstElement={this.props.firstElement}
+                onFirstElementChange={this.props.onFirstElementChange}
+              />
+            </Styled.SplitPane>
+          </Styled.Content>
+          <OperationsPanel />
+        </Styled.Instances>
+      </InstancesPollProvider>
     );
   }
 }

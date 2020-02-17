@@ -78,7 +78,7 @@ export class Dashboard extends Component {
     if (state.error) {
       return <EmptyPanel type="warning" label={MESSAGES[type].error} />;
     } else if (state.isLoading) {
-      return <EmptyPanel type="skeleton" Skeleton={Skeleton} rowHeight={32} />;
+      return <EmptyPanel type="skeleton" Skeleton={Skeleton} rowHeight={55} />;
     } else if (state.data.length === 0) {
       return <EmptyPanel type="info" label={MESSAGES[type].noData} />;
     } else if (state.data.length > 0 && type === INSTANCES_BY_WORKFLOW) {

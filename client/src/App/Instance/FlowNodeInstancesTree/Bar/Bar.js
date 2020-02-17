@@ -15,7 +15,7 @@ import * as Styled from './styled';
 
 const BarComponent = ({node, isSelected}) => {
   const name = `${node.name}${
-    node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance ${node.id})` : ''
+    node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance)` : ''
   }`;
 
   return (
@@ -42,7 +42,8 @@ BarComponent.propTypes = {
     name: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
     typeDetails: PropTypes.object.isRequired,
-    endDate: PropTypes.string
+    endDate: PropTypes.string,
+    children: PropTypes.arrayOf(PropTypes.object)
   }),
   isSelected: PropTypes.bool
 };

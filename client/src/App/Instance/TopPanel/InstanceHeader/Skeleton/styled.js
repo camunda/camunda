@@ -30,7 +30,7 @@ export const Row = styled.div`
 `;
 
 export const Block = styled(BaseBlock)`
-  height: 12px;
+  height: 14px;
 `;
 
 export const InitialBlock = styled(Block)`
@@ -52,10 +52,11 @@ export const TimeStampBlock = styled(Block)`
 
 export const RoundedBlock = styled(Block)`
   width: 45px;
+  height: 20px;
   border-radius: 20px;
 `;
 
 export const Circle = styled(BaseCircle)`
-  height: 16px;
-  width: 16px;
+  height: 14px;
+  width: 14px;
 `;

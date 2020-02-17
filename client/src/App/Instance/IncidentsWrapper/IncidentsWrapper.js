@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useMemo, useRef} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {isEqual} from 'lodash';
 
 import PropTypes from 'prop-types';
@@ -13,6 +13,7 @@ import IncidentsOverlay from './IncidentsOverlay';
 import IncidentsTable from './IncidentsTable';
 import IncidentsFilter from './IncidentsFilter';
 import {SORT_ORDER} from 'modules/constants';
+import usePrevious from 'modules/hooks/usePrevious';
 import {sortData} from './service';
 
 import * as Styled from './styled';
@@ -44,21 +45,13 @@ function IncidentsWrapper(props) {
     if (didFiltersChange(prevErrorTypes, errorTypes)) {
       setSelectedErrorTypes(updateFilters(selectedErrorTypes, errorTypes));
     }
-  });
+  }, [prevErrorTypes, errorTypes, selectedErrorTypes]);
 
   useEffect(() => {
     if (didFiltersChange(prevFlowNodes, flowNodes)) {
       setSelectedFlowNodes(updateFilters(selectedFlowNodes, flowNodes));
     }
-  });
-
-  function usePrevious(value) {
-    const ref = useRef();
-    useEffect(() => {
-      ref.current = value;
-    });
-    return ref.current;
-  }
+  }, [prevFlowNodes, flowNodes, selectedFlowNodes]);
 
   function didFiltersChange(previous, current) {
     return previous && !isEqual([...current.keys()], [...previous.keys()]);
@@ -103,13 +96,7 @@ function IncidentsWrapper(props) {
     setSelectedFlowNodes([]);
   }
 
-  const filteredIncidents = useMemo(() => filterIncidents(), [
-    selectedErrorTypes,
-    selectedFlowNodes,
-    incidents
-  ]);
-
-  function filterIncidents() {
+  const filteredIncidents = useMemo(() => {
     const hasSelectedFlowNodes = Boolean(selectedFlowNodes.length);
     const hasSelectedErrorTypes = Boolean(selectedErrorTypes.length);
 
@@ -134,7 +121,7 @@ function IncidentsWrapper(props) {
     };
 
     return [...incidents].filter(item => isSelected(item));
-  }
+  }, [incidents, selectedErrorTypes, selectedFlowNodes]);
 
   const sortedIncidents = sortData(
     filteredIncidents,

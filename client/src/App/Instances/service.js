@@ -4,36 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {isEmpty} from 'lodash';
+import {isEmpty, isEqual} from 'lodash';
 
 import {parseDiagramXML} from 'modules/utils/bpmn';
 
 import {getWorkflowByVersion} from 'modules/utils/filter';
-
-export function getStateUpdateForAddSelection(
-  selection,
-  rollingSelectionIndex,
-  instancesInSelectionsCount,
-  selectionCount,
-  prevState
-) {
-  const currentSelectionIndex = rollingSelectionIndex + 1;
-  const newCount = instancesInSelectionsCount + selection.totalCount;
-  return {
-    selections: [
-      {
-        selectionId: currentSelectionIndex,
-        ...selection
-      },
-      ...prevState.selections
-    ],
-    rollingSelectionIndex: currentSelectionIndex,
-    instancesInSelectionsCount: newCount,
-    selectionCount: selectionCount + 1,
-    openSelection: currentSelectionIndex,
-    selection: {all: false, ids: [], excludeIds: []}
-  };
-}
 
 export function decodeFields(object) {
   let result = {};
@@ -73,4 +48,26 @@ export function getWorkflowNameFromFilter({filter, groupedWorkflows}) {
 
   const currentWorkflow = groupedWorkflows[filter.workflow];
   return getWorkflowName(currentWorkflow);
+}
+
+export function hasWorkflowChanged(prevFilter, filter) {
+  return (
+    prevFilter.workflow !== filter.workflow ||
+    prevFilter.version !== filter.version
+  );
+}
+
+export function hasFirstElementChanged(prevElement, element) {
+  return prevElement !== element;
+}
+
+export function hasSortingChanged(prevSorting, sorting) {
+  return !isEqual(prevSorting, sorting);
+}
+
+export function hasUrlChanged(prevLocation, location) {
+  return prevLocation.search !== location.search;
+}
+export function hasFilterChanged(prevFilter, filter) {
+  return !isEqual(prevFilter, filter);
 }

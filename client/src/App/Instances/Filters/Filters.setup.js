@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {getFilterQueryString} from 'modules/utils/filter';
+
 import {
   createFilter,
   groupedWorkflowsMock as defaultGroupedWorkflowsMock
@@ -24,7 +26,10 @@ export const workflows = {
 export const mockProps = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
-  selectableFlowNodes: []
+  selectableFlowNodes: [],
+  location: {
+    search: getFilterQueryString({})
+  }
 };
 
 export const mockPropsWithSelectableFlowNodes = {
@@ -33,7 +38,10 @@ export const mockPropsWithSelectableFlowNodes = {
   selectableFlowNodes: [
     {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
     {id: 'TaskB', $type: 'bpmn:EndEvent'}
-  ]
+  ],
+  location: {
+    search: getFilterQueryString({})
+  }
 };
 
 export const COMPLETE_FILTER = {
@@ -45,4 +53,18 @@ export const COMPLETE_FILTER = {
   workflow: 'demoProcess',
   version: '2',
   activityId: '4'
+};
+
+export const mockPropsWithDefaultFilter = {
+  ...mockProps,
+  location: {
+    search: getFilterQueryString({active: true, incidents: true})
+  }
+};
+
+export const mockPropsWithInitFilter = {
+  ...mockProps,
+  location: {
+    search: getFilterQueryString(COMPLETE_FILTER)
+  }
 };

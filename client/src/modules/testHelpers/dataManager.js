@@ -10,16 +10,17 @@ import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 jest.mock('modules/DataManager/core');
 jest.mock('modules/utils/bpmn');
 
-const mockDataManager = () => {
+export const mockDataManager = () => {
   let subscription = {};
   return {
     publish: jest.fn(
       ({subscription, state = LOADING_STATE.LOADED, response, staticContent}) =>
         subscription({state, response, staticContent})
     ),
-    // THIS IS A TEMPORARY ENDPOINT,
-    publishing: jest.fn(),
-    poll: {clear: jest.fn(), start: jest.fn().mockImplementation(cb => cb())},
+    poll: {
+      unregister: jest.fn(),
+      register: jest.fn().mockImplementation((name, cb) => cb())
+    },
     update: jest.fn(),
     subscribe: jest.fn().mockImplementation(subs => {
       subscription = subs;
@@ -36,10 +37,10 @@ const mockDataManager = () => {
     getActivityInstancesTreeData: jest.fn(),
     getWorkflowInstancesStatistics: jest.fn(),
     getWorkflowInstancesByIds: jest.fn(),
-    getWorkflowInstancesBySelection: jest.fn(),
     getWorkflowCoreStatistics: jest.fn(),
     getInstancesByWorkflow: jest.fn(),
-    getIncidentsByError: jest.fn()
+    getIncidentsByError: jest.fn(),
+    getBatchOperations: jest.fn()
   };
 };
 
