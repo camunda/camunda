@@ -324,7 +324,7 @@ const Header = function(props) {
           />
         </TH>
         <Styled.ActionsTH>
-          <ColumnHeader disabled={isListEmpty} label="Actions" />
+          <ColumnHeader disabled={isListEmpty} label="Operations" />
         </Styled.ActionsTH>
       </Styled.TR>
     </THead>
