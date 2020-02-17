@@ -61,6 +61,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -99,6 +100,7 @@ public final class ZeebePartition extends Actor
   private final HealthMetrics healthMetrics;
   private AtomixLogStorage atomixLogStorage;
   private long deferredCommitPosition;
+  private final RaftPartitionHealth raftPartitionHealth;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -137,6 +139,8 @@ public final class ZeebePartition extends Actor
 
     this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
     criticalComponentsHealthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
+    raftPartitionHealth =
+        new RaftPartitionHealth(atomixRaftPartition, actor, this::inactiveTransition);
     healthMetrics = new HealthMetrics(partitionId);
     healthMetrics.setUnhealthy();
   }
@@ -207,15 +211,20 @@ public final class ZeebePartition extends Actor
             });
   }
 
-  private void inactiveTransition() {
+  private CompletableFuture<Void> inactiveTransition() {
+    final CompletableFuture<Void> inactiveTransitionFuture = new CompletableFuture<>();
     closePartition()
         .onComplete(
             (v, t) -> {
               if (t != null) {
                 LOG.error("Failed to close partition when transition to inactive role");
+                inactiveTransitionFuture.completeExceptionally(t);
+              } else {
+                inactiveTransitionFuture.complete(null);
               }
             });
     updateHealthStatus(HealthStatus.UNHEALTHY);
+    return inactiveTransitionFuture;
   }
 
   private ActorFuture<Void> onTransitionTo(
@@ -622,6 +631,12 @@ public final class ZeebePartition extends Actor
   protected void onActorStarted() {
     criticalComponentsHealthMonitor.startMonitoring();
     criticalComponentsHealthMonitor.addFailureListener(this);
+    criticalComponentsHealthMonitor.registerComponent("Raft-" + partitionId, raftPartitionHealth);
+  }
+
+  @Override
+  protected void onActorClosed() {
+    raftPartitionHealth.close();
   }
 
   @Override
