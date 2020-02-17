@@ -14,6 +14,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,11 +30,12 @@ public class EventProcessPublishStateDto {
   private String processMappingId;
   private String name;
   private OffsetDateTime publishDateTime;
-  private OffsetDateTime lastImportedEventIngestDateTime;
   private EventProcessState state;
   private Double publishProgress;
   @Builder.Default
   private Boolean deleted = false;
   private String xml;
   private Map<String, EventMappingDto> mappings;
+  @Builder.Default
+  private List<EventImportSourceDto> eventImportSources = new ArrayList<>();
 }

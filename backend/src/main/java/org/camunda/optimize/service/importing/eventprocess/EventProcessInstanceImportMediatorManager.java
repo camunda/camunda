@@ -7,12 +7,14 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -78,11 +80,15 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
     final String instanceIndexId,
     final EventProcessPublishStateDto publishedStateDto,
     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
+    if (publishedStateDto.getEventImportSources().size() != 1) {
+      throw new OptimizeRuntimeException("Cannot create mediator for multiple data sources");
+    }
+    EventImportSourceDto eventImportSourceDto = publishedStateDto.getEventImportSources().get(0);
     return new EventProcessInstanceImportMediator(
       instanceIndexId,
       configurationService,
       eventService,
-      publishedStateDto.getLastImportedEventIngestDateTime().toInstant().toEpochMilli(),
+      eventImportSourceDto.getLastImportedEventTimestamp().toInstant().toEpochMilli(),
       new EventProcessInstanceImportService(
         publishedStateDto,
         elasticsearchImportJobExecutor,

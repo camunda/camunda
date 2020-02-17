@@ -18,6 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -628,9 +629,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
   }
 
   private void createAndPublishEventProcessMapping(final Map<String, EventMappingDto> eventMappings, String bpmnXml) {
-    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXml(
-      eventMappings, EVENT_PROCESS_NAME, bpmnXml
-    );
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+      eventMappings, EVENT_PROCESS_NAME, bpmnXml);
     String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessId);
   }

@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
@@ -202,14 +203,23 @@ public class EventProcessService {
       .xml(eventProcessMapping.getXml())
       .publishDateTime(LocalDateUtil.getCurrentDateTime())
       .state(EventProcessState.PUBLISH_PENDING)
-      .lastImportedEventIngestDateTime(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
       .publishProgress(0.0D)
       .deleted(false)
       .mappings(eventProcessMapping.getMappings())
+      .eventImportSources(eventProcessMapping.getEventSources().stream()
+                            .map(this::createEventImportSourceFromDataSource)
+                            .collect(Collectors.toList()))
       .build();
 
     eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
     eventProcessPublishStateWriter.createEventProcessPublishState(processPublishState);
+  }
+
+  private EventImportSourceDto createEventImportSourceFromDataSource(EventSourceEntryDto eventSourceEntryDto) {
+    return EventImportSourceDto.builder()
+      .lastImportedEventTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
+      .eventSource(eventSourceEntryDto)
+      .build();
   }
 
   public void cancelPublish(final String eventProcessMappingId) {

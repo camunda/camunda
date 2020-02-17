@@ -12,12 +12,17 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
@@ -163,7 +168,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
-  protected EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
+  private EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
                                                                      final EventMappingDto intermediateEventMapping,
                                                                      final EventMappingDto endEventMapping) {
     final Map<String, EventMappingDto> eventMappings = new HashMap<>();
@@ -173,9 +178,22 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .ifPresent(mapping -> eventMappings.put(BPMN_INTERMEDIATE_EVENT_ID, mapping));
     Optional.ofNullable(endEventMapping)
       .ifPresent(mapping -> eventMappings.put(BPMN_END_EVENT_ID, mapping));
-    return eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXml(
+    return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
       eventMappings, EVENT_PROCESS_NAME, createSimpleProcessDefinitionXml()
     );
+  }
+
+  protected EventSourceEntryDto convertToEventSourceEntryDto(EventSourceEntryRestDto eventSourceRestEntry) {
+    return EventSourceEntryDto.builder()
+      .id(eventSourceRestEntry.getId())
+      .type(eventSourceRestEntry.getType())
+      .eventScope(eventSourceRestEntry.getEventScope())
+      .processDefinitionKey(eventSourceRestEntry.getProcessDefinitionKey())
+      .versions(eventSourceRestEntry.getVersions())
+      .tenants(eventSourceRestEntry.getTenants())
+      .tracedByBusinessKey(eventSourceRestEntry.getTracedByBusinessKey())
+      .traceVariable(eventSourceRestEntry.getTraceVariable())
+      .build();
   }
 
   @SneakyThrows

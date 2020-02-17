@@ -12,6 +12,7 @@ import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -82,7 +83,7 @@ public class EventProcessPublishStateWriter {
     try {
       Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
         Sets.newHashSet(
-          EventProcessPublishStateIndex.LAST_IMPORTED_EVENT_DATE_TIME,
+          EventProcessPublishStateIndex.EVENT_IMPORT_SOURCES,
           EventProcessPublishStateIndex.PUBLISH_PROGRESS,
           EventProcessPublishStateIndex.STATE
         ),

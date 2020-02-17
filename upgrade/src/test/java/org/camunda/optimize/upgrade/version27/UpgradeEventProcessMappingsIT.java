@@ -31,11 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 
 public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
-  private static final String FROM_VERSION = "2.7.0";
-
-  private static final EventIndexV1 EVENT_INDEX = new EventIndexV1();
-  private static final EventSequenceCountIndexV1 EVENT_SEQUENCE_COUNT_INDEX = new EventSequenceCountIndexV1();
-  private static final EventProcessMappingIndexV1 EVENT_PROCESS_MAPPING_INDEX = new EventProcessMappingIndexV1();
 
   @BeforeEach
   @Override
@@ -44,9 +39,10 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
 
     initSchema(Lists.newArrayList(
       METADATA_INDEX,
-      EVENT_INDEX,
-      EVENT_SEQUENCE_COUNT_INDEX,
-      EVENT_PROCESS_MAPPING_INDEX
+      EVENT_INDEX_V1,
+      EVENT_SEQUENCE_COUNT_INDEX_V1,
+      EVENT_PROCESS_MAPPING_INDEX_V1,
+      EVENT_PROCESS_PUBLISH_STATE_INDEX_V1
     ));
 
     setMetadataIndexVersion(FROM_VERSION);

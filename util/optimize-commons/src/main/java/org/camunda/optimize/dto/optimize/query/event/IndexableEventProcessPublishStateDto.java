@@ -30,13 +30,13 @@ public class IndexableEventProcessPublishStateDto {
   private String processMappingId;
   private String name;
   private OffsetDateTime publishDateTime;
-  private OffsetDateTime lastImportedEventIngestDateTime;
   private EventProcessState state;
   private Double publishProgress;
   @Builder.Default
   private Boolean deleted = false;
   private String xml;
   private List<IndexableEventMappingDto> mappings;
+  private List<EventImportSourceDto> eventImportSources;
 
   public static IndexableEventProcessPublishStateDto fromEventProcessPublishStateDto(
     final EventProcessPublishStateDto publishState) {
@@ -46,7 +46,6 @@ public class IndexableEventProcessPublishStateDto {
       .name(publishState.getName())
       .xml(publishState.getXml())
       .publishDateTime(publishState.getPublishDateTime())
-      .lastImportedEventIngestDateTime(publishState.getLastImportedEventIngestDateTime())
       .state(publishState.getState())
       .publishProgress(publishState.getPublishProgress())
       .deleted(publishState.getDeleted())
@@ -61,6 +60,7 @@ public class IndexableEventProcessPublishStateDto {
             .collect(Collectors.toList()))
           .orElse(null)
       )
+      .eventImportSources(publishState.getEventImportSources())
       .build();
   }
 
@@ -71,7 +71,6 @@ public class IndexableEventProcessPublishStateDto {
       .name(getName())
       .xml(getXml())
       .publishDateTime(getPublishDateTime())
-      .lastImportedEventIngestDateTime(getLastImportedEventIngestDateTime())
       .state(getState())
       .publishProgress(getPublishProgress())
       .deleted(getDeleted())
@@ -85,6 +84,7 @@ public class IndexableEventProcessPublishStateDto {
                 .end(mapping.getEnd()).build()
             ))).orElse(null)
       )
+      .eventImportSources(getEventImportSources())
       .build();
   }
 }

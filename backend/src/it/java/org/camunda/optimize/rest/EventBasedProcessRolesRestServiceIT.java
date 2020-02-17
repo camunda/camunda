@@ -218,7 +218,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {
-    return eventProcessClient.buildEventProcessMappingDtoWithMappings(
+    return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
       Collections.emptyMap(),
       "process name",
       createSimpleProcessDefinitionXml()

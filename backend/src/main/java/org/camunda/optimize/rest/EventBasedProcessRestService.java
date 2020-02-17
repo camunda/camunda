@@ -45,7 +45,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -232,7 +231,7 @@ public class EventBasedProcessRestService {
   }
 
   private EventProcessMappingRestDto mapMappingDtoToRestDto(final String userId, final EventProcessMappingDto dto) {
-    EventProcessMappingRestDto restDto = EventProcessMappingRestDto.builder()
+    return EventProcessMappingRestDto.builder()
       .id(dto.getId())
       .lastModified(dto.getLastModified())
       .lastModifier(dto.getLastModifier())
@@ -241,33 +240,25 @@ public class EventBasedProcessRestService {
       .state(dto.getState())
       .publishingProgress(dto.getPublishingProgress())
       .xml(dto.getXml())
-      .eventSources(mapSourceEntryToRestDto(userId, dto.getEventSources()))
+      .eventSources(mapSourceEntriesToRestDtos(userId, dto.getEventSources()))
       .build();
-
-    return restDto;
   }
 
-  private List<EventSourceEntryRestDto> mapSourceEntryToRestDto(final String userId,
-                                                                final List<EventSourceEntryDto> eventSourceDtos) {
-    List<EventSourceEntryRestDto> sourceRestDtos = new ArrayList<>();
-
-    for (EventSourceEntryDto sourceDto : eventSourceDtos) {
-      final String definitionName = getDefinitionName(userId, sourceDto);
-
-      EventSourceEntryRestDto sourceRestDto = EventSourceEntryRestDto.builder()
-        .id(sourceDto.getId())
-        .type(sourceDto.getType())
-        .eventScope(sourceDto.getEventScope())
-        .processDefinitionKey(sourceDto.getProcessDefinitionKey())
-        .processDefinitionName(definitionName)
-        .tracedByBusinessKey(sourceDto.getTracedByBusinessKey())
-        .traceVariable(sourceDto.getTraceVariable())
-        .versions(sourceDto.getVersions())
-        .tenants(sourceDto.getTenants())
-        .build();
-      sourceRestDtos.add(sourceRestDto);
-    }
-    return sourceRestDtos;
+  private List<EventSourceEntryRestDto> mapSourceEntriesToRestDtos(final String userId,
+                                                                   final List<EventSourceEntryDto> eventSourceDtos) {
+    return eventSourceDtos.stream()
+      .map(eventSource -> EventSourceEntryRestDto.builder()
+        .id(eventSource.getId())
+        .type(eventSource.getType())
+        .eventScope(eventSource.getEventScope())
+        .processDefinitionKey(eventSource.getProcessDefinitionKey())
+        .processDefinitionName(getDefinitionName(userId, eventSource))
+        .tracedByBusinessKey(eventSource.getTracedByBusinessKey())
+        .traceVariable(eventSource.getTraceVariable())
+        .versions(eventSource.getVersions())
+        .tenants(eventSource.getTenants())
+        .build())
+      .collect(toList());
   }
 
   private String getDefinitionName(final String userId, final EventSourceEntryDto eventSource) {

@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.importing.eventprocess;
 
+import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,6 +112,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     // then
+    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
@@ -118,9 +123,13 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
           .name(EVENT_PROCESS_NAME)
           .state(EventProcessState.PUBLISH_PENDING)
           .publishDateTime(publishDateTime)
-          .lastImportedEventIngestDateTime(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
           .deleted(false)
           .publishProgress(0.0D)
+          .eventImportSources(Collections.singletonList(
+            EventImportSourceDto.builder()
+              .lastImportedEventTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
+              .eventSource(convertToEventSourceEntryDto(storedEventProcessMapping.getEventSources().get(0)))
+              .build()))
           .build(),
         EventProcessPublishStateDto.Fields.id,
         EventProcessPublishStateDto.Fields.xml,
@@ -203,6 +212,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
+    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
@@ -211,9 +222,14 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
           .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISH_PENDING)
           .publishDateTime(publishDateTime)
-          .lastImportedEventIngestDateTime(firstEventTimestamp)
           .deleted(false)
           .publishProgress(50.0D)
+          .eventImportSources(
+            Collections.singletonList(
+              EventImportSourceDto.builder()
+                .lastImportedEventTimestamp(firstEventTimestamp)
+                .eventSource(convertToEventSourceEntryDto(storedEventProcessMapping.getEventSources().get(0)))
+                .build()))
           .build(),
         EventProcessPublishStateDto.Fields.id,
         EventProcessPublishStateDto.Fields.name,
@@ -245,6 +261,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
+    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
@@ -253,9 +271,14 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
           .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISHED)
           .publishDateTime(publishDateTime)
-          .lastImportedEventIngestDateTime(lastEventTimestamp)
           .deleted(false)
           .publishProgress(100.0D)
+          .eventImportSources(
+            Collections.singletonList(
+              EventImportSourceDto.builder()
+                .lastImportedEventTimestamp(lastEventTimestamp)
+                .eventSource(convertToEventSourceEntryDto(storedEventProcessMapping.getEventSources().get(0)))
+                .build()))
           .build(),
         EventProcessPublishStateDto.Fields.id,
         EventProcessPublishStateDto.Fields.name,
@@ -291,6 +314,8 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
+    final EventProcessMappingRestDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessMappingId);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
       .get()
       .hasNoNullFieldsOrProperties()
@@ -299,9 +324,14 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
           .processMappingId(eventProcessMappingId)
           .state(EventProcessState.PUBLISHED)
           .publishDateTime(publishDateTime)
-          .lastImportedEventIngestDateTime(lastEventTimestamp)
           .deleted(false)
           .publishProgress(100.0D)
+          .eventImportSources(
+            Collections.singletonList(
+              EventImportSourceDto.builder()
+                .lastImportedEventTimestamp(lastEventTimestamp)
+                .eventSource(convertToEventSourceEntryDto(storedEventProcessMapping.getEventSources().get(0)))
+                .build()))
           .build(),
         EventProcessPublishStateDto.Fields.id,
         EventProcessPublishStateDto.Fields.name,

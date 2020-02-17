@@ -9,10 +9,13 @@ import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 
@@ -40,7 +43,30 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .addUpgradeStep(addEventSourcesAndRolesField())
       .addUpgradeStep(new CreateIndexStep(new VariableUpdateInstanceIndex()))
       .addUpgradeStep(new CreateIndexStep(new BusinessKeyIndex()))
+      .addUpgradeStep(addEventImportSourceFieldForPublishStates())
       .build();
+  }
+
+  private UpgradeStep addEventImportSourceFieldForPublishStates() {
+    //@formatter:off
+    final String script =
+        "Map externalEventSource = [\n" +
+          "\"id\": ctx._source.id,\n" +
+          "\"type\": \"external\",\n" +
+          "\"eventScope\": \"all\"\n" +
+        "];\n" +
+        "Map importSource = [\n" +
+          "\"lastImportedEventTimestamp\": ctx._source.lastImportedEventIngestDateTime,\n" +
+          "\"eventSource\": externalEventSource\n" +
+        "];\n" +
+        "ctx._source.eventImportSources = new ArrayList();\n" +
+        "ctx._source.eventImportSources.add(importSource);\n" +
+        "ctx._source.remove(\"lastImportedEventIngestDateTime\");\n"
+      ;
+    return new UpdateIndexStep(
+      new EventProcessPublishStateIndex(),
+      script
+    );
   }
 
   private UpdateIndexStep addEventSourcesAndRolesField() {

@@ -15,14 +15,17 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
+import org.camunda.optimize.service.util.IdGenerator;
 
-import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -114,7 +117,7 @@ public class EventProcessClient {
   }
 
   public EventProcessMappingDto buildEventProcessMappingDto(final String name, final String xmlPath) {
-    return buildEventProcessMappingDtoWithMappings(null, name, xmlPath);
+    return buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, name, xmlPath);
   }
 
   public List<EventProcessRoleRestDto> getEventProcessMappingRoles(final String eventProcessMappingId) {
@@ -139,20 +142,26 @@ public class EventProcessClient {
   }
 
   @SneakyThrows
-  public EventProcessMappingDto buildEventProcessMappingDtoWithMappings(
+  public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
     final Map<String, EventMappingDto> flowNodeEventMappingsDto,
     final String name,
     final String xmlPath) {
-    return buildEventProcessMappingDtoWithMappingsWithXml(flowNodeEventMappingsDto, name, xmlPath);
+    List<EventSourceEntryDto> externalEventSource = new ArrayList<>();
+    externalEventSource.add(EventSourceEntryDto.builder()
+                              .id(IdGenerator.getNextId())
+                              .type(EventSourceType.EXTERNAL)
+                              .eventScope(EventScopeType.ALL)
+                              .build());
+    return buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(flowNodeEventMappingsDto, name, xmlPath, externalEventSource);
   }
 
   @SneakyThrows
-  public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsWithXml(
-    final Map<String, EventMappingDto> flowNodeEventMappingsDto, final String name, final String xml) {
+  public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+    final Map<String, EventMappingDto> flowNodeEventMappingsDto, final String name, final String xml, final List<EventSourceEntryDto> eventSources) {
     return EventProcessMappingDto.builder()
       .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))
       .mappings(flowNodeEventMappingsDto)
-      .eventSources(new ArrayList<>())
+      .eventSources(eventSources)
       .xml(xml)
       .build();
   }

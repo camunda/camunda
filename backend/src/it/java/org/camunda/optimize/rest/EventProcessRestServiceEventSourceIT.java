@@ -17,6 +17,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,9 +42,8 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void createWithCamundaEventSource() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    EventSourceEntryDto eventSourceEntryDto = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Collections.singletonList(eventSourceEntryDto));
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
@@ -50,22 +52,23 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     // then
     List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
-    final EventSourceEntryRestDto expectedEventSourceEntryRestDto = mapToRestDto(eventSourceEntry);
 
     assertThat(eventSources)
       .usingElementComparatorIgnoringFields("id")
-      .containsExactly(expectedEventSourceEntryRestDto)
-      .allSatisfy(eventSourceEntryRestDto -> {
-        assertThat(eventSourceEntryRestDto.getId()).isNotBlank();
-      });
+      .containsExactlyInAnyOrder(mapToRestDto(eventSourceEntryDto))
+      .allSatisfy(eventSourceEntryRestDto -> assertThat(eventSourceEntryRestDto.getId()).isNotBlank());
   }
 
   @Test
-  public void createWithExternalEventSource() {
+  public void createWithCamundaAndExternalEventSource() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry = EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build();
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
+    final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
+    final EventSourceEntryDto camundaEventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    eventSourceEntryDtos.add(externalEventSourceEntry);
+    eventSourceEntryDtos.add(camundaEventSourceEntry);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
+    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
@@ -73,22 +76,38 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     // then
     List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
-    final EventSourceEntryRestDto expectedEventSourceEntryRestDto = mapToRestDto(eventSourceEntry);
+    final EventSourceEntryRestDto expectedEventSourceEntryRestDto = mapToRestDto(camundaEventSourceEntry);
+
     assertThat(eventSources)
       .usingElementComparatorIgnoringFields("id")
-      .containsExactly(expectedEventSourceEntryRestDto)
-      .allSatisfy(eventSourceEntryRestDto -> {
-        assertThat(eventSourceEntryRestDto.getId()).isNotBlank();
-      });
+      .containsExactlyInAnyOrder(expectedEventSourceEntryRestDto, mapToRestDto(externalEventSourceEntry))
+      .allSatisfy(eventSourceEntryRestDto -> assertThat(eventSourceEntryRestDto.getId()).isNotBlank());
+  }
+
+  @Test
+  public void createWithExternalEventSource() {
+    // given
+    final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Collections.singletonList(
+      externalEventSourceEntry));
+
+    // when
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
+
+    // then
+    List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
+      .getEventSources();
+
+    assertThat(eventSources)
+      .usingElementComparatorIgnoringFields("id")
+      .containsExactly(mapToRestDto(externalEventSourceEntry));
   }
 
   @Test
   public void createWithDuplicateCamundaEventSource_fails() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
     final EventSourceEntryDto eventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(eventSourceEntry, eventSourceEntry));
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
@@ -104,10 +123,8 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void createWithMultipleExternalEventSources_fails() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
     final EventSourceEntryDto eventSourceEntry = EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build();
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(eventSourceEntry, eventSourceEntry));
 
     // when
     Response response = eventProcessClient
@@ -122,16 +139,19 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void updateEventSource() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
+    final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
+    eventSourceEntryDtos.add(externalEventSourceEntry);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
 
-    eventProcessMapping.getEventSources().add(eventSourceEntry1);
+    final EventSourceEntryDto camundaEventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    eventProcessMapping.getEventSources().add(camundaEventSourceEntry);
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // when
-    eventSourceEntry1.setEventScope(EventScopeType.PROCESS_INSTANCE);
+    camundaEventSourceEntry.setEventScope(EventScopeType.PROCESS_INSTANCE);
     performUpdateMappingRequest(eventProcessMappingId, eventProcessMapping);
 
     List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
@@ -139,22 +159,24 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
 
     // then
     assertThat(eventSources)
-      .extracting(EventSourceEntryRestDto::getProcessDefinitionKey)
-      .containsExactly(eventSourceEntry1.getProcessDefinitionKey());
+      .hasSize(2)
+      .usingElementComparatorIgnoringFields("id")
+      .containsExactlyInAnyOrder(mapToRestDto(camundaEventSourceEntry), mapToRestDto(externalEventSourceEntry));
   }
 
   @Test
   public void updateWithDuplicateCamundaEventSource_fails() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    final EventSourceEntryDto camundaEventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
+    eventSourceEntryDtos.add(camundaEventSourceEntry);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // when
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    eventProcessMapping.getEventSources().add(camundaEventSourceEntry);
     Response response = eventProcessClient
       .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
@@ -165,20 +187,23 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .getEventSources();
 
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
-    assertThat(eventSources).hasSize(1);
+    assertThat(eventSources)
+      .usingElementComparatorIgnoringFields("id")
+      .containsExactly(mapToRestDto(camundaEventSourceEntry));
   }
 
   @Test
   public void updateWithMultipleExternalEventSources_fails() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry = EventSourceEntryDto.builder().type(EventSourceType.EXTERNAL).build();
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
+    final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
+    eventSourceEntryDtos.add(externalEventSourceEntry);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
 
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // when
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
+    eventProcessMapping.getEventSources().add(externalEventSourceEntry);
     Response response = eventProcessClient
       .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
@@ -191,29 +216,46 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void deleteEventSource() {
     // given
-    final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry1 = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
-    final EventSourceEntryDto eventSourceEntry2 = createCamundaEventSourceEntry(PROCESS_DEF_KEY_2);
-    eventProcessMapping.getEventSources().add(eventSourceEntry1);
-    eventProcessMapping.getEventSources().add(eventSourceEntry2);
+    List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
+    final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
+    eventSourceEntryDtos.add(externalEventSourceEntry);
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
+    final EventSourceEntryDto camundaSourceEntry1 = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaSourceEntry2 = createCamundaEventSourceEntry(PROCESS_DEF_KEY_2);
+    eventProcessMapping.getEventSources().add(camundaSourceEntry1);
+    eventProcessMapping.getEventSources().add(camundaSourceEntry2);
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_2);
 
     // when
-    eventProcessMapping.getEventSources().remove(eventSourceEntry1);
+    eventProcessMapping.getEventSources().remove(camundaSourceEntry1);
     performUpdateMappingRequest(eventProcessMappingId, eventProcessMapping);
 
     // then
     List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
-    assertThat(eventSources).extracting(EventSourceEntryRestDto::getProcessDefinitionKey)
-      .containsExactly(eventSourceEntry2.getProcessDefinitionKey());
+    assertThat(eventSources)
+      .usingElementComparatorIgnoringFields("id")
+      .containsExactlyInAnyOrder(mapToRestDto(camundaSourceEntry2), mapToRestDto(externalEventSourceEntry))
+      .allSatisfy(eventSourceEntryRestDto -> assertThat(eventSourceEntryRestDto.getId()).isNotBlank());
   }
 
-  private EventProcessMappingDto createEventProcessMapping() {
-    return eventProcessClient.buildEventProcessMappingDto(processDefinitionXml);
+  private EventProcessMappingDto createWithEventSourceEntries(final List<EventSourceEntryDto> eventSourceEntries) {
+    return eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+      null,
+      null,
+      processDefinitionXml,
+      eventSourceEntries
+    );
+  }
+
+  private EventSourceEntryDto createExternalEventSourceEntry() {
+    return EventSourceEntryDto.builder()
+      .type(EventSourceType.EXTERNAL)
+      .eventScope(EventScopeType.ALL)
+      .build();
   }
 
   private EventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey) {
@@ -254,4 +296,5 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .execute(HttpStatus.SC_NO_CONTENT);
   }
+
 }

@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.springframework.stereotype.Component;
 
 import java.math.RoundingMode;
@@ -40,7 +41,10 @@ public class PublishStateUpdateService {
         final long publishTimestamp = publishState.getPublishDateTime().toInstant().toEpochMilli();
         final long lastPersistedTimestamp = stateAndMediator.getRight().getLastPersistedTimestamp();
 
-        publishState.setLastImportedEventIngestDateTime(
+        if (publishState.getEventImportSources().size() != 1) {
+          throw new OptimizeRuntimeException("Cannot update process publish state if there are multiple data sources");
+        }
+        publishState.getEventImportSources().get(0).setLastImportedEventTimestamp(
           OffsetDateTime.ofInstant(Instant.ofEpochMilli(lastPersistedTimestamp), ZoneId.systemDefault())
         );
 

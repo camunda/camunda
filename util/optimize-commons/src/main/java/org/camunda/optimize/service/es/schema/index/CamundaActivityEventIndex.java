@@ -85,7 +85,7 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(TIMESTAMP)
         .field("type", "date")
-          .field("format", OPTIMIZE_DATE_FORMAT)
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       ;
     // @formatter:on

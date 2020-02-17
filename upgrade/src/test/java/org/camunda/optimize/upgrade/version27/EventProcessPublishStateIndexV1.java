@@ -3,37 +3,32 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.events;
+package org.camunda.optimize.upgrade.version27;
 
-import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
-public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
-
-  public static final int VERSION = 2;
-
+public class EventProcessPublishStateIndexV1 extends StrictIndexMappingCreator {
+  public static final int VERSION = 1;
   public static final String ID = IndexableEventProcessPublishStateDto.Fields.id;
   public static final String PROCESS_MAPPING_ID = IndexableEventProcessPublishStateDto.Fields.processMappingId;
   public static final String NAME = IndexableEventProcessPublishStateDto.Fields.name;
   public static final String PUBLISH_DATE_TIME = IndexableEventProcessPublishStateDto.Fields.publishDateTime;
+  public static final String LAST_IMPORTED_EVENT_DATE_TIME = "lastImportedEventIngestDateTime";
   public static final String STATE = IndexableEventProcessPublishStateDto.Fields.state;
   public static final String PUBLISH_PROGRESS = IndexableEventProcessPublishStateDto.Fields.publishProgress;
   public static final String DELETED = IndexableEventProcessPublishStateDto.Fields.deleted;
   public static final String XML = IndexableEventProcessPublishStateDto.Fields.xml;
   public static final String MAPPINGS = IndexableEventProcessPublishStateDto.Fields.mappings;
-  public static final String EVENT_IMPORT_SOURCES = IndexableEventProcessPublishStateDto.Fields.eventImportSources;
 
   public static final String FLOWNODE_ID = IndexableEventMappingDto.Fields.flowNodeId;
   public static final String START = IndexableEventMappingDto.Fields.start;
@@ -42,9 +37,6 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
-
-  public static final String LAST_IMPORTED_EVENT_TIMESTAMP = EventImportSourceDto.Fields.lastImportedEventTimestamp;
-  public static final String EVENT_SOURCE = EventImportSourceDto.Fields.eventSource;
 
   public static final String EVENT_SOURCE_ID = EventSourceEntryDto.Fields.id;
   public static final String EVENT_SOURCE_TYPE = EventSourceEntryDto.Fields.type;
@@ -82,6 +74,10 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
+      .startObject(LAST_IMPORTED_EVENT_DATE_TIME)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
       .startObject(STATE)
       .field("type", "keyword")
       .endObject()
@@ -102,12 +98,7 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
           addMappingFields(newXContentBuilder)
         .endObject()
       .endObject()
-      .startObject(EVENT_IMPORT_SOURCES)
-        .field("type", "object")
-        .startObject("properties");
-          addEventImportSourcesField(newXContentBuilder)
-        .endObject()
-      .endObject();
+      ;
     // @formatter:on
     return newXContentBuilder;
   }
@@ -149,24 +140,6 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
     // @formatter:on
   }
 
-  private XContentBuilder addEventImportSourcesField(final XContentBuilder xContentBuilder) throws IOException {
-    XContentBuilder newXContentBuilder =
-    // @formatter:off
-    xContentBuilder
-      .startObject(LAST_IMPORTED_EVENT_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(EVENT_SOURCE)
-        .field("type", "object")
-        .startObject("properties");
-          addEventSourcesField(newXContentBuilder)
-        .endObject()
-      .endObject();
-    // @formatter:on
-    return newXContentBuilder;
-  }
-
   private XContentBuilder addEventSourcesField(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
@@ -196,5 +169,4 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
       .endObject();
     // @formatter:on
   }
-
 }
