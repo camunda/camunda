@@ -49,7 +49,6 @@ public final class GatewayCfgTest {
     CUSTOM_CFG
         .getCluster()
         .setContactPoint("foobar:1234")
-        .setMaxMessageSize("4K")
         .setRequestTimeout("123h")
         .setClusterName("testCluster")
         .setMemberId("testMember")
@@ -123,7 +122,6 @@ public final class GatewayCfgTest {
     expected
         .getCluster()
         .setContactPoint("broker:432")
-        .setMaxMessageSize("1G")
         .setRequestTimeout("43m")
         .setClusterName("envCluster")
         .setMemberId("envMember")

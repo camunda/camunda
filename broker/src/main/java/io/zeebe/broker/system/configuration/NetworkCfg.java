@@ -14,7 +14,6 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT
 import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
-import io.zeebe.util.ByteValue;
 import io.zeebe.util.ByteValueParser;
 import io.zeebe.util.Environment;
 import java.util.Optional;
@@ -75,11 +74,18 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.portOffset = portOffset;
   }
 
-  public ByteValue getMaxMessageSize() {
-    return ByteValueParser.fromString(maxMessageSize);
+  public String getMaxMessageSize() {
+    return maxMessageSize;
+  }
+
+  public long getMaxMessageSizeInBytes() {
+    return ByteValueParser.fromString(maxMessageSize).toBytes();
   }
 
   public void setMaxMessageSize(final String maxMessageSize) {
+    // call parsing logic to provoke any exceptions that might occur during parsing
+    ByteValueParser.fromString(maxMessageSize);
+
     this.maxMessageSize = maxMessageSize;
   }
 

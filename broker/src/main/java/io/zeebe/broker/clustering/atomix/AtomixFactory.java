@@ -24,8 +24,6 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.ByteValueParser;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -115,21 +113,20 @@ public final class AtomixFactory {
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB
-    final ByteValue maxMessageSize = networkCfg.getMaxMessageSize();
-    partitionGroupBuilder.withMaxEntrySize((int) maxMessageSize.toBytes());
+    final int maxMessageSize = (int) networkCfg.getMaxMessageSizeInBytes();
+    partitionGroupBuilder.withMaxEntrySize(maxMessageSize);
 
-    Optional.ofNullable(dataCfg.getLogSegmentSize())
-        .map(ByteValueParser::fromString)
+    Optional.ofNullable(dataCfg.getLogSegmentSizeInBytes())
         .ifPresent(
             segmentSize -> {
-              if (segmentSize.toBytes() < maxMessageSize.toBytes()) {
+              if (segmentSize < maxMessageSize) {
                 throw new IllegalArgumentException(
                     String.format(
                         "Expected the raft segment size greater than the max message size of %s, but was %s.",
                         maxMessageSize, segmentSize));
               }
 
-              partitionGroupBuilder.withSegmentSize(segmentSize.toBytes());
+              partitionGroupBuilder.withSegmentSize(segmentSize);
             });
 
     return partitionGroupBuilder.build();
