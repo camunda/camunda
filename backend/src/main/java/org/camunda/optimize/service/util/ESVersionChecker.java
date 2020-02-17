@@ -36,6 +36,10 @@ public class ESVersionChecker {
     supportedES.add("7.3.0");
     supportedES.add("7.4.0");
     supportedES.add("7.5.0");
+    supportedES.add("7.6.0");
+    warningES.add("7.7.0");
+    warningES.add("7.8.0");
+    warningES.add("7.9.0");
   }
 
   public static void checkESVersionSupport(RestHighLevelClient esClient) throws IOException {
