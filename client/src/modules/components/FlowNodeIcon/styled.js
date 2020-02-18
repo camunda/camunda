@@ -8,7 +8,7 @@ import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-import {ReactComponent as FlowNodeWorkFlow} from 'modules/components/Icon/document.svg';
+import {ReactComponent as FlowNodeWorkFlow} from 'modules/components/Icon/flow-node-workflow-root.svg';
 
 /**
  * Gateway Imports
@@ -66,16 +66,7 @@ const newIconStyle = css`
 `;
 
 export const WORKFLOW = themed(styled(FlowNodeWorkFlow)`
-  position: relative;
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06
-  })};
-  top: 0px;
-  left: 3px;
-  margin: 0 4px;
-  height: 18px;
-  width: auto;
+  ${newIconStyle}
 `);
 
 /**
