@@ -83,6 +83,24 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void importsAllDefinitionsEvenIfTotalAmountIsAboveMaxPageSize() {
+    //given
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionDefinitionMaxPageSize(1);
+    engineIntegrationExtension.deployDecisionDefinition();
+    engineIntegrationExtension.deployDecisionDefinition();
+    engineIntegrationExtension.deployDecisionDefinition();
+
+    //when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
+    assertThat(idsResp.getHits().getTotalHits().value, is(3L));
+  }
+
+  @Test
   public void decisionDefinitionTenantIdIsImportedIfPresent() {
     //given
     final String tenantId = "reallyAwesomeTenantId";

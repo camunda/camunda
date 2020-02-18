@@ -12,7 +12,6 @@ import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionImportService;
-import org.camunda.optimize.service.importing.page.AllEntitiesBasedImportPage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -49,8 +48,7 @@ public class ProcessDefinitionEngineImportMediator
 
   @Override
   protected boolean importNextPage() {
-    AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
-    List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions(page);
+    List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions();
     List<ProcessDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
 
     if (!newEntities.isEmpty()) {

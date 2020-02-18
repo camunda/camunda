@@ -55,11 +55,6 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
   }
 
   @Override
-  protected int getMaxPageSize() {
-    return configurationService.getEngineImportTenantMaxPageSize();
-  }
-
-  @Override
   public void resetImportIndex() {
     super.resetImportIndex();
     alreadyImportedTenants.clear();

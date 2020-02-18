@@ -41,9 +41,10 @@ public abstract class AllEntitiesBasedImportIndexHandler
         getElasticsearchImportIndexType(),
         getEngineAlias()
       ));
-    if (storedIndex.isPresent()) {
-      importIndex = storedIndex.get().getImportIndex();
-    }
+    storedIndex.ifPresent(
+      allEntitiesBasedImportIndexDto -> importIndex =
+        allEntitiesBasedImportIndexDto.getImportIndex()
+    );
   }
 
   @Override
@@ -55,23 +56,13 @@ public abstract class AllEntitiesBasedImportIndexHandler
     return indexToStore;
   }
 
-  @Override
-  public AllEntitiesBasedImportPage getNextPage() {
-    AllEntitiesBasedImportPage page = new AllEntitiesBasedImportPage();
-    page.setIndexOfFirstResult(0);
-    page.setPageSize(getMaxPageSize());
-    return page;
-  }
-
-  protected abstract int getMaxPageSize();
-
   protected abstract String getElasticsearchImportIndexType();
 
   public Long getImportIndex() {
     return importIndex;
   }
 
-  public void moveImportIndex(long units) {
+  protected void moveImportIndex(long units) {
     importIndex += units;
   }
 

@@ -60,7 +60,7 @@ public class ProcessImportIT extends AbstractImportIT {
     Collections.singleton(ProcessDefinitionIndex.TENANT_ID);
 
   @Test
-  public void importCanBeDisabled() throws IOException {
+  public void importCanBeDisabled() {
     // given
     embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
       .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
@@ -86,7 +86,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void allProcessDefinitionFieldDataIsAvailable() throws IOException {
+  public void allProcessDefinitionFieldDataIsAvailable() {
     //given
     deployAndStartSimpleServiceTask();
 
@@ -156,7 +156,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void allProcessInstanceDataIsAvailable() throws IOException {
+  public void allProcessInstanceDataIsAvailable() {
     //given
     deployAndStartSimpleServiceTask();
 
@@ -166,6 +166,24 @@ public class ProcessImportIT extends AbstractImportIT {
 
     //then
     allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+  }
+
+  @Test
+  public void importsAllDefinitionsEvenIfTotalAmountIsAboveMaxPageSize() {
+    //given
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionMaxPageSize(1);
+    deploySimpleProcess();
+    deploySimpleProcess();
+    deploySimpleProcess();
+
+    //when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
+    assertThat(idsResp.getHits().getTotalHits().value, is(3L));
   }
 
   @Test
@@ -305,7 +323,7 @@ public class ProcessImportIT extends AbstractImportIT {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
+      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
     }
   }
@@ -338,7 +356,7 @@ public class ProcessImportIT extends AbstractImportIT {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
-      List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
+      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(2));
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(nullValue()));
@@ -421,7 +439,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value, is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
-    List events = (List) hit.getSourceAsMap().get(EVENTS);
+    List<?> events = (List<?>) hit.getSourceAsMap().get(EVENTS);
     assertThat(events.size(), is(2));
   }
 
@@ -591,6 +609,11 @@ public class ProcessImportIT extends AbstractImportIT {
     engineIntegrationExtension.deleteHistoricProcessInstance(firstProcInst.getId());
     engineIntegrationExtension.deleteHistoricProcessInstance(secondProcInst.getId());
     return firstProcInst;
+  }
+
+  private void deploySimpleProcess() {
+    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    engineIntegrationExtension.deployProcessAndGetId(processModel);
   }
 
 }

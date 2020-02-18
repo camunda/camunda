@@ -12,7 +12,6 @@ import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.TenantFetcher;
 import org.camunda.optimize.service.importing.engine.handler.TenantImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.TenantImportService;
-import org.camunda.optimize.service.importing.page.AllEntitiesBasedImportPage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -46,9 +45,9 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
 
   @Override
   protected boolean importNextPage() {
-    final AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
-    final List<TenantEngineDto> entities = engineEntityFetcher.fetchTenants(page);
+    final List<TenantEngineDto> entities = engineEntityFetcher.fetchTenants();
     final List<TenantEngineDto> newEntities = importIndexHandler.filterNewOrChangedTenants(entities);
+
     if (!newEntities.isEmpty()) {
       tenantImportService.executeImport(newEntities);
       importIndexHandler.addImportedTenants(newEntities);

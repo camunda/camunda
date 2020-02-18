@@ -14,7 +14,9 @@ public interface ImportIndexHandler<PAGE extends ImportPage, INDEX> {
    * especially an offset where to start the import and the number of
    * instances to fetch.
    */
-  PAGE getNextPage();
+  default PAGE getNextPage() {
+    return null;
+  }
 
   /**
    * Creates a data transfer object (DTO) about an index to store that

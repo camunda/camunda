@@ -39,6 +39,24 @@ public class TenantImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void importsAllTenantsEvenIfTotalAmountIsAboveMaxPageSize() {
+    //given
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportTenantMaxPageSize(1);
+    engineIntegrationExtension.createTenant("tenant1");
+    engineIntegrationExtension.createTenant("tenant2");
+    engineIntegrationExtension.createTenant("tenant3");
+
+    //when
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    //then
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
+    assertThat(idsResp.getHits().getTotalHits().value, is(3L));
+  }
+
+  @Test
   public void tenantNameIsUpdatable() {
     //given
     final String tenantId = "tenantId";

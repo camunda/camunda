@@ -7,13 +7,13 @@ package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.page.AllEntitiesBasedImportPage;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.INDEX_OF_FIRST_RESULT;
@@ -27,19 +27,25 @@ public class DecisionDefinitionFetcher extends RetryBackoffEngineEntityFetcher<D
     super(engineContext);
   }
 
-  public List<DecisionDefinitionEngineDto> fetchDecisionDefinitions(final AllEntitiesBasedImportPage page) {
-    return fetchDecisionDefinitions(page.getIndexOfFirstResult(), page.getPageSize());
-  }
-
-  private List<DecisionDefinitionEngineDto> fetchDecisionDefinitions(final long indexOfFirstResult,
-                                                                     final long maxPageSize) {
+  public List<DecisionDefinitionEngineDto> fetchDecisionDefinitions() {
     logger.debug("Fetching decision definitions ...");
-    final long requestStart = System.currentTimeMillis();
-    final List<DecisionDefinitionEngineDto> entries = fetchWithRetry(
-      () -> performGetDecisionDefinitionsRequest(indexOfFirstResult, maxPageSize)
+    long requestStart = System.currentTimeMillis();
+    List<DecisionDefinitionEngineDto> entries = new ArrayList<>();
+    final int maxPageSize = configurationService.getEngineImportDecisionDefinitionMaxPageSize();
+    long indexOfFirstResult = 0L;
+    List<DecisionDefinitionEngineDto> pageOfEntries;
+    do {
+      final long tempIndex = indexOfFirstResult;
+      pageOfEntries = fetchWithRetry(() -> performGetDecisionDefinitionsRequest(tempIndex, maxPageSize));
+      entries.addAll(pageOfEntries);
+      indexOfFirstResult += pageOfEntries.size();
+    } while (pageOfEntries.size() >= maxPageSize);
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] decision definitions within [{}] ms",
+      entries.size(),
+      requestEnd - requestStart
     );
-    final long requestEnd = System.currentTimeMillis();
-    logger.debug("Fetched [{}] decision definitions within [{}] ms", entries.size(), requestEnd - requestStart);
     return entries;
   }
 
@@ -51,6 +57,8 @@ public class DecisionDefinitionFetcher extends RetryBackoffEngineEntityFetcher<D
       .path(configurationService.getDecisionDefinitionEndpoint())
       .queryParam(INDEX_OF_FIRST_RESULT, indexOfFirstResult)
       .queryParam(MAX_RESULTS_TO_RETURN, maxPageSize)
+      .queryParam("sortBy", "id")
+      .queryParam("sortOrder", "asc")
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<DecisionDefinitionEngineDto>>() {});

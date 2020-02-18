@@ -54,11 +54,6 @@ public class ProcessDefinitionImportIndexHandler extends AllEntitiesBasedImportI
   }
 
   @Override
-  protected int getMaxPageSize() {
-    return configurationService.getEngineImportProcessDefinitionMaxPageSize();
-  }
-
-  @Override
   public void resetImportIndex() {
     super.resetImportIndex();
     alreadyImportedIds.clear();

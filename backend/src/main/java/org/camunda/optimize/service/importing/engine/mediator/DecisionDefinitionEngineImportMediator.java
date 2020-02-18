@@ -12,7 +12,6 @@ import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionImportService;
-import org.camunda.optimize.service.importing.page.AllEntitiesBasedImportPage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -49,9 +48,9 @@ public class DecisionDefinitionEngineImportMediator
 
   @Override
   protected boolean importNextPage() {
-    AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
-    List<DecisionDefinitionEngineDto> entities = engineEntityFetcher.fetchDecisionDefinitions(page);
+    List<DecisionDefinitionEngineDto> entities = engineEntityFetcher.fetchDecisionDefinitions();
     List<DecisionDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
+
     if (!newEntities.isEmpty()) {
       definitionImportService.executeImport(newEntities);
       importIndexHandler.addImportedDefinitions(newEntities);
