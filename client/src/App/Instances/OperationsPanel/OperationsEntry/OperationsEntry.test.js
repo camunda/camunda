@@ -26,6 +26,7 @@ describe('OperationsEntry', () => {
     const html = node.html();
     expect(html).toContain(OPERATIONS.RETRY.id);
     expect(html).toContain('Retry');
+    expect(node.find('[data-test="operation-icon"]').length).toBe(1);
   });
 
   it('should render cancel operation', () => {
@@ -42,6 +43,7 @@ describe('OperationsEntry', () => {
     const html = node.html();
     expect(html).toContain(OPERATIONS.CANCEL.id);
     expect(html).toContain('Cancel');
+    expect(node.find('[data-test="operation-icon"]').length).toBe(1);
   });
 
   it('should render edit operation', () => {
@@ -58,5 +60,6 @@ describe('OperationsEntry', () => {
     const html = node.html();
     expect(html).toContain(OPERATIONS.EDIT.id);
     expect(html).toContain('Edit');
+    expect(node.find('[data-test="operation-icon"]').length).toBe(1);
   });
 });

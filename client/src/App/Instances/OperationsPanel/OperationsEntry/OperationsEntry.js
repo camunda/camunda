@@ -7,6 +7,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {OPERATION_TYPES} from './constants';
+import OperationIcon from 'modules/components/OperationIcon';
+
 import * as Styled from './styled';
 
 const {
@@ -24,8 +26,12 @@ const TYPE_LABELS = {
 const OperationsEntry = ({id, type, isRunning}) => {
   return (
     <Styled.Entry isRunning={isRunning}>
-      <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
-      <Styled.Id>{id}</Styled.Id>
+      <div>
+        <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
+        <Styled.Id>{id}</Styled.Id>
+      </div>
+
+      <OperationIcon operationType={type} data-test="operation-icon" />
     </Styled.Entry>
   );
 };
