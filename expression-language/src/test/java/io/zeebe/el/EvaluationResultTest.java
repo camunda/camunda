@@ -12,12 +12,9 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
-import org.agrona.DirectBuffer;
 import org.junit.Test;
 
 public class EvaluationResultTest {
-
-  private static final DirectBuffer NO_VARIABLES = asMsgPack(Map.of());
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage();
@@ -102,7 +99,7 @@ public class EvaluationResultTest {
   private EvaluationResult evaluateExpression(final String expression) {
     final var parseExpression = expressionLanguage.parseExpression(expression);
     final var evaluationResult =
-        expressionLanguage.evaluateExpression(parseExpression, NO_VARIABLES);
+        expressionLanguage.evaluateExpression(parseExpression, StaticEvaluationContext.empty());
 
     assertThat(evaluationResult.isFailure())
         .describedAs(evaluationResult.getFailureMessage())

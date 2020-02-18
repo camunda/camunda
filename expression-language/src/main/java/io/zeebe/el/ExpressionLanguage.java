@@ -7,8 +7,6 @@
  */
 package io.zeebe.el;
 
-import org.agrona.DirectBuffer;
-
 /**
  * A parser and interpreter for the expression language. An expression can be parsed and stored as
  * object. The parsed expression needs to be used to evaluate the expression with a given variable
@@ -31,9 +29,9 @@ public interface ExpressionLanguage {
    * Evaluate the given expression with the given context variables.
    *
    * @param expression the parsed expression
-   * @param variables the variables as MessagePack encoded buffer
+   * @param context the context to evaluate the expression with
    * @return the result of the evaluation, or the failure message if the evaluation was not
    *     successful
    */
-  EvaluationResult evaluateExpression(Expression expression, DirectBuffer variables);
+  EvaluationResult evaluateExpression(Expression expression, EvaluationContext context);
 }

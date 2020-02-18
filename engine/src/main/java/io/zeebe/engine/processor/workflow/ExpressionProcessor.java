@@ -7,6 +7,9 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
+
+import io.zeebe.el.EvaluationContext;
 import io.zeebe.el.EvaluationResult;
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
@@ -20,17 +23,16 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExpressionProcessor {
 
-  private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
-
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
-  private final VariablesState variablesState;
+  private final VariableStateEvaluationContext evaluationContext;
 
   public ExpressionProcessor(
       final ExpressionLanguage expressionLanguage, final VariablesState variablesState) {
     this.expressionLanguage = expressionLanguage;
-    this.variablesState = variablesState;
+
+    evaluationContext = new VariableStateEvaluationContext(variablesState);
   }
 
   /**
@@ -76,17 +78,35 @@ public final class ExpressionProcessor {
   private EvaluationResult evaluateExpression(
       final Expression expression, final long variableScopeKey) {
 
-    if (expression.isStatic()) {
-      return expressionLanguage.evaluateExpression(expression, NO_VARIABLES);
+    evaluationContext.variableScopeKey = variableScopeKey;
 
-    } else {
-      final var variables = variablesState.getVariablesAsDocument(variableScopeKey);
-      return expressionLanguage.evaluateExpression(expression, variables);
-    }
+    return expressionLanguage.evaluateExpression(expression, evaluationContext);
   }
 
   private DirectBuffer wrapResult(final String result) {
     resultView.wrap(result.getBytes());
     return resultView;
+  }
+
+  private static class VariableStateEvaluationContext implements EvaluationContext {
+
+    private final DirectBuffer variableNameBuffer = new UnsafeBuffer();
+
+    private final VariablesState variablesState;
+
+    private long variableScopeKey;
+
+    public VariableStateEvaluationContext(final VariablesState variablesState) {
+      this.variablesState = variablesState;
+    }
+
+    @Override
+    public DirectBuffer getVariable(final String variableName) {
+      ensureGreaterThan("variable scope key", variableScopeKey, 0);
+
+      variableNameBuffer.wrap(variableName.getBytes());
+
+      return variablesState.getVariable(variableScopeKey, variableNameBuffer);
+    }
   }
 }

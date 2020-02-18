@@ -10,21 +10,19 @@ package io.zeebe.el;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import java.util.Map;
-import org.agrona.DirectBuffer;
 import org.junit.Test;
 
 public class FeelExpressionTest {
 
-  private static final DirectBuffer NO_VARIABLES = asMsgPack(Map.of());
+  private static final EvaluationContext EMPTY_CONTEXT = StaticEvaluationContext.empty();
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage();
 
   @Test
   public void stringLiteral() {
-    final var evaluationResult = evaluateExpression("\"x\"", NO_VARIABLES);
+    final var evaluationResult = evaluateExpression("\"x\"", EMPTY_CONTEXT);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("x");
@@ -32,7 +30,7 @@ public class FeelExpressionTest {
 
   @Test
   public void booleanLiteral() {
-    final var evaluationResult = evaluateExpression("true", NO_VARIABLES);
+    final var evaluationResult = evaluateExpression("true", EMPTY_CONTEXT);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -40,7 +38,7 @@ public class FeelExpressionTest {
 
   @Test
   public void numericLiteral() {
-    final var evaluationResult = evaluateExpression("2.4", NO_VARIABLES);
+    final var evaluationResult = evaluateExpression("2.4", EMPTY_CONTEXT);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.NUMBER);
     assertThat(evaluationResult.getNumber()).isEqualTo(2.4);
@@ -48,7 +46,7 @@ public class FeelExpressionTest {
 
   @Test
   public void stringConcatenation() {
-    final var evaluationResult = evaluateExpression("\"x\" + \"y\"", NO_VARIABLES);
+    final var evaluationResult = evaluateExpression("\"x\" + \"y\"", EMPTY_CONTEXT);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("xy");
@@ -56,7 +54,7 @@ public class FeelExpressionTest {
 
   @Test
   public void mathExpression() {
-    final var evaluationResult = evaluateExpression("2 * 21", NO_VARIABLES);
+    final var evaluationResult = evaluateExpression("2 * 21", EMPTY_CONTEXT);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.NUMBER);
     assertThat(evaluationResult.getNumber()).isEqualTo(42L);
@@ -64,8 +62,8 @@ public class FeelExpressionTest {
 
   @Test
   public void pathExpression() {
-    final var variables = asMsgPack(Map.of("x", Map.of("y", "z")));
-    final var evaluationResult = evaluateExpression("x.y", variables);
+    final var context = StaticEvaluationContext.of(Map.of("x", asMsgPack(Map.of("y", "z"))));
+    final var evaluationResult = evaluateExpression("x.y", context);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("z");
@@ -73,8 +71,8 @@ public class FeelExpressionTest {
 
   @Test
   public void comparison() {
-    final var variables = asMsgPack(Map.of("x", 2));
-    final var evaluationResult = evaluateExpression("x < 4", variables);
+    final var context = StaticEvaluationContext.of(Map.of("x", asMsgPack("2")));
+    final var evaluationResult = evaluateExpression("x < 4", context);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -82,8 +80,12 @@ public class FeelExpressionTest {
 
   @Test
   public void conjunction() {
-    final var variables = asMsgPack(Map.of("x", true, "y", false));
-    final var evaluationResult = evaluateExpression("x and y", variables);
+    final var context =
+        StaticEvaluationContext.of(
+            Map.of(
+                "x", asMsgPack("true"),
+                "y", asMsgPack("false")));
+    final var evaluationResult = evaluateExpression("x and y", context);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -91,8 +93,12 @@ public class FeelExpressionTest {
 
   @Test
   public void disjunction() {
-    final var variables = asMsgPack(Map.of("x", true, "y", false));
-    final var evaluationResult = evaluateExpression("x or y", variables);
+    final var context =
+        StaticEvaluationContext.of(
+            Map.of(
+                "x", asMsgPack("true"),
+                "y", asMsgPack("false")));
+    final var evaluationResult = evaluateExpression("x or y", context);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -100,8 +106,8 @@ public class FeelExpressionTest {
 
   @Test
   public void someExpression() {
-    final var variables = asMsgPack("xs", List.of(1, 2, 3));
-    final var evaluationResult = evaluateExpression("some x in xs satisfies x > 2", variables);
+    final var context = StaticEvaluationContext.of(Map.of("xs", asMsgPack("[1, 2, 3]")));
+    final var evaluationResult = evaluateExpression("some x in xs satisfies x > 2", context);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -109,8 +115,8 @@ public class FeelExpressionTest {
 
   @Test
   public void everyExpression() {
-    final var variables = asMsgPack("xs", List.of(1, 2, 3));
-    final var evaluationResult = evaluateExpression("every x in xs satisfies x > 2", variables);
+    final var context = StaticEvaluationContext.of(Map.of("xs", asMsgPack("[1, 2, 3]")));
+    final var evaluationResult = evaluateExpression("every x in xs satisfies x > 2", context);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -118,17 +124,17 @@ public class FeelExpressionTest {
 
   @Test
   public void builtinFunctionInvocation() {
-    final var variables = asMsgPack(Map.of("x", "foo"));
-    final var evaluationResult = evaluateExpression("upper case(x)", variables);
+    final var context = StaticEvaluationContext.of(Map.of("x", asMsgPack("\"foo\"")));
+    final var evaluationResult = evaluateExpression("upper case(x)", context);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("FOO");
   }
 
   private EvaluationResult evaluateExpression(
-      final String expression, final DirectBuffer variables) {
+      final String expression, final EvaluationContext context) {
     final var parseExpression = expressionLanguage.parseExpression("=" + expression);
-    final var evaluationResult = expressionLanguage.evaluateExpression(parseExpression, variables);
+    final var evaluationResult = expressionLanguage.evaluateExpression(parseExpression, context);
 
     assertThat(evaluationResult.isFailure())
         .describedAs(evaluationResult.getFailureMessage())
