@@ -87,7 +87,9 @@
           <configurationDirectory>conf</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
-          <extraJvmArguments>-Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml
+          <extraJvmArguments>
+            -Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml
+            --illegal-access=deny
           </extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>
