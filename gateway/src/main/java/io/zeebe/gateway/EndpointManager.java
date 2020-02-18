@@ -302,11 +302,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       return;
     }
 
-    final ServerCallStreamObserver<GrpcResponseT> serverObserver =
-        (ServerCallStreamObserver<GrpcResponseT>) streamObserver;
-    serverObserver.setOnCancelHandler(
-        () -> Loggers.GATEWAY_LOGGER.trace("gRPC {} request cancelled", grpcRequest.getClass()));
-
+    suppressCancelledException(grpcRequest, streamObserver);
     brokerClient.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
@@ -326,16 +322,20 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       return;
     }
 
-    final ServerCallStreamObserver<GrpcResponseT> serverObserver =
-        (ServerCallStreamObserver<GrpcResponseT>) streamObserver;
-    serverObserver.setOnCancelHandler(
-        () -> Loggers.GATEWAY_LOGGER.trace("gRPC {} request cancelled", grpcRequest.getClass()));
-
+    suppressCancelledException(grpcRequest, streamObserver);
     brokerClient.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
         error -> streamObserver.onError(convertThrowable(error)),
         timeout);
+  }
+
+  private <GrpcRequestT, GrpcResponseT> void suppressCancelledException(
+      final GrpcRequestT grpcRequest, final StreamObserver<GrpcResponseT> streamObserver) {
+    final ServerCallStreamObserver<GrpcResponseT> serverObserver =
+        (ServerCallStreamObserver<GrpcResponseT>) streamObserver;
+    serverObserver.setOnCancelHandler(
+        () -> Loggers.GATEWAY_LOGGER.trace("gRPC {} request cancelled", grpcRequest.getClass()));
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(
