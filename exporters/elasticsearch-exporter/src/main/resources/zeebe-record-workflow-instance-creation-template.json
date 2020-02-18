@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-workflow-instance-creation_*"
+    "zeebe-record_workflow-instance-creation_*"
   ],
   "order": 20,
   "aliases": {

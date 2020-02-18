@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-deployment_*"
+    "zeebe-record_deployment_*"
   ],
   "order": 20,
   "aliases": {
