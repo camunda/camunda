@@ -71,24 +71,25 @@ pipeline {
             }
         }
 
-        stage('Test (Go)') {
-            steps {
-                container('golang') {
-                    sh '.ci/scripts/distribution/test-go.sh'
-                }
-            }
+        
 
-            post {
-                always {
-                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
-                }
-            }
- 
-        }
-
-        stage('Test (Java)') {
+        stage('Test') {
             parallel {
-                stage('Analyse (Java)') {
+               stage('Test (Go)') {
+                    steps {
+                        container('golang') {
+                            sh '.ci/scripts/distribution/test-go.sh'
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
+                        }
+                    }
+               }
+
+               stage('Analyse (Java)') {
                       steps {
                           container('maven') {
                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
