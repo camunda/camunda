@@ -54,6 +54,11 @@ It is designed for regular maintenance jobs such as:
 	* activating, completing or failing jobs
 	* update variables and retries
 	* view cluster status`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// silence help here instead of as a parameter because we only want to suppress it on a 'Zeebe' error and not if
+		// parsing args fails
+		cmd.SilenceUsage = true
+	},
 	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
 		if client != nil {
 			return client.Close()
