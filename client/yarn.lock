@@ -4525,11 +4525,6 @@ chownr@^1.1.1, chownr@^1.1.2:
   resolved "https://registry.yarnpkg.com/chownr/-/chownr-1.1.3.tgz#42d837d5239688d55f303003a508230fa6727142"
   integrity sha512-i70fVHhmV3DtTl6nqvZOnIjbY0Pe4kAUjwHj8z0zAdgBtYrJyYwLKCCuRBQ5ppkyL0AkN7HKRnETdmdp1zqNXw==
 
-chrome-emulated-devices-list@^0.1.0:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/chrome-emulated-devices-list/-/chrome-emulated-devices-list-0.1.1.tgz#9ee030c21aa6d065fbe562f3ce41ee257585fd60"
-  integrity sha512-wQu6YKNTNGaUXovpkvXLnfeumVK47r2TKpOuCTwOKv/5SmRzfHual+E+oDIwS3KFWAcJPAhoNRAOLvXwzC6/pw==
-
 chrome-remote-interface@^0.25.3:
   version "0.25.7"
   resolved "https://registry.yarnpkg.com/chrome-remote-interface/-/chrome-remote-interface-0.25.7.tgz#827e85fbef3cc561a9ef2404eb7eee355968c5bc"
@@ -4785,15 +4780,10 @@ commander@^2.11.0, commander@^2.19.0, commander@^2.20.0, commander@^2.8.1:
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.1.tgz#3863ce3ca92d0831dcf2a102f5fb4b5926afd0f9"
   integrity sha512-cCuLsMhJeWQ/ZpsFTbE765kvVfoeSddc4nU3up4fV+fDBcfUXnbITJ+JzhkdjzOqhURjZgujxaioam4RM9yGUg==
 
-commander@^4.0.0:
+commander@^4.0.0, commander@^4.0.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/commander/-/commander-4.1.1.tgz#9fd602bd936294e9e9ef46a3f4d6964044b18068"
   integrity sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==
-
-commander@^4.0.1:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-4.1.0.tgz#545983a0603fe425bc672d66c9e3c89c42121a83"
-  integrity sha512-NIQrwvv9V39FHgGFm36+U9SMQzbiHvU79k+iADraJTpmrFFfx7Ds0IvDoAdZsDrknlkRk14OYoWXb57uTh7/sw==
 
 common-tags@^1.8.0:
   version "1.8.0"
@@ -5655,6 +5645,11 @@ detect-port-alt@1.1.6:
   dependencies:
     address "^1.0.1"
     debug "^2.6.0"
+
+device-specs@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/device-specs/-/device-specs-1.0.0.tgz#47b54577b9b159118bbb0a175177d0aa9c50a9c9"
+  integrity sha512-fYXbFSeilT7bnKWFi4OERSPHdtaEoDGn4aUhV5Nly6/I+Tp6JZ/6Icmd7LVIF5euyodGpxz2e/bfUmDnIdSIDw==
 
 dezalgo@^1.0.0:
   version "1.0.3"
@@ -14537,10 +14532,10 @@ testcafe-browser-tools@2.0.8:
     read-file-relative "^1.2.0"
     which-promise "^1.0.0"
 
-testcafe-hammerhead@16.0.2:
-  version "16.0.2"
-  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-16.0.2.tgz#51b2adde8ff0f9eb0515b19d67c75d425c636af1"
-  integrity sha512-6NwQArGem9G/TpnnNNMDS45N53u3SmPbk7pVBq8pEZ4grWDGDqUHuRLjFbseF6yUaZFHBx13WqJYpZmf2vNJmw==
+testcafe-hammerhead@16.1.2:
+  version "16.1.2"
+  resolved "https://registry.yarnpkg.com/testcafe-hammerhead/-/testcafe-hammerhead-16.1.2.tgz#f9601652e67960bcb7f63bd8ad38b35f7e56fe37"
+  integrity sha512-+e0AeHIGDIY/1TdHJE0l2Gyv77Bjcb0ZTHYiIiY49t0R9+PV4fYmHxy+SoJJuhKWRv5/gVggta9DOBToQmWong==
   dependencies:
     acorn-hammerhead "^0.3.0"
     asar "^2.0.1"
@@ -14610,10 +14605,10 @@ testcafe-reporter-xunit@^2.1.0:
   resolved "https://registry.yarnpkg.com/testcafe-reporter-xunit/-/testcafe-reporter-xunit-2.1.0.tgz#e6d66c572ce15af266706af0fd610b2a841dd443"
   integrity sha1-5tZsVyzhWvJmcGrw/WELKoQd1EM=
 
-testcafe@^1.8.1:
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.8.1.tgz#1550658c98cb6b839ae47e1a77033f3f87fea44e"
-  integrity sha512-BTN3BAmKK2R5Z0t3poiMCaiqbZaWyHfFMhY1toMg0hgQi147Bs8naMCkFePt2r1dc5wGnJ5QEJikGbVMqJUwMQ==
+testcafe@^1.8.2:
+  version "1.8.2"
+  resolved "https://registry.yarnpkg.com/testcafe/-/testcafe-1.8.2.tgz#1c558c1ef014ef2df5db120f769f568ae5c59a5a"
+  integrity sha512-bMUF+O9hGVsQPonUkiSVSPs9TiyeWT3IAM/GHLfEhUP2yXgbjneuUg6YmG/+jrCbgZ9AuB4nDKcaZIVaQJyeSA==
   dependencies:
     "@types/node" "^10.12.19"
     async-exit-hook "^1.1.2"
@@ -14631,13 +14626,13 @@ testcafe@^1.8.1:
     callsite-record "^4.0.0"
     chai "^4.1.2"
     chalk "^2.3.0"
-    chrome-emulated-devices-list "^0.1.0"
     chrome-remote-interface "^0.25.3"
     coffeescript "^2.3.1"
     commander "^2.8.1"
     debug "^2.2.0"
     dedent "^0.4.0"
     del "^3.0.0"
+    device-specs "^1.0.0"
     elegant-spinner "^1.0.1"
     emittery "^0.4.1"
     endpoint-utils "^1.0.2"
@@ -14677,7 +14672,7 @@ testcafe@^1.8.1:
     source-map-support "^0.5.16"
     strip-bom "^2.0.0"
     testcafe-browser-tools "2.0.8"
-    testcafe-hammerhead "16.0.2"
+    testcafe-hammerhead "16.1.2"
     testcafe-legacy-api "3.1.11"
     testcafe-reporter-json "^2.1.0"
     testcafe-reporter-list "^2.1.0"
