@@ -280,20 +280,20 @@ pipeline {
                             // Upload data
                             sh("""
                               if [ "${USE_E2E_PRESETS}" = true ]; then
-                                gsutil -h "x-goog-meta-NUM_INSTANCES:\\\$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\\$EXPECTED_NUMBER_OF_USER_TASKS" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_VARIABLES:\\$EXPECTED_NUMBER_OF_VARIABLES" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_DECISION_INSTANCES:\\$EXPECTED_NUMBER_OF_DECISION_INSTANCES" \\
+                                gsutil -h "x-goog-meta-NUM_INSTANCES:\$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\$EXPECTED_NUMBER_OF_USER_TASKS" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_VARIABLES:\$EXPECTED_NUMBER_OF_VARIABLES" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_DECISION_INSTANCES:\$EXPECTED_NUMBER_OF_DECISION_INSTANCES" \
                                        cp "/export/${SQL_DUMP}" gs://optimize-data/
                               else
-                                gsutil -h "x-goog-meta-NUM_INSTANCES:${NUM_INSTANCES}" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\\$EXPECTED_NUMBER_OF_USER_TASKS" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_VARIABLES:\\$EXPECTED_NUMBER_OF_VARIABLES" \\
-                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_DECISION_INSTANCES:\\$EXPECTED_NUMBER_OF_DECISION_INSTANCES" \\
+                                gsutil -h "x-goog-meta-NUM_INSTANCES:${NUM_INSTANCES}" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_PROCESS_INSTANCES:\$EXPECTED_NUMBER_OF_PROCESS_INSTANCES" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES:\$EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_USER_TASKS:\$EXPECTED_NUMBER_OF_USER_TASKS" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_VARIABLES:\$EXPECTED_NUMBER_OF_VARIABLES" \
+                                       -h "x-goog-meta-EXPECTED_NUMBER_OF_DECISION_INSTANCES:\$EXPECTED_NUMBER_OF_DECISION_INSTANCES" \
                                        cp "/export/${SQL_DUMP}" gs://optimize-data/
                               fi
                                 """)
