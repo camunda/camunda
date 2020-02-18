@@ -6,8 +6,11 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
+import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -35,6 +39,29 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
     // then
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)).isNotEmpty();
+  }
+
+  @Test
+  public void publishMappingWithNoEventSourcesFails() {
+    // given
+    final EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+      Collections.emptyMap(),
+      "failToPublish",
+      createSimpleProcessDefinitionXml(),
+      Collections.emptyList()
+    );
+    eventProcessMappingDto.setMappings(Collections.singletonMap(BPMN_START_EVENT_ID, EventMappingDto.builder()
+      .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName("someEventName").build())
+      .build()));
+    String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    Response response = eventProcessClient.createPublishEventProcessMappingRequest(eventProcessMappingId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

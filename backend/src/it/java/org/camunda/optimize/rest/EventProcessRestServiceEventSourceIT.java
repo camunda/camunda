@@ -6,7 +6,6 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
@@ -37,6 +36,22 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @BeforeAll
   public static void setup() {
     processDefinitionXml = createSimpleProcessDefinitionXml();
+  }
+
+  @Test
+  public void createWithNoEventSource() {
+    // given
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(null);
+    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
+
+    // when
+    Response response = eventProcessClient
+      .createCreateEventProcessMappingRequest(eventProcessMapping)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -76,11 +91,10 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     // then
     List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
-    final EventSourceEntryRestDto expectedEventSourceEntryRestDto = mapToRestDto(camundaEventSourceEntry);
 
     assertThat(eventSources)
       .usingElementComparatorIgnoringFields("id")
-      .containsExactlyInAnyOrder(expectedEventSourceEntryRestDto, mapToRestDto(externalEventSourceEntry))
+      .containsExactlyInAnyOrder(mapToRestDto(camundaEventSourceEntry), mapToRestDto(externalEventSourceEntry))
       .allSatisfy(eventSourceEntryRestDto -> assertThat(eventSourceEntryRestDto.getId()).isNotBlank());
   }
 
@@ -117,7 +131,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
   }
 
   @Test
@@ -133,7 +147,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
   }
 
   @Test
@@ -165,6 +179,25 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   }
 
   @Test
+  public void updateWithNoEventSource() {
+    // given
+    List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
+    eventSourceEntryDtos.add(createExternalEventSourceEntry());
+    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
+    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
+
+    // when
+    final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
+    eventProcessMapping.setEventSources(null);
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
   public void updateWithDuplicateCamundaEventSource_fails() {
     // given
     final EventSourceEntryDto camundaEventSourceEntry = createCamundaEventSourceEntry(PROCESS_DEF_KEY_1);
@@ -179,14 +212,13 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     eventProcessMapping.getEventSources().add(camundaEventSourceEntry);
     Response response = eventProcessClient
       .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .execute();
 
     // then
     List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
 
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
     assertThat(eventSources)
       .usingElementComparatorIgnoringFields("id")
       .containsExactly(mapToRestDto(camundaEventSourceEntry));
@@ -210,7 +242,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
   }
 
   @Test
@@ -294,7 +326,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     eventProcessClient
       .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMappingDto)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute(HttpStatus.SC_NO_CONTENT);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
 }

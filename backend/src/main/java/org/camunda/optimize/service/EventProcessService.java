@@ -195,6 +195,9 @@ public class EventProcessService {
         "Cannot publish event based process from state: " + eventProcessMapping.getState()
       );
     }
+    if (eventProcessMapping.getEventSources().isEmpty()) {
+      throw new OptimizeValidationException("Cannot publish event based process with no data sources");
+    }
 
     final EventProcessPublishStateDto processPublishState = EventProcessPublishStateDto
       .builder()
@@ -244,6 +247,10 @@ public class EventProcessService {
   }
 
   private void validateEventSources(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
+    final List<EventSourceEntryDto> eventSources = eventProcessMappingDto.getEventSources();
+    if (eventSources == null || eventSources.contains(null)) {
+      throw new OptimizeValidationException("Sources for an event based process cannot be null");
+    }
     validateAccessToCamundaEventSources(userId, eventProcessMappingDto);
     validateNoDuplicateCamundaEventSources(eventProcessMappingDto);
     validateNoDuplicateExternalEventSources(eventProcessMappingDto);
