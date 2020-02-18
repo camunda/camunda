@@ -14,6 +14,7 @@ import io.zeebe.db.impl.DbBuffer;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
+import io.zeebe.engine.processor.workflow.deployment.model.BpmnFactory;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.BpmnTransformer;
 import io.zeebe.engine.state.ZbColumnFamilies;
@@ -35,7 +36,8 @@ import org.agrona.collections.LongHashSet;
 import org.agrona.io.DirectBufferInputStream;
 
 public final class WorkflowPersistenceCache {
-  private final BpmnTransformer transformer = new BpmnTransformer();
+
+  private final BpmnTransformer transformer = BpmnFactory.createTransformer();
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedWorkflow>>
       workflowsByProcessIdAndVersion = new HashMap<>();
@@ -294,15 +296,15 @@ public final class WorkflowPersistenceCache {
   }
 
   public void putLatestVersionDigest(final DirectBuffer processId, final DirectBuffer digest) {
-    this.workflowId.wrapBuffer(processId);
+    workflowId.wrapBuffer(processId);
     this.digest.wrapBuffer(digest);
 
-    digestByIdColumnFamily.put(this.workflowId, this.digest);
+    digestByIdColumnFamily.put(workflowId, this.digest);
   }
 
   public DirectBuffer getLatestVersionDigest(final DirectBuffer processId) {
-    this.workflowId.wrapBuffer(processId);
-    final DbBuffer dbBuffer = digestByIdColumnFamily.get(this.workflowId);
+    workflowId.wrapBuffer(processId);
+    final DbBuffer dbBuffer = digestByIdColumnFamily.get(workflowId);
     return dbBuffer == null ? null : dbBuffer.getValue();
   }
 }

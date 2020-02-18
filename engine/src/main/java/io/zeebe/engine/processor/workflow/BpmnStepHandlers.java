@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
@@ -77,6 +78,10 @@ public final class BpmnStepHandlers {
             state.getWorkflowState().getEventScopeInstanceState());
     final var errorEventHandler =
         new ErrorEventHandler(state.getWorkflowState(), state.getKeyGenerator());
+    final var expressionProcessor =
+        new ExpressionProcessor(
+            ExpressionLanguageFactory.createExpressionLanguage(),
+            state.getWorkflowState().getElementInstanceState().getVariablesState());
 
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATED, new ElementActivatedHandler<>());
@@ -197,7 +202,8 @@ public final class BpmnStepHandlers {
 
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_ACTIVATING,
-        new CallActivityActivatingHandler(catchEventSubscriber, state.getKeyGenerator()));
+        new CallActivityActivatingHandler(
+            catchEventSubscriber, state.getKeyGenerator(), expressionProcessor));
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_TERMINATING,
         new CallActivityTerminatingHandler(catchEventSubscriber));

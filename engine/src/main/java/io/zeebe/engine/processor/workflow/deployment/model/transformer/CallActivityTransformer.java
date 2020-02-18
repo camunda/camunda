@@ -7,8 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
-import static java.util.function.Predicate.not;
-
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCallActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -16,9 +15,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.CallActivity;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
-import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import java.util.Optional;
 
 public final class CallActivityTransformer implements ModelElementTransformer<CallActivity> {
 
@@ -34,7 +31,7 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final ExecutableCallActivity callActivity =
         workflow.getElementById(element.getId(), ExecutableCallActivity.class);
 
-    transformProcessId(element, callActivity, context.getJsonPathQueryCompiler());
+    transformProcessId(element, callActivity, context.getExpressionLanguage());
 
     bindLifecycle(callActivity);
   }
@@ -49,18 +46,14 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
   private void transformProcessId(
       final CallActivity element,
       final ExecutableCallActivity callActivity,
-      final JsonPathQueryCompiler jsonPathQueryCompiler) {
+      final ExpressionLanguage expressionLanguage) {
 
     final ZeebeCalledElement calledElement =
         element.getSingleExtensionElement(ZeebeCalledElement.class);
 
-    Optional.ofNullable(calledElement.getProcessId())
-        .filter(not(String::isEmpty))
-        .ifPresent(callActivity::setCalledElementProcessId);
+    final var processId = calledElement.getProcessId();
+    final var expression = expressionLanguage.parseExpression(processId);
 
-    Optional.ofNullable(calledElement.getProcessIdExpression())
-        .filter(not(String::isEmpty))
-        .map(jsonPathQueryCompiler::compile)
-        .ifPresent(callActivity::setCalledElementProcessIdExpression);
+    callActivity.setCalledElementProcessId(expression);
   }
 }

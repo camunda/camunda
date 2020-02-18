@@ -57,6 +57,8 @@ public abstract class AbstractBaseElementBuilder<
 
   public static final double SPACE = 50;
 
+  public static final String ZEEBE_EXPRESSION_FORMAT = "=%s";
+
   protected AbstractBaseElementBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
@@ -301,6 +303,10 @@ public abstract class AbstractBaseElementBuilder<
     final T element = createInstance(extensionClass);
     builder.accept(element);
     return addExtensionElement(element);
+  }
+
+  protected String asZeebeExpression(final String expression) {
+    return String.format(ZEEBE_EXPRESSION_FORMAT, expression);
   }
 
   public BpmnShape createBpmnShape(final FlowNode node) {

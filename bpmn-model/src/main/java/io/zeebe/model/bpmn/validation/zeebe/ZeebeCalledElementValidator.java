@@ -17,7 +17,6 @@ package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
-import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -25,8 +24,7 @@ public class ZeebeCalledElementValidator implements ModelElementValidator<ZeebeC
 
   private static final String ERROR_MESSAGE =
       String.format(
-          "Either '%s' or '%s' attribute must be present and not empty",
-          ZeebeConstants.ATTRIBUTE_PROCESS_ID, ZeebeConstants.ATTRIBUTE_PROCESS_ID_EXPRESSION);
+          "Attribute '%s' must be present and not empty", ZeebeConstants.ATTRIBUTE_PROCESS_ID);
 
   @Override
   public Class<ZeebeCalledElement> getElementType() {
@@ -37,12 +35,8 @@ public class ZeebeCalledElementValidator implements ModelElementValidator<ZeebeC
   public void validate(
       final ZeebeCalledElement element, final ValidationResultCollector validationResultCollector) {
 
-    final Optional<String> processId =
-        Optional.ofNullable(element.getProcessId()).filter(p -> !p.isEmpty());
-    final Optional<String> processIdExpression =
-        Optional.ofNullable(element.getProcessIdExpression()).filter(p -> !p.isEmpty());
-
-    if (processId.isPresent() == processIdExpression.isPresent()) {
+    final String processId = element.getProcessId();
+    if (processId == null || processId.isEmpty()) {
       validationResultCollector.addError(0, ERROR_MESSAGE);
     }
   }
