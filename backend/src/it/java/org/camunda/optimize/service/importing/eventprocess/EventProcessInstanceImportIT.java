@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
@@ -54,7 +53,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           .extracting(AliasMetaData::alias, AliasMetaData::writeIndex)
           .containsExactlyInAnyOrder(
             Tuple.tuple(
-              getOptimizeIndexAliasForIndexName(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessPublishStateId), true
+              getOptimizeIndexAliasForIndexName(new EventProcessInstanceIndex(eventProcessPublishStateId).getIndexName()),
+              true
             ),
             Tuple.tuple(
               getOptimizeIndexAliasForIndexName(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME), false

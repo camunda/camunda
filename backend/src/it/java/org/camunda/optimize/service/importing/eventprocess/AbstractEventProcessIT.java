@@ -12,19 +12,17 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.optimize.EventProcessClient;
@@ -169,8 +167,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   private EventProcessMappingDto buildSimpleEventProcessMappingDto(final EventMappingDto startEventMapping,
-                                                                     final EventMappingDto intermediateEventMapping,
-                                                                     final EventMappingDto endEventMapping) {
+                                                                   final EventMappingDto intermediateEventMapping,
+                                                                   final EventMappingDto endEventMapping) {
     final Map<String, EventMappingDto> eventMappings = new HashMap<>();
     Optional.ofNullable(startEventMapping)
       .ifPresent(mapping -> eventMappings.put(BPMN_START_EVENT_ID, mapping));
@@ -215,9 +213,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .getHighLevelClient()
       .indices().get(
         new GetIndexRequest().indices(
-          indexNameService
-            .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
-            + "*"
+          indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*"
         ),
         RequestOptions.DEFAULT
       );
@@ -275,7 +271,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final List<ProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(
-        new SearchRequest(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessMappingId),
+        new SearchRequest(new EventProcessInstanceIndex(eventProcessMappingId).getIndexName()),
         RequestOptions.DEFAULT
       );
     for (SearchHit hit : searchResponse.getHits().getHits()) {

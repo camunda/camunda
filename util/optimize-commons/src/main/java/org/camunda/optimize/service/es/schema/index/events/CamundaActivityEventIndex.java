@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
@@ -36,7 +36,7 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
   private String indexName;
 
   public CamundaActivityEventIndex(final String processDefinitionKey) {
-    indexName = CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey;
+    indexName = CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey.toLowerCase();
   }
 
   @Override

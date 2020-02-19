@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.index.CamundaActivityEventIndex;
+import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -23,8 +23,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 
 @AllArgsConstructor
 @Component
@@ -57,7 +55,7 @@ public class CamundaActivityEventWriter {
                                               CamundaActivityEventDto camundaActivityEventDto) {
     try {
       final IndexRequest request = new IndexRequest(
-        CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + camundaActivityEventDto.getProcessDefinitionKey()
+        new CamundaActivityEventIndex(camundaActivityEventDto.getProcessDefinitionKey()).getIndexName()
       )
         .id(IdGenerator.getNextId())
         .source(objectMapper.writeValueAsString(camundaActivityEventDto), XContentType.JSON);

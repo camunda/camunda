@@ -29,7 +29,7 @@ public class EventTraceStateIndex extends StrictIndexMappingCreator {
   private final String indexName;
 
   public EventTraceStateIndex(final String indexKey) {
-    this.indexName= ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX + indexKey;
+    this.indexName= ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX + indexKey.toLowerCase();
   }
 
   @Override

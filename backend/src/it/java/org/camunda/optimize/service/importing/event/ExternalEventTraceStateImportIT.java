@@ -12,6 +12,8 @@ import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +27,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public class ExternalEventTraceStateImportIT extends AbstractIT {
@@ -44,11 +44,11 @@ public class ExternalEventTraceStateImportIT extends AbstractIT {
     // then
     assertThat(
       elasticSearchIntegrationTestExtension
-        .getDocumentCountOf(EVENT_TRACE_STATE_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX)
+        .getDocumentCountOf(new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName())
     ).isEqualTo(0);
     assertThat(
       elasticSearchIntegrationTestExtension
-        .getDocumentCountOf(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX)
+        .getDocumentCountOf(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName())
     ).isEqualTo(0);
   }
 
@@ -548,14 +548,14 @@ public class ExternalEventTraceStateImportIT extends AbstractIT {
 
   public List<EventTraceStateDto> getAllStoredExternalEventTraceStates() {
     return getAllStoredDocumentsForIndexAsClass(
-      EVENT_TRACE_STATE_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX,
+      new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
       EventTraceStateDto.class
     );
   }
 
   public List<EventSequenceCountDto> getAllStoredExternalEventSequenceCounts() {
     return getAllStoredDocumentsForIndexAsClass(
-      EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX,
+      new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
       EventSequenceCountDto.class
     );
   }

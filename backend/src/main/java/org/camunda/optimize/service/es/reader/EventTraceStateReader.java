@@ -21,7 +21,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -55,6 +54,6 @@ public class EventTraceStateReader {
   }
   
   private String getIndexName() {
-    return EVENT_TRACE_STATE_INDEX_PREFIX + indexKey;
+    return new EventTraceStateIndex(indexKey).getIndexName();
   }
 }

@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -24,8 +25,6 @@ import org.elasticsearch.script.ScriptType;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 
 @AllArgsConstructor
 @Slf4j
@@ -83,7 +82,7 @@ public class EventSequenceCountWriter {
   }
 
   private String getIndexName() {
-    return EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey;
+    return new EventSequenceCountIndex(indexKey).getIndexName();
   }
 
 }

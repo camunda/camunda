@@ -21,6 +21,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -194,6 +195,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public OffsetDateTime getLastProcessedEventTimestampForEventIndexSuffix(final String eventIndexSuffix) throws
                                                                                                          IOException {
     return getLastImportTimestampOfTimestampBasedImportIndex(
+      // lowercase as the index names are automatically lowercased and thus the entry contains has a lowercase suffix
       ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + eventIndexSuffix.toLowerCase(),
       ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE
     );
@@ -501,7 +503,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   @SneakyThrows
   public List<CamundaActivityEventDto> getAllStoredCamundaActivityEvents(final String processDefinitionKey) {
     SearchResponse response = getSearchResponseForAllDocumentsOfIndex(
-      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey);
+      new CamundaActivityEventIndex(processDefinitionKey).getIndexName()
+    );
     List<CamundaActivityEventDto> storedEvents = new ArrayList<>();
     for (SearchHit searchHitFields : response.getHits()) {
       final CamundaActivityEventDto camundaActivityEventDto = getObjectMapper().readValue(

@@ -26,7 +26,7 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
   public static final String ACTIVITY_UPDATE_END_DATE = FlowNodeInstanceUpdateDto.Fields.endDate;
 
   public EventProcessInstanceIndex(final String eventProcessId) {
-    super(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessId);
+    super(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessId.toLowerCase());
   }
 
   @Override

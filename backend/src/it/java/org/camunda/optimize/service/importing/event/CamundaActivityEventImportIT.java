@@ -12,7 +12,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.CamundaActivityEventIndex;
+import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.importing.AbstractImportIT;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -32,7 +32,6 @@ import static org.camunda.optimize.service.CamundaEventImportService.END_MAPPED_
 import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_START_TYPE;
 import static org.camunda.optimize.service.CamundaEventImportService.START_MAPPED_SUFFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {
 
@@ -273,7 +272,8 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   private List<CamundaActivityEventDto> getSavedEventsForProcessDefinitionKey(final String processDefinitionKey) throws
                                                                                                                  JsonProcessingException {
     SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-      CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + processDefinitionKey);
+      new CamundaActivityEventIndex(processDefinitionKey).getIndexName()
+    );
     List<CamundaActivityEventDto> storedEvents = new ArrayList<>();
     for (SearchHit searchHitFields : response.getHits()) {
       final CamundaActivityEventDto camundaActivityEventDto = embeddedOptimizeExtension.getObjectMapper().readValue(

@@ -32,7 +32,7 @@ public class EventSequenceCountIndex extends StrictIndexMappingCreator {
   private final String indexName;
 
   public EventSequenceCountIndex(final String indexKey) {
-    this.indexName = ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey;
+    this.indexName = ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX + indexKey.toLowerCase();
   }
 
   @Override

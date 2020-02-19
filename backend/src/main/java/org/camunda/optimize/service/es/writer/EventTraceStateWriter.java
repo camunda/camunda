@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -19,8 +20,6 @@ import org.elasticsearch.client.RequestOptions;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 
 @AllArgsConstructor
 @Slf4j
@@ -65,7 +64,7 @@ public class EventTraceStateWriter {
   }
 
   private String getIndexName() {
-    return EVENT_TRACE_STATE_INDEX_PREFIX + indexKey;
+    return new EventTraceStateIndex(indexKey).getIndexName();
   }
 
 }

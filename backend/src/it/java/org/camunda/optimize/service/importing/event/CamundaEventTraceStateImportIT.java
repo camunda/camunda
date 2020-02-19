@@ -15,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -27,8 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.CamundaEventImportService.PROCESS_START_TYPE;
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 
 public class CamundaEventTraceStateImportIT extends AbstractIT {
 
@@ -190,11 +190,11 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
   }
 
   private String getSequenceCountIndexNameForDefinitionKey(final String definitionKey) {
-    return EVENT_SEQUENCE_COUNT_INDEX_PREFIX + definitionKey;
+    return new EventSequenceCountIndex(definitionKey).getIndexName();
   }
 
   private String getTraceStateIndexNameForDefinitionKey(final String definitionKey) {
-    return EVENT_TRACE_STATE_INDEX_PREFIX + definitionKey;
+    return new EventTraceStateIndex(definitionKey).getIndexName();
   }
 
   private <T> List<T> getAllStoredDocumentsForIndexAsClass(final String indexName, final Class<T> dtoClass) {
