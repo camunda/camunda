@@ -26,6 +26,7 @@ export default function useBatchOperations() {
   const dataManager = useDataManager();
 
   const requestBatchOperations = useCallback(() => {
+    console.log('foo');
     dataManager.getBatchOperations({pageSize: 20});
   }, [dataManager]);
 
@@ -37,11 +38,17 @@ export default function useBatchOperations() {
       setBatchOperations
     );
 
+    subscribe(
+      'BATCH_OPERATION_APPLIED',
+      LOADING_STATE.LOADED,
+      requestBatchOperations
+    );
+
     return () => {
       unsubscribe();
       dataManager.poll.unregister(POLL_TOPICS.OPERATIONS);
     };
-  }, [subscribe, unsubscribe, dataManager]);
+  }, [subscribe, unsubscribe, dataManager.poll, requestBatchOperations]);
 
   useEffect(subscribeToOperations, []);
 

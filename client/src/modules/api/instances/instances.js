@@ -99,7 +99,8 @@ export async function applyBatchOperation(operationType, query) {
   const url = `${URL}/batch-operation`;
   const payload = {operationType, query};
 
-  await post(url, payload);
+  const response = await post(url, payload);
+  return await response.json();
 }
 
 /**

@@ -17,10 +17,11 @@ import useDataManager from 'modules/hooks/useDataManager';
 
 const CreateOperationDropdown = ({label}) => {
   const {query} = useContext(FilterContext);
-  const {ids, excludeIds} = useContext(InstanceSelectionContext);
+  const {ids, excludeIds, reset} = useContext(InstanceSelectionContext);
   const {applyBatchOperation} = useDataManager();
 
   const handleCreateOperation = operationType => {
+    reset();
     applyBatchOperation(operationType, {...query, ids, excludeIds});
   };
 

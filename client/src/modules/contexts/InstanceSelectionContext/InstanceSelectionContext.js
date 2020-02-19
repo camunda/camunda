@@ -86,7 +86,14 @@ export const useInstanceSelection = totalCount => {
     }
   };
 
+  const reset = () => {
+    setAllChecked(false);
+    setMode(MODES.INCLUDE);
+    setIds([]);
+  };
+
   return {
+    reset,
     isAllChecked,
     handleCheckAll,
     isInstanceChecked,

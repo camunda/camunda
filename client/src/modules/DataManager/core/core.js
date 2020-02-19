@@ -74,9 +74,11 @@ export class DataManager {
     );
   }
 
-  applyBatchOperation(operationType, query) {
-    applyBatchOperation(operationType, query);
-  }
+  applyBatchOperation = async (operationType, query) => {
+    this.publisher.pubLoadingStates(`BATCH_OPERATION_APPLIED`, () =>
+      applyBatchOperation(operationType, query)
+    );
+  };
 
   fetchAndPublish(topic, apiCall, params, staticContent) {
     const cachedParams = this.cache.update(topic, apiCall, params);
