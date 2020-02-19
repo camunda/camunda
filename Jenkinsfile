@@ -49,7 +49,7 @@ pipeline {
             }
         }
 
-        stage('Build (Go)') {
+        stage('Prepare Tests') {
             environment {
                 IMAGE = "camunda/zeebe"
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
@@ -57,10 +57,6 @@ pipeline {
             }
 
             steps {
-                container('golang') {
-                    sh '.ci/scripts/distribution/build-go.sh'
-                }
-
                 container('maven') {
                     sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                 }
@@ -75,8 +71,12 @@ pipeline {
 
         stage('Test') {
             parallel {
-               stage('Test (Go)') {
+                stage('Go') {
                     steps {
+                        container('golang') {
+                            sh '.ci/scripts/distribution/build-go.sh'
+                        }
+
                         container('golang') {
                             sh '.ci/scripts/distribution/test-go.sh'
                         }
@@ -84,7 +84,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST-go.xml", keepLongStdio: true
                         }
                     }
                }
