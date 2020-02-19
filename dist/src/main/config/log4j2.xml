@@ -8,20 +8,17 @@
 
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout
-        pattern="${log.pattern}"/>
+      <JSONLayout compact="${env:ZEEBE_JSON_LOG_COMPACT:-true}" eventEol="true" properties="true" includeStacktrace="true" stacktraceAsString="false" />
     </Console>
 
-    <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"
+    <RollingRandomAccessFile name="RollingFile" fileName="${log.path}/zeebe.log"
       filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz">
-      <PatternLayout>
-        <Pattern>${log.pattern}</Pattern>
-      </PatternLayout>
+      <JSONLayout compact="${env:ZEEBE_JSON_LOG_COMPACT:-true}" eventEol="true" properties="true" includeStacktrace="true" stacktraceAsString="false" />
       <Policies>
         <TimeBasedTriggeringPolicy/>
         <SizeBasedTriggeringPolicy size="250 MB"/>
       </Policies>
-    </RollingFile>
+    </RollingRandomAccessFile>
   </Appenders>
 
   <Loggers>
