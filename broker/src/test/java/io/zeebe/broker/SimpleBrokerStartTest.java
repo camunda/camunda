@@ -45,20 +45,6 @@ public final class SimpleBrokerStartTest {
   }
 
   @Test
-  public void shouldFailToCreateBrokerWithInvalidTimeout() {
-    // given
-    final var brokerCfg = new BrokerCfg();
-    brokerCfg.setStepTimeout("invalid");
-
-    // when
-    final var catchedThrownBy =
-        assertThatThrownBy(() -> new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null));
-
-    // then
-    catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
     final var brokerCfg = new BrokerCfg();

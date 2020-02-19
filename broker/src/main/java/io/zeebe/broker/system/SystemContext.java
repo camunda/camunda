@@ -11,7 +11,6 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
-import io.zeebe.util.DurationUtil;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -64,7 +63,7 @@ public final class SystemContext {
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    stepTimeout = DurationUtil.parse(brokerCfg.getStepTimeout());
+    stepTimeout = brokerCfg.getStepTimeoutAsDuration();
 
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
