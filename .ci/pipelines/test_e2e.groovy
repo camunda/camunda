@@ -53,7 +53,7 @@ spec:
         readOnly: true
   containers:
     - name: maven
-      image: maven:3.6.1-jdk-11
+      image: markhobson/maven-chrome:jdk-11
       command: ["cat"]
       tty: true
       env:
@@ -106,7 +106,7 @@ spec:
           cpu: 2
           memory: 4Gi
     - name: zeebe
-      image: camunda/zeebe:latest
+      image: camunda/zeebe:0.23.0-alpha1
       env:
       volumeMounts:
         - name: zeebe-configuration
@@ -120,7 +120,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: operate
-      image: camunda/operate:lastest
+      image: camunda/operate:SNAPSHOT
       env:
         - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
           value: false
@@ -183,7 +183,7 @@ pipeline {
                 poll: false
             // compile current operate
             configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML -P skipFrontendBuild -P client.e2etests-chromeheadless test')
+                sh ('mvn -B -s $MAVEN_SETTINGS_XML -P client.e2etests-chromeheadless test')
             }
          }
       }

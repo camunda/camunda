@@ -5,7 +5,7 @@
  */
 
 export default {
-  endpoint: 'http://localhost:3000/',
+  endpoint: 'http://localhost:8080/',
   agentUser: {
     username: 'demo',
     password: 'demo'
