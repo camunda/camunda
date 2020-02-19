@@ -135,6 +135,7 @@
             </goals>
             <phase>pre-integration-test</phase>
             <configuration>
+              <exportAntProperties>true</exportAntProperties>
               <skip>${skip.tests}</skip>
               <target name="Import the data to the previous Optimize version">
                 <!-- ensure elasticsearch is clean -->
@@ -178,6 +179,37 @@
                 </exec>
                 <echo message="Import has been finished." />
 
+                <!--save document counts for testing after the migration-->
+                <exec outputproperty="pi_count" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_count | jq .count" />
+                </exec>
+                <exec outputproperty="ai_count" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f -X POST 'localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0,&quot;aggs&quot;: {&quot;events&quot;: {&quot;nested&quot;: {&quot;path&quot;: &quot;events&quot;},&quot;aggs&quot;: {&quot;event_count&quot;: {&quot;value_count&quot;: {&quot;field&quot;: &quot;events.id&quot;}}}}}}' | jq '.aggregations.events.doc_count'" />
+                </exec>
+                <exec outputproperty="var_count" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f -X POST 'localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0, &quot;aggs&quot;: {&quot;variables&quot;: {&quot;nested&quot;: { &quot;path&quot;: &quot;variables&quot; },  &quot;aggs&quot;: { &quot;variable_count&quot;: { &quot;value_count&quot;: { &quot;field&quot;: &quot;variables.id&quot; } } } } } }' | jq '.aggregations.variables.doc_count'" />
+                </exec>
+                <exec outputproperty="ut_count" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f -X POST 'localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0,&quot;aggs&quot;: {&quot;userTasks&quot;: {&quot;nested&quot;: {&quot;path&quot;: &quot;userTasks&quot;},&quot;aggs&quot;: {&quot;user_task_Count&quot;: {&quot;value_count&quot;: {&quot;field&quot;: &quot;userTasks.id&quot;}}}}}}' | jq '.aggregations.userTasks.doc_count'" />
+                </exec>
+                <exec outputproperty="di_count" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${old.optimize.elasticsearch.port}/optimize-decision-instance/_count | jq .count" />
+                </exec>
+                <exec outputproperty="pd_count" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${old.optimize.elasticsearch.port}/optimize-process-definition/_count | jq .count" />
+                </exec>
+                <exec outputproperty="dd_count" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${old.optimize.elasticsearch.port}/optimize-decision-definition/_count | jq .count" />
+                </exec>
+
+
                 <echo message="Authenticating on optimize api..." />
                 <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
@@ -188,7 +220,7 @@
                 <echo message="Reading all reports from optimize api..." />
                 <exec dir="${project.build.directory}/${project.previousVersion}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
+                  <arg value="curl -s -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
                 </exec>
                 <echo message="Reports successfully read." />
 
@@ -297,7 +329,45 @@
                     <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
                   </exec>
 
-                  <echo message="Killing Optimize ${project.version}..." />
+                <!--assert document counts are the same as before the migration-->
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c"/>
+                  <arg
+                      value="test ${pi_count} -eq `curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize-process-instance/_count | jq .count`"/>
+                </exec>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c"/>
+                  <arg
+                      value="test ${ai_count} -eq `curl -s -f -X POST 'localhost:${new.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0,&quot;aggs&quot;: {&quot;events&quot;: {&quot;nested&quot;: {&quot;path&quot;: &quot;events&quot;},&quot;aggs&quot;: {&quot;event_count&quot;: {&quot;value_count&quot;: {&quot;field&quot;: &quot;events.id&quot;}}}}}}' | jq '.aggregations.events.doc_count'`"/>
+                </exec>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c"/>
+                  <arg
+                      value="test ${ut_count} -eq `curl -s -f -X POST 'localhost:${new.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0,&quot;aggs&quot;: {&quot;userTasks&quot;: {&quot;nested&quot;: {&quot;path&quot;: &quot;userTasks&quot;},&quot;aggs&quot;: {&quot;user_task_Count&quot;: {&quot;value_count&quot;: {&quot;field&quot;: &quot;userTasks.id&quot;}}}}}}' | jq '.aggregations.userTasks.doc_count'`"/>
+                </exec>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c"/>
+                  <arg
+                      value="test ${var_count} -eq `curl -s -f -X POST 'localhost:${new.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0, &quot;aggs&quot;: {&quot;variables&quot;: {&quot;nested&quot;: { &quot;path&quot;: &quot;variables&quot; },  &quot;aggs&quot;: { &quot;variable_count&quot;: { &quot;value_count&quot;: { &quot;field&quot;: &quot;variables.id&quot; } } } } } }' | jq '.aggregations.variables.doc_count'`"/>
+                </exec>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c"/>
+                  <arg
+                      value="test ${dd_count} -eq `curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize-decision-definition/_count | jq .count`"/>
+                </exec>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c"/>
+                  <arg
+                      value="test ${pd_count} -eq `curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize-process-definition/_count | jq .count`"/>
+                </exec>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c"/>
+                  <arg
+                      value="test ${di_count} -eq `curl -s -f localhost:${old.optimize.elasticsearch.port}/optimize-decision-instance/_count | jq .count`"/>
+                </exec>
+
+
+                <echo message="Killing Optimize ${project.version}..." />
                   <exec executable="/bin/bash" failonerror="true">
                     <arg value="-c" />
                     <arg value="pkill -f org.camunda.optimize.Main" />
