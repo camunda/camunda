@@ -101,7 +101,7 @@ github.com/spf13/pflag
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.2.0
+# github.com/testcontainers/testcontainers-go v0.3.0
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
 # golang.org/x/net v0.0.0-20200202094626-16171245cfb2
