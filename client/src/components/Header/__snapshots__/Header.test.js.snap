@@ -25,7 +25,7 @@ exports[`matches the snapshot 1`] = `
     </span>
   </Link>
   <HeaderNav>
-    <NavItem
+    <withRouter(NavItem)
       active={
         Array [
           "/",
@@ -44,7 +44,7 @@ exports[`matches the snapshot 1`] = `
       linksTo="/"
       name="Home"
     />
-    <NavItem
+    <withRouter(NavItem)
       active={
         Array [
           "/analysis/",
@@ -54,7 +54,7 @@ exports[`matches the snapshot 1`] = `
       linksTo="/analysis"
       name="Analysis"
     />
-    <NavItem
+    <withRouter(NavItem)
       active={
         Array [
           "/eventBasedProcess/",
@@ -71,6 +71,10 @@ exports[`matches the snapshot 1`] = `
     />
   </HeaderNav>
   <ChangeLogErrorHandler />
-  <LogoutButtonErrorHandler />
+  <Dropdown
+    label="Hans Wurst"
+  >
+    <withRouter(LogoutButtonErrorHandler) />
+  </Dropdown>
 </header>
 `;

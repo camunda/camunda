@@ -10,9 +10,7 @@ import {shallow} from 'enzyme';
 import {showError, addNotification} from 'notifications';
 
 import {publish, getUsers} from './service';
-import PublishModalWithErrorHandling from './PublishModal';
-
-const PublishModal = PublishModalWithErrorHandling.WrappedComponent;
+import {PublishModal} from './PublishModal';
 
 jest.mock('./service', () => ({
   publish: jest.fn(),
@@ -32,6 +30,7 @@ jest.mock('notifications', () => ({
 }));
 
 const props = {
+  user: {id: 'demo'},
   id: 'processId',
   onPublish: jest.fn(),
   onClose: jest.fn(),

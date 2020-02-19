@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {Header, Footer} from '..';
 
-import PrivateRoute from './PrivateRoute';
+import {PrivateRoute} from './PrivateRoute';
 import {Login} from './Login';
 
 import {addHandler, removeHandler} from 'request';

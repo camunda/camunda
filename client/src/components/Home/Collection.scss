@@ -5,14 +5,10 @@
   position: relative;
 
   > .header {
-    position: fixed;
     height: 135px;
-    background-color: white;
     border-bottom: 1px solid $silver-darken-87;
-    top: 41px;
-    left: 0;
-    width: 100%;
-    z-index: 3;
+    margin: -36px -20px 0;
+    position: relative;
 
     > .Icon {
       display: inline-block;
@@ -34,7 +30,7 @@
 
     .text {
       display: inline-block;
-      margin-top: 39px;
+      top: 39px;
       position: absolute;
       left: 97px;
       right: 100px;
@@ -123,16 +119,21 @@
   }
 
   > .content {
-    top: 97px;
-    padding-top: 36px;
-    bottom: 0;
+    position: absolute;
+    padding-top: 34px;
+    bottom: -36px;
     left: -20px;
     right: -20px;
-    position: absolute;
+    top: 135px;
     overflow: auto;
   }
 
   .EntityList {
+    .header {
+      margin-top: -34px;
+      padding-top: 54px;
+    }
+
     .ListItem {
       &.report .indicator {
         background-color: #00acac;

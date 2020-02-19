@@ -27,7 +27,7 @@ import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 
 import {Provider as Theme} from 'theme';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, UserProvider} from 'HOC';
 
 class App extends React.Component {
   state = {
@@ -86,17 +86,19 @@ class App extends React.Component {
           <WithLicense>
             <div className="Root-container">
               <ErrorBoundary>
-                <Switch>
-                  <PrivateRoute exact path="/" component={Home} />
-                  <PrivateRoute path="/analysis" component={Analysis} />
-                  <PrivateRoute exact path="/eventBasedProcess" component={Events} />
-                  <Route exact path="/share/:type/:id" component={Sharing} />
-                  <PrivateRoute
-                    path="/(report|dashboard|collection|eventBasedProcess)/*"
-                    render={this.renderEntity}
-                  />
-                  <PrivateRoute path="*" component={ErrorPage} />
-                </Switch>
+                <UserProvider>
+                  <Switch>
+                    <PrivateRoute exact path="/" component={Home} />
+                    <PrivateRoute path="/analysis" component={Analysis} />
+                    <PrivateRoute exact path="/eventBasedProcess" component={Events} />
+                    <Route exact path="/share/:type/:id" component={Sharing} />
+                    <PrivateRoute
+                      path="/(report|dashboard|collection|eventBasedProcess)/*"
+                      render={this.renderEntity}
+                    />
+                    <PrivateRoute path="*" component={ErrorPage} />
+                  </Switch>
+                </UserProvider>
               </ErrorBoundary>
             </div>
           </WithLicense>

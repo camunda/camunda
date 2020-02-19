@@ -8,7 +8,6 @@ import {get} from 'request';
 import {showError} from 'notifications';
 
 let config;
-let currentUser;
 const awaiting = [];
 
 (async () => {
@@ -17,7 +16,6 @@ const awaiting = [];
     config = await response.json();
 
     awaiting.forEach(cb => cb(config));
-    currentUser = await getCurrentUser();
   } catch (e) {
     showError(e);
   }
@@ -41,15 +39,3 @@ export const areTenantsAvailable = createAccessorFunction('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction('optimizeVersion');
 export const getWebappEndpoints = createAccessorFunction('webappsEndpoints');
 export const getHeader = createAccessorFunction('header');
-export async function loadCurrentUser() {
-  const response = await get('api/identity/current/user');
-  currentUser = await response.json();
-
-  return currentUser;
-}
-export async function getCurrentUser() {
-  if (!currentUser) {
-    await loadCurrentUser();
-  }
-  return currentUser;
-}

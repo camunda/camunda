@@ -1,6 +1,8 @@
+@import 'shared-styles/shared-styles.scss';
+
 .NavItem {
   padding: 0 20px;
-  border-left: 1px solid rgba($color: #000, $alpha: 0.1);
+  border-left: 1px solid $silver-darken-87;
   height: 24px;
   display: flex;
   align-items: center;
@@ -11,7 +13,7 @@
 
   &:last-child {
     margin-right: 0;
-    border-right: 1px solid rgba($color: #000, $alpha: 0.1);
+    border-right: 1px solid $silver-darken-87;
   }
 
   .breadcrumb {
@@ -25,10 +27,10 @@
   }
 
   a {
-    color: #949494;
+    color: $grey-lighten-56;
   }
 
   .active {
-    color: #333;
+    color: $grey-base-40;
   }
 }

@@ -140,6 +140,7 @@ test('user permissions', async t => {
   await t.expect(Dashboard.editButton.exists).notOk();
 
   // delete collection
+  await t.click(e.usernameDropdown);
   await t.click(e.logoutButton);
 
   await login(t, 'user2');

@@ -7,13 +7,13 @@
 import React from 'react';
 import {Link, withRouter} from 'react-router-dom';
 
-import {Logo} from 'components';
+import {Logo, Dropdown} from 'components';
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
 import {t} from 'translation';
 import {getHeader} from 'config';
 import classnames from 'classnames';
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
 import ChangeLog from './ChangeLog';
 
@@ -21,7 +21,7 @@ import {isEventBasedProcessEnabled} from './service';
 
 import './Header.scss';
 
-class Header extends React.Component {
+export class Header extends React.Component {
   state = {
     config: {},
     showEventBased: false
@@ -42,7 +42,7 @@ class Header extends React.Component {
   }
 
   render() {
-    const {location, noActions} = this.props;
+    const {location, noActions, user} = this.props;
     const {config, showEventBased} = this.state;
 
     const name = t('appName');
@@ -81,7 +81,9 @@ class Header extends React.Component {
               )}
             </HeaderNav>
             <ChangeLog />
-            <LogoutButton />
+            <Dropdown label={user?.name}>
+              <LogoutButton />
+            </Dropdown>
           </>
         )}
       </header>
@@ -89,4 +91,4 @@ class Header extends React.Component {
   }
 }
 
-export default withErrorHandling(withRouter(Header));
+export default withUser(withErrorHandling(withRouter(Header)));

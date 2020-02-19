@@ -2,13 +2,27 @@
 @import './Header.colors.scss';
 
 .Header {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid $silver-darken-87;
   font-size: 15px;
   font-weight: 500;
   padding: 8px 20px;
   display: flex;
   flex-shrink: 0;
   z-index: 2;
+
+  .Dropdown {
+    .activateButton {
+      border: none;
+      background-color: white;
+      height: 100%;
+      padding-top: 0;
+      padding-bottom: 0;
+      padding-left: 0;
+      font-size: 15px;
+      color: $grey-lighten-56;
+      font-weight: 500;
+    }
+  }
 
   &.text-light {
     .NavItem {
@@ -45,7 +59,7 @@
   }
 
   .Header__link {
-    color: $text;
+    color: $grey-base-40;
     height: 100%;
     display: flex;
     align-items: center;
@@ -54,7 +68,7 @@
   }
 
   .Header__link:visited {
-    color: $text;
+    color: $grey-base-40;
   }
 
   .Header__logo {

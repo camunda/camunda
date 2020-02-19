@@ -8,8 +8,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {Route, Redirect} from 'react-router-dom';
 import {addHandler, removeHandler, request} from 'request';
-import {loadCurrentUser, getCurrentUser} from 'config';
 import {nowPristine} from 'saveGuard';
+import {withUser} from 'HOC';
 
 import {Header, Footer} from '..';
 
@@ -17,10 +17,9 @@ import {Login} from './Login';
 
 import './PrivateRoute.scss';
 
-export default class PrivateRoute extends React.Component {
+export class PrivateRoute extends React.Component {
   state = {
     showLogin: false,
-    currentUser: null,
     forceGotoHome: false
   };
   container = React.createRef();
@@ -28,12 +27,7 @@ export default class PrivateRoute extends React.Component {
 
   componentDidMount() {
     addHandler(this.handleResponse);
-    this.setCurrentUser();
   }
-
-  setCurrentUser = async () => {
-    this.setState({currentUser: await getCurrentUser()});
-  };
 
   handleResponse = response => {
     if (response.status === 401) {
@@ -46,8 +40,8 @@ export default class PrivateRoute extends React.Component {
   };
 
   handleLoginSuccess = async () => {
-    const {currentUser: oldUser} = this.state;
-    const newUser = await loadCurrentUser();
+    const {user: oldUser, refreshUser} = this.props;
+    const newUser = await refreshUser();
 
     if (oldUser && newUser.id !== oldUser.id) {
       outstandingRequests.length = 0;
@@ -56,7 +50,7 @@ export default class PrivateRoute extends React.Component {
       this.setState({forceGotoHome: true});
     }
 
-    this.setState({showLogin: false, currentUser: newUser});
+    this.setState({showLogin: false});
     redoOutstandingRequests();
   };
 
@@ -147,3 +141,5 @@ function redoOutstandingRequests() {
   });
   outstandingRequests.length = 0;
 }
+
+export default withUser(PrivateRoute);

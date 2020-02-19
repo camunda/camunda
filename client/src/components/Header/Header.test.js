@@ -9,18 +9,7 @@ import {shallow} from 'enzyme';
 
 import {isEventBasedProcessEnabled} from './service';
 
-import HeaderWithErrorHandling from './Header';
-
-const Header = HeaderWithErrorHandling.WrappedComponent;
-
-jest.mock('react-router-dom', () => {
-  return {
-    Link: ({children, to}) => {
-      return <a href={to}>{children}</a>;
-    },
-    withRouter: fn => fn
-  };
-});
+import {Header} from './Header';
 
 jest.mock('config', () => ({
   getHeader: jest.fn().mockReturnValue({
@@ -35,6 +24,7 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
+  user: {name: 'Hans Wurst'},
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   location: {pathname: '/'}
 };

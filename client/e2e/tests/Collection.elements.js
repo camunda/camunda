@@ -48,3 +48,4 @@ export const sourcesList = Selector('.SourcesList');
 export const addUserModal = Selector('.AddUserModal');
 export const addSourceModal = Selector('.AddSourceModal');
 export const logoutButton = Selector('.LogoutButton');
+export const usernameDropdown = Selector('header .Dropdown');

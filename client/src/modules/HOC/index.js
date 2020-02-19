@@ -5,3 +5,4 @@
  */
 
 export {default as withErrorHandling} from './withErrorHandling';
+export {UserProvider, default as withUser} from './withUser';
