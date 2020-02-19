@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.util.ByteValueParser;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
 import java.time.Duration;
@@ -45,11 +46,24 @@ public final class DataCfg implements ConfigurationEntry {
     this.directories = directories;
   }
 
+  public Long getLogSegmentSizeInBytes() {
+    if (logSegmentSize != null) {
+      return ByteValueParser.fromString(logSegmentSize).toBytes();
+    } else {
+      return null;
+    }
+  }
+
   public String getLogSegmentSize() {
     return logSegmentSize;
   }
 
   public void setLogSegmentSize(final String logSegmentSize) {
+    if (logSegmentSize != null) {
+      // call parsing logic to provoke any exceptions that might occur during parsing
+      ByteValueParser.fromString(logSegmentSize);
+    }
+
     this.logSegmentSize = logSegmentSize;
   }
 

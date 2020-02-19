@@ -7,58 +7,23 @@
  */
 package io.zeebe.util;
 
-import static io.zeebe.util.ByteUnit.BYTES;
-import static io.zeebe.util.ByteUnit.KILOBYTES;
-import static io.zeebe.util.ByteUnit.MEGABYTES;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+@Deprecated(
+    forRemoval = true,
+    since =
+        "0.23.0-alpha2") // Should be replaced when an alternative is found. For now, please refrain
+// from using this class outside configuration and use a long (size in
+// bytes) instead
 public final class ByteValue {
-  private static final Pattern PATTERN =
-      Pattern.compile("(\\d+)([K|M|G]?)", Pattern.CASE_INSENSITIVE);
+  private static final int CONVERSION_FACTOR_KB = 1024;
+  private static final int CONVERSION_FACTOR_MB = CONVERSION_FACTOR_KB * 1024;
+  private static final int CONVERSION_FACTOR_GB = CONVERSION_FACTOR_MB * 1024;
 
   private final ByteUnit unit;
   private final long value;
 
-  public ByteValue(final long value, final ByteUnit unit) {
+  protected ByteValue(final long value, final ByteUnit unit) {
     this.value = value;
     this.unit = unit;
-  }
-
-  public ByteValue(final String humanReadable) {
-    final Matcher matcher = PATTERN.matcher(humanReadable);
-
-    if (!matcher.matches()) {
-      final String err =
-          String.format(
-              "Illegal byte value '%s'. Must match '%s'. Valid examples: 100M, 4K, ...",
-              humanReadable, PATTERN.pattern());
-      throw new IllegalArgumentException(err);
-    }
-
-    final String valueString = matcher.group(1);
-    value = Long.parseLong(valueString);
-
-    final String unitString = matcher.group(2).toUpperCase();
-
-    unit = ByteUnit.getUnit(unitString);
-  }
-
-  public static ByteValue ofBytes(final long value) {
-    return new ByteValue(value, BYTES).normalize();
-  }
-
-  public static ByteValue ofKilobytes(final long value) {
-    return new ByteValue(value, ByteUnit.KILOBYTES);
-  }
-
-  public static ByteValue ofMegabytes(final long value) {
-    return new ByteValue(value, ByteUnit.MEGABYTES);
-  }
-
-  public static ByteValue ofGigabytes(final long value) {
-    return new ByteValue(value, ByteUnit.GIGABYTES);
   }
 
   public ByteUnit getUnit() {
@@ -69,36 +34,8 @@ public final class ByteValue {
     return value;
   }
 
-  public ByteValue normalize() {
-    if (toGigabytesValue().getValue() > 0) {
-      return toGigabytesValue();
-    } else if (toMegabytesValue().getValue() > 0) {
-      return toMegabytesValue();
-    } else if (toKilobytesValue().getValue() > 0) {
-      return toKilobytesValue();
-    } else {
-      return this;
-    }
-  }
-
   public long toBytes() {
     return unit.toBytes(value);
-  }
-
-  public ByteValue toBytesValue() {
-    return new ByteValue(unit.toBytes(value), BYTES);
-  }
-
-  public ByteValue toKilobytesValue() {
-    return new ByteValue(unit.toKilobytes(value), KILOBYTES);
-  }
-
-  public ByteValue toMegabytesValue() {
-    return new ByteValue(unit.toMegabytes(value), MEGABYTES);
-  }
-
-  public ByteValue toGigabytesValue() {
-    return new ByteValue(unit.toGigabytes(value), ByteUnit.GIGABYTES);
   }
 
   @Override
@@ -134,5 +71,35 @@ public final class ByteValue {
   @Override
   public String toString() {
     return String.format("%d%s", value, unit.metric());
+  }
+
+  /**
+   * Converts the {@code value} kilobytes into bytes
+   *
+   * @param value value in kilobytes
+   * @return {@code value} converted into bytes
+   */
+  public static long ofKilobytes(final long value) {
+    return value * CONVERSION_FACTOR_KB;
+  }
+
+  /**
+   * Converts the {@code value} megabytes into bytes
+   *
+   * @param value value in megabytes
+   * @return {@code value} converted into bytes
+   */
+  public static long ofMegabytes(final long value) {
+    return value * CONVERSION_FACTOR_MB;
+  }
+
+  /**
+   * Converts the {@code value} gigabytes into bytes
+   *
+   * @param value value in gigabytes
+   * @return {@code value} converted into bytes
+   */
+  public static long ofGigabytes(final long value) {
+    return value * CONVERSION_FACTOR_GB;
   }
 }

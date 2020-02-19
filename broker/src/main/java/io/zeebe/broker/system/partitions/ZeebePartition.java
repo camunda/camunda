@@ -105,7 +105,7 @@ public final class ZeebePartition extends Actor
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     this.partitionId = atomixRaftPartition.id().id();
     this.scheduler = actorScheduler;
-    this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSize().toBytes();
+    this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
 
     // load and validate exporters
     for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
