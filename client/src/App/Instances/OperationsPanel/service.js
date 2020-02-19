@@ -11,3 +11,7 @@ export function isBatchOperationRunning(batchOperation) {
 export function hasRunningBatchOperations(batchOperations) {
   return batchOperations.some(isBatchOperationRunning);
 }
+
+export function hasBatchOperations(batchOperations) {
+  return !!batchOperations && batchOperations.length > 0;
+}

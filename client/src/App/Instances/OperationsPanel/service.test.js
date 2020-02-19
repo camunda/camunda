@@ -4,7 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {isBatchOperationRunning, hasRunningBatchOperations} from './service';
+import {
+  isBatchOperationRunning,
+  hasRunningBatchOperations,
+  hasBatchOperations
+} from './service';
 import {
   mockOperationFinished,
   mockOperationRunning
@@ -53,5 +57,25 @@ describe('hasRunningBatchOperations', () => {
     const hasRunning = hasRunningBatchOperations([]);
 
     expect(hasRunning).toBe(false);
+  });
+});
+
+describe('BatchOperations', () => {
+  it('should be true if has operations', () => {
+    const result = hasBatchOperations([mockOperationRunning]);
+
+    expect(result).toBe(true);
+  });
+
+  it('should be false if it is null', () => {
+    const result = hasBatchOperations(null);
+
+    expect(result).toBe(false);
+  });
+
+  it('should be false if it does not contain anything', () => {
+    const result = hasBatchOperations([]);
+
+    expect(result).toBe(false);
   });
 });

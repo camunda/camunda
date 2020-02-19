@@ -25,6 +25,7 @@ function CollapsablePanel({
   isCollapsed,
   toggle,
   verticalLabelOffset,
+  hasBackgroundColor,
   ...props
 }) {
   const buttonDirection =
@@ -75,6 +76,7 @@ function CollapsablePanel({
       <Styled.ExpandedPanel
         isCollapsed={isCollapsed}
         panelPosition={panelPosition}
+        hasBackgroundColor={hasBackgroundColor}
         transitionTimeout={TRANSITION_TIMEOUT}
         data-test="expanded-panel"
       >
@@ -116,7 +118,8 @@ CollapsablePanel.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
   ]),
-  verticalLabelOffset: PropTypes.number
+  verticalLabelOffset: PropTypes.number,
+  hasBackgroundColor: PropTypes.bool
 };
 
 export default CollapsablePanel;

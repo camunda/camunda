@@ -10,6 +10,8 @@ import React from 'react';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import OperationsPanel from './OperationsPanel';
+import * as Styled from './styled';
+import * as CONSTANTS from './constants';
 
 import {
   mockOperationFinished,
@@ -46,6 +48,9 @@ describe('OperationsPanel', () => {
     // then
     const entry = node.find('[data-test="operations-entry"]');
     expect(entry).toHaveLength(0);
+
+    const emptyMessage = node.find(Styled.EmptyMessage);
+    expect(emptyMessage.text()).toEqual(CONSTANTS.EMPTY_MESSAGE);
   });
 
   it('should render operation entries', () => {
