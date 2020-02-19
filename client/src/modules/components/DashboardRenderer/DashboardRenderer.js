@@ -18,8 +18,6 @@ const columns = 18;
 const rowHeight = 94;
 const cellMargin = 10;
 
-const cols = {lg: columns, md: columns, sm: columns};
-
 export default function DashboardRenderer({
   disableReportInteractions,
   disableNameLink,
@@ -43,7 +41,8 @@ export default function DashboardRenderer({
 
   return (
     <GridLayout
-      cols={cols}
+      cols={{all: columns}}
+      breakpoints={{all: 0}}
       rowHeight={rowHeight}
       onLayoutChange={onChange}
       className="DashboardRenderer"

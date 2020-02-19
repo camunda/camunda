@@ -29,6 +29,20 @@ export default class DashboardEdit extends React.Component {
     };
   }
 
+  mousePosition = {x: 0, y: 0};
+  mouseTracker = evt => {
+    this.mousePosition.x = evt.clientX;
+    this.mousePosition.y = evt.clientY;
+  };
+
+  componentDidMount() {
+    document.addEventListener('mousemove', this.mouseTracker);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('mousemove', this.mouseTracker);
+  }
+
   updateLayout = layout => {
     this.setState(({reports}) => {
       const newReports = reports.map((oldReport, idx) => {
@@ -56,12 +70,9 @@ export default class DashboardEdit extends React.Component {
 
       // dispatch a mouse event to automatically grab the new report for positioning
       node.dispatchEvent(
-        new MouseEvent('mousedown', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-          clientX: nodePos.x + nodePos.width / 2,
-          clientY: nodePos.y + nodePos.height / 2
+        createEvent('mousedown', {
+          x: nodePos.x + nodePos.width / 2,
+          y: nodePos.y + nodePos.height / 2
         })
       );
 
@@ -74,6 +85,11 @@ export default class DashboardEdit extends React.Component {
         },
         {capture: true, once: true}
       );
+
+      window.setTimeout(() => {
+        node.dispatchEvent(createEvent('mousemove', this.mousePosition));
+        node.dispatchEvent(createEvent('mousemove', this.mousePosition));
+      });
     });
   };
 
@@ -143,4 +159,14 @@ export default class DashboardEdit extends React.Component {
       </div>
     );
   }
+}
+
+function createEvent(type, position) {
+  return new MouseEvent(type, {
+    view: window,
+    bubbles: true,
+    cancelable: true,
+    clientX: position.x,
+    clientY: position.y
+  });
 }

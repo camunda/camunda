@@ -2,12 +2,15 @@
 
 exports[`should render a Dashboard Report for every Report in the props 1`] = `
 <WidthProvider
+  breakpoints={
+    Object {
+      "all": 0,
+    }
+  }
   className="DashboardRenderer"
   cols={
     Object {
-      "lg": 18,
-      "md": 18,
-      "sm": 18,
+      "all": 18,
     }
   }
   isDraggable={false}
