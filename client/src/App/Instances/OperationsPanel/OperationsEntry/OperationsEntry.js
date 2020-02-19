@@ -8,7 +8,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {OPERATION_TYPES} from './constants';
 import OperationIcon from 'modules/components/OperationIcon';
-
+import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 
 const {
@@ -23,15 +23,18 @@ const TYPE_LABELS = {
   [CANCEL_WORKFLOW_INSTANCE]: 'Cancel'
 };
 
-const OperationsEntry = ({id, type, isRunning}) => {
+const OperationsEntry = ({id, type, isRunning, endDate}) => {
   return (
     <Styled.Entry isRunning={isRunning}>
-      <div>
-        <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
-        <Styled.Id>{id}</Styled.Id>
-      </div>
+      <Styled.EntryStatus>
+        <div>
+          <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
+          <Styled.Id>{id}</Styled.Id>
+        </div>
 
-      <OperationIcon operationType={type} data-test="operation-icon" />
+        <OperationIcon operationType={type} data-test="operation-icon" />
+      </Styled.EntryStatus>
+      {endDate && <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>}
     </Styled.Entry>
   );
 };
@@ -39,6 +42,7 @@ const OperationsEntry = ({id, type, isRunning}) => {
 OperationsEntry.propTypes = {
   id: PropTypes.string.isRequired,
   type: PropTypes.oneOf(Object.values(OPERATION_TYPES)).isRequired,
+  endDate: PropTypes.string,
   isRunning: PropTypes.bool.isRequired
 };
 

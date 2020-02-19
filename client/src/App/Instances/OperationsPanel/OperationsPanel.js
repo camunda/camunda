@@ -37,6 +37,7 @@ function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
             isRunning={isBatchOperationRunning(batchOperation)}
             id={batchOperation.id}
             type={batchOperation.type}
+            endDate={batchOperation.endDate}
             key={batchOperation.id}
             data-test="operations-entry"
           />

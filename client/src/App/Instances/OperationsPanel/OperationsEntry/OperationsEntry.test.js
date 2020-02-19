@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {OPERATIONS} from './OperationsEntry.setup';
 
 import OperationsEntry from './OperationsEntry';
+import * as Styled from './styled.js';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -19,10 +20,14 @@ describe('OperationsEntry', () => {
         id={OPERATIONS.RETRY.id}
         type={OPERATIONS.RETRY.type}
         isRunning={true}
+        endDate={OPERATIONS.RETRY.endDate}
       />
     );
 
     // then
+    const endDateNode = node.find(Styled.EndDate);
+    expect(endDateNode).not.toExist();
+
     const html = node.html();
     expect(html).toContain(OPERATIONS.RETRY.id);
     expect(html).toContain('Retry');
@@ -36,10 +41,15 @@ describe('OperationsEntry', () => {
         id={OPERATIONS.CANCEL.id}
         type={OPERATIONS.CANCEL.type}
         isRunning={true}
+        endDate={OPERATIONS.CANCEL.endDate}
       />
     );
 
     // then
+    const endDateNode = node.find(Styled.EndDate);
+    expect(endDateNode).toExist();
+    expect(endDateNode.text()).toContain('12 Dec 2018 00:00:00');
+
     const html = node.html();
     expect(html).toContain(OPERATIONS.CANCEL.id);
     expect(html).toContain('Cancel');
@@ -53,10 +63,16 @@ describe('OperationsEntry', () => {
         id={OPERATIONS.EDIT.id}
         type={OPERATIONS.EDIT.type}
         isRunning={false}
+        endDate={OPERATIONS.EDIT.endDate}
       />
     );
 
     // then
+
+    const endDateNode = node.find(Styled.EndDate);
+    expect(endDateNode).toExist();
+    expect(endDateNode.text()).toEqual('12 Dec 2018 00:00:00');
+
     const html = node.html();
     expect(html).toContain(OPERATIONS.EDIT.id);
     expect(html).toContain('Edit');
