@@ -5,8 +5,6 @@
  */
 
 import React from 'react';
-import moment from 'moment';
-
 import {Modal, Button, Input, Select, Message, Form, DatePicker, MessageBox} from 'components';
 import './DateFilter.scss';
 import {t} from 'translation';
@@ -16,12 +14,12 @@ import {convertFilterToState, convertStateToFilter} from './service';
 
 export default class DateFilter extends React.Component {
   state = {
-    pickerValid: true,
+    pickerValid: false,
     dateType: '',
     unit: '',
     customNum: '2',
-    startDate: moment(),
-    endDate: moment()
+    startDate: null,
+    endDate: null
   };
 
   componentDidMount() {
@@ -36,11 +34,12 @@ export default class DateFilter extends React.Component {
   confirm = () => {
     const {dateType, unit, customNum, startDate, endDate} = this.state;
     const {addFilter, filterType} = this.props;
-
-    return addFilter({
-      type: filterType,
-      data: convertStateToFilter({dateType, unit, customNum, startDate, endDate})
-    });
+    if (this.isValid()) {
+      return addFilter({
+        type: filterType,
+        data: convertStateToFilter({dateType, unit, customNum, startDate, endDate})
+      });
+    }
   };
 
   onDateChange = ({startDate, endDate, valid}) =>

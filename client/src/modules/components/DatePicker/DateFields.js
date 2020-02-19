@@ -10,21 +10,16 @@ import DateRange from './DateRange';
 import DateInput from './DateInput';
 import moment from 'moment';
 import {isDateValid} from './service';
-import {Icon} from 'components';
 
 import './DateFields.scss';
 
 export default class DateFields extends React.PureComponent {
-  constructor(props) {
-    super(props);
+  state = {
+    popupOpen: false,
+    currentlySelectedField: null
+  };
 
-    this.state = {
-      popupOpen: false,
-      currentlySelectedField: null,
-      minDate: null,
-      maxDate: null
-    };
-  }
+  endDateField = React.createRef();
 
   componentDidUpdate() {
     const {popupOpen} = this.state;
@@ -52,64 +47,55 @@ export default class DateFields extends React.PureComponent {
   render() {
     const {startDate, endDate, format} = this.props;
 
-    const startDateObj = moment(startDate, format);
-    const endDateObj = moment(endDate, format);
-
-    const startDateValid = isDateValid(startDate);
-    const endDateValid = isDateValid(endDate);
+    const startDateObj = moment(startDate, format, true);
+    const endDateObj = moment(endDate, format, true);
 
     return (
       <div className="DateFields" onKeyDown={this.handleKeyPress}>
-        <div className="DateFields__inputContainer">
+        <div className="inputContainer">
           <DateInput
-            className={classnames('DateInput__start', {
-              'DateInput__start--highlight': this.isFieldSelected('startDate')
+            className={classnames({
+              highlight: this.isFieldSelected('startDate')
             })}
-            format={format}
-            onDateChange={this.setDate('startDate')}
+            onChange={this.setDate('startDate')}
             onFocus={() => {
               this.setState({currentlySelectedField: 'startDate'});
             }}
             onSubmit={this.submitStart}
             onClick={this.toggleDateRangeForStart}
-            date={startDate}
-            error={!startDateValid}
+            value={startDate}
+            isInvalid={!isDateValid(startDate)}
             disabled={this.props.disabled}
-            icon={<Icon type="arrow-right" />}
           />
           <DateInput
-            className={classnames('DateInput__end', {
-              'DateInput__start--highlight': this.isFieldSelected('endDate')
+            className={classnames({
+              highlight: this.isFieldSelected('endDate')
             })}
-            ref={this.saveEndDateField}
-            format={format}
-            onDateChange={this.setDate('endDate')}
+            ref={this.endDateField}
+            onChange={this.setDate('endDate')}
             onFocus={() => {
               this.setState({currentlySelectedField: 'endDate'});
             }}
             onSubmit={this.submitEnd}
             onClick={this.toggleDateRangeForEnd}
-            date={endDate}
-            error={!endDateValid}
+            value={endDate}
+            isInvalid={!isDateValid(endDate)}
             disabled={this.props.disabled}
-            icon={<Icon type="calender" />}
           />
         </div>
         {this.state.popupOpen && (
           <div
             onClick={this.stopClosingPopup}
-            className={classnames('DateFields__range', {
-              'DateFields__range--left': this.isFieldSelected('startDate'),
-              'DateFields__range--right': this.isFieldSelected('endDate')
+            className={classnames('DateRangeContainer', {
+              DateRangeContainerLeft: this.isFieldSelected('startDate'),
+              DateRangeContainerRight: this.isFieldSelected('endDate')
             })}
           >
             <DateRange
-              format={format}
+              endDateSelected={this.isFieldSelected('endDate')}
               onDateChange={this.onDateRangeChange}
               startDate={startDateObj}
               endDate={endDateObj}
-              // reinitialize the component when one of the date inputs changes
-              key={startDate + endDate}
             />
           </div>
         )}
@@ -119,12 +105,12 @@ export default class DateFields extends React.PureComponent {
 
   submitStart = () => {
     this.setState({currentlySelectedField: 'endDate'});
-    document.querySelector('.DateInput__end').focus();
+    this.endDateField.current.focus();
   };
 
   submitEnd = () => {
     this.hidePopup();
-    document.querySelector('.DateInput__end').blur();
+    this.endDateField.current.blur();
   };
 
   closeOnEscape = event => {
@@ -133,16 +119,15 @@ export default class DateFields extends React.PureComponent {
     }
   };
 
-  saveEndDateField = input => (this.endDateField = input);
+  formatDate = date => moment(date).format(this.props.format);
 
   onDateRangeChange = date => {
-    this.props.onDateChange(this.state.currentlySelectedField, date.format('YYYY-MM-DD'));
+    this.props.onDateChange('startDate', this.formatDate(date.range1.startDate));
+    this.props.onDateChange('endDate', this.formatDate(date.range1.endDate));
 
     if (this.isFieldSelected('startDate')) {
-      this.setState({
-        currentlySelectedField: 'endDate'
-      });
-      this.endDateField.focus();
+      this.setState({currentlySelectedField: 'endDate'});
+      this.endDateField.current.focus();
     } else {
       setTimeout(this.hidePopup, 350);
     }
@@ -156,9 +141,7 @@ export default class DateFields extends React.PureComponent {
   hidePopup = () => {
     this.setState({
       popupOpen: false,
-      currentlySelectedField: null,
-      minDate: null,
-      maxDate: null
+      currentlySelectedField: null
     });
   };
 

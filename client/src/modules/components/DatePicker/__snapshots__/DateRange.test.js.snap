@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`match snapshot 1`] = `
+<DateRange
+  classNames={Object {}}
+  direction="horizontal"
+  disabledDates={Array []}
+  focusedRange={
+    Array [
+      0,
+      0,
+    ]
+  }
+  months={2}
+  moveRangeOnFirstSelection={false}
+  onChange={[MockFunction]}
+  rangeColors={
+    Array [
+      "#3d91ff",
+      "#3ecf8e",
+      "#fed14c",
+    ]
+  }
+  ranges={
+    Array [
+      Object {
+        "endDate": "2018-05-02T00:00:00.000Z",
+        "startDate": "2012-12-15T00:00:00.000Z",
+      },
+    ]
+  }
+/>
+`;

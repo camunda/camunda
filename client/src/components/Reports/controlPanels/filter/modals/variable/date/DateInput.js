@@ -10,10 +10,10 @@ import moment from 'moment';
 import {DatePicker} from 'components';
 
 export default class DateInput extends React.Component {
-  static defaultFilter = {type: 'fixed', startDate: moment(), endDate: moment()};
+  static defaultFilter = {type: 'fixed', startDate: null, endDate: null};
 
   componentDidMount() {
-    this.props.setValid(true);
+    this.props.setValid(false);
   }
 
   render() {

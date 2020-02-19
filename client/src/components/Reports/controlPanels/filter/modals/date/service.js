@@ -11,7 +11,7 @@ export function convertFilterToState(filter) {
   let state;
 
   if (type === 'fixed') {
-    state = {dateType: 'fixed', startDate: moment(start), endDate: moment(end)};
+    state = {dateType: 'fixed', startDate: moment(start), endDate: moment(end), pickerValid: true};
   } else {
     const {value, unit} = start;
     if (type === 'relative') {

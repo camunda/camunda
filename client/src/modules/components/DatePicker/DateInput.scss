@@ -6,22 +6,13 @@
   .Input {
     width: 130px;
 
-    &.DateInput__start {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-      border-right: none;
-    }
-
-    &.DateInput__end {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-      border-left: none;
-    }
-
-    &.DateInput__start--highlight,
-    &.DateInput__end--highlight {
+    &.highlight {
       border-color: rgb(0, 145, 255);
       background-color: rgba(0, 145, 255, 0.1);
+
+      &.isInvalid {
+        background-color: lighten($cam-red, 50);
+      }
     }
   }
 
@@ -34,8 +25,8 @@
     color: $text-disabled;
   }
 
-  .DateInput__warning {
+  .DateInputWarning {
     position: absolute;
-    top: 40px;
+    top: 30px;
   }
 }

@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="DateFields"
+  onKeyDown={[Function]}
+>
+  <div
+    className="inputContainer"
+  >
+    <DateInput
+      className=""
+      isInvalid={false}
+      onChange={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onSubmit={[Function]}
+      value="2017-08-29"
+    />
+    <DateInput
+      className=""
+      isInvalid={false}
+      onChange={[Function]}
+      onClick={[Function]}
+      onFocus={[Function]}
+      onSubmit={[Function]}
+      value="2020-06-05"
+    />
+  </div>
+</div>
+`;

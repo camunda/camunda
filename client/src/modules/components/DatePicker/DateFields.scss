@@ -2,79 +2,75 @@
 
 .DateFields {
   position: relative;
-}
+  margin-bottom: 15px;
 
-.DateFields__inputContainer {
-  display: flex;
-  align-items: stretch;
-}
+  .inputContainer {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
 
-.DateFields__range {
-  position: absolute;
-  width: max-content;
-  left: 0;
-  top: 50px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  background-color: white;
-  padding: 5px 0;
-  z-index: 9999;
-}
+    .DateInput:first-child {
+      margin-right: 15px;
+      &:after {
+        right: -10px;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        content: '-';
+      }
+    }
+  }
 
-.DateFields__range::before {
-  content: ' ';
-  display: block;
-  width: 20px;
-  height: 20px;
-  position: absolute;
-  transform: rotate(45deg);
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  background-color: white;
-  top: -10px;
-}
+  .DateRangeContainer {
+    position: absolute;
+    width: max-content;
+    left: 0;
+    top: 50px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background-color: white;
+    padding: 5px 0;
+    z-index: 9999;
 
-.DateFields__range::after {
-  content: ' ';
-  display: block;
-  width: 50px;
-  height: 22px;
-  position: absolute;
-  background-color: white;
-  top: 0;
-}
+    &.DateRangeContainerLeft {
+      &::before {
+        left: 20px;
+      }
 
-.DateFields__range--left::before {
-  left: 20px;
-}
-.DateFields__range--left::after {
-  left: 0;
-}
+      &::after {
+        left: 0;
+      }
+    }
 
-.DateFields__range--right::before {
-  left: 150px;
-}
-.DateFields__range--right::after {
-  left: 130px;
-}
+    &.DateRangeContainerRight {
+      &::before {
+        left: 160px;
+      }
+      &::after {
+        left: 140px;
+      }
+    }
 
-.DateFields__divider {
-  color: #626262;
-  text-align: center;
-  font-size: 0.875em;
-  display: flex;
-  justify-content: center;
-  flex-direction: column;
-  width: 40px;
-  height: 38px;
-  background-color: #fafafa;
-  border-top: 1px solid lightgray;
-  border-left: none;
-  border-right: none;
-  border-bottom: 1px solid lightgray;
-}
+    &::before {
+      content: ' ';
+      display: block;
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      transform: rotate(45deg);
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      background-color: white;
+      top: -10px;
+    }
 
-.DateFields__divider_disabled {
-  color: graytext;
-  background-color: #f8f8f8;
-  border-color: #bbb;
+    &::after {
+      content: ' ';
+      display: block;
+      width: 50px;
+      height: 22px;
+      position: absolute;
+      background-color: white;
+      top: 0;
+    }
+  }
 }

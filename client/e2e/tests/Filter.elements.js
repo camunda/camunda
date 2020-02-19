@@ -18,7 +18,7 @@ export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueF
 export const dateFilterStartInput = Selector('.DateFields .DateInput:first-child input');
 export const dateFilterEndInput = Selector('.DateFields .DateInput:last-child input');
 export const pickerDate = number =>
-  Selector('.DateFields .rdr-Calendar:first-child .rdr-Day').withText(number);
+  Selector('.DateFields .rdrMonths .rdrMonth:first-child .rdrDay').withText(number);
 export const infoText = Selector('.Modal__content .tip');
 export const dateTypeSelect = Selector('.selectGroup > .Select');
 export const unitSelect = Selector('.unitSelection .Select');

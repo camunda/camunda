@@ -5,104 +5,37 @@
  */
 
 import React from 'react';
-import {Calendar} from 'react-date-range';
+import {DateRange as ReactDateRange} from 'react-date-range';
+import {getLanguage} from 'translation';
+import {de} from 'react-date-range/dist/locale';
 
-import {adjustRange} from './service';
+import 'react-date-range/dist/styles.css'; // main style file
+import 'react-date-range/dist/theme/default.css'; // theme css file
+import './DateRange.scss';
 import moment from 'moment';
 
-import './DateRange.scss';
-
-const theme = {
-  DayInRange: {
-    color: 'black',
-    background: '#eeeeee'
-  },
-  DayActive: {
-    background: '#871020'
-  },
-  DaySelected: {
-    background: '#871020'
-  },
-  DayPassive: {
-    cursor: 'default'
-  }
-};
-
-export default class DateRange extends React.Component {
-  constructor(props) {
-    super(props);
-
-    const {startDate, endDate} = props;
-
-    this.state = adjustRange({
-      startLink: startDate.isValid() ? startDate.clone() : moment(),
-      endLink: endDate.isValid() ? endDate.clone() : moment()
-    });
-  }
-
-  render() {
-    const range = {
-      startDate: this.props.startDate,
-      endDate: this.props.endDate
+export default function DateRange({startDate, endDate, onDateChange, endDateSelected}) {
+  let range;
+  if (startDate.isValid() && endDate.isValid() && endDate.isSameOrAfter(startDate)) {
+    range = {
+      startDate,
+      endDate
     };
-
-    return (
-      <div>
-        <Calendar
-          format="this.props.format"
-          link={this.state.startLink}
-          linkCB={this.changeStartMonth}
-          range={range}
-          theme={theme}
-          minDate={this.props.minDate}
-          maxDate={this.props.maxDate}
-          firstDayOfWeek={1}
-          onChange={this.props.onDateChange}
-          classNames={this.getClassesForCalendar(true)}
-        />
-
-        <Calendar
-          format="this.props.format"
-          link={this.state.endLink}
-          linkCB={this.changeEndMonth}
-          theme={theme}
-          range={range}
-          minDate={this.props.minDate}
-          maxDate={this.props.maxDate}
-          firstDayOfWeek={1}
-          onChange={this.props.onDateChange}
-          classNames={this.getClassesForCalendar(false)}
-        />
-      </div>
-    );
+  } else {
+    range = {
+      startDate: moment(),
+      endDate: moment()
+    };
   }
 
-  getClassesForCalendar(first) {
-    if (first && this.state.innerArrowsDisabled) {
-      return {
-        nextButton: 'DateRange__calendarButton--hidden'
-      };
-    }
-
-    if (!first && this.state.innerArrowsDisabled) {
-      return {
-        prevButton: 'DateRange__calendarButton--hidden'
-      };
-    }
-  }
-
-  changeStartMonth = direction => this.changeMonth('startLink', direction);
-
-  changeEndMonth = direction => this.changeMonth('endLink', direction);
-
-  changeMonth = (name, direction) => {
-    const newLink = this.state[name].clone().add(direction, 'months');
-
-    this.setState(
-      adjustRange({
-        ...this.state,
-        [name]: newLink
-      })
-    );
-  };
+  return (
+    <ReactDateRange
+      focusedRange={endDateSelected ? [0, 1] : [0, 0]}
+      locale={getLanguage() === 'de' ? de : undefined}
+      ranges={[range]}
+      months={2}
+      onChange={onDateChange}
+      direction="horizontal"
+    />
+  );
 }
