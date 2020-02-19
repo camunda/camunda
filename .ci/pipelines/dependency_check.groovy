@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 boolean slaveDisconnected() {
-    return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
 }
 
 // general properties for CI execution

@@ -3,7 +3,7 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
 }
 
 // general properties for CI execution
