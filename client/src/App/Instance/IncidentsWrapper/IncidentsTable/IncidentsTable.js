@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
-import Modal from 'modules/components/Modal';
+import Modal, {SIZES} from 'modules/components/Modal';
 import {TransitionGroup} from 'modules/components/Transition';
 import {IncidentOperation} from 'modules/components/Operations';
 
@@ -51,6 +51,7 @@ export default class IncidentsTable extends React.Component {
       <Modal
         onModalClose={this.toggleModal}
         isVisible={this.state.isModalVisibile}
+        size={SIZES.BIG}
       >
         <Modal.Header>{this.state.modalTitle}</Modal.Header>
         <Modal.Body>

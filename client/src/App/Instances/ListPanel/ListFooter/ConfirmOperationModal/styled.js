@@ -4,5 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './Modal';
-export {SIZES} from './constants';
+import styled from 'styled-components';
+import Modal from 'modules/components/Modal';
+
+export const BodyText = styled(Modal.BodyText)`
+  margin-top: 2px;
+  > div:not(:last-child) {
+    margin-bottom: 22px;
+  }
+`;

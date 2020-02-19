@@ -12,6 +12,7 @@ import Button from 'modules/components/Button';
 import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import {themed, Colors, themeStyle} from 'modules/theme';
+import {SIZES} from './constants';
 
 export const ModalRoot = themed(styled.div`
   z-index: 999;
@@ -73,8 +74,16 @@ export const Transition = themed(styled(TransitionComponent)`
 `);
 
 export const ModalContent = themed(styled(Panel)`
-  width: 80%;
-  height: 90%;
+  ${({size}) =>
+    size === SIZES.BIG &&
+    `width: 80%;
+    height: 90%;`}
+
+  ${({size}) =>
+    size === SIZES.SMALL &&
+    `width: 636px;
+    height: 325px;`}
+
   border: 1px solid
     ${themeStyle({
       dark: Colors.uiDark06,

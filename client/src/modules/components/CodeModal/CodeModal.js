@@ -9,7 +9,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import CodeEditor from './CodeEditor';
-import Modal from 'modules/components/Modal';
+import Modal, {SIZES} from 'modules/components/Modal';
 
 import * as Styled from './styled';
 
@@ -27,7 +27,11 @@ function CodeModal({
   }
 
   return (
-    <Modal onModalClose={onModalClose} isVisible={isModalVisible}>
+    <Modal
+      onModalClose={onModalClose}
+      isVisible={isModalVisible}
+      size={SIZES.BIG}
+    >
       <Modal.Header>{headline}</Modal.Header>
       <Styled.ModalBody>
         <CodeEditor

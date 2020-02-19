@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const getMaxPage = (total, perPage) => Math.ceil(total / perPage);
+export const getMaxPage = (total, perPage) => Math.ceil(total / perPage);
 
-export {getMaxPage};
+export const isPaginationRequired = (maxPage, total) => {
+  return !(maxPage === 1 || total === 0);
+};

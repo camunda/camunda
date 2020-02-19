@@ -53,7 +53,6 @@ const getBoxShadow = ({size}) => {
 const colorStyle = ({color, size}) => {
   const styles = {
     [COLOR.SECONDARY]: css`
-      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35);
       background-color: ${themeStyle({
         dark: Colors.darkButton03,
         light: Colors.lightButton04

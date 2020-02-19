@@ -11,7 +11,7 @@ import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionConte
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 import Paginator from './Paginator';
-import {getMaxPage} from './service';
+import {getMaxPage, isPaginationRequired} from './service';
 import * as Styled from './styled';
 import CreateOperationDropdown from './CreateOperationDropdown';
 
@@ -24,22 +24,20 @@ function ListFooter({
 }) {
   const {getSelectedCount} = useInstanceSelectionContext();
   const maxPage = getMaxPage(filterCount, perPage);
-
-  const isPaginationRequired = (maxPage, total) => {
-    return !(maxPage === 1 || total === 0);
-  };
+  const selectedCount = getSelectedCount(filterCount);
 
   return (
     <Styled.Footer>
       {hasContent && (
         <>
           <Styled.OperationButtonContainer>
-            {getSelectedCount(filterCount) > 0 && (
+            {selectedCount > 0 && (
               <CreateOperationDropdown
                 label={`Apply Operation on ${pluralSuffix(
-                  getSelectedCount(filterCount),
+                  selectedCount,
                   'Instance'
                 )}...`}
+                selectedCount={selectedCount}
               />
             )}
           </Styled.OperationButtonContainer>

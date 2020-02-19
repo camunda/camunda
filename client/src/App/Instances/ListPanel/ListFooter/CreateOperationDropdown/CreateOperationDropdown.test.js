@@ -6,14 +6,21 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
+import {act} from 'react-dom/test-utils';
 
-import {OPERATION_TYPE} from 'modules/constants';
 import Dropdown from 'modules/components/Dropdown';
+import {OPERATION_TYPE} from 'modules/constants';
 
-import {mockUseOperationApply} from './CreateOperationDropdown.setup';
+import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
+
+import {
+  mockUseOperationApply,
+  mockConfirmOperationModal
+} from './CreateOperationDropdown.setup';
 
 import CreateOperationDropdown from './';
 
+jest.mock('../ConfirmOperationModal', () => mockConfirmOperationModal);
 jest.mock('./useOperationApply', () => () => mockUseOperationApply);
 
 describe('CreateOperationDropdown', () => {
@@ -23,7 +30,11 @@ describe('CreateOperationDropdown', () => {
 
   it('should render button', () => {
     // given
-    const node = mount(<CreateOperationDropdown label="MyLabel" />);
+    const node = mount(
+      <CollapsablePanelProvider>
+        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
+      </CollapsablePanelProvider>
+    );
 
     // when
     const button = node.find('button');
@@ -34,7 +45,11 @@ describe('CreateOperationDropdown', () => {
 
   it('should show dropdown menu on click', () => {
     // given
-    const node = mount(<CreateOperationDropdown label="MyLabel" />);
+    const node = mount(
+      <CollapsablePanelProvider>
+        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
+      </CollapsablePanelProvider>
+    );
     const button = node.find('[data-test="dropdown-toggle"]').first();
 
     // when
@@ -55,15 +70,18 @@ describe('CreateOperationDropdown', () => {
     expect(cancelButton.text()).toContain('Cancel');
   });
 
-  it('should trigger data manager on retry click', () => {
+  it('should show modal on retry click', () => {
     // given
-    const node = mount(<CreateOperationDropdown label="MyLabel" />);
+    const node = mount(
+      <CollapsablePanelProvider>
+        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
+      </CollapsablePanelProvider>
+    );
     const button = node.find('[data-test="dropdown-toggle"]').first();
 
     // when
     button.simulate('click');
 
-    // then
     const retryButton = node
       .find(Dropdown.Option)
       .at(0)
@@ -71,37 +89,49 @@ describe('CreateOperationDropdown', () => {
 
     retryButton.simulate('click');
 
-    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.RESOLVE_INCIDENT
-    );
+    node.update();
+
+    // then
+    const mockModal = node.find('[data-test="mock-confirm-operation-modal"]');
+
+    expect(mockModal).toExist();
+    expect(mockModal.text()).toBe('About to retry 2 Instances.');
   });
 
-  it('should trigger data manager on cancel click', () => {
+  it('should show modal on cancel click', () => {
     // given
-    const node = mount(<CreateOperationDropdown label="MyLabel" />);
+    const node = mount(
+      <CollapsablePanelProvider>
+        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
+      </CollapsablePanelProvider>
+    );
+
     const button = node.find('[data-test="dropdown-toggle"]').first();
 
     // when
     button.simulate('click');
 
-    // then
-    const retryButton = node
+    const cancelButton = node
       .find(Dropdown.Option)
       .at(1)
       .find('button');
 
-    retryButton.simulate('click');
+    cancelButton.simulate('click');
 
-    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
-    );
+    node.update();
+
+    // then
+    const mockModal = node.find('[data-test="mock-confirm-operation-modal"]');
+
+    expect(mockModal).toExist();
+    expect(mockModal.text()).toBe('About to cancel 2 Instances.');
   });
 
   it('should call applyBatchOperation', () => {
     const node = mount(
-      <CreateOperationDropdown label="MyLabel" selectedCount={2} />
+      <CollapsablePanelProvider>
+        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
+      </CollapsablePanelProvider>
     );
 
     const button = node.find('[data-test="dropdown-toggle"]').first();
@@ -116,6 +146,12 @@ describe('CreateOperationDropdown', () => {
       .find('button');
 
     retryButton.simulate('click');
+
+    const {onApplyClick} = node.find(mockConfirmOperationModal).props();
+
+    act(() => {
+      onApplyClick();
+    });
 
     expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledTimes(1);
     expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledWith(
