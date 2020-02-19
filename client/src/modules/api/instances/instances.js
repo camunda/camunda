@@ -95,9 +95,9 @@ export async function fetchWorkflowInstancesStatistics(payload) {
  * @param {*} operationType constants specifying the operation to be applied.
  * @param {*} queries object with query params.
  */
-export async function applyBatchOperation(operationType, queries) {
-  const url = `${URL}/operation`;
-  const payload = {operationType, queries};
+export async function applyBatchOperation(operationType, query) {
+  const url = `${URL}/batch-operation`;
+  const payload = {operationType, query};
 
   await post(url, payload);
 }

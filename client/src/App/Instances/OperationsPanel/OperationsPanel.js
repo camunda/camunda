@@ -10,8 +10,8 @@ import PropTypes from 'prop-types';
 import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
-import useBatchOperations from './useBatchOperations';
 
+import useBatchOperations from './useBatchOperations';
 import * as Styled from './styled';
 import {isBatchOperationRunning} from './service';
 import OperationsEntry from './OperationsEntry';

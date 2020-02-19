@@ -153,7 +153,7 @@ describe('instances api', () => {
 
       // then
       expect(wrappers.post.mock.calls[0][0]).toBe(
-        '/api/workflow-instances/operation'
+        '/api/workflow-instances/batch-operation'
       );
       expect(wrappers.post.mock.calls[0][1].operationType).toBe(
         OPERATION_TYPE.RESOLVE_INCIDENT

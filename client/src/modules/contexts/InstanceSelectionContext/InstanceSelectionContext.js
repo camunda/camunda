@@ -91,7 +91,9 @@ export const useInstanceSelection = totalCount => {
     handleCheckAll,
     isInstanceChecked,
     handleCheckInstance,
-    getSelectedCount
+    getSelectedCount,
+    ids: mode === MODES.INCLUDE ? ids : [],
+    excludeIds: mode === MODES.EXCLUDE ? ids : []
   };
 };
 

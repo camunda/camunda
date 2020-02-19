@@ -12,6 +12,7 @@ import {
   fetchWorkflowInstances,
   fetchWorkflowInstanceIncidents,
   fetchVariables,
+  applyBatchOperation,
   applyOperation
 } from 'modules/api/instances';
 
@@ -73,7 +74,9 @@ export class DataManager {
     );
   }
 
-  //
+  applyBatchOperation(operationType, query) {
+    applyBatchOperation(operationType, query);
+  }
 
   fetchAndPublish(topic, apiCall, params, staticContent) {
     const cachedParams = this.cache.update(topic, apiCall, params);
