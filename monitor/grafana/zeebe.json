@@ -36,6 +36,12 @@
     },
     {
       "type": "panel",
+      "id": "singlestat",
+      "name": "Singlestat",
+      "version": ""
+    },
+    {
+      "type": "panel",
       "id": "table",
       "name": "Table",
       "version": ""
@@ -58,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1581944106544,
+  "iteration": 1582118448861,
   "links": [],
   "panels": [
     {
@@ -82,7 +88,7 @@
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
-            "w": 12,
+            "w": 7,
             "x": 0,
             "y": 1
           },
@@ -192,22 +198,24 @@
         {
           "aliasColors": {},
           "bars": false,
+          "cacheTimeout": null,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows when and how often a pod was restarted.  The graph is zero when the pod is ready. With this it is also possible to determine how long it take for the pod to come ready again.",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
-            "w": 12,
-            "x": 12,
+            "w": 9,
+            "x": 7,
             "y": 1
           },
-          "id": 54,
-          "interval": "",
+          "id": 116,
           "legend": {
             "avg": false,
             "current": false,
+            "hideEmpty": false,
+            "hideZero": false,
             "max": false,
             "min": false,
             "show": true,
@@ -216,11 +224,13 @@
           },
           "lines": true,
           "linewidth": 1,
-          "nullPointMode": "null",
+          "links": [],
+          "nullPointMode": "null as zero",
           "options": {
             "dataLinks": []
           },
-          "percentage": false,
+          "percentage": true,
+          "pluginVersion": "6.3.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -230,49 +240,33 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "kube_statefulset_status_replicas_ready{statefulset=\"zeebe\", namespace=\"$namespace\"}",
+              "expr": "1 - kube_pod_container_status_ready{pod=~\".*\", pod!~\"curator.*|worker.*|starter.*\", namespace=\"$namespace\"}",
               "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Zeebe",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{pod}} restart",
               "refId": "A"
             },
             {
-              "expr": "kube_statefulset_status_replicas_ready{statefulset=\"elasticsearch-master\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Elastic",
-              "refId": "B"
+              "expr": "sum(rate(kube_pod_container_status_ready{container=\"worker\",namespace=\"$namespace\"}[1m])) or vector(1)",
+              "hide": false,
+              "legendFormat": "Worker restart",
+              "refId": "M"
             },
             {
-              "expr": "kube_deployment_status_replicas_available{deployment=~\".*worker\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "{{deployment}}",
-              "refId": "C"
-            },
-            {
-              "expr": "kube_deployment_status_replicas_available{deployment=~\".*starter\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "{{deployment}}",
-              "refId": "D"
-            },
-            {
-              "expr": "kube_pod_container_status_ready{pod=~\"$pod\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}}",
-              "refId": "E"
+              "expr": "sum(rate(kube_pod_container_status_ready{container=\"starter\",namespace=\"$namespace\"}[1m])) or vector(1)",
+              "legendFormat": "Starter Restart",
+              "refId": "N"
             }
           ],
           "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Running",
+          "title": "Pod Restarts",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -285,11 +279,12 @@
           },
           "yaxes": [
             {
+              "decimals": 0,
               "format": "short",
-              "label": null,
+              "label": "",
               "logBase": 1,
               "max": null,
-              "min": null,
+              "min": "0",
               "show": true
             },
             {
@@ -307,6 +302,95 @@
           }
         },
         {
+          "columns": [
+            {
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Displays the current running pods in the namespace.",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 16,
+            "y": 1
+          },
+          "id": 54,
+          "options": {},
+          "pageSize": null,
+          "scroll": true,
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "alias": "Time",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "alias": "Pod",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "pattern": "Metric",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            },
+            {
+              "alias": "Status",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short",
+              "valueMaps": [
+                {
+                  "text": "Ready",
+                  "value": "1"
+                },
+                {
+                  "text": "Not Ready",
+                  "value": "0"
+                }
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "expr": "kube_pod_container_status_ready{namespace=~\"$namespace\"}",
+              "format": "time_series",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Running",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
@@ -316,7 +400,7 @@
           "fillGradient": 1,
           "gridPos": {
             "h": 8,
-            "w": 12,
+            "w": 10,
             "x": 0,
             "y": 10
           },
@@ -408,6 +492,93 @@
           }
         },
         {
+          "cacheTimeout": null,
+          "colorBackground": false,
+          "colorValue": false,
+          "colors": [
+            "#299c46",
+            "rgba(237, 129, 40, 0.89)",
+            "#d44a3a"
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Takes the avg of all completed processes per second over the given time range.",
+          "format": "none",
+          "gauge": {
+            "maxValue": 100,
+            "minValue": 0,
+            "show": false,
+            "thresholdLabels": false,
+            "thresholdMarkers": true
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 5,
+            "x": 10,
+            "y": 10
+          },
+          "id": 117,
+          "interval": null,
+          "links": [],
+          "mappingType": 1,
+          "mappingTypes": [
+            {
+              "name": "value to text",
+              "value": 1
+            },
+            {
+              "name": "range to text",
+              "value": 2
+            }
+          ],
+          "maxDataPoints": 100,
+          "nullPointMode": "connected",
+          "nullText": null,
+          "options": {},
+          "postfix": "",
+          "postfixFontSize": "50%",
+          "prefix": "",
+          "prefixFontSize": "50%",
+          "rangeMaps": [
+            {
+              "from": "null",
+              "text": "N/A",
+              "to": "null"
+            }
+          ],
+          "sparkline": {
+            "fillColor": "rgba(31, 118, 189, 0.18)",
+            "full": false,
+            "lineColor": "rgb(31, 120, 193)",
+            "show": false,
+            "ymax": null,
+            "ymin": null
+          },
+          "tableColumn": "",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m]))",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{type}} {{action}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": "",
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Completed Processes in avg overtime per sec",
+          "type": "singlestat",
+          "valueFontSize": "110%",
+          "valueMaps": [
+            {
+              "op": "=",
+              "text": "N/A",
+              "value": "null"
+            }
+          ],
+          "valueName": "avg"
+        },
+        {
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
@@ -417,8 +588,8 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 12,
+            "w": 9,
+            "x": 15,
             "y": 10
           },
           "id": 74,
@@ -495,6 +666,93 @@
             "align": false,
             "alignLevel": null
           }
+        },
+        {
+          "cacheTimeout": null,
+          "colorBackground": false,
+          "colorValue": false,
+          "colors": [
+            "#299c46",
+            "rgba(237, 129, 40, 0.89)",
+            "#d44a3a"
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Takes the avg of all completed tasks per second over the given time range.",
+          "format": "none",
+          "gauge": {
+            "maxValue": 100,
+            "minValue": 0,
+            "show": false,
+            "thresholdLabels": false,
+            "thresholdMarkers": true
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 5,
+            "x": 10,
+            "y": 14
+          },
+          "id": 118,
+          "interval": null,
+          "links": [],
+          "mappingType": 1,
+          "mappingTypes": [
+            {
+              "name": "value to text",
+              "value": 1
+            },
+            {
+              "name": "range to text",
+              "value": 2
+            }
+          ],
+          "maxDataPoints": 100,
+          "nullPointMode": "connected",
+          "nullText": null,
+          "options": {},
+          "postfix": "",
+          "postfixFontSize": "50%",
+          "prefix": "",
+          "prefixFontSize": "50%",
+          "rangeMaps": [
+            {
+              "from": "null",
+              "text": "N/A",
+              "to": "null"
+            }
+          ],
+          "sparkline": {
+            "fillColor": "rgba(31, 118, 189, 0.18)",
+            "full": false,
+            "lineColor": "rgb(31, 120, 193)",
+            "show": false,
+            "ymax": null,
+            "ymin": null
+          },
+          "tableColumn": "",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m]))",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{type}} {{action}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": "",
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Completed Tasks in avg overtime per sec",
+          "type": "singlestat",
+          "valueFontSize": "110%",
+          "valueMaps": [
+            {
+              "op": "=",
+              "text": "N/A",
+              "value": "null"
+            }
+          ],
+          "valueName": "avg"
         },
         {
           "aliasColors": {},
@@ -925,7 +1183,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 2
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -982,7 +1240,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 2
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -1044,7 +1302,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 7
           },
           "id": 2,
           "legend": {
@@ -1140,7 +1398,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 7
           },
           "id": 3,
           "legend": {
@@ -1236,7 +1494,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 16
+            "y": 13
           },
           "id": 4,
           "legend": {
@@ -1332,7 +1590,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 16
+            "y": 13
           },
           "id": 5,
           "legend": {
@@ -1428,7 +1686,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 19
           },
           "id": 15,
           "legend": {
@@ -1531,7 +1789,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 19
           },
           "id": 18,
           "legend": {
@@ -2150,7 +2408,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 4
           },
           "id": 33,
           "legend": {
@@ -2251,7 +2509,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 4
           },
           "id": 98,
           "legend": {
@@ -2362,7 +2620,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 11
+            "y": 12
           },
           "id": 64,
           "legend": {
@@ -2457,7 +2715,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 11
+            "y": 12
           },
           "id": 35,
           "legend": {
@@ -2546,7 +2804,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 20
           },
           "id": 37,
           "legend": {
@@ -2641,7 +2899,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 20
           },
           "id": 40,
           "legend": {
@@ -2730,7 +2988,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 28
           },
           "id": 39,
           "legend": {
@@ -2848,7 +3106,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 6
+            "y": 5
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -2912,7 +3170,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 6
+            "y": 5
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -2984,7 +3242,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 6
           },
           "id": 26,
           "legend": {
@@ -3073,7 +3331,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 6
           },
           "id": 27,
           "legend": {
@@ -3175,7 +3433,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 14
+            "y": 13
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3239,7 +3497,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 14
+            "y": 13
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3303,7 +3561,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 14
+            "y": 13
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3381,7 +3639,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 7
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3446,7 +3704,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 7
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3506,7 +3764,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 13
           },
           "id": 79,
           "legend": {
@@ -3597,7 +3855,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 13
           },
           "id": 114,
           "legend": {
@@ -3689,7 +3947,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 20
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3754,7 +4012,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 17
+            "y": 20
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3820,7 +4078,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 24
+            "y": 27
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3881,7 +4139,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 24
+            "y": 27
           },
           "id": 72,
           "legend": {
@@ -3974,7 +4232,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 32
+            "y": 35
           },
           "id": 95,
           "legend": {
@@ -4326,7 +4584,7 @@
       "type": "row"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 19,
   "style": "dark",
   "tags": [],
@@ -4334,6 +4592,7 @@
     "list": [
       {
         "current": {
+          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -4418,7 +4677,7 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
