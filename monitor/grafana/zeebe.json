@@ -58,7 +58,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1579873290265,
+  "iteration": 1582041511984,
   "links": [],
   "panels": [
     {
@@ -82,7 +82,7 @@
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
-            "w": 12,
+            "w": 7,
             "x": 0,
             "y": 1
           },
@@ -192,22 +192,24 @@
         {
           "aliasColors": {},
           "bars": false,
+          "cacheTimeout": null,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows when and how often a pod was restarted.  The graph is zero when the pod is ready. With this it is also possible to determine how long it take for the pod to come ready again.",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 9,
-            "w": 12,
-            "x": 12,
+            "w": 9,
+            "x": 7,
             "y": 1
           },
-          "id": 54,
-          "interval": "",
+          "id": 116,
           "legend": {
             "avg": false,
             "current": false,
+            "hideEmpty": false,
+            "hideZero": false,
             "max": false,
             "min": false,
             "show": true,
@@ -216,11 +218,13 @@
           },
           "lines": true,
           "linewidth": 1,
-          "nullPointMode": "null",
+          "links": [],
+          "nullPointMode": "null as zero",
           "options": {
             "dataLinks": []
           },
-          "percentage": false,
+          "percentage": true,
+          "pluginVersion": "6.3.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -230,49 +234,33 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "kube_statefulset_status_replicas_ready{statefulset=\"zeebe\", namespace=\"$namespace\"}",
+              "expr": "1 - kube_pod_container_status_ready{pod=~\".*\", pod!~\"curator.*|worker.*|starter.*\", namespace=\"$namespace\"}",
               "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Zeebe",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{pod}} restart",
               "refId": "A"
             },
             {
-              "expr": "kube_statefulset_status_replicas_ready{statefulset=\"elasticsearch-master\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "Elastic",
-              "refId": "B"
+              "expr": "sum(rate(kube_pod_container_status_ready{container=\"worker\",namespace=\"$namespace\"}[1m])) or vector(1)",
+              "hide": false,
+              "legendFormat": "Worker restart",
+              "refId": "M"
             },
             {
-              "expr": "kube_deployment_status_replicas_available{deployment=~\".*worker\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "{{deployment}}",
-              "refId": "C"
-            },
-            {
-              "expr": "kube_deployment_status_replicas_available{deployment=~\".*starter\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "{{deployment}}",
-              "refId": "D"
-            },
-            {
-              "expr": "kube_pod_container_status_ready{pod=~\"$pod\", namespace=\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "{{pod}}",
-              "refId": "E"
+              "expr": "sum(rate(kube_pod_container_status_ready{container=\"starter\",namespace=\"$namespace\"}[1m])) or vector(1)",
+              "legendFormat": "Starter Restart",
+              "refId": "N"
             }
           ],
           "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Running",
+          "title": "Pod Restarts",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -285,11 +273,12 @@
           },
           "yaxes": [
             {
+              "decimals": 0,
               "format": "short",
-              "label": null,
+              "label": "",
               "logBase": 1,
               "max": null,
-              "min": null,
+              "min": "0",
               "show": true
             },
             {
@@ -305,6 +294,95 @@
             "align": false,
             "alignLevel": null
           }
+        },
+        {
+          "columns": [
+            {
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Displays the current running pods in the namespace.",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 16,
+            "y": 1
+          },
+          "id": 54,
+          "options": {},
+          "pageSize": null,
+          "scroll": true,
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "alias": "Time",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "alias": "Pod",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "pattern": "Metric",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            },
+            {
+              "alias": "Status",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short",
+              "valueMaps": [
+                {
+                  "text": "Ready",
+                  "value": "1"
+                },
+                {
+                  "text": "Not Ready",
+                  "value": "0"
+                }
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "expr": "kube_pod_container_status_ready{namespace=~\"$namespace\"}",
+              "format": "time_series",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "{{pod}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Running",
+          "transform": "timeseries_aggregations",
+          "type": "table"
         },
         {
           "aliasColors": {},
@@ -2150,7 +2228,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 4
           },
           "id": 33,
           "legend": {
@@ -2251,7 +2329,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 3
+            "y": 4
           },
           "id": 98,
           "legend": {
@@ -2362,7 +2440,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 11
+            "y": 12
           },
           "id": 64,
           "legend": {
@@ -2457,7 +2535,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 11
+            "y": 12
           },
           "id": 35,
           "legend": {
@@ -2546,7 +2624,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 20
           },
           "id": 37,
           "legend": {
@@ -2641,7 +2719,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 20
           },
           "id": 40,
           "legend": {
@@ -2730,7 +2808,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 28
           },
           "id": 39,
           "legend": {
@@ -4326,7 +4404,7 @@
       "type": "row"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 19,
   "style": "dark",
   "tags": [],
@@ -4418,7 +4496,7 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
@@ -4449,5 +4527,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 2
+  "version": 1
 }
