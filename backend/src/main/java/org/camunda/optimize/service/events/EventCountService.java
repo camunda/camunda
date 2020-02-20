@@ -77,7 +77,7 @@ public class EventCountService {
     return matchingEventCountDtos;
   }
 
-  public List<EventCountDto> getEventCountsForCamundaProcess(final String userId,
+  private List<EventCountDto> getEventCountsForCamundaProcess(final String userId,
                                                              final String searchTerm,
                                                              final String definitionKey,
                                                              final List<String> versions,

@@ -316,6 +316,44 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEventCounts_multipleCamundaOnly_allEvents() {
+    // given
+    final String definitionKey1 = "myProcess1";
+    final String definitionKey2 = "myProcess2";
+    deployAndStartUserTaskProcess(definitionKey1);
+    deployAndStartServiceTaskProcess(definitionKey2);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      createPostEventCountsRequest(
+        ImmutableList.of(
+          createCamundaEventSourceEntryDto(definitionKey1, EventScopeType.ALL, ImmutableList.of("1")),
+          createCamundaEventSourceEntryDto(definitionKey2, EventScopeType.ALL, ImmutableList.of("1"))
+        )
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos)
+      .containsExactlyInAnyOrder(
+        createProcessInstanceStartEventCountDto(definitionKey1),
+        createStartEventCountDto(definitionKey1),
+        createTaskStartEventCountDto(definitionKey1, CAMUNDA_USER_TASK),
+        createTaskEndEventCountDto(definitionKey1, CAMUNDA_USER_TASK),
+        createEndEventCountDto(definitionKey1),
+        createProcessInstanceEndEventCount(definitionKey1),
+        createProcessInstanceStartEventCountDto(definitionKey2),
+        createStartEventCountDto(definitionKey2),
+        createTaskStartEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK),
+        createTaskEndEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK),
+        createEndEventCountDto(definitionKey2),
+        createProcessInstanceEndEventCount(definitionKey2)
+      );
+  }
+
+  @Test
   public void getEventCounts_camundaAndExternal_allEvents() {
     // given
     final String definitionKey = "myProcess";
@@ -875,13 +913,12 @@ public class EventRestServiceIT extends AbstractIT {
       .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @ParameterizedTest(name = "event counts with suggestions is invalid with xml: {0}")
-  @MethodSource("invalidParameters")
-  public void getEventCounts_withSuggestionsAndInvalidXmlProvided(String xml) {
+  @Test
+  public void getEventCounts_withSuggestionsAndInvalidXmlProvided() {
     // Suggestions request for node ID and no xml provided
     EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
       .targetFlowNodeId(SECOND_TASK_ID)
-      .xml(xml)
+      .xml("")
       .mappings(Collections.emptyMap())
       .eventSources(createEventSourcesWithExternalEventsOnly())
       .build();
@@ -891,12 +928,11 @@ public class EventRestServiceIT extends AbstractIT {
       .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @ParameterizedTest(name = "event counts with suggestions is invalid with targetFlowNodeId: {0}")
-  @MethodSource("invalidParameters")
-  public void getEventCounts_withSuggestionsAndInvalidFlowNodeIdProvided(String flowNodeId) {
+  @Test
+  public void getEventCounts_withSuggestionsAndInvalidFlowNodeIdProvided() {
     // Suggestions request for invalid flowNodeId
     EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
-      .targetFlowNodeId(flowNodeId)
+      .targetFlowNodeId("")
       .xml(simpleDiagramXml)
       .mappings(Collections.emptyMap())
       .eventSources(createEventSourcesWithExternalEventsOnly())
@@ -905,10 +941,6 @@ public class EventRestServiceIT extends AbstractIT {
     // then the correct status code is returned
     createPostEventCountsRequest(eventCountRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
-  }
-
-  private static Stream<String> invalidParameters() {
-    return Stream.of("");
   }
 
   private EventTypeDto eventTypeFromEvent(CloudEventDto event) {
@@ -991,7 +1023,7 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   private List<EventSourceEntryDto> createEventSourcesWithExternalEventsOnly() {
-    return Lists.newArrayList(createExternalEventSourceEntryDto());
+    return Collections.singletonList(createExternalEventSourceEntryDto());
   }
 
   private OptimizeRequestExecutor createPostEventCountsRequestCamundaSourceOnly(final String definitionKey,

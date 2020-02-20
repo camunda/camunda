@@ -133,15 +133,15 @@ public class CamundaEventService {
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final ProcessDefinitionService processDefinitionService;
 
-  public List<EventDto> getCamundaActivityEventsForDefinitionAfter(final String definitionKey,
-                                                                   final Long eventTimestamp, final int limit) {
+  public List<EventDto> getCamundaEventsForDefinitionAfter(final String definitionKey,
+                                                           final Long eventTimestamp, final int limit) {
     return camundaActivityEventReader.getCamundaActivityEventsForDefinitionAfter(definitionKey, eventTimestamp, limit)
       .stream()
       .map(this::mapToEventDto)
       .collect(Collectors.toList());
   }
 
-  public List<EventDto> getCamundaActivityEventsForDefinitionAt(final String definitionKey, final Long eventTimestamp) {
+  public List<EventDto> getCamundaEventsForDefinitionAt(final String definitionKey, final Long eventTimestamp) {
     return camundaActivityEventReader.getCamundaActivityEventsForDefinitionAt(definitionKey, eventTimestamp)
       .stream()
       .map(this::mapToEventDto)

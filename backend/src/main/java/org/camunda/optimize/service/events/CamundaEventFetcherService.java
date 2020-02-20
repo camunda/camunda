@@ -23,12 +23,12 @@ public class CamundaEventFetcherService implements EventFetcherService {
 
   @Override
   public List<EventDto> getEventsIngestedAfter(final Long eventTimestamp, final int limit) {
-    return camundaEventService.getCamundaActivityEventsForDefinitionAfter(definitionKey, eventTimestamp, limit);
+    return camundaEventService.getCamundaEventsForDefinitionAfter(definitionKey, eventTimestamp, limit);
   }
 
   @Override
   public List<EventDto> getEventsIngestedAt(final Long eventTimestamp) {
-    return camundaEventService.getCamundaActivityEventsForDefinitionAt(definitionKey, eventTimestamp);
+    return camundaEventService.getCamundaEventsForDefinitionAt(definitionKey, eventTimestamp);
   }
 
 }

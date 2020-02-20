@@ -57,11 +57,11 @@ public class EventRestService {
     final List<EventCountDto> eventCounts = eventCountService.getEventCounts(
       userId, eventCountSearchRequestDto.getSearchTerm(), eventCountRequestDto
     );
-    return sortEventCountsUsingWithRequestParameters(eventCountSearchRequestDto, eventCounts);
+    return sortEventCountsUsingRequestParameters(eventCountSearchRequestDto, eventCounts);
   }
 
-  private List<EventCountDto> sortEventCountsUsingWithRequestParameters(final EventCountSearchRequestDto eventCountRequestDto,
-                                                                        final List<EventCountDto> eventCountDtos) {
+  private List<EventCountDto> sortEventCountsUsingRequestParameters(final EventCountSearchRequestDto eventCountRequestDto,
+                                                                    final List<EventCountDto> eventCountDtos) {
     SortOrder sortOrder = eventCountRequestDto.getSortOrder();
     boolean isAscending = sortOrder == null || sortOrder.equals(SortOrder.ASC);
     Comparator<EventCountDto> secondaryComparator = Optional.ofNullable(eventCountRequestDto.getOrderBy())

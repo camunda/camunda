@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
+import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
@@ -39,8 +40,6 @@ import static org.camunda.optimize.service.events.CamundaEventService.applyCamun
 @Component
 @Slf4j
 public class CamundaEventImportService {
-
-
 
   private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
   private final CamundaActivityEventWriter camundaActivityEventWriter;
@@ -156,11 +155,8 @@ public class CamundaEventImportService {
     final ProcessInstanceDto processInstanceDto) {
     String processDefinitionName = processDefinitionResolverService.getDefinitionForProcessDefinitionId(
       processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
-    return Stream.of(toProcessActivity(
-      processInstanceDto,
-      processDefinitionName,
-      PROCESS_START_TYPE,
-      processInstanceDto.getStartDate()
+    return Stream.of(toProcessInstanceStartEvent(
+      processInstanceDto, processDefinitionName, processInstanceDto.getStartDate()
     ));
   }
 
@@ -169,25 +165,45 @@ public class CamundaEventImportService {
     String processDefinitionName = processDefinitionResolverService.getDefinitionForProcessDefinitionId(
       processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
     return Stream.of(
-      toProcessActivity(
-        processInstanceDto,
-        processDefinitionName,
-        PROCESS_START_TYPE,
-        processInstanceDto.getStartDate()
-      ),
-      toProcessActivity(processInstanceDto, processDefinitionName, PROCESS_END_TYPE, processInstanceDto.getEndDate())
+      toProcessInstanceStartEvent(processInstanceDto, processDefinitionName, processInstanceDto.getStartDate()),
+      toProcessInstanceEndEvent(processInstanceDto, processDefinitionName, processInstanceDto.getEndDate())
     );
   }
 
-  private CamundaActivityEventDto toProcessActivity(final ProcessInstanceDto processInstanceDto,
-                                                    final String processDefinitionName,
-                                                    final String processEventType,
-                                                    final OffsetDateTime startDate) {
+  private CamundaActivityEventDto toProcessInstanceStartEvent(final ProcessInstanceDto processInstanceDto,
+                                                              final String processDefinitionName,
+                                                              final OffsetDateTime startDate) {
+    return toProcessInstanceEvent(
+      processInstanceDto,
+      processDefinitionName,
+      PROCESS_START_TYPE,
+      CamundaEventService::applyCamundaProcessInstanceStartEventSuffix,
+      startDate
+    );
+  }
+
+  private CamundaActivityEventDto toProcessInstanceEndEvent(final ProcessInstanceDto processInstanceDto,
+                                                            final String processDefinitionName,
+                                                            final OffsetDateTime startDate) {
+    return toProcessInstanceEvent(
+      processInstanceDto,
+      processDefinitionName,
+      PROCESS_END_TYPE,
+      CamundaEventService::applyCamundaProcessInstanceEndEventSuffix,
+      startDate
+    );
+  }
+
+  private CamundaActivityEventDto toProcessInstanceEvent(final ProcessInstanceDto processInstanceDto,
+                                                         final String processDefinitionName,
+                                                         final String processEventType,
+                                                         final Function<String, String> idSuffixerFunction,
+                                                         final OffsetDateTime startDate) {
     return CamundaActivityEventDto.builder()
-      .activityId(addDelimiterForStrings(processInstanceDto.getProcessDefinitionKey(), processEventType))
+      .activityId(idSuffixerFunction.apply(processInstanceDto.getProcessDefinitionKey()))
       .activityName(processEventType)
       .activityType(processEventType)
-      .activityInstanceId(addDelimiterForStrings(processInstanceDto.getProcessDefinitionKey(), processEventType))
+      .activityInstanceId(idSuffixerFunction.apply(processInstanceDto.getProcessDefinitionKey()))
       .processDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .processInstanceId(processInstanceDto.getProcessInstanceId())
       .processDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -196,10 +212,6 @@ public class CamundaEventImportService {
       .tenantId(processInstanceDto.getTenantId())
       .timestamp(startDate)
       .build();
-  }
-
-  private static String addDelimiterForStrings(String... strings) {
-    return String.join("_", strings);
   }
 
 }
