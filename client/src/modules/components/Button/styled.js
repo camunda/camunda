@@ -12,7 +12,7 @@ const sizeStyle = ({size}) => {
   const smallSizeStyle = css`
     height: 22px;
 
-    font-size: 12px;
+    font-size: 13px;
   `;
 
   const mediumSizeStyle = css`
@@ -50,7 +50,7 @@ const getBoxShadow = ({size}) => {
   return size === SIZE.SMALL ? '' : shadow;
 };
 
-const colorStyle = ({color}) => {
+const colorStyle = ({color, size}) => {
   const styles = {
     [COLOR.SECONDARY]: css`
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35);
@@ -109,27 +109,33 @@ const colorStyle = ({color}) => {
       }
     `,
     [COLOR.PRIMARY]: css`
-      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35);
+      box-shadow: ${size === SIZE.SMALL
+        ? ''
+        : '0 2px 2px 0 rgba(0, 0, 0, 0.35)'};
       background-color: ${Colors.selections};
-      border: 1px solid ${Colors.primaryButton01};
-      color: ${Colors.uiLight02};
+      border: 1px solid ${Colors.primaryButton03};
+      color: ${Colors.uiLight04};
 
       &:hover {
         background-color: ${Colors.primaryButton03};
+        border-color: ${Colors.primaryButton04};
       }
 
       &:focus {
-        border-color: ${Colors.primaryButton01};
+        box-shadow: 0 0 0 1px ${Colors.darkLinkHover},
+          0 0 0 4px ${Colors.focusOuter};
       }
 
       &:active {
-        background-color: ${Colors.primaryButton01};
-        border-color: ${Colors.primaryButton02};
+        background-color: ${Colors.primaryButton04};
+        border-color: ${Colors.primaryButton05};
       }
 
       &:disabled {
-        color: rgba(247, 248, 250, 0.6);
-        border-color: ${Colors.primaryButton03};
+        background-color: ${Colors.primaryButton02};
+        color: rgba(253, 253, 254, 0.8);
+        border-color: ${Colors.primaryButton01};
+        box-shadow: none;
       }
     `,
     [COLOR.MAIN]: css`

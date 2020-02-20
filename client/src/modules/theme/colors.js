@@ -64,10 +64,11 @@ const Colors = {
   badge02: '#88888d',
 
   // Button Colors
-  primaryButton01: '#2b7bff',
-  primaryButton02: '#005DF7',
-  primaryButton03: '#5E9BFF',
-  primaryButton04: '#3C85FF',
+  primaryButton01: '#A2C5FF',
+  primaryButton02: '#80B0FF',
+  primaryButton03: '#3C85FF',
+  primaryButton04: '#1A70FF',
+  primaryButton05: '#005DF7',
 
   darkButton02: '#7f8289',
   darkButton03: '#34353a',
