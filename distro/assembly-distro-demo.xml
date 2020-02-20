@@ -11,17 +11,16 @@
 
   <includeBaseDirectory>false</includeBaseDirectory>
 
-  <fileSets>
-    <!-- Add the Optimize back-end dependencies -->
-    <fileSet>
-      <directory>${project.basedir}/../backend/target/lib</directory>
-      <outputDirectory>lib</outputDirectory>
-    </fileSet>
+  <componentDescriptors>
+    <componentDescriptor>assembly-base-component.xml</componentDescriptor>
+  </componentDescriptors>
 
+  <fileSets>
     <fileSet>
       <directory>${project.build.directory}/elasticsearch-${elasticsearch.version}</directory>
       <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.version}</outputDirectory>
     </fileSet>
+
     <fileSet>
       <directory>src/environment/</directory>
       <excludes>
@@ -32,76 +31,10 @@
       </excludes>
       <outputDirectory>environment/</outputDirectory>
     </fileSet>
-    <fileSet>
-      <directory>${project.basedir}/../backend/src/main/resources/localization/</directory>
-      <outputDirectory>environment/localization</outputDirectory>
-    </fileSet>
-    <fileSet>
-      <directory>${project.basedir}/../backend/src/main/resources/logo/</directory>
-      <outputDirectory>environment/logo</outputDirectory>
-    </fileSet>
-
-    <fileSet>
-      <!--create empty plugin directory-->
-      <directory>src/</directory>
-      <outputDirectory>plugin</outputDirectory>
-      <excludes>
-        <exclude>*/**</exclude>
-      </excludes>
-    </fileSet>
-
-    <fileSet>
-      <directory>src/upgrade</directory>
-      <outputDirectory>upgrade</outputDirectory>
-      <!-- these files will be included in files section -->
-      <excludes>
-        <exclude>upgrade.bat</exclude>
-        <exclude>upgrade.sh</exclude>
-      </excludes>
-    </fileSet>
-
-    <fileSet>
-      <directory>src/reimport/</directory>
-      <outputDirectory>reimport/</outputDirectory>
-      <!-- these files will be included in files section -->
-      <excludes>
-        <exclude>reimport.bat</exclude>
-        <exclude>reimport.sh</exclude>
-      </excludes>
-    </fileSet>
   </fileSets>
 
   <files>
     <!-- root directory -->
-    <file>
-      <source>${project.basedir}/../backend/target/optimize-backend-${project.version}.jar</source>
-      <outputDirectory></outputDirectory>
-    </file>
-    <file>
-      <source>src/README.txt</source>
-      <filtered>true</filtered>
-      <lineEnding>crlf</lineEnding>
-      <outputDirectory></outputDirectory>
-    </file>
-    <file>
-      <source>src/LicenseBook_Optimize.txt</source>
-      <outputDirectory></outputDirectory>
-    </file>
-    <file>
-      <source>src/curl.exe</source>
-      <outputDirectory></outputDirectory>
-    </file>
-    <file>
-      <source>src/optimize-startup.sh</source>
-      <filtered>true</filtered>
-      <outputDirectory></outputDirectory>
-      <fileMode>0755</fileMode>
-    </file>
-    <file>
-      <source>src/optimize-startup.bat</source>
-      <filtered>true</filtered>
-      <outputDirectory></outputDirectory>
-    </file>
     <file>
       <source>src/optimize-demo.sh</source>
       <filtered>true</filtered>
@@ -113,45 +46,9 @@
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
     </file>
-
-    <!-- upgrade directory -->
     <file>
-      <source>
-        ${project.basedir}/../upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
-      </source>
-      <outputDirectory>upgrade</outputDirectory>
-    </file>
-    <file>
-      <source>src/upgrade/upgrade.sh</source>
-      <filtered>true</filtered>
-      <outputDirectory>upgrade</outputDirectory>
-      <fileMode>0755</fileMode>
-    </file>
-    <file>
-      <source>src/upgrade/upgrade.bat</source>
-      <filtered>true</filtered>
-      <outputDirectory>upgrade</outputDirectory>
-      <fileMode>0755</fileMode>
-    </file>
-
-    <!-- reimport directory -->
-    <file>
-      <source>
-        ${project.basedir}/../util/optimize-reimport-preparation/target/optimize-reimport-preparation-${project.version}.jar
-      </source>
-      <outputDirectory>reimport</outputDirectory>
-    </file>
-    <file>
-      <source>src/reimport/reimport.sh</source>
-      <filtered>true</filtered>
-      <outputDirectory>reimport</outputDirectory>
-      <fileMode>0755</fileMode>
-    </file>
-    <file>
-      <source>src/reimport/reimport.bat</source>
-      <filtered>true</filtered>
-      <outputDirectory>reimport</outputDirectory>
-      <fileMode>0755</fileMode>
+      <source>src/curl.exe</source>
+      <outputDirectory></outputDirectory>
     </file>
 
     <!-- logback configuration -->
@@ -161,4 +58,5 @@
       <destName>environment-logback.xml</destName>
     </file>
   </files>
+
 </assembly>
