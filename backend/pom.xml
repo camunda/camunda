@@ -373,7 +373,7 @@
         <executions>
           <execution>
             <id>copy-dependencies-to-lib-folder</id>
-            <phase>install</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
