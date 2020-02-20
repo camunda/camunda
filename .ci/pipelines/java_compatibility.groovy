@@ -32,7 +32,7 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
+      # Defined in: https://github.com/camunda-internal/gcloud-infrastructure/tree/master/camunda-ci/deployments/optimize
       name: ci-optimize-cambpm-config
   initContainers:
     - name: init-sysctl

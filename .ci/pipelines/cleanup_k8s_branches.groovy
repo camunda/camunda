@@ -77,7 +77,7 @@ pipeline {
   stages {
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda-ci/k8s-infrastructure',
+        git url: 'git@github.com:camunda-internal/gcloud-infrastructure',
             branch: "${params.INFRASTRUCTURE_BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
