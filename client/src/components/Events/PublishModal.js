@@ -74,10 +74,7 @@ export default withErrorHandling(
             {republish ? (
               <p>{t('events.publishModal.republishText')}</p>
             ) : (
-              <>
-                <p>{t('events.publishModal.text')}</p>
-                <p>{t('events.publishModal.hint')}</p>
-              </>
+              <p>{t('events.publishModal.text')}</p>
             )}
             <div className="permission">
               <h4>{t('events.permissions.whoHasAccess')}</h4>

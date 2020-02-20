@@ -29,9 +29,6 @@ exports[`should show different text depending on the republish prop 1`] = `
     <p>
       Published Event Based Processes will be available to use in Reports by selected users.
     </p>
-    <p>
-      Hint: To use inside a Collection, add the process in the Data Sources tab.
-    </p>
     <div
       className="permission"
     >

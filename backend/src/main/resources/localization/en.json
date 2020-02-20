@@ -139,8 +139,7 @@
       "head": "Publishing Process",
       "republishHead": "Re-Publishing Process",
       "republishText": "Re-Publishing will update data in all associated Reports.",
-      "text": "Published Event Based Processes will be available to use in Reports by selected users.",
-      "hint": "Hint: To use inside a Collection, add the process in the Data Sources tab."
+      "text": "Published Event Based Processes will be available to use in Reports by selected users."
     },
     "state": {
       "unmapped": "Unmapped",

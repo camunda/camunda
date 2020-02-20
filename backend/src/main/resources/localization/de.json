@@ -139,8 +139,7 @@
       "head": "Prozess Veröffentlichen",
       "republishHead": "Prozess Neu-Veröffentlichen",
       "republishText": "Neu-Veröffentlichung wird Daten in allen assoziierten Berichten aktualisieren.",
-      "text": "Veröffentlichte Eventbasierte Prozesse werden von ausgewählten Benutzern in Reports zur Verfügung stehen.",
-      "hint": "Hinweis: Um den Prozess in einer Sammlung zu verwenden, fügen Sie ihn im Datenquellen Register hinzu."
+      "text": "Veröffentlichte Eventbasierte Prozesse werden von ausgewählten Benutzern in Reports zur Verfügung stehen."
     },
     "state": {
       "unmapped": "Unzugeordnet",
