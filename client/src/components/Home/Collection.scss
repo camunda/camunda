@@ -1,30 +1,27 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Collection {
   height: 100%;
   position: relative;
 
   > .header {
     position: fixed;
-    height: 100px;
+    height: 135px;
     background-color: white;
-    border-bottom: 1px solid #d3d3d3;
-    top: 39px;
+    border-bottom: 1px solid $silver-darken-87;
+    top: 41px;
     left: 0;
     width: 100%;
     z-index: 3;
 
-    .indicator {
+    > .Icon {
       display: inline-block;
-      width: 8px;
-      height: 100%;
-      background-color: #5b2e96;
-    }
-
-    .icon {
-      display: inline-block;
-      margin: 26px;
+      margin-left: 63px;
+      margin-top: 38px;
+      width: 24px;
+      height: 24px;
       position: relative;
-      width: 48px;
-      height: 48px;
+      color: $grey-darken-23;
 
       svg {
         position: absolute;
@@ -37,68 +34,61 @@
 
     .text {
       display: inline-block;
-      margin-top: 26px;
-      vertical-align: top;
+      margin-top: 39px;
       position: absolute;
-      left: 108px;
-      right: 450px;
+      left: 97px;
+      right: 100px;
+      font-size: 17px;
+      height: 22px;
+      line-height: 22px;
+      color: $grey-darken-33;
 
-      .type {
-        font-size: 12px;
-        line-height: 15px;
-        color: #919191;
+      span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        line-height: 100%;
+        max-width: calc(100% - 43px);
       }
 
-      .name {
-        font-size: 24px;
-        line-height: 32px;
+      .Dropdown {
+        margin-left: 8px;
+        width: 24px;
+        height: 100%;
 
-        span {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          display: inline-block;
-          max-width: calc(100% - 43px);
-          vertical-align: top;
-        }
-
-        .Dropdown {
-          margin-left: 19px;
+        .activateButton {
           width: 24px;
+          padding: 0 24px 0 0;
           height: 100%;
-
-          .activateButton {
-            width: 24px;
-            padding: 0 24px 0 0;
-            height: 100%;
-            background-color: white;
-            border: none;
-          }
-
-          .menu {
-            top: 0;
-            left: 24px !important; // the calculateMenuStyle method of the Dropdown sets inline styles
-          }
-
-          .DropdownOption {
-            padding-left: 10px;
-
-            .Icon {
-              width: 14px;
-              height: 14px;
-              margin-right: 8px;
-            }
-          }
+          background-color: white;
+          color: $grey-darken-23;
+          border: none;
         }
 
-        .downIcon {
-          display: none;
+        .menu {
+          top: 0;
+          left: 24px !important; // the calculateMenuStyle method of the Dropdown sets inline styles
         }
 
-        .Icon {
-          width: 24px;
-          height: 24px;
+        .DropdownOption {
+          padding-left: 10px;
+
+          .Icon {
+            width: 14px;
+            height: 14px;
+            margin-right: 8px;
+          }
         }
+      }
+
+      .downIcon {
+        display: none;
+      }
+
+      .Icon {
+        width: 24px;
+        height: 24px;
       }
     }
 
@@ -106,19 +96,17 @@
       display: inline-block;
       position: absolute;
       bottom: 3px;
-      right: 31px;
+      left: 56px;
       margin: 0;
       padding: 0;
       list-style-type: none;
-      border-right: 1px solid;
-      border-image: linear-gradient(to bottom, lightgray 25px, transparent 25px) 1 100%;
+      font-size: 15px;
 
       li {
         display: inline-block;
-        height: 32px;
-        padding: 4px 20px;
-        border-left: 1px solid;
-        border-image: inherit;
+        padding: 4px 8px;
+        margin-right: 20px;
+        color: $grey-darken-36;
 
         a {
           color: inherit;
@@ -126,14 +114,16 @@
         }
 
         &.active {
-          box-shadow: 0 3px 0 #484c57;
+          font-weight: 500;
+          color: $grey-darken-23;
+          box-shadow: 0 3px 0 $grey-darken-23;
         }
       }
     }
   }
 
   > .content {
-    top: 62px;
+    top: 97px;
     padding-top: 36px;
     bottom: 0;
     left: -20px;

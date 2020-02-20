@@ -19,8 +19,7 @@ import {ReactComponent as stop} from './stop.svg';
 import {ReactComponent as link} from './link.svg';
 import {ReactComponent as embed} from './embed.svg';
 import {ReactComponent as save} from './save.svg';
-import {ReactComponent as overflowMenuVertical} from './overflow-menu-vertical.svg';
-import {ReactComponent as overflowMenuHorizontal} from './overflow-menu-horizontal.svg';
+import {ReactComponent as contextMenu} from './context-menu.svg';
 import {ReactComponent as openInCockpit} from './open-in-cockpit.svg';
 import {ReactComponent as copyDocument} from './copy-document.svg';
 import {ReactComponent as checkSmall} from './check-small.svg';
@@ -61,8 +60,7 @@ const icons = {
   hint,
   embed,
   save,
-  'overflow-menu-vertical': overflowMenuVertical,
-  'overflow-menu-horizontal': overflowMenuHorizontal,
+  'context-menu': contextMenu,
   'open-in-cockpit': openInCockpit,
   'copy-document': copyDocument,
   'check-small': checkSmall,

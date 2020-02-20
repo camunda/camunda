@@ -6,7 +6,7 @@
 
 import {Selector} from 'testcafe';
 
-export const collectionTitle = Selector('.Collection .header .name');
+export const collectionTitle = Selector('.Collection .header .text > span');
 export const createNewMenu = Selector('.CreateNewButton');
 export const option = text => Selector('.DropdownOption').withText(text);
 export const collectionBreadcrumb = Selector('.HeaderNav .breadcrumb');

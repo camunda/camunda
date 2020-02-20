@@ -87,7 +87,7 @@ exports[`should match snapshot 1`] = `
             label={
               <Icon
                 size="24px"
-                type="overflow-menu-vertical"
+                type="context-menu"
               />
             }
           >

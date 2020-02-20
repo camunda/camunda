@@ -7,64 +7,51 @@ exports[`should render content depending on the selected tab 1`] = `
   <div
     className="header"
   >
-    <div
-      className="indicator"
+    <Icon
+      size="24"
+      type="collection"
     />
-    <div
-      className="icon"
-    >
-      <ForwardRef(SvgCollection) />
-    </div>
     <div
       className="text"
     >
-      <div
-        className="type"
+      <span
+        title="aCollectionName"
       >
-        Collection
-      </div>
-      <div
-        className="name"
+        aCollectionName
+      </span>
+      <Dropdown
+        label={
+          <Icon
+            size="24px"
+            type="context-menu"
+          />
+        }
       >
-        <span
-          title="aCollectionName"
+        <ForwardRef(DropdownOption)
+          onClick={[Function]}
         >
-          aCollectionName
-        </span>
-        <Dropdown
-          label={
-            <Icon
-              size="24px"
-              type="overflow-menu-vertical"
-            />
-          }
+          <Icon
+            type="edit"
+          />
+          Edit
+        </ForwardRef(DropdownOption)>
+        <ForwardRef(DropdownOption)
+          onClick={[Function]}
         >
-          <ForwardRef(DropdownOption)
-            onClick={[Function]}
-          >
-            <Icon
-              type="edit"
-            />
-            Edit
-          </ForwardRef(DropdownOption)>
-          <ForwardRef(DropdownOption)
-            onClick={[Function]}
-          >
-            <Icon
-              type="copy-document"
-            />
-            Copy
-          </ForwardRef(DropdownOption)>
-          <ForwardRef(DropdownOption)
-            onClick={[Function]}
-          >
-            <Icon
-              type="delete"
-            />
-            Delete
-          </ForwardRef(DropdownOption)>
-        </Dropdown>
-      </div>
+          <Icon
+            type="copy-document"
+          />
+          Copy
+        </ForwardRef(DropdownOption)>
+        <ForwardRef(DropdownOption)
+          onClick={[Function]}
+        >
+          <Icon
+            type="delete"
+          />
+          Delete
+        </ForwardRef(DropdownOption)>
+      </Dropdown>
     </div>
     <ul
       className="navigation"

@@ -19,8 +19,6 @@ import {refreshBreadcrumbs} from 'components/navigation';
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
 
-import {ReactComponent as CollectionIcon} from './icons/collection.svg';
-
 import UserList from './UserList';
 import AlertList from './AlertList';
 import SourcesList from './SourcesList';
@@ -105,37 +103,29 @@ export default withErrorHandling(
       return (
         <div className="Collection">
           <div className="header">
-            <div className="indicator" />
-            <div className="icon">
-              <CollectionIcon />
-            </div>
+            <Icon size="24" type="collection" />
             <div className="text">
-              <div className="type">{t('common.collection.label')}</div>
-              <div className="name">
-                {collection && (
-                  <>
-                    <span title={collection.name}>{collection.name}</span>
-                    {collection.currentUserRole === 'manager' && (
-                      <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                        <Dropdown.Option onClick={this.startEditingCollection}>
-                          <Icon type="edit" />
-                          {t('common.edit')}
-                        </Dropdown.Option>
-                        <Dropdown.Option onClick={() => this.setState({copying: collectionEntity})}>
-                          <Icon type="copy-document" />
-                          {t('common.copy')}
-                        </Dropdown.Option>
-                        <Dropdown.Option
-                          onClick={() => this.setState({deleting: collectionEntity})}
-                        >
-                          <Icon type="delete" />
-                          {t('common.delete')}
-                        </Dropdown.Option>
-                      </Dropdown>
-                    )}
-                  </>
-                )}
-              </div>
+              {collection && (
+                <>
+                  <span title={collection.name}>{collection.name}</span>
+                  {collection.currentUserRole === 'manager' && (
+                    <Dropdown label={<Icon type="context-menu" size="24px" />}>
+                      <Dropdown.Option onClick={this.startEditingCollection}>
+                        <Icon type="edit" />
+                        {t('common.edit')}
+                      </Dropdown.Option>
+                      <Dropdown.Option onClick={() => this.setState({copying: collectionEntity})}>
+                        <Icon type="copy-document" />
+                        {t('common.copy')}
+                      </Dropdown.Option>
+                      <Dropdown.Option onClick={() => this.setState({deleting: collectionEntity})}>
+                        <Icon type="delete" />
+                        {t('common.delete')}
+                      </Dropdown.Option>
+                    </Dropdown>
+                  )}
+                </>
+              )}
             </div>
             <ul className="navigation">
               <li className={classnames({active: homeTab})}>
