@@ -196,7 +196,8 @@ func buildZbctl() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
+	// we need to build all binaries, because this is run after the go build stage on CI and will overwrite the binaries
+	cmd := exec.CommandContext(ctx, "./build.sh")
 	cmd.Env = append(os.Environ(), "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
 	return cmd.CombinedOutput()
 }
