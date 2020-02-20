@@ -241,7 +241,7 @@ const textAreaStyles = css`
   resize: vertical;
   font-size: 14px;
 
-  min-height: 25px;
+  min-height: 30px;
   max-height: 84px;
 
   ${inputMargin};
