@@ -11,11 +11,8 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
-import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.io.InputStream;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -32,24 +29,6 @@ public final class SystemContext {
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
   private Duration stepTimeout;
-
-  public SystemContext(String configFileLocation, final String basePath, final ActorClock clock) {
-    if (!Paths.get(configFileLocation).isAbsolute()) {
-      configFileLocation =
-          Paths.get(basePath, configFileLocation).normalize().toAbsolutePath().toString();
-    }
-
-    brokerCfg = TomlConfigurationReader.read(configFileLocation, BrokerCfg.class);
-
-    initSystemContext(clock, basePath);
-  }
-
-  public SystemContext(
-      final InputStream configStream, final String basePath, final ActorClock clock) {
-    brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
-
-    initSystemContext(clock, basePath);
-  }
 
   public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
     this.brokerCfg = brokerCfg;

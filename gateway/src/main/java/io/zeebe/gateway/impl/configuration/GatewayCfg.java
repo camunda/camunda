@@ -10,7 +10,11 @@ package io.zeebe.gateway.impl.configuration;
 import com.google.gson.GsonBuilder;
 import io.zeebe.util.Environment;
 import java.util.Objects;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
+@Component
+@ConfigurationProperties(prefix = "zeebe-gateway")
 public class GatewayCfg {
 
   private NetworkCfg network = new NetworkCfg();

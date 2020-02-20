@@ -1,0 +1,108 @@
+# Zeebe standalone gateway configuration file.
+# For the configuration of the embedded gateway see the gateway section of the zeebe.cfg.yaml
+
+# ! ! ! ! ! ! ! ! ! !
+# In order to activate the settings in this file, please set the following environment variable:
+# export spring.config.additional-location='file:./config/gateway.cfg.yaml'
+# ! ! ! ! ! ! ! ! ! !
+
+# Overview -------------------------------------------
+
+# This file contains a complete list of available configuration options.
+
+# Default values:
+#
+# When the default value is used for a configuration option, the option is
+# commented out. You can learn the default value from this file
+
+# Conventions:
+#
+# Byte sizes
+# For buffers and others must be specified as strings and follow the following
+# format: "10U" where U (unit) must be replaced with KB = Kilobytes, MB = Megabytes or GB = Gigabytes.
+# If unit is omitted then the default unit is simply bytes.
+# Example:
+# sendBufferSize = "16MB" (creates a buffer of 16 Megabytes)
+#
+# Time units
+# Timeouts, intervals, and the likes, must be specified either in the standard ISO-8601 format used
+# by java.time.Duration, or as strings with the following format: "VU", where:
+#   - V is a numerical value (e.g. 1, 5, 10, etc.)
+#   - U is the unit, one of: ms = Millis, s = Seconds, m = Minutes, or h = Hours
+#
+# Paths:
+# Relative paths are resolved relative to the installation directory of the gateway.
+
+# ----------------------------------------------------
+
+zeebe-gateway:
+  network:
+  # Sets the host the gateway binds to
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_NETWORK_HOST.
+  # host: 0.0.0.0
+  #
+  # Sets the port the gateway binds to
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_NETWORK_PORT.
+  # port: 26500
+  #
+  # Sets the minimum keep alive interval
+  # This setting specifies the minimum accepted interval between keep alive pings. This value must
+  # be specified as a positive integer followed by 's' for seconds, 'm' for minutes or 'h' for hours.
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_NETWORK_KEEPALIVEINTERVAL.
+  # minKeepAliveInterval: 30s
+
+  cluster:
+  # Sets the broker the gateway should initial contact
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_CONTACTPOINT.
+  # contactPoint: 127.0.0.1:26502
+
+  # Sets the timeout of requests send to the broker cluster
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_REQUEST_TIMEOUT.
+  # requestTimeout: 15s
+
+  # Sets name of the Zeebe cluster to connect to
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_CLUSTERNAME.
+  # clusterName: zeebe-cluster
+
+  # Sets the member id of the gateway in the cluster
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_MEMBERID.
+  # memberId: gateway
+
+  # Sets the host the gateway node binds to for internal cluster communication
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_HOST.
+  # host: 0.0.0.0
+
+  # Sets the port the gateway node binds to for internal cluster communication
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_PORT.
+  # port: 26502
+
+  threads:
+  # Sets the number of threads the gateway will use to communicate with the broker cluster
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_THREADS_MANAGEMENTTHREADS.
+  # managementThreads: 1
+
+  monitoring:
+  # Enables the metrics collection and exporting it over HTTP
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_MONITORING_ENABLED.
+  # enabled: false
+
+  # Sets the host the monitoring binds to
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_MONITORING_HOST.
+  # host: 0.0.0.0
+
+  # Sets the port the monitoring binds to
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_MONITOIRNG_PORT..
+  # port: 9600
+
+  security:
+  # Enables TLS authentication between clients and the gateway
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_SECURITY_ENABLED.
+  # enabled: false
+
+  # Sets the path to the certificate chain file
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_SECURITY_CERTIFICATECHAIN_PATH.
+  # certificateChainPath:
+
+  # Sets the path to the private key file location
+  # This setting can also be overridden using the environment variable ZEEBEGATEWAY_SECURITY_PRIVATEKEYPATH.
+  # privateKeyPath:

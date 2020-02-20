@@ -14,7 +14,11 @@ import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
+@Component
+@ConfigurationProperties(prefix = "zeebe-broker")
 public final class BrokerCfg {
 
   private NetworkCfg network = new NetworkCfg();

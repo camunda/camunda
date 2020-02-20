@@ -28,7 +28,7 @@ zeebe_stream_processor_events_total{action="skipped",partition="1",} 2153.0
 
 ## Configuring Metrics
 
-The HTTP server to export the metrics can be configured in the [configuration file](/operations/the-zeebecfgtoml-file.html#Metrics).
+The HTTP server to export the metrics can be configured in the [configuration file](/operations/the-zeebecfgyaml-file.html#Metrics).
 
 ## Connecting Prometheus
 

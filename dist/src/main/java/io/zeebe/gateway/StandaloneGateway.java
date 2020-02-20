@@ -15,18 +15,26 @@ import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
+import io.zeebe.EnvironmentHelper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.core.env.Environment;
 
-public class StandaloneGateway {
+@SpringBootApplication
+public class StandaloneGateway implements CommandLineRunner {
+
+  @Autowired GatewayCfg configuration;
+  @Autowired Environment springEnvironment;
 
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
@@ -90,8 +98,7 @@ public class StandaloneGateway {
   }
 
   public static void main(final String[] args) throws Exception {
-    final GatewayCfg gatewayCfg = initConfiguration(args);
-    gatewayCfg.init();
+    System.setProperty("spring.banner.location", "classpath:/assets/zeebe_gateway_banner.txt");
 
     getRuntime()
         .addShutdownHook(
@@ -102,31 +109,21 @@ public class StandaloneGateway {
               }
             });
 
-    new StandaloneGateway(gatewayCfg).run();
+
+    EnvironmentHelper.checkForLegacyTomlConfigurationArgument(args, "gateway.cfg.yaml");
+
+    SpringApplication.run(StandaloneGateway.class, args);
   }
 
-  private static GatewayCfg initConfiguration(final String[] args) {
-    if (args.length >= 1) {
-      String configFileLocation = args[0];
-
-      if (!Paths.get(configFileLocation).isAbsolute()) {
-        configFileLocation =
-            Paths.get(getBasePath(), configFileLocation).toAbsolutePath().normalize().toString();
-      }
-
-      return TomlConfigurationReader.read(configFileLocation, GatewayCfg.class);
+  @Override
+  public void run(final String... args) throws Exception {
+    final GatewayCfg gatewayCfg;
+    if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
+      gatewayCfg = configuration;
     } else {
-      return new GatewayCfg();
+      gatewayCfg = new GatewayCfg();
     }
-  }
-
-  private static String getBasePath() {
-    String basePath = System.getProperty("basedir");
-
-    if (basePath == null) {
-      basePath = Paths.get(".").toAbsolutePath().normalize().toString();
-    }
-
-    return basePath;
+    gatewayCfg.init();
+    new StandaloneGateway(gatewayCfg).run();
   }
 }

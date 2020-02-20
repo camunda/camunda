@@ -55,7 +55,6 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -89,17 +88,9 @@ public final class Broker implements AutoCloseable {
   private ServerTransport serverTransport;
   private BrokerHealthCheckService healthCheckService;
 
-  public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
-    this(new SystemContext(configFileLocation, basePath, clock));
-  }
-
   public Broker(final SystemContext systemContext) {
     this.brokerContext = systemContext;
     this.partitionListeners = new ArrayList<>();
-  }
-
-  public Broker(final InputStream configStream, final String basePath, final ActorClock clock) {
-    this(new SystemContext(configStream, basePath, clock));
   }
 
   public Broker(final BrokerCfg cfg, final String basePath, final ActorClock clock) {

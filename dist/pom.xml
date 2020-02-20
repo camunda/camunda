@@ -82,7 +82,47 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
       <version>2.13.0</version>
+    <version>2.2.4.RELEASE</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <version>2.2.4.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+      <version>2.2.4.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>5.2.3.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>5.2.3.RELEASE</version>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
   <build>
     <plugins>
@@ -90,11 +130,11 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>appassembler-maven-plugin</artifactId>
         <configuration>
-          <configurationDirectory>conf</configurationDirectory>
+          <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <extraJvmArguments>
-            -Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml
+            -Xms128m -Dlog4j.configurationFile=../config/log4j2.xml
             --illegal-access=deny
           </extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
@@ -109,16 +149,10 @@
             <program>
               <mainClass>io.zeebe.broker.StandaloneBroker</mainClass>
               <id>broker</id>
-              <commandLineArguments>
-                <commandLineArgument>conf/zeebe.cfg.toml</commandLineArgument>
-              </commandLineArguments>
             </program>
             <program>
               <mainClass>io.zeebe.gateway.StandaloneGateway</mainClass>
               <id>gateway</id>
-              <commandLineArguments>
-                <commandLineArgument>conf/gateway.cfg.toml</commandLineArgument>
-              </commandLineArguments>
             </program>
           </programs>
         </configuration>

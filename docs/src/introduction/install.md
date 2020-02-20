@@ -49,8 +49,8 @@ all data which should be persisted.
 
 ### Configuration
 
-The Zeebe configuration is located at `/usr/local/zeebe/conf/zeebe.cfg.toml`.
-The logging configuration is located at `/usr/local/zeebe/conf/log4j2.xml`.
+The Zeebe configuration is located at `/usr/local/zeebe/config/zeebe.cfg.yaml`.
+The logging configuration is located at `/usr/local/zeebe/config/log4j2.xml`.
 
 The configuration of the docker image can also be changed by using environment
 variables.
@@ -160,7 +160,6 @@ Once the Zeebe broker has started, it should produce the following output:
 
 ```
 bash
-23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
 23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
 23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
 23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {

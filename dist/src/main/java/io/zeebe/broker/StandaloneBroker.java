@@ -9,6 +9,7 @@ package io.zeebe.broker;
 
 import static java.lang.Runtime.getRuntime;
 
+import io.zeebe.EnvironmentHelper;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -16,16 +17,35 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.core.env.Environment;
 
-public class StandaloneBroker {
-  private static final CountDownLatch WAITING_LATCH = new CountDownLatch(1);
-  private static String tempFolder;
+@SpringBootApplication
+public class StandaloneBroker implements CommandLineRunner {
+
+  @Autowired BrokerCfg configuration;
+  @Autowired Environment springEnvironment;
+
+  private final CountDownLatch waiting_latch = new CountDownLatch(1);
+  private String tempFolder;
 
   public static void main(final String[] args) throws Exception {
+    System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
+
+    EnvironmentHelper.checkForLegacyTomlConfigurationArgument(args, "broker.cfg.yaml");
+
+    SpringApplication.run(StandaloneBroker.class, args);
+  }
+
+  @Override
+  public void run(final String... args) throws Exception {
     final Broker broker;
 
-    if (args.length == 1) {
-      broker = createBrokerFromConfiguration(args);
+    if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
+      broker = createBrokerFromConfigurationInBaseDirectory();
     } else {
       broker = createDefaultBrokerInTempDirectory();
     }
@@ -44,32 +64,32 @@ public class StandaloneBroker {
                 }
               }
             });
-    WAITING_LATCH.await();
+    waiting_latch.await();
   }
 
-  private static Broker createBrokerFromConfiguration(final String[] args) {
+  private Broker createBrokerFromConfigurationInBaseDirectory() {
     String basePath = System.getProperty("basedir");
 
     if (basePath == null) {
       basePath = Paths.get(".").toAbsolutePath().normalize().toString();
     }
 
-    return new Broker(args[0], basePath, null);
+    return new Broker(configuration, basePath, null);
   }
 
-  private static Broker createDefaultBrokerInTempDirectory() {
+  private Broker createDefaultBrokerInTempDirectory() {
     Loggers.SYSTEM_LOGGER.info("No configuration file specified. Using default configuration.");
 
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-      final BrokerCfg cfg = new BrokerCfg();
-      return new Broker(cfg, tempFolder, null);
+      final BrokerCfg defaultConfiguration = new BrokerCfg();
+      return new Broker(defaultConfiguration, tempFolder, null);
     } catch (final IOException e) {
       throw new RuntimeException("Could not start broker", e);
     }
   }
 
-  private static void deleteTempDirectory() {
+  private void deleteTempDirectory() {
     if (tempFolder != null) {
       try {
         FileUtil.deleteFolder(tempFolder);
