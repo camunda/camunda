@@ -64,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1582118448861,
+  "iteration": 1582184259525,
   "links": [],
   "panels": [
     {
@@ -201,6 +201,7 @@
           "cacheTimeout": null,
           "dashLength": 10,
           "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
           "description": "Shows when and how often a pod was restarted.  The graph is zero when the pod is ready. With this it is also possible to determine how long it take for the pod to come ready again.",
           "fill": 1,
           "fillGradient": 0,
@@ -2896,7 +2897,7 @@
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 9,
+            "h": 8,
             "w": 12,
             "x": 12,
             "y": 20
@@ -2985,8 +2986,8 @@
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 9,
-            "w": 12,
+            "h": 7,
+            "w": 24,
             "x": 0,
             "y": 28
           },
@@ -3017,11 +3018,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "kubelet_volume_stats_used_bytes{namespace=~\"$namespace\"}",
-              "format": "time_series",
-              "intervalFactor": 1,
-              "legendFormat": "{{persistentvolumeclaim}} ({{namespace}})",
-              "refId": "A"
+              "expr": "(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
+              "legendFormat": "{{persistentvolumeclaim}}",
+              "refId": "B"
             }
           ],
           "thresholds": [
@@ -3030,7 +3029,7 @@
               "fill": true,
               "line": true,
               "op": "gt",
-              "value": 134217728000,
+              "value": 0.8,
               "yaxis": "left"
             }
           ],
@@ -3053,11 +3052,11 @@
           },
           "yaxes": [
             {
-              "format": "bytes",
+              "format": "percentunit",
               "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
+              "max": "1",
+              "min": "0",
               "show": true
             },
             {
@@ -4351,7 +4350,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 8
+            "y": 39
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4415,7 +4414,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 8
+            "y": 39
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4476,7 +4475,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 17
+            "y": 48
           },
           "height": "400",
           "id": 52,
@@ -4512,14 +4511,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "1-(elasticsearch_filesystem_data_available_bytes{cluster=\"elasticsearch\",name=~\"elasticsearch-master-0|elasticsearch-master-1|elasticsearch-master-2\"}/elasticsearch_filesystem_data_size_bytes{cluster=\"elasticsearch\",name=~\"elasticsearch-master-0|elasticsearch-master-1|elasticsearch-master-2\"})",
-              "format": "time_series",
-              "interval": "",
-              "intervalFactor": 2,
-              "legendFormat": "{{name}}: {{path}}",
-              "metric": "",
-              "refId": "A",
-              "step": 20
+              "expr": "(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"})",
+              "legendFormat": "{{persistentvolumeclaim}}",
+              "refId": "B"
             }
           ],
           "thresholds": [
@@ -4584,7 +4578,7 @@
       "type": "row"
     }
   ],
-  "refresh": "5s",
+  "refresh": "10s",
   "schemaVersion": 19,
   "style": "dark",
   "tags": [],
@@ -4592,7 +4586,6 @@
     "list": [
       {
         "current": {
-          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
