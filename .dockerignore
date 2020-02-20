@@ -1,4 +1,5 @@
 *
 !docker
 !distro/target/*.tar.gz
+!target/checkout/distro/target/*.tar.gz
 !settings.xml

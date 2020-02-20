@@ -10,7 +10,9 @@ ARG NEXUS_PSW
 
 RUN apk add --no-cache maven tar
 
-COPY settings.xml docker/download.sh distro/target/*-${DISTRO}.tar.gz /tmp/
+COPY settings.xml docker/download.sh /tmp/
+# release artifacts should always win, thus copied last if present
+COPY distro/target/*-${DISTRO}.tar.gz target/checkout/distro/target/*-${DISTRO}.tar.gz /tmp/
 
 WORKDIR /build
 
