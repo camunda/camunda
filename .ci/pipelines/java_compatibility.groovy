@@ -48,30 +48,30 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 1
+        value: 2
       - name: TZ
         value: Europe/Berlin
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 4
-        memory: 4Gi
+        cpu: 6
+        memory: 6Gi
       requests:
         cpu: 4
         memory: 4Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
+      - name: JAVA_OPTS
+        value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 1
-        memory: 1Gi
+        cpu: 4
+        memory: 2Gi
       requests:
-        cpu: 1
-        memory: 1Gi
+        cpu: 3
+        memory: 2Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml

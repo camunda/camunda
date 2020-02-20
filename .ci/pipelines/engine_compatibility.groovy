@@ -54,7 +54,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 3
+        value: 2
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -77,18 +77,18 @@ String elasticSearchContainerSpec(def esVersion) {
         add: ["IPC_LOCK", "SYS_RESOURCE"]
     resources:
       limits:
-        cpu: 5
-        memory: 4Gi
+        cpu: 2
+        memory: 2Gi
       requests:
-        cpu: 5
-        memory: 4Gi
+        cpu: 2
+        memory: 2Gi
     env:
       - name: ES_NODE_NAME
         valueFrom:
           fieldRef:
             fieldPath: metadata.name
       - name: ES_JAVA_OPTS
-        value: "-Xms2g -Xmx2g"
+        value: "-Xms1g -Xmx1g"
       - name: bootstrap.memory_lock
         value: true
       - name: discovery.type
@@ -108,16 +108,16 @@ String camBpmContainerSpec(String camBpmVersion) {
     tty: true
     env:
       - name: JAVA_OPTS
-        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
+        value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 4
-        memory: 3Gi
+        memory: 2Gi
       requests:
-        cpu: 4
-        memory: 3Gi
+        cpu: 3
+        memory: 2Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml

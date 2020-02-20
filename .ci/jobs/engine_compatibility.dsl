@@ -15,6 +15,6 @@ pipelineJob('engine_compatibility') {
   }
 
   triggers {
-    cron('H 0 * * *')
+    cron('H 22 * * *')
   }
 }

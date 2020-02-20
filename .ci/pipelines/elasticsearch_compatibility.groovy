@@ -66,8 +66,8 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 4
-        memory: 4Gi
+        cpu: 6
+        memory: 6Gi
       requests:
         cpu: 4
         memory: 4Gi
@@ -85,10 +85,10 @@ static String camBpmContainerSpec(String camBpmVersion) {
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 1
+        cpu: 4
         memory: 2Gi
       requests:
-        cpu: 1
+        cpu: 3
         memory: 2Gi
     volumeMounts:
     - name: cambpm-config
