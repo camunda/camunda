@@ -35,7 +35,7 @@ echo Starting Elasticsearch ${elasticsearch.version}...
 echo (Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)
 echo.
 set ELASTICSEARCH_LOG_FILE=%BASEDIR%/log/elasticsearch.log
-start /b "Elasticsearch" cmd /c "%BASEDIR%elasticsearch\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat" >%ELASTICSEARCH_LOG_FILE% 2>&1
+start /b "Elasticsearch" cmd /c "%BASEDIR%elasticsearch\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat" >"%ELASTICSEARCH_LOG_FILE%" 2>&1
 
 :: query elasticsearch if it's up
 :while1
