@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="WARN" shutdownHook="disable">
 
   <Properties>
     <Property name="log.path">${sys:app.home}/logs</Property>

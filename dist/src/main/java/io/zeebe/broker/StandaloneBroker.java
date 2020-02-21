@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
+import org.apache.logging.log4j.LogManager;
 
 public class StandaloneBroker {
   private static final CountDownLatch WAITING_LATCH = new CountDownLatch(1);
@@ -36,11 +37,10 @@ public class StandaloneBroker {
               @Override
               public void run() {
                 try {
-                  if (broker != null) {
-                    broker.close();
-                  }
+                  broker.close();
                 } finally {
                   deleteTempDirectory();
+                  LogManager.shutdown();
                 }
               }
             });
