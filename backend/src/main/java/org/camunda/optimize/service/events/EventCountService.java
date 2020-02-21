@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,22 +68,20 @@ public class EventCountService {
       .flatMap(Collection::stream)
       .collect(Collectors.toList());
 
-    if (eventCountRequestDto.getMappings() != null) {
-      removePreviouslyMappedNonTargetEventsFromCounts(matchingEventCountDtos, eventCountRequestDto);
-      if (eventCountRequestDto.getEventSources().size() == 1
-        && eventCountRequestDto.getEventSources().get(0).getType().equals(EventSourceType.EXTERNAL)) {
-        addSuggestionsForExternalEventCounts(eventCountRequestDto, matchingEventCountDtos);
-      }
+    if (eventCountRequestDto.getEventSources().size() == 1
+      && eventCountRequestDto.getEventSources().get(0).getType().equals(EventSourceType.EXTERNAL)) {
+      addSuggestionsForExternalEventCounts(eventCountRequestDto, matchingEventCountDtos);
     }
+
     return matchingEventCountDtos;
   }
 
   private List<EventCountDto> getEventCountsForCamundaProcess(final String userId,
-                                                             final String searchTerm,
-                                                             final String definitionKey,
-                                                             final List<String> versions,
-                                                             final List<String> tenants,
-                                                             final EventScopeType eventScope) {
+                                                              final String searchTerm,
+                                                              final String definitionKey,
+                                                              final List<String> versions,
+                                                              final List<String> tenants,
+                                                              final EventScopeType eventScope) {
     return camundaEventService
       .getLabeledCamundaEventTypesForProcess(userId, definitionKey, versions, tenants, eventScope)
       .stream()
@@ -106,34 +105,36 @@ public class EventCountService {
                                                     final List<EventCountDto> eventCountDtos) {
     if (eventCountRequestDto.getXml() == null
       || eventCountRequestDto.getTargetFlowNodeId() == null
+      || eventCountRequestDto.getMappings() == null
       || eventCountRequestDto.getMappings().isEmpty()) {
       return;
     }
 
-    Map<String, EventMappingDto> currentMappings = eventCountRequestDto.getMappings();
+    final Map<String, EventMappingDto> currentMappings = eventCountRequestDto.getMappings();
     final BpmnModelInstance bpmnModelForXml = parseBpmnModel(eventCountRequestDto.getXml());
 
     validateEventCountSuggestionsParameters(eventCountRequestDto, currentMappings, bpmnModelForXml);
 
-    FlowNode targetFlowNode =
-      bpmnModelForXml.getModelElementById(eventCountRequestDto.getTargetFlowNodeId());
-    List<EventTypeDto> eventsMappedToIncomingNodes = getNearestIncomingMappedEvents(currentMappings, targetFlowNode);
-    List<EventTypeDto> eventsMappedToOutgoingNodes = getNearestOutgoingMappedEvents(currentMappings, targetFlowNode);
-
-    final List<EventTypeDto> suggestedEvents = getSuggestedExternalEventsForGivenMappings(
-      eventsMappedToIncomingNodes,
-      eventsMappedToOutgoingNodes
+    final FlowNode targetFlowNode = bpmnModelForXml.getModelElementById(eventCountRequestDto.getTargetFlowNodeId());
+    final Set<EventTypeDto> suggestedEvents = getSuggestedExternalEventsForGivenMappings(
+      getNearestIncomingMappedEvents(currentMappings, targetFlowNode),
+      getNearestOutgoingMappedEvents(currentMappings, targetFlowNode)
     );
+    final Set<EventTypeDto> alreadyMappedAndNotTargetNodeEvents = currentMappings.keySet().stream()
+      .filter(mappedEvent -> !mappedEvent.equals(eventCountRequestDto.getTargetFlowNodeId()))
+      .flatMap(key -> Stream.of(currentMappings.get(key).getStart(), currentMappings.get(key).getEnd()))
+      .filter(Objects::nonNull)
+      .collect(Collectors.toSet());
+    suggestedEvents.removeAll(alreadyMappedAndNotTargetNodeEvents);
 
-    eventCountDtos.forEach(eventCountDto -> {
-      if (eventCountIsInEventTypeList(eventCountDto, suggestedEvents)) {
-        eventCountDto.setSuggested(true);
-      }
-    });
+    eventCountDtos
+      .stream()
+      .filter(eventCountDto -> eventCountIsPresentInEventTypes(eventCountDto, suggestedEvents))
+      .forEach(eventCountDto -> eventCountDto.setSuggested(true));
   }
 
-  private List<EventTypeDto> getSuggestedExternalEventsForGivenMappings(final List<EventTypeDto> eventsMappedToIncomingNodes,
-                                                                        final List<EventTypeDto> eventsMappedToOutgoingNodes) {
+  private Set<EventTypeDto> getSuggestedExternalEventsForGivenMappings(final List<EventTypeDto> eventsMappedToIncomingNodes,
+                                                                       final List<EventTypeDto> eventsMappedToOutgoingNodes) {
     List<EventSequenceCountDto> suggestedEventSequenceCandidates =
       eventSequenceCountReader.getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
         eventsMappedToIncomingNodes, eventsMappedToOutgoingNodes
@@ -151,7 +152,7 @@ public class EventCountService {
         }
       })
       .filter(Objects::nonNull)
-      .collect(Collectors.toList());
+      .collect(Collectors.toSet());
   }
 
   private void validateEventCountSuggestionsParameters(final EventCountRequestDto eventCountRequestDto,
@@ -168,12 +169,15 @@ public class EventCountService {
     }
   }
 
-  private boolean eventCountIsInEventTypeList(final EventCountDto eventCountDto, final List<EventTypeDto> eventTypes) {
-    return eventTypes.stream()
-      .anyMatch(suggested ->
-                  (Objects.equals(suggested.getGroup(), eventCountDto.getGroup())
-                    && Objects.equals(suggested.getSource(), eventCountDto.getSource())
-                    && Objects.equals(suggested.getEventName(), eventCountDto.getEventName())));
+  private boolean eventCountIsPresentInEventTypes(final EventCountDto eventCountDto,
+                                                  final Set<EventTypeDto> eventTypes) {
+    return eventTypes.contains(
+      EventTypeDto.builder()
+        .eventName(eventCountDto.getEventName())
+        .group(eventCountDto.getGroup())
+        .source(eventCountDto.getSource())
+        .build()
+    );
   }
 
   private List<EventTypeDto> getNearestIncomingMappedEvents(final Map<String, EventMappingDto> currentMappings,
@@ -221,16 +225,4 @@ public class EventCountService {
       .collect(Collectors.toList());
   }
 
-  private void removePreviouslyMappedNonTargetEventsFromCounts(final List<EventCountDto> eventCountDtos,
-                                                               final EventCountRequestDto eventCountRequestDto) {
-    Map<String, EventMappingDto> currentMappings = eventCountRequestDto.getMappings();
-    final List<EventTypeDto> currentMappedNonTargetEvents = currentMappings.keySet()
-      .stream()
-      .filter(mappedEvent -> !mappedEvent.equals(eventCountRequestDto.getTargetFlowNodeId()))
-      .flatMap(key -> Stream.of(currentMappings.get(key).getStart(), currentMappings.get(key).getEnd()))
-      .filter(Objects::nonNull)
-      .collect(Collectors.toList());
-
-    eventCountDtos.removeIf(eventCountDto -> eventCountIsInEventTypeList(eventCountDto, currentMappedNonTargetEvents));
-  }
 }

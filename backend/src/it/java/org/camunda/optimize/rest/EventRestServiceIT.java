@@ -73,18 +73,18 @@ public class EventRestServiceIT extends AbstractIT {
   private CloudEventDto managementBbqEvent = createEventDtoWithProperties("management", "BBQ_sauce", "onboarded_event");
   private CloudEventDto ketchupMayoEvent = createEventDtoWithProperties("ketchup", "mayonnaise", "blacklisted_event");
   private CloudEventDto backendMayoEvent = createEventDtoWithProperties("BACKEND", "mayonnaise", "ketchupevent");
-  private CloudEventDto nullSubjectEvent = createEventDtoWithProperties(null, "another", "ketchupevent");
+  private CloudEventDto nullGroupEvent = createEventDtoWithProperties(null, "another", "ketchupevent");
 
   private final List<CloudEventDto> eventTraceOne = createTraceFromEventList(
     "traceIdOne",
     Arrays.asList(
-      backendKetchupEvent, frontendMayoEvent, managementBbqEvent, ketchupMayoEvent, backendMayoEvent, nullSubjectEvent
+      backendKetchupEvent, frontendMayoEvent, managementBbqEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
     )
   );
   private final List<CloudEventDto> eventTraceTwo = createTraceFromEventList(
     "traceIdTwo",
     Arrays.asList(
-      backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullSubjectEvent
+      backendKetchupEvent, frontendMayoEvent, ketchupMayoEvent, backendMayoEvent, nullGroupEvent
     )
   );
   private final List<CloudEventDto> eventTraceThree = createTraceFromEventList(
@@ -136,12 +136,12 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
       );
   }
 
@@ -374,12 +374,12 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactly(
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false),
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false),
         createProcessInstanceEndEventCount(definitionKey),
         createProcessInstanceStartEventCountDto(definitionKey),
         createEndEventCountDto(definitionKey),
@@ -414,10 +414,10 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false)
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createKetchupMayoCountDto(false)
       );
   }
 
@@ -437,7 +437,7 @@ public class EventRestServiceIT extends AbstractIT {
     assertThat(eventCountDtos)
       .isNotNull()
       .hasSize(1)
-      .containsExactly(toEventCountDto(frontendMayoEvent, 2L, false));
+      .containsExactly(createFrontendMayoCountDto(false));
   }
 
   @Test
@@ -457,12 +457,12 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(managementBbqEvent, 1L, false),
-        toEventCountDto(nullSubjectEvent, 2L, false)
+        createKetchupMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createBackendMayoCountDto(false),
+        createBackendKetchupCountDto(false),
+        createManagementBbqCountDto(false),
+        createNullGroupCountDto(false)
       );
   }
 
@@ -483,12 +483,12 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
       );
   }
 
@@ -524,10 +524,10 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(4)
       .containsExactly(
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false)
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createNullGroupCountDto(false),
+        createKetchupMayoCountDto(false)
       );
   }
 
@@ -555,20 +555,20 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then events that are sequenced with mapped events are first and marked as suggested
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(4)
       .containsExactly(
-        toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(frontendMayoEvent, 2L, true),
-        toEventCountDto(managementBbqEvent, 1L, true),
-        toEventCountDto(nullSubjectEvent, 2L, false)
+        createBackendMayoCountDto(true),
+        createFrontendMayoCountDto(true),
+        createManagementBbqCountDto(true),
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createKetchupMayoCountDto(false)
       );
   }
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExistWithNullFields() {
     // given
-    EventTypeDto nextMappedEventWithNullProperties = eventTypeFromEvent(nullSubjectEvent);
+    EventTypeDto nextMappedEventWithNullProperties = eventTypeFromEvent(nullGroupEvent);
 
     // Suggestions request for flow node with event mapped before and after
     EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
@@ -584,14 +584,13 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then events that are sequenced with mapped events are first and marked as suggested
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(5)
       .containsExactly(
-        toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
+        createBackendMayoCountDto(true),
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
       );
   }
 
@@ -618,29 +617,29 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then only the event in sequence before closest neighbour is suggested, non-suggestions use default ordering
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(4)
       .containsExactly(
-        toEventCountDto(frontendMayoEvent, 2L, true),
-        toEventCountDto(managementBbqEvent, 1L, true),
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false)
+        createFrontendMayoCountDto(true),
+        createManagementBbqCountDto(true),
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createKetchupMayoCountDto(false)
       );
   }
 
   @Test
-  public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist_alreadyMappedEventsAreOmitted() {
+  public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist_alreadyMappedEventsAreNotSuggested() {
     // given
-    EventTypeDto nextMappedEvent = eventTypeFromEvent(nullSubjectEvent);
-    EventTypeDto otherMappedEvent = eventTypeFromEvent(backendMayoEvent);
+    EventTypeDto firstMappedEvent = eventTypeFromEvent(backendMayoEvent);
+    EventTypeDto thirdMappedEvent = eventTypeFromEvent(nullGroupEvent);
 
     // Suggestions request for flow node with event mapped after
     EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
       .targetFlowNodeId(SECOND_TASK_ID)
       .xml(simpleDiagramXml)
       .mappings(ImmutableMap.of(
-        FIRST_TASK_ID, createEventMappingDto(otherMappedEvent, null),
-        THIRD_TASK_ID, createEventMappingDto(nextMappedEvent, null)
+        FIRST_TASK_ID, createEventMappingDto(firstMappedEvent, null),
+        THIRD_TASK_ID, createEventMappingDto(thirdMappedEvent, null)
       ))
       .eventSources(createEventSourcesWithExternalEventsOnly())
       .build();
@@ -651,21 +650,21 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then no suggestions returned as matching sequence event has already been mapped
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(4)
       .containsExactly(
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
       );
   }
 
   @Test
-  public void getEventCounts_withSuggestionsForValidTargetNodeAlreadyMapped_alreadyMappedEventForTargetNotExcluded() {
+  public void getEventCounts_withSuggestionsForValidTargetNodeAlreadyMapped_alreadyMappedEventForTargetStillSuggested() {
     // given
     EventTypeDto mappedEvent = eventTypeFromEvent(backendMayoEvent);
-    EventTypeDto otherMappedEvent = eventTypeFromEvent(nullSubjectEvent);
+    EventTypeDto otherMappedEvent = eventTypeFromEvent(nullGroupEvent);
 
     // Suggestions request for already mapped flow node and with event mapped after
     EventCountRequestDto eventCountRequestDto = EventCountRequestDto.builder()
@@ -684,14 +683,13 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then event count list contains suggestions and already mapped target event is included
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(5)
       .containsExactly(
-        toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
+        createBackendMayoCountDto(true),
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
       );
   }
 
@@ -719,14 +717,13 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then counts that are not suggestions respect custom ordering
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(5)
       .containsExactly(
-        toEventCountDto(frontendMayoEvent, 2L, true),
-        toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false),
-        toEventCountDto(nullSubjectEvent, 2L, false)
+        createFrontendMayoCountDto(true),
+        createBackendMayoCountDto(true),
+        createKetchupMayoCountDto(false),
+        createBackendKetchupCountDto(false),
+        createManagementBbqCountDto(false),
+        createNullGroupCountDto(false)
       );
   }
 
@@ -754,9 +751,9 @@ public class EventRestServiceIT extends AbstractIT {
       .isNotNull()
       .hasSize(3)
       .containsExactly(
-        toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(frontendMayoEvent, 2L, true),
-        toEventCountDto(ketchupMayoEvent, 2L, false)
+        createBackendMayoCountDto(true),
+        createFrontendMayoCountDto(true),
+        createKetchupMayoCountDto(false)
       );
   }
 
@@ -781,12 +778,11 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then suggested and non-suggested counts are filtered out by search term
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(3)
       .containsExactly(
-        toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false)
+        createBackendMayoCountDto(true),
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createKetchupMayoCountDto(false)
       );
   }
 
@@ -803,17 +799,17 @@ public class EventRestServiceIT extends AbstractIT {
     List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
-    // then all events are returned with no suggested using default group case-insensitive ordering
+    // then result is using default group case-insensitive ordering
     assertThat(eventCountDtos)
       .isNotNull()
       .hasSize(6)
       .containsExactly(
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(backendKetchupEvent, 4L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
       );
   }
 
@@ -834,16 +830,15 @@ public class EventRestServiceIT extends AbstractIT {
     List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
-    // then all unmapped events are returned with no suggested using default group case-insensitive ordering
+    // then no suggestions are returned, result is using default group case-insensitive ordering
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(5)
       .containsExactly(
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(backendMayoEvent, 3L, false),
-        toEventCountDto(frontendMayoEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
       );
   }
 
@@ -868,16 +863,16 @@ public class EventRestServiceIT extends AbstractIT {
     List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventCountRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
-    // then all unmapped events are returned and only event sequenced to the mapped end event is suggested
+    // then only event sequenced to the mapped end event is suggested
     assertThat(eventCountDtos)
-      .isNotNull()
-      .hasSize(4)
       .containsExactly(
-        toEventCountDto(backendMayoEvent, 3L, true),
-        toEventCountDto(nullSubjectEvent, 2L, false),
-        toEventCountDto(ketchupMayoEvent, 2L, false),
-        toEventCountDto(managementBbqEvent, 1L, false)
-      );
+        createBackendMayoCountDto(true),
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false)
+        );
   }
 
   @Test
@@ -943,6 +938,30 @@ public class EventRestServiceIT extends AbstractIT {
       .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
   }
 
+  private EventCountDto createNullGroupCountDto(final boolean suggested) {
+    return toEventCountDto(nullGroupEvent, 2L, suggested);
+  }
+
+  private EventCountDto createFrontendMayoCountDto(final boolean suggested) {
+    return toEventCountDto(frontendMayoEvent, 2L, suggested);
+  }
+
+  private EventCountDto createBackendMayoCountDto(final boolean suggested) {
+    return toEventCountDto(backendMayoEvent, 3L, suggested);
+  }
+
+  private EventCountDto createKetchupMayoCountDto(final boolean suggested) {
+    return toEventCountDto(ketchupMayoEvent, 2L, suggested);
+  }
+
+  private EventCountDto createManagementBbqCountDto(final boolean suggested) {
+    return toEventCountDto(managementBbqEvent, 1L, suggested);
+  }
+
+  private EventCountDto createBackendKetchupCountDto(final boolean suggested) {
+    return toEventCountDto(backendKetchupEvent, 4L, suggested);
+  }
+
   private EventTypeDto eventTypeFromEvent(CloudEventDto event) {
     return EventTypeDto.builder()
       .group(event.getGroup().orElse(null))
@@ -978,10 +997,10 @@ public class EventRestServiceIT extends AbstractIT {
       .collect(toList());
   }
 
-  private CloudEventDto createEventDtoWithProperties(final String subject, final String source, final String type) {
+  private CloudEventDto createEventDtoWithProperties(final String group, final String source, final String type) {
     return eventClient.createCloudEventDto()
       .toBuilder()
-      .group(subject)
+      .group(group)
       .source(source)
       .type(type)
       .build();
