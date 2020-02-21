@@ -193,6 +193,7 @@ export default withErrorHandling(
                       value={variables && traceVariable}
                       noValuesMessage={getDisabledMessage(tracedByBusinessKey, variables)}
                       disabled={tracedByBusinessKey}
+                      placeholder={t('common.filter.variableModal.inputPlaceholder')}
                       onChange={traceVariable => this.updateSource('traceVariable', traceVariable)}
                     >
                       {variables &&

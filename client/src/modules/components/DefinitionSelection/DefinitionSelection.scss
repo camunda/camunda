@@ -94,4 +94,13 @@
       }
     }
   }
+
+  &:not(.Popover) .container .selectionPanel .dropdowns {
+    width: 100%;
+
+    .entry:first-child {
+      width: auto;
+      flex: 1;
+    }
+  }
 }

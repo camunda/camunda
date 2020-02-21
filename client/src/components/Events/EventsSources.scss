@@ -4,6 +4,7 @@
   display: flex;
   align-items: center;
   flex-grow: 1;
+  min-width: 100px;
 
   .sourcesList {
     flex-grow: 1;
@@ -12,22 +13,35 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
+    min-width: 100px;
 
     .Dropdown {
       margin: 2px 0px 2px 10px;
+      min-width: 100px;
+      max-width: max-content;
+      flex-basis: 0;
+      flex-grow: 1;
 
       .Button {
-        padding: 2px 40px 2px 10px;
+        padding: 2px 30px 2px 10px;
         background: #f8f8f8;
         color: $text-disabled;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       &.isActive .Button {
-        background: $blue;
+        background: #4d90ff;
+        border-color: #1166ea;
         color: #fff;
         border-radius: 20px;
         font-size: 0.875em;
-        white-space: nowrap;
+
+        &.isActive,
+        &:hover {
+          background: $blue;
+        }
       }
     }
   }
@@ -37,6 +51,7 @@
     margin-top: 2px;
     margin-right: 10px;
     height: 32px;
-    min-width: 130px;
+    min-width: 165px;
+    white-space: nowrap;
   }
 }
