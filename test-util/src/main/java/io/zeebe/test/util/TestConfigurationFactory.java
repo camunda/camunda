@@ -20,6 +20,7 @@ import java.util.Properties;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
@@ -54,6 +55,27 @@ public class TestConfigurationFactory {
   public static final Logger LOG = Loggers.CONFIG_LOGGER;
 
   /**
+   * Reads the configuration from the input stream and binds it to an object
+   *
+   * @param configurationInputStream input stream of the configuration file; must not be {@code
+   *     null}
+   * @param type type of object to be created; it is assumed that this object has a public no arg
+   *     constructor; must not be {@code null}; must have a {@link ConfigurationProperties}
+   *     annotation with a {@code prefix} attribute
+   */
+  public <T> T create(final InputStream configurationInputStream, final Class<T> type) {
+    final ConfigurationProperties annotation = type.getAnnotation(ConfigurationProperties.class);
+    final String prefix;
+    if (annotation != null && annotation.prefix() != null) {
+      prefix = annotation.prefix();
+    } else {
+      throw new IllegalArgumentException(
+          "Unable to identify prefix for type" + type.getSimpleName());
+    }
+    return create(null, prefix, configurationInputStream, type);
+  }
+
+  /**
    * Reads the configuration file from the class path and binds it to an object
    *
    * @param environment environment to simulate environment variables that can be overlayed; may be
@@ -77,13 +99,12 @@ public class TestConfigurationFactory {
   }
 
   /**
-   * Reads the configuration the input stream and binds it to an object
+   * Reads the configuration from the input stream and binds it to an object
    *
    * @param environment environment to simulate environment variables that can be overlayed; may be
    *     {@code} null
    * @param prefix the top level element in the configuration that should be mapped to the object
-   * @param inputStream input stream of the configuration file; must be available on the classpath;
-   *     must not be {@code null}
+   * @param inputStream input stream of the configuration file; must not be {@code null}
    * @param type type of object to be created; it is assumed that this object has a public no arg
    *     constructor; must not be {@code null}
    */

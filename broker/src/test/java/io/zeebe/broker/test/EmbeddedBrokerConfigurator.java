@@ -19,17 +19,16 @@ import java.util.function.Consumer;
 public final class EmbeddedBrokerConfigurator {
 
   public static final Consumer<BrokerCfg> DEBUG_EXPORTER =
-      cfg -> cfg.getExporters().add(DebugLogExporter.defaultConfig(false));
+      cfg -> cfg.getExporters().put("DebugLogExporter", DebugLogExporter.defaultConfig(false));
 
   public static final Consumer<BrokerCfg> HTTP_EXPORTER =
-      cfg -> cfg.getExporters().add(DebugHttpExporter.defaultConfig());
+      cfg -> cfg.getExporters().put("DebugHttpExporter", DebugHttpExporter.defaultConfig());
 
   public static final Consumer<BrokerCfg> TEST_RECORDER =
       cfg -> {
         final ExporterCfg exporterCfg = new ExporterCfg();
-        exporterCfg.setId("test-recorder");
         exporterCfg.setClassName(RecordingExporter.class.getName());
-        cfg.getExporters().add(exporterCfg);
+        cfg.getExporters().put("test-recorder", exporterCfg);
       };
 
   public static final Consumer<BrokerCfg> DISABLE_EMBEDDED_GATEWAY =

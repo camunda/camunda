@@ -145,10 +145,9 @@ public final class SnapshotReplicationTest {
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());
-    exporterCfg.setId("data-delete-test-exporter");
 
     // overwrites RecordingExporter on purpose because since it doesn't update its position
     // we wouldn't be able to delete data
-    brokerCfg.setExporters(Collections.singletonList(exporterCfg));
+    brokerCfg.setExporters(Collections.singletonMap("data-delete-test-exporter", exporterCfg));
   }
 }

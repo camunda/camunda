@@ -208,9 +208,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public void configureBroker(final BrokerCfg brokerCfg) {
     // build-in exporters
     final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setId(TEST_RECORD_EXPORTER_ID);
     exporterCfg.setClassName(RecordingExporter.class.getName());
-    brokerCfg.getExporters().add(exporterCfg);
+    brokerCfg.getExporters().put(TEST_RECORD_EXPORTER_ID, exporterCfg);
 
     // custom configurators
     for (final Consumer<BrokerCfg> configurator : configurators) {

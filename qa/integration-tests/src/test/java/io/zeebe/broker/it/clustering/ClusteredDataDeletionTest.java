@@ -65,7 +65,7 @@ public final class ClusteredDataDeletionTest {
     data.setLogSegmentSize(DataSize.ofKilobytes(8));
     brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
 
-    brokerCfg.setExporters(Collections.emptyList());
+    brokerCfg.setExporters(Collections.emptyMap());
   }
 
   private static void configureCustomExporter(final BrokerCfg brokerCfg) {
@@ -77,11 +77,10 @@ public final class ClusteredDataDeletionTest {
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());
-    exporterCfg.setId("data-delete-test-exporter");
 
     // overwrites RecordingExporter on purpose because since it doesn't update its position
     // we wouldn't be able to delete data
-    brokerCfg.setExporters(Collections.singletonList(exporterCfg));
+    brokerCfg.setExporters(Collections.singletonMap("data-delete-test-exporter", exporterCfg));
   }
 
   @Test

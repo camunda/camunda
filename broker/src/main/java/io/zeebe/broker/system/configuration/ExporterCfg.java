@@ -15,9 +15,6 @@ import java.util.Map;
  * exporters, and other general configuration.
  */
 public final class ExporterCfg implements ConfigurationEntry {
-  /** locally unique ID of the exporter */
-  private String id;
-
   /**
    * path to the JAR file containing the exporter class
    *
@@ -41,14 +38,6 @@ public final class ExporterCfg implements ConfigurationEntry {
 
   public boolean isExternal() {
     return !isEmpty(jarPath);
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(final String id) {
-    this.id = id;
   }
 
   public String getJarPath() {
@@ -82,9 +71,6 @@ public final class ExporterCfg implements ConfigurationEntry {
   @Override
   public String toString() {
     return "ExporterCfg{"
-        + "id='"
-        + id
-        + '\''
         + ", jarPath='"
         + jarPath
         + '\''

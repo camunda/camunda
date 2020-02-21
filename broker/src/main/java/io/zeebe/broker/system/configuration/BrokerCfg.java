@@ -11,8 +11,8 @@ import com.google.gson.GsonBuilder;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.util.Environment;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +24,7 @@ public final class BrokerCfg {
   private ClusterCfg cluster = new ClusterCfg();
   private ThreadsCfg threads = new ThreadsCfg();
   private DataCfg data = new DataCfg();
-  private List<ExporterCfg> exporters = new ArrayList<>();
+  private Map<String, ExporterCfg> exporters = new HashMap<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
 
@@ -40,7 +40,7 @@ public final class BrokerCfg {
     cluster.init(this, brokerBase, environment);
     threads.init(this, brokerBase, environment);
     data.init(this, brokerBase, environment);
-    exporters.forEach(e -> e.init(this, brokerBase, environment));
+    exporters.values().forEach(e -> e.init(this, brokerBase, environment));
     gateway.init(this, brokerBase, environment);
     backpressure.init(this, brokerBase, environment);
   }
@@ -50,7 +50,9 @@ public final class BrokerCfg {
         .get(EnvironmentConstants.ENV_DEBUG_EXPORTER)
         .ifPresent(
             value ->
-                exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
+                exporters.put(
+                    "DebugLogExporter",
+                    DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
     environment
         .get(EnvironmentConstants.ENV_STEP_TIMEOUT)
         .ifPresent(value -> setStepTimeout(Duration.parse(value)));
@@ -88,11 +90,11 @@ public final class BrokerCfg {
     this.data = logs;
   }
 
-  public List<ExporterCfg> getExporters() {
+  public Map<String, ExporterCfg> getExporters() {
     return exporters;
   }
 
-  public void setExporters(final List<ExporterCfg> exporters) {
+  public void setExporters(final Map<String, ExporterCfg> exporters) {
     this.exporters = exporters;
   }
 

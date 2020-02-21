@@ -7,7 +7,6 @@
  */
 package io.zeebe.test.exporter;
 
-import com.moandjiezana.toml.Toml;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.api.Exporter;
@@ -17,8 +16,10 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.test.exporter.record.MockRecord;
 import io.zeebe.test.exporter.record.MockRecordMetadata;
 import io.zeebe.test.exporter.record.MockRecordStream;
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.ZbLogger;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
@@ -61,29 +62,28 @@ public class ExporterTestHarness {
   }
 
   /**
-   * Will configure the exporter with the given ID, and parse the input as if it were a partial TOML
+   * Will configure the exporter with the given ID, and parse the input as if it were a partial YAML
    * document; this would allow one to test sample configuration and make sure they're parsed as
    * expected.
    *
-   * <p>The given TOML document can be a partial document which contains strictly the exporter
+   * <p>The given YAML document can be a partial document which contains strictly the exporter
    * definition. For example: <code>
-   * [[exporters]]
-   * id = "elasticsearch"
-   * className = "io.zeebe.exporter.ElasticsearchExporter"
-   *
-   *   [exporters.args.bulk]
-   *   delay = 1
-   *   size = 1
+   * zeebe-broker:
+   *   exporters:
+   *     elasticsearsch:
+   *       className = "io.zeebe.exporter.ElasticsearchExporter"
+   *       args:
+   *       ...
    * </code>
    *
-   * <p>NOTE: the ID of the exporter in the TOML document MUST match the given ID here to avoid any
-   * issues where you would pass a sample TOML document with multiple exporter definitions.
+   * <p>NOTE: the ID of the exporter in the YAML document MUST match the given ID here to avoid any
+   * issues where you would pass a sample YAML document with multiple exporter definitions.
    *
    * @param id id of the exporter
-   * @param toml the reference TOML document
+   * @param yaml the reference YAML document
    */
-  public void configure(final String id, final InputStream toml) throws Exception {
-    final BrokerCfg config = new Toml().read(toml).to(BrokerCfg.class);
+  public void configure(final String id, final InputStream yaml) throws Exception {
+    final BrokerCfg config = new TestConfigurationFactory().create(yaml, BrokerCfg.class);
     configure(id, config);
   }
 
@@ -92,11 +92,12 @@ public class ExporterTestHarness {
    * transform the file into an {@link InputStream}. See its documentation for more.
    *
    * @param id the exporter ID
-   * @param configFile pointer to a TOML configuration file
+   * @param configFile pointer to a yaml configuration file
    */
   public void configure(final String id, final File configFile) throws Exception {
-    final BrokerCfg config = new Toml().read(configFile).to(BrokerCfg.class);
-    configure(id, config);
+    try (InputStream configStream = new FileInputStream(configFile)) {
+      configure(id, configStream);
+    }
   }
 
   /**
@@ -253,8 +254,7 @@ public class ExporterTestHarness {
   }
 
   private void configure(final String id, final BrokerCfg brokerCfg) throws Exception {
-    final Optional<ExporterCfg> config =
-        brokerCfg.getExporters().stream().filter(c -> c.getId().equals(id)).findFirst();
+    final Optional<ExporterCfg> config = Optional.ofNullable(brokerCfg.getExporters().get(id));
 
     if (config.isPresent()) {
       final MockConfiguration<Object> configuration = new MockConfiguration<>();

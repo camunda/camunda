@@ -39,6 +39,7 @@ import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
 import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,18 +71,18 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseDefaultStepTimeout() {
-    assertDefaultStepTimeout("5m");
+    assertDefaultStepTimeout(Duration.ofMinutes(5));
   }
 
   @Test
   public void shouldUseStepTimeout() {
-    assertStepTimeout("step-timeout-cfg", "2m");
+    assertStepTimeout("step-timeout-cfg", Duration.ofMinutes(2));
   }
 
   @Test
   public void shouldUseStepTimeoutFromEnv() {
-    environment.put(ENV_STEP_TIMEOUT, "1m");
-    assertDefaultStepTimeout("1m");
+    environment.put(ENV_STEP_TIMEOUT, Duration.ofMinutes(1).toString());
+    assertDefaultStepTimeout(Duration.ofMinutes(1));
   }
 
   @Test
@@ -173,20 +174,17 @@ public final class BrokerCfgTest {
   public void shouldExpandExporterJarPathRelativeToBrokerBaseIffPresent() {
     // given
     final ExporterCfg exporterCfgExternal = new ExporterCfg();
-    exporterCfgExternal.setId("external");
     exporterCfgExternal.setJarPath("exporters/exporter.jar");
 
     final ExporterCfg exporterCfgInternal1 = new ExporterCfg();
-    exporterCfgInternal1.setId("internal-1");
     exporterCfgInternal1.setJarPath("");
 
     final ExporterCfg exporterCfgInternal2 = new ExporterCfg();
-    exporterCfgInternal2.setId("internal-2");
 
     final BrokerCfg config = new BrokerCfg();
-    config.getExporters().add(exporterCfgExternal);
-    config.getExporters().add(exporterCfgInternal1);
-    config.getExporters().add(exporterCfgInternal2);
+    config.getExporters().put("external", exporterCfgExternal);
+    config.getExporters().put("internal-1", exporterCfgInternal1);
+    config.getExporters().put("internal-2", exporterCfgInternal2);
 
     final String base = temporaryFolder.getRoot().getAbsolutePath();
     final String jarFile = Paths.get(base, "exporters", "exporter.jar").toAbsolutePath().toString();
@@ -196,11 +194,11 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(config.getExporters()).hasSize(3);
-    assertThat(config.getExporters().get(0))
+    assertThat(config.getExporters().get("external"))
         .hasFieldOrPropertyWithValue("jarPath", jarFile)
         .is(new Condition<>(ExporterCfg::isExternal, "is external"));
-    assertThat(config.getExporters().get(1).isExternal()).isFalse();
-    assertThat(config.getExporters().get(2).isExternal()).isFalse();
+    assertThat(config.getExporters().get("internal-1").isExternal()).isFalse();
+    assertThat(config.getExporters().get("internal-2").isExternal()).isFalse();
   }
 
   @Test
@@ -526,12 +524,12 @@ public final class BrokerCfgTest {
     assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
   }
 
-  private void assertDefaultStepTimeout(final String stepTimeout) {
+  private void assertDefaultStepTimeout(final Duration stepTimeout) {
     assertStepTimeout("default", stepTimeout);
     assertStepTimeout("empty", stepTimeout);
   }
 
-  private void assertStepTimeout(final String configFileName, final String stepTimeout) {
+  private void assertStepTimeout(final String configFileName, final Duration stepTimeout) {
     final BrokerCfg cfg = readConfig(configFileName);
     assertThat(cfg.getStepTimeout()).isEqualTo(stepTimeout);
   }
@@ -645,7 +643,7 @@ public final class BrokerCfgTest {
     final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
     final BrokerCfg brokerCfg = readConfig(configFileName);
 
-    assertThat(brokerCfg.getExporters())
+    assertThat(brokerCfg.getExporters().values())
         .usingRecursiveFieldByFieldElementComparator()
         .contains(exporterCfg);
   }

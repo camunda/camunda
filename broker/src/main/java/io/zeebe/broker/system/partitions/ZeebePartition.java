@@ -115,10 +115,13 @@ public final class ZeebePartition extends Actor
     this.scheduler = actorScheduler;
     this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
 
+    final var exporterEntries = brokerCfg.getExporters().entrySet();
     // load and validate exporters
-    for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
+    for (final var exporterEntry : exporterEntries) {
+      final String id = exporterEntry.getKey();
+      final ExporterCfg exporterCfg = exporterEntry.getValue();
       try {
-        exporterRepository.load(exporterCfg);
+        exporterRepository.load(id, exporterCfg);
       } catch (final ExporterLoadException | ExporterJarLoadException e) {
         throw new IllegalStateException(
             "Failed to load exporter with configuration: " + exporterCfg, e);

@@ -55,7 +55,7 @@ public final class BrokerCfg {
               final io.zeebe.broker.system.configuration.ExporterCfg exporterCfg =
                   DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value));
               final ExporterCfg legacyConfig = new ExporterCfg();
-              legacyConfig.setId(exporterCfg.getId());
+              legacyConfig.setId("DebugLogExporter");
               legacyConfig.setClassName(exporterCfg.getClassName());
               legacyConfig.setArgs(exporterCfg.getArgs());
               exporters.add(legacyConfig);

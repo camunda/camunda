@@ -257,9 +257,6 @@
     #
     # Each exporter should be configured following this template:
     #
-    # id:
-    #   property should be unique in this configuration file, as it will server as the exporter
-    #   ID for loading/unloading.
     # jarPath:
     #   path to the JAR file containing the exporter class. JARs are only loaded once, so you can define
     #   two exporters that point to the same JAR, with the same class or a different one, and use args
@@ -276,59 +273,59 @@
     #
     # Enable the following debug exporter to log the exported records to console
     #
-    # - id: debug-log
-    #   className: io.zeebe.broker.exporter.debug.DebugLogExporter
-    #   args:
-    #     logLevel: debug
-    #     prettyPrint: false
+    # debuglog:
+      # className: io.zeebe.broker.exporter.debug.DebugLogExporter
+      # args:
+      #   logLevel: debug
+      #   prettyPrint: false
 
     # Debug HTTP Export ---------------
     #
     # Enable the following debug exporter to start a http server to inspect the exported records
     #
     #
-    # - id: debug-http
-    #   className: io.zeebe.broker.exporter.debug.DebugHttpExporter
-    #   args:
-    #     port = 8000
-    #     limit = 1024
+    # debug-http:
+      # className: io.zeebe.broker.exporter.debug.DebugHttpExporter
+      # args:
+      #   port = 8000
+      #   limit = 1024
 
     # Elasticsearch Exporter ----------
     # An example configuration for the elasticsearch exporter:
     #
-    # - id: elasticsearch
-    #   className: io.zeebe.exporter.ElasticsearchExporter
-    #
-    #   args:
-    #     url: http://localhost:9200
-    #
-    #     bulk:
-    #       delay: 5
-    #       size: 1000
-    #
-    #     authentication:
-    #       username: elastic
-    #       password: changeme
-    #
-    #     index:
-    #       prefix: zeebe-record
-    #       createTemplate: true
-    #
-    #       command: false
-    #       event: true
-    #       rejection: false
-    #
-    #       deployment: true
-    #       error: true
-    #       incident: true
-    #       job: true
-    #       jobBatch: false
-    #       message: false
-    #       messageSubscription: false
-    #       variable: true
-    #       variableDocument: true
-    #       workflowInstance: true
-    #       workflowInstanceCreation: false
-    #       workflowInstanceSubscription: false
+    # elasticsearch:
+      # className: io.zeebe.exporter.ElasticsearchExporter
+      #
+      # args:
+      #   url: http://localhost:9200
+      #
+      #   bulk:
+      #     delay: 5
+      #     size: 1000
+      #
+      #   authentication:
+      #     username: elastic
+      #     password: changeme
+      #
+      #   index:
+      #     prefix: zeebe-record
+      #     createTemplate: true
+      #
+      #     command: false
+      #     event: true
+      #     rejection: false
+      #
+      #     deployment: true
+      #     error: true
+      #     incident: true
+      #     job: true
+      #     jobBatch: false
+      #     message: false
+      #     messageSubscription: false
+      #     variable: true
+      #     variableDocument: true
+      #     workflowInstance: true
+      #     workflowInstanceCreation: false
+      #     workflowInstanceSubscription: false
       #
       #     ignoreVariablesAbove = 32677

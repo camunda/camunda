@@ -95,7 +95,7 @@ public final class GatewayCfgTest {
     setEnv(ENV_GATEWAY_CONTACT_POINT, "broker:432");
     setEnv(ENV_GATEWAY_MAX_MESSAGE_SIZE, "1G");
     setEnv(ENV_GATEWAY_MANAGEMENT_THREADS, "32");
-    setEnv(ENV_GATEWAY_REQUEST_TIMEOUT, "43m");
+    setEnv(ENV_GATEWAY_REQUEST_TIMEOUT, Duration.ofMinutes(43).toString());
     setEnv(ENV_GATEWAY_CLUSTER_NAME, "envCluster");
     setEnv(ENV_GATEWAY_CLUSTER_MEMBER_ID, "envMember");
     setEnv(ENV_GATEWAY_CLUSTER_HOST, "envHost");
@@ -116,7 +116,7 @@ public final class GatewayCfgTest {
             .getClassLoader()
             .getResource("security/test-chain.cert.pem")
             .getPath());
-    setEnv(ENV_GATEWAY_KEEP_ALIVE_INTERVAL, "30s");
+    setEnv(ENV_GATEWAY_KEEP_ALIVE_INTERVAL, Duration.ofSeconds(30).toString()); //
 
     final GatewayCfg expected = new GatewayCfg();
     expected
