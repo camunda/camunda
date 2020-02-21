@@ -114,13 +114,13 @@ test('external datasources', async t => {
   await t.takeElementScreenshot(e.reportModal, 'dashboard/dashboard-addAReportModal.png');
 
   await t.click(e.externalSourceLink);
-  await t.typeText(e.externalSourceInput, config.endpoint + '/license.html');
+  await t.typeText(e.externalSourceInput, 'http://example.com/');
 
   await t.click(e.addReportButton);
 
   await t.switchToIframe(e.externalReport);
 
-  await t.expect(e.formLabel.textContent).contains('License Key');
+  await t.expect(e.exampleHeading.textContent).contains('Example Domain');
 });
 
 test('deleting', async t => {

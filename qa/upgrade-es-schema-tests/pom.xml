@@ -50,6 +50,11 @@
                 </exec>
                 <echo message="Optimize ${project.previousVersion} successfully unpacked." />
 
+                <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="cp ./distro/src/environment/OptimizeLicense.txt ${project.build.directory}/${project.previousVersion}/environment" />
+                </exec>
+
                 <echo message="Downloading &amp; unpacking Optimize ${project.version}..." />
                 <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
@@ -57,6 +62,10 @@
                 </exec>
                 <echo message="Optimize ${project.version} successfully unpacked." />
 
+                <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="cp ./distro/src/environment/OptimizeLicense.txt ${project.build.directory}/${project.version}/environment" />
+                </exec>
               </target>
             </configuration>
           </execution>

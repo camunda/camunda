@@ -204,8 +204,4 @@ public class LicenseManager {
     this.optimizeLicense = optimizeLicense;
   }
 
-  public void resetLicenseFromFile() {
-    this.optimizeLicense = null;
-  }
-
 }

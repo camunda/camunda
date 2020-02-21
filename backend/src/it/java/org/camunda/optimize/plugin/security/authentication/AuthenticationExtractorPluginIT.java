@@ -11,11 +11,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,21 +38,12 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
   private static final String KERMIT_USER = "kermit";
 
   private ConfigurationService configurationService;
-  private LicenseManager licenseManager;
-  private String license = FileReaderUtil.readValidTestLicense();
 
   @BeforeEach
   public void setup() {
-    licenseManager = embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class);
-    licenseManager.setOptimizeLicense(license);
     configurationService = embeddedOptimizeExtension.getConfigurationService();
     createKermitUserAndGrantOptimizeAccess();
     configurationService.setPluginDirectory("target/testPluginsValid");
-  }
-
-  @AfterEach
-  public void resetBasePackage() {
-    licenseManager.resetLicenseFromFile();
   }
 
   @Test

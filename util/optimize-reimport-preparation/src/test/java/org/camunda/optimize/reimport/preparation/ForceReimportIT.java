@@ -49,6 +49,7 @@ public class ForceReimportIT extends AbstractIT {
   @Test
   public void forceReimport() throws IOException {
     //given
+    addLicense();
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinitionEngineDto);
     String reportId = createAndStoreNumberReport(collectionId, processDefinitionEngineDto);
@@ -60,7 +61,6 @@ public class ForceReimportIT extends AbstractIT {
       .buildCreateDashboardRequest()
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
-    addLicense();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

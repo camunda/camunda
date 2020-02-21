@@ -5,24 +5,31 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class LicenseCheckingRestServiceIT extends AbstractIT {
 
   private static final String CUSTOMER_ID = "schrottis inn";
@@ -138,18 +145,58 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
 
   @Test
   public void noLicenseAvailableShouldThrowAnError() {
-    // to ensure license is refreshed from file and elasticsearch
-    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).init();
-    // when
-    String errorMessage = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildValidateLicenseRequest()
-      .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
+    LicenseManager licenseManager = embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class);
+    try {
+      // given
+      licenseManager.setOptimizeLicense(null);
+      // when
+      String errorMessage = embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildValidateLicenseRequest()
+        .execute(String.class, Response.Status.BAD_REQUEST.getStatusCode());
 
-    // then
-    assertThat(
-      errorMessage.contains("No license stored in Optimize. Please provide a valid Optimize license"),
-      is(true)
+      // then
+      assertThat(
+        errorMessage.contains("No license stored in Optimize. Please provide a valid Optimize license"),
+        is(true)
+      );
+    } finally {
+      licenseManager.init();
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("requestExecutorBuilders")
+  public void excludedEndpointsAreAccessibleWithNoLicense(
+    Function<OptimizeRequestExecutor, OptimizeRequestExecutor> requestExecutorBuilder
+  ) {
+    LicenseManager licenseManager = embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class);
+    try {
+      // given
+      licenseManager.setOptimizeLicense(null);
+
+      // when
+      OptimizeRequestExecutor requestExecutor = embeddedOptimizeExtension.getRequestExecutor();
+      requestExecutor = requestExecutorBuilder.apply(requestExecutor);
+      Response response = requestExecutor.execute();
+
+      assertThat(response.getStatus(), is(not(Response.Status.FORBIDDEN.getStatusCode())));
+    } finally {
+      licenseManager.init();
+    }
+  }
+
+  private Stream<Function<OptimizeRequestExecutor, OptimizeRequestExecutor>> requestExecutorBuilders() {
+    return Stream.of(
+      OptimizeRequestExecutor::buildGetUIConfigurationRequest,
+      OptimizeRequestExecutor::buildCheckImportStatusRequest,
+      OptimizeRequestExecutor::buildValidateLicenseRequest,
+      executor -> {
+        String license = FileReaderUtil.readFile(
+          "/license/TestUnifiedLicense_UnlimitedWithOptimize.txt");
+        return executor.buildValidateAndStoreLicenseRequest(license);
+      },
+      executor -> executor.buildGetLocalizationRequest("de")
     );
   }
 

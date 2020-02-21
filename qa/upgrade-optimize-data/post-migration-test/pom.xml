@@ -192,7 +192,7 @@
                   </target>
                 </configuration>
               </execution>
-              
+
               <!--5. Download and unpack Optimize versions -->
               <execution>
                 <id>download-and-unpack-Optimize-versions</id>
@@ -215,13 +215,24 @@
                     </exec>
                     <echo message="Optimize ${project.previousVersion} successfully unpacked." />
 
+                    <!-- Copy the license into Optimize directory-->
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="cp ./distro/src/environment/OptimizeLicense.txt ${project.build.directory}/${project.previousVersion}/environment/" />
+                    </exec>
+
                     <echo message="Downloading &amp; unpacking Optimize ${project.version}..." />
                     <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
                       <arg value="mvn dependency:unpack -B ${maven-settings} -f qa/upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:${project.version}:tar.gz:production -DoutputDirectory=${project.build.directory}/${project.version} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                     </exec>
                     <echo message="Optimize ${project.version} successfully unpacked." />
-
+                    
+                    <!-- Copy the license into Optimize directory-->
+                    <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="cp ./distro/src/environment/OptimizeLicense.txt ${project.build.directory}/${project.version}/environment/" />
+                    </exec>
                   </target>
                 </configuration>
               </execution>

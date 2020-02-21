@@ -7,10 +7,6 @@ package org.camunda.optimize.jetty;
 
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.service.license.LicenseManager;
-import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,19 +21,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 public class NoCachingIT extends AbstractIT {
-
-  private LicenseManager licenseManager;
-
-  @BeforeEach
-  public void setup() {
-    licenseManager = embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class);
-    addLicenseToOptimize();
-  }
-
-  @AfterEach
-  public void resetBasePackage() {
-    licenseManager.resetLicenseFromFile();
-  }
 
   @ParameterizedTest
   @MethodSource("noCacheResources")
@@ -63,13 +46,4 @@ public class NoCachingIT extends AbstractIT {
     return NO_CACHE_RESOURCES.stream();
   }
 
-  private void addLicenseToOptimize() {
-    String license = FileReaderUtil.readValidTestLicense();
-
-    Response response =
-      embeddedOptimizeExtension.getRequestExecutor()
-        .buildValidateAndStoreLicenseRequest(license)
-        .execute();
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-  }
 }
