@@ -22,21 +22,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 
 @Component
 @Slf4j
 public class ProcessDefinitionService extends AbstractDefinitionService {
 
   private final ProcessDefinitionReader processDefinitionReader;
+  private final DefinitionService definitionService;
   private final CollectionScopeService collectionScopeService;
 
   public ProcessDefinitionService(final TenantService tenantService,
                                   final DefinitionAuthorizationService definitionAuthorizationService,
                                   final ProcessDefinitionReader processDefinitionReader,
+                                  final DefinitionService definitionService,
                                   final CollectionScopeService collectionScopeService) {
     super(tenantService, definitionAuthorizationService);
     this.processDefinitionReader = processDefinitionReader;
+    this.definitionService = definitionService;
     this.collectionScopeService = collectionScopeService;
   }
 
@@ -140,12 +145,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(@NonNull final String userId) {
-    List<ProcessDefinitionOptimizeDto> definitions = processDefinitionReader
-      .getFullyImportedProcessDefinitions(false);
-
-    definitions = filterAuthorizedProcessDefinitions(userId, definitions);
-
-    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, PROCESS);
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(@NonNull final String userId,
@@ -153,12 +153,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
       .getAvailableKeysAndTenantsFromCollectionScope(userId, IdentityType.USER, collectionId);
 
-    List<ProcessDefinitionOptimizeDto> definitions = processDefinitionReader
-      .getFullyImportedProcessDefinitionsForKeys(false, keysAndTenants.keySet());
-
-    definitions = filterAuthorizedProcessDefinitions(userId, definitions);
-
-    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions, keysAndTenants);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, keysAndTenants, PROCESS);
   }
 
   private List<ProcessDefinitionOptimizeDto> filterAuthorizedProcessDefinitions(
@@ -167,7 +162,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     return processDefinitions
       .stream()
       .filter(def -> def.getIsEventBased() || isAuthorizedToReadProcessDefinition(userId, def))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   private boolean isAuthorizedToReadProcessDefinition(final String userId,

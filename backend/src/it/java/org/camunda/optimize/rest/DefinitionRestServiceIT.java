@@ -6,7 +6,6 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
@@ -23,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
@@ -485,13 +483,13 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final String eventProcessName1 = "Event Process Definition1";
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
       eventProcessKey1, eventProcessName1, DefinitionType.PROCESS, true
-      );
+    );
     createEventBasedDefinition(eventProcessKey1, "1", eventProcessName1);
     final String eventProcessKey2 = "eventProcessKey2";
     final String eventProcessName2 = "Event Process Definition2";
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
       eventProcessKey2, eventProcessName2, DefinitionType.PROCESS, true
-      );
+    );
     createEventBasedDefinition(eventProcessKey2, "1", eventProcessName2);
 
     // when

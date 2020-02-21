@@ -5,13 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -273,17 +270,23 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Override
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(final String userId) {
+  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId,
+                                                                                              String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(userId, userId)
-      .buildGetDecisionDefinitionVersionsWithTenants()
+      .buildGetDecisionDefinitionVersionsWithTenants(collectionId)
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   @Override
   protected int getDefinitionResourceType() {
     return RESOURCE_TYPE_DECISION_DEFINITION;
+  }
+
+  @Override
+  protected DefinitionType getDefinitionType() {
+    return DefinitionType.DECISION;
   }
 
   @Override

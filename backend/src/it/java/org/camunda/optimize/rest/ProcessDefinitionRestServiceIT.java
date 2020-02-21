@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.http.HttpStatus;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
@@ -520,11 +520,12 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   }
 
   @Override
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(final String userId) {
+  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId,
+                                                                                              String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(userId, userId)
-      .buildGetProcessDefinitionVersionsWithTenants()
+      .buildGetProcessDefinitionVersionsWithTenants(collectionId)
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
   }
 
@@ -541,6 +542,11 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @Override
   protected int getDefinitionResourceType() {
     return RESOURCE_TYPE_PROCESS_DEFINITION;
+  }
+
+  @Override
+  protected DefinitionType getDefinitionType() {
+    return DefinitionType.PROCESS;
   }
 
   private ProcessDefinitionOptimizeDto addDefinitionToElasticsearch(final String key,

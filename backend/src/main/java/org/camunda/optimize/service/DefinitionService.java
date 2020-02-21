@@ -12,6 +12,8 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenants;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
@@ -30,11 +32,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 
@@ -71,12 +75,128 @@ public class DefinitionService {
     return getDefinitionsGroupedByTenant(userId);
   }
 
+  public List<DefinitionAvailableVersionsWithTenants> getDefinitionsGroupedByVersionAndTenantForType(
+    final String userId,
+    final Map<String, List<String>> definitionKeyAndTenantFilter,
+    final DefinitionType definitionType) {
+
+    return getDefinitionsGroupedByVersionAndTenantForType(userId, definitionType)
+      .stream()
+      .filter(def -> definitionKeyAndTenantFilter.keySet().contains(def.getKey()))
+      .peek(def -> {
+        final Map<String, TenantDto> userAuthorizedTenants = getAuthorizedTenantDtosForUser(userId);
+        Set<String> collectionTenantIds = definitionKeyAndTenantFilter.get(def.getKey())
+          .stream()
+          .filter(tenantId -> userAuthorizedTenants.keySet().contains(tenantId))
+          .collect(toSet());
+        List<TenantDto> filteredAllTenants = def.getAllTenants()
+          .stream()
+          .filter(tenant -> collectionTenantIds.contains(tenant.getId()))
+          .collect(toList());
+        List<DefinitionVersionWithTenants> filteredVersions = def.getVersions()
+          .stream()
+          .peek(versionWithTenants -> versionWithTenants.getTenants().retainAll(filteredAllTenants))
+          .filter(versionWithTenants -> !versionWithTenants.getTenants().isEmpty())
+          .collect(toList());
+
+        def.setAllTenants(filteredAllTenants);
+        def.setVersions(filteredVersions);
+      })
+      .filter(def -> !def.getAllTenants().isEmpty())
+      .collect(toList());
+  }
+
+  public List<DefinitionAvailableVersionsWithTenants> getDefinitionsGroupedByVersionAndTenantForType(
+    final String userId,
+    final DefinitionType definitionType) {
+
+    final Map<String, DefinitionAvailableVersionsWithTenants> definitionsGroupedByTenantAndVersion =
+      definitionReader.getDefinitionsGroupedByVersionAndTenantForType(definitionType);
+
+    final Map<String, TenantDto> authorizedTenantDtosById = getAuthorizedTenantDtosForUser(userId);
+
+    return definitionsGroupedByTenantAndVersion
+      .entrySet()
+      .stream()
+      .map(entry -> filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
+        entry.getValue(),
+        authorizedTenantDtosById,
+        userId,
+        definitionType
+      ))
+      .filter(definition -> !definition.getAllTenants().isEmpty())
+      // sort by name case insensitive
+      .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
+      .collect(toList());
+  }
+
+  public DefinitionAvailableVersionsWithTenants filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
+    final DefinitionAvailableVersionsWithTenants definitionDto,
+    final Map<String, TenantDto> definitionKeyAndTenantFilterMap,
+    final String userId,
+    final DefinitionType definitionType) {
+    List<DefinitionVersionWithTenants> filteredVersions;
+    if (isEventProcessDefinition(definitionDto.getKey())) {
+      filteredVersions = definitionDto.getVersions()
+        .stream()
+        .map(defVersionWithTenants -> new DefinitionVersionWithTenants(
+          defVersionWithTenants.getKey(),
+          defVersionWithTenants.getName(),
+          defVersionWithTenants.getVersion(),
+          defVersionWithTenants.getVersionTag(),
+          Lists.newArrayList(new TenantDto(null, "Not defined", null))
+        ))
+        .collect(toList());
+    } else {
+      filteredVersions = definitionDto.getVersions()
+        .stream()
+        .map(defVersionWithTenants -> {
+          final boolean hasNotDefinedTenant = defVersionWithTenants.getTenants().contains(TENANT_NOT_DEFINED);
+          List<TenantDto> tenants = hasNotDefinedTenant
+            ? Lists.newArrayList(definitionKeyAndTenantFilterMap.values())
+            : defVersionWithTenants.getTenants()
+            .stream()
+            .filter(tenant -> definitionKeyAndTenantFilterMap.keySet().contains(tenant.getId()))
+            .filter(tenant -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
+              userId,
+              IdentityType.USER,
+              defVersionWithTenants.getKey(),
+              definitionType,
+              tenant.getId()
+            ))
+            .map(tenantDto -> definitionKeyAndTenantFilterMap.get(tenantDto.getId()))
+            .collect(toList());
+          tenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));
+          return new DefinitionVersionWithTenants(
+            defVersionWithTenants.getKey(),
+            defVersionWithTenants.getName(),
+            defVersionWithTenants.getVersion(),
+            defVersionWithTenants.getVersionTag(),
+            tenants
+          );
+        })
+        .filter(v -> !v.getTenants().isEmpty())
+        .collect(toList());
+    }
+
+    return new DefinitionAvailableVersionsWithTenants(
+      definitionDto.getKey(),
+      definitionDto.getName(),
+      filteredVersions,
+      filteredVersions.stream()
+        .flatMap(v -> v.getTenants().stream())
+        .distinct()
+        .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
+        .collect(toList())
+    );
+  }
+
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant(final String userId) {
 
     final Map<String, TenantIdWithDefinitionsDto> definitionsGroupedByTenant =
       definitionReader.getDefinitionsGroupedByTenant();
 
-    final Map<String, TenantRestDto> authorizedTenantDtosById = getAuthorizedTenantsForUser(userId);
+    final Map<String, TenantRestDto> authorizedTenantDtosById = getAuthorizedTenantRestDtosForUser(userId);
     addSharedDefinitionsToAllAuthorizedTenantEntries(definitionsGroupedByTenant, authorizedTenantDtosById.keySet());
 
     return definitionsGroupedByTenant.values().stream()
@@ -139,7 +259,7 @@ public class DefinitionService {
   private Stream<DefinitionWithTenantsDto> filterDefinitionsWithTenantsByAuthorizations(final String userId,
                                                                                         final Stream<DefinitionWithTenantIdsDto> stream) {
     // load all authorized tenants at once to speedup mapping
-    final Map<String, TenantRestDto> authorizedTenantDtosById = getAuthorizedTenantsForUser(userId);
+    final Map<String, TenantRestDto> authorizedTenantDtosById = getAuthorizedTenantRestDtosForUser(userId);
 
     return stream
       .peek(definitionWithTenantIdsDto -> {
@@ -189,11 +309,19 @@ public class DefinitionService {
                   || definitionWithTenantsDto.getTenants().size() > 0);
   }
 
-  private Map<String, TenantRestDto> getAuthorizedTenantsForUser(final String userId) {
+  private Map<String, TenantRestDto> getAuthorizedTenantRestDtosForUser(final String userId) {
     return tenantService.getTenantsForUser(userId).stream()
-      .collect(Collectors.toMap(
+      .collect(toMap(
         TenantDto::getId,
         tenantDto -> new TenantRestDto(tenantDto.getId(), tenantDto.getName())
+      ));
+  }
+
+  private Map<String, TenantDto> getAuthorizedTenantDtosForUser(final String userId) {
+    return tenantService.getTenantsForUser(userId).stream()
+      .collect(toMap(
+        TenantDto::getId,
+        Function.identity()
       ));
   }
 

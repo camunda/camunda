@@ -22,20 +22,25 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+
 @Component
 @Slf4j
 public class DecisionDefinitionService extends AbstractDefinitionService {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final CollectionScopeService collectionScopeService;
+  private final DefinitionService definitionService;
 
   public DecisionDefinitionService(final TenantService tenantService,
                                    final DefinitionAuthorizationService definitionAuthorizationService,
                                    final DecisionDefinitionReader decisionDefinitionReader,
-                                   final CollectionScopeService collectionScopeService) {
+                                   final CollectionScopeService collectionScopeService,
+                                   final DefinitionService definitionService) {
     super(tenantService, definitionAuthorizationService);
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.collectionScopeService = collectionScopeService;
+    this.definitionService = definitionService;
   }
 
   public Optional<String> getDecisionDefinitionXml(final String userId,
@@ -75,12 +80,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId) {
-    List<DecisionDefinitionOptimizeDto> definitions = decisionDefinitionReader
-      .getFullyImportedDecisionDefinitions(false);
-
-    definitions = filterAuthorizedDecisionDefinitions(userId, definitions);
-
-    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, DECISION);
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId,
@@ -88,12 +88,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
       .getAvailableKeysAndTenantsFromCollectionScope(userId, IdentityType.USER, collectionId);
 
-    List<DecisionDefinitionOptimizeDto> definitions = decisionDefinitionReader
-      .getFullyImportedDecisionDefinitionsForKeys(false, keysAndTenants.keySet());
-
-    definitions = filterAuthorizedDecisionDefinitions(userId, definitions);
-
-    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions, keysAndTenants);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, keysAndTenants, DECISION);
   }
 
   private List<DecisionDefinitionOptimizeDto> filterAuthorizedDecisionDefinitions(

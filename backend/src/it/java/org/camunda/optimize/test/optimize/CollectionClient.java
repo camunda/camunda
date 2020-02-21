@@ -126,10 +126,10 @@ public class CollectionClient {
   public List<AlertDefinitionDto> getAlertsForCollection(final String collectionId) {
     return getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
-      .executeAndReturnList(AlertDefinitionDto.class,200);
+      .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
-  public List<EntityDto> getEntitiesForCollection(final String collectionId){
+  public List<EntityDto> getEntitiesForCollection(final String collectionId) {
     return getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
@@ -152,6 +152,13 @@ public class CollectionClient {
                                        final String definitionKey,
                                        final DefinitionType definitionType) {
     addScopeEntryToCollection(collectionId, createSimpleScopeEntry(definitionKey, definitionType));
+  }
+
+  public void createScopeForCollection(final String collectionId,
+                                       final String definitionKey,
+                                       final DefinitionType definitionType,
+                                       final List<String> tenantIds) {
+    addScopeEntryToCollection(collectionId, createSimpleScopeEntry(definitionKey, definitionType, tenantIds));
   }
 
   public List<CollectionScopeEntryRestDto> getCollectionScope(final String collectionId) {
@@ -183,6 +190,12 @@ public class CollectionClient {
 
   public CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
     return new CollectionScopeEntryDto(definitionType, definitionKey, DEFAULT_TENANTS);
+  }
+
+  public CollectionScopeEntryDto createSimpleScopeEntry(final String definitionKey,
+                                                        final DefinitionType definitionType,
+                                                        final List<String> tenantIds) {
+    return new CollectionScopeEntryDto(definitionType, definitionKey, tenantIds);
   }
 
   public void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {

@@ -6,27 +6,28 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -202,6 +203,43 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void testGetDefinitionVersionsWithTenants_forCollection() {
+    //given
+    createTenant(TENANT_1_DTO);
+    createTenant(TENANT_2_DTO);
+
+    final String definitionKey1 = "key1";
+    createDefinitionsForKey(definitionKey1, 1, TENANT_1_DTO.getId());
+    createDefinitionsForKey(definitionKey1, 1, TENANT_2_DTO.getId());
+
+    final String definitionKey2 = "key2";
+    createDefinitionsForKey(definitionKey2, 1, TENANT_1_DTO.getId());
+    createDefinitionsForKey(definitionKey2, 1, TENANT_2_DTO.getId());
+
+    // Create collection with scope of definition 1
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.createScopeForCollection(
+      collectionId, definitionKey1, getDefinitionType(), Lists.newArrayList(TENANT_1_DTO.getId()));
+
+    List<DefinitionVersionWithTenantsRestDto> expectedVersions = Lists.newArrayList(
+      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, Lists.newArrayList(TENANT_1_DTO))
+    );
+    DefinitionVersionsWithTenantsRestDto expectedDefinition1 = new DefinitionVersionsWithTenantsRestDto(
+      definitionKey1,
+      null,
+      expectedVersions,
+      expectedVersions.stream().flatMap(v -> v.getTenants().stream()).collect(toList())
+    );
+
+    // when
+    final List<DefinitionVersionsWithTenantsRestDto> definitionVersionsWithTenants =
+      getDefinitionVersionsWithTenants(collectionId);
+
+    // then
+    Assertions.assertThat(definitionVersionsWithTenants).containsExactly(expectedDefinition1);
+  }
+
+  @Test
   public void testGetDefinitionVersionsWithTenants_performance() {
     // given
     final int definitionCount = 50;
@@ -236,7 +274,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
       assertThat(definitionVersionsWithTenantsRestDto.getVersions().size(), is(versionCount));
       assertThat(definitionVersionsWithTenantsRestDto.getAllTenants().size(), is(tenantCount));
     });
-    assertThat(responseTimeMillis, is(lessThan(2000L)));
+    assertThat(responseTimeMillis, is(lessThan(1000L)));
 
     embeddedOptimizeExtension.getImportSchedulerFactory().shutdown();
   }
@@ -245,7 +283,16 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     return getDefinitionVersionsWithTenantsAsUser(DEFAULT_USERNAME);
   }
 
-  protected abstract List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId);
+  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenants(String collectionId) {
+    return getDefinitionVersionsWithTenantsAsUser(DEFAULT_USERNAME, collectionId);
+  }
+
+  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId){
+    return getDefinitionVersionsWithTenantsAsUser(userId, null);
+  };
+
+  protected abstract List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId,
+                                                                                                       String collectionId);
 
   protected void createDefinitionsForKey(final String definitionKey, final int versionCount) {
     createDefinitionsForKey(definitionKey, versionCount, null);
@@ -256,6 +303,8 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
   protected abstract void createDefinition(String key, String version, String tenantId, String name);
 
   protected abstract int getDefinitionResourceType();
+
+  protected abstract DefinitionType getDefinitionType();
 
   protected void grantSingleDefinitionAuthorizationsForUser(final String userId, final String definitionKey) {
     AuthorizationDto authorizationDto = new AuthorizationDto();

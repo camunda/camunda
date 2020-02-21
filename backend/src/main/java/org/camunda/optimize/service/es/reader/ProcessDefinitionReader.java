@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
@@ -51,7 +50,6 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -167,17 +165,6 @@ public class ProcessDefinitionReader {
       }
     }
     return Optional.ofNullable(processDefinitionOptimizeDto);
-  }
-
-  public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitionsForKeys(final boolean withXml,
-                                                                                      final Set<String> keys) {
-
-    if (keys.isEmpty()) {
-      return Collections.emptyList();
-    }
-
-    final BoolQueryBuilder query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, keys));
-    return fetchProcessDefinitions(true, withXml, query);
   }
 
   public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitions(final boolean withXml) {

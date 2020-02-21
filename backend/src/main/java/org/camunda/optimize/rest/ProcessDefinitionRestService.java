@@ -63,8 +63,8 @@ public class ProcessDefinitionRestService {
     @Context final ContainerRequestContext requestContext,
     @QueryParam("filterByCollectionScope") final String collectionId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
 
+    final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
     final List<DefinitionAvailableVersionsWithTenants> definitionVersionsWithTenants = optionalCollectionId
       .map(id -> processDefinitionService.getProcessDefinitionVersionsWithTenants(userId, id))
       .orElseGet(() -> processDefinitionService.getProcessDefinitionVersionsWithTenants(userId));

@@ -31,14 +31,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.ENGINE;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.TENANT_ID;
-import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -47,7 +45,6 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -152,17 +149,6 @@ public class DecisionDefinitionReader {
       definitionOptimizeDto = parseDecisionDefinition(responseAsString);
     }
     return Optional.ofNullable(definitionOptimizeDto);
-  }
-
-  public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitionsForKeys(final boolean withXml,
-                                                                                        final Set<String> keys) {
-
-    if (keys.isEmpty()) {
-      return Collections.emptyList();
-    }
-
-    final BoolQueryBuilder query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, keys));
-    return fetchDecisionDefinitions(true, withXml, query);
   }
 
   public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(final boolean withXml) {
