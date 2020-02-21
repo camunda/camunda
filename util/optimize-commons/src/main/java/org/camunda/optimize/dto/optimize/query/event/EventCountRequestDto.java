@@ -5,25 +5,37 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import lombok.NonNull;
 
-import javax.ws.rs.QueryParam;
+import javax.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventCountRequestDto {
 
-  @QueryParam("searchTerm")
-  String searchTerm;
-  @QueryParam("orderBy")
-  String orderBy;
-  @QueryParam("sortOrder")
-  SortOrder sortOrder;
+  @Size(min = 1)
+  private String targetFlowNodeId;
+
+  @Size(min = 1)
+  private String xml;
+
+  @Builder.Default
+  @NonNull
+  private Map<String, EventMappingDto> mappings = new HashMap<>();
+
+  @Builder.Default
+  @NonNull
+  private List<EventSourceEntryDto> eventSources = new ArrayList<>();
 
 }

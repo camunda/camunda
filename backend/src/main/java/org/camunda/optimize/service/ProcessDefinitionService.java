@@ -18,12 +18,11 @@ import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
 
 @Component
 @Slf4j
@@ -44,29 +43,45 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   public Optional<String> getProcessDefinitionXml(final String userId,
                                                   final String definitionKey,
                                                   final List<String> definitionVersions) {
-    return getProcessDefinitionXml(userId, definitionKey, definitionVersions, null);
+    return getProcessDefinitionXml(userId, definitionKey, definitionVersions, (String) null);
+  }
+
+  public Optional<String> getProcessDefinitionXml(final String userId,
+                                                  final String definitionKey,
+                                                  final String version,
+                                                  final String tenantId) {
+    return getProcessDefinitionXml(
+      userId,
+      definitionKey,
+      Collections.singletonList(version),
+      Collections.singletonList(tenantId)
+    );
   }
 
   public Optional<String> getProcessDefinitionXml(final String userId,
                                                   final String definitionKey,
                                                   final List<String> definitionVersions,
                                                   final String tenantId) {
-    String mostRecentValidVersion = convertToValidDefinitionVersion(
-      definitionKey,
-      definitionVersions,
-      processDefinitionReader::getLatestVersionToKey
-    );
-    return getProcessDefinitionXml(userId, definitionKey, mostRecentValidVersion, tenantId);
+    return getProcessDefinitionXml(userId, definitionKey, definitionVersions, Collections.singletonList(tenantId));
   }
 
   public Optional<String> getProcessDefinitionXml(final String userId,
                                                   final String definitionKey,
-                                                  final String definitionVersion,
-                                                  final String tenantId) {
-    return getProcessDefinitionWithXmlAsService(definitionKey, definitionVersion, tenantId)
+                                                  final List<String> definitionVersions,
+                                                  final List<String> tenantIds) {
+    return getProcessDefinitionWithXml(userId, definitionKey, definitionVersions, tenantIds)
+      .map(ProcessDefinitionOptimizeDto::getBpmn20Xml);
+  }
+
+
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXml(final String userId,
+                                                                            final String definitionKey,
+                                                                            final List<String> definitionVersions,
+                                                                            final List<String> tenantIds) {
+    return getProcessDefinitionWithXmlAsService(definitionKey, definitionVersions, tenantIds)
       .map(processDefinitionOptimizeDto -> {
         if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
-          return processDefinitionOptimizeDto.getBpmn20Xml();
+          return processDefinitionOptimizeDto;
         } else {
           throw new ForbiddenException("Current user is not authorized to access data of the process definition");
         }
@@ -76,14 +91,38 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXmlAsService(final String definitionKey,
                                                                                      final String definitionVersion,
                                                                                      final String tenantId) {
+    return getProcessDefinitionWithXmlAsService(
+      definitionKey,
+      Collections.singletonList(definitionVersion),
+      Optional.ofNullable(tenantId)
+        .map(Collections::singletonList)
+        .orElse(Collections.emptyList())
+    );
+  }
+
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXmlAsService(final String definitionKey,
+                                                                                     final List<String> definitionVersions,
+                                                                                     final List<String> tenantIds) {
+    if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
+      return Optional.empty();
+    }
+
     // first try to load tenant specific definition
     Optional<ProcessDefinitionOptimizeDto> fullyImportedDefinition =
-      processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, tenantId);
+      processDefinitionReader.getProcessDefinitionFromFirstTenantIfAvailable(
+        definitionKey,
+        definitionVersions,
+        tenantIds
+      );
 
     // if not available try to get shared definition
     if (!fullyImportedDefinition.isPresent()) {
       fullyImportedDefinition =
-        processDefinitionReader.getFullyImportedProcessDefinition(definitionKey, definitionVersion, null);
+        processDefinitionReader.getProcessDefinitionFromFirstTenantIfAvailable(
+          definitionKey,
+          definitionVersions,
+          Collections.emptyList()
+        );
     }
     return fullyImportedDefinition;
   }

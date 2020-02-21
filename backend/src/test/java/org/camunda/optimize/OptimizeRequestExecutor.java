@@ -21,7 +21,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountSuggestionsRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -1087,7 +1087,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetIdentityById(final String identityId) {
-    this.path =  IDENTITY_RESOURCE_PATH + "/" + identityId;
+    this.path = IDENTITY_RESOURCE_PATH + "/" + identityId;
     this.method = GET;
     return this;
   }
@@ -1121,8 +1121,8 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildIngestEventBatchWithMediaType(final List<CloudEventDto> eventDtos,
-                                                                     final String secret,
-                                                                     final String mediaType) {
+                                                                    final String secret,
+                                                                    final String mediaType) {
     this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
     this.method = POST;
     addSingleHeader(HttpHeaders.AUTHORIZATION, secret);
@@ -1144,20 +1144,24 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildPostEventCountRequest(EventCountRequestDto eventCountRequestDto,
-                                                            EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto) {
+  public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountRequestDto eventCountRequestDto) {
+    return buildPostEventCountRequest(null, eventCountRequestDto);
+  }
+
+  public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountSearchRequestDto eventCountSearchRequestDto,
+                                                            final EventCountRequestDto eventCountRequestDto) {
     this.path = "event/count";
     this.method = POST;
-    Optional.ofNullable(eventCountRequestDto)
-      .map(EventCountRequestDto::getSearchTerm)
+    Optional.ofNullable(eventCountSearchRequestDto)
+      .map(EventCountSearchRequestDto::getSearchTerm)
       .ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventCountRequestDto)
-      .map(EventCountRequestDto::getOrderBy)
+    Optional.ofNullable(eventCountSearchRequestDto)
+      .map(EventCountSearchRequestDto::getOrderBy)
       .ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
-    Optional.ofNullable(eventCountRequestDto)
-      .map(EventCountRequestDto::getSortOrder)
+    Optional.ofNullable(eventCountSearchRequestDto)
+      .map(EventCountSearchRequestDto::getSortOrder)
       .ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
-    this.body = Optional.ofNullable(eventCountSuggestionsRequestDto).map(this::getBody).orElse(null);
+    this.body = Optional.ofNullable(eventCountRequestDto).map(this::getBody).orElse(null);
     return this;
   }
 

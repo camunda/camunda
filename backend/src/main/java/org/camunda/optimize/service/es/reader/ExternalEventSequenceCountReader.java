@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -92,11 +91,11 @@ public class ExternalEventSequenceCountReader {
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
-  public List<EventCountDto> getEventCounts(final EventCountRequestDto eventCountRequestDto) {
-    log.debug("Fetching event counts with filter [{}}]", eventCountRequestDto);
+  public List<EventCountDto> getEventCounts(final String searchTerm) {
+    log.debug("Fetching event counts with searchTerm [{}}]", searchTerm);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(buildCountRequestQuery(eventCountRequestDto));
+    searchSourceBuilder.query(buildCountRequestQuery(searchTerm));
     searchSourceBuilder.aggregation(createAggregationBuilder());
     searchSourceBuilder.size(0);
 
@@ -141,12 +140,13 @@ public class ExternalEventSequenceCountReader {
     return builder.mustNot(existsQuery(field));
   }
 
-  private AbstractQueryBuilder buildCountRequestQuery(final EventCountRequestDto eventCountRequestDto) {
-    if (eventCountRequestDto.getSearchTerm() == null) {
+  private AbstractQueryBuilder buildCountRequestQuery(final String searchTerm) {
+    if (searchTerm == null) {
       return matchAllQuery();
     }
-    final String lowerCaseSearchTerm = eventCountRequestDto.getSearchTerm().toLowerCase();
-    if (eventCountRequestDto.getSearchTerm().length() > IndexSettingsBuilder.MAX_GRAM) {
+
+    final String lowerCaseSearchTerm = searchTerm.toLowerCase();
+    if (searchTerm.length() > IndexSettingsBuilder.MAX_GRAM) {
       return boolQuery()
         .should(prefixQuery(getNestedField(SOURCE_EVENT, GROUP), lowerCaseSearchTerm))
         .should(prefixQuery(getNestedField(SOURCE_EVENT, SOURCE), lowerCaseSearchTerm))

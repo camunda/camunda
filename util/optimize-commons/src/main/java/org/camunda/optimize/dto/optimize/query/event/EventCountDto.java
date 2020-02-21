@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 
 @Data
@@ -17,10 +18,12 @@ import lombok.experimental.FieldNameConstants;
 @NoArgsConstructor
 @FieldNameConstants
 public class EventCountDto {
-
   private String group;
+  @NonNull
   private String source;
+  @NonNull
   private String eventName;
+  private String eventLabel;
   private Long count;
   @Builder.Default
   private boolean suggested = false;
