@@ -71,7 +71,7 @@ ListContext.useListContext.mockImplementation(() => {
   };
 });
 
-describe('List', () => {
+describe.skip('List', () => {
   describe('Table', () => {
     it('should have by default rowsToDisplay 9', () => {
       const node = shallow(<List {...mockProps} />);
@@ -376,7 +376,7 @@ describe('List', () => {
     });
 
     // context needs to be mocked fist.
-    describe.only('Action button handler', () => {
+    describe('Action button handler', () => {
       it('should pass the onActionButtonClick prop to Actions', () => {
         const node = shallow(<List.Body {...mockProps} />);
         const ActionsNode = node.find(Actions).at(0); // first row

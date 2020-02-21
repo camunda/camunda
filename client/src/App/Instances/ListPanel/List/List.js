@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useContext} from 'react';
 import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
@@ -22,6 +22,8 @@ import ColumnHeader from './ColumnHeader';
 import ListContext, {useListContext} from './ListContext';
 import BaseSkeleton from './Skeleton';
 import * as Styled from './styled';
+
+import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
 
 const {THead, TBody, TH, TR, TD} = Table;
 
@@ -215,47 +217,51 @@ Message.propTypes = {
 
 const Body = function(props) {
   const {data, rowsToDisplay, handleActionButtonClick} = useListContext();
+  const {isIdSelected, handleSelect} = useContext(InstanceSelectionContext);
 
   return (
     <TBody {...props}>
-      {data.slice(0, rowsToDisplay).map((instance, idx) => (
-        <TR key={idx}>
-          <TD>
-            <Styled.Cell>
-              <Styled.SelectionStatusIndicator selected={false} />
-              <Checkbox
-                type="selection"
-                isChecked={false}
-                onChange={() => {}}
-                title={`Select instance ${instance.id}`}
-              />
+      {data.slice(0, rowsToDisplay).map((instance, idx) => {
+        const isSelected = isIdSelected(instance.id);
+        return (
+          <TR key={idx}>
+            <TD>
+              <Styled.Cell>
+                <Styled.SelectionStatusIndicator selected={isSelected} />
+                <Checkbox
+                  type="selection"
+                  isChecked={isSelected}
+                  onChange={handleSelect(instance.id)}
+                  title={`Select instance ${instance.id}`}
+                />
 
-              <StateIcon state={instance.state} />
-              <Styled.WorkflowName>
-                {getWorkflowName(instance)}
-              </Styled.WorkflowName>
-            </Styled.Cell>
-          </TD>
-          <TD>
-            <Styled.InstanceAnchor
-              to={`/instances/${instance.id}`}
-              title={`View instance ${instance.id}`}
-            >
-              {instance.id}
-            </Styled.InstanceAnchor>
-          </TD>
-          <TD>{`Version ${instance.workflowVersion}`}</TD>
-          <TD>{formatDate(instance.startDate)}</TD>
-          <TD>{formatDate(instance.endDate)}</TD>
-          <TD>
-            <Actions
-              instance={instance}
-              selected={false}
-              onButtonClick={() => handleActionButtonClick(instance)}
-            />
-          </TD>
-        </TR>
-      ))}
+                <StateIcon state={instance.state} />
+                <Styled.WorkflowName>
+                  {getWorkflowName(instance)}
+                </Styled.WorkflowName>
+              </Styled.Cell>
+            </TD>
+            <TD>
+              <Styled.InstanceAnchor
+                to={`/instances/${instance.id}`}
+                title={`View instance ${instance.id}`}
+              >
+                {instance.id}
+              </Styled.InstanceAnchor>
+            </TD>
+            <TD>{`Version ${instance.workflowVersion}`}</TD>
+            <TD>{formatDate(instance.startDate)}</TD>
+            <TD>{formatDate(instance.endDate)}</TD>
+            <TD>
+              <Actions
+                instance={instance}
+                selected={isSelected}
+                onButtonClick={() => handleActionButtonClick(instance)}
+              />
+            </TD>
+          </TR>
+        );
+      })}
     </TBody>
   );
 };

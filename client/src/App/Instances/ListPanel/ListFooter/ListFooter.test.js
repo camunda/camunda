@@ -5,34 +5,56 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 
+import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
+
+import Button from 'modules/components/Button';
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
 import {Copyright} from './styled';
 
-jest.mock('modules/utils/bpmn');
+const defaultContext = {selectedIds: []};
+
+const defaultProps = {
+  onFirstElementChange: jest.fn(),
+  perPage: 10,
+  firstElement: 0,
+  filterCount: 9,
+  dataManager: {},
+  hasContent: true
+};
 
 describe('ListFooter', () => {
-  const renderFooter = props => {
-    return shallow(
-      <ListFooter
-        onFirstElementChange={jest.fn()}
-        perPage={10}
-        firstElement={0}
-        filterCount={9}
-        dataManager={{}}
-        hasContent={true}
-        {...props}
-      />
+  beforeEach(() => {});
+
+  const renderFooter = ({
+    props: additionalProps,
+    context: additionalContext
+  } = {}) => {
+    const context = {...defaultContext, ...additionalContext};
+    const props = {...defaultProps, ...additionalProps};
+
+    return mount(
+      <InstanceSelectionContext.Provider value={context}>
+        <ListFooter {...props} />
+      </InstanceSelectionContext.Provider>
     );
   };
 
-  it('should pagination only if required', () => {
-    const node = renderFooter();
-    expect(node.find(Paginator).exists()).toBe(false);
-    node.setProps({filterCount: 11});
+  it('should show pagination', () => {
+    const node = renderFooter({props: {filterCount: 11}});
+
+    expect(node.find(Button).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(true);
+    expect(node.find(Copyright).exists()).toBe(true);
+  });
+
+  it('should not show pagination', () => {
+    const node = renderFooter({props: {filterCount: 9}});
+
+    expect(node.find(Button).exists()).toBe(false);
+    expect(node.find(Paginator).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
@@ -41,9 +63,23 @@ describe('ListFooter', () => {
     expect(node.find(Copyright).exists()).toBe(true);
   });
 
-  it('should show copyright note only when hasContent is false', () => {
-    const node = renderFooter({hasContent: false});
+  it('should show Button when there is selection', () => {
+    const node = renderFooter({
+      context: {selectedIds: ['123-456', '789-012']}
+    });
 
+    const button = node.find(Button);
+    expect(button.exists()).toBe(true);
+    expect(button.text()).toEqual('Apply Operation on 2 Instances');
+  });
+
+  it('should not show Paginator when hasContent is false', () => {
+    const node = renderFooter({
+      props: {hasContent: false, filterCount: 11},
+      context: {selectedIds: ['123-456']}
+    });
+
+    expect(node.find(Button).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });
