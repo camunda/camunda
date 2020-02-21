@@ -44,6 +44,8 @@ export const getHeader = createAccessorFunction('header');
 export async function loadCurrentUser() {
   const response = await get('api/identity/current/user');
   currentUser = await response.json();
+
+  return currentUser;
 }
 export async function getCurrentUser() {
   if (!currentUser) {

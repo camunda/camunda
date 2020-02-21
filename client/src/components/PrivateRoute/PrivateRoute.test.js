@@ -14,6 +14,7 @@ import {Login} from './Login';
 
 import {addHandler, removeHandler} from 'request';
 
+const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 const TestComponent = () => <div>TestComponent</div>;
 
 jest.mock('request', () => {
@@ -26,13 +27,19 @@ jest.mock('request', () => {
 it('should render the component if the user is logged in', () => {
   const node = shallow(<PrivateRoute component={TestComponent} />).renderProp('render')({});
 
-  expect(node).toIncludeText('TestComponent');
+  expect(node.find('Detachable')).toExist();
+  const childContent = shallow(node.find('Detachable').prop('children'));
+
+  expect(childContent).toIncludeText('TestComponent');
 });
 
 it('should use render method to render a component when specified', () => {
   const node = shallow(<PrivateRoute render={() => <h1>someText</h1>} />).renderProp('render')({});
 
-  expect(node).toIncludeText('someText');
+  expect(node.find('Detachable')).toExist();
+  const childContent = shallow(node.find('Detachable').prop('children'));
+
+  expect(childContent).toIncludeText('someText');
 });
 
 it('should render the login component', () => {
@@ -50,8 +57,10 @@ it('should register a response handler', () => {
   expect(addHandler).toHaveBeenCalled();
 });
 
-it('should unregister the response handler when it is destroyed', () => {
+it('should unregister the response handler when it is destroyed', async () => {
   const node = shallow(<PrivateRoute component={TestComponent} />);
+
+  await flushPromises();
   node.unmount();
 
   expect(removeHandler).toHaveBeenCalled();

@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
-import {Route} from 'react-router-dom';
-import classnames from 'classnames';
+import ReactDOM from 'react-dom';
+import {Route, Redirect} from 'react-router-dom';
 import {addHandler, removeHandler, request} from 'request';
-import {loadCurrentUser} from 'config';
+import {loadCurrentUser, getCurrentUser} from 'config';
+import {nowPristine} from 'saveGuard';
 
 import {Header, Footer} from '..';
 
@@ -17,37 +18,69 @@ import {Login} from './Login';
 import './PrivateRoute.scss';
 
 export default class PrivateRoute extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      showLogin: false
-    };
-  }
+  state = {
+    showLogin: false,
+    currentUser: null,
+    forceGotoHome: false
+  };
+  container = React.createRef();
+  componentContainer = document.createElement('div');
 
   componentDidMount() {
     addHandler(this.handleResponse);
+    this.setCurrentUser();
   }
 
-  handleResponse = (response, payload) => {
+  setCurrentUser = async () => {
+    this.setState({currentUser: await getCurrentUser()});
+  };
+
+  handleResponse = response => {
     if (response.status === 401) {
       this.setState({
         showLogin: true
-      });
-    } else if (response.status === 200 && payload.url === 'api/authentication') {
-      this.setState({
-        showLogin: false
       });
     }
 
     return response;
   };
 
-  handleLoginSuccess = () => {
-    this.setState({showLogin: false});
+  handleLoginSuccess = async () => {
+    const {currentUser: oldUser} = this.state;
+    const newUser = await loadCurrentUser();
+
+    if (oldUser && newUser.id !== oldUser.id) {
+      outstandingRequests.length = 0;
+      nowPristine();
+
+      this.setState({forceGotoHome: true});
+    }
+
+    this.setState({showLogin: false, currentUser: newUser});
     redoOutstandingRequests();
-    loadCurrentUser();
   };
+
+  componentDidUpdate() {
+    const {forceGotoHome, showLogin} = this.state;
+    const container = this.container.current;
+
+    if (forceGotoHome) {
+      this.setState({forceGotoHome: false});
+    }
+
+    if (!showLogin && container && !container.contains(this.componentContainer)) {
+      container.appendChild(this.componentContainer);
+
+      // Some components might use refs in componentDidUpdate to query the size of their container.
+      // Since in the previous update cycle, they were not part of the DOM tree, their size was incorrect (usually 0 or null)
+      // Now that they have been appended to the DOM again, we trigger another update so they can get their correct size
+      this.forceUpdate();
+    }
+
+    if (showLogin && container?.contains(this.componentContainer)) {
+      container.removeChild(this.componentContainer);
+    }
+  }
 
   render() {
     const {component: Component, ...rest} = this.props;
@@ -55,14 +88,20 @@ export default class PrivateRoute extends React.Component {
       <Route
         {...rest}
         render={props => {
-          const {showLogin} = this.state;
+          const {showLogin, forceGotoHome} = this.state;
+
+          if (forceGotoHome) {
+            return <Redirect to="/" />;
+          }
+
           return (
             <>
               {!showLogin && <Header />}
               <main>
-                <div className={classnames('PrivateRoute', {showLogin})}>
+                <div className="PrivateRoute" ref={this.container}></div>
+                <Detachable container={this.componentContainer}>
                   {this.props.render ? this.props.render(props) : <Component {...props} />}
-                </div>
+                </Detachable>
                 {showLogin && <Login {...props} onLogin={this.handleLoginSuccess} />}
               </main>
               {!showLogin && <Footer />}
@@ -76,6 +115,10 @@ export default class PrivateRoute extends React.Component {
   componentWillUnmount() {
     removeHandler(this.handleResponse);
   }
+}
+
+function Detachable({container, children}) {
+  return ReactDOM.createPortal(children, container);
 }
 
 const outstandingRequests = [];
