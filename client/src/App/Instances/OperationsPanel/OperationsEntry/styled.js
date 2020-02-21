@@ -33,7 +33,9 @@ export const Entry = themed(styled.li`
     dark: `solid 1px ${Colors.uiDark04}`,
     light: `solid 1px ${Colors.uiLight05}`
   })};
-
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
   min-height: 130px;
   padding: 17px 27px;
 `);
