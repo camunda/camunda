@@ -25,13 +25,15 @@ spec:
           valueFrom:
             resourceFieldRef:
               resource: limits.cpu
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
       resources:
         limits:
           cpu: 4
-          memory: 4Gi
+          memory: 6Gi
         requests:
           cpu: 4
-          memory: 4Gi
+          memory: 6Gi
     - name: node
       image: node:10.14.2-alpine
       command: ["cat"]
@@ -62,7 +64,7 @@ spec:
         - name: bootstrap.memory_lock
           value: true
         - name: processors
-          value: 1
+          value: 4
       securityContext:
         privileged: true
         capabilities:
@@ -90,8 +92,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 1
-          memory: 1Gi
+          cpu: 2
+          memory: 4Gi
         requests:
-          cpu: 1
-          memory: 1Gi
+          cpu: 2
+          memory: 4Gi
