@@ -24,8 +24,9 @@
 
       .Button {
         padding: 2px 30px 2px 10px;
-        background: #f8f8f8;
-        color: $text-disabled;
+        background: #d8dce3;
+        color: #5a5e64;
+        border-radius: 20px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -37,6 +38,7 @@
         color: #fff;
         border-radius: 20px;
         font-size: 0.875em;
+        white-space: nowrap;
 
         &.isActive,
         &:hover {

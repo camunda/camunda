@@ -20,11 +20,11 @@ import {
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {loadVariables} from 'services';
-
-import './EventsSourceModal.scss';
 import {showError} from 'notifications';
 import ExternalSource from './ExternalSource';
 import {loadEvents} from './service';
+
+import './EventsSourceModal.scss';
 
 export default withErrorHandling(
   class EventsSourceModal extends React.Component {

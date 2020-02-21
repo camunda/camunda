@@ -5,11 +5,13 @@
  */
 
 import React from 'react';
+import update from 'immutability-helper';
 import {Dropdown, Button, Icon, Deleter} from 'components';
-import './EventsSources.scss';
 import classnames from 'classnames';
 import EventsSourceModal from './EventsSourceModal';
 import {t} from 'translation';
+
+import './EventsSources.scss';
 
 export default class EventSources extends React.Component {
   state = {
@@ -20,15 +22,22 @@ export default class EventSources extends React.Component {
   openAddSourceModal = () => this.setState({editing: {}});
   openEditSourceModal = editing => this.setState({editing});
   closeSourceModal = () => this.setState({editing: null});
-  removeSource = ({processDefinitionKey, type}) => {
-    let filter;
-    if (type === 'external') {
-      filter = src => src.type !== 'external';
-    } else {
-      filter = src => src.processDefinitionKey !== processDefinitionKey;
-    }
 
-    this.props.onChange(this.props.sources.filter(filter));
+  removeSource = target => {
+    this.props.onChange(this.props.sources.filter(src => !this.sourceCheck(target)(src)));
+  };
+
+  toggleSource = targetSource => {
+    const sourceIndex = this.props.sources.findIndex(this.sourceCheck(targetSource));
+    this.props.onChange(update(this.props.sources, {[sourceIndex]: {$toggle: ['hidden']}}));
+  };
+
+  sourceCheck = ({processDefinitionKey, type}) => {
+    if (type === 'external') {
+      return src => src.type === 'external';
+    } else {
+      return src => src.processDefinitionKey === processDefinitionKey;
+    }
   };
 
   render() {
@@ -39,35 +48,24 @@ export default class EventSources extends React.Component {
       <div className="EventsSources">
         <div className="sourcesList">
           {sources.map(source => {
-            if (source.type === 'external') {
-              return (
-                <Dropdown
-                  className={classnames({isActive: true})}
-                  label={t('events.sources.externalEvents')}
-                  key="externalEvents"
-                >
-                  <Dropdown.Option onClick={() => this.setState({deleting: {type: 'external'}})}>
-                    {t('common.remove')}
-                  </Dropdown.Option>
-                </Dropdown>
-              );
-            } else {
-              const {processDefinitionKey, processDefinitionName} = source;
-              return (
-                <Dropdown
-                  className={classnames({isActive: true})}
-                  key={processDefinitionKey}
-                  label={processDefinitionName || processDefinitionKey}
-                >
+            return (
+              <Dropdown
+                className={classnames({isActive: !source.hidden})}
+                {...getDropdownProps(source)}
+              >
+                <Dropdown.Option onClick={() => this.toggleSource(source)}>
+                  {source.hidden ? t('events.sources.show') : t('events.sources.hide')}
+                </Dropdown.Option>
+                {source.type !== 'external' && (
                   <Dropdown.Option onClick={() => this.openEditSourceModal(source)}>
                     {t('events.sources.editSource')}
                   </Dropdown.Option>
-                  <Dropdown.Option onClick={() => this.setState({deleting: source})}>
-                    {t('common.remove')}
-                  </Dropdown.Option>
-                </Dropdown>
-              );
-            }
+                )}
+                <Dropdown.Option onClick={() => this.setState({deleting: source})}>
+                  {t('common.remove')}
+                </Dropdown.Option>
+              </Dropdown>
+            );
           })}
         </div>
         <Button className="addProcess" onClick={this.openAddSourceModal}>
@@ -95,5 +93,19 @@ export default class EventSources extends React.Component {
         )}
       </div>
     );
+  }
+}
+
+function getDropdownProps({processDefinitionKey, processDefinitionName, type}) {
+  if (type === 'external') {
+    return {
+      label: t('events.sources.externalEvents'),
+      key: 'externalEvents'
+    };
+  } else {
+    return {
+      label: processDefinitionName || processDefinitionKey,
+      key: processDefinitionKey
+    };
   }
 }

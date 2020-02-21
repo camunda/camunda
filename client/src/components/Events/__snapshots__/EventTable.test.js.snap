@@ -12,11 +12,12 @@ exports[`should match snapshot 1`] = `
     </b>
     <Switch
       checked={true}
-      disabled={0}
+      disabled={false}
       label="Show suggested Events"
       onChange={[Function]}
     />
     <EventSources
+      onChange={[Function]}
       sources={Array []}
     />
     <div

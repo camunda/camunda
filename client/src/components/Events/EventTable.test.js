@@ -79,7 +79,7 @@ it('should allow searching for events', () => {
 
   node.find('.searchInput').prop('onChange')({target: {value: 'some String'}});
 
-  expect(loadEvents).toHaveBeenCalledWith(undefined, 'some String');
+  expect(loadEvents).toHaveBeenCalledWith({eventSources: []}, 'some String');
 });
 
 it('should call callback when changing mapping', () => {
@@ -162,4 +162,26 @@ it('should disable events Suggestion if there are any camunda event sources', ()
   const node = shallow(<EventTable {...props} eventSources={[{type: 'camunda'}]} />);
 
   expect(node.find('Switch')).toBeDisabled();
+});
+
+it('should not show events from hidden sources in the table', () => {
+  loadEvents.mockReturnValueOnce([
+    {
+      group: 'eventGroup',
+      source: 'order-service',
+      eventName: 'OrderProcessed',
+      count: 10
+    },
+    {
+      group: 'bookrequest',
+      source: 'camunda',
+      eventName: 'startEvent',
+      count: 10
+    }
+  ]);
+  const node = shallow(<EventTable {...props} eventSources={[{type: 'external', hidden: true}]} />);
+
+  const events = node.find(Table).prop('body');
+  expect(events).toHaveLength(1);
+  expect(events[0].content).toContain('bookrequest');
 });

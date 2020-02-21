@@ -13,11 +13,10 @@ import {Table, LoadingIndicator, Input, Select, Switch, Icon} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-
 import {loadEvents} from './service';
+import EventsSources from './EventsSources';
 
 import './EventTable.scss';
-import EventsSources from './EventsSources';
 
 const asMapping = ({group, source, eventName}) => ({group, source, eventName});
 
@@ -40,8 +39,12 @@ export default withErrorHandling(
 
       this.setState({events: null});
 
-      let payload = undefined;
-      if (this.state.showSuggested && this.getNumberOfPotentialMappings(selection)) {
+      let payload = {eventSources};
+      if (
+        !this.camundaSourcesAdded() &&
+        this.state.showSuggested &&
+        this.getNumberOfPotentialMappings(selection)
+      ) {
         payload = {
           targetFlowNodeId: selection.id,
           xml,
@@ -128,6 +131,21 @@ export default withErrorHandling(
       }
     };
 
+    inHiddenSources = (event, sources) => {
+      const hiddenSources = sources.filter(src => src.hidden);
+
+      return hiddenSources.some(({processDefinitionKey, type}) => {
+        if (type === 'external') {
+          return event.source !== 'camunda';
+        } else {
+          return event.group === processDefinitionKey;
+        }
+      });
+    };
+
+    camundaSourcesAdded = () =>
+      this.props.eventSources.filter(src => src.type !== 'external').length > 0;
+
     render() {
       const {events, searchQuery, showSuggested} = this.state;
       const {selection, onMappingChange, mappings, eventSources} = this.props;
@@ -135,25 +153,27 @@ export default withErrorHandling(
       const {start, end} = (selection && mappings[selection.id]) || {};
       const numberOfMappings = !!start + !!end;
       const numberOfPotentialMappings = this.getNumberOfPotentialMappings(selection);
-
       const disabled = numberOfPotentialMappings <= numberOfMappings;
-      const camundaSource = eventSources.filter(src => src.type !== 'external');
       const externalEvents = eventSources.some(src => src.type === 'external');
-      const disableSuggestions = camundaSource.length;
 
       return (
         <div className="EventTable" ref={this.container}>
           <div className="header">
             <b>{t('events.list')}</b>
             <Switch
-              disabled={disableSuggestions}
-              checked={!disableSuggestions && showSuggested}
+              disabled={this.camundaSourcesAdded()}
+              checked={!this.camundaSourcesAdded() && showSuggested}
               onChange={({target: {checked}}) =>
                 this.setState({showSuggested: checked}, () => this.loadEvents(searchQuery))
               }
               label={t('events.table.showSuggestions')}
             />
-            <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
+            <EventsSources
+              sources={eventSources}
+              onChange={sources => {
+                this.props.onSourcesChange(sources, () => this.loadEvents(searchQuery));
+              }}
+            />
             <div className="searchContainer">
               <Icon className="searchIcon" type="search" />
               <Input
@@ -181,9 +201,10 @@ export default withErrorHandling(
                 ? events
                     .filter(
                       event =>
-                        !this.mappedAs(event) ||
-                        deepEqual(start, asMapping(event)) ||
-                        deepEqual(end, asMapping(event))
+                        (!this.mappedAs(event) ||
+                          deepEqual(start, asMapping(event)) ||
+                          deepEqual(end, asMapping(event))) &&
+                        !this.inHiddenSources(event, eventSources)
                     )
                     .map(event => {
                       const {group, source, eventName, count, suggested} = event;

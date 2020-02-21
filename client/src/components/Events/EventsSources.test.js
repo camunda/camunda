@@ -35,7 +35,7 @@ it('should remove a source from the list', () => {
 
   node
     .find(Dropdown.Option)
-    .at(1)
+    .at(2)
     .simulate('click');
 
   node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
@@ -43,12 +43,27 @@ it('should remove a source from the list', () => {
   expect(spy).toHaveBeenCalledWith([{type: 'external'}]);
 });
 
+it('should hide/show source', () => {
+  const spy = jest.fn();
+  const node = shallow(<EventsSources {...props} onChange={spy} />);
+
+  node
+    .find(Dropdown.Option)
+    .at(0)
+    .simulate('click');
+
+  expect(spy).toHaveBeenCalledWith([
+    {hidden: true, type: 'camunda', processDefinitionKey: 'src1'},
+    {type: 'external'}
+  ]);
+});
+
 it('should edit a source from the list', () => {
   const node = shallow(<EventsSources {...props} />);
 
   node
     .find(Dropdown.Option)
-    .at(0)
+    .at(1)
     .simulate('click');
 
   expect(node.find(EventsSourceModal).prop('initialSource')).toEqual({

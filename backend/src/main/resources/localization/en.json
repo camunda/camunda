@@ -174,7 +174,9 @@
       "camundaEvents": "Camunda Events",
       "empty": "There are no event sources added",
       "selectExternal": "Select external events",
-      "allExternal": "all events"
+      "allExternal": "all events",
+      "hide": "Hide in table",
+      "show": "Show in Table"
     }
   },
   "report": {
