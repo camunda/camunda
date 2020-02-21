@@ -26,7 +26,6 @@ export default function useBatchOperations() {
   const dataManager = useDataManager();
 
   const requestBatchOperations = useCallback(() => {
-    console.log('foo');
     dataManager.getBatchOperations({pageSize: 20});
   }, [dataManager]);
 
@@ -39,7 +38,7 @@ export default function useBatchOperations() {
     );
 
     subscribe(
-      'BATCH_OPERATION_APPLIED',
+      SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION,
       LOADING_STATE.LOADED,
       requestBatchOperations
     );

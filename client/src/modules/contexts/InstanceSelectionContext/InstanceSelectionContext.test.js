@@ -70,7 +70,7 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
     expect(result.current.isAllChecked).toBe(true);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
-    expect(result.current.ids).toEqual([INSTANCE_IDS.A, INSTANCE_IDS.B]);
+    expect(result.current.ids).toEqual([]);
     expect(result.current.excludeIds).toEqual([]);
   });
 

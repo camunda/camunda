@@ -28,7 +28,11 @@ describe('useBatchOperations', () => {
     });
 
     useDataManager.mockReturnValue({
-      poll: {register: jest.fn(), unregister: jest.fn()}
+      poll: {
+        register: jest.fn(),
+        unregister: jest.fn()
+      },
+      getBatchOperations: jest.fn()
     });
   });
 
@@ -42,9 +46,17 @@ describe('useBatchOperations', () => {
 
     // then
     expect(result.current.batchOperations).toEqual([]);
-    expect(useSubscription().subscribe).toHaveBeenCalledTimes(1);
-    expect(useSubscription().subscribe).toHaveBeenCalledWith(
+    expect(useSubscription().subscribe).toHaveBeenCalledTimes(2);
+    expect(useSubscription().subscribe).toHaveBeenNthCalledWith(
+      1,
       SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS,
+      LOADING_STATE.LOADED,
+      expect.any(Function)
+    );
+
+    expect(useSubscription().subscribe).toHaveBeenNthCalledWith(
+      2,
+      SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION,
       LOADING_STATE.LOADED,
       expect.any(Function)
     );
@@ -89,7 +101,9 @@ describe('useBatchOperations', () => {
     let publish;
     useSubscription().subscribe.mockImplementation(
       (topic, stateHooks, callback) => {
-        publish = callback;
+        if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
+          publish = callback;
+        }
       }
     );
     const {result} = renderHook(() => useBatchOperations(), {});
@@ -113,7 +127,9 @@ describe('useBatchOperations', () => {
     let publish;
     useSubscription().subscribe.mockImplementation(
       (topic, stateHooks, callback) => {
-        publish = callback;
+        if (topic === SUBSCRIPTION_TOPIC.LOAD_BATCH_OPERATIONS) {
+          publish = callback;
+        }
       }
     );
     const {result} = renderHook(() => useBatchOperations(), {});
@@ -142,5 +158,28 @@ describe('useBatchOperations', () => {
 
     // then
     expect(useDataManager().poll.unregister).toHaveBeenCalledTimes(2);
+  });
+
+  it('should get batch operations on CREATE_BATCH_OPERATION publish', () => {
+    // given
+    let publish;
+
+    useSubscription().subscribe.mockImplementation(
+      (topic, stateHooks, callback) => {
+        if (topic === SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION) {
+          publish = callback;
+        }
+      }
+    );
+
+    renderHook(() => useBatchOperations(), {});
+
+    // when
+    act(() => {
+      publish();
+    });
+
+    // then
+    expect(useDataManager().getBatchOperations).toHaveBeenCalledTimes(1);
   });
 });

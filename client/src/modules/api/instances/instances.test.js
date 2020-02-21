@@ -146,10 +146,10 @@ describe('instances api', () => {
   describe('applyBatchOperation', () => {
     it('should call post with the right payload', async () => {
       // given
-      const queries = [{id: 1, incidents: true}];
+      const query = {id: 1, incidents: true};
 
       // when
-      await applyBatchOperation(OPERATION_TYPE.RESOLVE_INCIDENT, queries);
+      await applyBatchOperation(OPERATION_TYPE.RESOLVE_INCIDENT, query);
 
       // then
       expect(wrappers.post.mock.calls[0][0]).toBe(
@@ -158,7 +158,7 @@ describe('instances api', () => {
       expect(wrappers.post.mock.calls[0][1].operationType).toBe(
         OPERATION_TYPE.RESOLVE_INCIDENT
       );
-      expect(wrappers.post.mock.calls[0][1].queries).toBe(queries);
+      expect(wrappers.post.mock.calls[0][1].query).toBe(query);
     });
   });
 
