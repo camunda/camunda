@@ -34,10 +34,16 @@ export const Entry = themed(styled.li`
     light: `solid 1px ${Colors.uiLight05}`
   })};
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: space-between;
   min-height: 130px;
-  padding: 17px 27px;
+  padding: 17px 27px 26px 27px;
+`);
+
+export const EntryStatus = themed(styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 `);
 
 export const Type = styled.div`
@@ -50,9 +56,9 @@ export const Type = styled.div`
 
 export const Id = themed(styled.div`
   font-size: 11px;
+`);
 
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiLight06
-  })};
+export const EndDate = themed(styled.div`
+  font-size: 14px;
+  align-self: flex-end;
 `);
