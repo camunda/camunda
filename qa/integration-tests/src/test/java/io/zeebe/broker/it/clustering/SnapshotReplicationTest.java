@@ -35,11 +35,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.springframework.util.unit.DataSize;
 
 public final class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
-  private static final int SNAPSHOT_PERIOD_SECONDS = 30;
+  private static final Duration SNAPSHOT_PERIOD = Duration.ofSeconds(30);
 
   // ensures we do not trigger deletion after replication; if we do, then the followers might open
   // the database which causes extra files to appear and messes up the checksum counting
@@ -71,7 +72,7 @@ public final class SnapshotReplicationTest {
     client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
     final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final Broker leader = clusteringRule.getBroker(leaderNodeId);
-    clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
 
     // when - snapshot
     clusteringRule.waitForValidSnapshotAtBroker(leader);
@@ -138,9 +139,9 @@ public final class SnapshotReplicationTest {
   private static void configureCustomExporter(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setMaxSnapshots(MAX_SNAPSHOTS);
-    data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
-    data.setLogSegmentSize("8k");
-    brokerCfg.getNetwork().setMaxMessageSize("8K");
+    data.setSnapshotPeriod(SNAPSHOT_PERIOD);
+    data.setLogSegmentSize(DataSize.ofKilobytes(8));
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());

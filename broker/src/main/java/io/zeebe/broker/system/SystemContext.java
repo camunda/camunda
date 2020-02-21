@@ -42,7 +42,7 @@ public final class SystemContext {
     brokerCfg.init(basePath);
     validateConfiguration();
 
-    stepTimeout = brokerCfg.getStepTimeoutAsDuration();
+    stepTimeout = brokerCfg.getStepTimeout();
 
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());

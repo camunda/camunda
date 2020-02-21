@@ -21,6 +21,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +49,7 @@ public final class GatewayIntegrationTest {
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
         .setContactPoint(internalApi.toString())
-        .setRequestTimeout("3s");
+        .setRequestTimeout(Duration.ofSeconds(3));
     configuration.init();
 
     final ControlledActorClock clock = new ControlledActorClock();

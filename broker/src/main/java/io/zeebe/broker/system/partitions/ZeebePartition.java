@@ -377,7 +377,7 @@ public final class ZeebePartition extends Actor
 
   private ActorFuture<Void> installSnapshotDirector(
       final StreamProcessor streamProcessor, final DataCfg dataCfg) {
-    final Duration snapshotPeriod = dataCfg.getSnapshotPeriodAsDuration();
+    final Duration snapshotPeriod = dataCfg.getSnapshotPeriod();
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             localBroker.getNodeId(),

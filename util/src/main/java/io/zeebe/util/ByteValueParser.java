@@ -10,10 +10,14 @@ package io.zeebe.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Deprecated(forRemoval = true, since = "0.23.0-alpha2")
+/* Should be replaced when an alternative is found. For now, please refrain
+from using this class outside configuration and use a long (size in bytes) instead*/
 public class ByteValueParser {
   private static final Pattern PATTERN =
       Pattern.compile("(\\d+)([K|M|G]?)", Pattern.CASE_INSENSITIVE);
 
+  @Deprecated
   public static ByteValue fromString(final String humanReadable) {
 
     final Matcher matcher = PATTERN.matcher(humanReadable);

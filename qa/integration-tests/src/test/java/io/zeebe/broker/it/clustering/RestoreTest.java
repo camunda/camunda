@@ -14,8 +14,6 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.util.ByteValue;
-import io.zeebe.util.ByteValueParser;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
@@ -23,14 +21,15 @@ import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.springframework.util.unit.DataSize;
 
 public final class RestoreTest {
-  private static final long ATOMIX_SEGMENT_SIZE = ByteValue.ofMegabytes(2);
-  private static final long LARGE_PAYLOAD_BYTESIZE = ByteValue.ofKilobytes(32);
+  private static final DataSize ATOMIX_SEGMENT_SIZE = DataSize.ofMegabytes(2);
+  private static final DataSize LARGE_PAYLOAD_BYTESIZE = DataSize.ofKilobytes(32);
   private static final String LARGE_PAYLOAD =
-      "{\"blob\": \"" + getRandomBase64Bytes(LARGE_PAYLOAD_BYTESIZE) + "\"}";
+      "{\"blob\": \"" + getRandomBase64Bytes(LARGE_PAYLOAD_BYTESIZE.toBytes()) + "\"}";
 
-  private static final int SNAPSHOT_PERIOD_MIN = 5;
+  private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
   private final ClusteringRule clusteringRule =
       new ClusteringRule(
           1,
@@ -38,11 +37,9 @@ public final class RestoreTest {
           3,
           cfg -> {
             cfg.getData().setMaxSnapshots(1);
-            cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD_MIN + "m");
-            cfg.getData()
-                .setLogSegmentSize(ByteValueParser.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
-            cfg.getNetwork()
-                .setMaxMessageSize(ByteValueParser.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
+            cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
+            cfg.getData().setLogSegmentSize(ATOMIX_SEGMENT_SIZE);
+            cfg.getNetwork().setMaxMessageSize(ATOMIX_SEGMENT_SIZE);
           });
   private final GrpcClientRule clientRule =
       new GrpcClientRule(
@@ -70,7 +67,7 @@ public final class RestoreTest {
 
     // when
     final long firstWorkflowKey = clientRule.deployWorkflow(firstWorkflow);
-    clusteringRule.getClock().addTime(Duration.ofMinutes(SNAPSHOT_PERIOD_MIN));
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
     clusteringRule.waitForValidSnapshotAtBroker(getLeader());
 
     final long secondWorkflowKey = clientRule.deployWorkflow(secondWorkflow);
@@ -135,7 +132,7 @@ public final class RestoreTest {
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
     final long workflowKey = clientRule.deployWorkflow(workflow);
     final int requiredInstances =
-        (int) Math.floorDiv(ATOMIX_SEGMENT_SIZE, LARGE_PAYLOAD_BYTESIZE) + 1;
+        (int) Math.floorDiv(ATOMIX_SEGMENT_SIZE.toBytes(), LARGE_PAYLOAD_BYTESIZE.toBytes()) + 1;
     IntStream.range(0, requiredInstances)
         .forEach(i -> clientRule.createWorkflowInstance(workflowKey, LARGE_PAYLOAD));
   }

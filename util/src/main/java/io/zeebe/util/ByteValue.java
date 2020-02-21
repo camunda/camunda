@@ -7,12 +7,6 @@
  */
 package io.zeebe.util;
 
-@Deprecated(
-    forRemoval = true,
-    since =
-        "0.23.0-alpha2") // Should be replaced when an alternative is found. For now, please refrain
-// from using this class outside configuration and use a long (size in
-// bytes) instead
 public final class ByteValue {
   private static final int CONVERSION_FACTOR_KB = 1024;
   private static final int CONVERSION_FACTOR_MB = CONVERSION_FACTOR_KB * 1024;
@@ -21,19 +15,25 @@ public final class ByteValue {
   private final ByteUnit unit;
   private final long value;
 
+  @Deprecated(forRemoval = true, since = "0.23.0-alpha2")
+  /* Should be replaced when an alternative is found. For now, please refrain
+  from using this class outside configuration and use a long (size in bytes) instead*/
   protected ByteValue(final long value, final ByteUnit unit) {
     this.value = value;
     this.unit = unit;
   }
 
+  @Deprecated
   public ByteUnit getUnit() {
     return unit;
   }
 
+  @Deprecated
   public long getValue() {
     return value;
   }
 
+  @Deprecated
   public long toBytes() {
     return unit.toBytes(value);
   }

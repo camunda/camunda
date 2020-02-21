@@ -115,7 +115,7 @@ public final class Gateway {
   }
 
   private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
-    final Duration minKeepAliveInterval = cfg.getMinKeepAliveIntervalAsDuration();
+    final Duration minKeepAliveInterval = cfg.getMinKeepAliveInterval();
 
     if (minKeepAliveInterval.isNegative() || minKeepAliveInterval.isZero()) {
       throw new IllegalArgumentException("Minimum keep alive interval must be positive.");

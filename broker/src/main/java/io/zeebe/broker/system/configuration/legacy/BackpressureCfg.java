@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system.configuration.legacy;
 
-@Deprecated(since = "0.23.0-alpha1")
+@Deprecated(since = "0.23.0-alpha2")
 /* Kept in order to be able to offer a migration path for old configuration.
  * It is not yet clear whether we intent to offer a migration path for old configurations.
  * This class might be moved or removed on short notice.

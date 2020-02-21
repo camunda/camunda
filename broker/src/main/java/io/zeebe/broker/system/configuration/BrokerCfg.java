@@ -9,7 +9,6 @@ package io.zeebe.broker.system.configuration;
 
 import com.google.gson.GsonBuilder;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
-import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ public final class BrokerCfg {
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
 
-  private String stepTimeout = "5m";
+  private Duration stepTimeout = Duration.ofMinutes(5);
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -52,7 +51,9 @@ public final class BrokerCfg {
         .ifPresent(
             value ->
                 exporters.add(DebugLogExporter.defaultConfig("pretty".equalsIgnoreCase(value))));
-    environment.get(EnvironmentConstants.ENV_STEP_TIMEOUT).ifPresent(this::setStepTimeout);
+    environment
+        .get(EnvironmentConstants.ENV_STEP_TIMEOUT)
+        .ifPresent(value -> setStepTimeout(Duration.parse(value)));
   }
 
   public NetworkCfg getNetwork() {
@@ -113,18 +114,11 @@ public final class BrokerCfg {
     return this;
   }
 
-  public Duration getStepTimeoutAsDuration() {
-    return DurationUtil.parse(stepTimeout);
-  }
-
-  public String getStepTimeout() {
+  public Duration getStepTimeout() {
     return stepTimeout;
   }
 
-  public void setStepTimeout(final String stepTimeout) {
-    // call parsing code to provoke any exceptions that might occur during parsing
-    DurationUtil.parse(stepTimeout);
-
+  public void setStepTimeout(final Duration stepTimeout) {
     this.stepTimeout = stepTimeout;
   }
 

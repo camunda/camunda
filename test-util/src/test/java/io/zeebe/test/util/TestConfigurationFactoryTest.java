@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.util.Environment;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
@@ -30,6 +31,8 @@ public class TestConfigurationFactoryTest {
 
     // then
     assertThat(actual.getSetting()).isEqualTo("test");
+    assertThat(actual.getTimeout()).isEqualTo(Duration.ofSeconds(3));
+    assertThat(actual.getSize()).isEqualTo(DataSize.ofMegabytes(2));
     assertThat(actual.getArgs()).containsOnly(entry("foo", "bar"));
   }
 
@@ -94,6 +97,7 @@ public class TestConfigurationFactoryTest {
     private String setting;
     private Map<String, Object> args;
     private DataSize size;
+    private Duration timeout;
 
     public String getSetting() {
       return setting;
@@ -117,6 +121,14 @@ public class TestConfigurationFactoryTest {
 
     public void setSize(final DataSize size) {
       this.size = size;
+    }
+
+    public Duration getTimeout() {
+      return timeout;
+    }
+
+    public void setTimeout(final Duration timeout) {
+      this.timeout = timeout;
     }
   }
 }

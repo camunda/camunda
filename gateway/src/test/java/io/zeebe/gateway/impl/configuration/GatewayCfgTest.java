@@ -29,6 +29,7 @@ import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -49,7 +50,7 @@ public final class GatewayCfgTest {
     CUSTOM_CFG
         .getCluster()
         .setContactPoint("foobar:1234")
-        .setRequestTimeout("123h")
+        .setRequestTimeout(Duration.ofHours(123))
         .setClusterName("testCluster")
         .setMemberId("testMember")
         .setHost("1.2.3.4")
@@ -118,11 +119,15 @@ public final class GatewayCfgTest {
     setEnv(ENV_GATEWAY_KEEP_ALIVE_INTERVAL, "30s");
 
     final GatewayCfg expected = new GatewayCfg();
-    expected.getNetwork().setHost("zeebe").setPort(5432).setMinKeepAliveInterval("30s");
+    expected
+        .getNetwork()
+        .setHost("zeebe")
+        .setPort(5432)
+        .setMinKeepAliveInterval(Duration.ofSeconds(30));
     expected
         .getCluster()
         .setContactPoint("broker:432")
-        .setRequestTimeout("43m")
+        .setRequestTimeout(Duration.ofMinutes(43))
         .setClusterName("envCluster")
         .setMemberId("envMember")
         .setHost("envHost")

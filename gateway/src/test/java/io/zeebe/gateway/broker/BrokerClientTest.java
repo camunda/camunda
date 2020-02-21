@@ -42,6 +42,7 @@ import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
@@ -70,7 +71,7 @@ public final class BrokerClientTest {
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
         .setContactPoint(broker.getSocketAddress().toString())
-        .setRequestTimeout("3s");
+        .setRequestTimeout(Duration.ofSeconds(3));
     configuration.init();
 
     final ControlledActorClock clock = new ControlledActorClock();

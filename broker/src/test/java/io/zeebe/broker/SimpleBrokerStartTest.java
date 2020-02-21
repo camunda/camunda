@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.log.LogStream;
 import java.io.File;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import org.junit.Before;
@@ -33,7 +34,7 @@ public final class SimpleBrokerStartTest {
   public void shouldFailToStartBrokerWithSmallTimeout() {
     // given
     final var brokerCfg = new BrokerCfg();
-    brokerCfg.setStepTimeout("1ms");
+    brokerCfg.setStepTimeout(Duration.ofMillis(1));
 
     final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
 

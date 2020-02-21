@@ -13,7 +13,6 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
 
 import io.zeebe.transport.impl.SocketAddress;
-import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.Objects;
@@ -22,12 +21,14 @@ public final class NetworkCfg {
 
   private String host;
   private int port = DEFAULT_PORT;
-  private String minKeepAliveInterval = "30s";
+  private Duration minKeepAliveInterval = Duration.ofSeconds(30);
 
   public void init(final Environment environment, final String defaultHost) {
     environment.get(ENV_GATEWAY_HOST).ifPresent(this::setHost);
     environment.getInt(ENV_GATEWAY_PORT).ifPresent(this::setPort);
-    environment.get(ENV_GATEWAY_KEEP_ALIVE_INTERVAL).ifPresent(this::setMinKeepAliveInterval);
+    environment
+        .get(ENV_GATEWAY_KEEP_ALIVE_INTERVAL)
+        .ifPresent(value -> setMinKeepAliveInterval(Duration.parse(value)));
 
     if (host == null) {
       host = defaultHost;
@@ -52,18 +53,11 @@ public final class NetworkCfg {
     return this;
   }
 
-  public Duration getMinKeepAliveIntervalAsDuration() {
-    return DurationUtil.parse(minKeepAliveInterval);
-  }
-
-  public String getMinKeepAliveInterval() {
+  public Duration getMinKeepAliveInterval() {
     return minKeepAliveInterval;
   }
 
-  public NetworkCfg setMinKeepAliveInterval(final String keepAlive) {
-    // call parsing logic to provoke any exceptions that might happen during parsing
-    DurationUtil.parse(keepAlive);
-
+  public NetworkCfg setMinKeepAliveInterval(final Duration keepAlive) {
     this.minKeepAliveInterval = keepAlive;
     return this;
   }

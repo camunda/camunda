@@ -21,7 +21,6 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 
-import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.Objects;
@@ -29,7 +28,7 @@ import java.util.Objects;
 public final class ClusterCfg {
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
 
-  private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
   private String host = DEFAULT_CLUSTER_HOST;
@@ -40,7 +39,9 @@ public final class ClusterCfg {
         .get(ENV_GATEWAY_CONTACT_POINT)
         .map(v -> v.contains(":") ? v : v + ":" + DEFAULT_CONTACT_POINT_PORT)
         .ifPresent(this::setContactPoint);
-    environment.get(ENV_GATEWAY_REQUEST_TIMEOUT).ifPresent(this::setRequestTimeout);
+    environment
+        .get(ENV_GATEWAY_REQUEST_TIMEOUT)
+        .ifPresent(value -> setRequestTimeout(Duration.parse(value)));
     environment.get(ENV_GATEWAY_CLUSTER_NAME).ifPresent(this::setClusterName);
     environment.get(ENV_GATEWAY_CLUSTER_MEMBER_ID).ifPresent(this::setMemberId);
     environment.get(ENV_GATEWAY_CLUSTER_HOST).ifPresent(this::setHost);
@@ -84,13 +85,10 @@ public final class ClusterCfg {
   }
 
   public Duration getRequestTimeout() {
-    return DurationUtil.parse(requestTimeout);
+    return requestTimeout;
   }
 
-  public ClusterCfg setRequestTimeout(final String requestTimeout) {
-    // call parsing logic to provoke any exceptions that might occur during parsing
-    DurationUtil.parse(requestTimeout);
-
+  public ClusterCfg setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
