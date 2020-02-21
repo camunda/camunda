@@ -1,8 +1,0 @@
-[network.commandApi]
-port = 1
-
-[network.internalApi]
-port = 5
-
-[network.monitoringApi]
-port = 6

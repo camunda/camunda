@@ -1,0 +1,5 @@
+config:
+  setting: test
+  size: 2MB
+  args:
+    foo: bar

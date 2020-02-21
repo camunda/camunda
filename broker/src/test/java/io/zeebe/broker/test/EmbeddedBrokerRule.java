@@ -27,11 +27,11 @@ import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
@@ -50,7 +50,7 @@ import org.slf4j.Logger;
 
 public final class EmbeddedBrokerRule extends ExternalResource {
 
-  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
+  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
   public static final int INSTALL_TIMEOUT = 5;
   public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
@@ -192,7 +192,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
         if (configStream == null) {
           brokerCfg = new BrokerCfg();
         } else {
-          brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
+          brokerCfg =
+              new TestConfigurationFactory()
+                  .create(null, "zeebe-broker", configStream, BrokerCfg.class);
         }
         configureBroker(brokerCfg);
       } catch (final IOException e) {

@@ -25,8 +25,8 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_SECURITY_ENABLED;
 
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
-import io.zeebe.util.TomlConfigurationReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -36,10 +36,10 @@ import org.junit.Test;
 
 public final class GatewayCfgTest {
 
-  private static final String DEFAULT_CFG_FILENAME = "/configuration/gateway.default.toml";
+  private static final String DEFAULT_CFG_FILENAME = "/configuration/gateway.default.yaml";
   private static final GatewayCfg DEFAULT_CFG = new GatewayCfg();
-  private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.toml";
-  private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.toml";
+  private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.yaml";
+  private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.yaml";
   private static final GatewayCfg CUSTOM_CFG = new GatewayCfg();
 
   static {
@@ -163,7 +163,9 @@ public final class GatewayCfgTest {
   private GatewayCfg readConfig(final String filename) {
     try (final InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
-        final GatewayCfg gatewayCfg = TomlConfigurationReader.read(inputStream, GatewayCfg.class);
+        final GatewayCfg gatewayCfg =
+            new TestConfigurationFactory()
+                .create(null, "zeebe-gateway", filename, GatewayCfg.class);
         gatewayCfg.init(new Environment(environment));
         return gatewayCfg;
       } else {

@@ -33,13 +33,12 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
-import io.zeebe.util.TomlConfigurationReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
@@ -201,18 +200,22 @@ public final class BrokerCfgTest {
   @Test
   public void shouldExpandExporterJarPathRelativeToBrokerBaseIffPresent() {
     // given
-    final InputStream input =
-        new ByteArrayInputStream(
-            ("[[exporters]]\n"
-                    + "id=\"external\"\n"
-                    + "jarPath=\"exporters/exporter.jar\"\n"
-                    + "[[exporters]]\n"
-                    + "id=\"internal-1\"\n"
-                    + "jarPath=\"\"\n"
-                    + "[[exporters]]\n"
-                    + "id=\"internal-2\"")
-                .getBytes());
-    final BrokerCfg config = TomlConfigurationReader.read(input, BrokerCfg.class);
+    final ExporterCfg exporterCfgExternal = new ExporterCfg();
+    exporterCfgExternal.setId("external");
+    exporterCfgExternal.setJarPath("exporters/exporter.jar");
+
+    final ExporterCfg exporterCfgInternal1 = new ExporterCfg();
+    exporterCfgInternal1.setId("internal-1");
+    exporterCfgInternal1.setJarPath("");
+
+    final ExporterCfg exporterCfgInternal2 = new ExporterCfg();
+    exporterCfgInternal2.setId("internal-2");
+
+    final BrokerCfg config = new BrokerCfg();
+    config.getExporters().add(exporterCfgExternal);
+    config.getExporters().add(exporterCfgInternal1);
+    config.getExporters().add(exporterCfgInternal2);
+
     final String base = temporaryFolder.getRoot().getAbsolutePath();
     final String jarFile = Paths.get(base, "exporters", "exporter.jar").toAbsolutePath().toString();
 
@@ -517,14 +520,17 @@ public final class BrokerCfgTest {
   }
 
   private BrokerCfg readConfig(final String name) {
-    final String configPath = "/system/" + name + ".toml";
-    final InputStream resourceAsStream = BrokerCfgTest.class.getResourceAsStream(configPath);
-    assertThat(resourceAsStream)
-        .withFailMessage("Unable to read configuration file %s", configPath)
-        .isNotNull();
+    final String configPath = "/system/" + name + ".yaml";
 
-    final BrokerCfg config = TomlConfigurationReader.read(resourceAsStream, BrokerCfg.class);
-    config.init(BROKER_BASE, new Environment(environment));
+    BrokerCfg config = null;
+    try {
+      config =
+          new TestConfigurationFactory().create(null, "zeebe-broker", configPath, BrokerCfg.class);
+      config.init(BROKER_BASE, new Environment(environment));
+    } catch (Exception e) {
+      fail("Unable to lead configuration " + configPath + ": " + e.getMessage(), e);
+    }
+
     return config;
   }
 

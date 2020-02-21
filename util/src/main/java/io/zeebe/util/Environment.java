@@ -8,9 +8,11 @@
 package io.zeebe.util;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -26,6 +28,10 @@ public final class Environment {
 
   public Environment(final Map<String, String> environment) {
     this.environment = environment;
+  }
+
+  public Set<String> getPropertyKeys() {
+    return Collections.unmodifiableSet(environment.keySet());
   }
 
   public Optional<String> get(final String name) {

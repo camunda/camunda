@@ -8,20 +8,12 @@
 package io.zeebe.util;
 
 import com.moandjiezana.toml.Toml;
-import java.io.File;
 import java.io.InputStream;
 import org.slf4j.Logger;
 
+@Deprecated(since = "0.23.0-alpha1") // will be replaced by YAML based configuration mechanism
 public final class TomlConfigurationReader {
   public static final Logger LOG = Loggers.CONFIG_LOGGER;
-
-  public static <T> T read(final String filePath, final Class<T> type) {
-    final File file = new File(filePath);
-
-    LOG.debug("Reading configuration for {} from file {} ", type, file.getAbsolutePath());
-
-    return new Toml().read(file).to(type);
-  }
 
   public static <T> T read(final InputStream configStream, final Class<T> type) {
     LOG.debug("Reading configuration for {} from input stream", type);
