@@ -4,19 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useContext} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
 import {OPERATION_TYPE} from 'modules/constants';
 import Dropdown from 'modules/components/Dropdown';
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
-import FilterContext from 'modules/contexts/FilterContext';
+import useFilterContext from 'modules/hooks/useFilterContext';
 import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
 import useDataManager from 'modules/hooks/useDataManager';
 
 const CreateOperationDropdown = ({label}) => {
-  const {query} = useContext(FilterContext);
+  const {query} = useFilterContext();
   const {ids, excludeIds, reset} = useInstanceSelectionContext();
   const {applyBatchOperation} = useDataManager();
 
