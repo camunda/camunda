@@ -62,7 +62,7 @@ spec:
         cpu: 6
         memory: 4Gi
       requests:
-        cpu: 4
+        cpu: 6
         memory: 4Gi
     """
 }
@@ -116,7 +116,7 @@ String camBpmContainerSpec(String camBpmVersion) {
         cpu: 4
         memory: 2Gi
       requests:
-        cpu: 3
+        cpu: 4
         memory: 2Gi
     volumeMounts:
     - name: cambpm-config

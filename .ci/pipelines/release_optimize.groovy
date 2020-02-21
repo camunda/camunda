@@ -61,7 +61,7 @@ spec:
         cpu: 4
         memory: 3Gi
       requests:
-        cpu: 2
+        cpu: 4
         memory: 3Gi
   - name: docker
     image: ${DIND_DOCKER_IMAGE()}
@@ -74,7 +74,7 @@ spec:
         cpu: 2
         memory: 1Gi
       requests:
-        cpu: 1
+        cpu: 2
         memory: 1Gi
 """
 }

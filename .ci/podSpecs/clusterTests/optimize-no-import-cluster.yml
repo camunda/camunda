@@ -33,6 +33,7 @@ spec:
           env:
             - name: JAVA_OPTS
               value: |
+                -Xms512m
                 -Xmx512m
                 -XX:MaxMetaspaceSize=128m
           ports:
@@ -57,7 +58,7 @@ spec:
               cpu: 2
               memory: 1Gi
             requests:
-              cpu: 1
+              cpu: 2
               memory: 1Gi
           volumeMounts:
             - name: configuration

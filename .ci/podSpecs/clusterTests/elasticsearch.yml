@@ -54,9 +54,12 @@ spec:
             - name: ES_JAVA_OPTS
               value: "-Xms1g -Xmx1g"
           resources:
+            limits:
+              cpu: 4
+              memory: 2Gi
             requests:
               cpu: 4
-              memory: "2Gi"
+              memory: 2Gi
           ports:
             - containerPort: 9200
               name: http

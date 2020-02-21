@@ -102,4 +102,4 @@ spec:
             memory: 10Gi
           requests:
             cpu: 8
-            memory: 5Gi
+            memory: 10Gi

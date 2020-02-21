@@ -70,7 +70,7 @@ spec:
         cpu: 6
         memory: 4Gi
       requests:
-        cpu: 4
+        cpu: 6
         memory: 4Gi
     """
 }

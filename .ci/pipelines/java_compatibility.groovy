@@ -56,8 +56,8 @@ spec:
         cpu: 6
         memory: 6Gi
       requests:
-        cpu: 4
-        memory: 4Gi
+        cpu: 6
+        memory: 6Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
@@ -70,7 +70,7 @@ spec:
         cpu: 4
         memory: 2Gi
       requests:
-        cpu: 3
+        cpu: 4
         memory: 2Gi
     volumeMounts:
     - name: cambpm-config
@@ -95,6 +95,9 @@ spec:
       capabilities:
         add: ["IPC_LOCK"]
     resources:
+      limits:
+        cpu: 2
+        memory: 2Gi
       requests:
         cpu: 2
         memory: 2Gi

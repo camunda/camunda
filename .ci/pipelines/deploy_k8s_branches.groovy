@@ -35,10 +35,10 @@ spec:
     resources:
       limits:
         cpu: 500m
-        memory: 500Mi
+        memory: 512Mi
       requests:
         cpu: 500m
-        memory: 500Mi
+        memory: 512Mi
     volumeMounts:
     - name: import 
       mountPath: /import
@@ -49,10 +49,10 @@ spec:
     resources:
       limits:
         cpu: 500m
-        memory: 500Mi
+        memory: 512Mi
       requests:
         cpu: 500m
-        memory: 500Mi
+        memory: 512Mi
     env:
       - name: PGUSER
         value: camunda

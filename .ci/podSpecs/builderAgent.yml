@@ -42,7 +42,7 @@ spec:
         cpu: 2
         memory: 1Gi
       requests:
-        cpu: 1
+        cpu: 2
         memory: 1Gi
   - name: node
     image: node:10.15.3-alpine
@@ -58,5 +58,5 @@ spec:
         cpu: 3
         memory: 2Gi
       requests:
-        cpu: 1
+        cpu: 3
         memory: 1Gi

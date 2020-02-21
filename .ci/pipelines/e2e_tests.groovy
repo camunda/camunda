@@ -128,6 +128,9 @@ static String elasticSearchContainerSpec(esVersion) {
       capabilities:
         add: ["IPC_LOCK"]
     resources:
+      limits:
+        cpu: 2
+        memory: 2Gi
       requests:
         cpu: 2
         memory: 2Gi

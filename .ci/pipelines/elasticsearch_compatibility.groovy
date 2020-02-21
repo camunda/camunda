@@ -69,8 +69,8 @@ spec:
         cpu: 6
         memory: 6Gi
       requests:
-        cpu: 4
-        memory: 4Gi
+        cpu: 6
+        memory: 6Gi
 """
 }
 
@@ -88,7 +88,7 @@ static String camBpmContainerSpec(String camBpmVersion) {
         cpu: 4
         memory: 2Gi
       requests:
-        cpu: 3
+        cpu: 4
         memory: 2Gi
     volumeMounts:
     - name: cambpm-config
@@ -118,6 +118,9 @@ static String elasticSearchContainerSpec(esVersion) {
       capabilities:
         add: ["IPC_LOCK"]
     resources:
+      limits:
+        cpu: 2
+        memory: 2Gi
       requests:
         cpu: 2
         memory: 2Gi

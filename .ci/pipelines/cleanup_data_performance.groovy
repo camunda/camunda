@@ -28,11 +28,11 @@ spec:
     tty: true
     resources:
       limits:
-        cpu: 1
+        cpu: 500m
         memory: 512Mi
       requests:
-        cpu: 200m
-        memory: 128Mi
+        cpu: 500m
+        memory: 512Mi
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
@@ -49,8 +49,8 @@ spec:
         cpu: 4
         memory: 4Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
 """
 }
 

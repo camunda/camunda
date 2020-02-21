@@ -47,8 +47,8 @@ spec:
               port: cambpm-http
           resources:
             limits:
-              cpu: 4
-              memory: 2Gi
+              cpu: 2
+              memory: 1Gi
             requests:
               cpu: 2
-              memory: 2Gi
+              memory: 1Gi

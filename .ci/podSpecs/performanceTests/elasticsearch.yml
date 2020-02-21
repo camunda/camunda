@@ -65,10 +65,10 @@ spec:
             # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
             # this is 30 - (cpu of elasticsearch container)
             limits:
-              cpu: 22
+              cpu: 14
               memory: 1Gi
             requests:
-              cpu: 22
+              cpu: 14
               memory: 1Gi
           volumeMounts:
             - name: ssd-storage
@@ -105,7 +105,7 @@ spec:
             limits:
               cpu: 16
             requests:
-              cpu: 8
+              cpu: 16
               memory: "16Gi"
           ports:
             - containerPort: 9200

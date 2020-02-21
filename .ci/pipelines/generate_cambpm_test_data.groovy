@@ -62,6 +62,7 @@ spec:
     resources:
       limits:
         cpu: 2
+        memory: 6Gi
       requests:
         cpu: 2
         memory: 6Gi
@@ -91,6 +92,7 @@ spec:
     resources:
       limits:
         cpu: 12
+        memory: 64Gi
       requests:
         cpu: 12
         memory: 64Gi
@@ -127,6 +129,7 @@ spec:
     resources:
       limits:
         cpu: 16
+        memory: 12Gi
       requests:
         cpu: 16
         memory: 12Gi
