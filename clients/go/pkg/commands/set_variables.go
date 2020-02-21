@@ -64,7 +64,7 @@ func (cmd *SetVariablesCommand) VariablesFromStringer(variables fmt.Stringer) (D
 }
 
 func (cmd *SetVariablesCommand) VariablesFromObject(variables interface{}) (DispatchSetVariablesCommand, error) {
-	value, err := cmd.mixin.AsJson("variables", variables, false)
+	value, err := cmd.mixin.AsJSON("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (cmd *SetVariablesCommand) VariablesFromObject(variables interface{}) (Disp
 }
 
 func (cmd *SetVariablesCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchSetVariablesCommand, error) {
-	value, err := cmd.mixin.AsJson("variables", variables, true)
+	value, err := cmd.mixin.AsJSON("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (cmd *SetVariablesCommand) Send(ctx context.Context) (*pb.SetVariablesRespo
 func NewSetVariablesCommand(gateway pb.GatewayClient, pred retryPredicate) SetVariablesCommandStep1 {
 	return &SetVariablesCommand{
 		Command: Command{
-			mixin:       utils.NewJsonStringSerializer(),
+			mixin:       utils.NewJSONStringSerializer(),
 			gateway:     gateway,
 			shouldRetry: pred,
 		},

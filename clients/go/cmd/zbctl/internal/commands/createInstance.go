@@ -51,22 +51,22 @@ var createInstanceCmd = &cobra.Command{
 				return err
 			}
 
-			return printJson(response)
-		} else {
-			variableNames := []string{}
-			for _, variableName := range createInstanceWithResultFlag {
-				trimedVariableName := strings.TrimSpace(variableName)
-				if trimedVariableName != "" {
-					variableNames = append(variableNames, trimedVariableName)
-				}
-			}
-			response, err := zbCmd.WithResult().FetchVariables(variableNames...).Send(ctx)
-			if err != nil {
-				return err
-			}
-
-			return printJson(response)
+			return printJSON(response)
 		}
+
+		variableNames := []string{}
+		for _, variableName := range createInstanceWithResultFlag {
+			trimmedVariableName := strings.TrimSpace(variableName)
+			if trimmedVariableName != "" {
+				variableNames = append(variableNames, trimmedVariableName)
+			}
+		}
+		response, err := zbCmd.WithResult().FetchVariables(variableNames...).Send(ctx)
+		if err != nil {
+			return err
+		}
+
+		return printJSON(response)
 	},
 }
 

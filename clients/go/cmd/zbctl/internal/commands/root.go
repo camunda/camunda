@@ -203,10 +203,10 @@ func keyArg(key *int64) cobra.PositionalArgs {
 	}
 }
 
-func printJson(value interface{}) error {
-	valueJson, err := json.MarshalIndent(value, "", "  ")
+func printJSON(value interface{}) error {
+	valueJSON, err := json.MarshalIndent(value, "", "  ")
 	if err == nil {
-		fmt.Println(string(valueJson))
+		fmt.Println(string(valueJSON))
 	}
 	return err
 }

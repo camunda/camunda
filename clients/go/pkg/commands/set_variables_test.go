@@ -39,7 +39,7 @@ func TestSetVariablesCommandWithVariablesFromString(t *testing.T) {
 		Key: 523,
 	}
 
-	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().SetVariables(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
@@ -78,7 +78,7 @@ func TestSetVariablesCommandWithVariablesFromStringer(t *testing.T) {
 		Key: 523,
 	}
 
-	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().SetVariables(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
@@ -117,7 +117,7 @@ func TestSetVariablesCommandWithVariablesFromObject(t *testing.T) {
 		Key: 523,
 	}
 
-	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().SetVariables(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
@@ -156,7 +156,7 @@ func TestSetVariablesCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 		Key: 523,
 	}
 
-	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().SetVariables(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
@@ -195,7 +195,7 @@ func TestSetVariablesCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T)
 		Key: 523,
 	}
 
-	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().SetVariables(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 
@@ -236,7 +236,7 @@ func TestSetVariablesCommandWithVariablesFromMap(t *testing.T) {
 		Key: 523,
 	}
 
-	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().SetVariables(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewSetVariablesCommand(client, func(context.Context, error) bool { return false })
 

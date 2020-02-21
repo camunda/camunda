@@ -27,12 +27,12 @@ const DefaultTestTimeout = 5 * time.Second
 const DefaultTestTimeoutInMs = int64(DefaultTestTimeout / time.Millisecond)
 const DefaultContainerWaitTimeout = 2 * time.Minute
 
-// RpcTestMsg implements the gomock.Matcher interface
-type RpcTestMsg struct {
+// RPCTestMsg implements the gomock.Matcher interface
+type RPCTestMsg struct {
 	Msg proto.Message
 }
 
-func (r *RpcTestMsg) Matches(msg interface{}) bool {
+func (r *RPCTestMsg) Matches(msg interface{}) bool {
 	m, ok := msg.(proto.Message)
 	if !ok {
 		return false
@@ -60,6 +60,6 @@ func (r *RpcTestMsg) Matches(msg interface{}) bool {
 	return proto.Equal(m, r.Msg)
 }
 
-func (r *RpcTestMsg) String() string {
+func (r *RPCTestMsg) String() string {
 	return fmt.Sprintf("is %s", r.Msg)
 }

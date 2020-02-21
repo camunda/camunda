@@ -37,7 +37,7 @@ var deployWorkflowCmd = &cobra.Command{
 			return err
 		}
 
-		return printJson(response)
+		return printJSON(response)
 	},
 }
 
