@@ -7,6 +7,8 @@
  */
 package io.zeebe.gateway;
 
+import static java.lang.Runtime.getRuntime;
+
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
@@ -22,6 +24,7 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
 
 public class StandaloneGateway {
 
@@ -89,6 +92,16 @@ public class StandaloneGateway {
   public static void main(final String[] args) throws Exception {
     final GatewayCfg gatewayCfg = initConfiguration(args);
     gatewayCfg.init();
+
+    getRuntime()
+        .addShutdownHook(
+            new Thread("Gateway close thread") {
+              @Override
+              public void run() {
+                LogManager.shutdown();
+              }
+            });
+
     new StandaloneGateway(gatewayCfg).run();
   }
 
