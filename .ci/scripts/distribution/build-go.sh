@@ -14,10 +14,10 @@ PREFIX=github.com/zeebe-io/zeebe/clients/go
 EXCLUDE=""
 
 for file in {internal,cmd/zbctl/internal}/*; do
-  EXCLUDE=$EXCLUDE$PREFIX/$file,
+  EXCLUDE="$EXCLUDE --exclude-package $PREFIX/$file"
 done
 
-/usr/bin/gocompat compare --go1compat --exclude-package=$EXCLUDE ./...
+/usr/bin/gocompat compare --go1compat $EXCLUDE ./...
 
 cd ${ORG_DIR}/zeebe/clients/go/cmd/zbctl
 
