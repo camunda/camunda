@@ -85,8 +85,8 @@ spec:
         cpu: 6
         memory: 6Gi
       requests:
-        cpu: 4
-        memory: 4Gi
+        cpu: 6
+        memory: 6Gi
     """
 }
 
