@@ -12,12 +12,12 @@ import {OPERATION_TYPE} from 'modules/constants';
 import Dropdown from 'modules/components/Dropdown';
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
 import FilterContext from 'modules/contexts/FilterContext';
-import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
+import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
 import useDataManager from 'modules/hooks/useDataManager';
 
 const CreateOperationDropdown = ({label}) => {
   const {query} = useContext(FilterContext);
-  const {ids, excludeIds, reset} = useContext(InstanceSelectionContext);
+  const {ids, excludeIds, reset} = useInstanceSelectionContext();
   const {applyBatchOperation} = useDataManager();
 
   const handleCreateOperation = operationType => {

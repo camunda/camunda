@@ -7,7 +7,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
+import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 
 import Dropdown from 'modules/components/Dropdown';
 import ListFooter from './ListFooter';

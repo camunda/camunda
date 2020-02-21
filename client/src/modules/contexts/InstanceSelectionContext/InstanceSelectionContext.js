@@ -118,4 +118,5 @@ InstanceSelectionProvider.propTypes = {
   totalCount: PropTypes.number
 };
 
-export {InstanceSelectionProvider, InstanceSelectionContext};
+export default InstanceSelectionContext;
+export {InstanceSelectionProvider};

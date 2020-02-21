@@ -8,9 +8,8 @@ import React, {useContext, useEffect} from 'react';
 import {mount} from 'enzyme';
 import {renderHook, act} from '@testing-library/react-hooks';
 
-import {
+import InstanceSelectionContext, {
   InstanceSelectionProvider,
-  InstanceSelectionContext,
   useInstanceSelection
 } from './InstanceSelectionContext';
 
