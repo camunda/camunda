@@ -10,6 +10,7 @@ import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -42,6 +43,7 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-896")
   public void testWorkflowVersionAndNameReturnedAndReused() {
     Long workflowKey1 = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
     Long workflowKey2 = ZeebeTestUtil.deployWorkflow(zeebeClient, "processWithGateway.bpmn");

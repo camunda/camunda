@@ -139,7 +139,6 @@ public class WorkflowZeebeRecordProcessor {
       final Optional<WorkflowEntity> diagramData = extractDiagramData(is);
       if(diagramData.isPresent()) {
         workflowEntity.setName(diagramData.get().getName());
-        logger.debug("Workflow name is obtained from the diagram: " + workflowEntity.getName());
       }
     }
 
