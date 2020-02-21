@@ -146,7 +146,7 @@ describe('IncidentsTable', () => {
         .find(ColumnHeader)
         .at(5)
         .text()
-    ).toContain('Action');
+    ).toContain('Operations');
   });
 
   it('should render the right number of rows', () => {

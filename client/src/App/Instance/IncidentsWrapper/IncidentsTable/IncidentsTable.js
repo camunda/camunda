@@ -142,7 +142,7 @@ export default class IncidentsTable extends React.Component {
                 <ColumnHeader label="Error Message" />
               </TH>
               <TH>
-                <ColumnHeader label="Actions" />
+                <ColumnHeader label="Operations" />
               </TH>
             </TR>
           </THead>
