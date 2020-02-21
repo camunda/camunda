@@ -198,7 +198,14 @@ pipeline {
   }
 
   post {
-    failure {
+    unsuccessful {
+      // Store container logs
+      writeFile(
+              file: "elastic_logs.txt",
+              text: containerLog( name: "elasticsearch", returnLog: true )
+      )
+      archiveArtifacts artifacts: '*.txt'
+      // Do not send notification if the node disconnected
       script {
         if (!nodeDisconnected()) {
           def notification = load ".ci/pipelines/build_notification.groovy"
