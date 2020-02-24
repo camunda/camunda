@@ -206,8 +206,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       });
     }
 
-    function postStartupActions() {
-      ensureLicense();
+    async function postStartupActions() {
+      await ensureLicense();
       setWhatsNewSeenStateForAllUsers();
       ingestEventData();
     }
