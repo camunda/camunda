@@ -86,9 +86,9 @@ export default class DateFields extends React.PureComponent {
         {this.state.popupOpen && (
           <div
             onClick={this.stopClosingPopup}
-            className={classnames('DateRangeContainer', {
-              DateRangeContainerLeft: this.isFieldSelected('startDate'),
-              DateRangeContainerRight: this.isFieldSelected('endDate')
+            className={classnames('dateRangeContainer', {
+              dateRangeContainerLeft: this.isFieldSelected('startDate'),
+              dateRangeContainerRight: this.isFieldSelected('endDate')
             })}
           >
             <DateRange
@@ -121,9 +121,9 @@ export default class DateFields extends React.PureComponent {
 
   formatDate = date => moment(date).format(this.props.format);
 
-  onDateRangeChange = date => {
-    this.props.onDateChange('startDate', this.formatDate(date.range1.startDate));
-    this.props.onDateChange('endDate', this.formatDate(date.range1.endDate));
+  onDateRangeChange = ({startDate, endDate}) => {
+    this.props.onDateChange('startDate', this.formatDate(startDate));
+    this.props.onDateChange('endDate', this.formatDate(endDate));
 
     if (this.isFieldSelected('startDate')) {
       this.setState({currentlySelectedField: 'endDate'});

@@ -13,7 +13,7 @@ exports[`match snapshot 1`] = `
   }
   months={2}
   moveRangeOnFirstSelection={false}
-  onChange={[MockFunction]}
+  onChange={[Function]}
   rangeColors={
     Array [
       "#3d91ff",
@@ -24,8 +24,8 @@ exports[`match snapshot 1`] = `
   ranges={
     Array [
       Object {
-        "endDate": "2018-05-02T00:00:00.000Z",
-        "startDate": "2012-12-15T00:00:00.000Z",
+        "endDate": 2018-05-02T00:00:00.000Z,
+        "startDate": 2012-12-15T00:00:00.000Z,
       },
     ]
   }

@@ -12,19 +12,18 @@ import {de} from 'react-date-range/dist/locale';
 import 'react-date-range/dist/styles.css'; // main style file
 import 'react-date-range/dist/theme/default.css'; // theme css file
 import './DateRange.scss';
-import moment from 'moment';
 
 export default function DateRange({startDate, endDate, onDateChange, endDateSelected}) {
   let range;
   if (startDate.isValid() && endDate.isValid() && endDate.isSameOrAfter(startDate)) {
     range = {
-      startDate,
-      endDate
+      startDate: startDate.toDate(),
+      endDate: endDate.toDate()
     };
   } else {
     range = {
-      startDate: moment(),
-      endDate: moment()
+      startDate: new Date(),
+      endDate: new Date()
     };
   }
 
@@ -34,7 +33,7 @@ export default function DateRange({startDate, endDate, onDateChange, endDateSele
       locale={getLanguage() === 'de' ? de : undefined}
       ranges={[range]}
       months={2}
-      onChange={onDateChange}
+      onChange={({range1}) => onDateChange(range1)}
       direction="horizontal"
     />
   );

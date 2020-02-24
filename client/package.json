@@ -24,7 +24,7 @@
     "object.values": "^1.1.0",
     "react": "16.12.0",
     "react-app-polyfill": "^1.0.6",
-    "react-date-range": "^1.0.0-beta",
+    "react-date-range": "^1.0.1",
     "react-dom": "^16.12.0",
     "react-full-screen": "^0.2.4",
     "react-grid-layout": "^0.17.1",
@@ -36,6 +36,9 @@
     "spinkit": "^1.2.5",
     "string.prototype.includes": "^1.0.0",
     "table-js": "^6.0.3"
+  },
+  "peerDependencies": {
+    "date-fns": "^2.9.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -105,7 +108,8 @@
     "testcafe-browser-provider-browserstack": "^1.11.0",
     "tree-kill": "^1.2.2",
     "ws": "^7.2.1",
-    "xml2js": "^0.4.23"
+    "xml2js": "^0.4.23",
+    "date-fns": "^2.9.0"
   },
   "browserslist": [
     ">0.2%",
