@@ -66,7 +66,7 @@ var activateJobsCmd = &cobra.Command{
 			log.Println("Activated", jobsCount, "for type", jobType)
 			for index, job := range jobs {
 				log.Println("Job", index+1, "/", jobsCount)
-				if err := printJson(job); err != nil {
+				if err := printJSON(job); err != nil {
 					return err
 				}
 			}

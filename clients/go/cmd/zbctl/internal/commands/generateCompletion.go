@@ -31,11 +31,15 @@ var generateCompletionCmd = &cobra.Command{
 		var err error
 		switch generateCompletionShellFlag {
 		case "bash":
-			rootCmd.GenBashCompletion(os.Stdout)
-			break
+			if err := rootCmd.GenBashCompletion(os.Stdout); err != nil {
+				return err
+			}
+
 		case "zsh":
-			rootCmd.GenZshCompletion(os.Stdout)
-			break
+			if err := rootCmd.GenZshCompletion(os.Stdout); err != nil {
+				return err
+			}
+
 		default:
 			err = errors.New(fmt.Sprint("Generating completion for shell", generateCompletionShellFlag, "not supported"))
 		}

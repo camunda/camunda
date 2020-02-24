@@ -212,7 +212,7 @@ public final class ClusteringRule extends ExternalResource {
     brokerCfgs.clear();
   }
 
-  Broker getBroker(final int nodeId) {
+  public Broker getBroker(final int nodeId) {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
 

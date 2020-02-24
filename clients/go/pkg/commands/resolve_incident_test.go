@@ -36,7 +36,7 @@ func TestResolveIncidentCommand(t *testing.T) {
 	}
 	stub := &pb.ResolveIncidentResponse{}
 
-	client.EXPECT().ResolveIncident(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().ResolveIncident(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewResolveIncidentCommand(client, func(context.Context, error) bool { return false })
 

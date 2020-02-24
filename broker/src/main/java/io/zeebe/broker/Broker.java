@@ -87,6 +87,7 @@ public final class Broker implements AutoCloseable {
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
   private ServerTransport serverTransport;
+  private BrokerHealthCheckService healthCheckService;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -115,6 +116,15 @@ public final class Broker implements AutoCloseable {
       LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::internalStart);
     }
     return startFuture;
+  }
+
+  // TODO: Added this API for testing. When http endpoint is available, this can be removed.
+  // https://github.com/zeebe-io/zeebe/issues/3833
+  public boolean isHealthy() {
+    if (healthCheckService != null) {
+      return healthCheckService.isBrokerHealthy();
+    }
+    return false;
   }
 
   private void internalStart() {
@@ -170,7 +180,7 @@ public final class Broker implements AutoCloseable {
     }
     startContext.addStep("cluster services", () -> atomix.start().join());
     startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
-    startContext.addStep("metric's server", () -> metricsServerStep(networkCfg, localBroker));
+    startContext.addStep("metric's server", () -> monitoringServerStep(networkCfg, localBroker));
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
@@ -255,10 +265,9 @@ public final class Broker implements AutoCloseable {
     return topologyManager;
   }
 
-  private AutoCloseable metricsServerStep(
+  private AutoCloseable monitoringServerStep(
       final NetworkCfg networkCfg, final BrokerInfo localBroker) {
-    final BrokerHealthCheckService healthCheckService =
-        new BrokerHealthCheckService(localBroker, atomix);
+    healthCheckService = new BrokerHealthCheckService(localBroker, atomix);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
 
@@ -310,6 +319,8 @@ public final class Broker implements AutoCloseable {
                     commandHandler,
                     createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
             scheduleActor(zeebePartition);
+            healthCheckService.registerMonitoredPartition(
+                owningPartition.id().id(), zeebePartition);
             return zeebePartition;
           });
     }

@@ -39,9 +39,7 @@ func (w *envWrapper) get(variable string) string {
 }
 
 func (w *envWrapper) unset(variable string) {
-	if _, present := w.vars[variable]; present {
-		delete(w.vars, variable)
-	}
+	delete(w.vars, variable)
 }
 
 func (w *envWrapper) lookup(variable string) (string, bool) {

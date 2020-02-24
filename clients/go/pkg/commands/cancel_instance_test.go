@@ -34,7 +34,7 @@ func TestCancelWorkflowInstanceCommand(t *testing.T) {
 	}
 	stub := &pb.CancelWorkflowInstanceResponse{}
 
-	client.EXPECT().CancelWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CancelWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCancelInstanceCommand(client, func(context.Context, error) bool {
 		return false

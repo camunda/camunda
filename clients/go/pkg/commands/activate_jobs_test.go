@@ -99,13 +99,13 @@ func TestActivateJobsCommand(t *testing.T) {
 
 	var expectedJobs []entities.Job
 	for _, job := range response1.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{*job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
 	}
 	for _, job := range response2.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{*job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
 	}
 	for _, job := range response3.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{*job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
 	}
 
 	gomock.InOrder(
@@ -115,7 +115,7 @@ func TestActivateJobsCommand(t *testing.T) {
 		stream.EXPECT().Recv().Return(nil, io.EOF),
 	)
 
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -132,9 +132,9 @@ func TestActivateJobsCommand(t *testing.T) {
 		t.Error("Failed to receive all jobs: ", jobs, expectedJobs)
 	}
 
-	for i := range jobs {
-		if !reflect.DeepEqual(jobs[i], expectedJobs[i]) {
-			t.Error("Failed to receive job: ", jobs[i], expectedJobs[i])
+	for i, job := range jobs {
+		if !reflect.DeepEqual(job, expectedJobs[i]) {
+			t.Error("Failed to receive job: ", job, expectedJobs[i])
 		}
 	}
 }
@@ -155,7 +155,7 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -189,7 +189,7 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -229,7 +229,7 @@ func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
 	defer cancel()
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
 		return false

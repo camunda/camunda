@@ -58,7 +58,7 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 	}
 	stub := &pb.DeployWorkflowResponse{}
 
-	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
 
@@ -97,7 +97,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 	}
 	stub := &pb.DeployWorkflowResponse{}
 
-	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewDeployCommand(client, func(context.Context, error) bool { return false })
 
