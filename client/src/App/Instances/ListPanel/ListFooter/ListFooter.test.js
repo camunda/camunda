@@ -14,7 +14,7 @@ import ListFooter from './ListFooter';
 import Paginator from './Paginator';
 import {Copyright} from './styled';
 
-const defaultContext = {selectedIds: []};
+const defaultContext = {getSelectedCount: () => 0};
 
 const defaultProps = {
   onFirstElementChange: jest.fn(),
@@ -65,18 +65,18 @@ describe('ListFooter', () => {
 
   it('should show Button when there is selection', () => {
     const node = renderFooter({
-      context: {selectedIds: ['123-456', '789-012']}
+      context: {getSelectedCount: () => 2}
     });
 
     const button = node.find(Button);
     expect(button.exists()).toBe(true);
-    expect(button.text()).toEqual('Apply Operation on 2 Instances');
+    expect(button.text()).toEqual('Apply Operation on 2 Instances...');
   });
 
   it('should not show Paginator when hasContent is false', () => {
     const node = renderFooter({
       props: {hasContent: false, filterCount: 11},
-      context: {selectedIds: ['123-456']}
+      context: {getSelectedCount: () => 2}
     });
 
     expect(node.find(Button).exists()).toBe(false);

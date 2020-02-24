@@ -22,7 +22,7 @@ function ListFooter({
   onFirstElementChange,
   hasContent
 }) {
-  const {selectedIds} = useContext(InstanceSelectionContext);
+  const {getSelectedCount} = useContext(InstanceSelectionContext);
   const maxPage = getMaxPage(filterCount, perPage);
 
   const isPaginationRequired = (maxPage, total) => {
@@ -34,10 +34,10 @@ function ListFooter({
       {hasContent && (
         <>
           <Styled.OperationButtonContainer>
-            {selectedIds.length > 0 && (
+            {getSelectedCount(filterCount) > 0 && (
               <Button color="primary" size="small">
                 Apply Operation on{' '}
-                {pluralSuffix(selectedIds.length, 'Instance')}
+                {pluralSuffix(getSelectedCount(filterCount), 'Instance')}...
               </Button>
             )}
           </Styled.OperationButtonContainer>

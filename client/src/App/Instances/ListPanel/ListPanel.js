@@ -186,7 +186,7 @@ class ListPanel extends React.Component {
     const isExpanded = this.props.expandState !== EXPAND_STATE.COLLAPSED;
 
     return (
-      <InstanceSelectionProvider>
+      <InstanceSelectionProvider totalCount={filterCount}>
         <SplitPane.Pane {...paneProps} hasShiftableControls>
           <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
 
