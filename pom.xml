@@ -29,6 +29,8 @@
     <version.elasticsearch>6.8.6</version.elasticsearch>
     <version.spring.boot>2.2.2.RELEASE</version.spring.boot>
 
+    <version.junit>4.13</version.junit>
+
     <version.swagger>2.9.2</version.swagger>
     <version.javax.json>1.1.4</version.javax.json>
 
@@ -102,6 +104,12 @@
         <groupId>io.springfox</groupId>
         <artifactId>springfox-swagger-ui</artifactId>
         <version>${version.swagger}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${version.junit}</version>
       </dependency>
 
     </dependencies>
@@ -192,6 +200,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.0.0-M4</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -205,13 +214,13 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
+          <version>3.0.0-M4</version>
           <configuration>
-            <forkCount>2</forkCount>
+            <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <systemPropertyVariables>
               <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-<!--              <spring.profiles.active>test</spring.profiles.active>-->
             </systemPropertyVariables>
           </configuration>
           <executions>

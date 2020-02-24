@@ -74,6 +74,8 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<!-- there are classes in main path dependening on test stuff, they should rather be moved to the test sources -->
+			<!--<scope>test</scope>-->
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>

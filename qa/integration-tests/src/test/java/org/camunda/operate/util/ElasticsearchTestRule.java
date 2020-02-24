@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import org.camunda.operate.TestImportListener;
 import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.IncidentEntity;
@@ -56,9 +55,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.util.ThreadUtil.*;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public class ElasticsearchTestRule extends TestWatcher {
 
@@ -180,7 +178,7 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   public void processRecordsAndWaitFor(Collection<RecordsReader> readers,Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
     long shouldImportCount = 0;
-    int maxRounds = 500;
+    int maxRounds = 50;
     boolean found = predicate.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
@@ -214,7 +212,10 @@ public class ElasticsearchTestRule extends TestWatcher {
       }
       refreshOperateESIndices();
       found = predicate.test(arguments);
-      waitingRound++;
+      if (!found) {
+        sleepFor(500);
+        waitingRound++;
+      }
     }
     if(found) {
       logger.debug("Conditions met in round {} ({} ms).", waitingRound--, System.currentTimeMillis()-start);

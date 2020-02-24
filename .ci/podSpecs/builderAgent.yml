@@ -9,9 +9,8 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   initContainers:
-    - name: init-sysctl
+    - name: increase-vm-max-map
       image: busybox
-      imagePullPolicy: IfNotPresent
       command: ["sysctl", "-w", "vm.max_map_count=262144"]
       securityContext:
         privileged: true
@@ -30,10 +29,10 @@ spec:
       resources:
         limits:
           cpu: 4
-          memory: 6Gi
+          memory: 8Gi
         requests:
           cpu: 4
-          memory: 6Gi
+          memory: 8Gi
     - name: node
       image: node:10.14.2-alpine
       command: ["cat"]
@@ -54,14 +53,12 @@ spec:
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.6
       env:
         - name: ES_JAVA_OPTS
-          value: "-Xms2048m -Xmx2048m"
+          value: "-Xms4096m -Xmx4096m"
         - name: cluster.name
           value: docker-cluster
         - name: discovery.type
           value: single-node
         - name: action.auto_create_index
-          value: true
-        - name: bootstrap.memory_lock
           value: true
         - name: processors
           value: 4
@@ -70,6 +67,7 @@ spec:
         capabilities:
           add:
             - IPC_LOCK
+            - SYS_RESOURCE
       ports:
         - containerPort: 9200
           name: es-http
@@ -80,10 +78,10 @@ spec:
       resources:
         limits:
           cpu: 4
-          memory: 4Gi
+          memory: 8Gi
         requests:
           cpu: 4
-          memory: 4Gi
+          memory: 8Gi
     - name: docker
       image: docker:18.06-dind
       args: ["--storage-driver=overlay2"]
@@ -92,8 +90,8 @@ spec:
       tty: true
       resources:
         limits:
-          cpu: 2
-          memory: 4Gi
+          cpu: 1
+          memory: 2Gi
         requests:
-          cpu: 2
-          memory: 4Gi
+          cpu: 1
+          memory: 2Gi
