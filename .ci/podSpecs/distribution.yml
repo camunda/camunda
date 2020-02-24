@@ -3,9 +3,9 @@ metadata:
     agent: zeebe-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
   tolerations:
-    - key: "slaves"
+    - key: "agents-n1-standard-32-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
@@ -80,7 +80,7 @@ spec:
           memory: 2Gi
         requests:
           cpu: 3
-          memory: 1Gi
+          memory: 2Gi
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
