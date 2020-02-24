@@ -70,12 +70,6 @@ public final class StubbedBrokerClient implements BrokerClient {
   }
 
   @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-      final BrokerRequest<T> request, final Duration requestTimeout) {
-    throw new UnsupportedOperationException("not implemented");
-  }
-
-  @Override
   public <T> void sendRequest(
       final BrokerRequest<T> request,
       final BrokerResponseConsumer<T> responseConsumer,
