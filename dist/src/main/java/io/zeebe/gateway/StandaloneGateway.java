@@ -20,6 +20,7 @@ import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.legacy.tomlconfig.LegacySupportTomlConfiguration;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.util.function.Function;
@@ -110,7 +111,7 @@ public class StandaloneGateway implements CommandLineRunner {
             });
 
 
-    EnvironmentHelper.checkForLegacyTomlConfigurationArgument(args, "gateway.cfg.yaml");
+    LegacySupportTomlConfiguration.checkForLegacyTomlConfigurationArgument(args, "broker.cfg.yaml");
 
     SpringApplication.run(StandaloneGateway.class, args);
   }

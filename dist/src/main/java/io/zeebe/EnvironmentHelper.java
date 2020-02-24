@@ -7,7 +7,6 @@
  */
 package io.zeebe;
 
-import io.zeebe.broker.Loggers;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.core.env.Environment;
@@ -31,24 +30,5 @@ public class EnvironmentHelper {
     }
 
     return result;
-  }
-
-  public static void checkForLegacyTomlConfigurationArgument(
-      String[] args, String recommendedSetting) {
-    if (args.length == 1 && args[0].endsWith(".toml")) {
-      final String configFileArgument = args[0];
-      Loggers.SYSTEM_LOGGER.warn(
-          "Found command line argument "
-              + configFileArgument
-              + " which might be a TOML configuration file.");
-      Loggers.SYSTEM_LOGGER.info(
-          "TOML configuration files are no longer supported. Please specify a YAML configuration file"
-              + "and set it via environment variable \"spring.config.additional-location\" (e.g. "
-              + "\"export spring.config.additional-location='file:./config/"
-              + recommendedSetting
-              + "'\").");
-      Loggers.SYSTEM_LOGGER.info(
-          "The ./config/ folder contains a configuration file template. Alternatively, you can also use environment variables.");
-    }
   }
 }
