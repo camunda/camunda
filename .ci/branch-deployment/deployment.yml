@@ -59,13 +59,13 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 30
           httpGet:
-            path: /api/meta/version
+            path: /
             port: optimize-http
         readinessProbe:
           initialDelaySeconds: 60
           periodSeconds: 30
           httpGet:
-            path: /api/meta/version
+            path: /
             port: optimize-http
         resources:
           limits:
