@@ -37,7 +37,7 @@ function ListFooter({
             {getSelectedCount(filterCount) > 0 && (
               <Button color="primary" size="small">
                 Apply Operation on{' '}
-                {pluralSuffix(getSelectedCount(filterCount), 'Instance')}
+                {pluralSuffix(getSelectedCount(filterCount), 'Instance')}...
               </Button>
             )}
           </Styled.OperationButtonContainer>

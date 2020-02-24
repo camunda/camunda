@@ -16,29 +16,28 @@ const MODES = {
   ALL: 'ALL'
 };
 
-export const useInstanceSelection = () => {
+export const useInstanceSelection = totalCount => {
   const [ids, setIds] = useState([]);
   const [isAllChecked, setAllChecked] = useState(false);
   const [mode, setMode] = useState(MODES.INCLUDE);
 
   useEffect(() => {
-    if (mode === MODES.EXCLUDE && ids.length === 0) {
+    if (
+      (mode === MODES.EXCLUDE && ids.length === 0) ||
+      (mode === MODES.INCLUDE && ids.length === totalCount && totalCount !== 0)
+    ) {
       setMode(MODES.ALL);
       setAllChecked(true);
+      setIds([]);
     }
-  }, [ids, mode]);
+  }, [ids, mode, totalCount]);
 
   const addToIds = id => {
     setIds([...ids, id]);
   };
 
   const removeFromIds = id => {
-    setIds(prevIds => {
-      const ids = [...prevIds];
-      const index = ids.indexOf(id);
-      ids.splice(index, 1);
-      return ids;
-    });
+    setIds(prevIds => prevIds.filter(prevId => prevId !== id));
   };
 
   const isInstanceChecked = id => {
@@ -63,7 +62,7 @@ export const useInstanceSelection = () => {
     }
   };
 
-  const handleCheckInstance = id => fo => {
+  const handleCheckInstance = id => () => {
     if (mode === MODES.ALL) {
       setMode(MODES.EXCLUDE);
       setAllChecked(false);
@@ -96,15 +95,18 @@ export const useInstanceSelection = () => {
   };
 };
 
-const InstanceSelectionProvider = ({children}) => {
-  return <Provider value={useInstanceSelection()}>{children}</Provider>;
+const InstanceSelectionProvider = ({children, totalCount}) => {
+  return (
+    <Provider value={useInstanceSelection(totalCount)}>{children}</Provider>
+  );
 };
 
 InstanceSelectionProvider.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
-  ])
+  ]),
+  totalCount: PropTypes.number
 };
 
 export {InstanceSelectionProvider, InstanceSelectionContext};

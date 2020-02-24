@@ -70,7 +70,7 @@ describe('ListFooter', () => {
 
     const button = node.find(Button);
     expect(button.exists()).toBe(true);
-    expect(button.text()).toEqual('Apply Operation on 2 Instances');
+    expect(button.text()).toEqual('Apply Operation on 2 Instances...');
   });
 
   it('should not show Paginator when hasContent is false', () => {

@@ -24,7 +24,7 @@ const TOTAL_COUNT = Object.values(INSTANCE_IDS).length;
 describe('InstanceSelectionContext', () => {
   it('should return false when there is no selection', () => {
     // when
-    const {result} = renderHook(() => useInstanceSelection());
+    const {result} = renderHook(() => useInstanceSelection(2));
 
     // then
     expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(false);
@@ -35,7 +35,7 @@ describe('InstanceSelectionContext', () => {
 
   it('should add id to selection and return true', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection());
+    const {result} = renderHook(() => useInstanceSelection(2));
 
     // when
     act(() => {
@@ -49,9 +49,9 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(1);
   });
 
-  it('should add two ids', () => {
+  it('should add two ids and check all', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection());
+    const {result} = renderHook(() => useInstanceSelection(2));
 
     // when
     act(() => {
@@ -65,13 +65,13 @@ describe('InstanceSelectionContext', () => {
     // then
     expect(result.current.isInstanceChecked(INSTANCE_IDS.A)).toBe(true);
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
-    expect(result.current.isAllChecked).toBe(false);
+    expect(result.current.isAllChecked).toBe(true);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
   });
 
   it('should add and remove selection and return false', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection());
+    const {result} = renderHook(() => useInstanceSelection(2));
 
     // when
     act(() => {
@@ -90,7 +90,7 @@ describe('InstanceSelectionContext', () => {
 
   it('should select all', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection());
+    const {result} = renderHook(() => useInstanceSelection(2));
 
     // when
     act(() => {
@@ -105,7 +105,7 @@ describe('InstanceSelectionContext', () => {
 
   it('should select all, unselect one', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection());
+    const {result} = renderHook(() => useInstanceSelection(2));
 
     // when
     act(() => {
@@ -124,7 +124,7 @@ describe('InstanceSelectionContext', () => {
 
   it('should check all when checking single instances', () => {
     // given
-    const {result} = renderHook(() => useInstanceSelection());
+    const {result} = renderHook(() => useInstanceSelection(2));
     act(() => {
       result.current.handleCheckAll();
     });
