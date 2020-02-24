@@ -7,6 +7,7 @@
 const {spawn} = require('child_process');
 const path = require('path');
 const request = require('request');
+const fetch = require('node-fetch');
 const http = require('http');
 const fs = require('fs');
 const WebSocket = require('ws');
@@ -14,6 +15,7 @@ const opn = require('opn');
 const ansiHTML = require('ansi-html');
 const xml2js = require('xml2js');
 const users = require('../demo-data/users.json');
+const license = require('./license');
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
@@ -42,16 +44,20 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     startManagementServer();
 
     function buildAndStartOptimize() {
-      buildBackend().then(() => {
-        if (!dockerProcess) {
-          startDocker().then(restoreSqlDump);
-        }
-        startBackend().then(postStartupActions).catch(() => {
-          console.log("Optimize process killed, restarting...")
+      buildBackend()
+        .then(() => {
+          if (!dockerProcess) {
+            startDocker().then(restoreSqlDump);
+          }
+          startBackend()
+            .then(postStartupActions)
+            .catch(() => {
+              console.log('Optimize process killed, restarting...');
+            });
+        })
+        .catch(() => {
+          console.log('Optimize build interrupted');
         });
-      }).catch(() => {
-        console.log("Optimize build interrupted")
-      });
     }
 
     if (ciMode) {
@@ -122,17 +128,16 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       return new Promise(resolve => {
         // this directory should be mounted by docker, on Linux this results in root bering the owner of that directory
         // we create it with the current user to ensure we have write permissions
-        fs.mkdirSync("databaseDumps");
-        dockerProcess = spawnWithArgs('docker-compose up --force-recreate --no-color',
-          {
-            cwd: path.resolve(__dirname, '..'),
-            shell: true,
-            env: {
-              ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
-              ES_VERSION: elasticSearchVersion,
-              CAMBPM_VERSION: cambpmVersion
-            }
-          });
+        fs.mkdirSync('databaseDumps');
+        dockerProcess = spawnWithArgs('docker-compose up --force-recreate --no-color', {
+          cwd: path.resolve(__dirname, '..'),
+          shell: true,
+          env: {
+            ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
+            ES_VERSION: elasticSearchVersion,
+            CAMBPM_VERSION: cambpmVersion
+          }
+        });
 
         dockerProcess.stdout.on('data', data => addLog(data, 'docker'));
         dockerProcess.stderr.on('data', data => addLog(data, 'docker', true));
@@ -157,33 +162,39 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     async function restoreSqlDump() {
-      await downloadFile("https://storage.googleapis.com/optimize-data/optimize_large_data-e2e.sqlc", "databaseDumps/dump.sqlc");
+      await downloadFile(
+        'https://storage.googleapis.com/optimize-data/optimize_large_data-e2e.sqlc',
+        'databaseDumps/dump.sqlc'
+      );
 
-      dataGeneratorProcess = spawnWithArgs("docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc");
+      dataGeneratorProcess = spawnWithArgs(
+        'docker exec postgres pg_restore --clean --if-exists -v -h localhost -U camunda -d engine dump/dump.sqlc'
+      );
 
-      dataGeneratorProcess.stdout.on("data", data => {
-        addLog(data.toString(), "dataGenerator")
+      dataGeneratorProcess.stdout.on('data', data => {
+        addLog(data.toString(), 'dataGenerator');
       });
 
       dataGeneratorProcess.stderr.on('data', data => {
-        addLog(data.toString(), "dataGenerator", true)
+        addLog(data.toString(), 'dataGenerator', true);
       });
 
-      dataGeneratorProcess.on("exit", () => {
+      dataGeneratorProcess.on('exit', () => {
         dataGeneratorProcess = null;
-        spawnWithArgs("rm -rf databaseDumps/");
-      })
+        spawnWithArgs('rm -rf databaseDumps/');
+      });
     }
 
     function downloadFile(downloadUrl, filePath) {
       return new Promise(resolve => {
         const file = fs.createWriteStream(filePath);
-        request.get(downloadUrl)
+        request
+          .get(downloadUrl)
           .pipe(file)
           .on('finish', () => {
             resolve();
-          })
-      })
+          });
+      });
     }
 
     function generateDemoData() {
@@ -196,8 +207,16 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function postStartupActions() {
+      ensureLicense();
       setWhatsNewSeenStateForAllUsers();
       ingestEventData();
+    }
+
+    async function ensureLicense() {
+      await fetch('http://localhost:8090/api/license/validate-and-store', {
+        method: 'POST',
+        body: license
+      });
     }
 
     function ingestEventData() {
@@ -229,17 +248,21 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function startManagementServer() {
-      const server = http.createServer(function (request, response) {
+      const server = http.createServer(function(request, response) {
         if (request.url === '/api/dataGenerationComplete') {
           response.writeHead(200, {'Content-Type': 'text/plain'});
           response.end(
-            (engineDataGenerationComplete && eventIngestionComplete && seenStateInitializationComplete).toString(),
+            (
+              engineDataGenerationComplete &&
+              eventIngestionComplete &&
+              seenStateInitializationComplete
+            ).toString(),
             'utf-8'
           );
           return;
         }
         if (request.url === '/api/restartBackend') {
-          addLog("--------- BACKEND RESTART INITIATED ---------", "backend");
+          addLog('--------- BACKEND RESTART INITIATED ---------', 'backend');
           if (buildBackendProcess) {
             buildBackendProcess.kill();
           }
@@ -248,23 +271,22 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
           }
           buildAndStartOptimize();
           response.statusCode = 200;
-          response.end("Restarting Optimize backend...", "utf-8");
+          response.end('Restarting Optimize backend...', 'utf-8');
           return;
         }
 
         if (request.url === '/api/generateNewData') {
           if (dataGeneratorProcess) {
             response.statusCode = 400;
-            response.end("Data is currently being generated", "utf-8");
+            response.end('Data is currently being generated', 'utf-8');
             return;
           }
-          addLog("--------- DATA GENERATION INITIATED ---------", "dataGenerator");
+          addLog('--------- DATA GENERATION INITIATED ---------', 'dataGenerator');
           generateDemoData();
           response.statusCode = 200;
-          response.end("Data generation initiated", "utd-8");
+          response.end('Data generation initiated', 'utd-8');
           return;
         }
-
 
         var filePath = __dirname + '/managementServer' + request.url;
         if (request.url === '/') {
@@ -280,7 +302,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
         var contentType = mimeTypes[extname] || 'application/octet-stream';
 
-        fs.readFile(filePath, function (error, content) {
+        fs.readFile(filePath, function(error, content) {
           if (error) {
             if (error.code === 'ENOENT') {
               response.writeHead(404, {'Content-Type': contentType});
@@ -371,7 +393,7 @@ function stopDocker() {
 }
 
 function spawnWithArgs(commandString, options) {
-  const args = commandString.split(" ");
+  const args = commandString.split(' ');
   const command = args.splice(0, 1)[0];
   return spawn(command, args, options);
 }

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {beforeAllTests, cleanEntities} from '../setup';
+import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
@@ -14,7 +14,6 @@ import * as Combined from './CombinedReport.elements.js';
 
 fixture('Combined Report')
   .page(config.endpoint)
-  .before(beforeAllTests)
   .beforeEach(u.login)
   .afterEach(cleanEntities);
 

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export default `--------------- BEGIN OPTIMIZE FAKE KEY ---------------
+module.exports = `--------------- BEGIN OPTIMIZE FAKE KEY ---------------
 redactedredactedredactedredactedredactedredactedredactedre
 redactedredactedredactedredactedredactedredactedredactedre
 redactedredactedredactedredactedredactedredactedredactedre

@@ -7,21 +7,6 @@
 import fetch from 'node-fetch';
 
 import config from './config';
-import license from './license';
-
-export async function ensureLicense() {
-  const resp = await fetch(config.endpoint + '/api/license/validate');
-  if (!resp.ok) {
-    await fetch(config.endpoint + '/api/license/validate-and-store', {
-      method: 'POST',
-      body: license
-    });
-  }
-}
-
-export async function beforeAllTests() {
-  await ensureLicense();
-}
 
 async function getSession(user) {
   const resp = await fetch(config.endpoint + '/api/authentication', {
