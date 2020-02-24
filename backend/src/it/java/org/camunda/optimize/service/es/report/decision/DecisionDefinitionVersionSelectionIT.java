@@ -7,23 +7,26 @@ package org.camunda.optimize.service.es.report.decision;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
@@ -118,7 +121,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   }
 
   @Test
-  public void missingDefinitionVersionResultsIn400() {
+  public void missingDefinitionVersionReturnsEmptyResult() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(1);
 
@@ -131,10 +134,10 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      Response response = evaluateReportWithResponse(report);
+      DecisionReportResultDto result = evaluateReport(report).getResult();
 
       // then
-      assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+      assertThat(result.getInstanceCount()).isEqualTo(0);
     }
   }
 
@@ -153,13 +156,6 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto,
         SingleDecisionReportDefinitionDto>>() {
       });
-  }
-
-  private Response evaluateReportWithResponse(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
   }
 
   private List<DecisionReportDataDto> createAllPossibleDecisionReports(String definitionKey,

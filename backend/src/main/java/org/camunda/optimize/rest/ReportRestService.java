@@ -65,7 +65,8 @@ public class ReportRestService {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewSingleProcessReport(
       userId,
-      Optional.ofNullable(singleProcessReportDefinitionDto).orElseGet(SingleProcessReportDefinitionDto::new));
+      Optional.ofNullable(singleProcessReportDefinitionDto).orElseGet(SingleProcessReportDefinitionDto::new)
+    );
   }
 
   /**
@@ -82,7 +83,8 @@ public class ReportRestService {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewSingleDecisionReport(
       userId,
-      Optional.ofNullable(singleDecisionReportDefinitionDto).orElseGet(SingleDecisionReportDefinitionDto::new));
+      Optional.ofNullable(singleDecisionReportDefinitionDto).orElseGet(SingleDecisionReportDefinitionDto::new)
+    );
   }
 
   /**
@@ -99,7 +101,8 @@ public class ReportRestService {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewCombinedProcessReport(
       userId,
-      Optional.ofNullable(combinedReportDefinitionDto).orElseGet(CombinedReportDefinitionDto::new));
+      Optional.ofNullable(combinedReportDefinitionDto).orElseGet(CombinedReportDefinitionDto::new)
+    );
   }
 
   @POST

@@ -41,6 +41,8 @@ public class DefinitionQueryUtil {
       query.must(termsQuery(type.getDefinitionVersionFieldName(), getLatestVersionToKey.apply(definitionKey)));
     } else if (!isDefinitionVersionSetToAll(definitionVersions)) {
       query.must(termsQuery(type.getDefinitionVersionFieldName(), definitionVersions));
+    } else if (definitionVersions.isEmpty()) {
+      query.mustNot(existsQuery(type.getDefinitionVersionFieldName()));
     }
     return query;
   }

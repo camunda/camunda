@@ -18,7 +18,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +63,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -102,7 +102,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(PARALLEL_GATEWAY_TYPE, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -138,7 +139,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -177,7 +179,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, FOURTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
             Tuple.tuple(PARALLEL_GATEWAY_TYPE, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FIFTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -212,7 +215,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, null)
-          ));
+          )
+        );
       });
   }
 
@@ -256,15 +260,41 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, secondEventSecondOccurrenceTime),
-            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, secondEventSecondOccurrenceTime, secondEventSecondOccurrenceTime),
-            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, secondEventSecondOccurrenceTime, thirdEventSecondOccurrenceTime),
-            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, thirdEventSecondOccurrenceTime, thirdEventSecondOccurrenceTime),
-            Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, thirdEventSecondOccurrenceTime, secondEventThirdOccurrenceTime),
-            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, secondEventThirdOccurrenceTime, secondEventThirdOccurrenceTime),
+            Tuple.tuple(
+              EXCLUSIVE_GATEWAY_TYPE,
+              MERGING_GATEWAY_ID,
+              secondEventSecondOccurrenceTime,
+              secondEventSecondOccurrenceTime
+            ),
+            Tuple.tuple(
+              USER_TASK_TYPE,
+              USER_TASK_ID_ONE,
+              secondEventSecondOccurrenceTime,
+              thirdEventSecondOccurrenceTime
+            ),
+            Tuple.tuple(
+              EXCLUSIVE_GATEWAY_TYPE,
+              SPLITTING_GATEWAY_ID,
+              thirdEventSecondOccurrenceTime,
+              thirdEventSecondOccurrenceTime
+            ),
+            Tuple.tuple(
+              USER_TASK_TYPE,
+              USER_TASK_ID_TWO,
+              thirdEventSecondOccurrenceTime,
+              secondEventThirdOccurrenceTime
+            ),
+            Tuple.tuple(
+              EXCLUSIVE_GATEWAY_TYPE,
+              MERGING_GATEWAY_ID,
+              secondEventThirdOccurrenceTime,
+              secondEventThirdOccurrenceTime
+            ),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, secondEventThirdOccurrenceTime, FOURTH_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -281,7 +311,10 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     eventMappings.put(BPMN_START_EVENT_ID, startMapping(FIRST_EVENT_NAME));
     eventMappings.put(USER_TASK_ID_ONE, startMapping(SECOND_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createExclusiveGatewayProcessDefinitionWithEventBeforeGatewayXml());
+    createAndPublishEventProcessMapping(
+      eventMappings,
+      createExclusiveGatewayProcessDefinitionWithEventBeforeGatewayXml()
+    );
 
     // when
     executeImportCycle();
@@ -304,7 +337,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, FIFTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, FIFTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME)
-            ));
+          )
+        );
         final Set<String> gatewayEventIds = processInstanceDto.getEvents().stream()
           .filter(event -> event.getActivityType().equals(EXCLUSIVE_GATEWAY_TYPE))
           .map(SimpleEventDto::getId)
@@ -357,7 +391,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -397,7 +432,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -415,7 +451,10 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     eventMappings.put(USER_TASK_ID_TWO, startMapping(THIRD_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(FOURTH_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createExclusiveGatewayProcessDefinitionWithConsecutiveGatewaysXml());
+    createAndPublishEventProcessMapping(
+      eventMappings,
+      createExclusiveGatewayProcessDefinitionWithConsecutiveGatewaysXml()
+    );
 
     // when
     executeImportCycle();
@@ -437,7 +476,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID_TWO, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -471,7 +511,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(closingGatewayType, MERGING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -505,7 +546,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(openingGatewayType, SPLITTING_GATEWAY_ID, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -523,8 +565,10 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     eventMappings.put(USER_TASK_ID_FOUR, startMapping(THIRD_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(FOURTH_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings,
-                                        createExclusiveGatewayProcessDefinitionWithThreeConsecutiveGatewaysAndLoopXml());
+    createAndPublishEventProcessMapping(
+      eventMappings,
+      createExclusiveGatewayProcessDefinitionWithThreeConsecutiveGatewaysAndLoopXml()
+    );
 
     // when
     executeImportCycle();
@@ -540,15 +584,26 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
           Arrays.asList(
             Tuple.tuple(START_EVENT_TYPE, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, SECOND_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID_FOUR, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
-            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID_THREE, SECOND_EVENT_DATETIME, SECOND_EVENT_DATETIME),
+            Tuple.tuple(
+              EXCLUSIVE_GATEWAY_TYPE,
+              SPLITTING_GATEWAY_ID_THREE,
+              SECOND_EVENT_DATETIME,
+              SECOND_EVENT_DATETIME
+            ),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID_THREE, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID, THIRD_EVENT_DATETIME, THIRD_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_FOUR, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, MERGING_GATEWAY_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
-            Tuple.tuple(EXCLUSIVE_GATEWAY_TYPE, SPLITTING_GATEWAY_ID_FOUR, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
+            Tuple.tuple(
+              EXCLUSIVE_GATEWAY_TYPE,
+              SPLITTING_GATEWAY_ID_FOUR,
+              FOURTH_EVENT_DATETIME,
+              FOURTH_EVENT_DATETIME
+            ),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -584,7 +639,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FOURTH_EVENT_DATETIME, FOURTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
@@ -604,8 +660,10 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     eventMappings.put(USER_TASK_ID_THREE, startMapping(FOURTH_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(FIFTH_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings,
-                                        createExclusiveGatewayProcessDefinitionWithMixedDirectionGatewaysXml());
+    createAndPublishEventProcessMapping(
+      eventMappings,
+      createExclusiveGatewayProcessDefinitionWithMixedDirectionGatewaysXml()
+    );
 
     // when
     executeImportCycle();
@@ -624,12 +682,14 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_TWO, THIRD_EVENT_DATETIME, FOURTH_EVENT_DATETIME),
             Tuple.tuple(USER_TASK_TYPE, USER_TASK_ID_THREE, FOURTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME),
             Tuple.tuple(END_EVENT_TYPE, BPMN_END_EVENT_ID, FIFTH_EVENT_DATETIME, FIFTH_EVENT_DATETIME)
-          ));
+          )
+        );
       });
   }
 
   private void createAndPublishEventProcessMapping(final Map<String, EventMappingDto> eventMappings, String bpmnXml) {
-    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
+    EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
       eventMappings, EVENT_PROCESS_NAME, bpmnXml);
     String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessId);

@@ -25,9 +25,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
@@ -42,6 +42,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static javax.ws.rs.core.Response.Status.OK;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
@@ -112,7 +114,7 @@ public class ReportRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
     // then
     assertThat(idDto, is(notNullValue()));
   }
@@ -125,7 +127,7 @@ public class ReportRestServiceIT extends AbstractIT {
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
     // then
     assertThat(idDto, is(notNullValue()));
   }
@@ -417,7 +419,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus(), is(OK.getStatusCode()));
   }
 
   @Test
@@ -489,7 +491,23 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus(), is(OK.getStatusCode()));
+  }
+
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void evaluateUnsavedReportWithoutVersionsAndTenantsDoesNotFail(ReportType reportType) {
+    //given
+    final SingleReportDataDto reportDataDto = createReportWithoutVersionsAndTenants(reportType);
+
+    // then
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
+      .execute();
+
+    // then status is OK
+    assertThat(response.getStatus()).isEqualTo(OK.getStatusCode());
   }
 
   @Test
@@ -515,7 +533,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus(), is(OK.getStatusCode()));
   }
 
   @Test
@@ -530,7 +548,7 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus(), is(OK.getStatusCode()));
   }
 
   @ParameterizedTest
@@ -540,7 +558,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     ReportDefinitionDto oldReport = getReport(id);
     ReportDefinitionDto report = getReport(copyId.getId());
@@ -555,7 +573,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId())
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     ReportDefinitionDto oldReport = getReport(id.getId());
     ReportDefinitionDto report = getReport(copyId.getId());
@@ -577,7 +595,7 @@ public class ReportRestServiceIT extends AbstractIT {
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, collectionId)
       .addSingleQueryParam("name", testReportCopyName)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -596,7 +614,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, collectionId)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -620,7 +638,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), collectionId)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id.getId());
@@ -654,7 +672,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, "null")
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -678,7 +696,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), "null")
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id.getId());
@@ -714,7 +732,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, newCollectionId)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id);
@@ -741,7 +759,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), newCollectionId)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
 
     // then
     ReportDefinitionDto oldReport = getReport(id.getId());
@@ -829,7 +847,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest(id)
-      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .execute(ReportDefinitionDto.class, OK.getStatusCode());
   }
 
   private String createSingleReport(final ReportType reportType) {
@@ -855,7 +873,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(IdDto.class, OK.getStatusCode());
   }
 
   private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType) {
@@ -905,7 +923,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdDto.class, OK.getStatusCode())
       .getId();
   }
 
@@ -919,7 +937,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdDto.class, OK.getStatusCode())
       .getId();
   }
 
@@ -942,7 +960,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdDto.class, OK.getStatusCode())
       .getId();
   }
 
@@ -950,7 +968,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .execute(IdDto.class, OK.getStatusCode())
       .getId();
   }
 
@@ -958,7 +976,7 @@ public class ReportRestServiceIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(ReportDefinitionDto.class, OK.getStatusCode());
   }
 
   @SneakyThrows
@@ -1027,6 +1045,25 @@ public class ReportRestServiceIT extends AbstractIT {
     data.getConfiguration().setXml("FAKE");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
+  }
+
+  private SingleReportDataDto createReportWithoutVersionsAndTenants(final ReportType reportType) {
+    switch (reportType) {
+      case PROCESS:
+        return TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(RANDOM_KEY)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build();
+      case DECISION:
+        return DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(RANDOM_KEY)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build();
+      default:
+        throw new IllegalStateException("Uncovered type: " + reportType);
+    }
   }
 
   @SneakyThrows

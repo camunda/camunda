@@ -180,6 +180,10 @@ public class ProcessDefinitionReader {
                                                                                                final List<String> definitionVersions,
                                                                                                final List<String> tenantIds) {
 
+    if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
+      return Optional.empty();
+    }
+
     final String mostRecentValidVersion = convertToValidDefinitionVersion(
       definitionKey, definitionVersions, this::getLatestVersionToKey
     );

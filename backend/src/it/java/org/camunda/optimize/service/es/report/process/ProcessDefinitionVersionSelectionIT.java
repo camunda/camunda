@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.process;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -21,17 +20,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
@@ -47,7 +46,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void processReportAcrossAllVersions() {
@@ -63,7 +63,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(3L));
@@ -86,7 +87,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(5L));
@@ -108,7 +110,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(1L));
@@ -122,7 +125,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(4L));
@@ -130,28 +134,28 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   }
 
   @Test
-  public void missingDefinitionVersionResultsIn400() {
+  public void missingDefinitionVersionReturnsEmptyResult() {
     // given
-    ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(1);
+    ProcessDefinitionEngineDto definition = deployProcessAndStartInstances(1);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
-      definition1.getKey(),
+      definition.getKey(),
       ImmutableList.of()
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      Response response = evaluateReportWithResponse(report);
+      ProcessReportResultDto result = evaluateReport(report).getResult();
 
       // then
-      assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+      assertThat(result.getInstanceCount()).isEqualTo(0);
     }
   }
 
   private List<ProcessReportDataDto> createAllPossibleProcessReports(String definitionKey,
-                                                                            List<String> definitionVersions) {
+                                                                     List<String> definitionVersions) {
     List<ProcessReportDataDto> reports = new ArrayList<>();
     for (ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
       ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
@@ -170,25 +174,23 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     return reports;
   }
 
-  private AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport(ProcessReportDataDto reportData) {
+  private AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport
+    (ProcessReportDataDto reportData) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto>>() {
+      .execute(new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto,
+        SingleProcessReportDefinitionDto>>() {
       });
-  }
-
-  private Response evaluateReportWithResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
   }
 
   private ProcessDefinitionEngineDto deployProcessAndStartInstances(int nInstancesToStart) {
     ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess();
     IntStream.range(0, nInstancesToStart).forEach(
-      i -> engineIntegrationExtension.startProcessInstance(definition.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE))
+      i -> engineIntegrationExtension.startProcessInstance(
+        definition.getId(),
+        ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE)
+      )
     );
     return definition;
   }

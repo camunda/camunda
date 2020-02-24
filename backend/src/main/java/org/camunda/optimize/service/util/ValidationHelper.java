@@ -76,8 +76,8 @@ public class ValidationHelper {
 
     if (data instanceof SingleReportDataDto) {
       SingleReportDataDto singleReportData = (SingleReportDataDto) data;
-      ensureListNotEmpty("definitionVersions", singleReportData.getDefinitionVersions());
       ensureNotNull("definitionKey", singleReportData.getDefinitionKey());
+      ensureNotNull("definitionVersions", singleReportData.getDefinitionVersions());
     } else if (data == null) {
       throw new OptimizeValidationException("Report data is not allowed to be null!");
     }

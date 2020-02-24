@@ -29,7 +29,7 @@ public class DecisionReportDataBuilder {
   private DecisionReportDataType reportDataType;
 
   private String decisionDefinitionKey;
-  private List<String> decisionDefinitionVersions;
+  private List<String> decisionDefinitionVersions = Collections.emptyList();
   private List<String> tenantIds = new ArrayList<>(Collections.singleton(null));
   private String variableId;
   private String variableName;

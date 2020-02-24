@@ -27,7 +27,7 @@ public class TemplatedProcessReportDataBuilder {
   private ProcessReportDataType reportDataType;
 
   private String processDefinitionKey;
-  private List<String> processDefinitionVersions;
+  private List<String> processDefinitionVersions = Collections.emptyList();
   private List<String> tenantIds = Collections.singletonList(null);
   private String variableName;
   private VariableType variableType;
