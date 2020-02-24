@@ -12,7 +12,7 @@ public class CronNormalizerUtil {
   public static String normalizeToSixParts(String cronTrigger) {
     String[] cronParts = cronTrigger.split(" ");
     if (cronParts.length < 6) {
-      return cronTrigger + " *";
+      return "0 " + cronTrigger;
     } else {
       return cronTrigger;
     }

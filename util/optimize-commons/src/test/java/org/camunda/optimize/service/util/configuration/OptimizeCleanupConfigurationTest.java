@@ -26,7 +26,7 @@ public class OptimizeCleanupConfigurationTest {
       true, "* * * * *", defaultTtl, defaultMode
     );
 
-    assertThat(underTest.getCronTrigger(), is("* * * * * *"));
+    assertThat(underTest.getCronTrigger(), is("0 * * * * *"));
   }
 
   @Test
