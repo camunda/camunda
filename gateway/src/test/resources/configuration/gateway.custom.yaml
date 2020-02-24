@@ -5,7 +5,7 @@ zeebe-gateway:
 
   cluster:
     contactPoint: foobar:1234
-    maxMessageSize: 4K
+    maxMessageSize: 4G
     requestTimeout: 123h
     clusterName: testCluster
     memberId: testMember
@@ -14,3 +14,13 @@ zeebe-gateway:
 
   threads:
     managementThreads: 100
+
+  monitoring:
+    enabled: true
+    host: monitoringHost
+    port: 1234
+
+  security:
+    enabled: true
+    privateKeyPath: privateKeyPath
+    certificateChainPath: certificateChainPath

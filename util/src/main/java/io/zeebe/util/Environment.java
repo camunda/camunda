@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class Environment {
@@ -75,14 +74,6 @@ public final class Environment {
   }
 
   public Optional<List<String>> getList(final String name) {
-    return get(name)
-        .map(v -> v.split(","))
-        .map(Arrays::asList)
-        .map(
-            list ->
-                list.stream()
-                    .map(String::trim)
-                    .filter(e -> !e.isEmpty())
-                    .collect(Collectors.toList()));
+    return get(name).map(v -> v.split(",")).map(Arrays::asList).map(StringUtil.LIST_SANITIZER);
   }
 }

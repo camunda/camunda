@@ -30,7 +30,6 @@ import io.zeebe.broker.logstreams.LogStreamDeletionService;
 import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.AsyncSnapshotDirector;
@@ -118,8 +117,8 @@ public final class ZeebePartition extends Actor
     final var exporterEntries = brokerCfg.getExporters().entrySet();
     // load and validate exporters
     for (final var exporterEntry : exporterEntries) {
-      final String id = exporterEntry.getKey();
-      final ExporterCfg exporterCfg = exporterEntry.getValue();
+      final var id = exporterEntry.getKey();
+      final var exporterCfg = exporterEntry.getValue();
       try {
         exporterRepository.load(id, exporterCfg);
       } catch (final ExporterLoadException | ExporterJarLoadException e) {

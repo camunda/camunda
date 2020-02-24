@@ -7,29 +7,19 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
-
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.util.Environment;
 
 public final class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry {
 
   private boolean enable = true;
 
   @Override
-  public void init(
-      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
-    environment.getBool(ENV_EMBED_GATEWAY).ifPresent(this::setEnable);
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
 
     // configure gateway based on broker network settings
     final NetworkCfg networkCfg = globalConfig.getNetwork();
 
-    // network host precedence from higher to lower:
-    // 1. ENV_GATEWAY_HOST
-    // 2. specified in gateway toml section
-    // 3. ENV_HOST
-    // 4. specified in broker network toml section
-    init(environment, networkCfg.getHost());
+    init(networkCfg.getHost());
 
     // ensure embedded gateway can access local broker
     getCluster().setContactPoint(networkCfg.getInternalApi().getAddress().toString());

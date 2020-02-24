@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import io.zeebe.util.Environment;
 import java.util.Map;
 
 /**
@@ -29,8 +28,7 @@ public final class ExporterCfg implements ConfigurationEntry {
   private Map<String, Object> args;
 
   @Override
-  public void init(
-      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
     if (isExternal()) {
       jarPath = ConfigurationUtil.toAbsolutePath(jarPath, brokerBase);
     }

@@ -29,7 +29,7 @@ public final class ClusterCfg implements ConfigurationEntry {
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
-  private List<Integer> partitionIds;
+  //  private List<Integer> partitionIds;
   private int nodeId = DEFAULT_NODE_ID;
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
@@ -99,9 +99,9 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.partitionsCount = partitionsCount;
   }
 
-  public List<Integer> getPartitionIds() {
-    return partitionIds;
-  }
+  //  public List<Integer> getPartitionIds() {
+  //    return partitionIds;
+  //  }
 
   public int getReplicationFactor() {
     return replicationFactor;

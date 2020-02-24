@@ -8,18 +8,12 @@
 package io.zeebe.gateway.impl.configuration;
 
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MANAGEMENT_THREADS;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
 
-import io.zeebe.util.Environment;
 import java.util.Objects;
 
 public final class ThreadsCfg {
 
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
-
-  public void init(final Environment environment) {
-    environment.getInt(ENV_GATEWAY_MANAGEMENT_THREADS).ifPresent(this::setManagementThreads);
-  }
 
   public int getManagementThreads() {
     return managementThreads;

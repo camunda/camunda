@@ -8,11 +8,7 @@
 package io.zeebe.gateway.impl.configuration;
 
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_TLS_ENABLED;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CERTIFICATE_PATH;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PRIVATE_KEY_PATH;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_SECURITY_ENABLED;
 
-import io.zeebe.util.Environment;
 import java.util.Objects;
 
 public final class SecurityCfg {
@@ -20,12 +16,6 @@ public final class SecurityCfg {
   private boolean enabled = DEFAULT_TLS_ENABLED;
   private String certificateChainPath;
   private String privateKeyPath;
-
-  public void init(final Environment environment) {
-    environment.getBool(ENV_GATEWAY_SECURITY_ENABLED).ifPresent(this::setEnabled);
-    environment.get(ENV_GATEWAY_CERTIFICATE_PATH).ifPresent(this::setCertificateChainPath);
-    environment.get(ENV_GATEWAY_PRIVATE_KEY_PATH).ifPresent(this::setPrivateKeyPath);
-  }
 
   public boolean isEnabled() {
     return enabled;

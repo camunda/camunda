@@ -7,7 +7,8 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import io.zeebe.util.Environment;
+import static io.zeebe.util.StringUtil.LIST_SANITIZER;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -26,15 +27,9 @@ public final class DataCfg implements ConfigurationEntry {
   private int maxSnapshots = 3;
 
   @Override
-  public void init(
-      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
 
-    applyEnvironment(environment);
     directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
-  }
-
-  private void applyEnvironment(final Environment environment) {
-    environment.getList(EnvironmentConstants.ENV_DIRECTORIES).ifPresent(v -> directories = v);
   }
 
   public List<String> getDirectories() {
@@ -42,7 +37,7 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   public void setDirectories(final List<String> directories) {
-    this.directories = directories;
+    this.directories = LIST_SANITIZER.apply(directories);
   }
 
   public long getLogSegmentSizeInBytes() {

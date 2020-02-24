@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.core.env.Environment;
 
-public class EnvironmentHelperTest {
+public final class EnvironmentHelperTest {
 
   @Test
   public void shouldReturnFalseWhenEnvironmentIsNull() {

@@ -13,10 +13,10 @@ services:
             - 26500:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
-            - ZEEBE_NODE_ID=0
-            - ZEEBE_PARTITIONS_COUNT=3
-            - ZEEBE_CLUSTER_SIZE=3
-            - ZEEBE_REPLICATION_FACTOR=3
+            - ZEEBEBROKER_CLUSTER_NODEID=0
+            - ZEEBEBROKER_CLUSTER_PARTITIONSCOUNT=3
+            - ZEEBEBROKER_CLUSTER_CLUSTERSIZE=3
+            - ZEEBEBROKER_CLUSTER_REPLICATIONFACTOR=3
         volumes:
             - broker_1:/usr/local/zeebe/data
 
@@ -26,11 +26,11 @@ services:
             - 26510:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
-            - ZEEBE_NODE_ID=1
-            - ZEEBE_PARTITIONS_COUNT=3
-            - ZEEBE_CLUSTER_SIZE=3
-            - ZEEBE_REPLICATION_FACTOR=3
-            - ZEEBE_CONTACT_POINTS=broker-1:26502
+            - ZEEBEBROKER_CLUSTER_NODEID=1
+            - ZEEBEBROKER_CLUSTER_PARTITIONSCOUNT=3
+            - ZEEBEBROKER_CLUSTER_CLUSTERSIZE=3
+            - ZEEBEBROKER_CLUSTER_REPLICATIONFACTOR=3
+            - ZEEBEBROKER_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502
         volumes:
             - broker_2:/usr/local/zeebe/data
 
@@ -40,10 +40,10 @@ services:
             - 26520:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
-            - ZEEBE_NODE_ID=2
-            - ZEEBE_PARTITIONS_COUNT=3
-            - ZEEBE_CLUSTER_SIZE=3
-            - ZEEBE_REPLICATION_FACTOR=3
-            - ZEEBE_CONTACT_POINTS=broker-1:26502
+            - ZEEBEBROKER_CLUSTER_NODEID=2
+            - ZEEBEBROKER_CLUSTER_PARTITIONSCOUNT=3
+            - ZEEBEBROKER_CLUSTER_CLUSTERSIZE=3
+            - ZEEBEBROKER_CLUSTER_REPLICATIONFACTOR=3
+            - ZEEBEBROKER_CLUSTER_INITIALCONTACTPOINTS=broker-1:26502
         volumes:
             - broker_3:/usr/local/zeebe/data

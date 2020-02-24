@@ -1,10 +1,8 @@
 # Zeebe broker configuration file
-
 # ! ! ! ! ! ! ! ! ! !
 # In order to activate the settings in this file, please set the following environment variable:
 # export spring.config.additional-location='file:./config/zeebe.cfg.yaml'
 # ! ! ! ! ! ! ! ! ! !
-
 
 # Overview -------------------------------------------
 
@@ -64,7 +62,7 @@
       # Sets the minimum keep alive interval
       # This setting specifies the minimum accepted interval between keep alive pings.
       # This value must be specified as a positive integer followed by 's' for seconds, 'm' for minutes or 'h' for hours.
-      # This setting can also be overwritten using the environment variable ZEEBEBROKER_GATEWAY_NETWORK_KEEPALIVEINTERVAL.
+      # This setting can also be overwritten using the environment variable ZEEBEBROKER_GATEWAY_NETWORK_MINKEEPALIVEINTERVAL.
       # minKeepAliveInterval: 30s
 
     # cluster:
@@ -74,12 +72,12 @@
 
     # threads:
       # Sets the number of threads the gateway will use to communicate with the broker cluster
-      # This setting can also be overridden using the environment variable ZEEBEBROKER_GATEWAY_CLUSTER_MANAGEMENTTHREADS.
+      # This setting can also be overridden using the environment variable ZEEBEBROKER_GATEWAY_THREADS_MANAGEMENTTHREADS.
       # managementThreads: 1
 
     # monitoring:
       # Enables the metrics collection in the gateway
-      # This setting can also be overridden using the environment variable ZEEBEBROKER_GATEWAY_MONITOPRING_ENABLED.
+      # This setting can also be overridden using the environment variable ZEEBEBROKER_GATEWAY_MONITORING_ENABLED.
       # enabled: false
 
     # security:
@@ -265,13 +263,17 @@
     #   entry point of the exporter, a class which *must* extend the io.zeebe.exporter.Exporter
     #   interface.
     #
-    # A nested table as [exporters.args] will allow you to inject arbitrary arguments into your
+    # A nested table as "args:" will allow you to inject arbitrary arguments into your
     # class through the use of annotations.
+    #
+    # These setting can also be overridden using the environment variables "ZEEBEBROKER_EXPORTERS_[exporter name]_..."
     #
 
     # Debug Log Exporter --------------
     #
     # Enable the following debug exporter to log the exported records to console
+    #
+    # These setting can also be overridden using the environment variables "ZEEBEBROKER_EXPORTERS_DEBUGLOG_..."
     #
     # debuglog:
       # className: io.zeebe.broker.exporter.debug.DebugLogExporter
@@ -283,8 +285,9 @@
     #
     # Enable the following debug exporter to start a http server to inspect the exported records
     #
+    # These setting can also be overridden using the environment variables "ZEEBEBROKER_EXPORTERS_DEBUGHTTP_..."
     #
-    # debug-http:
+    # debugHttp:
       # className: io.zeebe.broker.exporter.debug.DebugHttpExporter
       # args:
       #   port = 8000
@@ -292,6 +295,8 @@
 
     # Elasticsearch Exporter ----------
     # An example configuration for the elasticsearch exporter:
+    #
+    # These setting can also be overridden using the environment variables "ZEEBEBROKER_EXPORTERS_ELASTICSEARCH_..."
     #
     # elasticsearch:
       # className: io.zeebe.exporter.ElasticsearchExporter

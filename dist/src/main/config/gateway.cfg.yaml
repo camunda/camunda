@@ -3,7 +3,7 @@
 
 # ! ! ! ! ! ! ! ! ! !
 # In order to activate the settings in this file, please set the following environment variable:
-# export spring.config.additional-location='file:./config/gateway.cfg.yaml'
+# export SPRING_CONFIG_LOCATION='file:./config/gateway.cfg.yaml'
 # ! ! ! ! ! ! ! ! ! !
 
 # Overview -------------------------------------------
@@ -48,7 +48,7 @@
     # Sets the minimum keep alive interval
     # This setting specifies the minimum accepted interval between keep alive pings. This value must
     # be specified as a positive integer followed by 's' for seconds, 'm' for minutes or 'h' for hours.
-    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_NETWORK_KEEPALIVEINTERVAL.
+    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_NETWORK_MINKEEPALIVEINTERVAL.
     # minKeepAliveInterval: 30s
 
   # cluster:
@@ -57,7 +57,7 @@
     # contactPoint: 127.0.0.1:26502
 
     # Sets the timeout of requests send to the broker cluster
-    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_REQUEST_TIMEOUT.
+    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_CLUSTER_REQUESTTIMEOUT.
     # requestTimeout: 15s
 
     # Sets name of the Zeebe cluster to connect to
@@ -91,7 +91,7 @@
     # host: 0.0.0.0
 
     # Sets the port the monitoring binds to
-    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_MONITOIRNG_PORT..
+    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_MONITOIRNG_PORT.
     # port: 9600
 
   # security:
@@ -100,7 +100,7 @@
     # enabled: false
 
     # Sets the path to the certificate chain file
-    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_SECURITY_CERTIFICATECHAIN_PATH.
+    # This setting can also be overridden using the environment variable ZEEBEGATEWAY_SECURITY_CERTIFICATECHAINPATH.
     # certificateChainPath:
 
     # Sets the path to the private key file location

@@ -27,7 +27,10 @@ public class TestConfigurationFactoryTest {
     // when
     final SampleConfiguration actual =
         sutConfigurationFactory.create(
-            null, "config", "TestConfigurationFactoryTestSample.yaml", SampleConfiguration.class);
+            null,
+            "config-test",
+            "TestConfigurationFactoryTestSample.yaml",
+            SampleConfiguration.class);
 
     // then
     assertThat(actual.getSetting()).isEqualTo("test");
@@ -56,41 +59,20 @@ public class TestConfigurationFactoryTest {
           IllegalAccessException {
     // given
     final Map<String, String> environmentEntries = new HashMap<>();
-    environmentEntries.put("config.args.foo", "not bar");
+    environmentEntries.put("config-test.args.foo", "not bar");
     final Environment environment = new Environment(environmentEntries);
 
     // when
     final SampleConfiguration actual =
         sutConfigurationFactory.create(
             environment,
-            "config",
+            "config-test",
             "TestConfigurationFactoryTestSample.yaml",
             SampleConfiguration.class);
 
     // then
     assertThat(actual.getArgs()).containsOnly(entry("foo", "not bar"));
     assertThat(actual.getSize()).isEqualTo(DataSize.ofMegabytes(2));
-  }
-
-  @Test
-  public void shouldOverlayEnvironmentSettingsWithLenientNamingOverConfigurationReadFromFile()
-      throws InvocationTargetException, NoSuchMethodException, InstantiationException,
-          IllegalAccessException {
-    // given
-    final Map<String, String> environmentEntries = new HashMap<>();
-    environmentEntries.put("CONFIG_ARGS_FOO", "not bar");
-    final Environment environment = new Environment(environmentEntries);
-
-    // when
-    final SampleConfiguration actual =
-        sutConfigurationFactory.create(
-            environment,
-            "config",
-            "TestConfigurationFactoryTestSample.yaml",
-            SampleConfiguration.class);
-
-    // then
-    assertThat(actual.getArgs()).containsOnly(entry("foo", "not bar"));
   }
 
   public static final class SampleConfiguration {

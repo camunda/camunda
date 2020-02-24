@@ -86,6 +86,10 @@ public class DebugLogExporter implements Exporter {
     return exporterCfg;
   }
 
+  public static String defaultExporterId() {
+    return DebugLogExporter.class.getSimpleName();
+  }
+
   public static class DebugExporterConfiguration {
     private String logLevel = "debug";
     private boolean prettyPrint = false;

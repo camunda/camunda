@@ -28,29 +28,28 @@ import org.springframework.boot.context.properties.source.ConfigurationPropertyS
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.PropertiesPropertySource;
-import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 
 /**
  * This class mimics the Spring Boot configuration mechanism. It reads configuration from a YAML
- * file and then overlays a map of environment settings, that can be passed in as argument. It does
- * not consider the actual system environment settings. Instead, the test can specify the
- * environment settings it wants to test through an {@code Environment} object. It does support
- * lenient naming of environment variables (e.g. "CONFIG_SETTING" will be mapped to
- * "config.setting").
- *
- * <p>There are several caveats though:
+ * file or input stream and then overlays a map of environment settings, that can be passed in as
+ * argument. It does not consider the actual system environment settings. Instead, the test can
+ * specify the environment settings it wants to test through an {@code Environment} object. <br>
+ * There are several caveats though:
  *
  * <ul>
- *   <li>The file must be available on the classpath
+ *   <li>If using the file based interface, the file must be available on the classpath
  *   <li>It is assumed that the created types have public no arg constructors
+ *   <li>This implementation does not support relaxed binding (it was tried during development, but
+ *       in the end the rules for relaxed binding didn't match up with the ones used by Spring Boot
+ *       proper. This lead to confusion and eventually the relaxed naming support was dropped)
  *   <li>This class does not support the full feature set of Spring Boot configuration. Among others
  *       it does not support profiles or overlaying configuration from multiple files
  * </ul>
  */
-public class TestConfigurationFactory {
+public final class TestConfigurationFactory {
 
   public static final Logger LOG = Loggers.CONFIG_LOGGER;
 
@@ -87,7 +86,10 @@ public class TestConfigurationFactory {
    *     constructor; must not be {@code null}
    */
   public <T> T create(
-      final Environment environment, String prefix, final String fileName, final Class<T> type) {
+      final Environment environment,
+      final String prefix,
+      final String fileName,
+      final Class<T> type) {
     LOG.debug("Reading configuration for {} from file {}", type, fileName);
 
     try (InputStream inputStream = new ClassPathResource(fileName).getInputStream()) {
@@ -110,7 +112,7 @@ public class TestConfigurationFactory {
    */
   public <T> T create(
       final Environment environment,
-      String prefix,
+      final String prefix,
       final InputStream inputStream,
       final Class<T> type) {
     LOG.debug("Reading configuration for {} from input stream", type);
@@ -122,9 +124,6 @@ public class TestConfigurationFactory {
 
     propertySources.addLast(
         new MapPropertySource("environment properties strict", propertiesFromEnvironment));
-    propertySources.addLast(
-        new SystemEnvironmentPropertySource(
-            "environment properties lenient", propertiesFromEnvironment));
     propertySources.addLast(
         new PropertiesPropertySource("properties from file", propertiesFromFile));
 
@@ -155,14 +154,14 @@ public class TestConfigurationFactory {
     }
   }
 
-  private Properties loadYamlProperties(InputStream inputStream) {
+  private Properties loadYamlProperties(final InputStream inputStream) {
     final Resource resource = new InputStreamResource(inputStream);
     final YamlPropertiesFactoryBean factoryBean = new YamlPropertiesFactoryBean();
     factoryBean.setResources(resource);
     return factoryBean.getObject();
   }
 
-  private Map<String, Object> convertEnvironmentIntoMap(Environment environment) {
+  private Map<String, Object> convertEnvironmentIntoMap(final Environment environment) {
     final Map<String, Object> result = new HashMap<>();
 
     if (environment != null) {

@@ -15,6 +15,7 @@ import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
+import io.atomix.core.AtomixConfig;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
@@ -56,7 +57,7 @@ public final class AtomixFactory {
             .build();
 
     final AtomixBuilder atomixBuilder =
-        Atomix.builder()
+        Atomix.builder(new AtomixConfig())
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
             .withMembershipProtocol(membershipProtocol)

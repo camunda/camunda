@@ -11,9 +11,9 @@ import java.util.Arrays;
 import java.util.List;
 import org.springframework.core.env.Environment;
 
-public class EnvironmentHelper {
+public final class EnvironmentHelper {
 
-  public static boolean isProductionEnvironment(Environment springEnvironment) {
+  public static boolean isProductionEnvironment(final Environment springEnvironment) {
     boolean result = true;
 
     if (springEnvironment == null) {
