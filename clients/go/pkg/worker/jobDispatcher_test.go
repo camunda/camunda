@@ -34,7 +34,7 @@ type JobDispatcherSuite struct {
 	waitGroup       sync.WaitGroup
 }
 
-func (suite *JobDispatcherSuite) BeforeTest(suiteName, testName string) {
+func (suite *JobDispatcherSuite) BeforeTest(string, string) {
 	suite.client = jobClientStub{}
 	suite.dispatcher = jobDispatcher{
 		jobQueue:       make(chan entities.Job),
@@ -46,7 +46,7 @@ func (suite *JobDispatcherSuite) BeforeTest(suiteName, testName string) {
 	suite.waitGroup.Add(1)
 }
 
-func (suite *JobDispatcherSuite) AfterTest(suiteName, testName string) {
+func (suite *JobDispatcherSuite) AfterTest(string, string) {
 	c := make(chan struct{})
 	go func() {
 		suite.waitGroup.Wait()
@@ -133,7 +133,7 @@ func (suite *JobDispatcherSuite) TestShouldPassClientAndJobToHandler() {
 	go suite.dispatcher.run(&suite.client, handler, 1, &suite.waitGroup)
 
 	// when
-	suite.dispatcher.jobQueue <- entities.Job{pb.ActivatedJob{Key: jobKey}}
+	suite.dispatcher.jobQueue <- entities.Job{ActivatedJob: pb.ActivatedJob{Key: jobKey}}
 
 	// then
 	select {
