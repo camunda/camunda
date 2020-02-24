@@ -41,7 +41,7 @@ export const PointerBody = css`
 
 export const PointerShadow = css`
   border-width: 8px;
-  margin-right: -8px;
+
   border-bottom-color: ${themeStyle({
     dark: Colors.uiDark06,
     light: Colors.uiLight05
@@ -99,6 +99,7 @@ const topPointer = css`
     }
     &:before {
       ${PointerShadow};
+      margin-right: -8px;
     }
   }
 
@@ -134,6 +135,7 @@ const bottomPointer = css`
     }
     &:before {
       ${PointerShadow};
+      margin-left: -1px;
     }
   }
 
