@@ -86,7 +86,9 @@ func (s *oauthCredsCacheTestSuite) TestWriteCacheGoldenFile() {
 	err = cache.Update(capybaraAudience, capybara)
 	s.NoError(err)
 
-	cacheCopy, _ := NewOAuthYamlCredentialsCache(cachePath)
+	cacheCopyI, _ := NewOAuthYamlCredentialsCache(cachePath)
+	cacheCopy := cacheCopyI.(*oauthYamlCredentialsCache)
+
 	err = cacheCopy.readCache()
 	s.NoError(err)
 	s.EqualValues(wombat, cacheCopy.Get(wombatAudience))
@@ -95,7 +97,8 @@ func (s *oauthCredsCacheTestSuite) TestWriteCacheGoldenFile() {
 }
 
 func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCacheDefaultPath() {
-	cache, err := NewOAuthYamlCredentialsCache("")
+	cacheI, err := NewOAuthYamlCredentialsCache("")
+	cache := cacheI.(*oauthYamlCredentialsCache)
 	s.NoError(err)
 	s.Equal(DefaultOauthYamlCachePath, cache.path)
 }
@@ -115,7 +118,9 @@ func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironm
 
 	env.set(OAuthCachePathEnvVar, file.Name())
 
-	cache, err := NewOAuthYamlCredentialsCache(fakePath)
+	cacheI, err := NewOAuthYamlCredentialsCache(fakePath)
+	cache := cacheI.(*oauthYamlCredentialsCache)
+
 	s.NoError(err)
 	s.Equal(file.Name(), cache.path)
 	s.Empty(cache.audiences)

@@ -90,7 +90,7 @@ func (poller *jobPoller) activateJobs() {
 
 		poller.remaining += len(response.Jobs)
 		for _, job := range response.Jobs {
-			poller.jobQueue <- entities.Job{*job}
+			poller.jobQueue <- entities.Job{ActivatedJob: *job}
 		}
 	}
 }
