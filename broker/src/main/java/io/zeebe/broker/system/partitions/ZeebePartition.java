@@ -44,6 +44,7 @@ import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
+import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
@@ -93,6 +94,7 @@ public final class ZeebePartition extends Actor
   private FailureListener failureListener;
   private volatile HealthStatus healthStatus = HealthStatus.UNHEALTHY;
   private final HealthMonitor criticalComponentsHealthMonitor;
+  private final ZeebeIndexMapping zeebeIndexMapping;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -102,6 +104,7 @@ public final class ZeebePartition extends Actor
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
+      final ZeebeIndexMapping zeebeIndexMapping,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory) {
     this.localBroker = localBroker;
     this.atomixRaftPartition = atomixRaftPartition;
@@ -113,6 +116,7 @@ public final class ZeebePartition extends Actor
     this.partitionId = atomixRaftPartition.id().id();
     this.scheduler = actorScheduler;
     this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
+    this.zeebeIndexMapping = zeebeIndexMapping;
 
     final var exporterEntries = brokerCfg.getExporters().entrySet();
     // load and validate exporters
@@ -314,8 +318,10 @@ public final class ZeebePartition extends Actor
   }
 
   private SnapshotStorage createSnapshotStorage() {
+
     final var reader =
-        new AtomixLogStorageReader(atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
+        new AtomixLogStorageReader(
+            zeebeIndexMapping, atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
     final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
     return new AtomixSnapshotStorage(
         runtimeDirectory,
@@ -531,10 +537,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    final var storage = AtomixLogStorage.ofPartition(atomixRaftPartition);
+    final var atomixLogStorage =
+        AtomixLogStorage.ofPartition(zeebeIndexMapping, atomixRaftPartition);
 
     LogStream.builder()
-        .withLogStorage(storage)
+        .withLogStorage(atomixLogStorage)
         .withLogName(atomixRaftPartition.name())
         .withNodeId(localBroker.getNodeId())
         .withPartitionId(atomixRaftPartition.id().id())

@@ -164,21 +164,8 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   public void delete(final long position) {
     actor.call(
         () -> {
-          final boolean positionNotExist = !reader.seek(position);
-          if (positionNotExist) {
-            LOG.debug(
-                "Tried to delete from log stream, but found no corresponding address for the given position {}.",
-                position);
-            return;
-          }
-
-          final long blockAddress = reader.lastReadAddress();
-          LOG.debug(
-              "Delete data from log stream until position '{}' (address: '{}').",
-              position,
-              blockAddress);
-
-          logStorage.delete(blockAddress);
+          final long address = reader.lookupAddress(position);
+          logStorage.delete(address);
         });
   }
 

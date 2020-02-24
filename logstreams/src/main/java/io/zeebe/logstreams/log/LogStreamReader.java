@@ -64,14 +64,14 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
   long getPosition();
 
   /**
-   * The last log storage address, from which the last block of events was read.
-   *
-   * <p>Useful if you want to found out the related block address, then just seek to a given
-   * position and call this method.
+   * Look up the nearest log storage address, where the entry with the given position can be found.
+   * The implementation do not need to provide the exact log event address, it is more about an
+   * approximation, which can then be used to find the entry.
    *
    * <p>*Note:* The returned address is not the exact log event address.
    *
-   * @return the last log storage address, from which the last block of events was read.
+   * @param position the position, for which the look up should made
+   * @return the approximated address in the log storage
    */
-  long lastReadAddress();
+  long lookupAddress(long position);
 }

@@ -57,6 +57,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   @Override
   public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
+
     if (optionalIndexed.isPresent()) {
       final var indexed = optionalIndexed.get();
       final var pending =
