@@ -23,3 +23,7 @@ export const OPERATIONS = {
     endDate: '2020-02-06T14:56:17.932+0100'
   }
 };
+
+export const mockProps = {
+  onInstancesClick: jest.fn()
+};

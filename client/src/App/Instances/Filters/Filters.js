@@ -61,6 +61,9 @@ class Filters extends React.Component {
     }).isRequired,
     onFilterChange: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func.isRequired,
+    resetFilters: PropTypes.bool,
+    afterFilterReset: PropTypes.func,
+    onInstanceClick: PropTypes.func,
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.object),
     groupedWorkflows: PropTypes.object,
     location: PropTypes.object
@@ -91,7 +94,20 @@ class Filters extends React.Component {
   };
 
   componentDidUpdate = prevProps => {
-    if (!isEqual(prevProps.filter, this.props.filter)) {
+    const doResetFilterOperation =
+      this.props.resetFilters && this.props.afterFilterReset;
+
+    if (doResetFilterOperation) {
+      this.setFilterState(
+        DEFAULT_FILTER_CONTROLLED_VALUES,
+        this.props.afterFilterReset
+      );
+    }
+
+    if (
+      !isEqual(prevProps.filter, this.props.filter) ||
+      doResetFilterOperation
+    ) {
       this.setFilter(this.props.filter);
     }
   };
@@ -163,7 +179,6 @@ class Filters extends React.Component {
     const {value} = event.target;
     const currentWorkflow = this.props.groupedWorkflows[value];
     const version = getLastVersionOfWorkflow(currentWorkflow);
-
     this.setFilterState(
       {workflow: value, version, activityId: ''},
       this.propagateFilter
@@ -176,6 +191,7 @@ class Filters extends React.Component {
     if (value === '') {
       return;
     }
+
     this.setFilterState({version: value, activityId: ''}, this.propagateFilter);
   };
 

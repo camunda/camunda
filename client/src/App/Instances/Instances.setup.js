@@ -48,5 +48,6 @@ export const mockProps = {
   onFilterReset: jest.fn(),
   onFlowNodeSelection: jest.fn(),
   diagramModel: parsedDiagram,
-  statistics: []
+  statistics: [],
+  onInstancesClick: jest.fn()
 };

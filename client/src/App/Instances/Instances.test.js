@@ -20,6 +20,7 @@ import {DataManagerProvider} from 'modules/DataManager';
 
 import Filters from './Filters';
 import ListPanel from './ListPanel';
+import OperationsPanel from './OperationsPanel/OperationsPanel.js';
 
 import Instances from './Instances';
 
@@ -283,5 +284,21 @@ describe('Instances', () => {
         mockProps.workflowInstances.map(x => x.id)
       );
     });
+  });
+
+  it('should be able to handle instance click', () => {
+    // given
+    const node = mount(
+      <ProviderWrapper>
+        <Instances {...mockProps} />
+      </ProviderWrapper>
+    );
+
+    // when
+    node.find(OperationsPanel).prop('onInstancesClick')('key');
+    node.update();
+
+    // then
+    expect(mockProps.onInstancesClick).toBeCalledWith('key');
   });
 });

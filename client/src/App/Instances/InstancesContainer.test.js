@@ -842,5 +842,28 @@ describe('InstancesContainer', () => {
       // then
       expect(node.find('Instances').prop('sorting')).toEqual(DEFAULT_SORTING);
     });
+
+    it('should update state correctly on instances click', async () => {
+      // given
+      const node = mount(
+        <InstancesContainerWrapped
+          {...{dataManager}}
+          {...mockLocalStorageProps}
+          {...getRouterProps({})}
+        />
+      );
+      await flushPromises();
+      node.update();
+
+      // when
+
+      node.find('Instances').prop('onInstancesClick')('test');
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(node.state().resetFilters).toEqual(true);
+      expect(node.state().operationId).toEqual('test');
+    });
   });
 });

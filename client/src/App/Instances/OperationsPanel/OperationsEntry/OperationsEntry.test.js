@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {OPERATIONS} from './OperationsEntry.setup';
+import {OPERATIONS, mockProps} from './OperationsEntry.setup';
 
 import OperationsEntry from './OperationsEntry';
 import * as Styled from './styled.js';
@@ -15,12 +15,16 @@ import * as Styled from './styled.js';
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
     // when
+
     const node = shallow(
       <OperationsEntry
-        id={OPERATIONS.RETRY.id}
-        type={OPERATIONS.RETRY.type}
-        isRunning={true}
-        endDate={OPERATIONS.RETRY.endDate}
+        {...mockProps}
+        batchOperation={{
+          id: OPERATIONS.RETRY.id,
+          type: OPERATIONS.RETRY.type,
+          endDate: OPERATIONS.RETRY.endDate,
+          instancesCount: 1
+        }}
       />
     );
 
@@ -36,12 +40,16 @@ describe('OperationsEntry', () => {
 
   it('should render cancel operation', () => {
     // when
+
     const node = shallow(
       <OperationsEntry
-        id={OPERATIONS.CANCEL.id}
-        type={OPERATIONS.CANCEL.type}
-        isRunning={true}
-        endDate={OPERATIONS.CANCEL.endDate}
+        {...mockProps}
+        batchOperation={{
+          id: OPERATIONS.CANCEL.id,
+          type: OPERATIONS.CANCEL.type,
+          endDate: OPERATIONS.CANCEL.endDate,
+          instancesCount: 1
+        }}
       />
     );
 
@@ -58,12 +66,16 @@ describe('OperationsEntry', () => {
 
   it('should render edit operation', () => {
     // when
+
     const node = shallow(
       <OperationsEntry
-        id={OPERATIONS.EDIT.id}
-        type={OPERATIONS.EDIT.type}
-        isRunning={false}
-        endDate={OPERATIONS.EDIT.endDate}
+        {...mockProps}
+        batchOperation={{
+          id: OPERATIONS.EDIT.id,
+          type: OPERATIONS.EDIT.type,
+          endDate: OPERATIONS.EDIT.endDate,
+          instancesCount: 1
+        }}
       />
     );
 
@@ -77,5 +89,75 @@ describe('OperationsEntry', () => {
     expect(html).toContain(OPERATIONS.EDIT.id);
     expect(html).toContain('Edit');
     expect(node.find('[data-test="operation-icon"]').length).toBe(1);
+  });
+
+  it('should render instances count with when there is one instance', () => {
+    // when
+
+    const node = shallow(
+      <OperationsEntry
+        {...mockProps}
+        batchOperation={{
+          id: OPERATIONS.EDIT.id,
+          type: OPERATIONS.EDIT.type,
+          endDate: OPERATIONS.EDIT.endDate,
+          instancesCount: 1
+        }}
+      />
+    );
+
+    // then
+
+    const instancesCountNode = node.find(Styled.InstancesCount);
+    expect(instancesCountNode).toExist();
+    expect(instancesCountNode.text()).toEqual('1 Instance');
+  });
+
+  it('should render instances count with when there is more than one instance', () => {
+    // when
+
+    const node = shallow(
+      <OperationsEntry
+        {...mockProps}
+        batchOperation={{
+          id: OPERATIONS.EDIT.id,
+          type: OPERATIONS.EDIT.type,
+          endDate: OPERATIONS.EDIT.endDate,
+          instancesCount: 3
+        }}
+      />
+    );
+
+    // then
+
+    const instancesCountNode = node.find(Styled.InstancesCount);
+    expect(instancesCountNode).toExist();
+    expect(instancesCountNode.text()).toEqual('3 Instances');
+  });
+
+  it('should be able to handle instance click', () => {
+    // given
+
+    const node = shallow(
+      <OperationsEntry
+        {...mockProps}
+        batchOperation={{
+          id: OPERATIONS.EDIT.id,
+          type: OPERATIONS.EDIT.type,
+          endDate: OPERATIONS.EDIT.endDate,
+          instancesCount: 3
+        }}
+      />
+    );
+
+    // when
+    const InstancesCountNode = node.find(Styled.InstancesCount);
+
+    InstancesCountNode.simulate('click');
+
+    // then
+    expect(mockProps.onInstancesClick).toHaveBeenCalledWith(
+      'df325d44-6a4c-4428-b017-24f923f1d052'
+    );
   });
 });
