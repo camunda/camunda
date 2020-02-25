@@ -25,7 +25,8 @@
 				"type": "keyword"
 			},
 			"variableValue": {
-				"type": "keyword"
+				"type": "keyword",
+				"ignore_above": 8191
 			},
 			"endDate": {
 				"format": "date_time",
