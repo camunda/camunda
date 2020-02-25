@@ -11,7 +11,8 @@ with `camunda.operate`. The following parts are configurable:
  * [Authentication](authentication.md)
  * [Scaling Operate](importer-and-archiver.md)
  * [Monitoring possibilities](#monitoring-operate)
- 
+ * [Logging configuration](#logging)
+  
 # Configurations
 
 # Elasticsearch
@@ -124,6 +125,71 @@ management.endpoints.web.exposure.include: health,prometheus
 management.metrics.export.prometheus.enabled: false
 ```
 
+# Logging
+
+Operate uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image you can find two logging configuration files, 
+that can be further adjusted to your needs. 
+
+## Default logging configuration
+
+* `config/log4j2.xml` (applied by default)
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+  <Properties>
+    <Property name="LOG_PATTERN">%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
+  </Properties>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT" follow="true">
+      <PatternLayout pattern="${LOG_PATTERN}"/>
+    </Console>
+
+  </Appenders>
+  <Loggers>
+    <Logger name="org.camunda.operate" level="info" />
+    <Root level="info">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>
+```
+
+## JSON logging configuration
+
+* `config/log4j2-json.xml` - this one is specifically configured for usage with Stackdriver in Google Cloud 
+environment. The logs will be written in JSON format to make them better searchable in Google Cloud Logging UI.  
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+  <Properties>
+    <Property name="LOG_PATTERN">%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
+  </Properties>
+  <Appenders>
+	 <Console name="StackdriverJSONConsole" target="SYSTEM_OUT" follow="true">
+        <StackdriverJSONLayout/>
+      </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="org.camunda.operate" level="debug" />
+    <Root level="info">
+      <AppenderRef ref="StackdriverJSONConsole"/>
+    </Root>
+  </Loggers>
+</Configuration>
+```
+
+## Enable Logging configuration
+
+You can enable one of the logging configurations by specifying which logging configuration file should be used like this:
+
+```
+JAVA_OPTS=-Dlogging.config=file:/usr/local/operate/config/log4j2-json.xml
+```
+
+You need to specify the path of the logging configuration file you want to use.
+
 # An example of application.yml file
 
 The following snippet represents the default Operate configuration, which is shipped with the distribution. It can be found inside the `config` folder (`config/application.yml`)
@@ -160,10 +226,6 @@ camunda.operate:
     port: 9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
-logging:
-  level:
-    ROOT: INFO
-    org.camunda.operate: INFO
 #Spring Boot Actuator endpoints to be exposed
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
 # Enable or disable metrics
