@@ -262,7 +262,7 @@ class Header extends React.Component {
             linkProps={instances.linkProps}
             type={BADGE_TYPE.RUNNING_INSTANCES}
           />
-          <NavElement
+          <Styled.FilterNavElement
             dataTest={filters.dataTest}
             isActive={filters.isActive}
             title={filters.title}

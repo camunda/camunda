@@ -18,6 +18,7 @@ import Badge from 'modules/components/Badge';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 import * as Styled from './styled.js';
+import * as NavStyled from './NavElements/styled.js';
 
 import {LOADING_STATE} from 'modules/constants';
 
@@ -85,21 +86,32 @@ describe('Header', () => {
       expect(node.find(Styled.Menu).find('li').length).toBe(5);
 
       const BrandLinkNode = node.find('[data-test="header-link-brand"]');
-      expect(BrandLinkNode).toExist();
-      expect(BrandLinkNode.text()).toContain('Camunda Operate');
-      expect(BrandLinkNode.find(Styled.LogoIcon)).toExist();
+      expect(BrandLinkNode.find(NavStyled.BrandLabel)).toExist();
+
+      expect(BrandLinkNode.find(NavStyled.BrandLabel).text()).toContain(
+        'Camunda Operate'
+      );
+
+      expect(BrandLinkNode.find(NavStyled.LogoIcon)).toExist();
 
       const DashboardLinkNode = node.find(
         '[data-test="header-link-dashboard"]'
       );
       expect(DashboardLinkNode).toExist();
-      expect(DashboardLinkNode.text()).toContain('Dashboard');
+
+      expect(
+        DashboardLinkNode.find('[data-test="dashboard-label"]').text()
+      ).toContain('Dashboard');
 
       const InstancesLinkNode = node.find(
         '[data-test="header-link-instances"]'
       );
       expect(InstancesLinkNode).toExist();
-      expect(InstancesLinkNode.text()).toContain('Running Instances');
+      expect(InstancesLinkNode.find(NavStyled.Label)).toExist();
+
+      expect(InstancesLinkNode.find(NavStyled.Label).text()).toContain(
+        'Running Instances'
+      );
 
       expect(InstancesLinkNode.find(Badge).props().type).toBe(
         'RUNNING_INSTANCES'
@@ -107,15 +119,20 @@ describe('Header', () => {
 
       const FiltersLinkNode = node.find('[data-test="header-link-filters"]');
       expect(FiltersLinkNode).toExist();
-      expect(FiltersLinkNode.text()).toContain('Filters');
+      expect(FiltersLinkNode.find(NavStyled.Label)).toExist();
 
+      expect(FiltersLinkNode.find(NavStyled.Label).text()).toContain('Filters');
       expect(FiltersLinkNode.find(Badge).props().type).toBe('FILTERS');
 
       const IncidentsLinkNode = node.find(
         '[data-test="header-link-incidents"]'
       );
       expect(IncidentsLinkNode).toExist();
-      expect(IncidentsLinkNode.text()).toContain('Incidents');
+      expect(IncidentsLinkNode.find(NavStyled.Label)).toExist();
+
+      expect(IncidentsLinkNode.find(NavStyled.Label).text()).toContain(
+        'Incidents'
+      );
       expect(IncidentsLinkNode.find(Badge).props().type).toBe('INCIDENTS');
     });
 
@@ -242,16 +259,17 @@ describe('Header', () => {
 
       expect(
         node
-          .find('header')
           .find('[data-test="header-link-instances"]')
-          .props().children.props.isActive
+          .find(Badge)
+          .props().isActive
       ).toBe(true);
 
       expect(
         node
           .find('header')
           .find('[data-test="header-link-filters"]')
-          .props().children.props.isActive
+          .find(Badge)
+          .props().isActive
       ).toBe(true);
     });
 
