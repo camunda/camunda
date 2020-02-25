@@ -3,13 +3,14 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.security;
+package org.camunda.optimize.service.security.event;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
     // given
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
     final String eventProcessMappingId = eventProcessMapping.getId();
-    final EventSourceEntryDto eventSourceEntry = createEventSourceEntry(PROCESS_DEF_KEY);
+    final EventSourceEntryDto eventSourceEntry = eventProcessClient.createSimpleCamundaEventSourceEntry(PROCESS_DEF_KEY);
     eventProcessMapping.getEventSources().add(eventSourceEntry);
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY);
 
@@ -56,7 +57,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
   public void updateEventSourcesWithoutAccessToProcess() {
     // given
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry = this.createEventSourceEntry(PROCESS_DEF_KEY, TENANT_1);
+    final EventSourceEntryDto eventSourceEntry = eventProcessClient.createSimpleCamundaEventSourceEntry(PROCESS_DEF_KEY, TENANT_1);
     eventProcessMapping.getEventSources().add(eventSourceEntry);
 
     engineIntegrationExtension.createTenant(TENANT_1);
@@ -72,32 +73,12 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
-
   private EventProcessMappingDto createEventProcessMapping() {
     final EventProcessMappingDto eventProcessMappingDto = eventProcessClient.buildEventProcessMappingDto(
       processDefinitionXml);
     final String id = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessMappingDto.setId(id);
     return eventProcessMappingDto;
-  }
-
-  private EventSourceEntryDto createEventSourceEntry(final String processDefinitionKey) {
-    return EventSourceEntryDto.builder()
-      .processDefinitionKey(processDefinitionKey)
-      .versions(ImmutableList.of(ALL_VERSIONS))
-      .tracedByBusinessKey(true)
-      .eventScope(EventScopeType.ALL)
-      .build();
-  }
-
-  private EventSourceEntryDto createEventSourceEntry(final String processDefinitionKey, final String tenantId) {
-    return EventSourceEntryDto.builder()
-      .processDefinitionKey(processDefinitionKey)
-      .versions(ImmutableList.of(ALL_VERSIONS))
-      .tenants(ImmutableList.of(tenantId))
-      .tracedByBusinessKey(true)
-      .eventScope(EventScopeType.ALL)
-      .build();
   }
 
   private void grantAuthorizationsToDefaultUser(final String processDefinitionKey) {

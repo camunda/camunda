@@ -59,6 +59,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.COMBINED_REPORT;
@@ -155,7 +156,7 @@ public class EventProcessService {
     return eventProcessMappingWriter.deleteEventProcessMapping(eventProcessMappingId);
   }
 
-  public EventProcessMappingDto getEventProcessMapping(final String eventProcessMappingId) {
+  public EventProcessMappingDto getEventProcessMapping(final String userId, final String eventProcessMappingId) {
     final Optional<EventProcessMappingDto> eventProcessMapping = eventProcessMappingReader
       .getEventProcessMapping(eventProcessMappingId);
 
@@ -163,6 +164,9 @@ public class EventProcessService {
       eventProcessMappingDto,
       id -> eventProcessPublishStateReader.getEventProcessPublishStateByEventProcessId(id).orElse(null)
     ));
+
+    eventProcessMapping.ifPresent(eventProcessMappingDto ->
+                                    validateAccessToCamundaEventSourcesOrFail(userId, eventProcessMappingDto));
 
     return eventProcessMapping.orElseThrow(() -> {
       final String message = String.format(
@@ -172,23 +176,29 @@ public class EventProcessService {
     });
   }
 
-  public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
+  public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml(final String userId) {
     final Map<String, EventProcessPublishStateDto> allPublishedStates =
       eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(false)
         .stream()
         .collect(Collectors.toMap(EventProcessPublishStateDto::getProcessMappingId, Function.identity()));
 
-    final List<EventProcessMappingDto> allEventProcessMappingsOmitXml =
+    List<EventProcessMappingDto> allEventProcessMappingsOmitXml =
       eventProcessMappingReader.getAllEventProcessMappingsOmitXml();
 
     allEventProcessMappingsOmitXml
       .forEach(eventProcessMappingDto -> assignState(eventProcessMappingDto, allPublishedStates::get));
 
+    // filter by user authorization for event sources
+    allEventProcessMappingsOmitXml = filterEventProcessMappingsByEventSourceAuthorizations(
+      userId,
+      allEventProcessMappingsOmitXml
+    );
+
     return allEventProcessMappingsOmitXml;
   }
 
-  public void publishEventProcessMapping(final String eventProcessMappingId) {
-    final EventProcessMappingDto eventProcessMapping = getEventProcessMapping(eventProcessMappingId);
+  public void publishEventProcessMapping(final String userId, final String eventProcessMappingId) {
+    final EventProcessMappingDto eventProcessMapping = getEventProcessMapping(userId, eventProcessMappingId);
 
     if (!PUBLISHABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
@@ -211,7 +221,7 @@ public class EventProcessService {
       .mappings(eventProcessMapping.getMappings())
       .eventImportSources(eventProcessMapping.getEventSources().stream()
                             .map(this::createEventImportSourceFromDataSource)
-                            .collect(Collectors.toList()))
+                            .collect(toList()))
       .build();
 
     eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
@@ -225,8 +235,8 @@ public class EventProcessService {
       .build();
   }
 
-  public void cancelPublish(final String eventProcessMappingId) {
-    final EventProcessMappingDto eventProcessMapping = getEventProcessMapping(eventProcessMappingId);
+  public void cancelPublish(final String userId, final String eventProcessMappingId) {
+    final EventProcessMappingDto eventProcessMapping = getEventProcessMapping(userId, eventProcessMappingId);
 
     if (!PUBLISH_CANCELABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
@@ -246,27 +256,43 @@ public class EventProcessService {
     }
   }
 
+  private List<EventProcessMappingDto> filterEventProcessMappingsByEventSourceAuthorizations(
+    final String userId, final List<EventProcessMappingDto> eventMappings) {
+    // only return mappings where the user has access to all event sources
+    return eventMappings.stream()
+      .filter(eventMapping ->
+                eventMapping.getEventSources()
+                  .stream()
+                  .allMatch(eventSource -> validateEventSourceAuthorisation(userId, eventSource)))
+      .collect(toList());
+  }
+
   private void validateEventSources(final String userId, final EventProcessMappingDto eventProcessMappingDto) {
     final List<EventSourceEntryDto> eventSources = eventProcessMappingDto.getEventSources();
     if (eventSources == null || eventSources.contains(null)) {
       throw new OptimizeValidationException("Sources for an event based process cannot be null");
     }
-    validateAccessToCamundaEventSources(userId, eventProcessMappingDto);
+    validateAccessToCamundaEventSourcesOrFail(userId, eventProcessMappingDto);
     validateNoDuplicateCamundaEventSources(eventProcessMappingDto);
     validateNoDuplicateExternalEventSources(eventProcessMappingDto);
   }
 
-  private void validateAccessToCamundaEventSources(final String userId,
-                                                   final EventProcessMappingDto eventProcessMappingDto) {
+
+  private boolean validateEventSourceAuthorisation(final String userId, final EventSourceEntryDto eventSource) {
+    return eventSource.getType().equals(EventSourceType.EXTERNAL)
+      || definitionAuthorizationService.isAuthorizedToSeeDefinition(
+      userId,
+      IdentityType.USER,
+      eventSource.getProcessDefinitionKey(),
+      PROCESS,
+      eventSource.getTenants()
+    );
+  }
+
+  private void validateAccessToCamundaEventSourcesOrFail(final String userId,
+                                                         final EventProcessMappingDto eventProcessMappingDto) {
     final Set<String> notAuthorizedProcesses = eventProcessMappingDto.getEventSources().stream()
-      .filter(eventSourceEntryDto -> EventSourceType.CAMUNDA.equals(eventSourceEntryDto.getType()))
-      .filter(eventSource -> !definitionAuthorizationService.isAuthorizedToSeeDefinition(
-        userId,
-        IdentityType.USER,
-        eventSource.getProcessDefinitionKey(),
-        PROCESS,
-        eventSource.getTenants()
-      ))
+      .filter(eventSource -> !validateEventSourceAuthorisation(userId, eventSource))
       .map(EventSourceEntryDto::getProcessDefinitionKey)
       .collect(Collectors.toSet());
     if (!notAuthorizedProcesses.isEmpty()) {

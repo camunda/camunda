@@ -6,6 +6,7 @@
 package org.camunda.optimize.test.optimize;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
@@ -25,11 +27,12 @@ import org.camunda.optimize.service.util.IdGenerator;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
 @AllArgsConstructor
 public class EventProcessClient {
@@ -47,7 +50,10 @@ public class EventProcessClient {
   }
 
   public String createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
-    return createCreateEventProcessMappingRequest(eventProcessMappingDto).execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
+    return createCreateEventProcessMappingRequest(eventProcessMappingDto).execute(
+      IdDto.class,
+      Response.Status.OK.getStatusCode()
+    ).getId();
   }
 
   public OptimizeRequestExecutor createGetEventProcessMappingRequest(final String eventProcessMappingId) {
@@ -55,11 +61,18 @@ public class EventProcessClient {
   }
 
   public EventProcessMappingRestDto getEventProcessMapping(final String eventProcessMappingId) {
-    return createGetEventProcessMappingRequest(eventProcessMappingId).execute(EventProcessMappingRestDto.class, Response.Status.OK.getStatusCode());
+    return createGetEventProcessMappingRequest(eventProcessMappingId).execute(
+      EventProcessMappingRestDto.class,
+      Response.Status.OK.getStatusCode()
+    );
   }
 
   public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest() {
     return getRequestExecutor().buildGetAllEventProcessMappingsRequests();
+  }
+
+  public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest(final String userId, final String pw) {
+    return getRequestExecutor().withUserAuthentication(userId, pw).buildGetAllEventProcessMappingsRequests();
   }
 
   public List<EventProcessMappingDto> getAllEventProcessMappings() {
@@ -67,6 +80,10 @@ public class EventProcessClient {
       .executeAndReturnList(EventProcessMappingDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public List<EventProcessMappingDto> getAllEventProcessMappings(final String userId, final String pw) {
+    return createGetAllEventProcessMappingsRequest(userId, pw)
+      .executeAndReturnList(EventProcessMappingDto.class, Response.Status.OK.getStatusCode());
+  }
 
   public OptimizeRequestExecutor createUpdateEventProcessMappingRequest(final String eventProcessMappingId,
                                                                         final EventProcessMappingDto eventProcessMappingDto) {
@@ -75,7 +92,10 @@ public class EventProcessClient {
   }
 
   public void updateEventProcessMapping(final String eventProcessMappingId, final EventProcessMappingDto updateDto) {
-    createUpdateEventProcessMappingRequest(eventProcessMappingId, updateDto).execute(Response.Status.NO_CONTENT.getStatusCode());
+    createUpdateEventProcessMappingRequest(
+      eventProcessMappingId,
+      updateDto
+    ).execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public OptimizeRequestExecutor createPublishEventProcessMappingRequest(final String eventProcessMappingId) {
@@ -152,12 +172,18 @@ public class EventProcessClient {
                               .type(EventSourceType.EXTERNAL)
                               .eventScope(EventScopeType.ALL)
                               .build());
-    return buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(flowNodeEventMappingsDto, name, xmlPath, externalEventSource);
+    return buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+      flowNodeEventMappingsDto,
+      name,
+      xmlPath,
+      externalEventSource
+    );
   }
 
   @SneakyThrows
   public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
-    final Map<String, EventMappingDto> flowNodeEventMappingsDto, final String name, final String xml, final List<EventSourceEntryDto> eventSources) {
+    final Map<String, EventMappingDto> flowNodeEventMappingsDto, final String name, final String xml,
+    final List<EventSourceEntryDto> eventSources) {
     return EventProcessMappingDto.builder()
       .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))
       .mappings(flowNodeEventMappingsDto)
@@ -166,7 +192,44 @@ public class EventProcessClient {
       .build();
   }
 
+  public EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey) {
+    return EventSourceEntryDto.builder()
+      .processDefinitionKey(processDefinitionKey)
+      .versions(ImmutableList.of(ALL_VERSIONS))
+      .type(EventSourceType.CAMUNDA)
+      .tracedByBusinessKey(true)
+      .eventScope(EventScopeType.ALL)
+      .build();
+  }
+
+  public EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
+                                                                 final String tenantId) {
+    return EventSourceEntryDto.builder()
+      .processDefinitionKey(processDefinitionKey)
+      .versions(ImmutableList.of(ALL_VERSIONS))
+      .tenants(ImmutableList.of(tenantId))
+      .tracedByBusinessKey(true)
+      .type(EventSourceType.CAMUNDA)
+      .eventScope(EventScopeType.ALL)
+      .build();
+  }
+
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
+  }
+
+  public EventMappingDto createEventMappingsDto(EventTypeDto startEventDto, EventTypeDto endEventDto) {
+    return EventMappingDto.builder()
+      .start(startEventDto)
+      .end(endEventDto)
+      .build();
+  }
+
+  public static EventTypeDto createMappedEventDto() {
+    return EventTypeDto.builder()
+      .group(IdGenerator.getNextId())
+      .source(IdGenerator.getNextId())
+      .eventName(IdGenerator.getNextId())
+      .build();
   }
 }

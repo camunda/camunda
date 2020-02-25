@@ -79,7 +79,7 @@ public class EventBasedProcessRestService {
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return mapMappingDtoToRestDto(userId, eventProcessService.getEventProcessMapping(eventProcessId));
+    return mapMappingDtoToRestDto(userId, eventProcessService.getEventProcessMapping(userId, eventProcessId));
   }
 
   @GET
@@ -90,7 +90,7 @@ public class EventBasedProcessRestService {
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return eventProcessService.getAllEventProcessMappingsOmitXml()
+    return eventProcessService.getAllEventProcessMappingsOmitXml(userId)
       .stream()
       .map(mappingRestDto -> mapMappingDtoToRestDto(userId, mappingRestDto))
       .collect(toList());
@@ -126,7 +126,8 @@ public class EventBasedProcessRestService {
     validateAccessToEventProcessManagement(
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
-    eventProcessService.publishEventProcessMapping(eventProcessId);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    eventProcessService.publishEventProcessMapping(userId, eventProcessId);
   }
 
   @POST
@@ -137,7 +138,8 @@ public class EventBasedProcessRestService {
     validateAccessToEventProcessManagement(
       sessionService.getRequestUserOrFailNotAuthorized(requestContext)
     );
-    eventProcessService.cancelPublish(eventProcessId);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    eventProcessService.cancelPublish(userId, eventProcessId);
   }
 
   @GET
