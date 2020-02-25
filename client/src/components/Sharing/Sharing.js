@@ -17,6 +17,7 @@ import {
 } from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
+import {t} from 'translation';
 
 export default class Sharing extends React.Component {
   constructor(props) {
@@ -83,12 +84,12 @@ export default class Sharing extends React.Component {
             <h1 className="Sharing__title">{evaluationResult.name}</h1>
             <Link
               target="_blank"
-              to={`/${this.getType()}/${this.state.evaluationResult.id}`}
+              to={`/${this.getType()}/${this.state.evaluationResult.id}/`}
               className="Sharing__title-button"
             >
               <Button>
                 <Icon type="share" renderedIn="span" />
-                <span>Open in Optimize</span>
+                <span>{t('common.sharing.openInOptimize')}</span>
               </Button>
             </Link>
           </div>

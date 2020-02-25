@@ -595,7 +595,8 @@
           "report": "Use the following HTML code to embed the report into blogs and web pages:",
           "dashboard": "Use the following HTML code to embed the dashboard into blogs and web pages:"
         }
-      }
+      },
+      "openInOptimize": "Open in Optimize"
     },
     "filter": {
       "types": {

@@ -595,7 +595,8 @@
           "report": "Verwenden Sie den folgenden HTML-Code, um den Bericht in Blogs und Webseiten einzubetten:",
           "dashboard": "Verwenden Sie den folgenden HTML-Code, um das Dashboard in Blogs und Webseiten einzubetten:"
         }
-      }
+      },
+      "openInOptimize": "In Optimize Öffnen"
     },
     "filter": {
       "types": {
