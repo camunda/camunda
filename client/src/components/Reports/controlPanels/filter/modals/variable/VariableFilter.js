@@ -101,7 +101,7 @@ export default class VariableFilter extends React.Component {
           <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
             <Typeahead
               onChange={this.selectVariable}
-              initialValue={this.getId(selectedVariable)}
+              initialValue={variables.length > 0 && this.getId(selectedVariable)}
               placeholder={t('common.filter.variableModal.inputPlaceholder')}
               noValuesMessage={t('common.filter.variableModal.noVariables')}
             >
