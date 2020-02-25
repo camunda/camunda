@@ -93,6 +93,14 @@ public class UpgradeTest {
                 .beforeUpgrade(UpgradeTest::startMsgSubscription)
                 .afterUpgrade(UpgradeTest::publishMessage)
                 .done()
+          },
+          {
+            "timer",
+            scenario()
+                .deployWorkflow(timerWorkflow())
+                .beforeUpgrade(UpgradeTest::timerCreated)
+                .afterUpgrade(UpgradeTest::timerTriggered)
+                .done()
           }
         });
   }
@@ -203,6 +211,23 @@ public class UpgradeTest {
   private static long startMsgSubscription(final ContainerStateRule state) {
     TestUtil.waitUntil(() -> state.hasLogContaining("MESSAGE_START_EVENT_SUBSCRIPTION", "OPENED"));
     return -1L;
+  }
+
+  private static BpmnModelInstance timerWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .timerWithCycle("R/PT1S")
+        .endEvent()
+        .done();
+  }
+
+  private static long timerCreated(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("TIMER", "CREATED"));
+    return -1L;
+  }
+
+  private static void timerTriggered(final ContainerStateRule state, final long key) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("TIMER", "TRIGGERED"));
   }
 
   private static TestCaseBuilder scenario() {
