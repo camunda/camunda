@@ -17,7 +17,6 @@ exports[`should match snapshot 1`] = `
       onChange={[Function]}
     />
     <EventSources
-      onChange={[Function]}
       sources={Array []}
     />
     <div

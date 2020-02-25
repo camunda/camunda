@@ -102,6 +102,10 @@ export default withErrorHandling(
       if (prevState.events === null && this.state.events !== null) {
         this.scrollToSelectedElement();
       }
+
+      if (prevProps.eventSources !== this.props.eventSources) {
+        this.loadEvents(this.state.searchQuery);
+      }
     }
 
     updateTableAfterSelectionChange = prevProps => {
@@ -146,6 +150,17 @@ export default withErrorHandling(
     camundaSourcesAdded = () =>
       this.props.eventSources.filter(src => src.type !== 'external').length > 0;
 
+    isEventAvailable = event => {
+      const {selection, mappings, eventSources} = this.props;
+      const {start, end} = (selection && mappings[selection.id]) || {};
+      const mappedToSelection =
+        deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event));
+
+      return (
+        !this.inHiddenSources(event, eventSources) && (!this.mappedAs(event) || mappedToSelection)
+      );
+    };
+
     render() {
       const {events, searchQuery, showSuggested} = this.state;
       const {selection, onMappingChange, mappings, eventSources} = this.props;
@@ -168,12 +183,7 @@ export default withErrorHandling(
               }
               label={t('events.table.showSuggestions')}
             />
-            <EventsSources
-              sources={eventSources}
-              onChange={sources => {
-                this.props.onSourcesChange(sources, () => this.loadEvents(searchQuery));
-              }}
-            />
+            <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
             <div className="searchContainer">
               <Icon className="searchIcon" type="search" />
               <Input
@@ -198,78 +208,68 @@ export default withErrorHandling(
             ]}
             body={
               events
-                ? events
-                    .filter(
-                      event =>
-                        (!this.mappedAs(event) ||
-                          deepEqual(start, asMapping(event)) ||
-                          deepEqual(end, asMapping(event))) &&
-                        !this.inHiddenSources(event, eventSources)
-                    )
-                    .map(event => {
-                      const {group, source, eventName, count, suggested} = event;
-                      const mappedAs = this.mappedAs(event);
-                      const eventAsMapping = asMapping(event);
-                      const isDisabled = disabled && !mappedAs;
+                ? events.filter(this.isEventAvailable).map(event => {
+                    const {group, source, eventName, count, suggested} = event;
+                    const mappedAs = this.mappedAs(event);
+                    const eventAsMapping = asMapping(event);
+                    const isDisabled = disabled && !mappedAs;
 
-                      return {
-                        content: [
-                          <Input
-                            type="checkbox"
-                            checked={!!mappedAs}
-                            disabled={isDisabled}
-                            onChange={({target: {checked}}) =>
-                              onMappingChange(eventAsMapping, checked)
-                            }
-                          />,
-                          mappedAs ? (
-                            <Select
-                              value={mappedAs}
-                              onOpen={isOpen => {
-                                if (isOpen) {
-                                  // due to how we integrate Dropdowns in React Table, we need to manually
-                                  // adjust to the scroll offset
-                                  const container = this.container.current;
-                                  container.querySelector(
-                                    '.Dropdown.is-open .menu'
-                                  ).style.marginTop =
-                                    -container.querySelector('.rt-tbody').scrollTop + 'px';
-                                }
-                              }}
-                              onChange={value =>
-                                mappedAs !== value && onMappingChange(eventAsMapping, true, value)
+                    return {
+                      content: [
+                        <Input
+                          type="checkbox"
+                          checked={!!mappedAs}
+                          disabled={isDisabled}
+                          onChange={({target: {checked}}) =>
+                            onMappingChange(eventAsMapping, checked)
+                          }
+                        />,
+                        mappedAs ? (
+                          <Select
+                            value={mappedAs}
+                            onOpen={isOpen => {
+                              if (isOpen) {
+                                // due to how we integrate Dropdowns in React Table, we need to manually
+                                // adjust to the scroll offset
+                                const container = this.container.current;
+                                container.querySelector('.Dropdown.is-open .menu').style.marginTop =
+                                  -container.querySelector('.rt-tbody').scrollTop + 'px';
                               }
+                            }}
+                            onChange={value =>
+                              mappedAs !== value && onMappingChange(eventAsMapping, true, value)
+                            }
+                          >
+                            <Select.Option
+                              value="end"
+                              disabled={mappedAs !== 'end' && numberOfMappings === 2}
                             >
-                              <Select.Option
-                                value="end"
-                                disabled={mappedAs !== 'end' && numberOfMappings === 2}
-                              >
-                                {t('events.table.end')}
-                              </Select.Option>
-                              <Select.Option
-                                value="start"
-                                disabled={mappedAs !== 'start' && numberOfMappings === 2}
-                              >
-                                {t('events.table.start')}
-                              </Select.Option>
-                            </Select>
-                          ) : (
-                            '--'
-                          ),
-                          eventName,
-                          group,
-                          source,
-                          count
-                        ],
-                        props: {
-                          className: classnames({
-                            disabled: isDisabled,
-                            mapped: mappedAs,
-                            suggested
-                          })
-                        }
-                      };
-                    })
+                              {t('events.table.end')}
+                            </Select.Option>
+                            <Select.Option
+                              value="start"
+                              disabled={mappedAs !== 'start' && numberOfMappings === 2}
+                            >
+                              {t('events.table.start')}
+                            </Select.Option>
+                          </Select>
+                        ) : (
+                          '--'
+                        ),
+                        eventName,
+                        group,
+                        source,
+                        count
+                      ],
+                      props: {
+                        className: classnames({
+                          disabled: isDisabled,
+                          mapped: mappedAs,
+                          suggested
+                        })
+                      }
+                    };
+                  })
                 : []
             }
             disablePagination

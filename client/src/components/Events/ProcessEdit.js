@@ -171,9 +171,9 @@ export default withErrorHandling(
       });
     };
 
-    updateSources = (eventSources, cb) => {
+    updateSources = eventSources => {
       this.setDirty();
-      this.setState({eventSources}, cb);
+      this.setState({eventSources});
     };
 
     render() {

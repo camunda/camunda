@@ -24,20 +24,12 @@ export default class EventSources extends React.Component {
   closeSourceModal = () => this.setState({editing: null});
 
   removeSource = target => {
-    this.props.onChange(this.props.sources.filter(src => !this.sourceCheck(target)(src)));
+    this.props.onChange(this.props.sources.filter(src => src !== target));
   };
 
   toggleSource = targetSource => {
-    const sourceIndex = this.props.sources.findIndex(this.sourceCheck(targetSource));
+    const sourceIndex = this.props.sources.indexOf(targetSource);
     this.props.onChange(update(this.props.sources, {[sourceIndex]: {$toggle: ['hidden']}}));
-  };
-
-  sourceCheck = ({processDefinitionKey, type}) => {
-    if (type === 'external') {
-      return src => src.type === 'external';
-    } else {
-      return src => src.processDefinitionKey === processDefinitionKey;
-    }
   };
 
   render() {
