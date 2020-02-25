@@ -8,12 +8,12 @@ import React, {useContext} from 'react';
 import PropTypes from 'prop-types';
 
 import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
-import Button from 'modules/components/Button';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 import Paginator from './Paginator';
 import {getMaxPage} from './service';
 import * as Styled from './styled';
+import CreateOperationDropdown from './CreateOperationDropdown';
 
 function ListFooter({
   filterCount,
@@ -35,10 +35,12 @@ function ListFooter({
         <>
           <Styled.OperationButtonContainer>
             {getSelectedCount(filterCount) > 0 && (
-              <Button color="primary" size="small">
-                Apply Operation on{' '}
-                {pluralSuffix(getSelectedCount(filterCount), 'Instance')}...
-              </Button>
+              <CreateOperationDropdown
+                label={`Apply Operation on ${pluralSuffix(
+                  getSelectedCount(filterCount),
+                  'Instance'
+                )}...`}
+              />
             )}
           </Styled.OperationButtonContainer>
           <div>
