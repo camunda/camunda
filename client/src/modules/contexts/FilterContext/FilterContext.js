@@ -4,4 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './useInstancesSelection';
+import {createContext} from 'react';
+
+const FilterContext = createContext({});
+
+export default FilterContext;

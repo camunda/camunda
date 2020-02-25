@@ -23,7 +23,7 @@ import ListContext, {useListContext} from './ListContext';
 import BaseSkeleton from './Skeleton';
 import * as Styled from './styled';
 
-import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
+import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 
 const {THead, TBody, TH, TR, TD} = Table;
 

@@ -7,12 +7,16 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
+import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 
-import Dropdown from 'modules/components/Dropdown';
+import CreateOperationDropdown from './CreateOperationDropdown';
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
 import {Copyright} from './styled';
+
+jest.mock('./CreateOperationDropdown', () => ({label}) => (
+  <button>{label}</button>
+));
 
 const defaultContext = {getSelectedCount: () => 0};
 
@@ -45,7 +49,7 @@ describe('ListFooter', () => {
   it('should show pagination', () => {
     const node = renderFooter({props: {filterCount: 11}});
 
-    expect(node.find(Dropdown).exists()).toBe(false);
+    expect(node.find(CreateOperationDropdown).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(true);
     expect(node.find(Copyright).exists()).toBe(true);
   });
@@ -53,7 +57,7 @@ describe('ListFooter', () => {
   it('should not show pagination', () => {
     const node = renderFooter({props: {filterCount: 9}});
 
-    expect(node.find(Dropdown).exists()).toBe(false);
+    expect(node.find(CreateOperationDropdown).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });
@@ -68,7 +72,7 @@ describe('ListFooter', () => {
       context: {getSelectedCount: () => 2}
     });
 
-    const button = node.find(Dropdown);
+    const button = node.find(CreateOperationDropdown);
     expect(button.exists()).toBe(true);
     expect(button.text()).toContain('Apply Operation on 2 Instances...');
   });
@@ -79,7 +83,7 @@ describe('ListFooter', () => {
       context: {getSelectedCount: () => 2}
     });
 
-    expect(node.find(Dropdown).exists()).toBe(false);
+    expect(node.find(CreateOperationDropdown).exists()).toBe(false);
     expect(node.find(Paginator).exists()).toBe(false);
     expect(node.find(Copyright).exists()).toBe(true);
   });

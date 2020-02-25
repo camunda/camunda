@@ -12,6 +12,7 @@ import {
   fetchWorkflowInstances,
   fetchWorkflowInstanceIncidents,
   fetchVariables,
+  applyBatchOperation,
   applyOperation
 } from 'modules/api/instances';
 
@@ -39,7 +40,8 @@ const {
   LOAD_LIST_INSTANCES,
   LOAD_STATE_STATISTICS,
   LOAD_STATE_DEFINITIONS,
-  LOAD_BATCH_OPERATIONS
+  LOAD_BATCH_OPERATIONS,
+  CREATE_BATCH_OPERATION
 } = SUBSCRIPTION_TOPIC;
 
 export class DataManager {
@@ -73,7 +75,11 @@ export class DataManager {
     );
   }
 
-  //
+  applyBatchOperation = async (operationType, query) => {
+    this.publisher.pubLoadingStates(CREATE_BATCH_OPERATION, () =>
+      applyBatchOperation(operationType, query)
+    );
+  };
 
   fetchAndPublish(topic, apiCall, params, staticContent) {
     const cachedParams = this.cache.update(topic, apiCall, params);

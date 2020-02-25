@@ -86,12 +86,21 @@ export const useInstanceSelection = totalCount => {
     }
   };
 
+  const reset = () => {
+    setAllChecked(false);
+    setMode(MODES.INCLUDE);
+    setIds([]);
+  };
+
   return {
+    reset,
     isAllChecked,
     handleCheckAll,
     isInstanceChecked,
     handleCheckInstance,
-    getSelectedCount
+    getSelectedCount,
+    ids: mode === MODES.INCLUDE ? ids : [],
+    excludeIds: mode === MODES.EXCLUDE ? ids : []
   };
 };
 
@@ -109,4 +118,5 @@ InstanceSelectionProvider.propTypes = {
   totalCount: PropTypes.number
 };
 
-export {InstanceSelectionProvider, InstanceSelectionContext};
+export default InstanceSelectionContext;
+export {InstanceSelectionProvider};

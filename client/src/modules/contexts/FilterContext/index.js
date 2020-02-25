@@ -4,4 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default, InstanceSelectionProvider} from './InstanceSelectionContext';
+export {default} from './FilterContext';

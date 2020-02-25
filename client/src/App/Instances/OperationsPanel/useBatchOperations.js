@@ -37,11 +37,17 @@ export default function useBatchOperations() {
       setBatchOperations
     );
 
+    subscribe(
+      SUBSCRIPTION_TOPIC.CREATE_BATCH_OPERATION,
+      LOADING_STATE.LOADED,
+      requestBatchOperations
+    );
+
     return () => {
       unsubscribe();
       dataManager.poll.unregister(POLL_TOPICS.OPERATIONS);
     };
-  }, [subscribe, unsubscribe, dataManager]);
+  }, [subscribe, unsubscribe, dataManager.poll, requestBatchOperations]);
 
   useEffect(subscribeToOperations, []);
 

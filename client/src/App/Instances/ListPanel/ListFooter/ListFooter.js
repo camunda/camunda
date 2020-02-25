@@ -4,10 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useContext} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
-import {InstanceSelectionContext} from 'modules/contexts/InstanceSelectionContext';
+import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 import Paginator from './Paginator';
@@ -22,7 +22,7 @@ function ListFooter({
   onFirstElementChange,
   hasContent
 }) {
-  const {getSelectedCount} = useContext(InstanceSelectionContext);
+  const {getSelectedCount} = useInstanceSelectionContext();
   const maxPage = getMaxPage(filterCount, perPage);
 
   const isPaginationRequired = (maxPage, total) => {

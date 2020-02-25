@@ -33,6 +33,8 @@ import {formatGroupedWorkflows} from 'modules/utils/instance';
 
 import Instances from './Instances';
 
+import FilterContext from 'modules/contexts/FilterContext';
+
 import {
   decodeFields,
   hasFirstElementChanged,
@@ -244,11 +246,7 @@ class InstancesContainer extends Component {
   fetchWorkflowInstances = async (filter, groupedWorkflows) => {
     const {sorting, firstElement} = this.state;
     this.props.dataManager.getWorkflowInstances({
-      queries: [
-        parseFilterForRequest(
-          decodeFields(getFilterWithWorkflowIds(filter, groupedWorkflows))
-        )
-      ],
+      queries: [this.getQuery(filter, groupedWorkflows)],
       sorting,
       firstResult: firstElement,
       maxResults: DEFAULT_MAX_RESULTS
@@ -429,17 +427,28 @@ class InstancesContainer extends Component {
     return this.setState({filter});
   };
 
+  getQuery(filter, groupedWorkflows) {
+    return parseFilterForRequest(
+      decodeFields(getFilterWithWorkflowIds(filter, groupedWorkflows))
+    );
+  }
+
   render() {
+    const {filter, groupedWorkflows} = this.state;
     return (
-      <Instances
-        {...this.state}
-        filter={decodeFields(this.state.filter)}
-        onFilterChange={this.setFilterFromInput}
-        onFilterReset={this.handleFilterReset}
-        onFirstElementChange={this.handleFirstElementChange}
-        onFlowNodeSelection={this.setFilterFromSelection}
-        onSort={this.handleSortingChange}
-      />
+      <FilterContext.Provider
+        value={{query: this.getQuery(filter, groupedWorkflows)}}
+      >
+        <Instances
+          {...this.state}
+          filter={decodeFields(this.state.filter)}
+          onFilterChange={this.setFilterFromInput}
+          onFilterReset={this.handleFilterReset}
+          onFirstElementChange={this.handleFirstElementChange}
+          onFlowNodeSelection={this.setFilterFromSelection}
+          onSort={this.handleSortingChange}
+        />
+      </FilterContext.Provider>
     );
   }
 }

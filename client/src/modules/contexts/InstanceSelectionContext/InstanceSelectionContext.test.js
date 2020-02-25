@@ -8,9 +8,8 @@ import React, {useContext, useEffect} from 'react';
 import {mount} from 'enzyme';
 import {renderHook, act} from '@testing-library/react-hooks';
 
-import {
+import InstanceSelectionContext, {
   InstanceSelectionProvider,
-  InstanceSelectionContext,
   useInstanceSelection
 } from './InstanceSelectionContext';
 
@@ -31,6 +30,8 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(false);
     expect(result.current.isAllChecked).toBe(false);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(0);
+    expect(result.current.ids).toEqual([]);
+    expect(result.current.excludeIds).toEqual([]);
   });
 
   it('should add id to selection and return true', () => {
@@ -47,6 +48,8 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(false);
     expect(result.current.isAllChecked).toBe(false);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(1);
+    expect(result.current.ids).toEqual([INSTANCE_IDS.A]);
+    expect(result.current.excludeIds).toEqual([]);
   });
 
   it('should add two ids and check all', () => {
@@ -67,6 +70,8 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
     expect(result.current.isAllChecked).toBe(true);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
+    expect(result.current.ids).toEqual([]);
+    expect(result.current.excludeIds).toEqual([]);
   });
 
   it('should add and remove selection and return false', () => {
@@ -86,6 +91,8 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(false);
     expect(result.current.isAllChecked).toBe(false);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(0);
+    expect(result.current.ids).toEqual([]);
+    expect(result.current.excludeIds).toEqual([]);
   });
 
   it('should select all', () => {
@@ -101,6 +108,8 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
     expect(result.current.isAllChecked).toBe(true);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
+    expect(result.current.ids).toEqual([]);
+    expect(result.current.excludeIds).toEqual([]);
   });
 
   it('should select all, unselect one', () => {
@@ -120,6 +129,8 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
     expect(result.current.isAllChecked).toBe(false);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(1);
+    expect(result.current.ids).toEqual([]);
+    expect(result.current.excludeIds).toEqual([INSTANCE_IDS.A]);
   });
 
   it('should check all when checking single instances', () => {
@@ -143,6 +154,8 @@ describe('InstanceSelectionContext', () => {
     expect(result.current.isInstanceChecked(INSTANCE_IDS.B)).toBe(true);
     expect(result.current.isAllChecked).toBe(true);
     expect(result.current.getSelectedCount(TOTAL_COUNT)).toBe(2);
+    expect(result.current.ids).toEqual([]);
+    expect(result.current.excludeIds).toEqual([]);
   });
 
   it('should be consumable with useContext', () => {

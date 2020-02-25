@@ -4,4 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default, InstanceSelectionProvider} from './InstanceSelectionContext';
+import {useContext} from 'react';
+import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
+
+const useInstanceSelectionContext = () => useContext(InstanceSelectionContext);
+
+export default useInstanceSelectionContext;
