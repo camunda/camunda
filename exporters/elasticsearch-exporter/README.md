@@ -86,7 +86,7 @@ The given example would only export incident events, and nothing else.
 
 More specifically, each option configures the following:
 
-* `prefix` (`string`): this prefix will be appended to every index created by the exporter.
+* `prefix` (`string`): this prefix will be appended to every index created by the exporter; must not contain `_` (underscore).
 * `createTemplate` (`boolean`): if true, missing indexes will be created as needed.
 * `command` (`boolean`): if true, command records will be exported; if false, ignored.
 * `event` (`boolean`): if true, event records will be exported; if false, ignored.

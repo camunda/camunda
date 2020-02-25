@@ -9,6 +9,7 @@ package io.zeebe.exporter;
 
 import io.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.zeebe.exporter.api.Exporter;
+import io.zeebe.exporter.api.ExporterException;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
@@ -38,7 +39,18 @@ public class ElasticsearchExporter implements Exporter {
         context.getConfiguration().instantiate(ElasticsearchExporterConfiguration.class);
     log.debug("Exporter configured with {}", configuration);
 
+    validate(configuration);
+
     context.setFilter(new ElasticsearchRecordFilter(configuration));
+  }
+
+  private void validate(final ElasticsearchExporterConfiguration configuration) {
+    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not contain underscore. Current value: %s",
+              configuration.index.prefix));
+    }
   }
 
   @Override

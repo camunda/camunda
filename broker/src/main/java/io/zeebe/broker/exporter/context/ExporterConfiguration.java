@@ -10,7 +10,7 @@ package io.zeebe.broker.exporter.context;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import io.zeebe.broker.exporter.ExporterException;
+import io.zeebe.exporter.api.ExporterException;
 import io.zeebe.exporter.api.context.Configuration;
 import java.util.Map;
 
