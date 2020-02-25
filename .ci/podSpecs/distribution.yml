@@ -8,6 +8,9 @@ spec:
     - key: "slaves"
       operator: "Exists"
       effect: "NoSchedule"
+  volumes:
+    - name: shared-data
+      emptyDir: {}
   containers:
     - name: maven
       image: maven:3.6.0-jdk-11
@@ -23,6 +26,8 @@ spec:
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+        - name: ZEEBE_CI_SHARED_DATA
+          value: /home/shared
       resources:
         limits:
           cpu: 8
@@ -30,6 +35,12 @@ spec:
         requests:
           cpu: 8
           memory: 32Gi
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: shared-data
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
     - name: maven-jdk8
       image: maven:3.6.0-jdk-8
       command: ["cat"]
@@ -44,6 +55,8 @@ spec:
             -XX:+UseContainerSupport
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+        - name: ZEEBE_CI_SHARED_DATA
+          value: /home/shared
       resources:
         limits:
           cpu: 2
@@ -51,6 +64,12 @@ spec:
         requests:
           cpu: 2
           memory: 4Gi
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: shared-data
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
@@ -58,13 +77,21 @@ spec:
       resources:
         limits:
           cpu: 3
-          memory: 4Gi
+          memory: 2Gi
         requests:
           cpu: 3
           memory: 1Gi
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+        - name: ZEEBE_CI_SHARED_DATA
+          value: /home/shared
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: shared-data
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
     - name: docker
       image: docker:18.09.4-dind
       args: ["--storage-driver=overlay2"]
@@ -76,5 +103,9 @@ spec:
           cpu: 8
           memory: 16Gi
         requests:
-          cpu: 1
-          memory: 1Gi
+          cpu: 8
+          memory: 16Gi
+      volumeMounts:
+        - name: shared-data
+          mountPath: /home/shared
+          mountPropagation: Bidirectional
