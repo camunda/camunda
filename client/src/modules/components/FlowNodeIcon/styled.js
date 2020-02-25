@@ -8,7 +8,7 @@ import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-import {ReactComponent as FlowNodeWorkFlow} from 'modules/components/Icon/document.svg';
+import {ReactComponent as FlowNodeWorkFlow} from 'modules/components/Icon/flow-node-workflow-root.svg';
 
 /**
  * Gateway Imports
@@ -21,14 +21,14 @@ import {ReactComponent as FlowNodeGatewayEventBased} from 'modules/components/Ic
  * Task Imports
  */
 
-import {ReactComponent as FlowNodeTask} from 'modules/components/Icon/flow-node-task-default.svg';
+import {ReactComponent as FlowNodeTask} from 'modules/components/Icon/flow-node-task-undefined.svg';
 import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flow-node-task-service.svg';
 import {ReactComponent as FlowNodeTaskReceive} from 'modules/components/Icon/flow-node-task-receive.svg';
 import {ReactComponent as FlowNodeTaskSend} from 'modules/components/Icon/flow-node-task-send.svg';
-import {ReactComponent as FlowNodeTaskSubProcess} from 'modules/components/Icon/flow-node-task-subprocess.svg';
-import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-node-task-multi.svg';
-import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-task-parallel.svg';
-import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/flownode-task-call-activity.svg';
+import {ReactComponent as FlowNodeTaskSubProcess} from 'modules/components/Icon/flow-node-subprocess-embedded.svg';
+import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-node-multi-instance-parallel.svg';
+import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-multi-instance-sequential.svg';
+import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/flow-node-call-activity.svg';
 
 /**
  * Event Imports
@@ -39,20 +39,20 @@ import {ReactComponent as FlowNodeEventEnd} from 'modules/components/Icon/flow-n
 
 import {ReactComponent as FlowNodeEventMessageStart} from 'modules/components/Icon/flow-node-event-message-start.svg';
 
-import {ReactComponent as FlowNodeEventMessageIntermediateThrow} from 'modules/components/Icon/flow-node-event-message-intermediate-throw.svg';
-import {ReactComponent as FlowNodeEventMessageBoundaryNonInterrupting} from 'modules/components/Icon/flow-node-event-message-boundary-non-interrupting.svg';
-import {ReactComponent as FlowNodeEventMessageBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-message-boundary-interrupting.svg';
+import {ReactComponent as FlowNodeEventMessageIntermediateThrow} from 'modules/components/Icon/flow-node-event-message-throw.svg';
+import {ReactComponent as FlowNodeEventMessageBoundaryNonInterrupting} from 'modules/components/Icon/flow-node-event-message-non-interrupting.svg';
+import {ReactComponent as FlowNodeEventMessageBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-message-interrupting.svg';
 import {ReactComponent as FlowNodeEventMessageEnd} from 'modules/components/Icon/flow-node-event-message-end.svg';
 
 import {ReactComponent as FlowNodeEventTimerStart} from 'modules/components/Icon/flow-node-event-timer-start.svg';
-import {ReactComponent as FlowNodeEventTimerBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-timer-boundary-interrupting.svg';
-import {ReactComponent as FlowNodeEventTimerBoundaryNonInerrupting} from 'modules/components/Icon/flow-node-event-timer-boundary-non-interrupting.svg';
+import {ReactComponent as FlowNodeEventTimerBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-timer-interrupting.svg';
+import {ReactComponent as FlowNodeEventTimerBoundaryNonInerrupting} from 'modules/components/Icon/flow-node-event-timer-non-interrupting.svg';
 
-import {ReactComponent as FlowNodeEventErrorStart} from 'modules/components/Icon/flownode-event-error-start.svg';
-import {ReactComponent as FlowNodeEventErrorBoundary} from 'modules/components/Icon/flownode-event-error-boundary.svg';
-import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/flownode-event-end-error.svg';
+import {ReactComponent as FlowNodeEventErrorStart} from 'modules/components/Icon/flow-node-event-error-start.svg';
+import {ReactComponent as FlowNodeEventErrorBoundary} from 'modules/components/Icon/flow-node-event-error-boundary.svg';
+import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/flow-node-event-error-end.svg';
 
-import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flownode-event-subprocess.svg';
+import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flow-node-subprocess-event.svg';
 
 const newIconStyle = css`
   position: relative;
@@ -66,16 +66,7 @@ const newIconStyle = css`
 `;
 
 export const WORKFLOW = themed(styled(FlowNodeWorkFlow)`
-  position: relative;
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06
-  })};
-  top: 0px;
-  left: 3px;
-  margin: 0 4px;
-  height: 18px;
-  width: auto;
+  ${newIconStyle}
 `);
 
 /**
