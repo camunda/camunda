@@ -60,7 +60,7 @@ export default withErrorHandling(
       this.setState({
         loaded: true,
         name: t('dashboard.new'),
-        lastModified: moment().format('Y-MM-DDTHH:mm:ss.SSSZZ'),
+        lastModified: getFormattedNowDate(),
         lastModifier: t('common.you'),
         currentUserRole: 'editor',
         reports: [],
@@ -116,7 +116,8 @@ export default withErrorHandling(
         name,
         reports,
         redirect: this.isNew() ? `../${id}/` : './',
-        isAuthorizedToShare: await isAuthorizedToShareDashboard(id)
+        isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
+        lastModified: getFormattedNowDate()
       });
     };
 
@@ -202,3 +203,7 @@ export default withErrorHandling(
     }
   }
 );
+
+function getFormattedNowDate() {
+  return moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+}

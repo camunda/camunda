@@ -44,7 +44,7 @@ export default withErrorHandling(
     };
 
     createReport = () => {
-      const now = moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+      const now = getFormattedNowDate();
       this.setState({
         report: {
           ...newReport[this.getId()],
@@ -96,7 +96,10 @@ export default withErrorHandling(
           {viewMode === 'edit' ? (
             <ReportEdit
               isNew={this.isNew()}
-              updateOverview={report => this.setState({report})}
+              updateOverview={newReport => {
+                const report = {...newReport, lastModified: getFormattedNowDate()};
+                this.setState({report});
+              }}
               report={report}
             />
           ) : (
@@ -107,3 +110,7 @@ export default withErrorHandling(
     }
   }
 );
+
+function getFormattedNowDate() {
+  return moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+}
