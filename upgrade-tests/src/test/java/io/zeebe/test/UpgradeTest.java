@@ -86,6 +86,14 @@ public class UpgradeTest {
                 .afterUpgrade(UpgradeTest::publishMessage)
                 .done()
           },
+          {
+            "message start event",
+            scenario()
+                .deployWorkflow(msgStartWorkflow())
+                .beforeUpgrade(UpgradeTest::startMsgSubscription)
+                .afterUpgrade(UpgradeTest::publishMessage)
+                .done()
+          }
         });
   }
 
@@ -182,6 +190,19 @@ public class UpgradeTest {
         .join();
 
     TestUtil.waitUntil(() -> state.hasMessageInState(MESSAGE, "PUBLISHED"));
+  }
+
+  private static BpmnModelInstance msgStartWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .message(b -> b.zeebeCorrelationKey("key").name(MSG))
+        .endEvent()
+        .done();
+  }
+
+  private static long startMsgSubscription(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("MESSAGE_START_EVENT_SUBSCRIPTION", "OPENED"));
+    return -1L;
   }
 
   private static TestCaseBuilder scenario() {
