@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.protocols.raft.RaftCommitListener;
 import io.atomix.protocols.raft.RaftRoleChangeListener;
 import io.atomix.protocols.raft.RaftServer.Role;
@@ -72,7 +71,7 @@ public final class ZeebePartition extends Actor
   private static final int EXPORTER_PROCESSOR_ID = 1003;
   private static final String EXPORTER_NAME = "Exporter-%d";
 
-  private final ClusterEventService clusterEventService;
+  private final PartitionMessagingService messagingService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition atomixRaftPartition;
   private final ExporterRepository exporterRepository = new ExporterRepository();
@@ -103,7 +102,7 @@ public final class ZeebePartition extends Actor
       final BrokerInfo localBroker,
       final RaftPartition atomixRaftPartition,
       final List<PartitionListener> partitionListeners,
-      final ClusterEventService clusterEventService,
+      final PartitionMessagingService messagingService,
       final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
@@ -111,7 +110,7 @@ public final class ZeebePartition extends Actor
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory) {
     this.localBroker = localBroker;
     this.atomixRaftPartition = atomixRaftPartition;
-    this.clusterEventService = clusterEventService;
+    this.messagingService = messagingService;
     this.brokerCfg = brokerCfg;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.commandApiService = commandApiService;
@@ -276,6 +275,22 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (success, errorOnBaseInstallation) -> {
               if (errorOnBaseInstallation == null) {
+                try {
+                  snapshotController.recover();
+                  zeebeDb = snapshotController.openDb();
+                } catch (final Exception e) {
+                  // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                  onFailure();
+                  LOG.error("Failed to recover from snapshot", e);
+                  installFuture.completeExceptionally(
+                      new IllegalStateException(
+                          String.format(
+                              "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
+                              partitionId),
+                          e));
+                  return;
+                }
+
                 installProcessingPartition(installFuture);
               } else {
                 LOG.error("Unexpected error on base installation.", errorOnBaseInstallation);
@@ -290,19 +305,6 @@ public final class ZeebePartition extends Actor
     snapshotStorage = createSnapshotStorage();
     snapshotController = createSnapshotController();
 
-    try {
-      snapshotController.recover();
-      zeebeDb = snapshotController.openDb();
-    } catch (final Exception e) {
-      // TODO https://github.com/zeebe-io/zeebe/issues/3499
-      onFailure();
-      throw new IllegalStateException(
-          String.format(
-              "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
-              partitionId),
-          e);
-    }
-
     final LogCompactor logCompactor = new AtomixLogCompactor(atomixRaftPartition.getServer());
     final LogDeletionService deletionService =
         new LogDeletionService(localBroker.getNodeId(), partitionId, logCompactor, snapshotStorage);
@@ -314,7 +316,7 @@ public final class ZeebePartition extends Actor
   private StateSnapshotController createSnapshotController() {
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId, localBroker.getNodeId())
+            ? new StateReplication(messagingService, partitionId, localBroker.getNodeId())
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(
