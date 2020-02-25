@@ -28,10 +28,6 @@ camunda.operate:
     port: 9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
-logging:
-  level:
-    ROOT: INFO
-    org.camunda.operate: INFO
 #Spring Boot Actuator endpoints to be exposed
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
 # Enable or disable metrics
