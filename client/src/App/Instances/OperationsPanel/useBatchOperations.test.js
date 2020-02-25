@@ -132,4 +132,15 @@ describe('useBatchOperations', () => {
     expect(useDataManager().poll.register).toHaveBeenCalledTimes(1);
     expect(useDataManager().poll.unregister).toHaveBeenCalledTimes(2);
   });
+
+  it('should unregister from polling on unmount', () => {
+    // given
+    const {unmount} = renderHook(() => useBatchOperations(), {});
+
+    // when
+    unmount();
+
+    // then
+    expect(useDataManager().poll.unregister).toHaveBeenCalledTimes(2);
+  });
 });

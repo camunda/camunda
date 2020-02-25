@@ -39,8 +39,9 @@ export default function useBatchOperations() {
 
     return () => {
       unsubscribe();
+      dataManager.poll.unregister(POLL_TOPICS.OPERATIONS);
     };
-  }, [subscribe, unsubscribe]);
+  }, [subscribe, unsubscribe, dataManager]);
 
   useEffect(subscribeToOperations, []);
 
