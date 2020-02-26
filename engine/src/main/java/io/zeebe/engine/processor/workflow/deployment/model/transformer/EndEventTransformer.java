@@ -7,11 +7,13 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowNode;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEndEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class EndEventTransformer implements ModelElementTransformer<EndEvent> {
 
@@ -22,8 +24,37 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
 
   @Override
   public void transform(final EndEvent element, final TransformContext context) {
-    final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode endEvent =
-        currentWorkflow.getElementById(element.getId(), ExecutableFlowNode.class);
+    final var currentWorkflow = context.getCurrentWorkflow();
+    final var endEvent = currentWorkflow.getElementById(element.getId(), ExecutableEndEvent.class);
+
+    if (!element.getEventDefinitions().isEmpty()) {
+      transformEventDefinition(element, context, endEvent);
+    }
+  }
+
+  private void transformEventDefinition(
+      final EndEvent element,
+      final TransformContext context,
+      final ExecutableEndEvent executableElement) {
+
+    final var eventDefinition = element.getEventDefinitions().iterator().next();
+
+    if (eventDefinition instanceof ErrorEventDefinition) {
+      transformErrorEventDefinition(
+          context, executableElement, (ErrorEventDefinition) eventDefinition);
+
+      executableElement.bindLifecycleState(
+          WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.THROW_ERROR);
+    }
+  }
+
+  private void transformErrorEventDefinition(
+      final TransformContext context,
+      final ExecutableEndEvent executableElement,
+      final ErrorEventDefinition errorEventDefinition) {
+
+    final var error = errorEventDefinition.getError();
+    final var executableError = context.getError(error.getId());
+    executableElement.setError(executableError);
   }
 }

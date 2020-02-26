@@ -42,7 +42,8 @@ public final class LogStreamDeletionTest {
     final SnapshotStorage mockSnapshotStorage = mock(SnapshotStorage.class);
 
     deletionService =
-        new LogStreamDeletionService(mockLogStream, mockSnapshotStorage, mockPositionSupplier);
+        new LogStreamDeletionService(
+            0, 1, mockLogStream, mockSnapshotStorage, mockPositionSupplier);
     actorScheduler.submitActor(deletionService).join();
   }
 

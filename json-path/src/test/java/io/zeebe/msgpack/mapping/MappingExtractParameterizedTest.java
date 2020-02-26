@@ -13,7 +13,6 @@ import static io.zeebe.msgpack.mapping.MappingTestUtil.JSON_MAPPER;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.msgpack.mapping.Mapping.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -110,18 +109,6 @@ public final class MappingExtractParameterizedTest {
             // expected result
             "{'newObj':{'test':'value'}}"
           },
-          // zeebe-io/zeebe#297
-          //            {
-          //                // source
-          //                "{'foo':'bar','int':1,'obj':{'test':'ok'},'array':[1,2,3]}",
-          //                // mapping
-          //                createMappings().mapping("$", "$.foo")
-          //                                .mapping("$.obj", "$.foo.int").build(),
-          //                // expected result
-          //
-          // "{'foo':{'foo':'bar','int':{'test':'ok'},'obj':{'test':'ok'},'array':[1,2,3]}}"
-          //
-          //            },
           {
             // source
             "{'a':{'bb':{'value':'x'}}, 'ab':{'b':{'value':'y'}}}}",
@@ -150,22 +137,6 @@ public final class MappingExtractParameterizedTest {
             createMapping("foo.bar", "result"),
             // expected result
             "{'result':1}"
-          },
-          {
-            // source
-            "{'key':'val'}",
-            // mapping
-            createMapping("notAKey", "key"),
-            // expected result
-            "{'key':null}"
-          },
-          {
-            // source
-            "{'key':'val'}",
-            // mapping
-            createMapping("notAKey", "arr", Type.COLLECT),
-            // expected result
-            "{'arr':[null]}"
           },
         });
   }

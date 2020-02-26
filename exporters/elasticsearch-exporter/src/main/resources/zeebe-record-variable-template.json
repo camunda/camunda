@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-variable_*"
+    "zeebe-record_variable_*"
   ],
   "order": 20,
   "aliases": {
@@ -16,7 +16,8 @@
               "type": "keyword"
             },
             "value": {
-              "type": "keyword"
+              "type": "keyword",
+              "ignore_above": 32766
             },
             "scopeKey": {
               "type": "long"

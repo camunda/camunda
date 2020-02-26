@@ -26,6 +26,7 @@ import io.zeebe.model.bpmn.util.ModelUtil;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -60,17 +61,11 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
       validationResultCollector.addError(0, ERROR_UNSUPPORTED_TARGET_NODE);
     }
 
-    final Stream<MessageEventDefinition> messages =
-        getMessageEventDefinitions(outgoingSequenceFlows);
-    final List<String> duplicateMessageNames = ModelUtil.getDuplicateMessageNames(messages);
+    final List<MessageEventDefinition> messageEventDefinitions =
+        getMessageEventDefinitions(outgoingSequenceFlows).collect(Collectors.toList());
 
-    duplicateMessageNames.forEach(
-        name ->
-            validationResultCollector.addError(
-                0,
-                String.format(
-                    "Multiple message catch events with the same name '%s' are not allowed.",
-                    name)));
+    ModelUtil.verifyNoDuplicatedEventDefinition(
+        messageEventDefinitions, error -> validationResultCollector.addError(0, error));
 
     if (!succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(element)) {
       validationResultCollector.addError(

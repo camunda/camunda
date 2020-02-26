@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformation;
 
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.BoundaryEventTransformer;
@@ -56,9 +57,13 @@ public final class BpmnTransformer {
    */
   private final TransformationVisitor step4Visitor;
 
+  private final ExpressionLanguage expressionLanguage;
+
   private final JsonPathQueryCompiler jsonPathQueryCompiler = new JsonPathQueryCompiler();
 
-  public BpmnTransformer() {
+  public BpmnTransformer(final ExpressionLanguage expressionLanguage) {
+    this.expressionLanguage = expressionLanguage;
+
     step1Visitor = new TransformationVisitor();
     step1Visitor.registerHandler(new ErrorTransformer());
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
@@ -93,6 +98,7 @@ public final class BpmnTransformer {
   public List<ExecutableWorkflow> transformDefinitions(final BpmnModelInstance modelInstance) {
     final TransformContext context = new TransformContext();
     context.setJsonPathQueryCompiler(jsonPathQueryCompiler);
+    context.setExpressionLanguage(expressionLanguage);
 
     final ModelWalker walker = new ModelWalker(modelInstance);
     step1Visitor.setContext(context);

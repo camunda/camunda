@@ -28,7 +28,7 @@ type Job struct {
 	pb.ActivatedJob
 }
 
-// GetVariablesAsMap retuns a map of a workflow instance's variables.
+// GetVariablesAsMap returns a map of a workflow instance's variables.
 //
 // See https://docs.zeebe.io/reference/variables.html for details on workflow
 // variables.

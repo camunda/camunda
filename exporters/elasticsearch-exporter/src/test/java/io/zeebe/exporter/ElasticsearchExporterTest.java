@@ -80,7 +80,7 @@ public class ElasticsearchExporterTest {
     testHarness.export();
 
     // then
-    verify(esClient).putIndexTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON, "-");
+    verify(esClient).putIndexTemplate("foo-bar", "foo-bar", ZEEBE_RECORD_TEMPLATE_JSON);
 
     verify(esClient).putIndexTemplate(ValueType.DEPLOYMENT);
     verify(esClient).putIndexTemplate(ValueType.ERROR);

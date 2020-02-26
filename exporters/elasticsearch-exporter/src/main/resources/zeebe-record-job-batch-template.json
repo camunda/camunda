@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-job-batch_*"
+    "zeebe-record_job-batch_*"
   ],
   "order": 20,
   "aliases": {

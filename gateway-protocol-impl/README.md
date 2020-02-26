@@ -24,5 +24,5 @@ To generate the go stubs run
 mvn generate-sources -P golang
 ```
 
-the stubs will be generated in the `clients/go/pb` directory.
+the stubs will be generated in the `clients/go/pkg/pb` directory.
 

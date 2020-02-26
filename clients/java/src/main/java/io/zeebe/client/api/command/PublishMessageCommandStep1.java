@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.api.command;
 
+import io.zeebe.client.api.response.PublishMessageResponse;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
@@ -31,15 +32,18 @@ public interface PublishMessageCommandStep1 {
 
   interface PublishMessageCommandStep2 {
     /**
-     * Set the correlation-key of the message.
+     * Set the value of the correlation key of the message.
      *
-     * @param correlationKey the correlation-key of the message
+     * <p>This value will be used together with the message name to find matching message
+     * subscriptions.
+     *
+     * @param correlationKey the correlation key value of the message
      * @return the builder for this command
      */
     PublishMessageCommandStep3 correlationKey(String correlationKey);
   }
 
-  interface PublishMessageCommandStep3 extends FinalCommandStep<Void> {
+  interface PublishMessageCommandStep3 extends FinalCommandStep<PublishMessageResponse> {
     /**
      * Set the id of the message. The message is rejected if another message is already published
      * with the same id, name and correlation-key.

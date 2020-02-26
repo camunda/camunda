@@ -42,7 +42,7 @@ public final class GatewayIntegrationTest {
   public void setup() {
     final GatewayCfg configuration = new GatewayCfg();
     final var brokerCfg = broker.getBrokerCfg();
-    final var internalApi = brokerCfg.getNetwork().getCommandApi();
+    final var internalApi = brokerCfg.getNetwork().getInternalApi();
     configuration
         .getCluster()
         .setHost("0.0.0.0")

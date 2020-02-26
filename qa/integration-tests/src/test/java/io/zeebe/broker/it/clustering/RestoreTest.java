@@ -15,6 +15,7 @@ import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.ByteValueParser;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
@@ -24,8 +25,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public final class RestoreTest {
-  private static final int ATOMIX_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(2).toBytes();
-  private static final int LARGE_PAYLOAD_BYTESIZE = (int) ByteValue.ofKilobytes(32).toBytes();
+  private static final long ATOMIX_SEGMENT_SIZE = ByteValue.ofMegabytes(2);
+  private static final long LARGE_PAYLOAD_BYTESIZE = ByteValue.ofKilobytes(32);
   private static final String LARGE_PAYLOAD =
       "{\"blob\": \"" + getRandomBase64Bytes(LARGE_PAYLOAD_BYTESIZE) + "\"}";
 
@@ -38,8 +39,10 @@ public final class RestoreTest {
           cfg -> {
             cfg.getData().setMaxSnapshots(1);
             cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD_MIN + "m");
-            cfg.getData().setRaftSegmentSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
-            cfg.getNetwork().setMaxMessageSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
+            cfg.getData()
+                .setLogSegmentSize(ByteValueParser.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
+            cfg.getNetwork()
+                .setMaxMessageSize(ByteValueParser.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
           });
   private final GrpcClientRule clientRule =
       new GrpcClientRule(
@@ -97,6 +100,31 @@ public final class RestoreTest {
     assertThat(clientRule.createWorkflowInstance(thirdWorkflowKey)).isPositive();
   }
 
+  @Test
+  public void shouldKeepPositionsConsistent() {
+    // given
+    writeManyEventsUntilAtomixLogIsCompactable();
+
+    // when
+    clusteringRule.restartBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+
+    writeManyEventsUntilAtomixLogIsCompactable();
+
+    // then
+    final var leaderLogStream = clusteringRule.getLogStream(1);
+
+    final var reader = leaderLogStream.newLogStreamReader().join();
+    reader.seekToFirstEvent();
+    assertThat(reader.hasNext()).isTrue();
+
+    var previousPosition = -1L;
+    while (reader.hasNext()) {
+      final var position = reader.next().getPosition();
+      assertThat(position).isGreaterThan(previousPosition);
+      previousPosition = position;
+    }
+  }
+
   private Broker getLeader() {
     return clusteringRule.getBroker(
         clusteringRule.getLeaderForPartition(START_PARTITION_ID).getNodeId());
@@ -106,7 +134,8 @@ public final class RestoreTest {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
     final long workflowKey = clientRule.deployWorkflow(workflow);
-    final int requiredInstances = Math.floorDiv(ATOMIX_SEGMENT_SIZE, LARGE_PAYLOAD_BYTESIZE) + 1;
+    final int requiredInstances =
+        (int) Math.floorDiv(ATOMIX_SEGMENT_SIZE, LARGE_PAYLOAD_BYTESIZE) + 1;
     IntStream.range(0, requiredInstances)
         .forEach(i -> clientRule.createWorkflowInstance(workflowKey, LARGE_PAYLOAD));
   }

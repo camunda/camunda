@@ -9,9 +9,12 @@ package io.zeebe.transport.impl;
 
 import static io.zeebe.transport.impl.AtomixServerTransport.topicName;
 
+import io.atomix.utils.net.Address;
+import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
@@ -19,22 +22,24 @@ import org.agrona.DirectBuffer;
 final class RequestContext {
 
   private final CompletableActorFuture<DirectBuffer> currentFuture;
-  private final Supplier<Integer> nodeIdSupplier;
+  private final Supplier<String> nodeAddressSupplier;
   private final int partitionId;
   private final byte[] requestBytes;
   private final long startTime;
   private final Duration timeout;
   private final Predicate<DirectBuffer> responseValidator;
 
+  private ScheduledTimer scheduledTimer;
+
   RequestContext(
       final CompletableActorFuture<DirectBuffer> currentFuture,
-      final Supplier<Integer> nodeIdSupplier,
+      final Supplier<String> nodeAddressSupplier,
       final int partitionId,
       final byte[] requestBytes,
       final Predicate<DirectBuffer> responseValidator,
       final Duration timeout) {
     this.currentFuture = currentFuture;
-    this.nodeIdSupplier = nodeIdSupplier;
+    this.nodeAddressSupplier = nodeAddressSupplier;
     this.partitionId = partitionId;
     this.requestBytes = requestBytes;
     this.startTime = ActorClock.currentTimeMillis();
@@ -46,12 +51,9 @@ final class RequestContext {
     return currentFuture.isDone();
   }
 
-  CompletableActorFuture<DirectBuffer> getCurrentFuture() {
-    return currentFuture;
-  }
-
-  public Integer getNodeId() {
-    return nodeIdSupplier.get();
+  Address getNodeAddress() {
+    final var address = nodeAddressSupplier.get();
+    return address == null ? null : Address.from(address);
   }
 
   String getTopicName() {
@@ -80,5 +82,30 @@ final class RequestContext {
   boolean verifyResponse(final DirectBuffer response) {
     // the predicate returns true when the response is valid and the request should not be retried
     return responseValidator.test(response);
+  }
+
+  public void complete(DirectBuffer buffer) {
+    currentFuture.complete(buffer);
+    cancelTimer();
+  }
+
+  public void completeExceptionally(Throwable throwable) {
+    currentFuture.completeExceptionally(throwable);
+    cancelTimer();
+  }
+
+  private void cancelTimer() {
+    if (scheduledTimer != null) {
+      scheduledTimer.cancel();
+    }
+  }
+
+  public void setScheduledTimer(ScheduledTimer scheduledTimer) {
+    this.scheduledTimer = scheduledTimer;
+  }
+
+  public void timeout() {
+    currentFuture.completeExceptionally(
+        new TimeoutException("Request timed out after " + timeout.toString()));
   }
 }

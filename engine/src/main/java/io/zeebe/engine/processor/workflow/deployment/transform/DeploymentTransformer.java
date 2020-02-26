@@ -11,6 +11,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.KeyGenerator;
+import io.zeebe.engine.processor.workflow.deployment.model.BpmnFactory;
 import io.zeebe.engine.processor.workflow.deployment.model.yaml.BpmnYamlParser;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
@@ -38,7 +39,7 @@ import org.slf4j.Logger;
 public final class DeploymentTransformer {
   private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
-  private final BpmnValidator validator = new BpmnValidator();
+  private final BpmnValidator validator = BpmnFactory.createValidator();
   private final BpmnYamlParser yamlParser = new BpmnYamlParser();
   private final WorkflowState workflowState;
   private final KeyGenerator keyGenerator;
@@ -50,11 +51,11 @@ public final class DeploymentTransformer {
   private String rejectionReason;
 
   public DeploymentTransformer(final ZeebeState zeebeState) {
-    this.workflowState = zeebeState.getWorkflowState();
-    this.keyGenerator = zeebeState.getKeyGenerator();
+    workflowState = zeebeState.getWorkflowState();
+    keyGenerator = zeebeState.getKeyGenerator();
 
     try {
-      this.digestGenerator = MessageDigest.getInstance("MD5");
+      digestGenerator = MessageDigest.getInstance("MD5");
     } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException(e);
     }

@@ -17,25 +17,49 @@ package utils
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
 )
 
 const DefaultTestTimeout = 5 * time.Second
 const DefaultTestTimeoutInMs = int64(DefaultTestTimeout / time.Millisecond)
+const DefaultContainerWaitTimeout = 2 * time.Minute
 
-// RpcTestMsg implements the gomock.Matcher interface
-type RpcTestMsg struct {
+// RPCTestMsg implements the gomock.Matcher interface
+type RPCTestMsg struct {
 	Msg proto.Message
 }
 
-func (r *RpcTestMsg) Matches(msg interface{}) bool {
+func (r *RPCTestMsg) Matches(msg interface{}) bool {
 	m, ok := msg.(proto.Message)
 	if !ok {
 		return false
 	}
+
+	// the long-polling timeout is not controllable so we can only assert it's not higher than expected
+	{
+		gotActivReq, okGot := msg.(*pb.ActivateJobsRequest)
+		wantActivReq, okWant := r.Msg.(*pb.ActivateJobsRequest)
+		if okGot && okWant {
+			return cmp.Equal(gotActivReq, r.Msg, cmpopts.IgnoreFields(pb.ActivateJobsRequest{}, "RequestTimeout")) &&
+				gotActivReq.RequestTimeout <= wantActivReq.RequestTimeout
+		}
+	}
+	{
+		gotCreateReq, okGot := msg.(*pb.CreateWorkflowInstanceWithResultRequest)
+		wantCreateReq, okWant := r.Msg.(*pb.CreateWorkflowInstanceWithResultRequest)
+		if okGot && okWant {
+			return cmp.Equal(gotCreateReq, r.Msg, cmpopts.IgnoreFields(pb.CreateWorkflowInstanceWithResultRequest{}, "RequestTimeout")) &&
+				gotCreateReq.RequestTimeout <= wantCreateReq.RequestTimeout
+		}
+
+	}
+
 	return proto.Equal(m, r.Msg)
 }
 
-func (r *RpcTestMsg) String() string {
+func (r *RPCTestMsg) String() string {
 	return fmt.Sprintf("is %s", r.Msg)
 }

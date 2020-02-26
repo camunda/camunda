@@ -8,9 +8,12 @@
 package io.zeebe.broker;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
+import io.atomix.utils.net.Address;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.bootstrap.CloseProcess;
@@ -45,15 +48,14 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -64,18 +66,12 @@ import org.slf4j.Logger;
 public final class Broker implements AutoCloseable {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final String VERSION;
 
   private static final CollectorRegistry METRICS_REGISTRY = CollectorRegistry.defaultRegistry;
 
   static {
     // enable hotspot prometheus metric collection
     DefaultExports.initialize();
-  }
-
-  static {
-    final String version = Broker.class.getPackage().getImplementationVersion();
-    VERSION = version != null ? version : "development";
   }
 
   private final SystemContext brokerContext;
@@ -91,6 +87,7 @@ public final class Broker implements AutoCloseable {
   private CloseProcess closeProcess;
   private EmbeddedGatewayService embeddedGatewayService;
   private ServerTransport serverTransport;
+  private BrokerHealthCheckService healthCheckService;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -121,6 +118,15 @@ public final class Broker implements AutoCloseable {
     return startFuture;
   }
 
+  // TODO: Added this API for testing. When http endpoint is available, this can be removed.
+  // https://github.com/zeebe-io/zeebe/issues/3833
+  public boolean isHealthy() {
+    if (healthCheckService != null) {
+      return healthCheckService.isBrokerHealthy();
+    }
+    return false;
+  }
+
   private void internalStart() {
     final BrokerCfg brokerCfg = getConfig();
     final StartProcess startProcess = initStart();
@@ -149,7 +155,7 @@ public final class Broker implements AutoCloseable {
             clusterCfg.getNodeId(), networkCfg.getCommandApi().getAdvertisedAddress().toString());
 
     if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VERSION);
+      LOG.info("Version: {}", VersionUtil.getVersion());
       LOG.info(
           "Starting broker {} with configuration {}", localBroker.getNodeId(), brokerCfg.toJson());
     }
@@ -158,8 +164,10 @@ public final class Broker implements AutoCloseable {
 
     startContext.addStep("actor scheduler", this::actorSchedulerStep);
     startContext.addStep("membership and replication protocol", () -> atomixCreateStep(brokerCfg));
-    startContext.addStep("server transport", () -> serverTransport(localBroker));
-    startContext.addStep("command api", () -> commandAPIStep(brokerCfg, networkCfg, localBroker));
+    startContext.addStep(
+        "command api transport", () -> commandApiTransportStep(clusterCfg, localBroker));
+    startContext.addStep(
+        "command api handler", () -> commandApiHandlerStep(brokerCfg, localBroker));
     startContext.addStep("subscription api", () -> subscriptionAPIStep(localBroker));
 
     if (brokerCfg.getGateway().isEnable()) {
@@ -172,7 +180,7 @@ public final class Broker implements AutoCloseable {
     }
     startContext.addStep("cluster services", () -> atomix.start().join());
     startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
-    startContext.addStep("metric's server", () -> metricsServerStep(networkCfg, localBroker));
+    startContext.addStep("metric's server", () -> monitoringServerStep(networkCfg, localBroker));
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
@@ -185,24 +193,39 @@ public final class Broker implements AutoCloseable {
     scheduler = brokerContext.getScheduler();
     scheduler.start();
     return () ->
-        scheduler.stop().get(brokerContext.getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
+        scheduler.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
   private AutoCloseable atomixCreateStep(final BrokerCfg brokerCfg) {
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
-    return () -> atomix.stop().join();
+    return () ->
+        atomix.stop().get(brokerContext.getStepTimeout().toMillis(), TimeUnit.MILLISECONDS);
   }
 
-  private AutoCloseable serverTransport(final BrokerInfo localBroker) {
+  private AutoCloseable commandApiTransportStep(
+      final ClusterCfg clusterCfg, final BrokerInfo localBroker) {
+
+    final var nettyMessagingService =
+        new NettyMessagingService(
+            clusterCfg.getClusterName(),
+            Address.from(localBroker.getCommandApiAddress()),
+            new MessagingConfig());
+
+    nettyMessagingService.start().join();
+    LOG.debug("Bound command API to {} ", nettyMessagingService.address());
+
     final var transportFactory = new TransportFactory(scheduler);
     serverTransport =
-        transportFactory.createServerTransport(
-            localBroker.getNodeId(), atomix.getCommunicationService());
-    return serverTransport;
+        transportFactory.createServerTransport(localBroker.getNodeId(), nettyMessagingService);
+
+    return () -> {
+      serverTransport.close();
+      nettyMessagingService.stop().join();
+    };
   }
 
-  private AutoCloseable commandAPIStep(
-      final BrokerCfg brokerCfg, final NetworkCfg networkCfg, final BrokerInfo localBroker) {
+  private AutoCloseable commandApiHandlerStep(
+      final BrokerCfg brokerCfg, final BrokerInfo localBroker) {
 
     final BackpressureCfg backpressure = brokerCfg.getBackpressure();
     PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
@@ -212,13 +235,10 @@ public final class Broker implements AutoCloseable {
               backpressure.getAlgorithm(), backpressure.useWindowed());
     }
 
-    final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
-    final InetSocketAddress bindAddress = bindAddr.toInetSocketAddress();
-
     commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
     partitionListeners.add(commandHandler);
     scheduleActor(commandHandler);
-    LOG.info("Command api bound to {}.", bindAddress);
+
     return commandHandler;
   }
 
@@ -231,7 +251,10 @@ public final class Broker implements AutoCloseable {
   }
 
   private void scheduleActor(final Actor actor) {
-    brokerContext.getScheduler().submitActor(actor).join(30, TimeUnit.SECONDS);
+    brokerContext
+        .getScheduler()
+        .submitActor(actor)
+        .join(brokerContext.getStepTimeout().toSeconds(), TimeUnit.SECONDS);
   }
 
   private AutoCloseable topologyManagerStep(
@@ -242,10 +265,9 @@ public final class Broker implements AutoCloseable {
     return topologyManager;
   }
 
-  private AutoCloseable metricsServerStep(
+  private AutoCloseable monitoringServerStep(
       final NetworkCfg networkCfg, final BrokerInfo localBroker) {
-    final BrokerHealthCheckService healthCheckService =
-        new BrokerHealthCheckService(localBroker, atomix);
+    healthCheckService = new BrokerHealthCheckService(localBroker, atomix);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
 
@@ -297,6 +319,8 @@ public final class Broker implements AutoCloseable {
                     commandHandler,
                     createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
             scheduleActor(zeebePartition);
+            healthCheckService.registerMonitoredPartition(
+                owningPartition.id().id(), zeebePartition);
             return zeebePartition;
           });
     }

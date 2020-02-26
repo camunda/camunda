@@ -190,7 +190,7 @@ public final class FailJobTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(jobRecord.getRejectionReason()).contains("is marked as failed");
+    assertThat(jobRecord.getRejectionReason()).contains("it is in state 'FAILED'");
   }
 
   @Test
@@ -204,7 +204,7 @@ public final class FailJobTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(jobRecord.getRejectionReason()).contains("must be activated first");
+    assertThat(jobRecord.getRejectionReason()).contains("it is in state 'ACTIVATABLE'");
   }
 
   @Test
@@ -223,5 +223,21 @@ public final class FailJobTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRejectFailIfErrorThrown() {
+    // given
+    final var job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    ENGINE.job().withKey(job.getKey()).withErrorCode("error").throwError();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE.job().withKey(job.getKey()).withRetries(3).expectRejection().fail();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(jobRecord.getRejectionReason()).contains("is in state 'ERROR_THROWN'");
   }
 }

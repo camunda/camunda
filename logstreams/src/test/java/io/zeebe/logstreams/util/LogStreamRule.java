@@ -8,9 +8,9 @@
 package io.zeebe.logstreams.util;
 
 import io.atomix.protocols.raft.storage.RaftStorage.Builder;
-import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -90,7 +90,7 @@ public final class LogStreamRule extends ExternalResource {
     actorSchedulerRule.after();
   }
 
-  public void startLogStream() {
+  private void startLogStream() {
     final ActorScheduler actorScheduler = actorSchedulerRule.get();
 
     if (logStorageRule == null) {
@@ -99,7 +99,7 @@ public final class LogStreamRule extends ExternalResource {
     }
 
     builder =
-        new AtomixLogStreamBuilder()
+        LogStream.builder()
             .withActorScheduler(actorScheduler)
             .withPartitionId(0)
             .withLogName("0")
@@ -111,7 +111,7 @@ public final class LogStreamRule extends ExternalResource {
     openLogStream();
   }
 
-  public void stopLogStream() {
+  private void stopLogStream() {
     if (logStream != null) {
       logStream.close();
     }
@@ -127,8 +127,8 @@ public final class LogStreamRule extends ExternalResource {
     }
   }
 
-  public void openLogStream() {
-    logStream = new SyncLogStream(builder.build());
+  private void openLogStream() {
+    logStream = SyncLogStream.builder(builder).withActorScheduler(actorSchedulerRule.get()).build();
     logStorageRule.setPositionListener(logStream::setCommitPosition);
   }
 

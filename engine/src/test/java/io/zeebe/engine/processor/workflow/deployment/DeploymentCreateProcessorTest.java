@@ -39,7 +39,8 @@ public final class DeploymentCreateProcessorTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
     rule.startTypedStreamProcessor(
-        (typedRecordProcessors, zeebeState) -> {
+        (typedRecordProcessors, processingContext) -> {
+          final var zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
           DeploymentEventProcessors.addDeploymentCreateProcessor(
               typedRecordProcessors,

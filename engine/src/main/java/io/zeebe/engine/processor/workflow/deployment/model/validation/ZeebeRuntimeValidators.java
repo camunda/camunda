@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -18,25 +19,27 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeRuntimeValidators {
 
-  public static final Collection<ModelElementValidator<?>> VALIDATORS =
-      List.of(
-          ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
-              .hasValidPathExpression(ZeebeInput::getSource)
-              .hasValidPathExpression(ZeebeInput::getTarget)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeOutput.class)
-              .hasValidPathExpression(ZeebeOutput::getSource)
-              .hasValidPathExpression(ZeebeOutput::getTarget)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
-              .hasValidPathExpression(ZeebeSubscription::getCorrelationKey)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeLoopCharacteristics.class)
-              .hasValidPathExpression(ZeebeLoopCharacteristics::getInputCollection)
-              .hasValidPathExpression(ZeebeLoopCharacteristics::getOutputElement)
-              .build(),
-          ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
-              .hasValidPathExpression(ZeebeCalledElement::getProcessIdExpression)
-              .build(),
-          new SequenceFlowValidator());
+  public static final Collection<ModelElementValidator<?>> getValidators(
+      final ExpressionLanguage expressionLanguage) {
+    return List.of(
+        ZeebeJsonPathValidator.verifyThat(ZeebeInput.class)
+            .hasValidPathExpression(ZeebeInput::getSource)
+            .hasValidPathExpression(ZeebeInput::getTarget)
+            .build(),
+        ZeebeJsonPathValidator.verifyThat(ZeebeOutput.class)
+            .hasValidPathExpression(ZeebeOutput::getSource)
+            .hasValidPathExpression(ZeebeOutput::getTarget)
+            .build(),
+        ZeebeJsonPathValidator.verifyThat(ZeebeSubscription.class)
+            .hasValidPathExpression(ZeebeSubscription::getCorrelationKey)
+            .build(),
+        ZeebeJsonPathValidator.verifyThat(ZeebeLoopCharacteristics.class)
+            .hasValidPathExpression(ZeebeLoopCharacteristics::getInputCollection)
+            .hasValidPathExpression(ZeebeLoopCharacteristics::getOutputElement)
+            .build(),
+        ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
+            .hasValidExpression(ZeebeCalledElement::getProcessId)
+            .build(expressionLanguage),
+        new SequenceFlowValidator());
+  }
 }

@@ -55,6 +55,11 @@ public final class LongPollingActivateJobsHandler extends Actor {
     metrics = new LongPollingMetrics();
   }
 
+  @Override
+  public String getName() {
+    return "GatewayLongPollingJobHandler";
+  }
+
   public void activateJobs(
       final ActivateJobsRequest request,
       final StreamObserver<ActivateJobsResponse> responseObserver) {
@@ -158,7 +163,7 @@ public final class LongPollingActivateJobsHandler extends Actor {
       return;
     }
     if (!request.isTimedOut()) {
-      LOG.debug(
+      LOG.trace(
           "Jobs of type {} not available. Blocking request {}",
           request.getType(),
           request.getRequest());

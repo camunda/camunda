@@ -54,7 +54,7 @@ public final class LongPollingActivateJobsRequest {
     this.responseObserver = responseObserver;
 
     if (responseObserver instanceof ServerCallStreamObserver) {
-      cancelCheck = () -> ((ServerCallStreamObserver) responseObserver).isCancelled();
+      cancelCheck = ((ServerCallStreamObserver) responseObserver)::isCancelled;
     }
     this.jobType = jobType;
     this.maxJobsToActivate = maxJobstoActivate;
@@ -63,7 +63,7 @@ public final class LongPollingActivateJobsRequest {
   }
 
   public void complete() {
-    if (isCompleted()) {
+    if (isCompleted() || isCanceled()) {
       return;
     }
     if (scheduledTimer != null) {
@@ -82,7 +82,7 @@ public final class LongPollingActivateJobsRequest {
   }
 
   public void onResponse(final ActivateJobsResponse grpcResponse) {
-    if (!isCompleted) {
+    if (!(isCompleted() || isCanceled())) {
       try {
         responseObserver.onNext(grpcResponse);
       } catch (final Exception e) {

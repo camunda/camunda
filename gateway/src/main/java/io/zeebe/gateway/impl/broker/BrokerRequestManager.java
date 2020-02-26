@@ -165,7 +165,7 @@ public final class BrokerRequestManager extends Actor {
       final BrokerRequest<T> request,
       final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
       final Duration requestTimeout) {
-    final BrokerNodeIdProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
+    final BrokerAddressProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
 
     final ActorFuture<DirectBuffer> responseFuture =
         clientTransport.sendRequestWithRetry(
@@ -191,10 +191,10 @@ public final class BrokerRequestManager extends Actor {
     }
   }
 
-  private BrokerNodeIdProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
+  private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
     if (request.addressesSpecificPartition()) {
       // already know partition id
-      return new BrokerNodeIdProvider(request.getPartitionId());
+      return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {
       if (request instanceof BrokerPublishMessageRequest) {
         determinePartitionIdForPublishMessageRequest((BrokerPublishMessageRequest) request);
@@ -209,10 +209,10 @@ public final class BrokerRequestManager extends Actor {
         }
         request.setPartitionId(partitionId);
       }
-      return new BrokerNodeIdProvider(request.getPartitionId());
+      return new BrokerAddressProvider(request.getPartitionId());
     } else {
       // random broker
-      return new BrokerNodeIdProvider();
+      return new BrokerAddressProvider();
     }
   }
 
@@ -236,26 +236,26 @@ public final class BrokerRequestManager extends Actor {
     }
   }
 
-  private class BrokerNodeIdProvider implements Supplier<Integer> {
+  private class BrokerAddressProvider implements Supplier<String> {
     private final Function<BrokerClusterState, Integer> nodeIdSelector;
 
-    BrokerNodeIdProvider() {
+    BrokerAddressProvider() {
       this(BrokerClusterState::getRandomBroker);
     }
 
-    BrokerNodeIdProvider(final int partitionId) {
+    BrokerAddressProvider(final int partitionId) {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 
-    BrokerNodeIdProvider(final Function<BrokerClusterState, Integer> nodeIdSelector) {
+    BrokerAddressProvider(final Function<BrokerClusterState, Integer> nodeIdSelector) {
       this.nodeIdSelector = nodeIdSelector;
     }
 
     @Override
-    public Integer get() {
+    public String get() {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null) {
-        return nodeIdSelector.apply(topology);
+        return topology.getBrokerAddress(nodeIdSelector.apply(topology));
       } else {
         return null;
       }

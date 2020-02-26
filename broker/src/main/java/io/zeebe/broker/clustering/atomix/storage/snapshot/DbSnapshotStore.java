@@ -46,7 +46,7 @@ public final class DbSnapshotStore implements SnapshotStore {
   private final ReusableSnapshotId lowerBoundId;
   private final ReusableSnapshotId upperBoundId;
 
-  public DbSnapshotStore(
+  DbSnapshotStore(
       final Path snapshotsDirectory,
       final Path pendingDirectory,
       final ConcurrentNavigableMap<DbSnapshotId, DbSnapshot> snapshots) {
@@ -69,8 +69,8 @@ public final class DbSnapshotStore implements SnapshotStore {
    */
   @Override
   public Snapshot getSnapshot(final long index) {
-    // compute a map of all snapshots with index equal to the given index, and pick the one with the
-    // highest position
+    // it's possible (though unlikely) to have more than one snapshot per index, so we fallback to
+    // the one with the highest position
     final var indexBoundedSet =
         snapshots.subMap(lowerBoundId.setIndex(index), false, upperBoundId.setIndex(index), false);
     if (indexBoundedSet.isEmpty()) {
@@ -97,6 +97,9 @@ public final class DbSnapshotStore implements SnapshotStore {
 
   @Override
   public void delete() {
+    // currently only called by Atomix when permanently leaving a cluster - it should be safe here
+    // to not update the metrics, as they will simply disappear as time moves on. Once we have a
+    // single store/replication mechanism, we can consider updating the metrics here
     snapshots.clear();
 
     try {
@@ -129,7 +132,14 @@ public final class DbSnapshotStore implements SnapshotStore {
 
     // as a fallback, read the position from the DB; Atomix does not propagate position information
     // when replicating, so this is necessary
-    final var position = positionSupplier.getLowestPosition(directory);
+    final var position = positionSupplier.getLastProcessedPosition(directory);
+    if (position < 0) {
+      LOGGER.warn(
+          "Could not read position from snapshot {}, discarding instead of committing...",
+          directory);
+      return null;
+    }
+
     return put(directory, new DbSnapshotMetadata(index, term, timestamp, position));
   }
 
@@ -220,6 +230,7 @@ public final class DbSnapshotStore implements SnapshotStore {
     LOGGER.debug("Deleting snapshot {}", snapshot);
     snapshot.delete();
     snapshots.remove(snapshot.getMetadata());
+    listeners.forEach(l -> l.onSnapshotDeletion(snapshot, this));
     LOGGER.trace("Snapshots count: {}", snapshots.size());
   }
 
@@ -231,7 +242,7 @@ public final class DbSnapshotStore implements SnapshotStore {
         final var name = file.getFileName().toString();
         final var parts = name.split("-", 3);
         final var index = Long.parseLong(parts[0]);
-        if (cutoffId.getIndex() < index) {
+        if (cutoffId.getIndex() > index) {
           FileUtil.deleteFolder(file);
           LOGGER.debug("Delete not completed (orphaned) snapshot {}", file);
         }

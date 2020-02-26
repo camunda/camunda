@@ -19,12 +19,13 @@ import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FinalCommandStep;
+import io.zeebe.client.api.response.CompleteJobResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -52,25 +53,27 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<CompleteJobResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ZeebeFuture<Void> send() {
+  public ZeebeFuture<CompleteJobResponse> send() {
     final CompleteJobRequest request = builder.build();
 
-    final RetriableClientFutureImpl<Void, CompleteJobResponse> future =
-        new RetriableClientFutureImpl<>(
-            retryPredicate, streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                retryPredicate, streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;
   }
 
   private void send(
-      final CompleteJobRequest request, final StreamObserver<CompleteJobResponse> streamObserver) {
+      final CompleteJobRequest request,
+      final StreamObserver<GatewayOuterClass.CompleteJobResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .completeJob(request, streamObserver);

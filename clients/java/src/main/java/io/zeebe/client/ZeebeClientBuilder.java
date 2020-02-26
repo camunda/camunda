@@ -15,6 +15,7 @@
  */
 package io.zeebe.client;
 
+import io.grpc.ClientInterceptor;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
@@ -85,6 +86,8 @@ public interface ZeebeClientBuilder {
 
   /** Time interval between keep alive messages sent to the gateway. The default is 45 seconds. */
   ZeebeClientBuilder keepAlive(Duration keepAlive);
+
+  ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();

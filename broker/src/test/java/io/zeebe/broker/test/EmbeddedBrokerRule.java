@@ -13,6 +13,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setCommandApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -50,8 +51,8 @@ import org.slf4j.Logger;
 public final class EmbeddedBrokerRule extends ExternalResource {
 
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
-  public static final int INSTALL_TIMEOUT = 15;
-  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.SECONDS;
+  public static final int INSTALL_TIMEOUT = 5;
+  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.MINUTES;
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final boolean ENABLE_HTTP_EXPORTER = false;
@@ -108,6 +109,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     setGatewayApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setGatewayClusterPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setCommandApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
+    setInternalApiPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
     setMonitoringPort(SocketUtil.getNextAddress().getPort()).accept(brokerCfg);
   }
 

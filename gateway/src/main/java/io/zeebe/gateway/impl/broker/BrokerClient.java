@@ -25,8 +25,6 @@ public interface BrokerClient extends AutoCloseable {
       BrokerResponseConsumer<T> responseConsumer,
       Consumer<Throwable> throwableConsumer);
 
-  <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request, Duration requestTimeout);
-
   <T> void sendRequest(
       BrokerRequest<T> request,
       BrokerResponseConsumer<T> responseConsumer,

@@ -112,7 +112,7 @@ public final class AsyncSnapshotingTest {
   private void createAsyncSnapshotDirector(final ActorScheduler actorScheduler) {
     asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1));
+            0, mockStreamProcessor, snapshotController, logStream, Duration.ofMinutes(1));
     actorScheduler.submitActor(this.asyncSnapshotDirector).join();
   }
 

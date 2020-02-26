@@ -21,4 +21,5 @@ public final class EnvironmentConstants {
   public static final String ENV_CLUSTER_NAME = "ZEEBE_CLUSTER_NAME";
   public static final String ENV_EMBED_GATEWAY = "ZEEBE_EMBED_GATEWAY";
   public static final String ENV_DEBUG_EXPORTER = "ZEEBE_DEBUG";
+  public static final String ENV_STEP_TIMEOUT = "ZEEBE_STEP_TIMEOUT";
 }

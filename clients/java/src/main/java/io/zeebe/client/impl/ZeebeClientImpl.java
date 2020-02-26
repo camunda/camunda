@@ -17,6 +17,7 @@
 package io.zeebe.client.impl;
 
 import io.grpc.CallCredentials;
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
@@ -164,7 +165,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public static GatewayStub buildGatewayStub(
       final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
-    return GatewayGrpc.newStub(channel).withCallCredentials(credentials);
+    final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
+    if (!config.getInterceptors().isEmpty()) {
+      return gatewayStub.withInterceptors(
+          config.getInterceptors().toArray(new ClientInterceptor[] {}));
+    }
+    return gatewayStub;
   }
 
   private static ScheduledExecutorService buildExecutorService(

@@ -25,6 +25,7 @@ public final class StreamProcessorBuilder {
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
+  private int nodeId;
 
   public StreamProcessorBuilder() {
     processingContext = new ProcessingContext();
@@ -38,6 +39,11 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder actorScheduler(final ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
+    return this;
+  }
+
+  public StreamProcessorBuilder nodeId(int nodeId) {
+    this.nodeId = nodeId;
     return this;
   }
 
@@ -80,6 +86,10 @@ public final class StreamProcessorBuilder {
 
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
+  }
+
+  public int getNodeId() {
+    return nodeId;
   }
 
   public StreamProcessor build() {

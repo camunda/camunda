@@ -97,11 +97,16 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   public static BrokerInfo broker(
-      final int nodeId, final String host, final int port, final Partition... partitions) {
+      final int nodeId,
+      final String host,
+      final int port,
+      final String version,
+      final Partition... partitions) {
     return BrokerInfo.newBuilder()
         .setNodeId(nodeId)
         .setHost(host)
         .setPort(port)
+        .setVersion(version)
         .addAllPartitions(Arrays.asList(partitions))
         .build();
   }
@@ -223,6 +228,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final int clusterSize,
       final int partitionsCount,
       final int replicationFactor,
+      final String gatewayVersion,
       final BrokerInfo... brokers) {
     addRequestHandler(
         TopologyRequest.class,
@@ -231,6 +237,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setClusterSize(clusterSize)
                 .setPartitionsCount(partitionsCount)
                 .setReplicationFactor(replicationFactor)
+                .setGatewayVersion(gatewayVersion)
                 .addAllBrokers(Arrays.asList(brokers))
                 .build());
   }

@@ -13,6 +13,7 @@ import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.response.PublishMessageResponse;
 import io.zeebe.logstreams.log.LogStream;
 import java.time.Duration;
 import org.junit.Rule;
@@ -57,7 +58,7 @@ public class BrokerRestartTest {
     publishMessage(2).join();
   }
 
-  private ZeebeFuture<Void> publishMessage(final int key) {
+  private ZeebeFuture<PublishMessageResponse> publishMessage(final int key) {
     return clientRule
         .getClient()
         .newPublishMessageCommand()

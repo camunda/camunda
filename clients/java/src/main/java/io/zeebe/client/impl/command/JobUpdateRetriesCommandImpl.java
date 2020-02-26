@@ -20,11 +20,12 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2;
+import io.zeebe.client.api.response.UpdateRetriesJobResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -56,18 +57,20 @@ public final class JobUpdateRetriesCommandImpl
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<UpdateRetriesJobResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ZeebeFuture<Void> send() {
+  public ZeebeFuture<UpdateRetriesJobResponse> send() {
     final UpdateJobRetriesRequest request = builder.build();
 
-    final RetriableClientFutureImpl<Void, UpdateJobRetriesResponse> future =
-        new RetriableClientFutureImpl<>(
-            retryPredicate, streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<
+            UpdateRetriesJobResponse, GatewayOuterClass.UpdateJobRetriesResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                retryPredicate, streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;
@@ -75,7 +78,7 @@ public final class JobUpdateRetriesCommandImpl
 
   private void send(
       final UpdateJobRetriesRequest request,
-      final StreamObserver<UpdateJobRetriesResponse> streamObserver) {
+      final StreamObserver<GatewayOuterClass.UpdateJobRetriesResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .updateJobRetries(request, streamObserver);

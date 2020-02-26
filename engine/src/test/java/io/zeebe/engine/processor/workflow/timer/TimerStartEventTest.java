@@ -135,13 +135,6 @@ public final class TimerStartEventTest {
         .hasVersion(deployedWorkflow.getVersion())
         .hasWorkflowKey(workflowKey);
 
-    final Record<WorkflowInstanceRecordValue> startEventOccurred =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED)
-            .withWorkflowKey(workflowKey)
-            .getFirst();
-    assertThat(startEventOccurred.getKey())
-        .isLessThan(startEventActivating.getWorkflowInstanceKey());
-
     final long triggerRecordPosition =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER)
             .withWorkflowKey(workflowKey)

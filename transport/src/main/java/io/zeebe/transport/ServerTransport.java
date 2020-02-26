@@ -7,6 +7,8 @@
  */
 package io.zeebe.transport;
 
+import io.zeebe.util.sched.future.ActorFuture;
+
 public interface ServerTransport extends ServerOutput, AutoCloseable {
 
   /**
@@ -15,7 +17,7 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    * @param partitionId the partition, for which should be subscribed
    * @param requestHandler the handler which should be called.
    */
-  void subscribe(int partitionId, RequestHandler requestHandler);
+  ActorFuture<Void> subscribe(int partitionId, RequestHandler requestHandler);
 
   /**
    * Unsubscribe from the given partition, the registered handler will no longer be called on new
@@ -23,5 +25,5 @@ public interface ServerTransport extends ServerOutput, AutoCloseable {
    *
    * @param partitionId the partition, from which we should unsubscribe
    */
-  void unsubscribe(int partitionId);
+  ActorFuture<Void> unsubscribe(int partitionId);
 }

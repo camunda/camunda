@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-*"
+    "zeebe-record_*"
   ],
   "order": 10,
   "settings": {

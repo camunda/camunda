@@ -21,10 +21,33 @@ import (
 	"time"
 )
 
-type Command struct {
-	utils.SerializerMixin
+const (
+	longPollingOffsetPercent = 0.1
+	longPollingMaxDuration   = 10 * time.Second
+)
 
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(context.Context, error) bool
+type retryPredicate func(context.Context, error) bool
+
+type Command struct {
+	mixin utils.SerializerMixin
+
+	gateway     pb.GatewayClient
+	shouldRetry retryPredicate
+}
+
+func getLongPollingMillis(ctx context.Context) int64 {
+	longPollMillis := int64(-1)
+
+	if deadline, ok := ctx.Deadline(); ok {
+		timeout := time.Until(deadline)
+		longPollOffset := time.Duration(float64(timeout) * longPollingOffsetPercent)
+
+		if longPollOffset > longPollingMaxDuration {
+			longPollOffset = longPollingMaxDuration
+		}
+
+		longPollMillis = (timeout - longPollOffset).Milliseconds()
+	}
+
+	return longPollMillis
 }

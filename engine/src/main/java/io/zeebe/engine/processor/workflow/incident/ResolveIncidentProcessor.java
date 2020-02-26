@@ -15,10 +15,12 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.processor.workflow.SideEffectQueue;
+import io.zeebe.engine.processor.workflow.job.JobErrorThrownProcessor;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.IncidentState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.JobState;
+import io.zeebe.engine.state.instance.JobState.State;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
@@ -30,15 +32,20 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
 
-  private final BpmnStepProcessor stepProcessor;
-  private final ZeebeState zeebeState;
   private final SideEffectQueue queue = new SideEffectQueue();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
+  private final ZeebeState zeebeState;
+  private final BpmnStepProcessor stepProcessor;
+  private final JobErrorThrownProcessor jobErrorThrownProcessor;
+
   public ResolveIncidentProcessor(
-      final BpmnStepProcessor stepProcessor, final ZeebeState zeebeState) {
+      final ZeebeState zeebeState,
+      final BpmnStepProcessor stepProcessor,
+      final JobErrorThrownProcessor jobErrorThrownProcessor) {
     this.stepProcessor = stepProcessor;
     this.zeebeState = zeebeState;
+    this.jobErrorThrownProcessor = jobErrorThrownProcessor;
   }
 
   @Override
@@ -85,7 +92,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     final boolean isJobIncident = jobKey > 0;
 
     if (isJobIncident) {
-      attemptToMakeJobActivatableAgain(jobKey);
+      attemptToSolveJobIncident(jobKey, streamWriter);
     } else {
       attemptToContinueWorkflowProcessing(responseWriter, streamWriter, sideEffect, incidentRecord);
     }
@@ -116,11 +123,18 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     }
   }
 
-  private void attemptToMakeJobActivatableAgain(final long jobKey) {
+  private void attemptToSolveJobIncident(final long jobKey, final TypedStreamWriter streamWriter) {
     final JobState jobState = zeebeState.getJobState();
     final JobRecord job = jobState.getJob(jobKey);
-    if (job != null) {
+    final JobState.State state = jobState.getState(jobKey);
+
+    if (state == State.FAILED) {
+      // make job activatable again
       jobState.resolve(jobKey, job);
+
+    } else if (state == State.ERROR_THROWN) {
+      // try to throw the error again
+      jobErrorThrownProcessor.processRecord(jobKey, job, streamWriter);
     }
   }
 }

@@ -76,4 +76,9 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new JobRecordStream(
         filter(r -> r.getValueType() == ValueType.JOB).map(Record.class::cast));
   }
+
+  public IncidentRecordStream incidentRecords() {
+    return new IncidentRecordStream(
+        filter(r -> r.getValueType() == ValueType.INCIDENT).map(Record.class::cast));
+  }
 }

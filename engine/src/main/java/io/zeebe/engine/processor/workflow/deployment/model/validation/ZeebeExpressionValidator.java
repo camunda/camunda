@@ -7,8 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
+import io.zeebe.el.ExpressionLanguage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -19,27 +18,30 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     implements ModelElementValidator<T> {
 
+  private final ExpressionLanguage expressionLanguage;
   private final Class<T> elementType;
   private final List<Function<T, String>> expressionSuppliers;
 
   private ZeebeExpressionValidator(
-      final Class<T> elementType, final List<Function<T, String>> expressionSuppliers) {
+      final ExpressionLanguage expressionLanguage,
+      final Class<T> elementType,
+      final List<Function<T, String>> expressionSuppliers) {
+    this.expressionLanguage = expressionLanguage;
     this.elementType = elementType;
     this.expressionSuppliers = expressionSuppliers;
   }
 
-  private void validatePathQuery(
-      final String jsonPath, final ValidationResultCollector resultCollector) {
-    if (jsonPath == null || jsonPath.isEmpty()) {
+  private void validateExpression(
+      final String expression, final ValidationResultCollector resultCollector) {
+
+    if (expression == null || expression.isEmpty()) {
       return;
     }
 
-    final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
-    final JsonPathQuery compiledQuery = queryCompiler.compile(jsonPath);
+    final var parseResult = expressionLanguage.parseExpression(expression);
 
-    if (!compiledQuery.isValid()) {
-      resultCollector.addError(
-          0, String.format("JSON path query is invalid: %s", compiledQuery.getErrorReason()));
+    if (!parseResult.isValid()) {
+      resultCollector.addError(0, parseResult.getFailureMessage());
     }
   }
 
@@ -54,7 +56,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     expressionSuppliers.forEach(
         supplier -> {
           final var expression = supplier.apply(element);
-          validatePathQuery(expression, validationResultCollector);
+          validateExpression(expression, validationResultCollector);
         });
   }
 
@@ -72,14 +74,14 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
       this.elementType = elementType;
     }
 
-    public Builder<T> hasValidPathExpression(final Function<T, String> expressionSupplier) {
+    public Builder<T> hasValidExpression(final Function<T, String> expressionSupplier) {
       expressionSuppliers.add(expressionSupplier);
       return this;
     }
 
-    public ZeebeExpressionValidator<T> build() {
+    public ZeebeExpressionValidator<T> build(final ExpressionLanguage expressionLanguage) {
 
-      return new ZeebeExpressionValidator<>(elementType, expressionSuppliers);
+      return new ZeebeExpressionValidator<>(expressionLanguage, elementType, expressionSuppliers);
     }
   }
 }

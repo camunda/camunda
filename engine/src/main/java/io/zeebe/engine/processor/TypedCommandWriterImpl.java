@@ -70,6 +70,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final String rejectionReason,
       final UnpackedObject value,
       final Consumer<RecordMetadata> additionalMetadata) {
+
     final LogEntryBuilder event = batchWriter.event();
 
     if (sourceRecordPosition >= 0) {
@@ -118,5 +119,10 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   @Override
   public long flush() {
     return batchWriter.tryWrite();
+  }
+
+  @Override
+  public void close() {
+    batchWriter.close();
   }
 }

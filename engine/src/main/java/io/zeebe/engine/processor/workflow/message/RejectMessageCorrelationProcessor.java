@@ -120,6 +120,7 @@ public final class RejectMessageCorrelationProcessor
         subscription.getBpmnProcessId(),
         subscription.getMessageName(),
         subscription.getMessageKey(),
-        subscription.getMessageVariables());
+        subscription.getMessageVariables(),
+        subscription.getCorrelationKey());
   }
 }

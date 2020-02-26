@@ -7,9 +7,8 @@
  */
 package io.zeebe.transport.impl;
 
-import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.MessagingService;
 import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.Actor;
@@ -17,7 +16,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.net.ConnectException;
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
@@ -27,15 +25,15 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   private static final Duration RETRY_DELAY = Duration.ofMillis(10);
 
-  private final ClusterCommunicationService communicationService;
+  private final MessagingService messagingService;
 
-  public AtomixClientTransportAdapter(final ClusterCommunicationService communicationService) {
-    this.communicationService = communicationService;
+  public AtomixClientTransportAdapter(final MessagingService messagingService) {
+    this.messagingService = messagingService;
   }
 
   @Override
   public ActorFuture<DirectBuffer> sendRequestWithRetry(
-      final Supplier<Integer> nodeIdSupplier,
+      final Supplier<String> nodeAddressSupplier,
       final Predicate<DirectBuffer> responseValidator,
       final ClientRequest clientRequest,
       final Duration timeout) {
@@ -51,10 +49,16 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     final var requestFuture = new CompletableActorFuture<DirectBuffer>();
     final var requestContext =
         new RequestContext(
-            requestFuture, nodeIdSupplier, partitionId, requestBytes, responseValidator, timeout);
+            requestFuture,
+            nodeAddressSupplier,
+            partitionId,
+            requestBytes,
+            responseValidator,
+            timeout);
     actor.call(
         () -> {
-          actor.runDelayed(timeout, () -> timeoutFuture(requestContext));
+          final var scheduledTimer = actor.runDelayed(timeout, () -> timeoutFuture(requestContext));
+          requestContext.setScheduledTimer(scheduledTimer);
           tryToSend(requestContext);
         });
 
@@ -66,19 +70,22 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
-    final var nodeId = requestContext.getNodeId();
-    if (nodeId == null) {
+    final var calculateTimeout = requestContext.calculateTimeout();
+    if (calculateTimeout.toMillis() <= 0L) {
+      // we reached the timeout
+      // our request future will be completedExceptionally from the scheduled timeout job
+      return;
+    }
+
+    final var nodeAddress = requestContext.getNodeAddress();
+    if (nodeAddress == null) {
       actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       return;
     }
 
     final var requestBytes = requestContext.getRequestBytes();
-    communicationService
-        .<byte[], byte[]>send(
-            requestContext.getTopicName(),
-            requestBytes,
-            MemberId.from(nodeId.toString()),
-            requestContext.calculateTimeout())
+    messagingService
+        .sendAndReceive(nodeAddress, requestContext.getTopicName(), requestBytes, calculateTimeout)
         .whenComplete(
             (response, errorOnRequest) ->
                 actor.run(() -> handleResponse(requestContext, response, errorOnRequest)));
@@ -86,11 +93,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   private void handleResponse(
       final RequestContext requestContext, final byte[] response, final Throwable errorOnRequest) {
-    final var currentFuture = requestContext.getCurrentFuture();
+    if (requestContext.isDone()) {
+      return;
+    }
+
     if (errorOnRequest == null) {
       final var responseBuffer = new UnsafeBuffer(response);
       if (requestContext.verifyResponse(responseBuffer)) {
-        currentFuture.complete(responseBuffer);
+        requestContext.complete(responseBuffer);
       } else {
         // no valid response - retry in respect of the timeout
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
@@ -99,14 +109,18 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       // normally the root exception is a completion exception
       // and the cause is either connect or non remote handler
       final var cause = errorOnRequest.getCause();
-      if (cause instanceof ConnectException
-          || cause instanceof MessagingException.NoRemoteHandler) {
+      if (exceptionShowsConnectionIssue(errorOnRequest) || exceptionShowsConnectionIssue(cause)) {
         // no registered subscription yet
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
-        currentFuture.completeExceptionally(errorOnRequest);
+        requestContext.completeExceptionally(errorOnRequest);
       }
     }
+  }
+
+  private boolean exceptionShowsConnectionIssue(Throwable throwable) {
+    return throwable instanceof ConnectException
+        || throwable instanceof MessagingException.NoRemoteHandler;
   }
 
   private void timeoutFuture(final RequestContext requestContext) {
@@ -114,9 +128,6 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
-    final var currentFuture = requestContext.getCurrentFuture();
-    final var timeout = requestContext.getTimeout();
-    currentFuture.completeExceptionally(
-        new TimeoutException("Request timed out after " + timeout.toString()));
+    requestContext.timeout();
   }
 }

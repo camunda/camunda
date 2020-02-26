@@ -78,7 +78,7 @@ public final class ActivateJobsTest extends ClientTest {
             .newActivateJobsCommand()
             .jobType("foo")
             .maxJobsToActivate(3)
-            .timeout(1000)
+            .timeout(Duration.ofMillis(1000))
             .workerName("worker1")
             .send()
             .join();

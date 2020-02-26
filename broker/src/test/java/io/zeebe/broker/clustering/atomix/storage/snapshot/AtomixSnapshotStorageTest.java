@@ -22,6 +22,7 @@ import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -185,7 +186,9 @@ public final class AtomixSnapshotStorageTest {
 
   private AtomixSnapshotStorage newStorage(final int maxSnapshotsCount) {
     final var runtimeDirectory = temporaryFolder.getRoot().toPath().resolve("runtime");
-    storage = new AtomixSnapshotStorage(runtimeDirectory, store, entrySupplier, maxSnapshotsCount);
+    storage =
+        new AtomixSnapshotStorage(
+            runtimeDirectory, store, entrySupplier, maxSnapshotsCount, new SnapshotMetrics(0));
     return storage;
   }
 

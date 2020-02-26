@@ -8,7 +8,6 @@
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -17,7 +16,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import java.util.List;
 
 public final class SubProcessTransformer implements ModelElementTransformer<SubProcess> {
 
@@ -48,22 +46,20 @@ public final class SubProcessTransformer implements ModelElementTransformer<SubP
       final SubProcess element,
       final ExecutableWorkflow currentWorkflow,
       final ExecutableFlowElementContainer subprocess) {
-    final List<ExecutableCatchEvent> parentEvents;
 
     if (element.getScope() instanceof FlowNode) {
       final FlowNode scope = (FlowNode) element.getScope();
       final ExecutableFlowElementContainer parentSubProc =
           currentWorkflow.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
 
-      parentEvents = parentSubProc.getEvents();
+      parentSubProc.attach(subprocess);
     } else {
       // top-level start event
-      parentEvents = currentWorkflow.getEvents();
+      currentWorkflow.attach(subprocess);
     }
 
     final ExecutableStartEvent startEvent = subprocess.getStartEvents().iterator().next();
 
-    parentEvents.add(startEvent);
     startEvent.setEventSubProcess(subprocess.getId());
     startEvent.bindLifecycleState(
         WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED);

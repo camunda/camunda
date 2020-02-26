@@ -30,6 +30,9 @@ public interface BrokerInfo {
   /** @return the address (host+port) of the broker */
   String getAddress();
 
+  /** @return the version of the broker */
+  String getVersion();
+
   /** @return all partitions of the broker */
   List<PartitionInfo> getPartitions();
 }

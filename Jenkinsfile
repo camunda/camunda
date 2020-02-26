@@ -33,6 +33,9 @@ pipeline {
                 container('maven-jdk8') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
+                container('golang') {
+                    sh '.ci/scripts/distribution/prepare-go.sh'
+                }
             }
         }
 
@@ -46,7 +49,7 @@ pipeline {
             }
         }
 
-        stage('Build (Go)') {
+        stage('Prepare Tests') {
             environment {
                 IMAGE = "camunda/zeebe"
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
@@ -54,12 +57,8 @@ pipeline {
             }
 
             steps {
-                container('golang') {
-                    sh '.ci/scripts/distribution/build-go.sh'
-                }
-
                 container('maven') {
-                    sh '.ci/scripts/docker/prepare.sh'
+                    sh 'cp dist/target/zeebe-distribution-*.tar.gz zeebe-distribution.tar.gz'
                 }
 
                 container('docker') {
@@ -68,17 +67,29 @@ pipeline {
             }
         }
 
-        stage('Test (Go)') {
-            steps {
-                container('golang') {
-                    sh '.ci/scripts/distribution/test-go.sh'
-                }
-            }
-        }
+        
 
-        stage('Test (Java)') {
+        stage('Test') {
             parallel {
-                stage('Analyse (Java)') {
+                stage('Go') {
+                    steps {
+                        container('golang') {
+                            sh '.ci/scripts/distribution/build-go.sh'
+                        }
+
+                        container('golang') {
+                            sh '.ci/scripts/distribution/test-go.sh'
+                        }
+                    }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST-go.xml", keepLongStdio: true
+                        }
+                    }
+               }
+
+               stage('Analyse (Java)') {
                       steps {
                           container('maven') {
                                configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {

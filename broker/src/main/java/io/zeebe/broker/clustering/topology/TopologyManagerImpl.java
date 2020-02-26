@@ -18,6 +18,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.Actor;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ public final class TopologyManagerImpl extends Actor
   private final BrokerInfo localBroker;
 
   private final List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
+  private final String actorName;
 
   public TopologyManagerImpl(
       final Atomix atomix, final BrokerInfo localBroker, final ClusterCfg clusterCfg) {
@@ -43,6 +45,13 @@ public final class TopologyManagerImpl extends Actor
         .setClusterSize(clusterCfg.getClusterSize())
         .setPartitionsCount(clusterCfg.getPartitionsCount())
         .setReplicationFactor(clusterCfg.getReplicationFactor());
+
+    final String version = VersionUtil.getVersion();
+    if (version != null && !version.isBlank()) {
+      localBroker.setVersion(version);
+    }
+
+    this.actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
   }
 
   @Override
@@ -58,7 +67,7 @@ public final class TopologyManagerImpl extends Actor
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "TopologyManager");
+    return actorName;
   }
 
   @Override

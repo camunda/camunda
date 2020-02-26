@@ -17,6 +17,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
@@ -28,6 +29,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.msgpack.value.DocumentValue;
@@ -69,6 +71,11 @@ public final class RequestMapper {
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
     return new BrokerFailJobRequest(grpcRequest.getJobKey(), grpcRequest.getRetries())
+        .setErrorMessage(grpcRequest.getErrorMessage());
+  }
+
+  public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
+    return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
         .setErrorMessage(grpcRequest.getErrorMessage());
   }
 

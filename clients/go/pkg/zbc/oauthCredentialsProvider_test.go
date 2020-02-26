@@ -77,7 +77,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -130,7 +130,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -177,7 +177,7 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -348,7 +348,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderCachesCredenti
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.NoError(err)
@@ -403,7 +403,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.NoError(err)
@@ -414,7 +414,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	s.False(authServerCalled)
 
 	// when we do it again
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.NoError(err)
@@ -458,12 +458,15 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 		CredentialsProvider:    credsProvider,
 	})
 	s.NoError(err)
-	client.SetRequestTimeout(time.Hour)
 
 	// when
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+
 	finishCmd := make(chan struct{})
 	go func() {
-		_, err = client.NewTopologyCommand().Send()
+
+		_, err = client.NewTopologyCommand().Send(ctx)
 		finishCmd <- struct{}{}
 	}()
 
@@ -478,9 +481,64 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 		s.T().Fatal("expected command to fail")
 	}
 
-	s.EqualValues(codes.Unauthenticated, status.Code(err))
-	// TODO(MiguelPires): uncomment after https://github.com/zeebe-io/zeebe/issues/3536
-	//  s.True(errors.Is(err, context.DeadlineExceeded))
+	s.EqualValues(codes.Canceled, status.Code(err))
+}
+func (s *oauthCredsProviderTestSuite) TestNoRequestIfOAuthFails() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		return nil, nil
+	})
+
+	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	go grpcServer.Serve(lis)
+	defer grpcServer.Stop()
+
+	authServer := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
+		writer.WriteHeader(400)
+	}))
+
+	defer authServer.Close()
+
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: authServer.URL,
+	})
+	s.NoError(err)
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	defer cancel()
+
+	finishCmd := make(chan struct{})
+	go func() {
+		_, err = client.NewTopologyCommand().Send(ctx)
+		finishCmd <- struct{}{}
+	}()
+
+	select {
+	case <-finishCmd:
+	case <-time.After(5 * time.Second):
+		s.T().Fatal("expected command to fail, timed out out after 5s")
+	}
+
+	// then
+	if err == nil {
+		s.T().Fatal("expected command to fail")
+	}
+
+	s.EqualValues(codes.Canceled, status.Code(err))
+	s.EqualValues(0, interceptor.interceptCounter)
 }
 
 func mockAuthorizationServer(t *testing.T, token *mutableToken) *httptest.Server {

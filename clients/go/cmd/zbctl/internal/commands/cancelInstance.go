@@ -14,6 +14,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -30,7 +31,10 @@ var cancelInstanceCmd = &cobra.Command{
 			NewCancelInstanceCommand().
 			WorkflowInstanceKey(cancelInstanceKey)
 
-		_, err := zbCmd.Send()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		_, err := zbCmd.Send(ctx)
 		if err == nil {
 			log.Println("Canceled workflow instance with key", cancelInstanceKey)
 		}

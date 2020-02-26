@@ -10,6 +10,8 @@ package io.zeebe.engine.processor.workflow.deployment.model.validation;
 import static io.zeebe.engine.processor.workflow.deployment.model.validation.ExpectedValidationResult.expect;
 import static org.junit.Assert.fail;
 
+import io.zeebe.el.ExpressionLanguage;
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
@@ -42,6 +44,14 @@ public final class ZeebeRuntimeValidationTest {
 
   private static final String INVALID_PATH_QUERY_MESSAGE =
       "JSON path query is invalid: Unexpected json-path token ROOT_OBJECT";
+
+  private static final String INVALID_EXPRESSION = "?!";
+
+  private static final String INVALID_EXPRESSION_MESSAGE =
+      "failed to parse expression '?!': [1.2] failure: end of input expected\n"
+          + "\n"
+          + "?!\n"
+          + " ^";
 
   public BpmnModelInstance modelInstance;
 
@@ -160,16 +170,19 @@ public final class ZeebeRuntimeValidationTest {
         // process id expression is not supported
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .callActivity("call", c -> c.zeebeProcessIdExpression(INVALID_PATH_QUERY))
+            .callActivity("call", c -> c.zeebeProcessIdExpression(INVALID_EXPRESSION))
             .done(),
-        Arrays.asList(expect(ZeebeCalledElement.class, INVALID_PATH_QUERY_MESSAGE))
+        Arrays.asList(expect(ZeebeCalledElement.class, INVALID_EXPRESSION_MESSAGE))
       },
     };
   }
 
   private static ValidationResults validate(final BpmnModelInstance model) {
     final ModelWalker walker = new ModelWalker(model);
-    final ValidationVisitor visitor = new ValidationVisitor(ZeebeRuntimeValidators.VALIDATORS);
+    final ExpressionLanguage expressionLanguage =
+        ExpressionLanguageFactory.createExpressionLanguage();
+    final ValidationVisitor visitor =
+        new ValidationVisitor(ZeebeRuntimeValidators.getValidators(expressionLanguage));
     walker.walk(visitor);
 
     return visitor.getValidationResult();

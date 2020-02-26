@@ -19,11 +19,12 @@ import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
+import io.zeebe.client.api.response.ResolveIncidentResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -47,18 +48,20 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<ResolveIncidentResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ZeebeFuture<Void> send() {
+  public ZeebeFuture<ResolveIncidentResponse> send() {
     final ResolveIncidentRequest request = builder.build();
 
-    final RetriableClientFutureImpl<Void, ResolveIncidentResponse> future =
-        new RetriableClientFutureImpl<>(
-            retryPredicate, streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<
+            ResolveIncidentResponse, GatewayOuterClass.ResolveIncidentResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                retryPredicate, streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;
@@ -66,7 +69,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
 
   private void send(
       final ResolveIncidentRequest request,
-      final StreamObserver<ResolveIncidentResponse> streamObserver) {
+      final StreamObserver<GatewayOuterClass.ResolveIncidentResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .resolveIncident(request, streamObserver);

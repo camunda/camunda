@@ -20,7 +20,7 @@ Add `zeebe-test` as test dependency to your project.
 </dependencyManagement>
 
 <dependencies>
-  
+
   <dependency>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-client-java</artifactId>
@@ -31,7 +31,7 @@ Add `zeebe-test` as test dependency to your project.
     <artifactId>zeebe-test</artifactId>
     <scope>test</scope>
   </dependency>
-  
+
 </dependencies>
 ```
 

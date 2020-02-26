@@ -31,6 +31,7 @@ const (
 	DefaultJobWorkerPollInterval  = 100 * time.Millisecond
 	DefaultJobWorkerPollThreshold = 0.3
 	RequestTimeoutOffset          = 10 * time.Second
+	DefaultRequestTimeout         = 10 * time.Second
 )
 
 type JobWorkerBuilder struct {
@@ -180,7 +181,7 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 	}
 }
 
-func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, requestTimeout time.Duration) JobWorkerBuilderStep1 {
+func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient) JobWorkerBuilderStep1 {
 	return &JobWorkerBuilder{
 		gatewayClient: gatewayClient,
 		jobClient:     jobClient,
@@ -191,8 +192,8 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, re
 		request: pb.ActivateJobsRequest{
 			Timeout:        commands.DefaultJobTimeoutInMs,
 			Worker:         commands.DefaultJobWorkerName,
-			RequestTimeout: int64(requestTimeout / time.Millisecond),
+			RequestTimeout: DefaultRequestTimeout.Milliseconds(),
 		},
-		requestTimeout: requestTimeout + RequestTimeoutOffset,
+		requestTimeout: DefaultRequestTimeout + RequestTimeoutOffset,
 	}
 }

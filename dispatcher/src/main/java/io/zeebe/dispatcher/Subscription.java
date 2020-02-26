@@ -287,7 +287,6 @@ public class Subscription implements ConsumableChannel {
     int initialStreamId = -1;
     boolean isReadingBatch = false;
     int offset = partitionOffset;
-    int fragmentCount = 0;
 
     int offsetLimit = partitionOffset(limit);
     if (partitionId(limit) > partitionId) {
@@ -317,7 +316,6 @@ public class Subscription implements ConsumableChannel {
 
         break;
       } else {
-        fragmentCount++;
 
         if (isStreamAware) {
           final int streamId = buffer.getInt(streamIdOffset(partitionOffset));
@@ -362,8 +360,7 @@ public class Subscription implements ConsumableChannel {
           absoluteOffset,
           blockLength,
           partitionId,
-          offset,
-          fragmentCount);
+          offset);
     }
     return blockLength;
   }

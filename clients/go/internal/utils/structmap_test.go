@@ -505,9 +505,7 @@ func TestMapMarshal_EmbeddedTagged(t *testing.T) {
 	}
 	if v, ok := res["inner"]; !ok {
 		t.Fatal("inner struct is missing")
-	} else {
-		if v, ok := v.(map[string]interface{})["bar"]; !ok || v != "bar" {
-			t.Fatal("bar member of inner struct is missing or invalid")
-		}
+	} else if v, ok := v.(map[string]interface{})["bar"]; !ok || v != "bar" {
+		t.Fatal("bar member of inner struct is missing or invalid")
 	}
 }

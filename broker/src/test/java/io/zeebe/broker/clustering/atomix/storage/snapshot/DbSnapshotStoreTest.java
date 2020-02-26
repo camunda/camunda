@@ -13,10 +13,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.atomix.protocols.raft.storage.snapshot.Snapshot;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
 import io.atomix.utils.time.WallClockTimestamp;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -92,6 +94,46 @@ public final class DbSnapshotStoreTest {
 
     // then
     assertThat(existing).isEqualTo(snapshot);
+  }
+
+  @Test
+  public void shouldDeleteOrphanedPendingSnapshotsOnPurge() {
+    // given
+    final var toDelete = pendingDirectory.resolve("1-1-1-1");
+    final var snapshotDirectory = pendingDirectory.resolve("2-2-2-2");
+    final var toKeep = pendingDirectory.resolve("3-3-3-3");
+    final var store = newStore(new ConcurrentSkipListMap<>());
+    IoUtil.ensureDirectoryExists(toDelete.toFile(), "snapshot directory");
+    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "snapshot directory");
+    IoUtil.ensureDirectoryExists(toKeep.toFile(), "snapshot directory");
+
+    // when
+    final var snapshot = store.newSnapshot(2, 1, WallClockTimestamp.from(1), snapshotDirectory);
+    store.purgeSnapshots(snapshot);
+
+    // then
+    assertThat(toDelete).doesNotExist();
+    assertThat(toKeep).exists();
+  }
+
+  @Test
+  public void shouldDeleteOlderSnapshotsOnPurge() {
+    // given
+    final var toDeleteDirectory = pendingDirectory.resolve("1-1-1-1");
+    final var snapshotDirectory = pendingDirectory.resolve("2-2-2-2");
+    final var store = newStore(new ConcurrentSkipListMap<>());
+    IoUtil.ensureDirectoryExists(toDeleteDirectory.toFile(), "snapshot directory");
+    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "snapshot directory");
+
+    // when
+    store.newSnapshot(1, 1, WallClockTimestamp.from(1), toDeleteDirectory);
+    final var snapshot = store.newSnapshot(2, 2, WallClockTimestamp.from(2), snapshotDirectory);
+    store.purgeSnapshots(snapshot);
+
+    // then
+    assertThat(toDeleteDirectory).doesNotExist();
+    assertThat(snapshot.getPath()).exists();
+    assertThat((Collection<Snapshot>) store.getSnapshots()).containsOnly(snapshot);
   }
 
   private DbSnapshotStore newStore(

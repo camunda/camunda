@@ -237,10 +237,7 @@ public final class MultipleEventSubprocessTest {
 
     // when
     triggerMessageStart(wfInstanceKey, helper.getMessageName());
-    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED)
-        .withWorkflowInstanceKey(wfInstanceKey)
-        .withElementId("event_sub_start_msg")
-        .await();
+
     ENGINE.job().ofInstance(wfInstanceKey).withType("timerTask").complete();
 
     // then

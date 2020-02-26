@@ -1,10 +1,14 @@
 # Event Subprocess
 
-An event subprocess is a subprocess that is triggered by an event. It can be added globally to the process or locally inside an embedded subprocess. 
+An event subprocess is a subprocess that is triggered by an event. It can be added globally to the process or locally inside an embedded subprocess.
 
 ![event-subprocess](/bpmn-workflows/event-subprocesses/event-subprocess.png)
 
-An event subprocess must have exactly one start event of type **timer or message**. Other start events are not allowed.
+An event subprocess must have exactly one start event of one of the following types:
+
+* [Timer](/bpmn-workflows/timer-events/timer-events.html)
+* [Message](/bpmn-workflows/message-events/message-events.html)
+* [Error](/bpmn-workflows/error-events/error-events.html)
 
 An event subprocess behaves like a boundary event but is inside the scope instead of being attached to the scope. Like a boundary event, the event subprocess can be interrupting or non-interrupting (indicated in BPMN by a solid or dashed border of the start event). The start event of the event subprocess can be triggered when its containing scope is activated.
 
@@ -39,14 +43,14 @@ By default, the local variables of the event subprocess are not propagated (i.e.
 ```
 
   </p>
-</details> 
+</details>
 
 <details>
 	<summary>Using the BPMN modeler</summary>
   <p>Adding an event subprocess with an interrupting timer start event:
-	
+
 ![event-subprocess](/bpmn-workflows/event-subprocesses/zeebe-modeler-event-subprocess.gif)
-	
+
   </p>
 </details>
 
@@ -59,12 +63,12 @@ By default, the local variables of the event subprocess are not propagated (i.e.
         <th>Intent</th>
         <th>Element Id</th>
         <th>Element Type</th>
-    </tr> 
+    </tr>
 		<tr>
 				<td>EVENT_OCCURRED</td>
 				<td>five-minutes</td>
-				<td>START_EVENT</td> 
-		</tr>  
+				<td>START_EVENT</td>
+		</tr>
 		<tr>
 				<td>ELEMENT_TERMINATING</td>
 				<td>fetch-item</td>
@@ -132,7 +136,5 @@ By default, the local variables of the event subprocess are not propagated (i.e.
 
 References:
 * [Embedded Subprocess](/bpmn-workflows/embedded-subprocesses/embedded-subprocesses.html)
-* [Timer Start Event](/bpmn-workflows/timer-events/timer-events.html#timer-start-events)
-* [Message Start Event](/bpmn-workflows/message-events/message-events.html#message-start-events)
 * [Variable Scopes](/reference/variables.html#variable-scopes)
 

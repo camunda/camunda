@@ -58,6 +58,7 @@ public final class TopologyUpdateTest {
     topologyManager.event(createMemberUpdateEvent(brokerUpdated));
     waitUntil(() -> topologyManager.getTopology().getFollowersForPartition(1) != null);
     assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isTrue();
+    assertThat(topologyManager.getTopology().getBrokerVersion(0)).isEqualTo(broker.getVersion());
   }
 
   @Test
@@ -162,6 +163,7 @@ public final class TopologyUpdateTest {
             .setClusterSize(3)
             .setReplicationFactor(3);
     broker.setCommandApiAddress("localhost:1000");
+    broker.setVersion("0.23.0-SNAPSHOT");
     return broker;
   }
 

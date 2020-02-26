@@ -9,6 +9,7 @@ package io.zeebe.gateway;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.zeebe.gateway.cmd.BrokerErrorException;
@@ -48,15 +49,19 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
+import io.zeebe.util.VersionUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
@@ -68,8 +73,8 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
   public EndpointManager(
       final BrokerClient brokerClient, final LongPollingActivateJobsHandler longPollingHandler) {
     this.brokerClient = brokerClient;
-    this.topologyManager = brokerClient.getTopologyManager();
-    this.activateJobsHandler = longPollingHandler;
+    topologyManager = brokerClient.getTopologyManager();
+    activateJobsHandler = longPollingHandler;
   }
 
   private void addBrokerInfo(
@@ -79,7 +84,8 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     brokerInfo
         .setNodeId(brokerId)
         .setHost(addressParts[0])
-        .setPort(Integer.parseInt(addressParts[1]));
+        .setPort(Integer.parseInt(addressParts[1]))
+        .setVersion(topology.getBrokerVersion(brokerId));
   }
 
   private void addPartitionInfoToBrokerInfo(
@@ -190,6 +196,16 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   @Override
+  public void throwError(
+      final ThrowErrorRequest request, final StreamObserver<ThrowErrorResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toThrowErrorRequest,
+        ResponseMapper::toThrowErrorResponse,
+        responseObserver);
+  }
+
+  @Override
   public void publishMessage(
       final PublishMessageRequest request,
       final StreamObserver<PublishMessageResponse> responseObserver) {
@@ -230,11 +246,15 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final BrokerClusterState topology = topologyManager.getTopology();
 
     if (topology != null) {
-
       topologyResponseBuilder
           .setClusterSize(topology.getClusterSize())
           .setPartitionsCount(topology.getPartitionsCount())
           .setReplicationFactor(topology.getReplicationFactor());
+
+      final String gatewayVersion = VersionUtil.getVersion();
+      if (gatewayVersion != null && !gatewayVersion.isBlank()) {
+        topologyResponseBuilder.setGatewayVersion(gatewayVersion);
+      }
 
       final ArrayList<BrokerInfo> brokers = new ArrayList<>();
 
@@ -283,6 +303,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       return;
     }
 
+    suppressCancelledException(grpcRequest, streamObserver);
     brokerClient.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
@@ -302,11 +323,20 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       return;
     }
 
+    suppressCancelledException(grpcRequest, streamObserver);
     brokerClient.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
         error -> streamObserver.onError(convertThrowable(error)),
         timeout);
+  }
+
+  private <GrpcRequestT, GrpcResponseT> void suppressCancelledException(
+      final GrpcRequestT grpcRequest, final StreamObserver<GrpcResponseT> streamObserver) {
+    final ServerCallStreamObserver<GrpcResponseT> serverObserver =
+        (ServerCallStreamObserver<GrpcResponseT>) streamObserver;
+    serverObserver.setOnCancelHandler(
+        () -> Loggers.GATEWAY_LOGGER.trace("gRPC {} request cancelled", grpcRequest.getClass()));
   }
 
   private <BrokerResponseT, GrpcResponseT> void consumeResponse(
@@ -351,6 +381,10 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       status = mapRejectionToStatus(((BrokerRejectionException) cause).getRejection());
     } else if (cause instanceof ClientOutOfMemoryException) {
       status = Status.UNAVAILABLE.augmentDescription(cause.getMessage());
+    } else if (cause instanceof TimeoutException) { // can be thrown by transport
+      status =
+          Status.DEADLINE_EXCEEDED.augmentDescription(
+              "Time out between gateway and broker: " + cause.getMessage());
     } else if (cause instanceof GrpcStatusException) {
       status = ((GrpcStatusException) cause).getGrpcStatus();
     } else {
@@ -369,7 +403,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     return convertedThrowable;
   }
 
-  public static Status mapBrokerErrorToStatus(final BrokerError error) {
+  private static Status mapBrokerErrorToStatus(final BrokerError error) {
     switch (error.getCode()) {
       case WORKFLOW_NOT_FOUND:
         return Status.NOT_FOUND.augmentDescription(error.getMessage());
@@ -383,7 +417,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
   }
 
-  public static Status mapRejectionToStatus(final BrokerRejection rejection) {
+  private static Status mapRejectionToStatus(final BrokerRejection rejection) {
     final String description =
         String.format(
             "Command rejected with code '%s': %s", rejection.getIntent(), rejection.getReason());

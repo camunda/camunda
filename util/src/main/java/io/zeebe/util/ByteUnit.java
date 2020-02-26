@@ -9,6 +9,9 @@ package io.zeebe.util;
 
 import java.util.Arrays;
 
+@Deprecated(
+    forRemoval = true,
+    since = "0.23.0-alpha2") // Should be replaced when an alternative is found.
 public enum ByteUnit {
   BYTES(0, ""),
   KILOBYTES(1, "K"),

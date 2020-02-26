@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0gna48o" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
+  <bpmn:process id="error-events" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_05pskwe</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_05pskwe" sourceRef="StartEvent_1" targetRef="Task_0ocegdd" />
+    <bpmn:serviceTask id="Task_0ocegdd" name="Collect Money">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="A" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_05pskwe</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_18u2t28</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="IntermediateThrowEvent_1tbwdsd" name="Invalid Credit Card" attachedToRef="Task_0ocegdd">
+      <bpmn:outgoing>SequenceFlow_0gwkplm</bpmn:outgoing>
+      <bpmn:errorEventDefinition errorRef="Error_0mjxhwa" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0gwkplm" sourceRef="IntermediateThrowEvent_1tbwdsd" targetRef="Task_0hg5h6n" />
+    <bpmn:serviceTask id="Task_0hg5h6n" name="Use different Payment Method">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="C" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0gwkplm</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1mdbd9a</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_18u2t28" sourceRef="Task_0ocegdd" targetRef="ExclusiveGateway_1g7htp1" />
+    <bpmn:serviceTask id="Task_0q449qa" name="Fetch Items">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="B" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0h2jsps</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1g7htp1">
+      <bpmn:incoming>SequenceFlow_18u2t28</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_1mdbd9a</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0h2jsps</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_0h2jsps" sourceRef="ExclusiveGateway_1g7htp1" targetRef="Task_0q449qa" />
+    <bpmn:sequenceFlow id="SequenceFlow_1mdbd9a" sourceRef="Task_0hg5h6n" targetRef="ExclusiveGateway_1g7htp1" />
+    <bpmn:subProcess id="SubProcess_0kw936z" triggeredByEvent="true">
+      <bpmn:startEvent id="StartEvent_1tfbazb" name="Order Canceled">
+        <bpmn:outgoing>SequenceFlow_1i20oiw</bpmn:outgoing>
+        <bpmn:errorEventDefinition errorRef="Error_1xpqxuc" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1i20oiw" sourceRef="StartEvent_1tfbazb" targetRef="Task_13uceeu" />
+      <bpmn:serviceTask id="Task_13uceeu" name="Refund Money">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="D" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SequenceFlow_1i20oiw</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1l3ylr0</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="SequenceFlow_1l3ylr0" sourceRef="Task_13uceeu" targetRef="Task_0h73uvi" />
+      <bpmn:serviceTask id="Task_0h73uvi" name="Free Items">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="E" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>SequenceFlow_1l3ylr0</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1uywoz1</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:endEvent id="EndEvent_04muhjf">
+        <bpmn:incoming>SequenceFlow_1uywoz1</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1uywoz1" sourceRef="Task_0h73uvi" targetRef="EndEvent_04muhjf" />
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmn:error id="Error_0mjxhwa" name="error" errorCode="invalid credit card" />
+  <bpmn:error id="Error_1xpqxuc" name="Error_3d8urpe" errorCode="order canceled" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="error-events">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_05pskwe_di" bpmnElement="SequenceFlow_05pskwe">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_181vzwk_di" bpmnElement="Task_0ocegdd">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_0y6tw4m_di" bpmnElement="IntermediateThrowEvent_1tbwdsd">
+        <dc:Bounds x="352" y="139" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="377" y="183" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0gwkplm_di" bpmnElement="SequenceFlow_0gwkplm">
+        <di:waypoint x="370" y="175" />
+        <di:waypoint x="370" y="240" />
+        <di:waypoint x="460" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1src815_di" bpmnElement="Task_0hg5h6n">
+        <dc:Bounds x="460" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_18u2t28_di" bpmnElement="SequenceFlow_18u2t28">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="585" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_14z6rcx_di" bpmnElement="Task_0q449qa">
+        <dc:Bounds x="680" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1g7htp1_di" bpmnElement="ExclusiveGateway_1g7htp1" isMarkerVisible="true">
+        <dc:Bounds x="585" y="92" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0h2jsps_di" bpmnElement="SequenceFlow_0h2jsps">
+        <di:waypoint x="635" y="117" />
+        <di:waypoint x="680" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1mdbd9a_di" bpmnElement="SequenceFlow_1mdbd9a">
+        <di:waypoint x="560" y="240" />
+        <di:waypoint x="610" y="240" />
+        <di:waypoint x="610" y="142" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="SubProcess_03syhed_di" bpmnElement="SubProcess_0kw936z" isExpanded="true">
+        <dc:Bounds x="179" y="320" width="601" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_0amx9yz_di" bpmnElement="StartEvent_1tfbazb">
+        <dc:Bounds x="220" y="372" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="199" y="415" width="78" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1i20oiw_di" bpmnElement="SequenceFlow_1i20oiw">
+        <di:waypoint x="256" y="390" />
+        <di:waypoint x="310" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1wkm5ii_di" bpmnElement="Task_13uceeu">
+        <dc:Bounds x="310" y="350" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1l3ylr0_di" bpmnElement="SequenceFlow_1l3ylr0">
+        <di:waypoint x="410" y="390" />
+        <di:waypoint x="470" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_174udqh_di" bpmnElement="Task_0h73uvi">
+        <dc:Bounds x="470" y="350" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_04muhjf_di" bpmnElement="EndEvent_04muhjf">
+        <dc:Bounds x="632" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1uywoz1_di" bpmnElement="SequenceFlow_1uywoz1">
+        <di:waypoint x="570" y="390" />
+        <di:waypoint x="632" y="390" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

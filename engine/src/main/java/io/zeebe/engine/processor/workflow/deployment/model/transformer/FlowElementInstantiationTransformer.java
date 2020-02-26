@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableAct
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCallActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEndEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEventBasedGateway;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
@@ -53,7 +54,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(Activity.class, ExecutableActivity::new);
     ELEMENT_FACTORIES.put(BoundaryEvent.class, ExecutableBoundaryEvent::new);
     ELEMENT_FACTORIES.put(CallActivity.class, ExecutableCallActivity::new);
-    ELEMENT_FACTORIES.put(EndEvent.class, ExecutableFlowNode::new);
+    ELEMENT_FACTORIES.put(EndEvent.class, ExecutableEndEvent::new);
     ELEMENT_FACTORIES.put(EventBasedGateway.class, ExecutableEventBasedGateway::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableCatchEventElement::new);

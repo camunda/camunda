@@ -15,10 +15,11 @@
  */
 package io.zeebe.client.api.command;
 
+import io.zeebe.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface CompleteJobCommandStep1 extends FinalCommandStep<Void> {
+public interface CompleteJobCommandStep1 extends FinalCommandStep<CompleteJobResponse> {
 
   /**
    * Set the variables to complete the job with.

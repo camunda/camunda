@@ -16,8 +16,6 @@
 package zbc
 
 import (
-	"time"
-
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
 )
@@ -40,8 +38,6 @@ type Client interface {
 	NewThrowErrorCommand() commands.ThrowErrorCommandStep1
 
 	NewJobWorker() worker.JobWorkerBuilderStep1
-
-	SetRequestTimeout(time.Duration) Client
 
 	Close() error
 }

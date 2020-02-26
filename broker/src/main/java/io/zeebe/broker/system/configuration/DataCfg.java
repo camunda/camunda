@@ -7,10 +7,12 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.util.ByteValueParser;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
@@ -22,14 +24,11 @@ public final class DataCfg implements ConfigurationEntry {
 
   private String snapshotPeriod = "15m";
 
-  private String raftSegmentSize;
-
   private int maxSnapshots = 3;
 
   @Override
   public void init(
       final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
-    raftSegmentSize = Optional.ofNullable(raftSegmentSize).orElse(logSegmentSize);
 
     applyEnvironment(environment);
     directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
@@ -47,11 +46,24 @@ public final class DataCfg implements ConfigurationEntry {
     this.directories = directories;
   }
 
+  public Long getLogSegmentSizeInBytes() {
+    if (logSegmentSize != null) {
+      return ByteValueParser.fromString(logSegmentSize).toBytes();
+    } else {
+      return null;
+    }
+  }
+
   public String getLogSegmentSize() {
     return logSegmentSize;
   }
 
   public void setLogSegmentSize(final String logSegmentSize) {
+    if (logSegmentSize != null) {
+      // call parsing logic to provoke any exceptions that might occur during parsing
+      ByteValueParser.fromString(logSegmentSize);
+    }
+
     this.logSegmentSize = logSegmentSize;
   }
 
@@ -60,7 +72,14 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   public void setSnapshotPeriod(final String snapshotPeriod) {
+    // call parsing to provoke any exceptions that might occur during parsing
+    DurationUtil.parse(snapshotPeriod);
+
     this.snapshotPeriod = snapshotPeriod;
+  }
+
+  public Duration getSnapshotPeriodAsDuration() {
+    return DurationUtil.parse(snapshotPeriod);
   }
 
   public int getMaxSnapshots() {
@@ -69,14 +88,6 @@ public final class DataCfg implements ConfigurationEntry {
 
   public void setMaxSnapshots(final int maxSnapshots) {
     this.maxSnapshots = maxSnapshots;
-  }
-
-  public String getRaftSegmentSize() {
-    return raftSegmentSize;
-  }
-
-  public void setRaftSegmentSize(final String raftSegmentSize) {
-    this.raftSegmentSize = raftSegmentSize;
   }
 
   @Override
@@ -89,9 +100,6 @@ public final class DataCfg implements ConfigurationEntry {
         + '\''
         + ", snapshotPeriod='"
         + snapshotPeriod
-        + '\''
-        + ", raftSegmentSize='"
-        + raftSegmentSize
         + '\''
         + ", maxSnapshots="
         + maxSnapshots

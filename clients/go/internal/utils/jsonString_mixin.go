@@ -21,14 +21,14 @@ import (
 
 type SerializerMixin interface {
 	Validate(string, string) error
-	AsJson(string, interface{}, bool) (string, error)
+	AsJSON(string, interface{}, bool) (string, error)
 }
 
-type JsonStringSerializer struct {
+type JSONStringSerializer struct {
 	valueMap map[string]interface{}
 }
 
-func (validator *JsonStringSerializer) Validate(name string, value string) error {
+func (validator *JSONStringSerializer) Validate(name string, value string) error {
 	err := json.Unmarshal([]byte(value), &validator.valueMap)
 	if err != nil {
 		return fmt.Errorf("parameter %q requires a JSON object, got %q: %s", name, value, err)
@@ -36,7 +36,7 @@ func (validator *JsonStringSerializer) Validate(name string, value string) error
 	return nil
 }
 
-func (validator *JsonStringSerializer) AsJson(name string, value interface{}, ignoreOmitempty bool) (string, error) {
+func (validator *JSONStringSerializer) AsJSON(name string, value interface{}, ignoreOmitempty bool) (string, error) {
 	if ignoreOmitempty {
 		value = MapMarshal(value, "json", false, true)
 	}
@@ -47,8 +47,8 @@ func (validator *JsonStringSerializer) AsJson(name string, value interface{}, ig
 	return string(b), nil
 }
 
-func NewJsonStringSerializer() SerializerMixin {
-	return &JsonStringSerializer{
+func NewJSONStringSerializer() SerializerMixin {
+	return &JSONStringSerializer{
 		valueMap: make(map[string]interface{}),
 	}
 }

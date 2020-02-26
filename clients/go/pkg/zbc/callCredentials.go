@@ -24,7 +24,10 @@ type callCredentials struct {
 
 func (cc *callCredentials) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
 	headers := make(map[string]string)
-	cc.credentialsProvider.ApplyCredentials(ctx, headers)
+	if err := cc.credentialsProvider.ApplyCredentials(ctx, headers); err != nil {
+		return nil, err
+	}
+
 	return headers, nil
 }
 

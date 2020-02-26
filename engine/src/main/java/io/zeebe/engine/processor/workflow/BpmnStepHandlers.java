@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
@@ -36,6 +37,8 @@ import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletingHand
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
+import io.zeebe.engine.processor.workflow.handlers.endevent.ErrorEventHandler;
+import io.zeebe.engine.processor.workflow.handlers.endevent.ThrowErrorHandler;
 import io.zeebe.engine.processor.workflow.handlers.eventsubproc.EventSubProcessEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementCompletedHandler;
@@ -69,7 +72,16 @@ public final class BpmnStepHandlers {
     final IncidentResolver incidentResolver = new IncidentResolver(state.getIncidentState());
     final CatchEventSubscriber catchEventSubscriber = new CatchEventSubscriber(catchEventBehavior);
     final BufferedMessageToStartEventCorrelator messageStartEventCorrelator =
-        new BufferedMessageToStartEventCorrelator(state.getKeyGenerator(), state.getMessageState());
+        new BufferedMessageToStartEventCorrelator(
+            state.getKeyGenerator(),
+            state.getMessageState(),
+            state.getWorkflowState().getEventScopeInstanceState());
+    final var errorEventHandler =
+        new ErrorEventHandler(state.getWorkflowState(), state.getKeyGenerator());
+    final var expressionProcessor =
+        new ExpressionProcessor(
+            ExpressionLanguageFactory.createExpressionLanguage(),
+            state.getWorkflowState().getElementInstanceState().getVariablesState());
 
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATED, new ElementActivatedHandler<>());
@@ -162,7 +174,8 @@ public final class BpmnStepHandlers {
         BpmnStep.START_EVENT_EVENT_OCCURRED, new StartEventEventOccurredHandler<>(state));
 
     stepHandlers.put(
-        BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED, new EventSubProcessEventOccurredHandler<>());
+        BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED,
+        new EventSubProcessEventOccurredHandler<>(catchEventBehavior));
 
     stepHandlers.put(
         BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());
@@ -189,10 +202,13 @@ public final class BpmnStepHandlers {
 
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_ACTIVATING,
-        new CallActivityActivatingHandler(catchEventSubscriber, state.getKeyGenerator()));
+        new CallActivityActivatingHandler(
+            catchEventSubscriber, state.getKeyGenerator(), expressionProcessor));
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_TERMINATING,
         new CallActivityTerminatingHandler(catchEventSubscriber));
+
+    stepHandlers.put(BpmnStep.THROW_ERROR, new ThrowErrorHandler(errorEventHandler));
   }
 
   public void handle(final BpmnStepContext context) {

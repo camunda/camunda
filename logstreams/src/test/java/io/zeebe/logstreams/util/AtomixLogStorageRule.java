@@ -156,7 +156,16 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   public void close() {
     Optional.ofNullable(raftLog).ifPresent(RaftLog::close);
+    raftLog = null;
     Optional.ofNullable(snapshotStore).ifPresent(SnapshotStore::close);
+    snapshotStore = null;
+    Optional.ofNullable(metaStore).ifPresent(MetaStore::close);
+    metaStore = null;
+    Optional.ofNullable(storage).ifPresent(AtomixLogStorage::close);
+    storage = null;
+    Optional.ofNullable(raftStorage).ifPresent(RaftStorage::deleteLog);
+    raftStorage = null;
+    positionListener = null;
   }
 
   public int getPartitionId() {

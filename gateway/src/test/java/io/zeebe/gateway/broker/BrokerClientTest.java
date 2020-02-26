@@ -93,6 +93,8 @@ public final class BrokerClientTest {
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(START_PARTITION_ID);
     topology.setPartitionLeader(START_PARTITION_ID, 0, 1);
+    topology.addBrokerIfAbsent(0);
+    topology.setBrokerAddressIfPresent(0, stubAddress.toString());
 
     ((BrokerTopologyManagerImpl) client.getTopologyManager()).setTopology(topology);
   }
@@ -167,11 +169,13 @@ public final class BrokerClientTest {
 
     // then
     exception.expect(ExecutionException.class);
-    exception.expectMessage(containsString("Request timed out after PT3S"));
+    exception.expectMessage(containsString("timed out"));
     // when the partition is repeatedly not found, the client loops
     // over refreshing the topology and making a request that fails and so on. The timeout
     // kicks in at any point in that loop, so we cannot assert the exact error message any more
-    // specifically.
+    // specifically. It is also possible that Atomix times out before hand if we calculated a very
+    // small time out for the request, e.g. < 50ms, so we also cannot assert the value of the
+    // timeout
 
     // when
     client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();

@@ -33,6 +33,7 @@
     <data name="messageName" id="4" type="varDataEncoding"/>
     <data name="variables" id="5" type="varDataEncoding"/>
     <data name="bpmnProcessId" id="6" type="varDataEncoding"/>
+    <data name="correlationKey" id="7" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="CorrelateMessageSubscription" id="3">

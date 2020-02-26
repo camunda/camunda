@@ -21,6 +21,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ const (
 	DefaultAddressHost = "127.0.0.1"
 	DefaultAddressPort = "26500"
 	AddressEnvVar      = "ZEEBE_ADDRESS"
+	defaultTimeout     = 10 * time.Second
 )
 
 var client zbc.Client
@@ -45,13 +47,25 @@ var clientCacheFlag string
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
 	Short: "zeebe command line interface",
-	Long: `zbctl is command line interface designed to create and read resources inside zeebe broker. 
+	Long: `zbctl is command line interface designed to create and read resources inside zeebe broker.
 It is designed for regular maintenance jobs such as:
 	* deploying workflows,
 	* creating jobs and workflow instances
 	* activating, completing or failing jobs
 	* update variables and retries
 	* view cluster status`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// silence help here instead of as a parameter because we only want to suppress it on a 'Zeebe' error and not if
+		// parsing args fails
+		cmd.SilenceUsage = true
+	},
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		if client != nil {
+			return client.Close()
+		}
+
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -189,10 +203,10 @@ func keyArg(key *int64) cobra.PositionalArgs {
 	}
 }
 
-func printJson(value interface{}) error {
-	valueJson, err := json.MarshalIndent(value, "", "  ")
+func printJSON(value interface{}) error {
+	valueJSON, err := json.MarshalIndent(value, "", "  ")
 	if err == nil {
-		fmt.Println(string(valueJson))
+		fmt.Println(string(valueJSON))
 	}
 	return err
 }

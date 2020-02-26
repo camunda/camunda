@@ -14,23 +14,24 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"sort"
 )
 
-type ByNodeId []*pb.BrokerInfo
+type ByNodeID []*pb.BrokerInfo
 
-func (a ByNodeId) Len() int           { return len(a) }
-func (a ByNodeId) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByNodeId) Less(i, j int) bool { return a[i].NodeId < a[j].NodeId }
+func (a ByNodeID) Len() int           { return len(a) }
+func (a ByNodeID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByNodeID) Less(i, j int) bool { return a[i].NodeId < a[j].NodeId }
 
-type ByPartitionId []*pb.Partition
+type ByPartitionID []*pb.Partition
 
-func (a ByPartitionId) Len() int           { return len(a) }
-func (a ByPartitionId) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByPartitionId) Less(i, j int) bool { return a[i].PartitionId < a[j].PartitionId }
+func (a ByPartitionID) Len() int           { return len(a) }
+func (a ByPartitionID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByPartitionID) Less(i, j int) bool { return a[i].PartitionId < a[j].PartitionId }
 
 var statusCmd = &cobra.Command{
 	Use:     "status",
@@ -38,28 +39,50 @@ var statusCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		response, err := client.NewTopologyCommand().Send()
+		var err error
+
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		resp, err := client.NewTopologyCommand().Send(ctx)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("Cluster size:", response.ClusterSize)
-		fmt.Println("Partitions count:", response.PartitionsCount)
-		fmt.Println("Replication factor:", response.ReplicationFactor)
-		fmt.Println("Brokers:")
-
-		sort.Sort(ByNodeId(response.Brokers))
-
-		for _, broker := range response.Brokers {
-			fmt.Println("  Broker", broker.NodeId, "-", fmt.Sprintf("%s:%d", broker.Host, broker.Port))
-			sort.Sort(ByPartitionId(broker.Partitions))
-			for _, partition := range broker.Partitions {
-				fmt.Println("    Partition", partition.PartitionId, ":", roleToString(partition.Role))
-			}
-		}
-
+		printStatus(resp)
 		return nil
 	},
+}
+
+func printStatus(resp *pb.TopologyResponse) {
+	gatewayVersion := "unavailable"
+	if resp.GatewayVersion != "" {
+		gatewayVersion = resp.GatewayVersion
+	}
+
+	fmt.Println("Cluster size:", resp.ClusterSize)
+	fmt.Println("Partitions count:", resp.PartitionsCount)
+	fmt.Println("Replication factor:", resp.ReplicationFactor)
+	fmt.Println("Gateway version:", gatewayVersion)
+	fmt.Println("Brokers:")
+
+	sort.Sort(ByNodeID(resp.Brokers))
+
+	for _, broker := range resp.Brokers {
+		fmt.Printf("  Broker %d - %s:%d\n", broker.NodeId, broker.Host, broker.Port)
+
+		version := "unavailable"
+		if broker.Version != "" {
+			version = broker.Version
+		}
+
+		fmt.Printf("    Version: %s\n", version)
+
+		sort.Sort(ByPartitionID(broker.Partitions))
+		for _, partition := range broker.Partitions {
+			fmt.Printf("    Partition %d : %s\n", partition.PartitionId, roleToString(partition.Role))
+		}
+	}
 }
 
 func init() {

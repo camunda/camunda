@@ -10,6 +10,7 @@ package io.zeebe.util;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
+@Deprecated(forRemoval = true, since = "0.23.0-alpha2") // to be removed if an alternative is found
 public final class DurationUtil {
   /**
    * Input format expected to be [value][unit], where: - value is a number {@link

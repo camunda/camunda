@@ -40,7 +40,6 @@ const KeepAliveEnvVar = "ZEEBE_KEEP_ALIVE"
 
 type ClientImpl struct {
 	gateway             pb.GatewayClient
-	requestTimeout      time.Duration
 	connection          *grpc.ClientConn
 	credentialsProvider CredentialsProvider
 }
@@ -50,6 +49,7 @@ type ClientConfig struct {
 	UsePlaintextConnection bool
 	CaCertificatePath      string
 	CredentialsProvider    CredentialsProvider
+
 	// KeepAlive can be used configure how often keep alive messages should be sent to the gateway. These will be sent
 	// whether or not there are active requests. Negative values will result in error and zero will result in the default
 	// of 45 seconds being used
@@ -65,65 +65,60 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func (client *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
-	return commands.NewTopologyCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
+	return commands.NewTopologyCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
-	return commands.NewDeployCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
+	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
-	return commands.NewPublishMessageCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
+	return commands.NewPublishMessageCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
-	return commands.NewResolveIncidentCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
+	return commands.NewResolveIncidentCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
-	return commands.NewCreateInstanceCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
+	return commands.NewCreateInstanceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewCancelInstanceCommand() commands.CancelInstanceStep1 {
-	return commands.NewCancelInstanceCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewCancelInstanceCommand() commands.CancelInstanceStep1 {
+	return commands.NewCancelInstanceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
-	return commands.NewCompleteJobCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
+	return commands.NewCompleteJobCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewFailJobCommand() commands.FailJobCommandStep1 {
-	return commands.NewFailJobCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewFailJobCommand() commands.FailJobCommandStep1 {
+	return commands.NewFailJobCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1 {
-	return commands.NewUpdateJobRetriesCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1 {
+	return commands.NewUpdateJobRetriesCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
-	return commands.NewSetVariablesCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
+	return commands.NewSetVariablesCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {
-	return commands.NewActivateJobsCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {
+	return commands.NewActivateJobsCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
-	return commands.NewThrowErrorCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
+	return commands.NewThrowErrorCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
-	return worker.NewJobWorkerBuilder(client.gateway, client, client.requestTimeout)
+func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
+	return worker.NewJobWorkerBuilder(c.gateway, c)
 }
 
-func (client *ClientImpl) SetRequestTimeout(requestTimeout time.Duration) Client {
-	client.requestTimeout = requestTimeout
-	return client
-}
-
-func (client *ClientImpl) Close() error {
-	return client.connection.Close()
+func (c *ClientImpl) Close() error {
+	return c.connection.Close()
 }
 
 func NewClient(config *ClientConfig) (Client, error) {
@@ -155,7 +150,6 @@ func NewClient(config *ClientConfig) (Client, error) {
 
 	return &ClientImpl{
 		gateway:             pb.NewGatewayClient(conn),
-		requestTimeout:      DefaultRequestTimeout,
 		connection:          conn,
 		credentialsProvider: config.CredentialsProvider,
 	}, nil
@@ -197,7 +191,7 @@ func configureCredentialsProvider(config *ClientConfig, opts []grpc.DialOption) 
 		callCredentials := &callCredentials{credentialsProvider: config.CredentialsProvider}
 		opts = append(opts, grpc.WithPerRPCCredentials(callCredentials))
 	} else {
-		config.CredentialsProvider = &NoopCredentialsProvider{}
+		config.CredentialsProvider = &noopCredentialsProvider{}
 	}
 
 	return opts, nil

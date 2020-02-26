@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.api.command;
 
-public interface ResolveIncidentCommandStep1 extends FinalCommandStep<Void> {
+import io.zeebe.client.api.response.ResolveIncidentResponse;
+
+public interface ResolveIncidentCommandStep1 extends FinalCommandStep<ResolveIncidentResponse> {
   // the place for new optional parameters
 }

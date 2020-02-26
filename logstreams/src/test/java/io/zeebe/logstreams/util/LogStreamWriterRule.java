@@ -31,8 +31,15 @@ public final class LogStreamWriterRule extends ExternalResource {
 
   @Override
   protected void after() {
-    logStreamWriter = null;
+    closeWriter();
     logStream = null;
+  }
+
+  public void closeWriter() {
+    if (logStreamWriter != null) {
+      logStreamWriter.close();
+      logStreamWriter = null;
+    }
   }
 
   public long writeEvents(final int count, final DirectBuffer event) {

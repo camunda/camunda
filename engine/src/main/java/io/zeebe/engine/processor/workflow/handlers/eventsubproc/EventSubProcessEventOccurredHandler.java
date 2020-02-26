@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.handlers.eventsubproc;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
@@ -21,10 +22,14 @@ import org.agrona.DirectBuffer;
 
 public final class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     extends EventOccurredHandler<T> {
+
+  private final CatchEventBehavior catchEventBehavior;
+
   private final WorkflowInstanceRecord containerRecord = new WorkflowInstanceRecord();
 
-  public EventSubProcessEventOccurredHandler() {
+  public EventSubProcessEventOccurredHandler(final CatchEventBehavior catchEventBehavior) {
     super(null);
+    this.catchEventBehavior = catchEventBehavior;
   }
 
   @Override
@@ -47,6 +52,7 @@ public final class EventSubProcessEventOccurredHandler<T extends ExecutableStart
     if (startEvent.interrupting()) {
       interruptingKey = handleInterrupting(context, triggeredEvent, scopeKey);
     } else {
+      processEventTrigger(context, context.getKey(), context.getKey(), triggeredEvent);
       context
           .getOutput()
           .appendFollowUpEvent(
@@ -68,35 +74,48 @@ public final class EventSubProcessEventOccurredHandler<T extends ExecutableStart
 
   private long handleInterrupting(
       final BpmnStepContext<T> context, final EventTrigger triggeredEvent, final long scopeKey) {
+
+    catchEventBehavior.unsubscribeFromEvents(scopeKey, context);
+
     final boolean waitForTermination = interruptParentScope(context);
 
     if (waitForTermination) {
       return deferEvent(context, context.getKey(), scopeKey, containerRecord, triggeredEvent);
     } else {
-      return context
-          .getOutput()
-          .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, containerRecord);
+      final long eventKey =
+          context
+              .getOutput()
+              .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, containerRecord);
+      processEventTrigger(context, context.getKey(), eventKey, triggeredEvent);
+      return eventKey;
     }
   }
 
   private boolean interruptParentScope(final BpmnStepContext<T> context) {
     final long scopeKey = context.getValue().getFlowScopeKey();
     final List<ElementInstance> children = context.getElementInstanceState().getChildren(scopeKey);
-    boolean waitForTermination = false;
+
+    int terminatedChildInstances = 0;
 
     for (final ElementInstance child : children) {
       if (child.canTerminate()) {
-        waitForTermination = true;
         context
             .getOutput()
             .appendFollowUpEvent(
                 child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
-      } else {
-        context.getElementInstanceState().consumeToken(scopeKey);
+
+        terminatedChildInstances += 1;
       }
     }
 
-    return waitForTermination;
+    // consume all other active tokens (e.g. tokens waiting at a joining gateway)
+    final int zombies =
+        context.getFlowScopeInstance().getNumberOfActiveTokens() - terminatedChildInstances;
+    for (int z = 0; z < zombies; z++) {
+      context.getElementInstanceState().consumeToken(scopeKey);
+    }
+
+    return terminatedChildInstances > 0;
   }
 
   private void prepareActivateContainer(

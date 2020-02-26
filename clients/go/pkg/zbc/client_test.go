@@ -15,6 +15,7 @@
 package zbc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/suite"
@@ -51,13 +52,13 @@ func (s *clientTestSuite) TestClientWithTls() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../../test/testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/ca.cert.pem",
 	})
 
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -80,7 +81,7 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	// when
 	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../../test/testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/ca.cert.pem",
 	}
 	env.set(InsecureEnvVar, "true")
 
@@ -105,15 +106,15 @@ func (s *clientTestSuite) TestCaCertificateEnvVar() {
 	// when
 	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../../test/testdata/wrong.cert",
+		CaCertificatePath: "testdata/wrong.cert",
 	}
-	env.set(CaCertificatePath, "../../test/testdata/ca.cert.pem")
+	env.set(CaCertificatePath, "testdata/ca.cert.pem")
 
 	_, err := NewClient(config)
 
 	// then
 	s.NoError(err)
-	s.EqualValues("../../test/testdata/ca.cert.pem", config.CaCertificatePath)
+	s.EqualValues("testdata/ca.cert.pem", config.CaCertificatePath)
 }
 
 func (s *clientTestSuite) TestClientWithoutTls() {
@@ -130,13 +131,13 @@ func (s *clientTestSuite) TestClientWithoutTls() {
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
-		CaCertificatePath:      "../../test/testdata/ca.cert.pem",
+		CaCertificatePath:      "testdata/ca.cert.pem",
 	})
 
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -163,7 +164,7 @@ func (s *clientTestSuite) TestClientWithDefaultRootCa() {
 	s.NoError(err)
 
 	// then
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// when
 	s.Error(err)
@@ -223,7 +224,7 @@ func (s *clientTestSuite) TestClientWithDefaultCredentialsProvider() {
 	s.NoError(err)
 
 	// when
-	_, err = client.NewTopologyCommand().Send()
+	_, err = client.NewTopologyCommand().Send(context.Background())
 
 	// then
 	s.Error(err)
@@ -298,8 +299,49 @@ func (s *clientTestSuite) TestRejectNegativeDurationAsEnvVar() {
 	// then
 	s.Error(err)
 }
+
+func (s *clientTestSuite) TestCommandExpireWithContext() {
+	// given
+	blockReq := make(chan struct{})
+	defer close(blockReq)
+	lis, server := createServerWithInterceptor(func(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+		<-blockReq
+		return nil, nil
+	})
+	go server.Serve(lis)
+	defer server.Stop()
+
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         lis.Addr().String(),
+		UsePlaintextConnection: true,
+	})
+	s.NoError(err)
+
+	// when
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+
+	cmdFinished := make(chan struct{})
+	go func() {
+		_, err = client.NewTopologyCommand().Send(ctx)
+		close(cmdFinished)
+	}()
+
+	// then
+	select {
+	case <-cmdFinished:
+	case <-time.After(2 * time.Second):
+		s.FailNow("expected command to fail with deadline exceeded, but blocked instead")
+	}
+
+	code := status.Code(err)
+	if code != codes.DeadlineExceeded {
+		s.FailNow(fmt.Sprintf("expected command to fail with deadline exceeded, but got %s instead", code.String()))
+	}
+}
+
 func createSecureServer() (net.Listener, *grpc.Server) {
-	creds, _ := credentials.NewServerTLSFromFile("../../test/testdata/chain.cert.pem", "../../test/testdata/private.key.pem")
+	creds, _ := credentials.NewServerTLSFromFile("testdata/chain.cert.pem", "testdata/private.key.pem")
 	return createServer(grpc.Creds(creds))
 }
 

@@ -31,7 +31,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private final MsgPackHelper msgPackHelper;
 
   private final ClientTransport output;
-  private final int target;
+  private final String target;
 
   private int partitionId = partitionIdNullValue();
   private long key = keyNullValue();
@@ -41,9 +41,9 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private Intent intent = null;
 
   public ExecuteCommandRequest(
-      final ClientTransport output, final int target, final MsgPackHelper msgPackHelper) {
+      final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
     this.output = output;
-    this.target = target;
+    this.target = targetAddress;
     this.msgPackHelper = msgPackHelper;
   }
 

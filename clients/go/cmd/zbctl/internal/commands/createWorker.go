@@ -16,6 +16,7 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
@@ -77,6 +78,7 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 	variables := job.Variables
 	log.Println("Activated job", key, "with variables", variables)
 
+	// #nosec 204
 	command := exec.Command(createWorkerHandlerArgs[0], createWorkerHandlerArgs[1:]...)
 
 	// capture stdout and stderr for completing/failing job
@@ -87,26 +89,36 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 	// get stdin of handler command and send variables
 	stdin, err := command.StdinPipe()
 	if err != nil {
-		log.Fatal("Failed to get stdin for command", createWorkerHandlerFlag, err)
+		failJob(jobClient, job, fmt.Sprintf("failed to get stdin for command '%s': %s", createWorkerHandlerFlag, err.Error()))
+		return
 	}
-	io.WriteString(stdin, variables)
-	stdin.Close()
+
+	_, err = io.WriteString(stdin, variables)
+	if err != nil {
+		failJob(jobClient, job, fmt.Sprintf("failed to write to stdin for command '%s': %s", createWorkerHandlerFlag, err.Error()))
+		return
+	}
+
+	err = stdin.Close()
+	if err != nil {
+		log.Printf("failed to close stdin for command '%s': %s", createWorkerHandlerFlag, err.Error())
+	}
 
 	// start and wait for handler command to finish
 	err = command.Start()
 	if err != nil {
-		log.Fatal("Failed to start command", createWorkerHandlerFlag, err)
+		failJob(jobClient, job, fmt.Sprintf("failed to start command '%s': %s", createWorkerHandlerFlag, err.Error()))
 	}
 
 	if command.Wait() == nil {
-		variables := string(stdout.Bytes())
+		variables := stdout.String()
 		if len(variables) < 2 {
 			// use empty variables if non was returned
 			variables = "{}"
 		}
 		completeJob(jobClient, job, variables)
 	} else {
-		failJob(jobClient, job, string(stderr.Bytes()))
+		failJob(jobClient, job, stderr.String())
 	}
 }
 
@@ -118,7 +130,10 @@ func completeJob(jobClient worker.JobClient, job entities.Job, variables string)
 	} else {
 		log.Println("Handler completed job", job.Key, "with variables", variables)
 
-		_, err = request.Send()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		_, err = request.Send(ctx)
 		if err != nil {
 			log.Println("Unable to complete job", key, err)
 		}
@@ -127,7 +142,11 @@ func completeJob(jobClient worker.JobClient, job entities.Job, variables string)
 
 func failJob(jobClient worker.JobClient, job entities.Job, error string) {
 	log.Println("Command failed to handle job", job.Key, error)
-	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).Send()
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).Send(ctx)
 	if err != nil {
 		log.Println("Unable to fail job", err)
 	}
@@ -137,7 +156,9 @@ func init() {
 	createCmd.AddCommand(createWorkerCmd)
 
 	createWorkerCmd.Flags().StringVar(&createWorkerHandlerFlag, "handler", "", "Specify handler to invoke for each job")
-	createWorkerCmd.MarkFlagRequired("handler")
+	if err := createWorkerCmd.MarkFlagRequired("handler"); err != nil {
+		panic(err)
+	}
 
 	createWorkerCmd.Flags().StringVar(&createWorkerNameFlag, "name", DefaultJobWorkerName, "Specify the worker name")
 	createWorkerCmd.Flags().DurationVar(&createWorkerTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the duration no other worker should work on job activated by this worker")

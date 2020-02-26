@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.22.0-SNAPSHOT</version>
+    <version>0.23.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -77,6 +77,12 @@
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_hotspot</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>2.13.0</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -87,7 +93,9 @@
           <configurationDirectory>conf</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
-          <extraJvmArguments>-Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml
+          <extraJvmArguments>
+            -Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml
+            --illegal-access=deny
           </extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>

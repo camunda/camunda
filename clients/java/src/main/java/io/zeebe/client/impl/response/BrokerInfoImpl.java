@@ -28,12 +28,14 @@ public final class BrokerInfoImpl implements BrokerInfo {
   private final int nodeId;
   private final String host;
   private final int port;
+  private final String version;
   private final List<PartitionInfo> partitions;
 
   public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo broker) {
     this.nodeId = broker.getNodeId();
     this.host = broker.getHost();
     this.port = broker.getPort();
+    this.version = broker.getVersion();
 
     this.partitions = new ArrayList<>();
     for (final GatewayOuterClass.Partition partition : broker.getPartitionsList()) {
@@ -62,6 +64,11 @@ public final class BrokerInfoImpl implements BrokerInfo {
   }
 
   @Override
+  public String getVersion() {
+    return this.version;
+  }
+
+  @Override
   public List<PartitionInfo> getPartitions() {
     return this.partitions;
   }
@@ -76,6 +83,8 @@ public final class BrokerInfoImpl implements BrokerInfo {
         + '\''
         + ", port="
         + port
+        + ", version="
+        + version
         + ", partitions="
         + partitions
         + '}';

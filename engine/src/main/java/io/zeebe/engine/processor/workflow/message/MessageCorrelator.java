@@ -81,6 +81,7 @@ public final class MessageCorrelator {
         subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer(),
         messageKey,
-        messageVariables);
+        messageVariables,
+        subscription.getCorrelationKey());
   }
 }

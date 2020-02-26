@@ -55,7 +55,7 @@ type oauthCachedCredentials struct {
 	Auth struct{ Credentials *OAuthCredentials }
 }
 
-func NewOAuthYamlCredentialsCache(path string) (*oauthYamlCredentialsCache, error) {
+func NewOAuthYamlCredentialsCache(path string) (OAuthCredentialsCache, error) {
 	var err error
 
 	envCachePath := env.get(OAuthCachePathEnvVar)

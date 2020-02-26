@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.engine.processor.workflow.deployment.model.BpmnFactory;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -27,10 +28,10 @@ public final class ExclusiveGatewayTransformationTest {
     // given
     final BpmnModelInstance modelInstance =
         Bpmn.readModelFromStream(
-            this.getClass().getResourceAsStream("/workflows/exclusive-gateway.bpmn"));
+            getClass().getResourceAsStream("/workflows/exclusive-gateway.bpmn"));
 
     // when
-    final BpmnTransformer transformer = new BpmnTransformer();
+    final BpmnTransformer transformer = BpmnFactory.createTransformer();
     final List<ExecutableWorkflow> workflows = transformer.transformDefinitions(modelInstance);
 
     // then

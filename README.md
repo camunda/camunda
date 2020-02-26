@@ -36,12 +36,12 @@ To learn more about what we're currently working on, please visit the [roadmap](
 ## Recommended Docs Entries for New Users
 
 * [What is Zeebe?](https://docs.zeebe.io/introduction/what-is-zeebe.html)
-* [Core Concepts](https://docs.zeebe.io/basics/README.html)
-* [Getting Started Tutorial](https://docs.zeebe.io/getting-started/README.html)
-* [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/README.html)
+* [Core Concepts](https://docs.zeebe.io/basics/index.html)
+* [Getting Started Tutorial](https://docs.zeebe.io/getting-started/index.html)
+* [BPMN Workflows](https://docs.zeebe.io/bpmn-workflows/index.html)
 * [Configuration](https://docs.zeebe.io/operations/the-zeebecfgtoml-file.html)
-* [Java Client](https://docs.zeebe.io/java-client/README.html)
-* [Go Client](https://docs.zeebe.io/go-client/get-started.html)
+* [Java Client](https://docs.zeebe.io/java-client/index.html)
+* [Go Client](https://docs.zeebe.io/go-client/index.html)
 
 
 ## Contributing

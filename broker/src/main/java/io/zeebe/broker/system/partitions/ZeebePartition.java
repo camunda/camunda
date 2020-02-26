@@ -9,6 +9,7 @@ package io.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.protocols.raft.RaftCommitListener;
+import io.atomix.protocols.raft.RaftRoleChangeListener;
 import io.atomix.protocols.raft.RaftServer.Role;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
@@ -36,15 +37,20 @@ import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
+import io.zeebe.logstreams.state.SnapshotMetrics;
 import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.zeebe.util.DurationUtil;
+import io.zeebe.util.health.CriticalComponentsHealthMonitor;
+import io.zeebe.util.health.FailureListener;
+import io.zeebe.util.health.HealthMonitor;
+import io.zeebe.util.health.HealthMonitorable;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
@@ -57,11 +63,12 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
-public final class ZeebePartition extends Actor implements RaftCommitListener, Consumer<Role> {
+public final class ZeebePartition extends Actor
+    implements RaftCommitListener, RaftRoleChangeListener, HealthMonitorable, FailureListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;
-  private static final String EXPORTER_NAME = "exporter-%d";
+  private static final String EXPORTER_NAME = "Exporter-%d";
 
   private final ClusterEventService clusterEventService;
   private final BrokerCfg brokerCfg;
@@ -83,6 +90,10 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
   private SnapshotStorage snapshotStorage;
   private StateSnapshotController snapshotController;
   private ZeebeDb zeebeDb;
+  private final String actorName;
+  private FailureListener failureListener;
+  private volatile HealthStatus healthStatus = HealthStatus.UNHEALTHY;
+  private final HealthMonitor criticalComponentsHealthMonitor;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -102,7 +113,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     this.partitionId = atomixRaftPartition.id().id();
     this.scheduler = actorScheduler;
-    this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSize().toBytes();
+    this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
 
     // load and validate exporters
     for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
@@ -113,6 +124,9 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
             "Failed to load exporter with configuration: " + exporterCfg, e);
       }
     }
+
+    this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
+    criticalComponentsHealthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
   }
 
   /**
@@ -121,15 +135,15 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
    * @param newRole the new role of the raft partition
    */
   @Override
-  public void accept(final Role newRole) {
-    actor.run(() -> onRoleChange(newRole));
+  public void onNewRole(final Role newRole, final long newTerm) {
+    actor.run(() -> onRoleChange(newRole, newTerm));
   }
 
-  private void onRoleChange(final Role newRole) {
+  private void onRoleChange(final Role newRole, final long newTerm) {
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
-          leaderTransition();
+          leaderTransition(newTerm);
         }
         break;
       case INACTIVE:
@@ -139,7 +153,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
       case FOLLOWER:
       default:
         if (raftRole == null || raftRole == Role.LEADER) {
-          followerTransition();
+          followerTransition(newTerm);
         }
         break;
     }
@@ -148,31 +162,33 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
     raftRole = newRole;
   }
 
-  private void leaderTransition() {
+  private void leaderTransition(final long newTerm) {
     onTransitionTo(this::transitionToLeader)
         .onComplete(
             (success, error) -> {
               if (error == null) {
                 partitionListeners.forEach(
-                    l -> l.onBecomingLeader(partitionId, atomixRaftPartition.term(), logStream));
+                    l -> l.onBecomingLeader(partitionId, newTerm, logStream));
               } else {
                 LOG.error("Failed to install leader partition {}", partitionId, error);
                 // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                onFailure();
               }
             });
   }
 
-  private void followerTransition() {
+  private void followerTransition(final long newTerm) {
     onTransitionTo(this::transitionToFollower)
         .onComplete(
             (success, error) -> {
               if (error == null) {
                 partitionListeners.forEach(
-                    l -> l.onBecomingFollower(partitionId, atomixRaftPartition.term(), logStream));
+                    l -> l.onBecomingFollower(partitionId, newTerm, logStream));
               } else {
                 LOG.error("Failed to install follower partition {}", partitionId, error);
                 // TODO https://github.com/zeebe-io/zeebe/issues/3499
                 // we should probably retry here
+                onFailure();
               }
             });
   }
@@ -268,6 +284,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
       zeebeDb = snapshotController.openDb();
     } catch (final Exception e) {
       // TODO https://github.com/zeebe-io/zeebe/issues/3499
+      onFailure();
       throw new IllegalStateException(
           String.format(
               "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
@@ -277,7 +294,8 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
     final StatePositionSupplier positionSupplier = new StatePositionSupplier(partitionId, LOG);
     final LogStreamDeletionService deletionService =
-        new LogStreamDeletionService(logStream, snapshotStorage, positionSupplier);
+        new LogStreamDeletionService(
+            localBroker.getNodeId(), partitionId, logStream, snapshotStorage, positionSupplier);
     closeables.add(deletionService);
 
     return scheduler.submitActor(deletionService);
@@ -286,7 +304,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
   private StateSnapshotController createSnapshotController() {
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId)
+            ? new StateReplication(clusterEventService, partitionId, localBroker.getNodeId())
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(
@@ -301,7 +319,8 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
         runtimeDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
         new AtomixRecordEntrySupplierImpl(reader),
-        brokerCfg.getData().getMaxSnapshots());
+        brokerCfg.getData().getMaxSnapshots(),
+        new SnapshotMetrics(partitionId));
   }
 
   private boolean shouldReplicateSnapshots() {
@@ -343,6 +362,7 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
         .logStream(logStream)
         .actorScheduler(scheduler)
         .zeebeDb(zeebeDb)
+        .nodeId(localBroker.getNodeId())
         .commandResponseWriter(commandApiService.newCommandResponseWriter())
         .onProcessedListener(commandApiService.getOnProcessedListener(partitionId))
         .streamProcessorFactory(
@@ -357,21 +377,33 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
   private ActorFuture<Void> installSnapshotDirector(
       final StreamProcessor streamProcessor, final DataCfg dataCfg) {
-    final Duration snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
+    final Duration snapshotPeriod = dataCfg.getSnapshotPeriodAsDuration();
     final var asyncSnapshotDirector =
-        new AsyncSnapshotDirector(streamProcessor, snapshotController, logStream, snapshotPeriod);
+        new AsyncSnapshotDirector(
+            localBroker.getNodeId(),
+            streamProcessor,
+            snapshotController,
+            logStream,
+            snapshotPeriod);
     closeables.add(asyncSnapshotDirector);
     return scheduler.submitActor(asyncSnapshotDirector);
   }
 
   private ActorFuture<Void> installExporter(final ZeebeDb zeebeDb) {
+    final var exporterDescriptors = exporterRepository.getExporters().values();
+
+    if (exporterDescriptors.isEmpty()) {
+      return CompletableActorFuture.completed(null);
+    }
+
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
-            .name(String.format(EXPORTER_NAME, partitionId))
+            .name(
+                buildActorName(localBroker.getNodeId(), String.format(EXPORTER_NAME, partitionId)))
             .logStream(logStream)
             .zeebeDb(zeebeDb)
-            .descriptors(exporterRepository.getExporters().values());
+            .descriptors(exporterDescriptors);
 
     final var exporterDirector = new ExporterDirector(context);
     closeables.add(exporterDirector);
@@ -380,7 +412,6 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
   }
 
   private CompletableActorFuture<Void> closePartition() {
-
     Collections.reverse(closeables);
     final var closeActorsFuture = new CompletableActorFuture<Void>();
     stepByStepClosing(closeActorsFuture, closeables);
@@ -493,13 +524,17 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
+    return actorName;
   }
 
   @Override
   public void onActorStarting() {
+    final var storage = AtomixLogStorage.ofPartition(atomixRaftPartition);
 
-    LogStreams.createAtomixLogStream(atomixRaftPartition)
+    LogStream.builder()
+        .withLogStorage(storage)
+        .withLogName(atomixRaftPartition.name())
+        .withPartitionId(atomixRaftPartition.id().id())
         .withMaxFragmentSize(maxFragmentSize)
         .withActorScheduler(scheduler)
         .buildAsync()
@@ -509,15 +544,23 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
                 this.logStream = log;
                 atomixRaftPartition.getServer().addCommitListener(this);
                 atomixRaftPartition.addRoleChangeListener(this);
-                onRoleChange(atomixRaftPartition.getRole());
+                onRecovered();
+                onRoleChange(atomixRaftPartition.getRole(), atomixRaftPartition.term());
               } else {
                 LOG.error(
                     "Failed to install log stream service for partition {}",
                     atomixRaftPartition.id().id(),
                     error);
                 actor.close();
+                onFailure();
               }
             });
+  }
+
+  @Override
+  protected void onActorStarted() {
+    criticalComponentsHealthMonitor.startMonitoring();
+    criticalComponentsHealthMonitor.addFailureListener(this);
   }
 
   @Override
@@ -529,6 +572,9 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
             closePartition()
                 .onComplete(
                     (v, t) -> {
+                      atomixRaftPartition.removeRoleChangeListener(this);
+                      atomixRaftPartition.getServer().removeCommitListener(this);
+
                       final ActorFuture<Void> logStreamCloseFuture = logStream.closeAsync();
                       if (t == null) {
                         logStreamCloseFuture.onComplete(closeFuture);
@@ -541,5 +587,42 @@ public final class ZeebePartition extends Actor implements RaftCommitListener, C
     closeFuture.join();
 
     super.close();
+  }
+
+  public void onFailure() {
+    actor.run(() -> updateHealthStatus(HealthStatus.UNHEALTHY));
+  }
+
+  public void onRecovered() {
+    actor.run(() -> updateHealthStatus(HealthStatus.HEALTHY));
+  }
+
+  private void updateHealthStatus(final HealthStatus newStatus) {
+    if (healthStatus != newStatus) {
+      healthStatus = newStatus;
+      if (failureListener != null) {
+        switch (newStatus) {
+          case HEALTHY:
+            failureListener.onRecovered();
+            break;
+          case UNHEALTHY:
+            failureListener.onFailure();
+            break;
+          default:
+            LOG.warn("Unknown health status {}", newStatus);
+            break;
+        }
+      }
+    }
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return healthStatus;
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(() -> this.failureListener = failureListener);
   }
 }

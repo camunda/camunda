@@ -89,10 +89,10 @@ func (suite *JobPollerSuite) TestShouldPollAfterPollIntervalIfThresholdIsReached
 	suite.poller.threshold = 4
 
 	gomock.InOrder(
-		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: &pb.ActivateJobsRequest{
 			MaxJobsToActivate: 10,
 		}}).Return(suite.singleJobStream(), nil),
-		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: &pb.ActivateJobsRequest{
 			MaxJobsToActivate: 9,
 		}}).Return(suite.singleJobStream(), nil),
 	)
@@ -112,14 +112,14 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterIntervalIfNotThreshold() {
 	suite.poller.remaining = 6
 	suite.poller.threshold = 4
 
-	suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
+	suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: &pb.ActivateJobsRequest{
 		MaxJobsToActivate: 4,
 	}}).Return(suite.singleJobStream(), nil)
 
 	// when
 	go suite.poller.poll(&suite.waitGroup)
 
-	// then one job is received after inital poll and no further poll
+	// then one job is received after initial poll and no further poll
 	suite.consumeJob()
 }
 
@@ -129,10 +129,10 @@ func (suite *JobPollerSuite) TestShoulPolldAfterJobFinsihedIfThresholdIsReached(
 	suite.poller.threshold = 4
 
 	gomock.InOrder(
-		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: &pb.ActivateJobsRequest{
 			MaxJobsToActivate: 10,
 		}}).Return(suite.singleJobStream(), nil),
-		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: &pb.ActivateJobsRequest{
 			MaxJobsToActivate: 10,
 		}}).Return(suite.singleJobStream(), nil),
 	)
@@ -151,14 +151,14 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterJobIsFinishedIfNotThreshold()
 	suite.poller.remaining = 6
 	suite.poller.threshold = 4
 
-	suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: &pb.ActivateJobsRequest{
+	suite.client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: &pb.ActivateJobsRequest{
 		MaxJobsToActivate: 4,
 	}}).Return(suite.singleJobStream(), nil)
 
 	// when
 	go suite.poller.poll(&suite.waitGroup)
 
-	// then one job is received after inital poll and no further poll
+	// then one job is received after initial poll and no further poll
 	suite.completeJob()
 }
 

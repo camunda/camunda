@@ -15,6 +15,7 @@
 package commands
 
 import (
+	"context"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -31,7 +32,10 @@ var throwErrorJobCmd = &cobra.Command{
 	Args:    keyArg(&jobKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_, err := client.NewThrowErrorCommand().JobKey(jobKey).ErrorCode(errorCode).ErrorMessage(errorMessage).Send()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
+
+		_, err := client.NewThrowErrorCommand().JobKey(jobKey).ErrorCode(errorCode).ErrorMessage(errorMessage).Send(ctx)
 		if err == nil {
 			log.Printf("Threw error with code '%s' on job with key %d\n", errorCode, jobKey)
 		}
@@ -43,6 +47,8 @@ var throwErrorJobCmd = &cobra.Command{
 func init() {
 	throwErrorCmd.AddCommand(throwErrorJobCmd)
 	throwErrorJobCmd.Flags().StringVar(&errorCode, "errorCode", "", "Specify an error code to which the error should be matched")
-	_ = throwErrorJobCmd.MarkFlagRequired("errorCode")
+	if err := throwErrorJobCmd.MarkFlagRequired("errorCode"); err != nil {
+		panic(err)
+	}
 	throwErrorJobCmd.Flags().StringVar(&errorMessage, "errorMessage", "", "Specify an error message with additional context")
 }

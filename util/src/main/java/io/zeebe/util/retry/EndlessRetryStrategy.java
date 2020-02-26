@@ -11,8 +11,12 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.BooleanSupplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class EndlessRetryStrategy implements RetryStrategy {
+
+  private static final Logger LOG = LoggerFactory.getLogger(EndlessRetryStrategy.class);
 
   private final ActorControl actor;
   private final ActorRetryMechanism retryMechanism;
@@ -50,6 +54,11 @@ public final class EndlessRetryStrategy implements RetryStrategy {
         actor.done();
       } else {
         actor.yield();
+        LOG.error(
+            "Catched exception {} with message {}, will retry...",
+            exception.getClass(),
+            exception.getMessage(),
+            exception);
       }
     }
   }

@@ -107,7 +107,8 @@ public class SubscriptionCommandSender {
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final long messageKey,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final DirectBuffer correlationKey) {
 
     final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
 
@@ -118,6 +119,7 @@ public class SubscriptionCommandSender {
     correlateWorkflowInstanceSubscriptionCommand.setMessageKey(messageKey);
     correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
     correlateWorkflowInstanceSubscriptionCommand.getVariables().wrap(variables);
+    correlateWorkflowInstanceSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
 
     return partitionCommandSender.sendCommand(
         workflowInstancePartitionId, correlateWorkflowInstanceSubscriptionCommand);

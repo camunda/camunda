@@ -7,7 +7,9 @@
  */
 package io.zeebe.logstreams.log;
 
-public interface LogStreamWriter {
+import io.zeebe.util.CloseableSilently;
+
+public interface LogStreamWriter extends CloseableSilently {
 
   /**
    * Attempts to write the event to the underlying stream.

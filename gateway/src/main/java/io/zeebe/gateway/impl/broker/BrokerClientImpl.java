@@ -78,18 +78,17 @@ public final class BrokerClientImpl implements BrokerClient {
     }
 
     final ClusterCfg clusterCfg = configuration.getCluster();
-    topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+    final var membershipService = atomixCluster.getMembershipService();
+    topologyManager = new BrokerTopologyManagerImpl(membershipService::getMembers);
     actorScheduler.submitActor(topologyManager);
-    atomixCluster.getMembershipService().addListener(topologyManager);
-    atomixCluster
-        .getMembershipService()
+    membershipService.addListener(topologyManager);
+    membershipService
         .getMembers()
         .forEach(
             member -> topologyManager.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member)));
 
-    final var atomixTransportAdapter =
-        new AtomixClientTransportAdapter(atomixCluster.getCommunicationService());
+    final var messagingService = atomixCluster.getMessagingService();
+    final var atomixTransportAdapter = new AtomixClientTransportAdapter(messagingService);
     actorScheduler.submitActor(atomixTransportAdapter);
     requestManager =
         new BrokerRequestManager(
@@ -145,12 +144,6 @@ public final class BrokerClientImpl implements BrokerClient {
       final BrokerResponseConsumer<T> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
     requestManager.sendRequest(request, responseConsumer, throwableConsumer);
-  }
-
-  @Override
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-      final BrokerRequest<T> request, final Duration requestTimeout) {
-    return requestManager.sendRequest(request, requestTimeout);
   }
 
   @Override

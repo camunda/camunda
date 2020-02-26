@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformation;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableError;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -26,6 +27,8 @@ public final class TransformContext {
   private final Map<DirectBuffer, ExecutableError> errors = new HashMap<>();
 
   private JsonPathQueryCompiler jsonPathQueryCompiler;
+
+  private ExpressionLanguage expressionLanguage;
 
   /*
    * set whenever parsing a workflow
@@ -74,5 +77,13 @@ public final class TransformContext {
 
   public void setJsonPathQueryCompiler(final JsonPathQueryCompiler jsonPathQueryCompiler) {
     this.jsonPathQueryCompiler = jsonPathQueryCompiler;
+  }
+
+  public ExpressionLanguage getExpressionLanguage() {
+    return expressionLanguage;
+  }
+
+  public void setExpressionLanguage(final ExpressionLanguage expressionLanguage) {
+    this.expressionLanguage = expressionLanguage;
   }
 }

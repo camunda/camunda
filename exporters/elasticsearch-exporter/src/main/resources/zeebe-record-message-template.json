@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-message_*"
+    "zeebe-record_message_*"
   ],
   "order": 20,
   "aliases": {

@@ -18,6 +18,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingBuilder;
+import io.zeebe.msgpack.mapping.Mappings;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 
@@ -69,8 +70,8 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
       outputs.forEach(o -> mappingBuilder.mapping(o.getSource(), o.getTarget()));
       final Mapping[] outputMappings = mappingBuilder.build();
 
-      flowNode.setInputMappings(inputMappings);
-      flowNode.setOutputMappings(outputMappings);
+      flowNode.setInputMappings(new Mappings(inputMappings));
+      flowNode.setOutputMappings(new Mappings(outputMappings));
     }
   }
 }
