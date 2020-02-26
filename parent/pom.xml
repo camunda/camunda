@@ -48,7 +48,7 @@
     <version.commons-codec>1.14</version.commons-codec>
     <version.elasticsearch>6.8.6</version.elasticsearch>
     <version.error-prone>2.3.4</version.error-prone>
-    <version.grpc>1.27.1</version.grpc>
+    <version.grpc>1.27.2</version.grpc>
     <version.gson>2.8.6</version.gson>
     <version.guava>28.2-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
