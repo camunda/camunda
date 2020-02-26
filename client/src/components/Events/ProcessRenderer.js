@@ -15,20 +15,28 @@ export default function ProcessRenderer({
   onChange = () => {},
   onSelectNode = () => {}
 }) {
+  let isRemoveEvent = false;
+
   function onChangeWithViewer() {
     viewer.saveXML((err, xml) => {
       if (err) {
         throw err;
       } else {
-        onChange(viewer, xml);
+        onChange(xml, isRemoveEvent);
+        isRemoveEvent = false;
       }
     });
+  }
+
+  function onElementRemove() {
+    isRemoveEvent = true;
   }
 
   useEffect(() => {
     const eventBus = viewer.get('eventBus');
 
     eventBus.on('commandStack.changed', onChangeWithViewer);
+    eventBus.on('shape.remove', onElementRemove);
     eventBus.on('selection.changed', onSelectNode);
 
     const overlays = viewer.get('overlays');
@@ -60,6 +68,7 @@ export default function ProcessRenderer({
     return () => {
       eventBus.off('commandStack.changed', onChangeWithViewer);
       eventBus.off('selection.changed', onSelectNode);
+      eventBus.off('shape.remove', onElementRemove);
       overlays.remove({type: 'MAPPED'});
     };
   });

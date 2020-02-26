@@ -24,12 +24,15 @@ export default class EventSources extends React.Component {
   closeSourceModal = () => this.setState({editing: null});
 
   removeSource = target => {
-    this.props.onChange(this.props.sources.filter(src => src !== target));
+    this.props.onChange(
+      this.props.sources.filter(src => src !== target),
+      true
+    );
   };
 
   toggleSource = targetSource => {
     const sourceIndex = this.props.sources.indexOf(targetSource);
-    this.props.onChange(update(this.props.sources, {[sourceIndex]: {$toggle: ['hidden']}}));
+    this.props.onChange(update(this.props.sources, {[sourceIndex]: {$toggle: ['hidden']}}), false);
   };
 
   render() {
@@ -77,7 +80,8 @@ export default class EventSources extends React.Component {
             initialSource={editing}
             existingSources={sources}
             onConfirm={sources => {
-              this.props.onChange(sources);
+              const isEditing = Object.keys(editing).length > 0;
+              this.props.onChange(sources, isEditing);
               this.closeSourceModal();
             }}
             onClose={this.closeSourceModal}

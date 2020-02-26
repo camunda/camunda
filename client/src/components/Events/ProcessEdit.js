@@ -14,7 +14,7 @@ import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {t} from 'translation';
 
-import {createProcess, updateProcess, loadProcess} from './service';
+import {createProcess, updateProcess, loadProcess, getCleanedMappings} from './service';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
 
@@ -171,9 +171,26 @@ export default withErrorHandling(
       });
     };
 
-    updateSources = eventSources => {
+    updateSources = (eventSources, reloadMappings) => this.update({eventSources}, reloadMappings);
+    updateXml = (xml, reloadMappings) => this.update({xml}, reloadMappings);
+
+    update = (change, reloadMappings) => {
+      const {eventSources, mappings, xml} = this.state;
       this.setDirty();
-      this.setState({eventSources});
+      if (reloadMappings) {
+        this.props.mightFail(
+          getCleanedMappings({
+            eventSources,
+            mappings,
+            xml,
+            ...change
+          }),
+          mappings => this.setState({mappings, ...change}),
+          showError
+        );
+      } else {
+        this.setState(change);
+      }
     };
 
     render() {
@@ -202,18 +219,7 @@ export default withErrorHandling(
             <ProcessRenderer
               name={name}
               mappings={mappings}
-              onChange={(viewer, xml) => {
-                this.setDirty();
-
-                // remove all mappings where the diagram element does not exist anymore
-                const elementRegistry = viewer.get('elementRegistry');
-                this.setState(({mappings}) => ({
-                  mappings: update(mappings, {
-                    $unset: Object.keys(mappings).filter(key => !elementRegistry.get(key))
-                  }),
-                  xml
-                }));
-              }}
+              onChange={this.updateXml}
               onSelectNode={({newSelection}) => {
                 if (newSelection.length !== 1) {
                   this.setState({selectedNode: null});

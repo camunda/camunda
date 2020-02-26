@@ -21,7 +21,21 @@ it('should call onChange with the xml', () => {
   viewer.eventBus.on.mock.calls[0][1]();
 
   expect(viewer.saveXML).toHaveBeenCalled();
-  expect(spy).toHaveBeenCalledWith(viewer, 'some xml');
+  expect(spy).toHaveBeenCalledWith('some xml', false);
+});
+
+it('should set the the change as remove is shape is removed', () => {
+  const viewer = new Modeler();
+  const spy = jest.fn();
+  shallow(<ProcessRenderer viewer={viewer} onChange={spy} />);
+
+  // shape.remove
+  viewer.eventBus.on.mock.calls[1][1]();
+
+  // commandStack.changed
+  viewer.eventBus.on.mock.calls[0][1]();
+
+  expect(spy).toHaveBeenCalledWith('some xml', true);
 });
 
 it('should create mapping overlays', () => {

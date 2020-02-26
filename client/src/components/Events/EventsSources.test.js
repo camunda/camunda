@@ -40,7 +40,7 @@ it('should remove a source from the list', () => {
 
   node.find('DeleterErrorHandler').prop('deleteEntity')(props.sources[0]);
 
-  expect(spy).toHaveBeenCalledWith([{type: 'external'}]);
+  expect(spy).toHaveBeenCalledWith([{type: 'external'}], true);
 });
 
 it('should hide/show source', () => {
@@ -52,10 +52,10 @@ it('should hide/show source', () => {
     .at(0)
     .simulate('click');
 
-  expect(spy).toHaveBeenCalledWith([
-    {hidden: true, type: 'camunda', processDefinitionKey: 'src1'},
-    {type: 'external'}
-  ]);
+  expect(spy).toHaveBeenCalledWith(
+    [{hidden: true, type: 'camunda', processDefinitionKey: 'src1'}, {type: 'external'}],
+    false
+  );
 });
 
 it('should edit a source from the list', () => {

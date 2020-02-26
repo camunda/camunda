@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {EntityNameForm} from 'components';
 
-import {updateProcess, loadProcess} from './service';
+import {updateProcess, loadProcess, getCleanedMappings} from './service';
 import ProcessEditWithErrorHandling from './ProcessEdit';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
@@ -28,6 +28,7 @@ jest.mock('saveGuard', () => ({
 
 jest.mock('./service', () => ({
   updateProcess: jest.fn(),
+  getCleanedMappings: jest.fn(),
   createProcess: jest.fn(),
   loadProcess: jest.fn().mockReturnValue({
     name: 'Process Name',
@@ -107,27 +108,24 @@ it('should unset a mapping', () => {
   expect(node.find(EventTable).prop('mappings')).toEqual({});
 });
 
-it('should set new sources', () => {
+it('should set new sources', async () => {
   const node = shallow(<ProcessEdit {...props} />);
 
   const newSources = [{processDefinitionKey: 'newSource'}];
 
-  node.find(EventTable).prop('onSourcesChange')(newSources);
+  node.find(EventTable).prop('onSourcesChange')(newSources, true);
 
+  expect(getCleanedMappings).toHaveBeenCalled();
+  await node.update();
   expect(node.find(EventTable).prop('eventSources')).toEqual(newSources);
 });
 
-it('should remove mappings when a node is removed', () => {
+it('should update mappings when a node is removed', () => {
   const node = shallow(
     <ProcessEdit {...props} initialMappings={{a: {end: {eventName: '1'}, start: null}}} />
   );
 
-  node.find(ProcessRenderer).prop('onChange')(
-    {
-      get: () => ({get: () => null})
-    },
-    'new Xml'
-  );
+  node.find(ProcessRenderer).prop('onChange')('new Xml', true);
 
-  expect(node.find(EventTable).prop('mappings')).toEqual({});
+  expect(getCleanedMappings).toHaveBeenCalled();
 });
