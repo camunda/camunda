@@ -13,6 +13,7 @@ import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -120,8 +121,34 @@ class ContainerStateRule extends TestWatcher {
 
   // returns true if it finds a line that contains every piece.
   boolean hasLogContaining(final String... pieces) {
+    return getLogContaining(pieces) != null;
+  }
+
+  public String getLogContaining(final String... pieces) {
     final String[] lines = broker.getLogs().split("\n");
-    return Arrays.stream(lines).anyMatch(line -> Arrays.stream(pieces).allMatch(line::contains));
+
+    return Arrays.stream(lines)
+        .filter(line -> Arrays.stream(pieces).allMatch(line::contains))
+        .findFirst()
+        .orElse(null);
+  }
+
+  public long getIncidentKey() {
+    final String incidentCreated = getLogContaining("INCIDENT", "CREATED");
+
+    final Pattern pattern = Pattern.compile("(\"key\":)(\\d+)", Pattern.CASE_INSENSITIVE);
+    final Matcher matcher = pattern.matcher(incidentCreated);
+
+    long incidentKey = -1;
+    if (matcher.find()) {
+      try {
+        incidentKey = Long.parseLong(matcher.group(2));
+      } catch (NumberFormatException | IndexOutOfBoundsException e) {
+        // no key was found
+      }
+    }
+
+    return incidentKey;
   }
 
   /** Close all opened resources. */

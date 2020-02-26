@@ -1,13 +1,19 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
+ */
 package io.zeebe.test;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-class UpgradeTestCase {
+final class UpgradeTestCase {
   private TestCaseBuilder builder;
 
   private UpgradeTestCase(final TestCaseBuilder builder) {
@@ -18,27 +24,29 @@ class UpgradeTestCase {
     return new TestCaseBuilder();
   }
 
-  void setUp(final ZeebeClient client) {
+  long setUp(final ZeebeClient client) {
     builder.deployWorkflow.accept(client);
 
-    if (builder.createInstance != null) {
-      builder.createInstance.accept(client);
+    if (builder.createInstance == null) {
+      return -1;
     }
+
+    return builder.createInstance.apply(client);
   }
 
   Long runBefore(final ContainerStateRule state) {
     return builder.before.apply(state);
   }
 
-  void runAfter(final ContainerStateRule state, final Long key) {
-    builder.after.accept(state, key);
+  void runAfter(final ContainerStateRule state, final long wfInstanceKey, final long key) {
+    builder.after.accept(state, wfInstanceKey, key);
   }
 
   static class TestCaseBuilder {
     private Consumer<ZeebeClient> deployWorkflow;
-    private Consumer<ZeebeClient> createInstance;
+    private Function<ZeebeClient, Long> createInstance;
     private Function<ContainerStateRule, Long> before;
-    private BiConsumer<ContainerStateRule, Long> after;
+    private TriConsumer<ContainerStateRule, Long, Long> after;
 
     TestCaseBuilder deployWorkflow(final BpmnModelInstance model) {
       deployWorkflow =
@@ -60,7 +68,8 @@ class UpgradeTestCase {
                   .latestVersion()
                   .variables(Map.of("key", "123"))
                   .send()
-                  .join();
+                  .join()
+                  .getWorkflowInstanceKey();
       return this;
     }
     /**
@@ -77,7 +86,7 @@ class UpgradeTestCase {
      * Should continue the instance after the upgrade in a way that will complete the workflow.
      * Takes the container rule and a long (e.g., a key) as input.
      */
-    TestCaseBuilder afterUpgrade(final BiConsumer<ContainerStateRule, Long> func) {
+    TestCaseBuilder afterUpgrade(final TriConsumer<ContainerStateRule, Long, Long> func) {
       after = func;
       return this;
     }
@@ -85,5 +94,10 @@ class UpgradeTestCase {
     UpgradeTestCase done() {
       return new UpgradeTestCase(this);
     }
+  }
+
+  @FunctionalInterface
+  interface TriConsumer<A, B, C> {
+    void accept(A a, B b, C c);
   }
 }

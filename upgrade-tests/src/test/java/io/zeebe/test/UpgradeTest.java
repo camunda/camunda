@@ -19,6 +19,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.agrona.IoUtil;
@@ -101,6 +102,15 @@ public class UpgradeTest {
                 .beforeUpgrade(UpgradeTest::timerCreated)
                 .afterUpgrade(UpgradeTest::timerTriggered)
                 .done()
+          },
+          {
+            "incident",
+            scenario()
+                .deployWorkflow(incidentWorkflow())
+                .createInstance()
+                .beforeUpgrade(UpgradeTest::createIncident)
+                .afterUpgrade(UpgradeTest::resolveIncident)
+                .done()
           }
         });
   }
@@ -112,13 +122,13 @@ public class UpgradeTest {
         .broker(CURRENT_VERSION, tmpFolder.getRoot().getPath())
         .withStandaloneGateway(lastVersion)
         .start();
-    testCase.setUp(state.client());
+    final long wfInstanceKey = testCase.setUp(state.client());
 
     // when
     final long key = testCase.runBefore(state);
 
     // then
-    testCase.runAfter(state, key);
+    testCase.runAfter(state, wfInstanceKey, key);
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
 
@@ -135,8 +145,8 @@ public class UpgradeTest {
   private void upgradeZeebe(final boolean deleteSnapshot) {
     // given
     state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
-    testCase.setUp(state.client());
-    final Long key = testCase.runBefore(state);
+    final long wfInstanceKey = testCase.setUp(state.client());
+    final long key = testCase.runBefore(state);
 
     // when
     state.close();
@@ -149,7 +159,7 @@ public class UpgradeTest {
 
     // then
     state.broker(CURRENT_VERSION, tmpFolder.getRoot().getPath()).start();
-    testCase.runAfter(state, key);
+    testCase.runAfter(state, wfInstanceKey, key);
 
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
@@ -170,7 +180,8 @@ public class UpgradeTest {
     return jobsResponse.getJobs().get(0).getKey();
   }
 
-  private static void completeJob(final ContainerStateRule state, final long key) {
+  private static void completeJob(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
     state.client().newCompleteCommand(key).send().join();
   }
 
@@ -188,7 +199,8 @@ public class UpgradeTest {
     return -1L;
   }
 
-  private static void publishMessage(final ContainerStateRule state, final long key) {
+  private static void publishMessage(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
     state
         .client()
         .newPublishMessageCommand()
@@ -203,7 +215,7 @@ public class UpgradeTest {
   private static BpmnModelInstance msgStartWorkflow() {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
-        .message(b -> b.zeebeCorrelationKey("key").name(MSG))
+        .message(b -> b.zeebeCorrelationKey("key").name(MESSAGE))
         .endEvent()
         .done();
   }
@@ -226,8 +238,36 @@ public class UpgradeTest {
     return -1L;
   }
 
-  private static void timerTriggered(final ContainerStateRule state, final long key) {
+  private static void timerTriggered(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
     TestUtil.waitUntil(() -> state.hasLogContaining("TIMER", "TRIGGERED"));
+  }
+
+  private static BpmnModelInstance incidentWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask("failingTask", t -> t.zeebeTaskType(TASK).zeebeInput("foo", "foo"))
+        .done();
+  }
+
+  private static long createIncident(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("INCIDENT", "CREATED"));
+    return state.getIncidentKey();
+  }
+
+  private static void resolveIncident(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
+    state
+        .client()
+        .newSetVariablesCommand(wfInstanceKey)
+        .variables(Map.of("foo", "bar"))
+        .send()
+        .join();
+
+    state.client().newResolveIncidentCommand(key).send().join();
+    final ActivateJobsResponse job =
+        state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
+    state.client().newCompleteCommand(job.getJobs().get(0).getKey()).send().join();
   }
 
   private static TestCaseBuilder scenario() {
