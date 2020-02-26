@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.util.IdGenerator;
 
@@ -23,6 +24,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldNameConstants
+@ToString
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EventSourceEntryDto {
 

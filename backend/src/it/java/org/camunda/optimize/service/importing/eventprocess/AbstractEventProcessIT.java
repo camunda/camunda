@@ -69,7 +69,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String BPMN_START_EVENT_ID = "StartEvent_1";
   protected static final String BPMN_INTERMEDIATE_EVENT_ID = "IntermediateEvent_1";
   protected static final String BPMN_INTERMEDIATE_EVENT_ID_TWO = "IntermediateEvent_2";
-  protected static final String BPMN_END_EVENT_ID = "EndEvent_2";
+  protected static final String BPMN_END_EVENT_ID = "EndEvent_1";
   protected static final String USER_TASK_ID_ONE = "user_task_1";
   protected static final String USER_TASK_ID_TWO = "user_task_2";
   protected static final String USER_TASK_ID_THREE = "user_task_3";
@@ -91,13 +91,12 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String STARTED_EVENT = "startedEvent";
   protected static final String FINISHED_EVENT = "finishedEvent";
   protected static final String START_EVENT_TYPE = "startEvent";
+  protected static final String INTERMEDIATE_CATCH_EVENT_TYPE = "intermediateCatchEvent";
   protected static final String END_EVENT_TYPE = "endEvent";
   protected static final String EXCLUSIVE_GATEWAY_TYPE = "exclusiveGateway";
   protected static final String PARALLEL_GATEWAY_TYPE = "parallelGateway";
   protected static final String EVENT_BASED_GATEWAY_TYPE = "eventBasedGateway";
   protected static final String USER_TASK_TYPE = "userTask";
-  protected static final String INTERMEDIATE_CATCH_EVENT_TYPE = "intermediateCatchEvent";
-
 
   protected static final String PROCESS_INSTANCE_STATE_COMPLETED = "COMPLETED";
   protected static final String PROCESS_INSTANCE_STATE_ACTIVE = "ACTIVE";
@@ -284,14 +283,22 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   protected String ingestTestEvent(final String event) {
-    return ingestTestEvent(IdGenerator.getNextId(), event, OffsetDateTime.now());
+    return ingestTestEvent(IdGenerator.getNextId(), event, OffsetDateTime.now(), MY_TRACE_ID_1);
+  }
+
+  protected String ingestTestEvent(final String event, final String traceId) {
+    return ingestTestEvent(IdGenerator.getNextId(), event, OffsetDateTime.now(), traceId);
   }
 
   protected String ingestTestEvent(final String event, final OffsetDateTime eventTimestamp) {
-    return ingestTestEvent(IdGenerator.getNextId(), event, eventTimestamp);
+    return ingestTestEvent(IdGenerator.getNextId(), event, eventTimestamp, MY_TRACE_ID_1);
   }
 
   protected String ingestTestEvent(final String eventId, final String eventName, final OffsetDateTime eventTimestamp) {
+    return ingestTestEvent(eventId, eventName, eventTimestamp, MY_TRACE_ID_1);
+  }
+
+  protected String ingestTestEvent(final String eventId, final String eventName, final OffsetDateTime eventTimestamp, final String traceId) {
     embeddedOptimizeExtension.getEventService()
       .saveEventBatch(
         Collections.singletonList(
@@ -299,7 +306,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
             .id(eventId)
             .eventName(eventName)
             .timestamp(eventTimestamp.toInstant().toEpochMilli())
-            .traceId(MY_TRACE_ID_1)
+            .traceId(traceId)
             .group(EVENT_GROUP)
             .source(EVENT_SOURCE)
             .data(ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE))

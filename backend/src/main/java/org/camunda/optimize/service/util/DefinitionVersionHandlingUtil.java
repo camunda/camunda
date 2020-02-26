@@ -67,7 +67,4 @@ public class DefinitionVersionHandlingUtil {
     return allVersionSelected.isPresent();
   }
 
-  public static boolean hasMultipleVersionsSet(List<String> definitionVersions) {
-    return definitionVersions.size() > 1;
-  }
 }

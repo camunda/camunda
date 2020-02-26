@@ -25,7 +25,7 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
   public static final String ACTIVITY_INSTANCE_ID = CamundaActivityEventDto.Fields.activityInstanceId;
   public static final String PROCESS_DEFINITION_KEY = CamundaActivityEventDto.Fields.processDefinitionKey;
   public static final String PROCESS_INSTANCE_ID = CamundaActivityEventDto.Fields.processInstanceId;
-  public static final String PROCESS_INSTANCE_VERSION = CamundaActivityEventDto.Fields.processDefinitionVersion;
+  public static final String PROCESS_DEFINITION_VERSION = CamundaActivityEventDto.Fields.processDefinitionVersion;
   public static final String PROCESS_INSTANCE_NAME = CamundaActivityEventDto.Fields.processDefinitionName;
   public static final String ENGINE = CamundaActivityEventDto.Fields.engine;
   public static final String TENANT_ID = CamundaActivityEventDto.Fields.tenantId;
@@ -71,7 +71,7 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
       .startObject(PROCESS_INSTANCE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(PROCESS_INSTANCE_VERSION)
+      .startObject(PROCESS_DEFINITION_VERSION)
         .field("type", "keyword")
       .endObject()
       .startObject(PROCESS_INSTANCE_NAME)

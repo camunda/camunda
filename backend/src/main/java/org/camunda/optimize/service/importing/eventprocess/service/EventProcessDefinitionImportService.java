@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.eventprocess;
+package org.camunda.optimize.service.importing.eventprocess.service;
 
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.EventProcessDefinitionService;
+import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceIndexManager;
 import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.springframework.stereotype.Component;
 

@@ -14,8 +14,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -43,31 +41,6 @@ public class EventProcessPublishStateReader {
   private final ConfigurationService configurationService;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
-
-  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateById(final String publishStateId) {
-    log.debug("Fetching event process publish state with id [{}]", publishStateId);
-    final GetRequest getRequest = new GetRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX).id(publishStateId);
-
-    final GetResponse getResponse;
-    try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch event process publish state with id [%s]", publishStateId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    EventProcessPublishStateDto result = null;
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        result = objectMapper.readValue(responseAsString, EventProcessPublishStateDto.class);
-      } catch (IOException e) {
-        throw new OptimizeRuntimeException("Can't fetch event process publish state.");
-      }
-    }
-    return Optional.ofNullable(result);
-  }
 
   public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
     final String eventProcessMappingId) {

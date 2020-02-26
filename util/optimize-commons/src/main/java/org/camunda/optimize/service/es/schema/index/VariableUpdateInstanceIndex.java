@@ -21,13 +21,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UP
 @Component
 public class VariableUpdateInstanceIndex extends StrictIndexMappingCreator {
 
-  private static final String INSTANCE_ID = VariableUpdateInstanceDto.Fields.instanceId;
-  private static final String NAME = VariableUpdateInstanceDto.Fields.name;
-  private static final String TYPE = VariableUpdateInstanceDto.Fields.type;
-  private static final String VALUE = VariableUpdateInstanceDto.Fields.value;
-  private static final String PROCESS_INSTANCE_ID = VariableUpdateInstanceDto.Fields.processInstanceId;
-  private static final String TENANT_ID = VariableUpdateInstanceDto.Fields.tenantId;
-  private static final String TIMESTAMP = VariableUpdateInstanceDto.Fields.timestamp;
+  public static final String INSTANCE_ID = VariableUpdateInstanceDto.Fields.instanceId;
+  public static final String NAME = VariableUpdateInstanceDto.Fields.name;
+  public static final String TYPE = VariableUpdateInstanceDto.Fields.type;
+  public static final String VALUE = VariableUpdateInstanceDto.Fields.value;
+  public static final String PROCESS_INSTANCE_ID = VariableUpdateInstanceDto.Fields.processInstanceId;
+  public static final String TENANT_ID = VariableUpdateInstanceDto.Fields.tenantId;
+  public static final String TIMESTAMP = VariableUpdateInstanceDto.Fields.timestamp;
 
   public static final int VERSION = 1;
 
