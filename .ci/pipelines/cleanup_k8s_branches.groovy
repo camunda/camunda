@@ -5,7 +5,7 @@ boolean slaveDisconnected() {
 }
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 def static DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
 
 static String agentYaml(env) {

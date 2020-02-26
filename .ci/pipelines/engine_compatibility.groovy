@@ -5,7 +5,7 @@ boolean slaveDisconnected() {
 }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
-def static NODE_POOL() { return "slaves" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 
@@ -21,7 +21,7 @@ spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
   tolerations:
-    - key: "slaves"
+    - key: "${NODE_POOL()}"
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
