@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.events.CustomTracedCamundaEventFetcherService.EVENT_SOURCE_CAMUNDA;
+import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceEndEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
@@ -349,8 +349,8 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
       EventMappingDto.builder()
         .start(EventTypeDto.builder()
                  .eventName(BPMN_END_EVENT_ID)
-                 .group(EVENT_GROUP)
-                 .source(EVENT_SOURCE)
+                 .group(EXTERNAL_EVENT_GROUP)
+                 .source(EXTERNAL_EVENT_SOURCE)
                  .build())
         .build()
     );

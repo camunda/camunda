@@ -24,13 +24,6 @@ import java.util.Optional;
 @Slf4j
 @UtilityClass
 public class BpmnModelUtility {
-  public static Map<String, String> extractFlowNodeNames(final BpmnModelInstance model) {
-    return extractFlowNodeNames(model, FlowNode.class);
-  }
-
-  public static Map<String, String> extractUserTaskNames(final BpmnModelInstance model) {
-    return extractFlowNodeNames(model, UserTask.class);
-  }
 
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(bpmn20Xml.getBytes())) {
@@ -38,6 +31,18 @@ public class BpmnModelUtility {
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Failed reading model", e);
     }
+  }
+
+  public static Map<String, String> extractFlowNodeNames(final String bpmn20Xml) {
+    return extractFlowNodeNames(parseBpmnModel(bpmn20Xml));
+  }
+
+  public static Map<String, String> extractFlowNodeNames(final BpmnModelInstance model) {
+    return extractFlowNodeNames(model, FlowNode.class);
+  }
+
+  public static Map<String, String> extractUserTaskNames(final BpmnModelInstance model) {
+    return extractFlowNodeNames(model, UserTask.class);
   }
 
   public static Optional<String> extractProcessDefinitionName(final String definitionKey, final String xml) {

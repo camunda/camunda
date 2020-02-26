@@ -84,8 +84,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String MERGING_GATEWAY_ID_FOUR = "merging_gateway_four";
   protected static final String VARIABLE_ID = "var";
   protected static final String VARIABLE_VALUE = "value";
-  protected static final String EVENT_GROUP = "test";
-  protected static final String EVENT_SOURCE = "integrationTest";
+  protected static final String EXTERNAL_EVENT_GROUP = "test";
+  protected static final String EXTERNAL_EVENT_SOURCE = "integrationTest";
   protected static final String EVENT_PROCESS_NAME = "myEventProcess";
 
   protected static final String STARTED_EVENT = "startedEvent";
@@ -156,11 +156,19 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
                                                                      final String ingestedEndEventName) {
     return buildSimpleEventProcessMappingDto(
       EventMappingDto.builder()
-        .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedStartEventName).build())
+        .end(EventTypeDto.builder()
+               .group(EXTERNAL_EVENT_GROUP)
+               .source(EXTERNAL_EVENT_SOURCE)
+               .eventName(ingestedStartEventName)
+               .build())
         .build(),
       null,
       EventMappingDto.builder()
-        .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedEndEventName).build())
+        .end(EventTypeDto.builder()
+               .group(EXTERNAL_EVENT_GROUP)
+               .source(EXTERNAL_EVENT_SOURCE)
+               .eventName(ingestedEndEventName)
+               .build())
         .build()
     );
   }
@@ -282,23 +290,26 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return results;
   }
 
-  protected String ingestTestEvent(final String event) {
-    return ingestTestEvent(IdGenerator.getNextId(), event, OffsetDateTime.now(), MY_TRACE_ID_1);
+  protected String ingestTestEvent(final String eventName) {
+    return ingestTestEvent(IdGenerator.getNextId(), eventName, OffsetDateTime.now(), MY_TRACE_ID_1);
   }
 
-  protected String ingestTestEvent(final String event, final String traceId) {
-    return ingestTestEvent(IdGenerator.getNextId(), event, OffsetDateTime.now(), traceId);
+  protected String ingestTestEvent(final String eventName, final String traceId) {
+    return ingestTestEvent(IdGenerator.getNextId(), eventName, OffsetDateTime.now(), traceId);
   }
 
-  protected String ingestTestEvent(final String event, final OffsetDateTime eventTimestamp) {
-    return ingestTestEvent(IdGenerator.getNextId(), event, eventTimestamp, MY_TRACE_ID_1);
+  protected String ingestTestEvent(final String eventName, final OffsetDateTime eventTimestamp) {
+    return ingestTestEvent(IdGenerator.getNextId(), eventName, eventTimestamp, MY_TRACE_ID_1);
   }
 
   protected String ingestTestEvent(final String eventId, final String eventName, final OffsetDateTime eventTimestamp) {
     return ingestTestEvent(eventId, eventName, eventTimestamp, MY_TRACE_ID_1);
   }
 
-  protected String ingestTestEvent(final String eventId, final String eventName, final OffsetDateTime eventTimestamp, final String traceId) {
+  protected String ingestTestEvent(final String eventId,
+                                   final String eventName,
+                                   final OffsetDateTime eventTimestamp,
+                                   final String traceId) {
     embeddedOptimizeExtension.getEventService()
       .saveEventBatch(
         Collections.singletonList(
@@ -307,8 +318,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
             .eventName(eventName)
             .timestamp(eventTimestamp.toInstant().toEpochMilli())
             .traceId(traceId)
-            .group(EVENT_GROUP)
-            .source(EVENT_SOURCE)
+            .group(EXTERNAL_EVENT_GROUP)
+            .source(EXTERNAL_EVENT_SOURCE)
             .data(ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE))
             .build()
         )
@@ -324,20 +335,41 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   protected static EventMappingDto startMapping(final String eventName) {
     return EventMappingDto.builder()
-      .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(eventName).build())
+      .start(
+        EventTypeDto.builder()
+          .group(EXTERNAL_EVENT_GROUP)
+          .source(EXTERNAL_EVENT_SOURCE)
+          .eventName(eventName)
+          .build()
+      )
       .build();
   }
 
   protected static EventMappingDto endMapping(final String eventName) {
     return EventMappingDto.builder()
-      .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(eventName).build())
+      .end(
+        EventTypeDto.builder()
+          .group(EXTERNAL_EVENT_GROUP)
+          .source(EXTERNAL_EVENT_SOURCE)
+          .eventName(eventName)
+          .build())
       .build();
   }
 
   protected static EventMappingDto startAndEndMapping(final String startEventName, final String endEventName) {
     return EventMappingDto.builder()
-      .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(startEventName).build())
-      .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(endEventName).build())
+      .start(
+        EventTypeDto.builder()
+          .group(EXTERNAL_EVENT_GROUP)
+          .source(EXTERNAL_EVENT_SOURCE)
+          .eventName(startEventName)
+          .build())
+      .end(
+        EventTypeDto.builder()
+          .group(EXTERNAL_EVENT_GROUP)
+          .source(EXTERNAL_EVENT_SOURCE)
+          .eventName(endEventName)
+          .build())
       .build();
   }
 

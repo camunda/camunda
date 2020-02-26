@@ -42,6 +42,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueReq
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -1027,6 +1028,13 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetEventProcessMappingRolesRequest(String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId + "/role";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCleanupEventProcessMappingRequest(EventMappingCleanupRequestDto cleanupRequestDto) {
+    this.path = "eventBasedProcess/_mappingCleanup";
+    this.body = getBody(cleanupRequestDto);
+    this.method = POST;
     return this;
   }
 

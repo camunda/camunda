@@ -5,12 +5,9 @@
  */
 package org.camunda.optimize.service.security.event;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -18,10 +15,11 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntryWithTenant;
 
 public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcessIT {
 
@@ -39,7 +37,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
     // given
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
     final String eventProcessMappingId = eventProcessMapping.getId();
-    final EventSourceEntryDto eventSourceEntry = eventProcessClient.createSimpleCamundaEventSourceEntry(PROCESS_DEF_KEY);
+    final EventSourceEntryDto eventSourceEntry = createSimpleCamundaEventSourceEntry(PROCESS_DEF_KEY);
     eventProcessMapping.getEventSources().add(eventSourceEntry);
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY);
 
@@ -57,7 +55,8 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
   public void updateEventSourcesWithoutAccessToProcess() {
     // given
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final EventSourceEntryDto eventSourceEntry = eventProcessClient.createSimpleCamundaEventSourceEntry(PROCESS_DEF_KEY, TENANT_1);
+    final EventSourceEntryDto eventSourceEntry =
+      createSimpleCamundaEventSourceEntryWithTenant(PROCESS_DEF_KEY, TENANT_1);
     eventProcessMapping.getEventSources().add(eventSourceEntry);
 
     engineIntegrationExtension.createTenant(TENANT_1);

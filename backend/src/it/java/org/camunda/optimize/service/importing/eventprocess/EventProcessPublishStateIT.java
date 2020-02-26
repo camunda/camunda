@@ -52,7 +52,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       Collections.emptyList()
     );
     eventProcessMappingDto.setMappings(Collections.singletonMap(BPMN_START_EVENT_ID, EventMappingDto.builder()
-      .end(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName("someEventName").build())
+      .end(EventTypeDto.builder().group(EXTERNAL_EVENT_GROUP).source(EXTERNAL_EVENT_SOURCE).eventName("someEventName").build())
       .build()));
     String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 

@@ -7,6 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -21,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -192,33 +194,45 @@ public class EventProcessClient {
       .build();
   }
 
-  public EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey) {
+  public Map<String, EventMappingDto> cleanupEventProcessMappings(final EventMappingCleanupRequestDto cleanupRequestDto) {
+    return createCleanupEventProcessMappingsRequest(cleanupRequestDto)
+      // @formatter:off
+      .execute(new TypeReference<Map<String, EventMappingDto>>() {});
+    // @formatter:on
+  }
+
+  public OptimizeRequestExecutor createCleanupEventProcessMappingsRequest(final EventMappingCleanupRequestDto cleanupRequestDto) {
+    return getRequestExecutor().buildCleanupEventProcessMappingRequest(cleanupRequestDto);
+  }
+
+  public static EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey) {
+    return createSimpleCamundaEventSourceEntryWithTenant(processDefinitionKey, null);
+  }
+
+  public static EventSourceEntryDto createSimpleCamundaEventSourceEntryWithTenant(final String processDefinitionKey,
+                                                                                  final String tenantId) {
+    return createSimpleCamundaEventSourceEntry(processDefinitionKey, ALL_VERSIONS, tenantId);
+  }
+
+  public static EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
+                                                                        final String version) {
+    return createSimpleCamundaEventSourceEntry(processDefinitionKey, version, null);
+  }
+
+  public static EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
+                                                                        final String version,
+                                                                        final String tenantId) {
     return EventSourceEntryDto.builder()
       .processDefinitionKey(processDefinitionKey)
-      .versions(ImmutableList.of(ALL_VERSIONS))
-      .type(EventSourceType.CAMUNDA)
+      .versions(ImmutableList.of(version))
+      .tenants(Lists.newArrayList(tenantId))
       .tracedByBusinessKey(true)
+      .type(EventSourceType.CAMUNDA)
       .eventScope(EventScopeType.ALL)
       .build();
   }
 
-  public EventSourceEntryDto createSimpleCamundaEventSourceEntry(final String processDefinitionKey,
-                                                                 final String tenantId) {
-    return EventSourceEntryDto.builder()
-      .processDefinitionKey(processDefinitionKey)
-      .versions(ImmutableList.of(ALL_VERSIONS))
-      .tenants(ImmutableList.of(tenantId))
-      .tracedByBusinessKey(true)
-      .type(EventSourceType.CAMUNDA)
-      .eventScope(EventScopeType.ALL)
-      .build();
-  }
-
-  private OptimizeRequestExecutor getRequestExecutor() {
-    return requestExecutorSupplier.get();
-  }
-
-  public EventMappingDto createEventMappingsDto(EventTypeDto startEventDto, EventTypeDto endEventDto) {
+  public static EventMappingDto createEventMappingsDto(EventTypeDto startEventDto, EventTypeDto endEventDto) {
     return EventMappingDto.builder()
       .start(startEventDto)
       .end(endEventDto)
@@ -231,5 +245,9 @@ public class EventProcessClient {
       .source(IdGenerator.getNextId())
       .eventName(IdGenerator.getNextId())
       .build();
+  }
+
+  private OptimizeRequestExecutor getRequestExecutor() {
+    return requestExecutorSupplier.get();
   }
 }

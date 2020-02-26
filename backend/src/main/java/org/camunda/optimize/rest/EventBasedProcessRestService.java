@@ -10,10 +10,12 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessRoleRestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingRestDto;
@@ -23,12 +25,14 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.EventProcessService;
 import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.events.EventMappingCleanupService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.EventProcessAuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -46,6 +50,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 
@@ -57,6 +62,7 @@ public class EventBasedProcessRestService {
 
   private final EventProcessService eventProcessService;
   private final EventProcessRoleService eventProcessRoleService;
+  private final EventMappingCleanupService eventMappingCleanupService;
   private final EventProcessAuthenticationService authenticationService;
   private final SessionService sessionService;
   private final DefinitionService definitionService;
@@ -195,6 +201,16 @@ public class EventBasedProcessRestService {
       .map(this::resolveToEventProcessRoleDto)
       .collect(toList());
     eventProcessRoleService.updateRoles(eventProcessId, eventRoleDtos, userId);
+  }
+
+  @POST
+  @Path("/_mappingCleanup")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Map<String, EventMappingDto> doMappingCleanup(@Context final ContainerRequestContext requestContext,
+                                                       @Valid @NotNull @RequestBody final EventMappingCleanupRequestDto requestDto) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateAccessToEventProcessManagement(userId);
+    return eventMappingCleanupService.doMappingCleanup(userId, requestDto);
   }
 
   private EventProcessRoleDto<IdentityDto> resolveToEventProcessRoleDto(final EventProcessRoleDto<IdentityDto> eventProcessRoleRestDto) {
