@@ -17,6 +17,7 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
 import java.io.File;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -79,7 +80,7 @@ public class UpgradeTest {
                 .done()
           },
           {
-            "message",
+            "message subscription",
             scenario()
                 .deployWorkflow(messageWorkflow())
                 .createInstance()
@@ -110,6 +111,15 @@ public class UpgradeTest {
                 .createInstance()
                 .beforeUpgrade(UpgradeTest::createIncident)
                 .afterUpgrade(UpgradeTest::resolveIncident)
+                .done()
+          },
+          {
+            "publish message",
+            scenario()
+                .deployWorkflow(messageWorkflow())
+                .createInstance()
+                .beforeUpgrade(UpgradeTest::awaitOpenMessageSubscription)
+                .afterUpgrade(UpgradeTest::publishMessage)
                 .done()
           }
         });
@@ -206,6 +216,7 @@ public class UpgradeTest {
         .newPublishMessageCommand()
         .messageName(MESSAGE)
         .correlationKey("123")
+        .timeToLive(Duration.ofMinutes(5))
         .send()
         .join();
 
