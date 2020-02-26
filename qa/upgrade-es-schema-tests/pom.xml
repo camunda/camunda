@@ -191,7 +191,7 @@
                 <!--save document counts for testing after the migration-->
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/_refresh" />
+                  <arg value="curl -s -f localhost:${old.optimize.elasticsearch.port}/_refresh" />
                 </exec>
 
                 <exec outputproperty="pi_count" executable="/bin/bash" failonerror="true">
