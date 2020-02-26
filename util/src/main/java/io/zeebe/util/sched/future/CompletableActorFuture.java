@@ -181,7 +181,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V>, BiConsum
               + (state == COMPLETED_EXCEPTIONALLY
                   ? ("exceptionally with '" + failure + "' ")
                   : " with value " + value);
-      throw new IllegalStateException(err);
+      throw new IllegalStateException(err, throwable);
     }
   }
 
