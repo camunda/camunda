@@ -7,10 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import HomeWithErrorHandling from './Home';
+import {Home} from './Home';
 import {loadEntities} from './service';
-
-const Home = HomeWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
   loadEntities: jest.fn().mockReturnValue([
@@ -38,4 +36,10 @@ it('should load entities', () => {
   shallow(<Home {...props} />);
 
   expect(loadEntities).toHaveBeenCalled();
+});
+
+it('should display the user name', () => {
+  const node = shallow(<Home {...props} user={{name: 'John Doe'}} />);
+
+  expect(node.find('.welcomeMessage')).toIncludeText('John Doe');
 });

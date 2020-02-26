@@ -1,4 +1,9 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Home {
+  height: 100%;
+  position: relative;
+
   .data-hint {
     text-align: center;
     font-size: 12px;
@@ -8,6 +13,39 @@
     .Icon {
       min-width: 14px;
       min-height: 14px;
+    }
+  }
+
+  .welcomeMessage {
+    margin: -36px -20px 0;
+    height: 110px;
+    border-bottom: 1px solid $silver-darken-87;
+    line-height: 110px;
+    color: $grey-darken-23;
+    opacity: 0.8;
+    font-size: 19px;
+    padding-left: 66px;
+    position: relative;
+  }
+
+  > .content {
+    position: absolute;
+    padding-top: 34px;
+    bottom: -36px;
+    left: -20px;
+    right: -20px;
+    top: 110px;
+    overflow: auto;
+  }
+
+  .EntityList {
+    .header {
+      margin-top: -34px;
+      padding-top: 40px;
+    }
+
+    .content {
+      padding-top: 60px;
     }
   }
 
