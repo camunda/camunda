@@ -214,31 +214,31 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .build();
         break;
-      case USER_TASK_FREQUENCY_GROUP_BY_FLOW_NODE:
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
-          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .groupByType(ProcessGroupByType.USER_TASKS)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
         break;
-      case USER_TASK_FREQUENCY_GROUP_BY_FLOW_NODE_BY_ASSIGNEE:
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
-          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .groupByType(ProcessGroupByType.USER_TASKS)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
 
         reportData.getConfiguration().setDistributedBy(DistributedBy.ASSIGNEE);
         break;
-      case USER_TASK_FREQUENCY_GROUP_BY_FLOW_NODE_BY_CANDIDATE_GROUP:
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
-          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .groupByType(ProcessGroupByType.USER_TASKS)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
@@ -287,11 +287,11 @@ public class TemplatedProcessReportDataBuilder {
           .build();
         reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
         break;
-      case USER_TASK_DURATION_GROUP_BY_FLOW_NODE:
+      case USER_TASK_DURATION_GROUP_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.DURATION)
-          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .groupByType(ProcessGroupByType.USER_TASKS)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
@@ -299,11 +299,11 @@ public class TemplatedProcessReportDataBuilder {
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
-      case USER_TASK_DURATION_GROUP_BY_FLOW_NODE_BY_ASSIGNEE:
+      case USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.DURATION)
-          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .groupByType(ProcessGroupByType.USER_TASKS)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
@@ -313,11 +313,11 @@ public class TemplatedProcessReportDataBuilder {
         reportData.getConfiguration().setDistributedBy(DistributedBy.ASSIGNEE);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
-      case USER_TASK_DURATION_GROUP_BY_FLOW_NODE_BY_CANDIDATE_GROUP:
+      case USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.DURATION)
-          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .groupByType(ProcessGroupByType.USER_TASKS)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)

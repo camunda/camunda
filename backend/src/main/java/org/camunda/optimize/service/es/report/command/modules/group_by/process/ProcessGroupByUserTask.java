@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
@@ -109,15 +109,15 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
       }
     }
 
-    groupedData = addMissingGroupByResults(userTaskNames, groupedData, context);
+    addMissingGroupByResults(userTaskNames, groupedData, context);
 
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
   }
 
-  private List<GroupByResult> addMissingGroupByResults(final Map<String, String> userTaskNames,
-                                                       final List<GroupByResult> groupedData,
-                                                       final ExecutionContext<ProcessReportDataDto> context) {
+  private void addMissingGroupByResults(final Map<String, String> userTaskNames,
+                                        final List<GroupByResult> groupedData,
+                                        final ExecutionContext<ProcessReportDataDto> context) {
     // enrich data user tasks that haven't been executed, but should still show up in the result (limited by
     // ESBucketLimit)
     final int bucketLimit = configurationService.getEsAggregationBucketLimit();
@@ -129,7 +129,6 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
         groupedData.add(emptyResult);
       }
     });
-    return groupedData;
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
@@ -143,7 +142,7 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
 
   @Override
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(new FlowNodesGroupByDto());
+    reportData.setGroupBy(new UserTasksGroupByDto());
   }
 
 }

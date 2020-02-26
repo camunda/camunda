@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.upgrade.main.impl;
 
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
@@ -15,9 +17,17 @@ import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.index.query.QueryBuilders;
+
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_USER_TASKS_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_USER_TASK_ENTITY;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
 public class UpgradeFrom27To30 extends UpgradeProcedure {
   private static final String FROM_VERSION = "2.7.0";
@@ -45,6 +55,7 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .addUpgradeStep(new CreateIndexStep(new VariableUpdateInstanceIndex()))
       .addUpgradeStep(new CreateIndexStep(new BusinessKeyIndex()))
       .addUpgradeStep(addEventImportSourceFieldForPublishStates())
+      .addUpgradeStep(replaceFlowNodeWithUserTaskGroupByInUserTaskReports())
       .addUpgradeStep(new UpdateIndexStep(new TimestampBasedImportIndex(), null))
       .build();
   }
@@ -97,5 +108,33 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       script
     );
   }
+
+  private UpgradeStep replaceFlowNodeWithUserTaskGroupByInUserTaskReports() {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("reportDataField", DATA)
+        .put("userTaskView", VIEW_USER_TASK_ENTITY)
+        .put("flowNodesGroupBy", GROUP_BY_FLOW_NODES_TYPE)
+        .put("userTasksGroupBy", GROUP_BY_USER_TASKS_TYPE)
+        .build()
+    );
+    String script = substitutor.replace(
+      // @formatter:off
+      "def reportData = ctx._source.${reportDataField};\n" +
+      "if (reportData.view != null && \"${userTaskView}\".equals(reportData.view.entity)) {\n" +
+        "  if(reportData.groupBy != null && \"${flowNodesGroupBy}\".equals(reportData.groupBy.type)) {" +
+        "    reportData.groupBy.type = \"${userTasksGroupBy}\";\n" +
+        "    ctx._source.${reportDataField} = reportData;\n" +
+          "}\n" +
+      "}\n"
+      // @formatter:on
+    );
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script
+    );
+  }
+
 
 }

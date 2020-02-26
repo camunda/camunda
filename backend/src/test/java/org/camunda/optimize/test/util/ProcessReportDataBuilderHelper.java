@@ -28,6 +28,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByUserTasks;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
 
 public class ProcessReportDataBuilderHelper {
@@ -80,6 +81,8 @@ public class ProcessReportDataBuilderHelper {
         return createGroupByCandidateGroup();
       case FLOW_NODES:
         return createGroupByFlowNode();
+      case USER_TASKS:
+        return createGroupByUserTasks();
     }
   }
 

@@ -10,6 +10,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
+import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -19,6 +20,7 @@ import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -27,6 +29,7 @@ import org.camunda.optimize.upgrade.version27.EventIndexV1;
 import org.camunda.optimize.upgrade.version27.EventProcessMappingIndexV1;
 import org.camunda.optimize.upgrade.version27.EventProcessPublishStateIndexV1;
 import org.camunda.optimize.upgrade.version27.EventSequenceCountIndexV1;
+import org.camunda.optimize.upgrade.version27.EventTraceStateIndexV1;
 import org.camunda.optimize.upgrade.version27.TimestampBasedImportIndexV2;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -50,12 +53,26 @@ public abstract class AbstractUpgradeIT {
   protected static final String FROM_VERSION = "2.7.0";
 
   protected static final MetadataIndex METADATA_INDEX = new MetadataIndex();
+  protected static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
 
   protected static final EventIndexV1 EVENT_INDEX_V1 = new EventIndexV1();
   protected static final EventSequenceCountIndexV1 EVENT_SEQUENCE_COUNT_INDEX_V1 = new EventSequenceCountIndexV1();
   protected static final EventProcessMappingIndexV1 EVENT_PROCESS_MAPPING_INDEX_V1 = new EventProcessMappingIndexV1();
   protected static final EventProcessPublishStateIndexV1 EVENT_PROCESS_PUBLISH_STATE_INDEX_V1 = new EventProcessPublishStateIndexV1();
+  protected static final EventTraceStateIndexV1 EVENT_TRACE_STATE_INDEX_V1 = new EventTraceStateIndexV1();
   protected static final TimestampBasedImportIndexV2 TIMESTAMP_BASED_IMPORT_INDEX_V2 = new TimestampBasedImportIndexV2();
+
+  protected static final List<IndexMappingCreator> ALL_INDEXES =
+    Lists.newArrayList(
+      METADATA_INDEX,
+      SINGLE_PROCESS_REPORT_INDEX,
+      EVENT_INDEX_V1,
+      EVENT_SEQUENCE_COUNT_INDEX_V1,
+      EVENT_PROCESS_MAPPING_INDEX_V1,
+      EVENT_PROCESS_PUBLISH_STATE_INDEX_V1,
+      EVENT_TRACE_STATE_INDEX_V1,
+      TIMESTAMP_BASED_IMPORT_INDEX_V2
+    );
 
   protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;

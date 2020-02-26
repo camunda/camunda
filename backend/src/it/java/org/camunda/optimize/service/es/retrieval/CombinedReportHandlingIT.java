@@ -77,7 +77,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_IN
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -222,7 +222,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionDto userTaskDuration = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto userTaskDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
       .build();
@@ -1183,7 +1183,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
-      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK)
       .setVisualization(ProcessVisualization.TABLE)
       .build();
     return createNewSingleMapReport(durationMapReportData);
@@ -1195,7 +1195,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
-      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK)
       .build();
     return createNewSingleMapReport(durationMapReportData);
   }

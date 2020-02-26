@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.version27;
 
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
@@ -33,14 +32,7 @@ public class UpgradeEventProcessPublishStateEventImportSourceIT extends Abstract
   public void setUp() throws Exception {
     super.setUp();
 
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      EVENT_INDEX_V1,
-      EVENT_PROCESS_MAPPING_INDEX_V1,
-      EVENT_PROCESS_PUBLISH_STATE_INDEX_V1,
-      TIMESTAMP_BASED_IMPORT_INDEX_V2
-    ));
-
+    initSchema(ALL_INDEXES);
     setMetadataIndexVersion(FROM_VERSION);
 
     executeBulk("steps/event_process_publish_states/27-event-process-publish-state-bulk");

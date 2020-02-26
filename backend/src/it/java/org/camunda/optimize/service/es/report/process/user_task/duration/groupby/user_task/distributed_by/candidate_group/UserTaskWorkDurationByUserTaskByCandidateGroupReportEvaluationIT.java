@@ -23,7 +23,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_FLOW_NODE_BY_CANDIDATE_GROUP;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
 
 public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskByCandidateGroupReportEvaluationIT {
@@ -71,7 +71,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.WORK)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_FLOW_NODE_BY_CANDIDATE_GROUP)
+      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP)
       .build();
   }
 

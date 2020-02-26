@@ -6,7 +6,6 @@
 package org.camunda.optimize.upgrade.version27;
 
 import lombok.SneakyThrows;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom27To30;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -22,23 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class EventCountAndTraceIndexUpgradeIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "2.7.0";
 
-  protected static final EventTraceStateIndexV1 EVENT_TRACE_STATE_INDEX_V1 = new EventTraceStateIndexV1();
-
   @BeforeEach
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      EVENT_INDEX_V1,
-      EVENT_SEQUENCE_COUNT_INDEX_V1,
-      EVENT_PROCESS_MAPPING_INDEX_V1,
-      EVENT_PROCESS_PUBLISH_STATE_INDEX_V1,
-      EVENT_TRACE_STATE_INDEX_V1,
-      TIMESTAMP_BASED_IMPORT_INDEX_V2
-    ));
-
+    initSchema(ALL_INDEXES);
     setMetadataIndexVersion(FROM_VERSION);
   }
 

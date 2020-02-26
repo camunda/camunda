@@ -6,7 +6,6 @@
 package org.camunda.optimize.upgrade.version27;
 
 import lombok.SneakyThrows;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
@@ -37,14 +36,7 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
   public void setUp() throws Exception {
     super.setUp();
 
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      EVENT_INDEX_V1,
-      EVENT_PROCESS_MAPPING_INDEX_V1,
-      EVENT_PROCESS_PUBLISH_STATE_INDEX_V1,
-      TIMESTAMP_BASED_IMPORT_INDEX_V2
-    ));
-
+    initSchema(ALL_INDEXES);
     setMetadataIndexVersion(FROM_VERSION);
 
     executeBulk("steps/event_process_mappings/27-event-process-mappings-bulk");

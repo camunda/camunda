@@ -55,7 +55,7 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
     final List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (isUserTaskCommand(viewDto) && isGroupByAssigneeOrCandidateGroupOrFlowNode(groupByDto)) {
+    if (isUserTaskCommand(viewDto) && isGroupByAssigneeOrCandidateGroupOrUserTask(groupByDto)) {
       configsToConsiderForCommand.add(this.distributedBy.getId());
     }
     if (getProcessPart().isPresent()) {
@@ -81,11 +81,11 @@ public class SingleReportConfigurationDto implements Combinable {
       viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
   }
 
-  private boolean isGroupByAssigneeOrCandidateGroupOrFlowNode(ProcessGroupByDto groupByDto) {
+  private boolean isGroupByAssigneeOrCandidateGroupOrUserTask(ProcessGroupByDto groupByDto) {
     return nonNull(groupByDto) && (
       ProcessGroupByType.ASSIGNEE.equals(groupByDto.getType()) ||
         ProcessGroupByType.CANDIDATE_GROUP.equals(groupByDto.getType()) ||
-        ProcessGroupByType.FLOW_NODES.equals(groupByDto.getType())
+        ProcessGroupByType.USER_TASKS.equals(groupByDto.getType())
     );
   }
 

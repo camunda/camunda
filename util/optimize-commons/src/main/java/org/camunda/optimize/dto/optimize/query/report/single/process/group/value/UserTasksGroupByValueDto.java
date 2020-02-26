@@ -9,6 +9,6 @@ public class UserTasksGroupByValueDto implements ProcessGroupByValueDto {
 
   @Override
   public boolean isCombinable(Object o) {
-    return true;
+    return o instanceof UserTasksGroupByValueDto || o instanceof FlowNodesGroupByValueDto;
   }
 }

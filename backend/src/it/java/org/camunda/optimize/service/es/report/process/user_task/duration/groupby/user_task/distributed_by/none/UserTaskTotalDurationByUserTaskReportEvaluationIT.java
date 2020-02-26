@@ -15,7 +15,7 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import java.sql.SQLException;
 import java.util.List;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
@@ -54,7 +54,7 @@ public class UserTaskTotalDurationByUserTaskReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_FLOW_NODE)
+      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
       .build();
   }
 
