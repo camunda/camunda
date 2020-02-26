@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
@@ -21,11 +22,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,12 +57,17 @@ public class CompositeCommandResult {
     private String label;
     private List<DistributedByResult> distributions;
 
-    public static GroupByResult createResultWithNoDistributedBy(final String key) {
-      return new GroupByResult(key, null, new ArrayList<>());
+    public static GroupByResult createResultWithEmptyDistributedBy(final String key) {
+      return new GroupByResult(key, null, singletonList(DistributedByResult.createResultWithEmptyValue(key)));
     }
 
-    public static GroupByResult createResultWithEmptyDistributedBy(final String key) {
-      return new GroupByResult(key, null, singletonList(DistributedByResult.createResultWithEmptyValue(null)));
+    public static GroupByResult createResultWithEmptyDistributedBy(final String key,
+                                                                   final ExecutionContext<ProcessReportDataDto> context) {
+      return new GroupByResult(
+        key,
+        null,
+        DistributedByResult.createEmptyDistributedByResultsForAllPossibleKeys(context, key)
+      );
     }
 
     public static GroupByResult createEmptyGroupBy(List<DistributedByResult> distributions) {
@@ -102,6 +111,22 @@ public class CompositeCommandResult {
 
     public static DistributedByResult createDistributedByResult(String key, String label, ViewResult viewResult) {
       return new DistributedByResult(key, label, viewResult);
+    }
+
+    public static List<DistributedByResult> createEmptyDistributedByResultsForAllPossibleKeys(
+      final ExecutionContext<ProcessReportDataDto> context,
+      final String groupByKey) {
+      Set<String> allDistributedByKeys = context.getAllDistributedByKeys();
+      if (allDistributedByKeys.isEmpty()) {
+        // should only be the case for DistributedByNone
+        return Collections.singletonList(DistributedByResult.createResultWithEmptyValue(groupByKey));
+      }
+
+      List<DistributedByResult> emptyDistributedByResult = new ArrayList<>();
+      for (String key : allDistributedByKeys) {
+        emptyDistributedByResult.add(createResultWithEmptyValue(key, null));
+      }
+      return emptyDistributedByResult;
     }
 
     public String getLabel() {

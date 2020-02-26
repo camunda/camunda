@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by;
 
+import com.google.common.collect.Sets;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
@@ -39,6 +39,12 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
   public void addDistributedByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey) {
     addAdjustmentsForCommandKeyGeneration(dataForCommandKey);
     viewPart.addViewAdjustmentsForCommandKeyGeneration(dataForCommandKey);
+  }
+
+  public void enrichContextWithAllExpectedDistributedByKeys(
+    final ExecutionContext<Data> context,
+    final Aggregations aggregations) {
+    context.setAllDistributedByKeys(Sets.newHashSet());
   }
 
   protected abstract void addAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);

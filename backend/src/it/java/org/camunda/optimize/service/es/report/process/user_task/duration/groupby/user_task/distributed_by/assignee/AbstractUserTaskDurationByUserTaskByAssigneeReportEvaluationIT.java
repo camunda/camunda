@@ -204,9 +204,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       evaluateHypeMapReportForAllAggTypes(reportData);
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(results, aggType);
-    });
+    aggregationTypes.forEach((AggregationType aggType) -> assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
+      results,
+      aggType
+    ));
   }
 
   protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
@@ -387,9 +388,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       evaluateHypeMapReportForAllAggTypes(reportData);
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      assertHyperMap_CustomOrderOnResultValueIsApplied(results, aggType);
-    });
+    aggregationTypes.forEach((AggregationType aggType) -> assertHyperMap_CustomOrderOnResultValueIsApplied(
+      results,
+      aggType
+    ));
   }
 
   protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
@@ -523,6 +525,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
+        .distributedByContains(SECOND_USER, null)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -563,6 +566,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
+        .distributedByContains(SECOND_USER, null)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -748,7 +752,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   }
 
   protected abstract void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
-                                                        final FlowNodeExecutionState executionState);
+                                                                 final FlowNodeExecutionState executionState);
 
   private void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
                                        final OffsetDateTime now,
@@ -839,33 +843,33 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     return createReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
-  private void finishUserTaskRoundsOneWithDefaultAndSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
+  private void finishUserTaskRoundsOneWithDefaultAndSecondUser(final ProcessInstanceEngineDto processInstanceDto) {
     // finish first task
     engineIntegrationExtension.finishAllRunningUserTasks(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
-      processInstanceDto1.getId()
+      processInstanceDto.getId()
     );
     // finish second task with
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER,
       SECOND_USERS_PASSWORD,
-      processInstanceDto1.getId()
+      processInstanceDto.getId()
     );
   }
 
-  private void finishUserTaskRoundsOneWithSecondAndDefault(final ProcessInstanceEngineDto processInstanceDto1) {
+  private void finishUserTaskRoundsOneWithSecondAndDefault(final ProcessInstanceEngineDto processInstanceDto) {
     // finish first task
     engineIntegrationExtension.finishAllRunningUserTasks(
       SECOND_USER,
       SECOND_USERS_PASSWORD,
-      processInstanceDto1.getId()
+      processInstanceDto.getId()
     );
     // finish second task with
     engineIntegrationExtension.finishAllRunningUserTasks(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
-      processInstanceDto1.getId()
+      processInstanceDto.getId()
     );
   }
 

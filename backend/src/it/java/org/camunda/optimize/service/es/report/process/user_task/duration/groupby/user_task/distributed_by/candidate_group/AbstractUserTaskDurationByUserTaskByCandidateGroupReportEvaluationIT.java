@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.user_task.distributed_by.candidate_group;
 
 import com.google.common.collect.ImmutableList;
-import lombok.Data;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -20,7 +19,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
@@ -313,9 +311,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       evaluateHypeMapReportForAllAggTypes(reportData);
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(results, aggType);
-    });
+    aggregationTypes.forEach((AggregationType aggType) -> assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
+      results,
+      aggType
+    ));
   }
 
   protected void assertHyperMap_ForSeveralProcessesWithAllAggregationTypes(
@@ -373,9 +372,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       evaluateHypeMapReportForAllAggTypes(reportData);
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      assertHyperMap_ForMultipleEventsWithAllAggregationTypes(results, aggType);
-    });
+    aggregationTypes.forEach((AggregationType aggType) -> assertHyperMap_ForMultipleEventsWithAllAggregationTypes(
+      results,
+      aggType
+    ));
   }
 
   protected void assertHyperMap_ForMultipleEventsWithAllAggregationTypes(
@@ -544,9 +544,10 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       evaluateHypeMapReportForAllAggTypes(reportData);
 
     // then
-    aggregationTypes.forEach((AggregationType aggType) -> {
-      assertHyperMap_CustomOrderOnResultValueIsApplied(results, aggType);
-    });
+    aggregationTypes.forEach((AggregationType aggType) -> assertHyperMap_CustomOrderOnResultValueIsApplied(
+      results,
+      aggType
+    ));
   }
 
   protected void assertHyperMap_CustomOrderOnResultValueIsApplied(
@@ -680,6 +681,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -720,6 +722,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
       .processInstanceCount(2L)
       .groupByContains(USER_TASK_1)
         .distributedByContains(FIRST_CANDIDATE_GROUP, calculateExpectedValueGivenDurationsDefaultAggr(20L, 40L))
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .doAssert(actualResult);
     // @formatter:on
   }

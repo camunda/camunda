@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.service.es.report.command.CommandContext;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 @Data
 public class ExecutionContext<ReportData extends SingleReportDataDto> {
@@ -23,6 +24,12 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   // only used/needed for group by date commands when evaluated for
   // a combined report.
   private Range<OffsetDateTime> dateIntervalRange;
+
+  // used to ensure a complete list of distributedByResults (to include all keys, even if the result is empty)
+  // e.g. used for groupBy usertask - distributedBy assignee reports, where it is possible that
+  // a user has been assigned to one userTask but not another, yet we want the userId to appear
+  // in all groupByResults (with 0 if they have not been assigned to said task)
+  private Set<String> allDistributedByKeys;
 
   public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final CommandContext<RD> commandContext) {
     this.reportData = commandContext.getReportDefinition().getData();

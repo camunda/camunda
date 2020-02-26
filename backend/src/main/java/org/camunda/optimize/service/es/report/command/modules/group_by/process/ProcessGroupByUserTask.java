@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
@@ -32,13 +31,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
@@ -81,18 +76,25 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
               .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
               .subAggregation(distributedByPart.createAggregation(context))
           )
-      );
+      )
+      // sibling aggregation for distributedByPart for retrieval of all keys that
+      // should be present in distributedBy result
+      .subAggregation(distributedByPart.createAggregation(context));
     return Collections.singletonList(groupByAssigneeAggregation);
   }
 
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
+
+    distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
+      context,
+      userTasks.getAggregations()
+    );
 
     final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
     List<GroupByResult> groupedData = new ArrayList<>();
@@ -107,13 +109,7 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
       }
     }
 
-    final boolean hasDistributedByPartNone = distributedByPart instanceof ProcessDistributedByNone;
-
-    groupedData = addMissingGroupByResults(userTaskNames, groupedData, hasDistributedByPartNone);
-
-    if (!hasDistributedByPartNone) {
-      groupedData = addMissingDistributedByResults(groupedData);
-    }
+    groupedData = addMissingGroupByResults(userTaskNames, groupedData, context);
 
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
@@ -121,52 +117,19 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
 
   private List<GroupByResult> addMissingGroupByResults(final Map<String, String> userTaskNames,
                                                        final List<GroupByResult> groupedData,
-                                                       final boolean hasDistributedByPartNone) {
+                                                       final ExecutionContext<ProcessReportDataDto> context) {
     // enrich data user tasks that haven't been executed, but should still show up in the result (limited by
     // ESBucketLimit)
     final int bucketLimit = configurationService.getEsAggregationBucketLimit();
     userTaskNames.keySet().forEach(userTaskKey -> {
       if (groupedData.size() < bucketLimit) {
-        // If result is distributed by none, add empty distributed by.
-        // Otherwise, prepare empty list to be filled with missing distributed by parts later
-        GroupByResult emptyResult = hasDistributedByPartNone
-          ? GroupByResult.createResultWithEmptyDistributedBy(userTaskKey)
-          : GroupByResult.createResultWithNoDistributedBy(userTaskKey);
+        // Add empty result for each missing bucket
+        GroupByResult emptyResult = GroupByResult.createResultWithEmptyDistributedBy(userTaskKey, context);
         emptyResult.setLabel(userTaskNames.get(userTaskKey));
         groupedData.add(emptyResult);
       }
     });
     return groupedData;
-  }
-
-  private List<GroupByResult> addMissingDistributedByResults(final List<GroupByResult> groupedData) {
-    // Enrich data with empty distributed by results for all distributedByKeys that may not exist in some groupByResults
-    Map<String, String> allDistributedByKeys = getDistributedByKeyLabelMap(groupedData);
-    for (GroupByResult groupByResult : groupedData) {
-      Set<String> presentDistributedByKeys = groupByResult.getDistributions()
-        .stream()
-        .map(distributed -> distributed.getKey())
-        .collect(toSet());
-      if (!presentDistributedByKeys.containsAll(allDistributedByKeys.keySet())) {
-        // some distributions are missing, add empty distributions for each missing key
-        Set<String> missingDistributedByKeys = new HashSet<>(allDistributedByKeys.keySet());
-        missingDistributedByKeys.removeAll(presentDistributedByKeys);
-        for (String key : missingDistributedByKeys) {
-          DistributedByResult emptyDistributedResult =
-            DistributedByResult.createResultWithEmptyValue(key, allDistributedByKeys.get(key));
-          groupByResult.getDistributions().add(emptyDistributedResult);
-        }
-      }
-    }
-    return groupedData;
-  }
-
-  private Map<String, String> getDistributedByKeyLabelMap(final List<GroupByResult> groupedData) {
-    Set<String> existingKeys = new HashSet<>();
-    return groupedData.stream()
-      .flatMap(groupByResult -> groupByResult.getDistributions().stream())
-      .filter(distr -> existingKeys.add(distr.getKey()))
-      .collect(toMap(distr -> distr.getKey(), distr -> distr.getLabel()));
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {

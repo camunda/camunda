@@ -6,10 +6,8 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -23,8 +21,9 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 
@@ -32,7 +31,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 public abstract class ProcessDistributedByIdentity extends ProcessDistributedByPart {
 
   private final ConfigurationService configurationService;
-  private final ProcessDefinitionReader processDefinitionReader;
   private final LocalizationService localizationService;
 
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
@@ -57,7 +55,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
                                                                          final Aggregations aggregations,
                                                                          final ExecutionContext<ProcessReportDataDto> context) {
     final Terms byIdentityAggregations = aggregations.get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
-    final List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
+    List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
 
     for (Terms.Bucket identityBucket : byIdentityAggregations.getBuckets()) {
       final CompositeCommandResult.ViewResult viewResult = viewPart.retrieveResult(
@@ -71,6 +69,32 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
       distributedByIdentity.add(createDistributedByResult(key, null, viewResult));
     }
 
+    addEmptyMissingDistributedByResults(distributedByIdentity, context);
+
     return distributedByIdentity;
+  }
+
+  public void addEmptyMissingDistributedByResults(
+    List<CompositeCommandResult.DistributedByResult> distributedByIdentityResultList,
+    final ExecutionContext<ProcessReportDataDto> context) {
+    context.getAllDistributedByKeys().stream()
+      .filter(key -> distributedByIdentityResultList.stream()
+        .noneMatch(distributedByResult -> distributedByResult.getKey().equals(key)))
+      .map(CompositeCommandResult.DistributedByResult::createResultWithEmptyValue)
+      .forEach(distributedByIdentityResultList::add);
+  }
+
+  @Override
+  public void enrichContextWithAllExpectedDistributedByKeys(
+    final ExecutionContext<ProcessReportDataDto> context,
+    final Aggregations aggregations) {
+    final Terms allIdentityAggregation = aggregations.get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
+    final Set<String> allDistributedByIdentityKeys = allIdentityAggregation.getBuckets()
+      .stream()
+      .map(identityBucket -> identityBucket.getKeyAsString().equals(DISTRIBUTE_BY_IDENTITY_MISSING_KEY)
+        ? localizationService.getDefaultLocaleMessageForMissingAssigneeLabel()
+        : identityBucket.getKeyAsString())
+      .collect(toSet());
+    context.setAllDistributedByKeys(allDistributedByIdentityKeys);
   }
 }
