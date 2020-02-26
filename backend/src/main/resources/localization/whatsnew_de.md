@@ -1,7 +1,11 @@
-## Neue Dashboard Layout Werkzeuge
+## Filter für Start- und Enddatum
 
-Wenn Sie einen Bericht auf einem Dashboard platzieren oder Berichte auf einem Dashboard verschieben, werden andere Berichte automatisch verschoben um Platz zu machen.
+Start- und Enddatum Filter umfassen jetzt rollierende und laufende Bereiche. Es ist jetzt auch möglich, Daten nach Quartalen zu filtern.
 
-## Event Based processes user permissions
+## Verbesserung des Dashboard-Layouts
 
-Ermöglichen Sie anderen Benutzern und Gruppen die Erstellung von Berichten, die auf diesem veröffentlichten Prozess basieren.
+Beim Hinzufügen oder Verschieben eines Berichts werden andere Berichte im Dashboard automatisch verschoben, um Platz zu schaffen.
+
+## Verbesserungen der Benutzeraufgabenberichte
+
+Wenn Sie Benutzeraufgaben nach Verantwortlichen gruppieren, können Sie jetzt Benutzeraufgaben anzeigen, die niemandem zugewiesen sind.

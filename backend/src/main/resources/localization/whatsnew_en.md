@@ -1,7 +1,11 @@
-## New Dashboard Layouting utilities
+## Start and end date range filters
 
-When adding reports to a dashboard, or rearranging reports on a dashboard, other reports on the dashboard now automatically move to make space.
+Expanded date ranges now include rolling and in progress ranges. It is also now possible to filter data by quarter.
 
-## Event Based processes user permissions
+## Dashboard layout improvement
 
-Enable other users and groups to create Reports based on your published event based process
+When adding or moving a report, other reports on the dashboard automatically move to make space.
+
+## User Task Report Improvements
+
+When grouping user tasks by assignee, it is now possible to see user tasks that are not assigned to anyone.
