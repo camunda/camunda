@@ -274,7 +274,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
       assertThat(definitionVersionsWithTenantsRestDto.getVersions().size(), is(versionCount));
       assertThat(definitionVersionsWithTenantsRestDto.getAllTenants().size(), is(tenantCount));
     });
-    assertThat(responseTimeMillis, is(lessThan(1000L)));
+    assertThat(responseTimeMillis, is(lessThan(2000L)));
 
     embeddedOptimizeExtension.getImportSchedulerFactory().shutdown();
   }
