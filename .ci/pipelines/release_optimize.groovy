@@ -11,7 +11,8 @@ static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
-static String PUBLIC_DOCKER_IMAGE() { return "optimize.registry.camunda.cloud/optimize" }
+static String PUBLIC_DOCKER_IMAGE() { return "registry.camunda.cloud/optimize-ee/optimize" }
+
 static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME() {
   return isStagingJenkins() ? 'stage-downloads-camunda-cloud-enterprise-release' : 'downloads-camunda-cloud-enterprise-release'
 }
@@ -279,9 +280,9 @@ pipeline {
         container('docker') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
             sh("""
-            cp \$MAVEN_SETTINGS_XML settings.xml 
+            cp \$MAVEN_SETTINGS_XML settings.xml
             echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize optimize.registry.camunda.cloud --password-stdin
+            echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
             docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
               --build-arg SKIP_DOWNLOAD=true \
