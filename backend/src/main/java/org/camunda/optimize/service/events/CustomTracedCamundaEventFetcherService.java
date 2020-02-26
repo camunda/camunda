@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
@@ -21,10 +22,15 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -32,7 +38,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 
 @AllArgsConstructor
 @Component
@@ -44,6 +49,7 @@ public class CustomTracedCamundaEventFetcherService implements EventFetcherServi
 
   private final String definitionKey;
   private final EventSourceEntryDto eventSource;
+  private final DateFormat dateTimeFormatter;
 
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final ProcessDefinitionReader processDefinitionReader;
@@ -97,6 +103,15 @@ public class CustomTracedCamundaEventFetcherService implements EventFetcherServi
       .map(EventDto::getTraceId)
       .collect(Collectors.toSet());
 
+    final Map<String, List<VariableUpdateInstanceDto>> processInstanceToVariableUpdates =
+      variableUpdateInstanceReader.getVariableInstanceUpdatesForProcessInstanceIds(processInstanceIds)
+        .stream()
+        .distinct()
+        .collect(groupingBy(VariableUpdateInstanceDto::getProcessInstanceId));
+
+    eventDtosToImport.forEach(
+      eventDto -> eventDto.setData(extractVariablesDataForEvent(processInstanceToVariableUpdates.get(eventDto.getTraceId()))));
+
     List<EventDto> correlatedEvents;
     if (eventSource.getTracedByBusinessKey()) {
       Map<String, String> instanceIdToBusinessKeys =
@@ -111,19 +126,14 @@ public class CustomTracedCamundaEventFetcherService implements EventFetcherServi
         .peek(eventDto -> eventDto.setTraceId(instanceIdToBusinessKeys.get(eventDto.getTraceId())))
         .collect(Collectors.toList());
     } else {
-      final Map<String, List<VariableUpdateInstanceDto>> processInstanceToVariableUpdates =
-        variableUpdateInstanceReader.getVariableInstanceUpdatesForProcessInstanceIds(processInstanceIds)
-          .stream()
-          .filter(variableUpdateInstanceDto -> variableUpdateInstanceDto.getName()
-            .equalsIgnoreCase(eventSource.getTraceVariable()))
-          .distinct()
-          .collect(groupingBy(VariableUpdateInstanceDto::getProcessInstanceId));
       correlatedEvents = eventDtosToImport.stream()
         .filter(eventDto -> processInstanceToVariableUpdates.get(eventDto.getTraceId()) != null)
         .peek(eventDto -> {
           // if the value of the correlation key changes during the running of the instance, we take the original value
           VariableUpdateInstanceDto firstUpdate = processInstanceToVariableUpdates.get(eventDto.getTraceId())
             .stream()
+            .filter(variableUpdateInstanceDto -> variableUpdateInstanceDto.getName()
+              .equalsIgnoreCase(eventSource.getTraceVariable()))
             .distinct()
             .min(Comparator.comparing(VariableUpdateInstanceDto::getTimestamp)).get();
           eventDto.setTraceId(firstUpdate.getValue());
@@ -135,6 +145,49 @@ public class CustomTracedCamundaEventFetcherService implements EventFetcherServi
       log.warn("could not find the correlation key for some events in batch for event source {}", eventSource);
     }
     return correlatedEvents;
+  }
+
+  private Object extractVariablesDataForEvent(List<VariableUpdateInstanceDto> variableUpdateInstanceDtos) {
+    if (variableUpdateInstanceDtos == null || variableUpdateInstanceDtos.isEmpty()) {
+      return null;
+    }
+    Map<String, Object> latestVariableUpdatesById =
+      variableUpdateInstanceDtos.stream().collect(groupingBy(VariableUpdateInstanceDto::getName))
+        .entrySet().stream()
+        .peek(entry -> entry.getValue().sort(Comparator.comparing(VariableUpdateInstanceDto::getTimestamp).reversed()))
+        .collect(Collectors.toMap(
+          Map.Entry::getKey,
+          entry -> getTypedVariable(entry.getValue().get(0))
+        ));
+    return latestVariableUpdatesById;
+  }
+
+  private Object getTypedVariable(final VariableUpdateInstanceDto variableUpdateInstanceDto) {
+    String type = variableUpdateInstanceDto.getType();
+    String value = variableUpdateInstanceDto.getValue();
+    try {
+      if (type.equalsIgnoreCase(VariableType.STRING.getId())) {
+        return value;
+      } else if (type.equalsIgnoreCase(VariableType.INTEGER.getId())) {
+        return Integer.parseInt(value);
+      } else if (type.equalsIgnoreCase(VariableType.DOUBLE.getId())) {
+        return Double.valueOf(value);
+      } else if (type.equalsIgnoreCase(VariableType.SHORT.getId())) {
+        return Short.parseShort(value);
+      } else if (type.equalsIgnoreCase(VariableType.BOOLEAN.getId())) {
+        return Boolean.parseBoolean(value);
+      } else if (type.equalsIgnoreCase(VariableType.LONG.getId())) {
+        return Long.valueOf(value);
+      } else if (type.equalsIgnoreCase(VariableType.DATE.getId())) {
+        return dateTimeFormatter.parse(value);
+      }
+    } catch (ParseException | NumberFormatException ex) {
+      log.warn(
+        "Could not parse variable value {} with type {} into supported type, will use String as type", value, type,
+        ex
+      );
+    }
+    return value;
   }
 
   private EventDto mapToEventDto(final CamundaActivityEventDto camundaActivityEventDto) {

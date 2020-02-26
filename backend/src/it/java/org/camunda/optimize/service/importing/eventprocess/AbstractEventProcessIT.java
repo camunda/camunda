@@ -16,11 +16,15 @@ import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
@@ -50,12 +54,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.events.CustomTracedCamundaEventFetcherService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
@@ -371,6 +378,112 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
           .eventName(endEventName)
           .build())
       .build();
+  }
+
+  protected void assertProcessInstance(final ProcessInstanceDto processInstanceDto, final String expectedInstanceId,
+                                       final List<String> expectedEventIds) {
+    assertThat(processInstanceDto.getProcessInstanceId()).isEqualTo(expectedInstanceId);
+    assertThat(processInstanceDto.getEvents())
+      .satisfies(events -> assertThat(events)
+        .extracting(
+          SimpleEventDto::getActivityId
+        )
+        .containsExactlyInAnyOrderElementsOf(expectedEventIds)
+      );
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartProcessWithVariables(final Map<String, Object> variables) {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+      .startEvent(BPMN_START_EVENT_ID)
+      .userTask(BPMN_INTERMEDIATE_EVENT_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
+  }
+
+  protected void publishEventMappingUsingProcessInstanceCamundaEvents(final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                                      final Map<String, EventMappingDto> eventMappings) {
+    publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(processInstanceEngineDto, eventMappings, null);
+  }
+
+  protected void publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                                                      final Map<String, EventMappingDto> eventMappings,
+                                                                                      final String traceVariable) {
+    final List<EventSourceEntryDto> eventSourceEntryDtos = createCamundaEventSourceEntryForDeployedProcess(
+      processInstanceEngineDto, traceVariable, null);
+    createAndPublishEventMapping(eventMappings, eventSourceEntryDtos);
+  }
+
+  protected void createAndPublishEventMapping(final Map<String, EventMappingDto> eventMappings,
+                                              final List<EventSourceEntryDto> eventSourceEntryDtos) {
+    final EventProcessMappingDto eventProcessMappingDto =
+      eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
+        eventMappings,
+        UUID.randomUUID().toString(),
+        createThreeActivitiesProcessDefinitionXml(),
+        eventSourceEntryDtos
+      );
+    String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+  }
+
+  protected List<EventSourceEntryDto> createExternalEventSource() {
+    return Collections.singletonList(org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto.builder()
+                                       .type(EventSourceType.EXTERNAL)
+                                       .eventScope(EventScopeType.ALL)
+                                       .build());
+  }
+
+  protected List<EventSourceEntryDto> createCamundaEventSourceEntryForDeployedProcessWithBusinessKey(final ProcessInstanceEngineDto processInstanceEngineDto) {
+    return createCamundaEventSourceEntryForDeployedProcess(processInstanceEngineDto, null, null);
+  }
+
+  protected List<EventSourceEntryDto> createCamundaEventSourceEntryForDeployedProcess(final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                                                      final String traceVariable,
+                                                                                      final List<String> versions) {
+    return Collections.singletonList(EventSourceEntryDto.builder()
+                                       .type(EventSourceType.CAMUNDA)
+                                       .eventScope(EventScopeType.ALL)
+                                       .tracedByBusinessKey(traceVariable == null)
+                                       .traceVariable(traceVariable)
+                                       .versions(Optional.ofNullable(versions).orElse(Collections.singletonList("ALL")))
+                                       .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+                                       .tenants(Collections.singletonList(processInstanceEngineDto.getTenantId()))
+                                       .build());
+  }
+
+  protected Map<String, EventMappingDto> createMappingsForEventProcess(final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                                       final String startEventName,
+                                                                       final String intermediateEventName,
+                                                                       final String endEventName) {
+    final Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(BPMN_START_EVENT_ID, EventMappingDto.builder()
+      .end(EventTypeDto.builder()
+             .eventName(startEventName)
+             .group(processInstanceEngineDto.getProcessDefinitionKey())
+             .source(EVENT_SOURCE_CAMUNDA)
+             .build())
+      .build());
+    eventMappings.put(BPMN_INTERMEDIATE_EVENT_ID, EventMappingDto.builder()
+      .start(EventTypeDto.builder()
+               .eventName(intermediateEventName)
+               .group(processInstanceEngineDto.getProcessDefinitionKey())
+               .source(EVENT_SOURCE_CAMUNDA)
+               .build())
+      .build());
+    eventMappings.put(BPMN_END_EVENT_ID, EventMappingDto.builder()
+      .start(EventTypeDto.builder()
+               .eventName(endEventName)
+               .group(processInstanceEngineDto.getProcessDefinitionKey())
+               .source(EVENT_SOURCE_CAMUNDA)
+               .build())
+      .build());
+    return eventMappings;
+  }
+
+  protected void importEngineEntities() {
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   @SneakyThrows

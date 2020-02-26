@@ -28,6 +28,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -127,6 +129,7 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
         return new CustomTracedCamundaEventFetcherService(
           eventSourceEntryDto.getProcessDefinitionKey(),
           eventSourceEntryDto,
+          new SimpleDateFormat(configurationService.getEngineDateFormat()),
           camundaActivityEventReader,
           processDefinitionReader,
           variableUpdateInstanceReader,

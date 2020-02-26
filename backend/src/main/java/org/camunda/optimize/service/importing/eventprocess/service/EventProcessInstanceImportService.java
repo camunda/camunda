@@ -26,6 +26,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.MappedEventType;
 import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.EventProcessInstanceElasticsearchImportJob;
@@ -51,6 +52,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.service.events.CustomTracedCamundaEventFetcherService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
 
 @AllArgsConstructor
