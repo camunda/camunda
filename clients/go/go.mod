@@ -15,7 +15,7 @@ require (
 	github.com/go-ozzo/ozzo-validation/v4 v4.1.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/mock v1.4.0
-	github.com/golang/protobuf v1.3.3
+	github.com/golang/protobuf v1.3.4
 	github.com/google/go-cmp v0.4.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
