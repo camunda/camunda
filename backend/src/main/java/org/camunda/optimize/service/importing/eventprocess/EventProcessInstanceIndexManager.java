@@ -11,19 +11,17 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
@@ -34,10 +32,9 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
   final private OptimizeElasticsearchClient elasticsearchClient;
   final private ElasticSearchSchemaManager elasticSearchSchemaManager;
   final private EventProcessPublishStateReader eventProcessPublishStateReader;
-  final private OptimizeIndexNameService indexNameService;
 
-  final private Map<String, EventProcessPublishStateDto> publishedInstanceIndices = new ConcurrentHashMap<>();
-  final private Map<String, Phaser> indexUsagePhasers = new ConcurrentHashMap<>();
+  final private Map<String, EventProcessPublishStateDto> publishedInstanceIndices = new HashMap<>();
+  final private Map<String, AtomicInteger> usageCountPerIndex = new HashMap<>();
 
   public synchronized Map<String, EventProcessPublishStateDto> getPublishedInstanceIndices() {
     return publishedInstanceIndices;
@@ -52,8 +49,8 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
             elasticsearchClient, processInstanceIndex
           );
           if (indexAlreadyExists) {
-            final Phaser phaser = indexUsagePhasers.get(publishStateDto.getId());
-            if (phaser == null || phaser.getArrivedParties() == 0) {
+            final AtomicInteger usageCount = usageCountPerIndex.get(publishStateDto.getId());
+            if (usageCount == null || usageCount.get() == 0) {
               elasticSearchSchemaManager.deleteOptimizeIndex(elasticsearchClient, processInstanceIndex);
             }
           }
@@ -92,29 +89,27 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
       });
   }
 
-  public synchronized CompletableFuture<Void> registerIndexUsageAndReturnCompletableHook(
-    final EventProcessInstanceImportMediator eventProcessInstanceImportMediator) {
-    final Phaser indexUsagePhaser = indexUsagePhasers.compute(
-      eventProcessInstanceImportMediator.getPublishedProcessStateId(),
-      (id, existingPhaser) -> {
-        if (existingPhaser != null) {
-          existingPhaser.register();
-          return existingPhaser;
+  public synchronized CompletableFuture<Void> registerIndexUsageAndReturnFinishedHandler(
+    final String eventProcessPublishStateId) {
+    final AtomicInteger indexUsageCounter = usageCountPerIndex.compute(
+      eventProcessPublishStateId,
+      (id, usageCounter) -> {
+        if (usageCounter != null) {
+          usageCounter.incrementAndGet();
+          return usageCounter;
         } else {
-          return new Phaser(1);
+          return new AtomicInteger(1);
         }
       }
     );
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
-    importCompleted.whenComplete((aVoid, throwable) -> {
-      indexUsagePhaser.arriveAndDeregister();
-    });
+    importCompleted.whenComplete((aVoid, throwable) -> indexUsageCounter.decrementAndGet());
     return importCompleted;
   }
 
   @Override
-  public void reloadConfiguration(final ApplicationContext context) {
+  public synchronized void reloadConfiguration(final ApplicationContext context) {
     publishedInstanceIndices.clear();
-    indexUsagePhasers.clear();
+    usageCountPerIndex.clear();
   }
 }
