@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.0.0-alpha2</version>
   </parent>
 
   <artifactId>upgrade-es-schema-tests</artifactId>
@@ -204,7 +204,7 @@
                 </exec>
                 <exec outputproperty="var_count" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="curl -s -f -X POST 'localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0, &quot;aggs&quot;: {&quot;variables&quot;: {&quot;nested&quot;: { &quot;path&quot;: &quot;variables&quot; },  &quot;aggs&quot;: { &quot;variable_count&quot;: { &quot;value_count&quot;: { &quot;field&quot;: &quot;variables.id&quot; } } } } } }' | jq '.aggregations.variables.doc_count'" />
+                  <arg value="curl -s -f -X POST 'localhost:${old.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0, &quot;aggs&quot;: {&quot;variables&quot;: {&quot;nested&quot;: { &quot;path&quot;: &quot;variables&quot; }, &quot;aggs&quot;: { &quot;variable_count&quot;: { &quot;value_count&quot;: { &quot;field&quot;: &quot;variables.id&quot; } } } } } }' | jq '.aggregations.variables.doc_count'" />
                 </exec>
                 <exec outputproperty="ut_count" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
@@ -359,7 +359,7 @@
                 </exec>
                 <exec outputproperty="post_migration_var_count" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="curl -s -f -X POST 'localhost:${new.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0, &quot;aggs&quot;: {&quot;variables&quot;: {&quot;nested&quot;: { &quot;path&quot;: &quot;variables&quot; },  &quot;aggs&quot;: { &quot;variable_count&quot;: { &quot;value_count&quot;: { &quot;field&quot;: &quot;variables.id&quot; } } } } } }' | jq '.aggregations.variables.doc_count'" />
+                  <arg value="curl -s -f -X POST 'localhost:${new.optimize.elasticsearch.port}/optimize-process-instance/_search' -H 'Content-Type: application/json' -d '{&quot;size&quot;: 0, &quot;aggs&quot;: {&quot;variables&quot;: {&quot;nested&quot;: { &quot;path&quot;: &quot;variables&quot; }, &quot;aggs&quot;: { &quot;variable_count&quot;: { &quot;value_count&quot;: { &quot;field&quot;: &quot;variables.id&quot; } } } } } }' | jq '.aggregations.variables.doc_count'" />
                 </exec>
                 <exec outputproperty="post_migration_ut_count" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
@@ -380,39 +380,32 @@
 
 
                 <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c"/>
-                  <arg
-                      value="echo Comparing Process Instance count ${pi_count} = ${post_migration_pi_count}; test ${pi_count} -eq ${post_migration_pi_count}"/>
+                  <arg value="-c" />
+                  <arg value="echo Comparing Process Instance count ${pi_count} = ${post_migration_pi_count}; test ${pi_count} -eq ${post_migration_pi_count}" />
                 </exec>
                 <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c"/>
-                  <arg
-                      value="echo Comparing Process Definition count ${pd_count} = ${post_migration_pd_count}; test ${pd_count} -eq ${post_migration_pd_count}"/>
+                  <arg value="-c" />
+                  <arg value="echo Comparing Process Definition count ${pd_count} = ${post_migration_pd_count}; test ${pd_count} -eq ${post_migration_pd_count}" />
                 </exec>
                 <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c"/>
-                  <arg
-                      value="echo Comparing Decision Instance count ${di_count} = ${post_migration_di_count}; test ${di_count} -eq ${post_migration_di_count}"/>
+                  <arg value="-c" />
+                  <arg value="echo Comparing Decision Instance count ${di_count} = ${post_migration_di_count}; test ${di_count} -eq ${post_migration_di_count}" />
                 </exec>
                 <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c"/>
-                  <arg
-                      value="echo Comparing Decision Definition count ${dd_count} = ${post_migration_dd_count}; test ${dd_count} -eq ${post_migration_dd_count}"/>
+                  <arg value="-c" />
+                  <arg value="echo Comparing Decision Definition count ${dd_count} = ${post_migration_dd_count}; test ${dd_count} -eq ${post_migration_dd_count}" />
                 </exec>
                 <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c"/>
-                  <arg
-                      value="echo Comparing User Task count ${ut_count} = ${post_migration_ut_count}; test ${ut_count} -eq ${post_migration_ut_count}"/>
+                  <arg value="-c" />
+                  <arg value="echo Comparing User Task count ${ut_count} = ${post_migration_ut_count}; test ${ut_count} -eq ${post_migration_ut_count}" />
                 </exec>
                 <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c"/>
-                  <arg
-                      value="echo Comparing Activity Instance count ${ai_count} = ${post_migration_ai_count}; test ${ai_count} -eq ${post_migration_ai_count}"/>
+                  <arg value="-c" />
+                  <arg value="echo Comparing Activity Instance count ${ai_count} = ${post_migration_ai_count}; test ${ai_count} -eq ${post_migration_ai_count}" />
                 </exec>
                 <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c"/>
-                  <arg
-                      value="echo Comparing Variable count ${var_count} = ${post_migration_var_count}; test ${var_count} -eq ${post_migration_var_count}"/>
+                  <arg value="-c" />
+                  <arg value="echo Comparing Variable count ${var_count} = ${post_migration_var_count}; test ${var_count} -eq ${post_migration_var_count}" />
                 </exec>
 
 
