@@ -24,7 +24,7 @@ import org.testcontainers.containers.Network;
 
 class ContainerStateRule extends TestWatcher {
 
-  private static final Pattern doubleNewline = Pattern.compile("\n\n");
+  private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateRule.class);
   private ZeebeBrokerContainer broker;
@@ -99,7 +99,7 @@ class ContainerStateRule extends TestWatcher {
       LOG.error(
           String.format(
               "%n===============================================%n%s logs%n===============================================%n%s",
-              type, log.replaceAll(doubleNewline.pattern(), "\n")));
+              type, log.replaceAll(DOUBLE_NEWLINE.pattern(), "\n")));
     }
   }
 
