@@ -19,4 +19,8 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     this.indexPrefix = indexPrefix;
   }
 
+  public void setDefaultIndexPrefix() {
+    setIndexPrefix(DEFAULT_INDEX_PREFIX);
+  }
+
 }

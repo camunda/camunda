@@ -5,20 +5,32 @@
  */
 package org.camunda.operate.webapp.rest;
 
+import org.camunda.operate.Probes;
 import org.camunda.operate.webapp.rest.dto.HealthStateDto;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.server.ResponseStatusException;
+import static org.camunda.operate.webapp.rest.dto.HealthStateDto.HEALTH_STATUS_OK;
 
 @RestController
 public class HealthCheckRestService {
 
   public static final String HEALTH_CHECK_URL = "/api/check";
 
+  @Autowired
+  private Probes probes;
+
   @RequestMapping(value = HEALTH_CHECK_URL, method = RequestMethod.GET)
-  public HealthStateDto status() {
-    return new HealthStateDto("OK");
+  public HealthStateDto status(@RequestParam(name = "maxDuration", required = false, defaultValue = "50000") Long maxDurationInMs) {
+    if (probes.isLive(maxDurationInMs)) {
+      return new HealthStateDto(HEALTH_STATUS_OK);
+    } else {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
 }

@@ -5,12 +5,18 @@
  */
 package org.camunda.operate.util;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.schema.indices.IndexDescriptor;
 import org.camunda.operate.es.schema.templates.TemplateDescriptor;
+import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.slf4j.Logger;
@@ -26,9 +32,28 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
 
   @Override
   public boolean initializeSchema() {
-    //do nothing
+    // do nothing
     logger.info("INIT: no schema will be created");
     return true;
+  }
+
+  public void deleteSchema() {
+    try {
+      String prefix = operateProperties.getElasticsearch().getIndexPrefix();
+      logger.info("Removing indices " + prefix + "*");
+      esClient.indices().delete(new DeleteIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
+      esClient.indices().deleteTemplate(new DeleteIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
+    } catch (ElasticsearchStatusException | IOException e) {
+      throw new OperateRuntimeException("Failed to delete indices ", e);
+    }
+  }
+
+  public void deleteSchemaQuietly() {
+    try {
+      deleteSchema();
+    } catch (Throwable t) {
+      logger.debug(t.getMessage());
+    }
   }
 
   @Override

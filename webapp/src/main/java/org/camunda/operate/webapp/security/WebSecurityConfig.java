@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -67,6 +68,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     "/swagger-ui.html",
     "/documentation",
     "/webjars/**",
+    HealthCheckRestService.HEALTH_CHECK_URL,
     ACTUATOR_ENDPOINTS,
     CLIENT_CONFIG_RESOURCE
   };  

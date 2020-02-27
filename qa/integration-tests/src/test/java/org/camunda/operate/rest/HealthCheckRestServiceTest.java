@@ -6,6 +6,7 @@
 package org.camunda.operate.rest;
 
 import org.camunda.operate.webapp.rest.dto.HealthStateDto;
+import org.camunda.operate.Probes;
 import org.camunda.operate.util.WebSecurityDisabledConfig;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.HealthCheckRestService;
@@ -13,14 +14,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.webapp.rest.dto.HealthStateDto.HEALTH_STATUS_OK;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
 
 /**
- * Tests the health check with disabled authentication.
+ * Tests the probes check with disabled authentication.
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -32,12 +37,22 @@ public class HealthCheckRestServiceTest {
   @Autowired
   private TestRestTemplate testRestTemplate;
 
+  @MockBean
+  private Probes probes;
   @Test
-  public void testHealthState() {
+  public void testHealthStateIsOK() {
+    given(probes.isLive(any(Long.class))).willReturn(true);
     final ResponseEntity<HealthStateDto> response = testRestTemplate.getForEntity(HealthCheckRestService.HEALTH_CHECK_URL, HealthStateDto.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody().getState()).isEqualTo("OK");
+    assertThat(response.getBody().getState()).isEqualTo(HEALTH_STATUS_OK);
+  }
+  
+  public void testHealthStateIsNotOK() {
+    given(probes.isLive(any(Long.class))).willReturn(false);
+    final ResponseEntity<HealthStateDto> response = testRestTemplate.getForEntity(HealthCheckRestService.HEALTH_CHECK_URL, HealthStateDto.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
 }
