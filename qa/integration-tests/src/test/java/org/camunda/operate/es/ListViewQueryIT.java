@@ -20,7 +20,6 @@ import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.webapp.rest.dto.SortingDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -64,7 +63,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(ListViewQueryDto::setAllRunning);
+    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllRunningQuery();
     
     MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
 
@@ -889,30 +888,6 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testQueryWithTwoFragments() throws Exception {
-    createData();
-
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(q -> {
-      q.setRunning(true)   //1st fragment
-       .setActive(true)
-       .setIncidents(true);
-    });
-    //2nd fragment
-    ListViewQueryDto query2 = new ListViewQueryDto()
-        .setFinished(true)
-        .setCompleted(true)
-        .setCanceled(true);
-    workflowInstanceQueryDto.addQuery(query2);
-
-    MvcResult mvcResult = postRequest(query(0, 100),workflowInstanceQueryDto);
-
-    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
-
-    assertThat(response.getTotalCount()).isEqualTo(8);
-    assertThat(response.getWorkflowInstances().size()).isEqualTo(8);
-  }
-
-  @Test
   public void testQueryFinishedCompleted() throws Exception {
     createData();
 
@@ -1030,15 +1005,13 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         runningInstance.getWorkflowInstanceKey().toString(),
         instanceWithoutIncident.getWorkflowInstanceKey().toString()
     );
-    ListViewRequestDto queryRequest = new ListViewRequestDto(
-        new ListViewQueryDto().setActive(true).setIncidents(true).setRunning(true)
+    ListViewRequestDto queryRequest = TestUtil.createGetAllRunningQuery()
         .setCompleted(false).setCanceled(false)
         // part with empty strings instead of NULL
         .setErrorMessage("")
         .setActivityId("")
         .setVariable(new VariablesQueryDto("", ""))
-        .setIds(workflowInstanceIds)
-    );   
+        .setIds(workflowInstanceIds);
 
     MvcResult mvcResult = postRequest(query(0, 100),queryRequest);
 

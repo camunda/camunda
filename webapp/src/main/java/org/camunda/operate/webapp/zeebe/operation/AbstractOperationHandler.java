@@ -5,8 +5,6 @@
  */
 package org.camunda.operate.webapp.zeebe.operation;
 
-import java.time.OffsetDateTime;
-
 import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
@@ -59,9 +57,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       operation.setState(OperationState.FAILED);
       operation.setLockExpirationTime(null);
       operation.setLockOwner(null);
-      operation.setEndDate(OffsetDateTime.now());
       operation.setErrorMessage(StringUtils.trimWhitespace(errorMsg));
-      //TODO remove this null check within OPE-786
       if (operation.getBatchOperationId() != null) {
         operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
       }

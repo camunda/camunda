@@ -14,9 +14,9 @@ import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -77,7 +77,7 @@ public class ActivityStatisticsReader {
     void updateMapEntry(ActivityStatisticsDto statistics, Long value);
   }
   
-  public Collection<ActivityStatisticsDto> getActivityStatistics(ListViewQueryDto query) {
+  public Collection<ActivityStatisticsDto> getActivityStatistics(ListViewRequestDto query) {
 
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
 
@@ -112,7 +112,7 @@ public class ActivityStatisticsReader {
     }
   }
 
-  public SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  public SearchRequest createQuery(ListViewRequestDto query, ElasticsearchUtil.QueryType queryType) {
     final QueryBuilder q = constantScoreQuery(listViewReader.createQueryFragment(query, queryType));
 
     ChildrenAggregationBuilder agg =

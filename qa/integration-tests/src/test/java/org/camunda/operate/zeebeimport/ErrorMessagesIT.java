@@ -10,13 +10,12 @@ import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Arrays;
 
+import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
@@ -72,7 +71,7 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
     
     // then
     assertThat(incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey).get(0).getErrorMessage()).isEqualTo(errorMessageWithoutWhiteSpaces);
-    ListViewResponseDto response = listViewReader.queryWorkflowInstances(new ListViewRequestDto(), 0, 5);
+    ListViewResponseDto response = listViewReader.queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(), 0, 5);
     ListViewWorkflowInstanceDto workflowInstances  = response.getWorkflowInstances().get(0);
     assertThat(workflowInstances).isNotNull();
     assertThat(workflowInstances.getOperations().get(0).getErrorMessage()).doesNotStartWith(" ").doesNotEndWith(" ");
@@ -116,13 +115,9 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
     );    
   }
 
-  protected ListViewResponseDto searchForErrorMessages(String ... errorMessages) {
-    ListViewRequestDto queriesRequest = new ListViewRequestDto();
-    queriesRequest.setQueries(CollectionUtil.map(Arrays.asList(errorMessages),errorMessage -> {
-      ListViewQueryDto query = ListViewQueryDto.createAll();
-      query.setErrorMessage(errorMessage);
-      return query;
-    }));
+  protected ListViewResponseDto searchForErrorMessages(String errorMessage) {
+    ListViewRequestDto queriesRequest = TestUtil.createGetAllWorkflowInstancesQuery()
+        .setErrorMessage(errorMessage);
     return listViewReader.queryWorkflowInstances(queriesRequest, 0, 10);
   }
  

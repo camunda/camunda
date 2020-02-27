@@ -6,19 +6,19 @@
 package org.camunda.operate.webapp.rest.dto.operation;
 
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 
 public class CreateBatchOperationRequestDto {
 
   public CreateBatchOperationRequestDto() {
   }
 
-  public CreateBatchOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
+  public CreateBatchOperationRequestDto(ListViewRequestDto query, OperationType operationType) {
     this.query = query;
     this.operationType = operationType;
   }
 
-  private ListViewQueryDto query;
+  private ListViewRequestDto query;
 
   private OperationType operationType;
 
@@ -27,11 +27,11 @@ public class CreateBatchOperationRequestDto {
    */
   private String name;
 
-  public ListViewQueryDto getQuery() {
+  public ListViewRequestDto getQuery() {
     return query;
   }
 
-  public CreateBatchOperationRequestDto setQuery(ListViewQueryDto query) {
+  public CreateBatchOperationRequestDto setQuery(ListViewRequestDto query) {
     this.query = query;
     return this;
   }

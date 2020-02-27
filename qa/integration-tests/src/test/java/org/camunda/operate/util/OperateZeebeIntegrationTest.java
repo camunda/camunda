@@ -19,7 +19,7 @@ import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -288,15 +288,15 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return workflowInstanceKey;
   }
 
-  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {
+  protected MvcResult postBatchOperationWithOKResponse(ListViewRequestDto query, OperationType operationType) throws Exception {
     return postBatchOperationWithOKResponse(query, operationType, null);
   }
 
-  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType, String name) throws Exception {
+  protected MvcResult postBatchOperationWithOKResponse(ListViewRequestDto query, OperationType operationType, String name) throws Exception {
     return postBatchOperation(query, operationType, name, HttpStatus.SC_OK);
   }
 
-  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
+  protected MvcResult postBatchOperation(ListViewRequestDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
     CreateBatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
     MockHttpServletRequestBuilder postOperationRequest =
       post(POST_BATCH_OPERATION_URL)
@@ -311,7 +311,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
 
-  protected CreateBatchOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
+  protected CreateBatchOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewRequestDto query) {
     CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
     batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);

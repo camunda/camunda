@@ -8,7 +8,6 @@ package org.camunda.operate.util;
 import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static org.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
 import static org.camunda.operate.util.OperateIntegrationTest.DEFAULT_USER;
-
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -31,7 +30,6 @@ import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -253,10 +251,10 @@ public abstract class TestUtil {
     return result;
   }
 
-  public static ListViewRequestDto createWorkflowInstanceQuery(Consumer<ListViewQueryDto> filtersSupplier) {
-    ListViewQueryDto query = new ListViewQueryDto();
+  public static ListViewRequestDto createWorkflowInstanceQuery(Consumer<ListViewRequestDto> filtersSupplier) {
+    ListViewRequestDto query = new ListViewRequestDto();
     filtersSupplier.accept(query);
-    return new ListViewRequestDto().addQuery(query);
+    return query;
   }
 
   public static ListViewRequestDto createGetAllWorkflowInstancesQuery() {
@@ -271,16 +269,15 @@ public abstract class TestUtil {
       });
   }
 
-  public static ListViewRequestDto createGetAllWorkflowInstancesQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+  public static ListViewRequestDto createGetAllWorkflowInstancesQuery(Consumer<ListViewRequestDto> filtersSupplier) {
     final ListViewRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
-    filtersSupplier.accept(workflowInstanceQuery.queryAt(0));
-
+    filtersSupplier.accept(workflowInstanceQuery);
     return workflowInstanceQuery;
   }
 
-  public static ListViewRequestDto createGetAllFinishedQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+  public static ListViewRequestDto createGetAllFinishedQuery(Consumer<ListViewRequestDto> filtersSupplier) {
     final ListViewRequestDto workflowInstanceQuery = createGetAllFinishedQuery();
-    filtersSupplier.accept(workflowInstanceQuery.queryAt(0));
+    filtersSupplier.accept(workflowInstanceQuery);
     return workflowInstanceQuery;
   }
 
@@ -290,6 +287,15 @@ public abstract class TestUtil {
         q.setFinished(true);
         q.setCompleted(true);
         q.setCanceled(true);
+      });
+  }
+
+  public static ListViewRequestDto createGetAllRunningQuery() {
+    return
+      createWorkflowInstanceQuery(q -> {
+        q.setRunning(true);
+        q.setActive(true);
+        q.setIncidents(true);
       });
   }
 
@@ -336,7 +342,6 @@ public abstract class TestUtil {
     oe.setIncidentKey(incidentKey);
     oe.setVariableName(varName);
     oe.setType(OperationType.RESOLVE_INCIDENT);
-    oe.setStartDate(OffsetDateTime.now());
     if (username != null) {
       oe.setUsername(username);
     } else {

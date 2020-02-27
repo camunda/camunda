@@ -70,7 +70,6 @@ public class ElasticsearchManager {
       throws PersistenceException {
     OperationEntity operation = getOperation(zeebeCommandKey, workflowInstanceKey, incidentKey, operationType);
     if (operation != null) {
-      //TODO remove this null check within OPE-786
       if (operation.getBatchOperationId() != null) {
         operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId(), bulkRequest);
       }

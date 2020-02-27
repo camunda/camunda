@@ -6,7 +6,6 @@
 package org.camunda.operate.webapp.rest.dto.operation;
 
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 
 public class CreateOperationRequestDto {
 
