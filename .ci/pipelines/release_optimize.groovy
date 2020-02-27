@@ -248,11 +248,10 @@ pipeline {
     }
     stage('Upload to DownloadCenter storage bucket') {
       when {
-        // Only perform upload when PUSH_CHANGES is true or we're on a stage jenkins (Stage has a separate bucket)
+        // Only perform upload when PUSH_CHANGES is set or we're on a stage jenkins (Stage has a separate bucket)
         expression { params.PUSH_CHANGES == true || isStagingJenkins() }
       }
       environment {
-        SOURCE_PATH = "target/checkout/distro/target/*.{tar.gz,zip}"
         TARGET_PATH = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME()}/optimize/${params.RELEASE_VERSION}/"
       }
       steps {
@@ -260,7 +259,7 @@ pipeline {
           withCredentials([file(credentialsId: 'downloadcenter_upload_gcloud_key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
             sh """#!/bin/bash -xe
             gcloud auth activate-service-account --key-file \${GOOGLE_APPLICATION_CREDENTIALS}
-            gsutil cp \$SOURCE_PATH gs://${TARGET_PATH}
+            gsutil cp target/checkout/distro/target/*.{tar.gz,zip} gs://${TARGET_PATH}
             """
           }
         }
