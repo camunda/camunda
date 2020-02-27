@@ -8,22 +8,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
-import {OPERATION_TYPE} from 'modules/constants';
+import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import Dropdown from 'modules/components/Dropdown';
-import {DROPDOWN_PLACEMENT} from 'modules/constants';
-import useFilterContext from 'modules/hooks/useFilterContext';
-import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
-import useDataManager from 'modules/hooks/useDataManager';
+
+import useOperationApply from './useOperationApply';
 
 const CreateOperationDropdown = ({label}) => {
-  const {query} = useFilterContext();
-  const {ids, excludeIds, reset} = useInstanceSelectionContext();
-  const {applyBatchOperation} = useDataManager();
-
-  const handleCreateOperation = operationType => {
-    reset();
-    applyBatchOperation(operationType, {...query, ids, excludeIds});
-  };
+  const {applyOperation} = useOperationApply();
 
   return (
     <Styled.DropdownContainer>
@@ -33,12 +24,12 @@ const CreateOperationDropdown = ({label}) => {
         label={label}
       >
         <Dropdown.Option
-          onClick={() => handleCreateOperation(OPERATION_TYPE.RESOLVE_INCIDENT)}
+          onClick={() => applyOperation(OPERATION_TYPE.RESOLVE_INCIDENT)}
           label="Retry"
         />
         <Dropdown.Option
           onClick={() =>
-            handleCreateOperation(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)
+            applyOperation(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)
           }
           label="Cancel"
         />
