@@ -95,14 +95,14 @@ fi
 if [ -z "$BROWSER" ]; then
   (sleep 10; echo -e "Sorry for the inconvenience, but it wasn't possible to locate your default browser... \nIf you want to see our default website please open your browser and insert this URL:\nhttp://localhost:8090/login";) &
 else
-  (sleep 2; $BROWSER "http://localhost:8090/#/login";) &
+  (sleep 2; $BROWSER "http://localhost:8090";) &
 fi
 
 # print some info for the user
 echo
 echo "You can now view Camunda Optimize in your browser."
 echo
-echo -e "\t http://localhost:8090/login"
+echo -e "\t http://localhost:8090"
 echo
 
 wait
