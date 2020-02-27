@@ -240,26 +240,6 @@ pipeline {
         }
       }
     }
-    stage('Upload to DownloadCenter storage bucket') {
-      when {
-        expression { params.PUSH_CHANGES == true }
-      }
-      environment {
-        SOURCE_PATH = "target/checkout/distro/target/*.{tar.gz,zip}"
-        TARGET_PATH = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME()}/optimize/${params.RELEASE_VERSION}/"
-      }
-      steps {
-        container('gcloud') {
-          withCredentials([file(credentialsId: 'downloadcenter_upload_gcloud_key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-            sh """#!/bin/bash -xe
-            gcloud auth activate-service-account --key-file \${GOOGLE_APPLICATION_CREDENTIALS}
-            ENV_PREFIX=\$([[ \$JENKINS_URL == *stage* ]] && echo stage- || echo '')
-            gsutil cp \${SOURCE_PATH} gs://\${ENV_PREFIX}\${TARGET_PATH}
-            """
-          }
-        }
-      }
-    }
     stage('Docker Image') {
       when {
         expression { params.PUSH_CHANGES == true }
