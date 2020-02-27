@@ -5,7 +5,6 @@
  */
 
 import {reportConfig, formatters} from 'services';
-import {getRelativeValue} from '../service';
 import {t} from 'translation';
 
 const {
@@ -13,7 +12,7 @@ const {
   getLabelFor
 } = reportConfig.process;
 
-const {formatReportResult} = formatters;
+const {formatReportResult, getRelativeValue} = formatters;
 
 export function getFormattedLabels(
   reportsLabels,

@@ -6,10 +6,19 @@
 
 import processDefaultData from './processDefaultData';
 
-import {getRelativeValue} from '../service';
+import {formatters} from 'services';
+const {getRelativeValue} = formatters;
 
-jest.mock('../service', () => ({
-  getRelativeValue: jest.fn()
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  formatters: {
+    getRelativeValue: jest.fn(),
+    formatReportResult: jest.fn().mockReturnValue([
+      {key: 'a', value: 1, label: 'a name'},
+      {key: 'b', value: 2},
+      {key: 'c', value: 3}
+    ])
+  }
 }));
 
 const report = {
@@ -29,7 +38,7 @@ const report = {
     visualization: 'table'
   },
   result: {
-    data: [{key: 'a', value: 1, label: 'a name'}, {key: 'b', value: 2}, {key: 'c', value: 3}],
+    data: [],
     instanceCount: 5
   }
 };
@@ -42,7 +51,11 @@ const props = {
 };
 
 it('should display data for key-value pairs', async () => {
-  expect(processDefaultData(props).body).toEqual([['a name', 1], ['b', 2], ['c', 3]]);
+  expect(processDefaultData(props).body).toEqual([
+    ['a name', 1],
+    ['b', 2],
+    ['c', 3]
+  ]);
 });
 
 it('should format data according to the provided formatter', async () => {
@@ -50,7 +63,11 @@ it('should format data according to the provided formatter', async () => {
     ...props,
     formatter: v => 2 * v
   };
-  expect(processDefaultData(newProps).body).toEqual([['a name', 2], ['b', 4], ['c', 6]]);
+  expect(processDefaultData(newProps).body).toEqual([
+    ['a name', 2],
+    ['b', 4],
+    ['c', 6]
+  ]);
 });
 
 const newProps = {

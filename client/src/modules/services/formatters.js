@@ -105,6 +105,13 @@ export function duration(timeObject, precision) {
   return timeSegments.join('\u00A0');
 }
 
+export function getRelativeValue(data, total) {
+  if (!data && data !== 0) {
+    return '--';
+  }
+  return Math.round((data / total) * 1000) / 10 + '%';
+}
+
 export const convertDurationToObject = value => {
   // sort the time units in descending order, then find the first one
   // that fits the provided value without any decimal places

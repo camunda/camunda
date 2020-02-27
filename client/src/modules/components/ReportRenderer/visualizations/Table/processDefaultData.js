@@ -5,10 +5,9 @@
  */
 
 import {reportConfig, formatters, isDurationReport} from 'services';
-import {getRelativeValue} from '../service';
 import {t} from 'translation';
 
-const {formatReportResult} = formatters;
+const {formatReportResult, getRelativeValue} = formatters;
 
 export default function processDefaultData({formatter = v => v, report}) {
   const {data, result, reportType} = report;

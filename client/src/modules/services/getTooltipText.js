@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {getRelativeValue} from './formatters';
+
 export default function getTooltipText(
   data,
   formatter,
@@ -36,11 +38,4 @@ export default function getTooltipText(
   }
 
   return absolute + `\u00A0(${relative})`;
-}
-
-function getRelativeValue(data, total) {
-  if (data === null) {
-    return '';
-  }
-  return Math.round((data / total) * 1000) / 10 + '%';
 }
