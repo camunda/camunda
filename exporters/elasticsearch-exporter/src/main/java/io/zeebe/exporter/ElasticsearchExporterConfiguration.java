@@ -111,7 +111,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean workflowInstanceSubscription = false;
 
     // size limits
-    public int ignoreVariablesAbove = 32677;
+    public int ignoreVariablesAbove = 8191;
 
     @Override
     public String toString() {
