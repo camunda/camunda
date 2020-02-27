@@ -37,7 +37,8 @@
 				"type": "keyword"
 			},
 			"value": {
-				"type": "keyword"
+				"type": "keyword",
+				"ignore_above": 8191
 			},
 			"key": {
 				"type": "long"

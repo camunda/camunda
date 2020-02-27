@@ -6,17 +6,22 @@
 package org.camunda.operate.util;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class PayloadUtil {
-
+  
   @Autowired
   private ObjectMapper objectMapper;
 
@@ -29,6 +34,18 @@ public class PayloadUtil {
     return map;
 
   }
+  
+  public String readJSONStringFromClasspath(String filename) {
+    try (InputStream inputStream = PayloadUtil.class.getResourceAsStream(filename)) {
+      if (inputStream != null) {
+        return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+      } else {
+        throw new OperateRuntimeException("Failed to find "+filename+" in classpath ");
+      }
+    } catch (IOException e) {
+      throw new OperateRuntimeException("Failed to load file "+filename+" from classpath ", e);
+    }
+  }   
 
   private void traverseTheTree(JsonNode jsonNode, Map<String, Object> map, String path) {
     if (jsonNode.isValueNode()) {

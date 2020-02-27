@@ -12,6 +12,7 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobHandler;
 import io.zeebe.client.api.worker.JobWorker;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Duration;
@@ -60,6 +61,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     createWorkflowWithoutInstances();
     createWorkflowWithInstancesThatHasOnlyIncidents(5 + random.nextInt(17), 5 + random.nextInt(17));
     createWorkflowWithInstancesWithoutIncidents(5 + random.nextInt(23), 5 + random.nextInt(23));
+
+    createAndStartWorkflowWithLargeVariableValue();
     
     deployVersion1();
  
@@ -82,6 +85,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return true;
 
   }
+
+  private void createAndStartWorkflowWithLargeVariableValue() {
+    logger.debug("Deploy and start workflow with large variable value >32kb");
+    ZeebeTestUtil.deployWorkflow(client, "usertest/single-task.bpmn");
+    String jsonString = payloadUtil.readJSONStringFromClasspath("/usertest/large-payload.json");
+    ZeebeTestUtil.startWorkflowInstance(client, "bigVarProcess", jsonString);
+  }  
 
   public void createSpecialDataV1() {
     doNotTouchWorkflowInstanceKeys.add(startLoanProcess());

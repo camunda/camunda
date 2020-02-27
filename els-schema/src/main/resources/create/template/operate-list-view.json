@@ -7,12 +7,6 @@
 		"index": {
 			"refresh_interval": "2s",
 			"analysis": {
-				"analyzer":{
-					"no_analyzer":{
-						"type":"custom",
-						"tokenizer":"keyword"
-					}
-				},
 				"normalizer": {
 					"case_insensitive": {
 						"filter": "lowercase"
@@ -73,8 +67,8 @@
 				"type": "keyword"
 			},
 			"varValue": {
-				"analyzer":"no_analyzer",
-				"type": "text"
+				"type": "keyword",
+				"ignore_above": 8191
 			},
 			"activityState": {
 				"type": "keyword"
