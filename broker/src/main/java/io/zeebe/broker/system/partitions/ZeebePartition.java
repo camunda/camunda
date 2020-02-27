@@ -534,6 +534,7 @@ public final class ZeebePartition extends Actor
     LogStream.builder()
         .withLogStorage(storage)
         .withLogName(atomixRaftPartition.name())
+        .withNodeId(localBroker.getNodeId())
         .withPartitionId(atomixRaftPartition.id().id())
         .withMaxFragmentSize(maxFragmentSize)
         .withActorScheduler(scheduler)
