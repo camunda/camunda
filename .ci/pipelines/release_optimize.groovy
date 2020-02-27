@@ -76,6 +76,18 @@ spec:
       requests:
         cpu: 2
         memory: 1Gi
+  - name: gcloud
+    image: google/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
 """
 }
 
@@ -237,7 +249,7 @@ pipeline {
         TARGET_PATH = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME()}/optimize/${params.RELEASE_VERSION}/"
       }
       steps {
-        container('jnlp') {
+        container('gcloud') {
           withCredentials([file(credentialsId: 'downloadcenter_upload_gcloud_key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
             sh """#!/bin/bash -xe
             gcloud auth activate-service-account --key-file \${GOOGLE_APPLICATION_CREDENTIALS}
