@@ -63,7 +63,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .join()
    *  .getBrokers();
    *
-   *  SocketAddress address = broker.getSocketAddress();
+   *  InetSocketAddress address = broker.getSocketAddress();
    *
    *  List&#60;PartitionInfo&#62; partitions = broker.getPartitions();
    * </pre>

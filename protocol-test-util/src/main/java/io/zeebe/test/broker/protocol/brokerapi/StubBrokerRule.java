@@ -19,7 +19,6 @@ import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.net.InetSocketAddress;
@@ -31,7 +30,7 @@ import org.junit.rules.ExternalResource;
 public final class StubBrokerRule extends ExternalResource {
   private static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
   private final int nodeId;
-  private final SocketAddress socketAddress;
+  private final InetSocketAddress socketAddress;
   private ActorScheduler scheduler;
   private MsgPackHelper msgPackHelper;
   private final AtomicReference<Topology> currentTopology = new AtomicReference<>();
@@ -45,7 +44,7 @@ public final class StubBrokerRule extends ExternalResource {
 
   public StubBrokerRule() {
     this.nodeId = 0;
-    this.socketAddress = new SocketAddress(SocketUtil.getNextAddress());
+    this.socketAddress = SocketUtil.getNextAddress();
     this.partitionCount = 1;
   }
 
@@ -128,7 +127,7 @@ public final class StubBrokerRule extends ExternalResource {
     return new JobStubs(this);
   }
 
-  public SocketAddress getSocketAddress() {
+  public InetSocketAddress getSocketAddress() {
     return socketAddress;
   }
 

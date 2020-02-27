@@ -54,10 +54,12 @@ public final class SimpleBrokerStartTest {
     broker.addPartitionListener(
         new PartitionListener() {
           @Override
-          public void onBecomingFollower(int partitionId, long term, LogStream logStream) {}
+          public void onBecomingFollower(
+              final int partitionId, final long term, final LogStream logStream) {}
 
           @Override
-          public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+          public void onBecomingLeader(
+              final int partitionId, final long term, final LogStream logStream) {
             leaderLatch.countDown();
           }
         });

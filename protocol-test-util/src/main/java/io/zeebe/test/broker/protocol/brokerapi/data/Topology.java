@@ -10,7 +10,7 @@ package io.zeebe.test.broker.protocol.brokerapi.data;
 import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
 
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.transport.impl.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,10 +26,11 @@ public final class Topology {
     this.brokers = new HashMap<>(other.brokers);
   }
 
-  private TopologyBroker getBroker(final int nodeId, final SocketAddress brokerAddress) {
+  private TopologyBroker getBroker(final int nodeId, final InetSocketAddress brokerAddress) {
     TopologyBroker topologyBroker = brokers.get(nodeId);
     if (topologyBroker == null) {
-      topologyBroker = new TopologyBroker(nodeId, brokerAddress.host(), brokerAddress.port());
+      topologyBroker =
+          new TopologyBroker(nodeId, brokerAddress.getHostName(), brokerAddress.getPort());
       brokers.put(nodeId, topologyBroker);
     }
     return topologyBroker;
@@ -39,7 +40,8 @@ public final class Topology {
     return addLeader(brokerRule.getNodeId(), brokerRule.getSocketAddress(), partition);
   }
 
-  public Topology addLeader(final int nodeId, final SocketAddress address, final int partition) {
+  public Topology addLeader(
+      final int nodeId, final InetSocketAddress address, final int partition) {
     getBroker(nodeId, address).addPartition(new BrokerPartitionState(LEADER_STATE, partition, 1));
     return this;
   }

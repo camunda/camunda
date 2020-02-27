@@ -7,7 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import io.zeebe.transport.impl.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.Optional;
 
 public class SocketBindingCfg {
@@ -22,12 +22,12 @@ public class SocketBindingCfg {
     this.defaultPort = defaultPort;
   }
 
-  public SocketAddress getAddress() {
-    return new SocketAddress(host, port);
+  public InetSocketAddress getAddress() {
+    return new InetSocketAddress(host, port);
   }
 
-  public SocketAddress getAdvertisedAddress() {
-    return new SocketAddress(advertisedHost, advertisedPort);
+  public InetSocketAddress getAdvertisedAddress() {
+    return new InetSocketAddress(advertisedHost, advertisedPort);
   }
 
   public void applyDefaults(final NetworkCfg networkCfg) {

@@ -42,12 +42,12 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -337,7 +337,7 @@ public final class ClusteringRule extends ExternalResource {
 
   private void waitUntilBrokersInTopology() {
 
-    final Set<SocketAddress> addresses =
+    final Set<InetSocketAddress> addresses =
         brokers.values().stream()
             .map(Broker::getConfig)
             .map(b -> b.getNetwork().getCommandApi().getAddress())
@@ -346,7 +346,7 @@ public final class ClusteringRule extends ExternalResource {
     waitForTopology(
         topology ->
             topology.stream()
-                .map(b -> new SocketAddress(b.getHost(), b.getPort()))
+                .map(b -> new InetSocketAddress(b.getHost(), b.getPort()))
                 .collect(Collectors.toSet())
                 .containsAll(addresses));
   }
@@ -426,19 +426,20 @@ public final class ClusteringRule extends ExternalResource {
   public void restartBroker(final int nodeId) {
     stopBroker(nodeId);
     final Broker broker = getBroker(nodeId).start().join();
-    final SocketAddress commandApi = broker.getConfig().getNetwork().getCommandApi().getAddress();
+    final InetSocketAddress commandApi =
+        broker.getConfig().getNetwork().getCommandApi().getAddress();
     waitUntilBrokerIsAddedToTopology(commandApi);
     waitForPartitionReplicationFactor();
   }
 
-  private void waitUntilBrokerIsAddedToTopology(final SocketAddress socketAddress) {
+  private void waitUntilBrokerIsAddedToTopology(final InetSocketAddress socketAddress) {
     waitForTopology(
         topology ->
             topology.stream()
                 .anyMatch(
                     b ->
-                        b.getHost().equals(socketAddress.host())
-                            && b.getPort() == socketAddress.port()));
+                        b.getHost().equals(socketAddress.getHostName())
+                            && b.getPort() == socketAddress.getPort()));
   }
 
   /**
@@ -447,10 +448,12 @@ public final class ClusteringRule extends ExternalResource {
    * @param socketAddress
    * @return
    */
-  public List<Integer> getBrokersLeadingPartitions(final SocketAddress socketAddress) {
+  public List<Integer> getBrokersLeadingPartitions(final InetSocketAddress socketAddress) {
     return client.newTopologyRequest().send().join().getBrokers().stream()
         .filter(
-            b -> b.getHost().equals(socketAddress.host()) && b.getPort() == socketAddress.port())
+            b ->
+                b.getHost().equals(socketAddress.getHostName())
+                    && b.getPort() == socketAddress.getPort())
         .flatMap(broker -> broker.getPartitions().stream())
         .filter(PartitionInfo::isLeader)
         .map(PartitionInfo::getPartitionId)
@@ -462,9 +465,9 @@ public final class ClusteringRule extends ExternalResource {
    *
    * @return
    */
-  public List<SocketAddress> getBrokersInCluster() {
+  public List<InetSocketAddress> getBrokersInCluster() {
     return client.newTopologyRequest().send().join().getBrokers().stream()
-        .map(b -> new SocketAddress(b.getHost(), b.getPort()))
+        .map(b -> new InetSocketAddress(b.getHost(), b.getPort()))
         .collect(Collectors.toList());
   }
 
@@ -472,19 +475,15 @@ public final class ClusteringRule extends ExternalResource {
     return brokers.values();
   }
 
-  public SocketAddress[] getOtherBrokers(final String address) {
-    return getOtherBrokers(SocketAddress.from(address));
-  }
-
-  public SocketAddress[] getOtherBrokers(final SocketAddress address) {
+  public InetSocketAddress[] getOtherBrokers(final InetSocketAddress address) {
     return getBrokers().stream()
         .map(b -> b.getConfig().getNetwork().getCommandApi().getAddress())
         .filter(a -> !address.equals(a))
-        .toArray(SocketAddress[]::new);
+        .toArray(InetSocketAddress[]::new);
   }
 
-  public SocketAddress[] getOtherBrokers(final int nodeId) {
-    final SocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
+  public InetSocketAddress[] getOtherBrokers(final int nodeId) {
+    final InetSocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
     return getOtherBrokers(filter);
   }
 
@@ -503,7 +502,7 @@ public final class ClusteringRule extends ExternalResource {
   public void stopBroker(final int nodeId) {
     final Broker broker = brokers.remove(nodeId);
     if (broker != null) {
-      final SocketAddress socketAddress =
+      final InetSocketAddress socketAddress =
           broker.getConfig().getNetwork().getCommandApi().getAddress();
       final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
       broker.close();
@@ -513,23 +512,25 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
-  private void waitUntilBrokerIsRemovedFromTopology(final SocketAddress socketAddress) {
+  private void waitUntilBrokerIsRemovedFromTopology(final InetSocketAddress socketAddress) {
     waitForTopology(
         topology ->
             topology.stream()
                 .noneMatch(
                     b ->
-                        b.getHost().equals(socketAddress.host())
-                            && b.getPort() == socketAddress.port()));
+                        b.getHost().equals(socketAddress.getHostName())
+                            && b.getPort() == socketAddress.getPort()));
   }
 
   private void waitForNewLeaderOfPartitions(
-      final List<Integer> partitions, final SocketAddress oldLeader) {
+      final List<Integer> partitions, final InetSocketAddress oldLeader) {
     waitForTopology(
         topology ->
             topology.stream()
                 .filter(
-                    b -> !(b.getHost().equals(oldLeader.host()) && b.getPort() == oldLeader.port()))
+                    b ->
+                        !(b.getHost().equals(oldLeader.getHostName())
+                            && b.getPort() == oldLeader.getPort()))
                 .flatMap(broker -> broker.getPartitions().stream())
                 .filter(PartitionInfo::isLeader)
                 .map(PartitionInfo::getPartitionId)
@@ -567,7 +568,7 @@ public final class ClusteringRule extends ExternalResource {
     }
   }
 
-  public SocketAddress getGatewayAddress() {
+  public InetSocketAddress getGatewayAddress() {
     return gateway.getGatewayCfg().getNetwork().toSocketAddress();
   }
 
