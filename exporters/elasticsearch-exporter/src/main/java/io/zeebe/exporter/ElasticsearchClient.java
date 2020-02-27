@@ -10,6 +10,7 @@ package io.zeebe.exporter;
 import io.prometheus.client.Histogram;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,11 +71,36 @@ public class ElasticsearchClient {
       metrics = new ElasticsearchMetrics(record.getPartitionId());
     }
 
+    checkRecord(record);
+
     final IndexRequest request =
         new IndexRequest(indexFor(record), typeFor(record), idFor(record))
             .source(record.toJson(), XContentType.JSON)
             .routing(String.valueOf(record.getPartitionId()));
     bulk(request);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void checkRecord(Record<?> record) {
+    if (record.getValueType() == ValueType.VARIABLE) {
+      checkVariableRecordValue((Record<VariableRecordValue>) record);
+    }
+  }
+
+  private void checkVariableRecordValue(Record<VariableRecordValue> record) {
+    final VariableRecordValue value = record.getValue();
+    final int size = value.getValue().getBytes().length;
+
+    if (size > configuration.index.ignoreVariablesAbove) {
+      log.warn(
+          "Variable {key: {}, name: {}, variableScope: {}, workflowInstanceKey: {}} exceeded max size of {} bytes with a size of {} bytes. As a consequence this variable is not index by elasticsearch.",
+          record.getKey(),
+          value.getName(),
+          value.getScopeKey(),
+          value.getWorkflowInstanceKey(),
+          configuration.index.ignoreVariablesAbove,
+          size);
+    }
   }
 
   public void bulk(final IndexRequest indexRequest) {

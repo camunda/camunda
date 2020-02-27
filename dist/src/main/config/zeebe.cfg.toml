@@ -317,3 +317,5 @@
 #  workflowInstance = true
 #  workflowInstanceCreation = false
 #  workflowInstanceSubscription = false
+#
+#  ignoreVariablesAbove = 32677
