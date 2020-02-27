@@ -25,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.time.Period;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +58,6 @@ public class OptimizeProcessCleanupServiceTest {
   @BeforeEach
   public void init() {
     configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    mockProcessDefinitions(new ArrayList<>());
   }
 
   @Test

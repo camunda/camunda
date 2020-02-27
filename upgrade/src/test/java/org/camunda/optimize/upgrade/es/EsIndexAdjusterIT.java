@@ -49,7 +49,7 @@ public class EsIndexAdjusterIT {
     ConfigurationServiceBuilder.createDefaultConfiguration()
   ).createOptimizeMapper();
 
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS, lenient = true)
   private RestHighLevelClient restClient;
   @Mock
   private RestClient lowLevelRestClient;

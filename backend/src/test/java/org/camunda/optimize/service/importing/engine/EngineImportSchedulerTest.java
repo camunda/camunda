@@ -55,7 +55,9 @@ public class EngineImportSchedulerTest {
   @Test
   public void isImportingIsTrueWhenActiveImportJob() {
     // given
-    Mockito.when(mockedImportMediator.canImport()).thenReturn(true);
+    // it is indeed used but mockito reports this still as an unnecessary stubbing which it isn't, thus usage of lenient
+    Mockito.lenient().when(mockedImportMediator.canImport()).thenReturn(true);
+
     // first round of importing
     underTest.scheduleNextRound();
 
@@ -73,8 +75,9 @@ public class EngineImportSchedulerTest {
   @Test
   public void isImportingIsFalseWhenNoActiveImportJob() {
     // given
+    // it is indeed used but mockito reports this still as an unnecessary stubbing which it isn't, thus usage of lenient
+    Mockito.lenient().when(mockedImportMediator.canImport()).thenReturn(true);
 
-    Mockito.when(mockedImportMediator.canImport()).thenReturn(true);
     // first round of importing
     underTest.scheduleNextRound();
 

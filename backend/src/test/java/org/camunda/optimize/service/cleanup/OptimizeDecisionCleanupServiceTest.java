@@ -23,7 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.time.Period;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,6 @@ public class OptimizeDecisionCleanupServiceTest {
   @BeforeEach
   public void init() {
     configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    mockDecisionDefinitions(new ArrayList<>());
   }
 
   @Test
@@ -208,8 +206,8 @@ public class OptimizeDecisionCleanupServiceTest {
     final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos = decisionDefinitionIds.stream()
       .map(this::createDecisionDefinitionDto)
       .collect(Collectors.toList());
-    when(decisionDefinitionReader.getDecisionDefinitions(false, false)).thenReturn(
-      decisionDefinitionOptimizeDtos);
+    when(decisionDefinitionReader.getDecisionDefinitions(false, false))
+      .thenReturn(decisionDefinitionOptimizeDtos);
     return decisionDefinitionIds;
   }
 
