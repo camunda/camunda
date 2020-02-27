@@ -12,7 +12,13 @@ static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE() { return "optimize.registry.camunda.cloud/optimize" }
-static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME() { return 'downloads-camunda-cloud-enterprise-release' }
+static String DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME() {
+  return isStagingJenkins() ? 'stage-downloads-camunda-cloud-enterprise-release' : 'downloads-camunda-cloud-enterprise-release'
+}
+
+static boolean isStagingJenkins() {
+  return jenkins.model.Jenkins.getInstanceOrNull()?.getRootUrl()?.contains('stage') ?: false
+}
 
 static boolean isMajorOrMinorRelease(releaseVersion) {
   def version = releaseVersion.tokenize('.')
@@ -236,6 +242,26 @@ pipeline {
                 scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \${file} jenkins_camunda_web@vm29.camunda.com:/var/www/camunda/camunda.org/enterprise-release/optimize/${params.RELEASE_VERSION}/
               done
             """)
+          }
+        }
+      }
+    }
+    stage('Upload to DownloadCenter storage bucket') {
+      when {
+        // Only perform upload when PUSH_CHANGES is true or we're on a stage jenkins (Stage has a separate bucket)
+        expression { params.PUSH_CHANGES == true || isStagingJenkins() }
+      }
+      environment {
+        SOURCE_PATH = "target/checkout/distro/target/*.{tar.gz,zip}"
+        TARGET_PATH = "${DOWNLOADCENTER_GS_ENTERPRISE_BUCKET_NAME()}/optimize/${params.RELEASE_VERSION}/"
+      }
+      steps {
+        container('gcloud') {
+          withCredentials([file(credentialsId: 'downloadcenter_upload_gcloud_key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+            sh """#!/bin/bash -xe
+            gcloud auth activate-service-account --key-file \${GOOGLE_APPLICATION_CREDENTIALS}
+            gsutil cp \$SOURCE_PATH gs://${TARGET_PATH}
+            """
           }
         }
       }
