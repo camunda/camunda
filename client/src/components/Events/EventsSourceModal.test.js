@@ -93,7 +93,7 @@ it('should edit a source when clicking confirm', () => {
 
   expect(spy).toHaveBeenCalledWith([
     {
-      eventScope: 'process_instance',
+      eventScope: 'start_end',
       processDefinitionKey: 'foo',
       processDefinitionName: 'Foo',
       tenants: ['a', 'b'],

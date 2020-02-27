@@ -213,14 +213,14 @@ export default withErrorHandling(
                   <Form.Group>
                     <h4>{t('events.sources.display')}</h4>
                     <LabeledInput
-                      checked={eventScope === 'start_end'}
-                      onChange={() => this.updateSource('eventScope', 'start_end')}
                       label={t('events.sources.startAndEnd')}
+                      checked={eventScope === 'process_instance'}
+                      onChange={() => this.updateSource('eventScope', 'process_instance')}
                       type="radio"
                     />
                     <LabeledInput
-                      checked={eventScope === 'process_instance'}
-                      onChange={() => this.updateSource('eventScope', 'process_instance')}
+                      checked={eventScope === 'start_end'}
+                      onChange={() => this.updateSource('eventScope', 'start_end')}
                       label={t('events.sources.flownodeEvents')}
                       type="radio"
                     />
