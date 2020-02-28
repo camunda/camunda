@@ -54,7 +54,7 @@ public final class DbSnapshotStore implements SnapshotStore {
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
 
-    this.positionSupplier = new StatePositionSupplier(-1, LOGGER);
+    this.positionSupplier = new StatePositionSupplier(LOGGER);
     this.lowerBoundId = new ReusableSnapshotId(Long.MIN_VALUE);
     this.upperBoundId = new ReusableSnapshotId(Long.MAX_VALUE);
     this.listeners = new CopyOnWriteArraySet<>();
