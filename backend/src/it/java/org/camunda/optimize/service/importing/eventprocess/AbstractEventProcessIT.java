@@ -481,11 +481,6 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return eventMappings;
   }
 
-  protected void importEngineEntities() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
   @SneakyThrows
   protected String createThreeActivitiesProcessDefinitionXml() {
     final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")

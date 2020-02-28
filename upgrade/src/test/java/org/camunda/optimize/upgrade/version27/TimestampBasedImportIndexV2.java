@@ -3,23 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.index;
+package org.camunda.optimize.upgrade.version27;
 
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
-@Component
-public class TimestampBasedImportIndex extends StrictIndexMappingCreator {
+public class TimestampBasedImportIndexV2 extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
-  public static final String LAST_IMPORT_EXECUTION_TIMESTAMP = "lastImportExecutionTimestamp";
   public static final String TIMESTAMP_OF_LAST_ENTITY = "timestampOfLastEntity";
   public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
   private static final String ENGINE = "engine";
@@ -46,10 +43,7 @@ public class TimestampBasedImportIndex extends StrictIndexMappingCreator {
       .startObject(TIMESTAMP_OF_LAST_ENTITY)
       .field("type", "date")
       .field("format", OPTIMIZE_DATE_FORMAT)
-      .endObject()
-      .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
-      .field("type", "date")
-      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject();
   }
+
 }

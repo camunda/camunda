@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -42,6 +43,7 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
       .addAll(entitiesNextPage)
       .build();
 
+    importIndexHandler.updateLastImportedTimestamp();
     if (timestampNeedsToBeSet) {
       importService.executeImport(allEntities, () -> importIndexHandler.updateTimestampOfLastEntity(timestamp));
       importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);

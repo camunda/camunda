@@ -27,6 +27,7 @@ import org.camunda.optimize.upgrade.version27.EventIndexV1;
 import org.camunda.optimize.upgrade.version27.EventProcessMappingIndexV1;
 import org.camunda.optimize.upgrade.version27.EventProcessPublishStateIndexV1;
 import org.camunda.optimize.upgrade.version27.EventSequenceCountIndexV1;
+import org.camunda.optimize.upgrade.version27.TimestampBasedImportIndexV2;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -54,6 +55,7 @@ public abstract class AbstractUpgradeIT {
   protected static final EventSequenceCountIndexV1 EVENT_SEQUENCE_COUNT_INDEX_V1 = new EventSequenceCountIndexV1();
   protected static final EventProcessMappingIndexV1 EVENT_PROCESS_MAPPING_INDEX_V1 = new EventProcessMappingIndexV1();
   protected static final EventProcessPublishStateIndexV1 EVENT_PROCESS_PUBLISH_STATE_INDEX_V1 = new EventProcessPublishStateIndexV1();
+  protected static final TimestampBasedImportIndexV2 TIMESTAMP_BASED_IMPORT_INDEX_V2 = new TimestampBasedImportIndexV2();
 
   protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;

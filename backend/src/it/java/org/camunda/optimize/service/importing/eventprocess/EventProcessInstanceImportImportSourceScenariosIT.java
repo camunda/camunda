@@ -9,17 +9,26 @@ import lombok.SneakyThrows;
 import org.assertj.core.util.Maps;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
+import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoField;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,7 +39,9 @@ import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOUR
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceEndEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler.RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractEventProcessIT {
@@ -434,6 +445,79 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     assertThat(processInstances).isEmpty();
   }
 
+  @Test
+  public void instancesAreGeneratedFromCamundaEventImportSource_eventsNewerThanLastExecutionTimestampOfImportersNotIncluded() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
+    publishEventMappingUsingProcessInstanceCamundaEvents(
+      processInstanceEngineDto,
+      createMappingsForEventProcess(
+        processInstanceEngineDto,
+        BPMN_START_EVENT_ID,
+        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        BPMN_END_EVENT_ID
+      )
+    );
+
+    importEngineEntities();
+    CamundaActivityEventDto lastImportedActivityForFirstImport =
+      getLastImportedActivityForProcessDefinition(processInstanceEngineDto.getProcessDefinitionKey());
+
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importEngineEntities();
+
+    // when
+    updateImportIndexLastImportExecutionTimestamp(
+      RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID,
+      lastImportedActivityForFirstImport.getTimestamp().plus(1, ChronoField.MILLI_OF_SECOND.getBaseUnit())
+    );
+
+    executeImportCycle();
+
+    // then
+    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+        assertProcessInstance(
+          processInstanceDto,
+          processInstanceEngineDto.getBusinessKey(),
+          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID)
+        );
+      });
+  }
+
+  private void updateImportIndexLastImportExecutionTimestamp(final String importType,
+                                                             final OffsetDateTime timestampToSet) {
+    final TimestampBasedImportIndexDto runningProcessImport = new ArrayList<>(ElasticsearchHelper.mapHits(
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
+        TIMESTAMP_BASED_IMPORT_INDEX_NAME).getHits(),
+      TimestampBasedImportIndexDto.class,
+      embeddedOptimizeExtension.getObjectMapper()
+    )).stream().filter(index -> index.getEsTypeIndexRefersTo().equalsIgnoreCase(
+      importType))
+      .findFirst().get();
+    runningProcessImport.setLastImportExecutionTimestamp(timestampToSet);
+
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      TIMESTAMP_BASED_IMPORT_INDEX_NAME,
+      EsHelper.constructKey(
+        runningProcessImport.getEsTypeIndexRefersTo(),
+        runningProcessImport.getEngine()
+      ),
+      runningProcessImport
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  private CamundaActivityEventDto getLastImportedActivityForProcessDefinition(final String processDefinitionKey) {
+    return ElasticsearchHelper.mapHits(
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(new CamundaActivityEventIndex(
+        processDefinitionKey).getIndexName()).getHits(),
+      CamundaActivityEventDto.class,
+      embeddedOptimizeExtension.getObjectMapper()
+    ).stream().max(Comparator.comparing(CamundaActivityEventDto::getTimestamp).reversed()).get();
+  }
+
   private ProcessInstanceEngineDto deployAndStartProcess() {
     return deployAndStartProcessWithVariables(Collections.emptyMap());
   }
@@ -452,6 +536,12 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
   private List<EventSourceEntryDto> createCamundaEventSourceEntryForDeployedProcessWithVersions(final ProcessInstanceEngineDto processInstanceEngineDto,
                                                                                                 final List<String> versions) {
     return createCamundaEventSourceEntryForDeployedProcess(processInstanceEngineDto, null, versions);
+  }
+
+  private void importEngineEntities() {
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   @SneakyThrows

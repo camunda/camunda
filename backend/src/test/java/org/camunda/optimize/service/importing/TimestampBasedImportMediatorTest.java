@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.service.importing.engine.handler.CompletedActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,6 +16,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,10 +41,13 @@ public abstract class TimestampBasedImportMediatorTest {
   @Captor
   protected ArgumentCaptor<Runnable> callbackLambdaCaptor;
 
-  protected void init() {
+  private OffsetDateTime importTimestamp;
 
+  protected void init() {
     this.underTest.importIndexHandler = importIndexHandler;
     this.underTest.importService = importService;
+    importTimestamp = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(importTimestamp);
   }
 
   @Test
@@ -59,6 +64,7 @@ public abstract class TimestampBasedImportMediatorTest {
     );
 
     // then
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     verify(importService, times(0)).executeImport(any(), any());
   }
 
@@ -78,6 +84,7 @@ public abstract class TimestampBasedImportMediatorTest {
     );
 
     // then
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     verify(importService, times(1)).executeImport(any());
     verify(importIndexHandler, times(0)).updateTimestampOfLastEntity(any());
   }
@@ -98,6 +105,7 @@ public abstract class TimestampBasedImportMediatorTest {
     );
 
     // then
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     verify(importService, times(1)).executeImport(any(), any());
     verify(importIndexHandler, times(1)).updatePendingTimestampOfLastEntity(any());
     verify(importService).executeImport(any(), callbackLambdaCaptor.capture());
@@ -107,7 +115,6 @@ public abstract class TimestampBasedImportMediatorTest {
 
     verify(importIndexHandler, times(1)).updateTimestampOfLastEntity(any());
   }
-
 
   @Test
   public void testImportNextEnginePageTimestampBased_returnsFalse() {
@@ -122,6 +129,7 @@ public abstract class TimestampBasedImportMediatorTest {
     );
 
     // then
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     assertThat(result, is(false));
   }
 
@@ -139,6 +147,7 @@ public abstract class TimestampBasedImportMediatorTest {
     );
 
     // then
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     assertThat(result, is(true));
   }
 }

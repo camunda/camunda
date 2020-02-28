@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ public abstract class TimestampBasedImportIndexHandler
   @Autowired
   protected ConfigurationService configurationService;
 
+  private OffsetDateTime lastImportExecutionTimestamp = getTimestampBeforeEngineExisted();
   private OffsetDateTime persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
   private OffsetDateTime timestampOfLastEntity = persistedTimestampOfLastEntity;
 
@@ -78,6 +80,10 @@ public abstract class TimestampBasedImportIndexHandler
     }
   }
 
+  public void updateLastImportedTimestamp() {
+    this.lastImportExecutionTimestamp = LocalDateUtil.getCurrentDateTime();
+  }
+
   public OffsetDateTime getTimestampOfLastEntity() {
     return timestampOfLastEntity;
   }
@@ -90,6 +96,7 @@ public abstract class TimestampBasedImportIndexHandler
       TimestampBasedImportIndexDto loadedImportIndex = dto.get();
       persistedTimestampOfLastEntity = loadedImportIndex.getTimestampOfLastEntity();
       timestampOfLastEntity = persistedTimestampOfLastEntity;
+      lastImportExecutionTimestamp = loadedImportIndex.getLastImportExecutionTimestamp();
     }
   }
 
@@ -103,6 +110,7 @@ public abstract class TimestampBasedImportIndexHandler
   @Override
   public TimestampBasedImportIndexDto createIndexInformationForStoring() {
     TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
+    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
     indexToStore.setEngine(getEngineAlias());
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
@@ -111,6 +119,7 @@ public abstract class TimestampBasedImportIndexHandler
 
   @Override
   public void resetImportIndex() {
+    lastImportExecutionTimestamp = getTimestampBeforeEngineExisted();
     persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
     timestampOfLastEntity = persistedTimestampOfLastEntity;
   }

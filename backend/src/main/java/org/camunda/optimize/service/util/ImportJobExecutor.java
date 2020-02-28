@@ -14,11 +14,13 @@ import javax.annotation.PreDestroy;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public abstract class ImportJobExecutor {
 
+  private static final ThreadFactory THREAD_FACTORY = new ThreadFactoryBuilder().setNameFormat("ImportJobExecutor-pool-%d").build();
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @PostConstruct
@@ -51,7 +53,6 @@ public abstract class ImportJobExecutor {
   public void startExecutingImportJobs() {
     if (importExecutor == null || importExecutor.isShutdown()) {
       final BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(getMaxQueueSize());
-      final String poolName = this.getClass().getSimpleName() + "-pool-%d";
       importExecutor =
         new ThreadPoolExecutor(
           getExecutorThreadCount(),
@@ -59,7 +60,7 @@ public abstract class ImportJobExecutor {
           Long.MAX_VALUE,
           TimeUnit.DAYS,
           importJobsQueue,
-          new ThreadFactoryBuilder().setNameFormat(poolName).build(),
+          THREAD_FACTORY,
           new BlockCallerUntilExecutorHasCapacity()
         );
     }

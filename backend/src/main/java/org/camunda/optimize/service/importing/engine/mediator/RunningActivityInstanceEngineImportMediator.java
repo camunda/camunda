@@ -37,8 +37,6 @@ public class RunningActivityInstanceEngineImportMediator
   @Autowired
   private EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
 
-  private RunningActivityInstanceImportService runningActivityInstanceImportService;
-
   private final EngineContext engineContext;
 
   public RunningActivityInstanceEngineImportMediator(final EngineContext engineContext) {

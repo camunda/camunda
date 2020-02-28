@@ -10,6 +10,7 @@ import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -44,6 +45,7 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
       .addUpgradeStep(new CreateIndexStep(new VariableUpdateInstanceIndex()))
       .addUpgradeStep(new CreateIndexStep(new BusinessKeyIndex()))
       .addUpgradeStep(addEventImportSourceFieldForPublishStates())
+      .addUpgradeStep(new UpdateIndexStep(new TimestampBasedImportIndex(), null))
       .build();
   }
 

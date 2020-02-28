@@ -35,7 +35,8 @@ public class EventCountAndTraceIndexUpgradeIT extends AbstractUpgradeIT {
       EVENT_SEQUENCE_COUNT_INDEX_V1,
       EVENT_PROCESS_MAPPING_INDEX_V1,
       EVENT_PROCESS_PUBLISH_STATE_INDEX_V1,
-      EVENT_TRACE_STATE_INDEX_V1
+      EVENT_TRACE_STATE_INDEX_V1,
+      TIMESTAMP_BASED_IMPORT_INDEX_V2
     ));
 
     setMetadataIndexVersion(FROM_VERSION);

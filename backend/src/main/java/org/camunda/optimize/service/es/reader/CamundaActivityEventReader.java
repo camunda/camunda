@@ -75,20 +75,22 @@ public class CamundaActivityEventReader {
     return getPageOfEventsForDefinitionKeySortedByTimestamp(definitionKey, timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
   }
 
-  public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionWithVersionAndTenantAfter(
+  public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionWithVersionAndTenantBetween(
     final String definitionKey,
     final List<String> versions,
     final List<String> tenantIds,
-    final Long eventTimestamp,
+    final Long startTimestamp,
+    final Long endTimestamp,
     final int limit) {
     log.debug(
-      "Fetching camunda activity events for key [{}] with versions [{}], tenant IDs [{}] and with timestamp after {}",
-      definitionKey, versions, tenantIds, eventTimestamp
+      "Fetching camunda activity events for key [{}] with versions [{}], tenant IDs [{}] and with timestamp between {} and {}",
+      definitionKey, versions, tenantIds, startTimestamp, endTimestamp
     );
 
     final BoolQueryBuilder eventsQuery = buildQueryForVersionsAndTenants(versions, tenantIds)
       .must(rangeQuery(CamundaActivityEventIndex.TIMESTAMP)
-              .gt(formatter.format(convertToOffsetDateTime(eventTimestamp))));
+              .gt(formatter.format(convertToOffsetDateTime(startTimestamp)))
+              .lt(formatter.format(convertToOffsetDateTime(endTimestamp))));
 
     return getPageOfEventsForDefinitionKeySortedByTimestamp(definitionKey, eventsQuery, limit);
   }

@@ -14,7 +14,9 @@ import java.time.ZoneId;
 @Data
 public class TimestampBasedImportIndexDto implements ImportIndexDto {
 
+  protected OffsetDateTime lastImportExecutionTimestamp = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected OffsetDateTime timestampOfLastEntity = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected String esTypeIndexRefersTo;
   protected String engine;
+
 }

@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.es.reader.VariableUpdateInstanceReader;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
@@ -49,6 +50,7 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
   private final EventProcessInstanceIndexManager eventBasedProcessIndexManager;
   private final VariableUpdateInstanceReader variableUpdateInstanceReader;
   private final BusinessKeyReader businessKeyReader;
+  private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
 
   private final Map<String, List<EventProcessInstanceImportMediator>> importMediators = new ConcurrentHashMap<>();
 
@@ -133,7 +135,8 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
           camundaActivityEventReader,
           processDefinitionReader,
           variableUpdateInstanceReader,
-          businessKeyReader
+          businessKeyReader,
+          timestampBasedImportIndexReader
         );
       default:
         throw new OptimizeRuntimeException("Cannot find event fetching service for event import source type: "

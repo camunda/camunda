@@ -224,19 +224,20 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
   }
 
   public void storeImportIndexesToElasticsearch() {
-    for (EngineContext engineContext : getConfiguredEngines()) {
-      StoreIndexesEngineImportMediator storeIndexesEngineImportJobFactory =
-        getApplicationContext().getBean(
-          StoreIndexesEngineImportMediator.class,
-          engineContext
-        );
-      storeIndexesEngineImportJobFactory.resetBackoff();
-
-      storeIndexesEngineImportJobFactory.runImport();
-
-      makeSureAllScheduledJobsAreFinished();
+    final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      scheduler.getImportMediators()
+        .stream()
+        .filter(med -> med instanceof StoreIndexesEngineImportMediator)
+        .forEach(mediator -> {
+          mediator.resetBackoff();
+          mediator.runImport();
+          final CompletableFuture<Void> toComplete = new CompletableFuture<>();
+          synchronizationCompletables.add(toComplete);
+          mediator.getImportJobExecutor().executeImportJob(new SynchronizationElasticsearchImportJob(toComplete));
+        });
     }
-
+    CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
   }
 
   private Collection<EngineContext> getConfiguredEngines() {

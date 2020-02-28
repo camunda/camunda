@@ -41,7 +41,8 @@ public class UpgradeEventProcessMappingsIT extends AbstractUpgradeIT {
       METADATA_INDEX,
       EVENT_INDEX_V1,
       EVENT_PROCESS_MAPPING_INDEX_V1,
-      EVENT_PROCESS_PUBLISH_STATE_INDEX_V1
+      EVENT_PROCESS_PUBLISH_STATE_INDEX_V1,
+      TIMESTAMP_BASED_IMPORT_INDEX_V2
     ));
 
     setMetadataIndexVersion(FROM_VERSION);
