@@ -1,0 +1,85 @@
+image:
+  repository: camunda/zeebe
+  tag: SNAPSHOT
+  pullPolicy: IfNotPresent
+
+# ZEEBE CFG
+
+clusterSize: 3
+partitionCount: 3
+replicationFactor: 3
+cpuThreadCount: 4
+ioThreadCount: 4
+gatewayMetrics: true
+
+# JavaOpts:
+# DEFAULTS
+
+JavaOpts: |
+  -XX:+UseParallelGC 
+  -XX:MinHeapFreeRatio=5
+  -XX:MaxHeapFreeRatio=10
+  -XX:MaxRAMPercentage=25.0 
+  -XX:GCTimeRatio=4 
+  -XX:AdaptiveSizePolicyWeight=90
+  -XX:+PrintFlagsFinal
+  -Xmx4g
+  -Xms4g
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/usr/local/zeebe/data
+  -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
+
+# RESOURCES
+resources:
+  limits:
+    cpu: 5
+    memory: 12Gi
+  requests:
+    cpu: 5
+    memory: 12Gi
+
+# PVC
+
+pvcAccessMode: ["ReadWriteOnce"]
+pvcSize: 128Gi
+pvcStorageClassName: ssd
+
+
+# ELASTIC
+
+elasticsearch:
+  enabled: true
+  imageTag: 6.8.5
+
+  replicas: 3
+  minimumMasterNodes: 2
+
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    storageClassName: "ssd"
+    resources:
+      requests:
+        storage: 500Gi
+
+  esJavaOpts: "-Xmx4g -Xms4g"
+
+  resources:
+    requests:
+      cpu: 3
+      memory: 8Gi
+    limits:
+      cpu: 3
+      memory: 8Gi
+
+# KIBANA
+
+kibana:
+  enabled: false
+
+# PROMETHEUS
+
+prometheus:
+  enabled: false
+
+  servicemonitor:
+    enabled: true
