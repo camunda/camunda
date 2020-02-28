@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.SneakyThrows;
 import org.assertj.core.util.Maps;
+import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
@@ -274,6 +275,39 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
   }
 
   @Test
+  public void instancesAreGeneratedFromCamundaEventImportSource_correlatedByBusinessKey_ignoreInstancesWithNullBusinessKey() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceWithBusinessKey(null);
+    final ProcessInstanceEngineDto instanceWithBusinessKey = engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importEngineEntities();
+
+    publishEventMappingUsingProcessInstanceCamundaEvents(
+      processInstanceEngineDto,
+      createMappingsForEventProcess(
+        processInstanceEngineDto,
+        BPMN_START_EVENT_ID,
+        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        BPMN_END_EVENT_ID
+      )
+    );
+
+    // when
+    executeImportCycle();
+
+    // then only the instance with a business key present is saved
+    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+        assertProcessInstance(
+          processInstanceDto,
+          instanceWithBusinessKey.getBusinessKey(),
+          Arrays.asList(BPMN_START_EVENT_ID, BPMN_INTERMEDIATE_EVENT_ID, BPMN_END_EVENT_ID)
+        );
+      });
+  }
+
+  @Test
   public void instancesAreGeneratedFromMultipleCamundaEventImportSources() {
     // given
     final ProcessInstanceEngineDto firstProcessInstanceEngineDto = deployAndStartProcess();
@@ -402,6 +436,17 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
 
   private ProcessInstanceEngineDto deployAndStartProcess() {
     return deployAndStartProcessWithVariables(Collections.emptyMap());
+  }
+
+  private ProcessInstanceEngineDto deployAndStartInstanceWithBusinessKey(String businessKey) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      Bpmn.createExecutableProcess("aProcess")
+        .startEvent(BPMN_START_EVENT_ID)
+        .userTask(BPMN_INTERMEDIATE_EVENT_ID)
+        .endEvent(BPMN_END_EVENT_ID)
+        .done(),
+      Collections.emptyMap(), businessKey, null
+    );
   }
 
   private List<EventSourceEntryDto> createCamundaEventSourceEntryForDeployedProcessWithVersions(final ProcessInstanceEngineDto processInstanceEngineDto,

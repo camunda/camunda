@@ -117,6 +117,7 @@ public class CustomTracedCamundaEventFetcherService implements EventFetcherServi
       Map<String, String> instanceIdToBusinessKeys =
         businessKeyReader.getBusinessKeysForProcessInstanceIds(processInstanceIds)
           .stream()
+          .filter(businessKeyDto -> businessKeyDto.getBusinessKey() != null)
           .collect(Collectors.toMap(
             BusinessKeyDto::getProcessInstanceId,
             BusinessKeyDto::getBusinessKey
