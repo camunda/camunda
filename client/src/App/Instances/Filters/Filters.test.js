@@ -61,6 +61,7 @@ describe('Filters', () => {
     expect(node.state().filter.endDate).toEqual('');
     expect(node.state().filter.ids).toEqual('');
     expect(node.state().filter.errorMessage).toEqual('');
+    expect(node.state().filter.batchOperationId).toEqual('');
     expect(node.state().filter.variable).toEqual({name: '', value: ''});
   });
 
@@ -85,6 +86,9 @@ describe('Filters', () => {
       COMPLETE_FILTER.errorMessage
     );
     expect(node.state().filter.variable).toEqual(COMPLETE_FILTER.variable);
+    expect(node.state().filter.batchOperationId).toEqual(
+      COMPLETE_FILTER.batchOperationId
+    );
   });
 
   it('should render the running and finished filters', () => {
@@ -1535,6 +1539,180 @@ describe('Filters', () => {
 
       // then
       expect(mockProps.onFilterReset).toHaveBeenCalled();
+    });
+  });
+
+  describe('batchOperationId filter', () => {
+    it('should render a batchOperationId field', async () => {
+      jest.useFakeTimers();
+
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters.WrappedComponent
+              groupedWorkflows={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+      const field = node
+        .find(Styled.ValidationTextInput)
+        .filterWhere(n => n.props().name === 'batchOperationId')
+        .find('input');
+
+      field.simulate('change', {
+        target: {value: 'asd', name: 'batchOperationId'}
+      });
+
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+
+      await flushPromises();
+
+      expect(field.length).toEqual(1);
+      expect(field.prop('placeholder')).toEqual('Operation Id');
+      expect(field.prop('value')).toEqual('');
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        batchOperationId: 'asd'
+      });
+    });
+
+    it('should not call onFilterChange before debounce delay', async () => {
+      // given
+      jest.useFakeTimers();
+
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters.WrappedComponent
+              groupedWorkflows={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+      const field = node
+        .find(Styled.ValidationTextInput)
+        .filterWhere(n => n.props().name === 'batchOperationId')
+        .find('input');
+
+      field.simulate('change', {
+        target: {value: 'asd', name: 'batchOperationId'}
+      });
+
+      await flushPromises();
+
+      expect(mockProps.onFilterChange).not.toHaveBeenCalled();
+    });
+
+    // test behaviour here
+    it('should initialize the field with empty value', () => {
+      const node = shallow(
+        <Filters.WrappedComponent
+          groupedWorkflows={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+        />
+      );
+
+      expect(node.state().filter.batchOperationId).toEqual('');
+    });
+
+    it('should be prefilled with the value from props.filter.batchOperationId ', async () => {
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters.WrappedComponent
+              groupedWorkflows={workflows}
+              {...mockPropsWithInitFilter}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+
+      const field = node
+        .find(Styled.ValidationTextInput)
+        .filterWhere(n => n.props().name === 'batchOperationId');
+
+      // then
+      expect(field.props().value).toEqual('batch-operation-id-example');
+    });
+
+    it('should update state when input receives text', () => {
+      const node = shallow(
+        <Filters.WrappedComponent
+          groupedWorkflows={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+        />
+      );
+
+      node.instance().handleControlledInputChange({
+        target: {value: 'batch operation id', name: 'batchOperationId'}
+      });
+
+      expect(node.state().filter.batchOperationId).toEqual(
+        'batch operation id'
+      );
+    });
+
+    it('should call onFilterChange with the right batch operation id', async () => {
+      // given
+      jest.useFakeTimers();
+      const batchOperationId = 'lorem ipsum';
+      const node = shallow(
+        <Filters.WrappedComponent
+          groupedWorkflows={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+        />
+      );
+      const instance = node.instance();
+
+      //when
+      instance.handleControlledInputChange({
+        target: {value: batchOperationId, name: 'batchOperationId'}
+      });
+      instance.waitForTimer(instance.propagateFilter);
+
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+
+      await flushPromises();
+
+      // then
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
+        batchOperationId
+      });
+    });
+
+    it('should call onFilterChange with empty object', async () => {
+      // given
+      jest.useFakeTimers();
+      const emptyBatchOperationId = '';
+      const node = shallow(
+        <Filters.WrappedComponent
+          groupedWorkflows={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+        />
+      );
+      const instance = node.instance();
+
+      //when
+      instance.handleControlledInputChange({
+        target: {value: emptyBatchOperationId, name: 'batchOperationId'}
+      });
+      instance.waitForTimer(instance.propagateFilter);
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+
+      await flushPromises();
+
+      // then
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
   });
 });

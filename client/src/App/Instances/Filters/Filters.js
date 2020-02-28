@@ -48,6 +48,7 @@ class Filters extends React.Component {
       completed: PropTypes.bool.isRequired,
       endDate: PropTypes.string.isRequired,
       errorMessage: PropTypes.string.isRequired,
+      batchOperationId: PropTypes.string.isRequired,
       ids: PropTypes.string.isRequired,
       incidents: PropTypes.bool.isRequired,
       startDate: PropTypes.string.isRequired,
@@ -78,7 +79,8 @@ class Filters extends React.Component {
       activityId: '',
       version: '',
       workflow: '',
-      variable: {name: '', value: ''}
+      variable: {name: '', value: ''},
+      batchOperationId: ''
     }
   };
 
@@ -222,7 +224,8 @@ class Filters extends React.Component {
       errorMessage,
       startDate,
       endDate,
-      ids
+      ids,
+      batchOperationId
     } = this.state.filter;
 
     const {previewVersion, previewName} = this.state;
@@ -340,6 +343,17 @@ class Filters extends React.Component {
               checkIsValueComplete={checkIsVariableValueComplete}
               checkIsValueValid={checkIsVariableValueValid}
             />
+          </Styled.Field>
+          <Styled.Field>
+            <Styled.ValidationTextInput
+              value={batchOperationId}
+              name="batchOperationId"
+              placeholder="Operation Id"
+              onChange={this.handleControlledInputChange}
+              onFilterChange={() => this.waitForTimer(this.propagateFilter)}
+            >
+              <Input />
+            </Styled.ValidationTextInput>
           </Styled.Field>
           <Styled.CheckboxGroup
             type={FILTER_TYPES.RUNNING}

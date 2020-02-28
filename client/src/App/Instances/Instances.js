@@ -42,7 +42,8 @@ export default class Instances extends Component {
       variable: PropTypes.shape({
         name: PropTypes.string,
         value: PropTypes.string
-      })
+      }),
+      batchOperationId: PropTypes.string
     }).isRequired,
     filterCount: PropTypes.number.isRequired,
     groupedWorkflows: PropTypes.object.isRequired,

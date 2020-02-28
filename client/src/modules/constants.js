@@ -139,6 +139,7 @@ export const DEFAULT_FILTER_CONTROLLED_VALUES = {
   activityId: '',
   version: '',
   workflow: '',
+  batchOperationId: '',
   variable: {name: '', value: ''}
 };
 
