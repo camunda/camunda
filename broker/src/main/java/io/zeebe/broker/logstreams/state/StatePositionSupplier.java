@@ -10,18 +10,16 @@ package io.zeebe.broker.logstreams.state;
 import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.LastProcessedPositionState;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.ZeebeState;
 import java.nio.file.Path;
 import org.slf4j.Logger;
 
 public class StatePositionSupplier {
 
-  private final int partitionId;
   private final Logger logger;
 
-  public StatePositionSupplier(final int partitionId, final Logger log) {
-    this.partitionId = partitionId;
+  public StatePositionSupplier(final Logger log) {
     this.logger = log;
   }
 
@@ -74,8 +72,8 @@ public class StatePositionSupplier {
 
   private long getLastProcessedPosition(
       final Path directory, final ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    final ZeebeState processorState = new ZeebeState(partitionId, zeebeDb, zeebeDb.createContext());
-    final long lowestPosition = processorState.getLastSuccessfulProcessedRecordPosition();
+    final var lastProcessedState = new LastProcessedPositionState(zeebeDb, zeebeDb.createContext());
+    final long lowestPosition = lastProcessedState.getPosition();
     logger.debug("The last processed position for snapshot {} is {}", directory, lowestPosition);
     return lowestPosition;
   }

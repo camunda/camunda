@@ -292,7 +292,7 @@ public final class ZeebePartition extends Actor
           e);
     }
 
-    final StatePositionSupplier positionSupplier = new StatePositionSupplier(partitionId, LOG);
+    final StatePositionSupplier positionSupplier = new StatePositionSupplier(LOG);
     final LogStreamDeletionService deletionService =
         new LogStreamDeletionService(
             localBroker.getNodeId(), partitionId, logStream, snapshotStorage, positionSupplier);
