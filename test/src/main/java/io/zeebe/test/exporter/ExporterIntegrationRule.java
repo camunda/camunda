@@ -254,7 +254,7 @@ public class ExporterIntegrationRule extends ExternalResource {
 
     final Map<String, Object> variables = new HashMap<>();
     variables.put("orderId", "foo-bar-123");
-    variables.put("largeValue", "x".repeat(40_000));
+    variables.put("largeValue", "x".repeat(8192));
 
     final long workflowInstanceKey = createWorkflowInstance("testProcess", variables);
 
