@@ -82,3 +82,57 @@ describe('CollapsablePanel', () => {
     expect(toggleMock).toHaveBeenCalledTimes(2);
   });
 });
+
+it('should have background color style rule when hasBackgroundColor is true', () => {
+  // when
+  const node = mount(
+    <CollapsablePanel
+      label="Cool Panel"
+      hasBackgroundColor
+      panelPosition="RIGHT"
+      isCollapsed={false}
+      toggle={() => {}}
+    >
+      <div data-test="cool-panel-content">Cool Panel Content</div>
+    </CollapsablePanel>
+  );
+
+  // then
+  const expandedPanel = node.find('[data-test="expanded-panel"]');
+  expect(expandedPanel).toHaveStyleRule('background-color', '#313238');
+});
+
+it('should have border-right rule when panel position is RIGHT', () => {
+  // when
+  const node = mount(
+    <CollapsablePanel
+      label="Cool Panel"
+      panelPosition="RIGHT"
+      isCollapsed={false}
+      toggle={() => {}}
+    >
+      <div data-test="cool-panel-content">Cool Panel Content</div>
+    </CollapsablePanel>
+  );
+
+  // then
+  const expandedPanel = node.find('[data-test="expanded-panel"]');
+  expect(expandedPanel).toHaveStyleRule('border-right', 'none');
+});
+it('should not have border-right rule when panel position is not RIGHT', () => {
+  // when
+  const node = mount(
+    <CollapsablePanel
+      label="Cool Panel"
+      panelPosition="LEFT"
+      isCollapsed={false}
+      toggle={() => {}}
+    >
+      <div data-test="cool-panel-content">Cool Panel Content</div>
+    </CollapsablePanel>
+  );
+
+  // then
+  const expandedPanel = node.find('[data-test="expanded-panel"]');
+  expect(expandedPanel).not.toHaveStyleRule('border-right', 'none');
+});

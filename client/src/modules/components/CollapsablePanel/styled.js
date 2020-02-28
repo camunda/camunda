@@ -33,7 +33,6 @@ export const Collapsable = themed(styled.div`
   }};
 
   position: relative;
-
   display: flex;
   flex-direction: column;
 
@@ -63,12 +62,26 @@ const panelStyle = css`
     `visibility  ${transitionTimeout}ms ease-out, opacity ${transitionTimeout}ms ease-out`};
 `;
 
-export const ExpandedPanel = styled(BasicPanel)`
+const backgroundColors = css`
+  background-color: ${themeStyle({
+    dark: Colors.uiDark02,
+    light: Colors.uiLight02
+  })};
+`;
+
+export const ExpandedPanel = themed(styled(BasicPanel)`
   ${panelStyle}
   opacity: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
   visibility: ${({isCollapsed}) => (isCollapsed ? 'hidden' : 'visible')};
   z-index: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
-`;
+  ${({panelPosition}) => {
+    return panelPosition === PANEL_POSITION.RIGHT ? 'border-right: none;' : '';
+  }}
+  ${({hasBackgroundColor}) => {
+    return hasBackgroundColor ? backgroundColors : '';
+  }}
+
+`);
 
 export const CollapsedPanel = styled(BasicPanel)`
   ${panelStyle}

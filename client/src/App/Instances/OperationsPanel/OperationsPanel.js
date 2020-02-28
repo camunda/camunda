@@ -13,7 +13,8 @@ import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 
 import useBatchOperations from './useBatchOperations';
 import * as Styled from './styled';
-import {isBatchOperationRunning} from './service';
+import * as CONSTANTS from './constants';
+import {isBatchOperationRunning, hasBatchOperations} from './service';
 import OperationsEntry from './OperationsEntry';
 
 function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
@@ -23,25 +24,30 @@ function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
 
   return (
     <CollapsablePanel
-      label="Operations"
+      label={CONSTANTS.OPERATIONS_LABEL}
       panelPosition={PANEL_POSITION.RIGHT}
       maxWidth={478}
       isOverlay
       isCollapsed={isOperationsCollapsed}
       toggle={toggleOperations}
+      hasBackgroundColor
       verticalLabelOffset={27}
     >
       <Styled.OperationsList>
-        {batchOperations.map(batchOperation => (
-          <OperationsEntry
-            isRunning={isBatchOperationRunning(batchOperation)}
-            id={batchOperation.id}
-            type={batchOperation.type}
-            endDate={batchOperation.endDate}
-            key={batchOperation.id}
-            data-test="operations-entry"
-          />
-        ))}
+        {hasBatchOperations(batchOperations) ? (
+          batchOperations.map(batchOperation => (
+            <OperationsEntry
+              isRunning={isBatchOperationRunning(batchOperation)}
+              id={batchOperation.id}
+              type={batchOperation.type}
+              endDate={batchOperation.endDate}
+              key={batchOperation.id}
+              data-test="operations-entry"
+            />
+          ))
+        ) : (
+          <Styled.EmptyMessage>{CONSTANTS.EMPTY_MESSAGE}</Styled.EmptyMessage>
+        )}
       </Styled.OperationsList>
     </CollapsablePanel>
   );
