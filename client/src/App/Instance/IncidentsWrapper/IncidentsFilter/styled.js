@@ -115,7 +115,7 @@ export const MoreDropdown = themed(styled(Dropdown)`
     &[data-button-open='true'] {
       color: #fff;
       background: ${Colors.selections};
-      border-color: ${Colors.primaryButton01};
+      border-color: ${Colors.primaryButton03};
     }
   }
 

@@ -25,7 +25,7 @@ export const NodeIcon = themed(styled(BasicFlowNodeIcon)`
 `);
 
 const selectionStyle = css`
-  border-color: ${Colors.primaryButton01};
+  border-color: ${Colors.darkFocusInner};
   border-width: 1px 1px 0px 1px;
   background: ${Colors.selections};
   color: '#fff';
@@ -42,7 +42,7 @@ const selectionStyle = css`
     width: 100%;
     height: 1px;
     z-index: 1;
-    background: ${Colors.primaryButton01};
+    background: ${Colors.darkFocusInner};
   }
 `;
 

@@ -56,7 +56,7 @@ export const Pill = themed(styled.button`
   border-style: solid;
   border-width: 1px;
   border-color: ${setColors(
-    Colors.primaryButton01,
+    Colors.primaryButton03,
     Colors.uiDark06,
     Colors.uiLight03
   )};
