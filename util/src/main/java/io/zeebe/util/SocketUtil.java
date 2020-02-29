@@ -16,6 +16,6 @@ public final class SocketUtil {
 
   public static String toHostAndPortString(InetSocketAddress inetSocketAddress) {
     return String.format(
-        HOST_PORT_FORMAT, inetSocketAddress.getHostName(), inetSocketAddress.getPort());
+        HOST_PORT_FORMAT, inetSocketAddress.getHostString(), inetSocketAddress.getPort());
   }
 }
