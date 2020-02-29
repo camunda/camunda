@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 camunda services GmbH (info@camunda.com)
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.zeebe.config.AppCfg;
 import java.util.Arrays;
 import java.util.List;
 
-public class AllInOne extends App {
+public final class AllInOne extends App {
 
   private final AppCfg appCfg;
 

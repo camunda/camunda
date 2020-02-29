@@ -6,11 +6,24 @@
 
   <groupId>io.zeebe</groupId>
   <artifactId>zeebe-benchmark</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <inceptionYear>2019</inceptionYear>
+
+  <parent>
+    <groupId>io.zeebe</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>0.23.0-SNAPSHOT</version>
+    <relativePath>../../parent</relativePath>
+  </parent>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
 
     <!-- compiler configuration -->
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -30,6 +43,17 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>28.2-jre</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+      <version>1.27.2</version>
+    </dependency>
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
