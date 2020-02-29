@@ -257,7 +257,9 @@ public final class ClusteringRule extends ExternalResource {
       // all nodes have to join the same broker
       // https://github.com/zeebe-io/zeebe/issues/2012
 
-      setInitialContactPoints(getBrokerCfg(0).getNetwork().getInternalApi().getAddress().toString())
+      setInitialContactPoints(
+              io.zeebe.util.SocketUtil.toHostAndPortString(
+                  getBrokerCfg(0).getNetwork().getInternalApi().getAddress()))
           .accept(brokerCfg);
     }
 
@@ -281,7 +283,8 @@ public final class ClusteringRule extends ExternalResource {
 
   private Gateway createGateway() {
     final String contactPoint =
-        getBrokerCfg(0).getNetwork().getInternalApi().getAddress().toString();
+        io.zeebe.util.SocketUtil.toHostAndPortString(
+            getBrokerCfg(0).getNetwork().getInternalApi().getAddress());
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
@@ -324,7 +327,9 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   private ZeebeClient createClient() {
-    final String contactPoint = gateway.getGatewayCfg().getNetwork().toSocketAddress().toString();
+    final String contactPoint =
+        io.zeebe.util.SocketUtil.toHostAndPortString(
+            gateway.getGatewayCfg().getNetwork().toSocketAddress());
     final ZeebeClientBuilder zeebeClientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint);
 

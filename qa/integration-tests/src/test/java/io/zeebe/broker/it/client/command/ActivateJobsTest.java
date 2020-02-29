@@ -16,6 +16,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.test.util.BrokerClassRuleHelper;
+import io.zeebe.util.SocketUtil;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -138,7 +139,7 @@ public final class ActivateJobsTest {
     for (int i = 0; i < count; i++) {
       final ZeebeClient client =
           ZeebeClient.newClientBuilder()
-              .brokerContactPoint(BROKER_RULE.getGatewayAddress().toString())
+              .brokerContactPoint(SocketUtil.toHostAndPortString(BROKER_RULE.getGatewayAddress()))
               .usePlaintext()
               .build();
 
