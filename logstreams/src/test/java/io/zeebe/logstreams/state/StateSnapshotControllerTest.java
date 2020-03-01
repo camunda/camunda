@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+@SuppressWarnings("unchecked")
 public final class StateSnapshotControllerTest {
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
@@ -73,14 +74,14 @@ public final class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldOpenNewDatabaseIfNoSnapshotsToRecoverFrom() throws Exception {
+  public void shouldDoNothingIfNoSnapshotsToRecoverFrom() throws Exception {
     // given
 
     // when
     snapshotController.recover();
 
     // then
-    assertThat(snapshotController.isDbOpened()).isTrue();
+    assertThat(snapshotController.isDbOpened()).isFalse();
   }
 
   @Test
@@ -95,7 +96,7 @@ public final class StateSnapshotControllerTest {
     wrapper.putInt(key, value);
     snapshotController.close();
     snapshotController.recover();
-    assertThat(snapshotController.isDbOpened()).isTrue();
+    assertThat(snapshotController.isDbOpened()).isFalse();
     wrapper.wrap(snapshotController.openDb());
 
     // then
@@ -197,22 +198,22 @@ public final class StateSnapshotControllerTest {
     final var lastTempSnapshot = snapshotController.takeTempSnapshot(6L);
 
     // when/then
-    assertThat(snapshotController.getLastValidSnapshotDirectory())
+    assertThat(snapshotController.getLastValidSnapshotDirectory().toPath())
         .isEqualTo(lastValidSnapshot.getPath())
         .isNotEqualTo(lastTempSnapshot.getPath());
   }
 
   private void corruptLatestSnapshot() throws IOException {
     final var snapshot = storage.getLatestSnapshot();
-    assertThat(snapshot).isPresent();
+    final var path = snapshot.orElseThrow().getPath();
 
-    final var optionalFile =
-        Files.list(snapshot.get().getPath())
-            .filter(p -> p.toString().endsWith(".sst"))
-            .sorted(Comparator.reverseOrder())
-            .findFirst();
-    assertThat(optionalFile).isPresent();
-    Files.write(
-        optionalFile.get(), "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
+    try (final var files = Files.list(path)) {
+      final var file =
+          files
+              .filter(p -> p.toString().endsWith(".sst"))
+              .max(Comparator.naturalOrder())
+              .orElseThrow();
+      Files.write(file, "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
+    }
   }
 }

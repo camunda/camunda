@@ -26,8 +26,9 @@ import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.broker.exporter.stream.ExporterDirectorContext;
-import io.zeebe.broker.logstreams.LogStreamDeletionService;
-import io.zeebe.broker.logstreams.state.StatePositionSupplier;
+import io.zeebe.broker.logstreams.AtomixLogCompactor;
+import io.zeebe.broker.logstreams.LogCompactor;
+import io.zeebe.broker.logstreams.LogDeletionService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.monitoring.HealthMetrics;
@@ -302,10 +303,9 @@ public final class ZeebePartition extends Actor
           e);
     }
 
-    final StatePositionSupplier positionSupplier = new StatePositionSupplier(LOG);
-    final LogStreamDeletionService deletionService =
-        new LogStreamDeletionService(
-            localBroker.getNodeId(), partitionId, logStream, snapshotStorage, positionSupplier);
+    final LogCompactor logCompactor = new AtomixLogCompactor(atomixRaftPartition.getServer());
+    final LogDeletionService deletionService =
+        new LogDeletionService(localBroker.getNodeId(), partitionId, logCompactor, snapshotStorage);
     closeables.add(deletionService);
 
     return scheduler.submitActor(deletionService);
@@ -603,10 +603,12 @@ public final class ZeebePartition extends Actor
     super.close();
   }
 
+  @Override
   public void onFailure() {
     actor.run(() -> updateHealthStatus(HealthStatus.UNHEALTHY));
   }
 
+  @Override
   public void onRecovered() {
     actor.run(() -> updateHealthStatus(HealthStatus.HEALTHY));
   }

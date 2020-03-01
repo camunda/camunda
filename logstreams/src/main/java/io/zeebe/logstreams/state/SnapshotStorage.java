@@ -42,9 +42,9 @@ public interface SnapshotStorage extends AutoCloseable {
    * trigger further side effects, such as deleting old snapshots, compacting, etc.
    *
    * @param snapshot the snapshot to commit
-   * @return true if committed, false otherwise
+   * @return the committed snapshot
    */
-  default boolean commitSnapshot(final Snapshot snapshot) {
+  default Optional<Snapshot> commitSnapshot(final Snapshot snapshot) {
     return commitSnapshot(snapshot.getPath());
   }
 
@@ -53,9 +53,9 @@ public interface SnapshotStorage extends AutoCloseable {
    * trigger further side effects, such as deleting old snapshots, compacting, etc.
    *
    * @param snapshotPath the path to the snapshot to commit
-   * @return true if committed, false otherwise
+   * @return the committed snapshot
    */
-  boolean commitSnapshot(Path snapshotPath);
+  Optional<Snapshot> commitSnapshot(Path snapshotPath);
 
   /**
    * Returns the latest snapshot if any.

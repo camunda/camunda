@@ -50,9 +50,7 @@ public class StateSnapshotController implements SnapshotController {
   public Snapshot takeSnapshot(final long lowerBoundSnapshotPosition) {
     final var snapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
     createSnapshot(snapshot.getPath());
-    storage.commitSnapshot(snapshot);
-
-    return snapshot;
+    return storage.commitSnapshot(snapshot).orElseThrow();
   }
 
   @Override

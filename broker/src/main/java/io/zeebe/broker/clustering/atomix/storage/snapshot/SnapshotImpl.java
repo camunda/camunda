@@ -12,17 +12,17 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 final class SnapshotImpl implements Snapshot {
-  private final long position;
+  private final long compactionBound;
   private final Path path;
 
-  SnapshotImpl(final long position, final Path path) {
-    this.position = position;
+  SnapshotImpl(final long compactionBound, final Path path) {
+    this.compactionBound = compactionBound;
     this.path = path;
   }
 
   @Override
-  public long getPosition() {
-    return position;
+  public long getCompactionBound() {
+    return compactionBound;
   }
 
   @Override
@@ -32,25 +32,26 @@ final class SnapshotImpl implements Snapshot {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getPosition(), getPath());
+    return Objects.hash(getCompactionBound(), getPath());
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object other) {
+    if (this == other) {
       return true;
     }
 
-    if (o == null || getClass() != o.getClass()) {
+    if (other == null || getClass() != other.getClass()) {
       return false;
     }
 
-    final SnapshotImpl snapshot = (SnapshotImpl) o;
-    return getPosition() == snapshot.getPosition() && getPath().equals(snapshot.getPath());
+    final SnapshotImpl snapshot = (SnapshotImpl) other;
+    return getCompactionBound() == snapshot.getCompactionBound()
+        && getPath().equals(snapshot.getPath());
   }
 
   @Override
   public String toString() {
-    return "SnapshotImpl{" + "position=" + position + ", path=" + path + '}';
+    return "SnapshotImpl{" + "path=" + path + ", compactionBound=" + compactionBound + '}';
   }
 }

@@ -192,7 +192,8 @@ public final class AsyncSnapshotDirector extends Actor {
 
       LOG.debug(LOG_MSG_ENFORCE_SNAPSHOT, lastProcessedPosition);
       try {
-        createSnapshot(() -> snapshotController.takeSnapshot(lastProcessedPosition));
+        snapshotController.takeSnapshot(lastProcessedPosition);
+        LOG.debug("Created snapshot for {}", processorName);
       } catch (final Exception ex) {
         LOG.error(ERROR_MSG_ENFORCED_SNAPSHOT, ex);
       }

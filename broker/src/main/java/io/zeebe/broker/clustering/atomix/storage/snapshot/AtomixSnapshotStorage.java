@@ -65,11 +65,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
               indexed.index(),
               indexed.entry().term(),
               WallClockTimestamp.from(System.currentTimeMillis()));
-      final var pendingPath = pending.getPath();
-      final var realPath =
-          pendingPath.resolveSibling(
-              String.format("%s-%d", pendingPath.getFileName(), snapshotPosition));
-      return new SnapshotImpl(snapshotPosition, realPath);
+      return new SnapshotImpl(indexed.index(), pending.getPath());
     } else {
       LOGGER.debug(
           "No previous entry found for position {}, cannot take snapshot", snapshotPosition);
@@ -84,18 +80,16 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     if (optionalMeta.isPresent()) {
       final var metadata = optionalMeta.get();
       return getPendingDirectoryFor(
-          metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), metadata.getPosition());
+          metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp());
     }
 
     return null;
   }
 
   @Override
-  public boolean commitSnapshot(final Path snapshotPath) {
-    // in the case of DbSnapshot instances, we expect the path to always contain all the metadata
-    try (final var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
-      return created != null;
-    }
+  public Optional<Snapshot> commitSnapshot(final Path snapshotPath) {
+    final var metadata = DbSnapshotMetadata.ofPath(snapshotPath);
+    return metadata.map(m -> createNewCommittedSnapshot(snapshotPath, m));
   }
 
   @Override
@@ -184,16 +178,23 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     LOGGER.debug("Snapshot {} removed from store {}", snapshot, store);
   }
 
+  private Snapshot createNewCommittedSnapshot(
+      final Path snapshotPath, final DbSnapshotMetadata metadata) {
+    try (final var created =
+        store.newSnapshot(
+            metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), snapshotPath)) {
+      return new SnapshotImpl(metadata.getIndex(), created.getPath());
+    }
+  }
+
   private Path getPendingDirectoryFor(
-      final long index, final long term, final WallClockTimestamp timestamp, final long position) {
-    final var pending = store.newPendingSnapshot(index, term, timestamp);
-    final var pendingPath = pending.getPath();
-    return pendingPath.resolveSibling(String.format("%s-%d", pendingPath.getFileName(), position));
+      final long index, final long term, final WallClockTimestamp timestamp) {
+    return store.newPendingSnapshot(index, term, timestamp).getPath();
   }
 
   private Optional<Snapshot> toSnapshot(final Path path) {
     return DbSnapshotMetadata.ofPath(path)
-        .map(metadata -> new SnapshotImpl(metadata.getPosition(), path));
+        .map(metadata -> new SnapshotImpl(metadata.getIndex(), path));
   }
 
   private void observeExistingSnapshots() {
@@ -220,7 +221,7 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
       }
 
       metrics.observeSnapshotSize(totalSize);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.warn("Failed to observe size for snapshot {}", snapshot, e);
     }
   }

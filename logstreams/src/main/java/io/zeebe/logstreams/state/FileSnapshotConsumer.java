@@ -34,7 +34,7 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
 
   @Override
   public boolean completeSnapshot(final String snapshotId) {
-    return storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotId));
+    return storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotId)).isPresent();
   }
 
   @Override

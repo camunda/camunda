@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 
 public final class StateReplication implements SnapshotReplication {
 
-  public static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
+  private static final String REPLICATION_TOPIC_FORMAT = "replication-%d";
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final String replicationTopic;
@@ -48,7 +48,7 @@ public final class StateReplication implements SnapshotReplication {
     eventService.broadcast(
         replicationTopic,
         snapshot,
-        (s) -> {
+        s -> {
           LOG.trace(
               "Replicate on topic {} snapshot chunk {} for snapshot {}.",
               replicationTopic,
@@ -62,7 +62,7 @@ public final class StateReplication implements SnapshotReplication {
 
   @Override
   public void consume(final Consumer<SnapshotChunk> consumer) {
-    executorService = Executors.newSingleThreadExecutor((r) -> new Thread(r, threadName));
+    executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
 
     subscription =
         eventService

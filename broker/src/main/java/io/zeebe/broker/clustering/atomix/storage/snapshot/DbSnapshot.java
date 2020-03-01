@@ -31,16 +31,6 @@ public final class DbSnapshot implements Snapshot {
   private final Path directory;
   private final DbSnapshotMetadata metadata;
 
-  public DbSnapshot(
-      final Path directory,
-      final long index,
-      final long term,
-      final WallClockTimestamp timestamp,
-      final long position) {
-    this.directory = directory;
-    this.metadata = new DbSnapshotMetadata(index, term, timestamp, position);
-  }
-
   DbSnapshot(final Path directory, final DbSnapshotMetadata metadata) {
     this.directory = directory;
     this.metadata = metadata;
