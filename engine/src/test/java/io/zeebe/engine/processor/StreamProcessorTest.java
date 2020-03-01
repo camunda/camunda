@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
@@ -25,6 +24,7 @@ import static org.mockito.Mockito.verify;
 
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.StreamProcessorRule;
+import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -503,9 +503,7 @@ public final class StreamProcessorTest {
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
-    inOrder
-        .verify(stateSnapshotController, TIMEOUT.times(1))
-        .commitSnapshot(argThat(s -> s.getPosition() == position));
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).commitSnapshot(any(Snapshot.class));
   }
 
   @Test
@@ -540,7 +538,6 @@ public final class StreamProcessorTest {
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeSnapshot(anyLong());
   }
@@ -590,12 +587,9 @@ public final class StreamProcessorTest {
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot(anyLong());
-    inOrder
-        .verify(stateSnapshotController, never())
-        .commitSnapshot(argThat(s -> s.getPosition() == position));
+    inOrder.verify(stateSnapshotController, never()).commitSnapshot(any(Snapshot.class));
   }
 
   @Test
@@ -618,7 +612,6 @@ public final class StreamProcessorTest {
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot(anyLong());
     inOrder.verify(stateSnapshotController, never()).commitSnapshot(any());
