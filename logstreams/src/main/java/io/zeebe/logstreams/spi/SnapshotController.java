@@ -54,7 +54,7 @@ public interface SnapshotController extends AutoCloseable {
    *
    * @return the lower bound position related to the snapshot
    */
-  long recover() throws Exception;
+  void recover() throws Exception;
 
   /**
    * Opens the database from the latest snapshot.
@@ -69,13 +69,6 @@ public interface SnapshotController extends AutoCloseable {
    * @return valid snapshots count
    */
   int getValidSnapshotsCount();
-
-  /**
-   * Returns the position of the last valid snapshot. Or, -1 if no valid snapshot exists.
-   *
-   * @return the snapshot position
-   */
-  long getLastValidSnapshotPosition();
 
   /**
    * Returns the latest valid snapshot's directory.

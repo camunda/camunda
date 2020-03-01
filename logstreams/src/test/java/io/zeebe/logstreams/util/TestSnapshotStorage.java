@@ -136,16 +136,16 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
   private static final class SnapshotImpl implements Snapshot {
     private final Path path;
-    private final long position;
+    private final long compactionBound;
 
     private SnapshotImpl(final Path path) {
       this.path = path;
-      this.position = Long.valueOf(path.getFileName().toString());
+      this.compactionBound = Long.valueOf(path.getFileName().toString());
     }
 
     @Override
-    public long getPosition() {
-      return position;
+    public long getCompactionBound() {
+      return compactionBound;
     }
 
     @Override
@@ -155,7 +155,7 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
     @Override
     public String toString() {
-      return "SnapshotImpl{" + "path=" + path + ", position=" + position + '}';
+      return "SnapshotImpl{" + "path=" + path + ", compactionBound=" + compactionBound + '}';
     }
   }
 }

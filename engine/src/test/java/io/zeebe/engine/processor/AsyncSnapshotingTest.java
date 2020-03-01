@@ -133,7 +133,7 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldValidSnapshotWhenCommitPositionGreaterEquals() throws Exception {
+  public void shouldValidSnapshotWhenCommitPositionGreaterEquals() {
     // given
     clock.addTime(Duration.ofMinutes(1));
 
@@ -149,7 +149,7 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldNotStopTakingSnapshotsAfterFailingReplication() throws Exception {
+  public void shouldNotStopTakingSnapshotsAfterFailingReplication() {
     // given
     final RuntimeException expectedException = new RuntimeException("expected");
     doThrow(expectedException).when(snapshotController).replicateLatestSnapshot(any());
@@ -190,7 +190,7 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldTakeSnapshotsOneByOne() throws Exception {
+  public void shouldTakeSnapshotsOneByOne() {
     // given
     clock.addTime(Duration.ofMinutes(1));
     verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
@@ -207,7 +207,7 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldDeleteDataOnMaxSnapshots() throws IOException {
+  public void shouldDeleteDataOnMaxSnapshots() {
     // when
     clock.addTime(Duration.ofMinutes(1));
     verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
@@ -318,7 +318,7 @@ public final class AsyncSnapshotingTest {
   }
 
   @Test
-  public void shouldNotTakeSnapshotIfExistsAfterRestart() throws Exception {
+  public void shouldNotTakeSnapshotIfExistsAfterRestart() {
     // given
     final long lastProcessedPosition = 25L;
     final long lastWrittenPosition = lastProcessedPosition;

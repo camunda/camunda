@@ -78,9 +78,7 @@ public final class AsyncSnapshotDirector extends Actor {
     commitCondition = actor.onCondition(getConditionNameForPosition(), this::onCommitCheck);
     logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
 
-    // is this necessary other than for logging? I mean we recover from the latest valid snapshot,
-    // and start processing from there, so we wouldn't try to take snapshots before anyway?
-    lastValidSnapshotPosition = Long.MIN_VALUE;
+    lastValidSnapshotPosition = -1;
   }
 
   @Override

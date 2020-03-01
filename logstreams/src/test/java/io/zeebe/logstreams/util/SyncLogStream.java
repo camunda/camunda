@@ -73,9 +73,4 @@ public class SyncLogStream implements SynchronousLogStream {
   public LogStreamReader newLogStreamReader() {
     return logStream.newLogStreamReader().join();
   }
-
-  @Override
-  public void delete(final long position) {
-    logStream.delete(position);
-  }
 }

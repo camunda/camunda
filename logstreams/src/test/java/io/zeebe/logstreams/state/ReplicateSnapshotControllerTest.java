@@ -131,8 +131,8 @@ public final class ReplicateSnapshotControllerTest {
 
     // then
     final RocksDBWrapper wrapper = new RocksDBWrapper();
-    final long recoveredSnapshot = receiverSnapshotController.recover();
-    assertThat(recoveredSnapshot).isEqualTo(1);
+    receiverSnapshotController.recover();
+    assertThat(receiverSnapshotController.isDbOpened()).isTrue();
 
     wrapper.wrap(receiverSnapshotController.openDb());
     final int valueFromSnapshot = wrapper.getInt(KEY);
@@ -151,8 +151,8 @@ public final class ReplicateSnapshotControllerTest {
 
     // then
     final RocksDBWrapper wrapper = new RocksDBWrapper();
-    final long recoveredSnapshot = receiverSnapshotController.recover();
-    assertThat(recoveredSnapshot).isEqualTo(1);
+    receiverSnapshotController.recover();
+    assertThat(receiverSnapshotController.isDbOpened()).isTrue();
 
     wrapper.wrap(receiverSnapshotController.openDb());
     final int valueFromSnapshot = wrapper.getInt(KEY);

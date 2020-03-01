@@ -32,7 +32,7 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
 public final class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
-  public static final long INVALID_ADDRESS = -1L;
+  private static final long INVALID_ADDRESS = -1L;
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
@@ -56,7 +56,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
   private final AtomicInteger openWriterCount = new AtomicInteger(0);
 
-  public LogStreamImpl(
+  LogStreamImpl(
       final ActorScheduler actorScheduler,
       final ActorConditions onCommitPositionUpdatedConditions,
       final String logName,
@@ -161,15 +161,6 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   }
 
   @Override
-  public void delete(final long position) {
-    actor.call(
-        () -> {
-          final long address = reader.lookupAddress(position);
-          logStorage.delete(address);
-        });
-  }
-
-  @Override
   public void registerOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     actor.call(() -> onCommitPositionUpdatedConditions.registerConsumer(condition));
   }
@@ -183,9 +174,9 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   public ActorFuture<LogStreamReader> newLogStreamReader() {
     return actor.call(
         () -> {
-          final LogStreamReaderImpl reader = new LogStreamReaderImpl(logStorage);
-          readers.add(reader);
-          return reader;
+          final LogStreamReaderImpl newReader = new LogStreamReaderImpl(logStorage);
+          readers.add(newReader);
+          return newReader;
         });
   }
 
@@ -286,8 +277,6 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
     final var appenderOpenFuture = new CompletableActorFuture<LogStorageAppender>();
 
     appenderFuture = appenderOpenFuture;
-    final String logName = getLogName();
-
     final int initialDispatcherPartitionId = determineInitialPartitionId();
     writeBuffer =
         Dispatchers.create(buildActorName(nodeId, "dispatcher-" + partitionId))
@@ -335,13 +324,13 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
       final long lastPosition = logReader.seekToEnd();
 
       // dispatcher needs to generate positions greater than the last position
-      int partitionId = 0;
+      int dispatcherPartitionId = 0;
 
       if (lastPosition > 0) {
-        partitionId = PositionUtil.partitionId(lastPosition);
+        dispatcherPartitionId = PositionUtil.partitionId(lastPosition);
       }
 
-      return partitionId;
+      return dispatcherPartitionId;
     }
   }
 

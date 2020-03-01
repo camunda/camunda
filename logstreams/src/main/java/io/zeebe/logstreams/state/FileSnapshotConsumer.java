@@ -17,12 +17,12 @@ import java.nio.file.StandardOpenOption;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
-public final class FileSnapshotConsumer implements SnapshotConsumer {
+final class FileSnapshotConsumer implements SnapshotConsumer {
 
   private final SnapshotStorage storage;
   private final Logger logger;
 
-  public FileSnapshotConsumer(final SnapshotStorage storage, final Logger logger) {
+  FileSnapshotConsumer(final SnapshotStorage storage, final Logger logger) {
     this.storage = storage;
     this.logger = logger;
   }

@@ -77,10 +77,10 @@ public final class StateSnapshotControllerTest {
     // given
 
     // when
-    final long lowerBoundSnapshotPosition = snapshotController.recover();
+    snapshotController.recover();
 
     // then
-    assertThat(lowerBoundSnapshotPosition).isEqualTo(-1);
+    assertThat(snapshotController.isDbOpened()).isTrue();
   }
 
   @Test
@@ -94,11 +94,11 @@ public final class StateSnapshotControllerTest {
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
     snapshotController.close();
-    final long lowerBound = snapshotController.recover();
+    snapshotController.recover();
+    assertThat(snapshotController.isDbOpened()).isTrue();
     wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(lowerBound).isEqualTo(-1);
     assertThat(wrapper.mayExist(key)).isFalse();
   }
 
@@ -120,11 +120,10 @@ public final class StateSnapshotControllerTest {
     snapshotController.close();
 
     // when
-    final long lowerBound = snapshotController.recover();
+    snapshotController.recover();
     wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(lowerBound).isEqualTo(3);
     assertThat(wrapper.getInt("x")).isEqualTo(3);
   }
 
@@ -144,11 +143,10 @@ public final class StateSnapshotControllerTest {
     corruptLatestSnapshot();
 
     // when
-    final long lowerBound = snapshotController.recover();
+    snapshotController.recover();
     wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(lowerBound).isEqualTo(1);
     assertThat(wrapper.getInt("x")).isEqualTo(1);
   }
 
@@ -191,15 +189,17 @@ public final class StateSnapshotControllerTest {
     // given
     snapshotController.openDb();
 
-    assertThat(snapshotController.getLastValidSnapshotPosition()).isEqualTo(-1L);
+    assertThat(snapshotController.getLastValidSnapshotDirectory()).isNull();
 
     snapshotController.takeSnapshot(1L);
     snapshotController.takeSnapshot(3L);
-    snapshotController.takeSnapshot(5L);
-    snapshotController.takeTempSnapshot(6L);
+    final var lastValidSnapshot = snapshotController.takeSnapshot(5L);
+    final var lastTempSnapshot = snapshotController.takeTempSnapshot(6L);
 
     // when/then
-    assertThat(snapshotController.getLastValidSnapshotPosition()).isEqualTo(5L);
+    assertThat(snapshotController.getLastValidSnapshotDirectory())
+        .isEqualTo(lastValidSnapshot.getPath())
+        .isNotEqualTo(lastTempSnapshot.getPath());
   }
 
   private void corruptLatestSnapshot() throws IOException {

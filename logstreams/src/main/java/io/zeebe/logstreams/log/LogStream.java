@@ -63,13 +63,6 @@ public interface LogStream extends AutoCloseable {
   ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter();
 
   /**
-   * Triggers deletion of data from the log stream, where the given position is used as upper bound.
-   *
-   * @param position the position as upper bound
-   */
-  void delete(long position);
-
-  /**
    * Registers for on commit updates.
    *
    * @param condition the condition which should be signalled.

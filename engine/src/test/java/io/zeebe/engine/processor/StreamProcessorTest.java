@@ -358,7 +358,7 @@ public final class StreamProcessorTest {
     final AtomicLong generatedKey = new AtomicLong(-1L);
     final CountDownLatch processLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
-        (processingContext) -> {
+        processingContext -> {
           processingContextActor = processingContext.getActor();
           final ZeebeState state = processingContext.getZeebeState();
           return processors(state.getKeyGenerator())
@@ -417,7 +417,7 @@ public final class StreamProcessorTest {
 
     final CountDownLatch processingLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
-        (processingContext) -> {
+        processingContext -> {
           processingContextActor = processingContext.getActor();
           final ZeebeState state = processingContext.getZeebeState();
           return processors(state.getKeyGenerator())
@@ -572,7 +572,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldNotCreateSnapshotsIfNoProcessorProcessEvent() throws Exception {
+  public void shouldNotCreateSnapshotsIfNoProcessorProcessEvent() {
     // given
     streamProcessorRule.startTypedStreamProcessor((processors, context) -> processors);
 
@@ -593,7 +593,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldNotCreateSnapshotsIfNewEventExist() throws Exception {
+  public void shouldNotCreateSnapshotsIfNewEventExist() {
     // given
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
