@@ -7,16 +7,16 @@
 import React, {memo} from 'react';
 import PropTypes from 'prop-types';
 import Badge from 'modules/components/Badge';
-import * as Styled from '../styled.js';
+import * as Styled from './styled.js';
 
 // export default React.memo(function Skeleton(props) {
 export const BrandNavElement = memo(props => (
-  <li data-test={props.dataTest}>
+  <Styled.ListItem data-test={props.dataTest}>
     <Styled.Brand to={props.to} title={props.title}>
       <Styled.LogoIcon />
-      <span>{props.label}</span>
+      <Styled.BrandLabel>{props.label}</Styled.BrandLabel>
     </Styled.Brand>
-  </li>
+  </Styled.ListItem>
 ));
 
 BrandNavElement.propTypes = {
@@ -27,15 +27,15 @@ BrandNavElement.propTypes = {
 };
 
 export const LinkElement = memo(props => (
-  <li data-test={props.dataTest}>
+  <Styled.ListItem data-test={props.dataTest}>
     <Styled.DashboardLink
       to={props.to}
       isActive={props.isActive}
       title={props.title}
     >
-      <span>{props.label}</span>
+      <span data-test="dashboard-label">{props.label}</span>
     </Styled.DashboardLink>
-  </li>
+  </Styled.ListItem>
 ));
 
 LinkElement.propTypes = {
@@ -47,18 +47,18 @@ LinkElement.propTypes = {
 };
 
 export const NavElement = memo(props => (
-  <li data-test={props.dataTest}>
+  <Styled.ListItem data-test={props.dataTest} className={props.className}>
     <Styled.ListLink
       isActive={props.isActive}
       title={props.title}
       {...props.linkProps}
     >
-      <span>{props.label}</span>
+      <Styled.Label>{props.label}</Styled.Label>
       <Badge isActive={props.isActive} type={props.type}>
         {props.count}
       </Badge>
     </Styled.ListLink>
-  </li>
+  </Styled.ListItem>
 ));
 
 NavElement.propTypes = {
@@ -68,5 +68,6 @@ NavElement.propTypes = {
   linkProps: PropTypes.object,
   type: PropTypes.string,
   label: PropTypes.string,
-  count: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  count: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  className: PropTypes.string
 };

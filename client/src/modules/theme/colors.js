@@ -92,7 +92,11 @@ const Colors = {
   darkPillHover: '#767a80',
 
   // Instance History
-  darkTreeHover: '#4E4F55'
+  darkTreeHover: '#4E4F55',
+
+  // logo
+  logoLight: '#666666',
+  logoDark: '#f8f8f8'
 };
 
 export default Colors;

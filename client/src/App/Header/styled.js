@@ -5,11 +5,11 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {ReactComponent as Logo} from 'modules/components/Icon/logo.svg';
 import withStrippedProps from 'modules/utils/withStrippedProps';
+import {NavElement} from './NavElements';
+import * as Styled from './NavElements/styled';
 
 export const HEADER_HEIGHT = 56;
 const separator = themeStyle({
@@ -17,34 +17,16 @@ const separator = themeStyle({
   light: 'rgba(98, 98, 110, 0.25)'
 });
 
-export const LogoIcon = styled(Logo)`
-  position: relative;
-  top: 2px;
-
-  width: 15px;
-  height: 15px;
-  margin-right: 20px;
+export const FilterNavElement = styled(NavElement)`
+  ${Styled.Label} {
+    margin-right: 3px;
+  }
 `;
 
-export const Brand = themed(styled(
-  withStrippedProps(['toggleTheme', 'isActive'])(Link)
-)`
-  display: inline-block;
-  padding: 0 20px;
-  border-right: 1px solid ${separator};
-`);
-
-export const DashboardLink = themed(styled(
-  withStrippedProps(['toggleTheme', 'isActive'])(Link)
-)`
-  display: inline-block;
-  padding: 0 20px;
-  border-right: 1px solid ${separator};
-
-  span {
-    ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
-  }
-`);
+export const NavListItem = styled.div`
+  display: flex;
+  align-items: center;
+`;
 
 export const Header = themed(styled(
   withStrippedProps(['toggleTheme'])('header')
@@ -55,7 +37,7 @@ export const Header = themed(styled(
     dark: Colors.uiDark01,
     light: Colors.uiLight01
   })};
-  padding: 9px 0 0 0;
+  padding: 9px 20px 21px 20px;
   font-size: 15px;
   font-weight: 500;
   color: ${themeStyle({
@@ -65,23 +47,12 @@ export const Header = themed(styled(
   line-height: 19px;
 `);
 
-export const ListLink = themed(styled(
-  withStrippedProps(['toggleTheme', 'isActive'])(Link)
-)`
-  margin-left: 20px;
-  display: flex;
-  height: 20px;
-  align-items: center;
-  & span {
-    ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
-  }
-`);
-
 export const Detail = themed(styled.span`
   display: flex;
   align-items: center;
-  padding-left: 20px;
-  margin-left: 20px;
+  align-self: center;
+  padding: 12px 0 12px 20px;
+  margin-left: 21px;
   height: 50%;
   border-left: 1px solid ${separator};
 `);

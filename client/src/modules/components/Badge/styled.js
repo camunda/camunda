@@ -53,7 +53,7 @@ const opacityStyle = props =>
 const badgeCss = css`
   display: inline-block;
   height: 17px;
-  margin-left: 7px;
+  margin-left: 8px;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
@@ -62,7 +62,7 @@ const badgeCss = css`
 `;
 
 export const Badge = themed(styled.div`
-  padding: 0 6px;
+  padding: 0 9px;
   min-width: 17px;
 
   border-radius: 8.5px;
