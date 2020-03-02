@@ -191,7 +191,7 @@
                 <!--save document counts for testing after the migration-->
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="curl -s -f localhost:${old.optimize.elasticsearch.port}/_refresh" />
+                  <arg value="curl -s -f -X POST localhost:${old.optimize.elasticsearch.port}/_refresh" />
                 </exec>
 
                 <exec outputproperty="pi_count" executable="/bin/bash" failonerror="true">
@@ -346,7 +346,7 @@
                 <!--assert document counts are the same as before the migration-->
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/_refresh" />
+                  <arg value="curl -s -f -X POST localhost:${new.optimize.elasticsearch.port}/_refresh" />
                 </exec>
 
                 <exec outputproperty="post_migration_pi_count" executable="/bin/bash" failonerror="true">
