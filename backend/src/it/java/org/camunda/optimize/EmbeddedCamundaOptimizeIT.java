@@ -8,7 +8,6 @@ package org.camunda.optimize;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -23,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 public class EmbeddedCamundaOptimizeIT extends AbstractIT {
 
-  @Disabled
   @Test
   public void onOptimizeDestroyNoRemainingZombieThreads() throws Exception {
     embeddedOptimizeExtension.stopOptimize();
