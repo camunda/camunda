@@ -68,19 +68,18 @@ export const Pill = themed(styled.button`
   )};
 
   ${Count} {
-    background-color: ${themeStyle({
-      dark: Colors.darkButton02,
-      light: Colors.uiLight06
-    })};
-
-    ${({isActive}) => isActive && 'background: #fff'}
+    background-color: ${setColors(
+      '#fff',
+      Colors.darkButton02,
+      Colors.uiLight06
+    )};
+    opacity: ${({isActive}) =>
+      themeStyle({
+        dark: 1,
+        light: isActive ? 1 : 0.5
+      })};
+    
     ${({isActive}) => isActive && `color: ${Colors.selections}`}
-
-
-    opacity: ${themeStyle({
-      dark: 1,
-      light: 0.5
-    })};
   }
 
   &:disabled{
@@ -106,16 +105,16 @@ export const Pill = themed(styled.button`
     &:hover ${Count} {
       background-color: ${themeStyle({
         dark: Colors.darkButton02,
-        light: Colors.lightButton01
+        light: Colors.uiLight06
       })};
 
       ${({isActive}) => isActive && 'background: #fff'}
       ${({isActive}) => isActive && `color: ${Colors.selections}`}
-      
-      opacity: ${themeStyle({
-        dark: 1,
-        light: 0.55
-      })};
+      opacity: ${({isActive}) =>
+        themeStyle({
+          dark: 1,
+          light: isActive ? 1 : 0.55
+        })};
     }
   }
 `);
