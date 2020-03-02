@@ -25,6 +25,7 @@ public final class LongPollingActivateJobsRequest {
   private final BrokerActivateJobsRequest request;
   private final StreamObserver<ActivateJobsResponse> responseObserver;
   private final String jobType;
+  private final String worker;
   private final int maxJobsToActivate;
   private final Duration longPollingTimeout;
 
@@ -40,6 +41,7 @@ public final class LongPollingActivateJobsRequest {
         RequestMapper.toActivateJobsRequest(request),
         responseObserver,
         request.getType(),
+        request.getWorker(),
         request.getMaxJobsToActivate(),
         request.getRequestTimeout());
   }
@@ -48,6 +50,7 @@ public final class LongPollingActivateJobsRequest {
       final BrokerActivateJobsRequest request,
       final StreamObserver<ActivateJobsResponse> responseObserver,
       final String jobType,
+      final String worker,
       final int maxJobstoActivate,
       final long longPollingTimeout) {
     this.request = request;
@@ -57,6 +60,7 @@ public final class LongPollingActivateJobsRequest {
       cancelCheck = ((ServerCallStreamObserver) responseObserver)::isCancelled;
     }
     this.jobType = jobType;
+    this.worker = worker;
     this.maxJobsToActivate = maxJobstoActivate;
     this.longPollingTimeout =
         longPollingTimeout == 0 ? null : Duration.ofMillis(longPollingTimeout);
@@ -110,6 +114,10 @@ public final class LongPollingActivateJobsRequest {
 
   public String getType() {
     return jobType;
+  }
+
+  public String getWorker() {
+    return worker;
   }
 
   public int getMaxJobsToActivate() {
