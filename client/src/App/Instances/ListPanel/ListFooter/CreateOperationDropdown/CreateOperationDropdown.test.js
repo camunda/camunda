@@ -10,20 +10,11 @@ import {mount} from 'enzyme';
 import {OPERATION_TYPE} from 'modules/constants';
 import Dropdown from 'modules/components/Dropdown';
 
-import {
-  mockUseDataManager,
-  mockUseInstanceSelectionContext,
-  mockUseFilterContext,
-  expectedQuery
-} from './CreateOperationDropdown.setup';
+import {mockUseOperationApply} from './CreateOperationDropdown.setup';
 
 import CreateOperationDropdown from './';
 
-jest.mock('modules/hooks/useDataManager', () => () => mockUseDataManager);
-jest.mock('modules/hooks/useFilterContext', () => () => mockUseFilterContext);
-jest.mock('modules/hooks/useInstanceSelectionContext', () => () =>
-  mockUseInstanceSelectionContext
-);
+jest.mock('./useOperationApply', () => () => mockUseOperationApply);
 
 describe('CreateOperationDropdown', () => {
   beforeEach(() => {
@@ -80,10 +71,9 @@ describe('CreateOperationDropdown', () => {
 
     retryButton.simulate('click');
 
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.RESOLVE_INCIDENT,
-      expectedQuery
+    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledTimes(1);
+    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledWith(
+      OPERATION_TYPE.RESOLVE_INCIDENT
     );
   });
 
@@ -103,10 +93,33 @@ describe('CreateOperationDropdown', () => {
 
     retryButton.simulate('click');
 
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
-      expectedQuery
+    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledTimes(1);
+    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledWith(
+      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+    );
+  });
+
+  it('should call applyOperation', () => {
+    const node = mount(
+      <CreateOperationDropdown label="MyLabel" selectedCount={2} />
+    );
+
+    const button = node.find('[data-test="dropdown-toggle"]').first();
+
+    // when
+    button.simulate('click');
+
+    // then
+    const retryButton = node
+      .find(Dropdown.Option)
+      .at(1)
+      .find('button');
+
+    retryButton.simulate('click');
+
+    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledTimes(1);
+    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledWith(
+      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     );
   });
 });

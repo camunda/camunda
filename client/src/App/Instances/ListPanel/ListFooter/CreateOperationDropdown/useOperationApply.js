@@ -10,13 +10,24 @@ import useDataManager from 'modules/hooks/useDataManager';
 
 export default function useOperationApply() {
   const {query} = useFilterContext();
-  const {ids, excludeIds, reset} = useInstanceSelectionContext();
+  const {ids: selectedIds, excludeIds, reset} = useInstanceSelectionContext();
   const {applyBatchOperation} = useDataManager();
 
   return {
     applyOperation: operationType => {
       reset();
-      applyBatchOperation(operationType, {...query, ids, excludeIds});
+
+      const filterIds = query.ids || [];
+
+      // if ids are selected, ignore ids from filter
+      // if no ids are selected, apply ids from filter
+      const ids = selectedIds.length > 0 ? selectedIds : filterIds;
+
+      applyBatchOperation(operationType, {
+        ...query,
+        ids,
+        excludeIds
+      });
     }
   };
 }
