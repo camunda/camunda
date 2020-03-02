@@ -24,12 +24,10 @@ export const Dropdown = styled(DefaultDropdown)`
 
 export const ProfileDropdown = styled.span`
   margin-top: 7px;
-  margin-right: 20px;
   display: flex;
   align-items: center;
   margin-left: auto;
   flex-direction: row;
-  width: 130px;
   height: 50%;
 `;
 
