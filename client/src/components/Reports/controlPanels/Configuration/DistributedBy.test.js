@@ -14,7 +14,7 @@ const data = {
   visualization: 'line',
   view: {entity: 'userTask'},
   configuration: {},
-  groupBy: {type: 'flowNodes'}
+  groupBy: {type: 'userTasks'}
 };
 
 it('should match snapshot', () => {

@@ -41,7 +41,7 @@ export function processResult({data, result}) {
 }
 
 function filterResult(result, {groupBy: {type}, configuration: {hiddenNodes}}) {
-  if (type === 'flowNodes') {
+  if (type === 'flowNodes' || type === 'userTasks') {
     return {
       ...result,
       data: result.data.filter(

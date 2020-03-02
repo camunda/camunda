@@ -55,6 +55,7 @@ export const view = [
 export const groupBy = [
   {key: 'none', group: 'none', data: {type: 'none', value: null}},
   {key: 'flowNodes', group: 'fn', data: {type: 'flowNodes', value: null}},
+  {key: 'userTasks', group: 'task', data: {type: 'userTasks', value: null}},
   {
     key: 'startDate',
     group: 'date',
@@ -118,7 +119,7 @@ export const combinations = {
     fn: ['table', 'chart', 'heat']
   },
   userTask: {
-    fn: ['table', 'chart', 'heat'],
+    task: ['table', 'chart', 'heat'],
     user: ['table', 'chart']
   }
 };

@@ -247,5 +247,8 @@ function convertGroupByType(type) {
   if (type === 'startDate' || type === 'endDate') {
     return 'date';
   }
+  if (type === 'userTasks') {
+    return 'flowNodes';
+  }
   return type;
 }

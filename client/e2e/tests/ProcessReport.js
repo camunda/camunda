@@ -586,12 +586,13 @@ test('should only enable valid combinations for user task', async t => {
   await t.click(e.groupbyDropdown);
 
   await t.expect(e.option('None').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Flow Nodes').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Flow Nodes').hasAttribute('disabled')).ok();
+  await t.expect(e.option('User Task').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Assignee').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Candidate Group').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Start Date of Process Instance').hasAttribute('disabled')).ok();
 
-  await t.click(e.option('Flow Nodes'));
+  await t.click(e.option('User Tasks'));
 
   await t.click(e.visualizationDropdown);
 

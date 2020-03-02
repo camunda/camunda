@@ -79,7 +79,7 @@ export default withErrorHandling(
       return {
         ...tableData,
         resultType: result.type,
-        sortByLabel: data.groupBy.type === 'flowNodes',
+        sortByLabel: ['flowNodes', 'userTasks'].includes(data.groupBy.type),
         updateSorting: updateReport && this.updateSorting,
         sorting: configuration && configuration.sorting
       };

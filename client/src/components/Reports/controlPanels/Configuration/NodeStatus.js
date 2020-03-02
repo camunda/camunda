@@ -15,7 +15,7 @@ export default function NodeStatus({
   },
   onChange
 }) {
-  if (groupBy && ['flowNodes', 'assignee', 'candidateGroup'].includes(groupBy.type)) {
+  if (groupBy && ['userTasks', 'flowNodes', 'assignee', 'candidateGroup'].includes(groupBy.type)) {
     return (
       <fieldset className="NodeStatus">
         <legend>{t('report.config.nodeStatus.legend')}</legend>

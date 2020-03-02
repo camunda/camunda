@@ -210,6 +210,7 @@
       "label": "Gruppiere nach",
       "none": "Keiner",
       "flowNodes": "Prozessknoten",
+      "userTasks": "Benutzeraufgaben",
       "startDate": "Startdatum der Prozessinstanz",
       "automatic": "Automatisch",
       "endDate": "Enddatum der Prozessinstanz",

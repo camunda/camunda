@@ -32,7 +32,7 @@ export default class VisibleNodesFilter extends React.Component {
       }
     } = this.props.report;
 
-    if (!combined && groupBy.type === 'flowNodes') {
+    if (!combined && ['flowNodes', 'userTasks'].includes(groupBy.type)) {
       return (
         <div className="VisibleNodesFilter">
           <fieldset>

@@ -79,7 +79,7 @@ export function calculateLinePosition(chart) {
 }
 
 export function canBeInterpolated({type, value}, xml, decisionDefinitionKey) {
-  if (type === 'flowNodes') {
+  if (type === 'flowNodes' || type === 'userTasks') {
     return false;
   }
   if (type === 'variable' && value.type === 'String') {

@@ -33,7 +33,7 @@ export default function DistributedBy({
           }}
         >
           <Select.Option value="none">{t('common.none')}</Select.Option>
-          {groupBy.type === 'flowNodes' ? (
+          {groupBy.type === 'userTasks' ? (
             <>
               <Select.Option key="assignee" value="assignee">
                 {t('report.groupBy.userAssignee')}

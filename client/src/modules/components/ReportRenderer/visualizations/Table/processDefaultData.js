@@ -25,7 +25,7 @@ export default function processDefaultData({formatter = v => v, report}) {
     config.getLabelFor('view', config.options.view, view)
   ];
 
-  if (view.entity === 'userTask' && groupBy.type === 'flowNodes') {
+  if (view.entity === 'userTask' && groupBy.type === 'userTasks') {
     labels[0] = t('report.view.userTask');
   }
 

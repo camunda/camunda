@@ -55,7 +55,7 @@ export default function reportConfig({view, groupBy, visualization, combinations
 
     if (
       ['line', 'pie', 'heat'].includes(targetVisualization) &&
-      ['user', 'fn'].includes(groupGroup) &&
+      ['user', 'task'].includes(groupGroup) &&
       report.data.configuration.distributedBy !== 'none'
     ) {
       return false;

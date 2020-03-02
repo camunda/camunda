@@ -103,10 +103,10 @@ it('should forbid line and pie charts for distributed user task reports', () => 
   expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
 });
 
-it('should forbid line, pie charts and heatmap for distributed flownode reports', () => {
+it('should forbid line, pie charts and heatmap for distributed userTask reports', () => {
   const report = {data: {configuration: {distributedBy: 'assignee'}}};
   const view = {entity: 'userTask', property: 'frequency'};
-  const groupBy = {type: 'flowNodes', value: null};
+  const groupBy = {type: 'userTasks', value: null};
 
   expect(isAllowed(report, view, groupBy, 'table')).toBeTruthy();
   expect(isAllowed(report, view, groupBy, 'line')).toBeFalsy();
