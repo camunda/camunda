@@ -27,6 +27,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,20 +68,24 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
   }
 
   @Override
-  public void runImport() {
+  public CompletableFuture<Void> runImport() {
+    final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
-      List<ImportIndexDto> importIndexes =
-        Stream.concat(
+      final List<ImportIndexDto> importIndexes = Stream
+        .concat(
           createStreamForHandlers(importIndexHandlerRegistry.getAllEntitiesBasedHandlers(engineContext.getEngineAlias())),
           createStreamForHandlers(importIndexHandlerRegistry.getTimestampBasedHandlers(engineContext.getEngineAlias()))
         )
-          .map(ImportIndexHandler::createIndexInformationForStoring)
-          .collect(Collectors.toList());
-      importService.executeImport(importIndexes);
+        .map(ImportIndexHandler::createIndexInformationForStoring)
+        .collect(Collectors.toList());
+
+      importService.executeImport(importIndexes, () -> importCompleted.complete(null));
     } catch (Exception e) {
       log.error("Could not execute import for storing index information!", e);
+      importCompleted.complete(null);
     }
+    return importCompleted;
   }
 
   @Override

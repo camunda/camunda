@@ -15,13 +15,14 @@ public class ProcessDefinitionElasticsearchImportJob extends ElasticsearchImport
 
   private ProcessDefinitionWriter processDefinitionWriter;
 
-  public ProcessDefinitionElasticsearchImportJob(ProcessDefinitionWriter processDefinitionWriter) {
-    super();
+  public ProcessDefinitionElasticsearchImportJob(final ProcessDefinitionWriter processDefinitionWriter,
+                                                 final Runnable importCompleteCallback) {
+    super(importCompleteCallback);
     this.processDefinitionWriter = processDefinitionWriter;
   }
 
   @Override
-  protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
     processDefinitionWriter.importProcessDefinitions(newOptimizeEntities);
   }
 }

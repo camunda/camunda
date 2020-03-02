@@ -31,54 +31,51 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   @Override
-  public void executeImport(List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities) {
+  public void executeImport(final List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities,
+                            final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
+      final List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
         mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities);
+      final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
+        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
 
-  @Override
-  public void executeImport(final List<ProcessDefinitionXmlEngineDto> pageOfEngineEntities, final Runnable callback) {
-    executeImport(pageOfEngineEntities);
-  }
-
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
+  private void addElasticsearchImportJobToQueue(
+    final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob) {
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionXmlEngineDto>
-                                                                                   engineEntities) {
+  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
+    final List<ProcessDefinitionXmlEngineDto> engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 
   private ElasticsearchImportJob<ProcessDefinitionOptimizeDto> createElasticsearchImportJob(
-    List<ProcessDefinitionOptimizeDto> processDefinitions) {
+    final List<ProcessDefinitionOptimizeDto> processDefinitions,
+    final Runnable importCompleteCallback) {
     ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(
-      processDefinitionXmlWriter
+      processDefinitionXmlWriter, importCompleteCallback
     );
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;
   }
 
-  private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(ProcessDefinitionXmlEngineDto engineEntity) {
+  private ProcessDefinitionOptimizeDto mapEngineEntityToOptimizeEntity(final ProcessDefinitionXmlEngineDto engineEntity) {
     final BpmnModelInstance bpmnModelInstance = parseBpmnModel(engineEntity.getBpmn20Xml());
-    final ProcessDefinitionOptimizeDto optimizeDto = new ProcessDefinitionOptimizeDto(
+    return new ProcessDefinitionOptimizeDto(
       engineEntity.getId(),
       engineContext.getEngineAlias(),
       engineEntity.getBpmn20Xml(),
       extractFlowNodeNames(bpmnModelInstance),
       extractUserTaskNames(bpmnModelInstance)
     );
-    return optimizeDto;
   }
 
 

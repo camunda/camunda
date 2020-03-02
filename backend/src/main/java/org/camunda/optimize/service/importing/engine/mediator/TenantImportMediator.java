@@ -47,14 +47,17 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
   }
 
   @Override
-  protected boolean importNextPage() {
+  protected boolean importNextPage(final Runnable importCompleteCallback) {
     final List<TenantEngineDto> entities = engineEntityFetcher.fetchTenants();
     final List<TenantEngineDto> newEntities = importIndexHandler.filterNewOrChangedTenants(entities);
 
     if (!newEntities.isEmpty()) {
-      tenantImportService.executeImport(newEntities);
+      tenantImportService.executeImport(newEntities, importCompleteCallback);
       importIndexHandler.addImportedTenants(newEntities);
+    } else {
+      importCompleteCallback.run();
     }
+
     return !newEntities.isEmpty();
   }
 

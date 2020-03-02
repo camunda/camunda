@@ -8,12 +8,5 @@ package org.camunda.optimize.service.importing.engine.service;
 import java.util.List;
 
 public interface ImportService<T> {
-
-  default void executeImport(List<T> pageOfEngineEntities) {
-    // @formatter:off
-    executeImport(pageOfEngineEntities, () -> {});
-    // @formatter:on
-  }
-
-  void executeImport(List<T> pageOfEngineEntities, Runnable callback);
+  void executeImport(List<T> pageOfEngineEntities, Runnable importCompleteCallback);
 }

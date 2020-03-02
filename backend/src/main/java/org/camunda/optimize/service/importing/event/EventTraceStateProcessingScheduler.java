@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,13 +57,14 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     return super.startScheduling();
   }
 
-  public void runImportCycle() {
-    getImportMediators()
-      .forEach(mediator -> {
-        if (mediator.canImport()) {
-          mediator.runImport();
-        }
-      });
+  public Future<Void> runImportCycle() {
+    final CompletableFuture<?>[] importTaskFutures = getImportMediators()
+      .stream()
+      .filter(EngineImportMediator::canImport)
+      .map(EngineImportMediator::runImport)
+      .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(importTaskFutures);
   }
 
   public List<EngineImportMediator> getImportMediators() {

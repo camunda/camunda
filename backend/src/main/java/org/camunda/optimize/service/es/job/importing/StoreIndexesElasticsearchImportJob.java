@@ -15,8 +15,9 @@ public class StoreIndexesElasticsearchImportJob extends ElasticsearchImportJob<I
 
   private ImportIndexWriter importIndexWriter;
 
-  public StoreIndexesElasticsearchImportJob(final ImportIndexWriter importIndexWriter) {
-    super();
+  public StoreIndexesElasticsearchImportJob(final ImportIndexWriter importIndexWriter,
+                                            final Runnable importCompleteCallback) {
+    super(importCompleteCallback);
     this.importIndexWriter = importIndexWriter;
   }
 

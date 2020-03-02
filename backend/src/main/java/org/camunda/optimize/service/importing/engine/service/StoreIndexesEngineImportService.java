@@ -20,13 +20,13 @@ import java.util.List;
  */
 @AllArgsConstructor
 @Slf4j
-public class StoreIndexesEngineImportService {
+public class StoreIndexesEngineImportService implements ImportService<ImportIndexDto> {
   private ImportIndexWriter importIndexWriter;
   private ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
 
-  public void executeImport(List<ImportIndexDto> importIndexesToStore) {
+  public void executeImport(final List<ImportIndexDto> importIndexesToStore, final Runnable importCompleteCallback) {
     final StoreIndexesElasticsearchImportJob storeIndexesImportJob = new StoreIndexesElasticsearchImportJob(
-      importIndexWriter
+      importIndexWriter, importCompleteCallback
     );
     storeIndexesImportJob.setEntitiesToImport(importIndexesToStore);
     elasticsearchImportJobExecutor.executeImportJob(storeIndexesImportJob);

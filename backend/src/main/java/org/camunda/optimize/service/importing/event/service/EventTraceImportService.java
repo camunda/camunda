@@ -23,14 +23,14 @@ public class EventTraceImportService implements ImportService<EventDto> {
   private final EventTraceStateService eventTraceStateService;
 
   @Override
-  public void executeImport(final List<EventDto> pageOfEvents, final Runnable callback) {
+  public void executeImport(final List<EventDto> pageOfEvents, final Runnable importCompleteCallback) {
     log.trace("Importing external event traces.");
 
     boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
-      elasticsearchImportJobExecutor.executeImportJob(createElasticsearchImportJob(pageOfEvents, callback));
+      elasticsearchImportJobExecutor.executeImportJob(createElasticsearchImportJob(pageOfEvents, importCompleteCallback));
     } else {
-      callback.run();
+      importCompleteCallback.run();
     }
   }
 

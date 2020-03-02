@@ -40,14 +40,14 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   }
 
   @Override
-  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities, Runnable callback) {
+  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities, Runnable importCompleteCallback) {
     logger.trace("Importing running activity instances from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<FlowNodeEventDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, callback);
+        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }

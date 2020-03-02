@@ -7,9 +7,11 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.service.util.ImportJobExecutor;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface EngineImportMediator {
 
-  void runImport();
+  CompletableFuture<Void> runImport();
 
   long getBackoffTimeInMs();
 

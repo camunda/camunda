@@ -15,6 +15,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
+import java.util.concurrent.CompletableFuture;
 
 public abstract class BackoffImportMediator<T extends ImportIndexHandler> implements EngineImportMediator {
   protected Logger logger = LoggerFactory.getLogger(getClass());
@@ -38,13 +39,15 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   }
 
   @Override
-  public void runImport() {
-    boolean pageIsPresent = importNextPageRetryOnError();
+  public CompletableFuture<Void> runImport() {
+    final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
+    boolean pageIsPresent = importNextPageRetryOnError(importCompleted);
     if (pageIsPresent) {
       idleBackoffCalculator.resetBackoff();
     } else {
       calculateNewDateUntilIsBlocked();
     }
+    return importCompleted;
   }
 
   /**
@@ -76,17 +79,18 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   protected abstract void init();
 
-  protected abstract boolean importNextPage();
+  protected abstract boolean importNextPage(Runnable importCompleteCallback);
 
-  private boolean importNextPageRetryOnError() {
+  private boolean importNextPageRetryOnError(final CompletableFuture<Void> importCompleteCallback) {
     Boolean result = null;
     while (result == null) {
       try {
-        result = importNextPage();
+        result = importNextPage(() -> importCompleteCallback.complete(null));
       } catch (final Exception e) {
         if (errorBackoffCalculator.isMaximumBackoffReached()) {
           // if max back-off is reached abort retrying and return true to indicate there is new data
           logger.error("Was not able to import next page and reached max backoff, aborting this run.", e);
+          importCompleteCallback.complete(null);
           result = true;
         } else {
           long timeToSleep = errorBackoffCalculator.calculateSleepTime();

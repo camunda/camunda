@@ -42,7 +42,8 @@ public class ProcessDefinitionEngineImportMediator
 
   @PostConstruct
   public void init() {
-    importIndexHandler = importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias());
+    importIndexHandler =
+      importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext);
     definitionImportService = new ProcessDefinitionImportService(
       elasticsearchImportJobExecutor, engineContext, processDefinitionWriter
@@ -50,14 +51,17 @@ public class ProcessDefinitionEngineImportMediator
   }
 
   @Override
-  protected boolean importNextPage() {
+  protected boolean importNextPage(final Runnable importCompleteCallback) {
     List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions();
     List<ProcessDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
 
     if (!newEntities.isEmpty()) {
-      definitionImportService.executeImport(newEntities);
+      definitionImportService.executeImport(newEntities, importCompleteCallback);
       importIndexHandler.addImportedDefinitions(newEntities);
+    } else {
+      importCompleteCallback.run();
     }
+
     return !newEntities.isEmpty();
   }
 

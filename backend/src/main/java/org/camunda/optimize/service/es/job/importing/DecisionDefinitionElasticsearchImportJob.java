@@ -15,13 +15,14 @@ public class DecisionDefinitionElasticsearchImportJob extends ElasticsearchImpor
 
   private DecisionDefinitionWriter decisionDefinitionWriter;
 
-  public DecisionDefinitionElasticsearchImportJob(DecisionDefinitionWriter decisionDefinitionWriter) {
-    super();
+  public DecisionDefinitionElasticsearchImportJob(final DecisionDefinitionWriter decisionDefinitionWriter,
+                                                  final Runnable importCompleteCallback) {
+    super(importCompleteCallback);
     this.decisionDefinitionWriter = decisionDefinitionWriter;
   }
 
   @Override
-  protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
     decisionDefinitionWriter.importProcessDefinitions(newOptimizeEntities);
   }
 }

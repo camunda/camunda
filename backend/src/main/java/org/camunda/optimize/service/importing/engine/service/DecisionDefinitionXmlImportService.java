@@ -34,25 +34,16 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   @Override
-  public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList) {
+  public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList, final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
     final boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
       final List<DecisionDefinitionOptimizeDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
       final ElasticsearchImportJob<DecisionDefinitionOptimizeDto> elasticsearchImportJob = createElasticsearchImportJob(
-        optimizeDtos
+        optimizeDtos, importCompleteCallback
       );
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
     }
-  }
-
-  @Override
-  public void executeImport(final List<DecisionDefinitionXmlEngineDto> pageOfEngineEntities, final Runnable callback) {
-    executeImport(pageOfEngineEntities);
-  }
-
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
@@ -63,9 +54,10 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   }
 
   private ElasticsearchImportJob<DecisionDefinitionOptimizeDto> createElasticsearchImportJob(
-    final List<DecisionDefinitionOptimizeDto> optimizeDtos) {
+    final List<DecisionDefinitionOptimizeDto> optimizeDtos,
+    final Runnable importCompleteCallback) {
     DecisionDefinitionXmlElasticsearchImportJob importJob = new DecisionDefinitionXmlElasticsearchImportJob(
-      decisionDefinitionXmlWriter
+      decisionDefinitionXmlWriter, importCompleteCallback
     );
     importJob.setEntitiesToImport(optimizeDtos);
     return importJob;

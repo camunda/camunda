@@ -50,7 +50,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   }
 
   @Override
-  public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities, Runnable callback) {
+  public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities, Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
@@ -58,7 +58,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       List<ProcessVariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<ProcessVariableDto> elasticsearchImportJob = createElasticsearchImportJob(
         newOptimizeEntities,
-        callback
+        importCompleteCallback
       );
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }

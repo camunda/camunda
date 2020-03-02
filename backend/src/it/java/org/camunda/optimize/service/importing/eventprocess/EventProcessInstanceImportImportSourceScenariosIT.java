@@ -289,7 +289,8 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
   public void instancesAreGeneratedFromCamundaEventImportSource_correlatedByBusinessKey_ignoreInstancesWithNullBusinessKey() {
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceWithBusinessKey(null);
-    final ProcessInstanceEngineDto instanceWithBusinessKey = engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
+    final ProcessInstanceEngineDto instanceWithBusinessKey = engineIntegrationExtension
+      .startProcessInstance(processInstanceEngineDto.getDefinitionId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     importEngineEntities();
 
@@ -511,11 +512,12 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
 
   private CamundaActivityEventDto getLastImportedActivityForProcessDefinition(final String processDefinitionKey) {
     return ElasticsearchHelper.mapHits(
-      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(new CamundaActivityEventIndex(
-        processDefinitionKey).getIndexName()).getHits(),
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
+        new CamundaActivityEventIndex(processDefinitionKey).getIndexName()
+      ).getHits(),
       CamundaActivityEventDto.class,
       embeddedOptimizeExtension.getObjectMapper()
-    ).stream().max(Comparator.comparing(CamundaActivityEventDto::getTimestamp).reversed()).get();
+    ).stream().max(Comparator.comparing(CamundaActivityEventDto::getTimestamp)).get();
   }
 
   private ProcessInstanceEngineDto deployAndStartProcess() {

@@ -15,13 +15,14 @@ public class DecisionDefinitionXmlElasticsearchImportJob extends ElasticsearchIm
 
   private DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
 
-  public DecisionDefinitionXmlElasticsearchImportJob(final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter) {
-    super();
+  public DecisionDefinitionXmlElasticsearchImportJob(final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
+                                                     final Runnable importCompleteCallback) {
+    super(importCompleteCallback);
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
   }
 
   @Override
-  protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) {
     decisionDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
   }
 }

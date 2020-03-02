@@ -15,6 +15,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,6 +44,7 @@ public class EngineImportSchedulerTest {
   public void isImportingIsTrueWhenImporting() {
     // given
     Mockito.when(mockedImportMediator.canImport()).thenReturn(true);
+    Mockito.lenient().when(mockedImportMediator.runImport()).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     underTest.scheduleNextRound();
@@ -57,6 +59,7 @@ public class EngineImportSchedulerTest {
     // given
     // it is indeed used but mockito reports this still as an unnecessary stubbing which it isn't, thus usage of lenient
     Mockito.lenient().when(mockedImportMediator.canImport()).thenReturn(true);
+    Mockito.lenient().when(mockedImportMediator.runImport()).thenReturn(CompletableFuture.completedFuture(null));
 
     // first round of importing
     underTest.scheduleNextRound();
@@ -77,6 +80,7 @@ public class EngineImportSchedulerTest {
     // given
     // it is indeed used but mockito reports this still as an unnecessary stubbing which it isn't, thus usage of lenient
     Mockito.lenient().when(mockedImportMediator.canImport()).thenReturn(true);
+    Mockito.lenient().when(mockedImportMediator.runImport()).thenReturn(CompletableFuture.completedFuture(null));
 
     // first round of importing
     underTest.scheduleNextRound();

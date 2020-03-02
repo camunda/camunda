@@ -34,7 +34,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   }
 
   @Override
-  public void executeImport(final List<HistoricIdentityLinkLogDto> pageOfEngineEntities, Runnable callback) {
+  public void executeImport(final List<HistoricIdentityLinkLogDto> pageOfEngineEntities, Runnable importCompleteCallback) {
     logger.trace("Importing identity link logs from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
@@ -42,7 +42,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
       final List<IdentityLinkLogEntryDto> newOptimizeEntities =
         mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       final ElasticsearchImportJob<IdentityLinkLogEntryDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, callback);
+        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }

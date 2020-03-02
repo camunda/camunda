@@ -14,14 +14,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.verify;
 public abstract class TimestampBasedImportMediatorTest {
 
   protected TimestampBasedImportMediator<CompletedActivityInstanceImportIndexHandler,
-      HistoricActivityInstanceEngineDto> underTest;
+    HistoricActivityInstanceEngineDto> underTest;
 
   @Mock
   protected CompletedActivityInstanceImportIndexHandler importIndexHandler;
@@ -46,6 +47,11 @@ public abstract class TimestampBasedImportMediatorTest {
   protected void init() {
     this.underTest.importIndexHandler = importIndexHandler;
     this.underTest.importService = importService;
+    Mockito.lenient().doAnswer(invocation -> {
+      final Runnable runnable = invocation.getArgument(1);
+      runnable.run();
+      return null;
+    }).when(importService).executeImport(any(), any(Runnable.class));
     importTimestamp = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(importTimestamp);
   }
@@ -57,11 +63,7 @@ public abstract class TimestampBasedImportMediatorTest {
     List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
 
     // when
-    underTest.importNextEnginePageTimestampBased(
-      entitiesLastTimestamp,
-      entitiesNextPage,
-      1
-    );
+    runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
     verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
@@ -77,15 +79,11 @@ public abstract class TimestampBasedImportMediatorTest {
     List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
 
     // when
-    underTest.importNextEnginePageTimestampBased(
-      entitiesLastTimestamp,
-      entitiesNextPage,
-      1
-    );
+    runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
+    verify(importService, times(1)).executeImport(any(), any());
     verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
-    verify(importService, times(1)).executeImport(any());
     verify(importIndexHandler, times(0)).updateTimestampOfLastEntity(any());
   }
 
@@ -98,21 +96,12 @@ public abstract class TimestampBasedImportMediatorTest {
     entitiesNextPage.add(new HistoricActivityInstanceEngineDto());
 
     // when
-    underTest.importNextEnginePageTimestampBased(
-      entitiesLastTimestamp,
-      entitiesNextPage,
-      1
-    );
+    runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
     verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     verify(importService, times(1)).executeImport(any(), any());
     verify(importIndexHandler, times(1)).updatePendingTimestampOfLastEntity(any());
-    verify(importService).executeImport(any(), callbackLambdaCaptor.capture());
-
-    Runnable lambda = callbackLambdaCaptor.getValue();
-    lambda.run();
-
     verify(importIndexHandler, times(1)).updateTimestampOfLastEntity(any());
   }
 
@@ -122,15 +111,11 @@ public abstract class TimestampBasedImportMediatorTest {
     List<HistoricActivityInstanceEngineDto> entitiesNextPage = new ArrayList<>();
 
     // when
-    final boolean result = underTest.importNextEnginePageTimestampBased(
-      entitiesLastTimestamp,
-      entitiesNextPage,
-      1
-    );
+    final boolean result = runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
     verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
-    assertThat(result, is(false));
+    assertThat(result).isFalse();
   }
 
   @Test
@@ -140,14 +125,23 @@ public abstract class TimestampBasedImportMediatorTest {
     entitiesNextPage.add(new HistoricActivityInstanceEngineDto());
 
     // when
-    final boolean result = underTest.importNextEnginePageTimestampBased(
-      entitiesLastTimestamp,
-      entitiesNextPage,
-      1
-    );
+    final boolean result = runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
     verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
-    assertThat(result, is(true));
+    assertThat(result).isTrue();
+  }
+
+  private boolean runAndFinishImport(final List<HistoricActivityInstanceEngineDto> entitiesLastTimestamp,
+                                     final List<HistoricActivityInstanceEngineDto> entitiesNextPage) {
+    final CompletableFuture<Void> importCompleteFuture = new CompletableFuture<>();
+    final boolean result = underTest.importNextEnginePageTimestampBased(
+      entitiesLastTimestamp,
+      entitiesNextPage,
+      1,
+      () -> importCompleteFuture.complete(null)
+    );
+    assertThat(importCompleteFuture).isCompleted();
+    return result;
   }
 }

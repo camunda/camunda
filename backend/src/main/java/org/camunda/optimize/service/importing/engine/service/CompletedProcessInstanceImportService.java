@@ -30,14 +30,14 @@ public class CompletedProcessInstanceImportService implements ImportService<Hist
   private CamundaEventImportService camundaEventService;
 
   @Override
-  public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
+  public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<ProcessInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, callback);
+        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }

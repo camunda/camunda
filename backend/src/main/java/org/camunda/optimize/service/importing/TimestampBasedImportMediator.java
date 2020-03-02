@@ -26,13 +26,16 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
   protected abstract int getMaxPageSize();
 
   @Override
-  protected boolean importNextPage() {
-    return importNextEnginePageTimestampBased(getEntitiesLastTimestamp(), getEntitiesNextPage(), getMaxPageSize());
+  protected boolean importNextPage(final Runnable importCompleteCallback) {
+    return importNextEnginePageTimestampBased(
+      getEntitiesLastTimestamp(), getEntitiesNextPage(), getMaxPageSize(), importCompleteCallback
+    );
   }
 
   protected boolean importNextEnginePageTimestampBased(final List<DTO> entitiesLastTimestamp,
                                                        final List<DTO> entitiesNextPage,
-                                                       int maxPageSize) {
+                                                       final int maxPageSize,
+                                                       final Runnable importCompleteCallback) {
     boolean timestampNeedsToBeSet = !entitiesNextPage.isEmpty();
 
     final OffsetDateTime timestamp = timestampNeedsToBeSet ?
@@ -45,10 +48,15 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
 
     importIndexHandler.updateLastImportedTimestamp();
     if (timestampNeedsToBeSet) {
-      importService.executeImport(allEntities, () -> importIndexHandler.updateTimestampOfLastEntity(timestamp));
+      importService.executeImport(allEntities, () -> {
+        importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        importCompleteCallback.run();
+      });
       importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
     } else if (!entitiesLastTimestamp.isEmpty()) {
-      importService.executeImport(allEntities);
+      importService.executeImport(allEntities, importCompleteCallback);
+    } else {
+      importCompleteCallback.run();
     }
 
     return entitiesNextPage.size() >= maxPageSize;

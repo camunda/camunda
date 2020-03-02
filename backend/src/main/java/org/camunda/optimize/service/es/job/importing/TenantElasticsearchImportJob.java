@@ -15,8 +15,8 @@ public class TenantElasticsearchImportJob extends ElasticsearchImportJob<TenantD
 
   private final TenantWriter tenantWriter;
 
-  public TenantElasticsearchImportJob(final TenantWriter tenantWriter) {
-    super();
+  public TenantElasticsearchImportJob(final TenantWriter tenantWriter, final Runnable importCompleteCallback) {
+    super(importCompleteCallback);
     this.tenantWriter = tenantWriter;
   }
 

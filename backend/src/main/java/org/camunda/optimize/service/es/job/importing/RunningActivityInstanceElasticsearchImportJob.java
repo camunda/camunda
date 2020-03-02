@@ -27,7 +27,7 @@ public class RunningActivityInstanceElasticsearchImportJob extends Elasticsearch
   }
 
   @Override
-  protected void persistEntities(List<FlowNodeEventDto> runningActivityInstances) throws Exception {
+  protected void persistEntities(List<FlowNodeEventDto> runningActivityInstances) {
     runningActivityInstanceWriter.importActivityInstancesToProcessInstances(runningActivityInstances);
     camundaEventService.importRunningActivityInstancesToCamundaActivityEvents(runningActivityInstances);
   }

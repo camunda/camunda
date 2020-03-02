@@ -47,7 +47,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   private final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
 
   @Override
-  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList, Runnable callback) {
+  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList, Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
     boolean newDataIsAvailable = !engineDtoList.isEmpty();
 
@@ -56,7 +56,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
         final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
 
         final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
-          optimizeDtos, callback);
+          optimizeDtos, importCompleteCallback);
         addElasticsearchImportJobToQueue(elasticsearchImportJob);
       } catch (OptimizeDecisionDefinitionFetchException e) {
         log.debug("Required Decision Definition not imported yet, skipping current decision instance import cycle.", e);

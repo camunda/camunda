@@ -13,6 +13,8 @@ import org.camunda.optimize.service.util.ImportJobExecutor;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -67,14 +69,7 @@ public class EngineImportScheduler extends Thread {
     }
   }
 
-  private List<EngineImportMediator> obtainActiveMediators() {
-    return importMediators
-      .stream()
-      .filter(EngineImportMediator::canImport)
-      .collect(Collectors.toList());
-  }
-
-  public void scheduleNextRound() {
+  public Future<Void> scheduleNextRound() {
     List<EngineImportMediator> currentImportRound = obtainActiveMediators();
     if (nothingToBeImported(currentImportRound)) {
       this.isImporting = false;
@@ -82,11 +77,19 @@ public class EngineImportScheduler extends Thread {
         notifyThatImportIsIdle();
       }
       doBackoff();
+      return CompletableFuture.completedFuture(null);
     } else {
       this.isImporting = true;
       notifyThatImportIsInProgress();
-      scheduleCurrentImportRound(currentImportRound);
+      return scheduleCurrentImportRound(currentImportRound);
     }
+  }
+
+  private List<EngineImportMediator> obtainActiveMediators() {
+    return importMediators
+      .stream()
+      .filter(EngineImportMediator::canImport)
+      .collect(Collectors.toList());
   }
 
   private boolean hasActiveImportJobs() {
@@ -126,18 +129,25 @@ public class EngineImportScheduler extends Thread {
       .orElse(5000L);
   }
 
-  public void scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
-    String mediators = currentImportRound.stream()
-      .map(c -> c.getClass().getSimpleName())
-      .reduce((a, b) -> a + ", " + b).orElse("");
+  public Future<Void> scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
+    final String mediators = currentImportRound.stream()
+      .map(mediator -> mediator.getClass().getSimpleName())
+      .collect(Collectors.joining(","));
     log.debug("Scheduling import round for {}", mediators);
-    for (EngineImportMediator engineImportMediator : currentImportRound) {
-      try {
-        engineImportMediator.runImport();
-      } catch (Exception e) {
-        log.error("Was not able to execute import of [{}]", engineImportMediator.getClass().getSimpleName(), e);
-      }
-    }
+
+    final CompletableFuture<?>[] importTaskFutures = currentImportRound
+      .stream()
+      .map(mediator -> {
+        try {
+          return mediator.runImport();
+        } catch (Exception e) {
+          log.error("Was not able to execute import of [{}]", mediator.getClass().getSimpleName(), e);
+          return CompletableFuture.completedFuture(null);
+        }
+      })
+      .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(importTaskFutures);
   }
 
   public boolean isEnabled() {

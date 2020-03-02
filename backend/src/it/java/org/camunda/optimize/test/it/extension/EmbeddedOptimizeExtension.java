@@ -7,6 +7,7 @@ package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
@@ -44,7 +45,6 @@ import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -140,18 +140,18 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     getOptimize().startEngineImportSchedulers();
   }
 
+  @SneakyThrows
   public void importAllEngineData() {
     boolean importInProgress = true;
     resetImportBackoff();
     while (importInProgress) {
       boolean currentImportInProgress = false;
       for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-        scheduler.scheduleNextRound();
+        scheduler.scheduleNextRound().get();
         currentImportInProgress |= scheduler.isImporting();
       }
       importInProgress = currentImportInProgress;
     }
-    makeSureAllScheduledJobsAreFinished();
   }
 
   public void importAllEngineEntitiesFromScratch() {
@@ -170,9 +170,9 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
-
   }
 
+  @SneakyThrows
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
     RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
     CamundaEventImportService camundaEventService = getApplicationContext().getBean(CamundaEventImportService.class);
@@ -185,10 +185,10 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
           getElasticsearchImportJobExecutor(),
           configuredEngine
         );
-      service.executeImport(activities, () -> {
-      });
+      CompletableFuture<Void> done = new CompletableFuture<>();
+      service.executeImport(activities, () -> done.complete(null));
+      done.get();
     }
-    makeSureAllScheduledJobsAreFinished();
   }
 
   private void resetImportBackoff() {
@@ -199,22 +199,22 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     }
   }
 
+  @SneakyThrows
   private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
     resetImportBackoff();
-    scheduler.scheduleNextRound();
-    makeSureAllScheduledJobsAreFinished();
+    scheduler.scheduleNextRound().get();
     resetImportBackoff();
     scheduleNextRoundScrollBasedOnly(scheduler);
-    makeSureAllScheduledJobsAreFinished();
   }
 
+  @SneakyThrows
   private void scheduleNextRoundScrollBasedOnly(EngineImportScheduler scheduler) {
     final List<EngineImportMediator> currentImportRound = scheduler.getImportMediators()
       .stream()
       .filter(EngineImportMediator::canImport)
       .filter(e -> e instanceof ScrollBasedImportMediator)
       .collect(Collectors.toList());
-    scheduler.scheduleCurrentImportRound(currentImportRound);
+    scheduler.scheduleCurrentImportRound(currentImportRound).get();
     // after each scroll import round, we need to reset the scrolls, since otherwise
     // we will have a lot of dangling scroll contexts in ElasticSearch in our integration tests.
     currentImportRound.stream()
@@ -226,16 +226,16 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.getImportMediators()
-        .stream()
-        .filter(med -> med instanceof StoreIndexesEngineImportMediator)
-        .forEach(mediator -> {
-          mediator.resetBackoff();
-          mediator.runImport();
-          final CompletableFuture<Void> toComplete = new CompletableFuture<>();
-          synchronizationCompletables.add(toComplete);
-          mediator.getImportJobExecutor().executeImportJob(new SynchronizationElasticsearchImportJob(toComplete));
-        });
+      synchronizationCompletables.addAll(
+        scheduler.getImportMediators()
+          .stream()
+          .filter(med -> med instanceof StoreIndexesEngineImportMediator)
+          .map(mediator -> {
+            mediator.resetBackoff();
+            return mediator.runImport();
+          })
+          .collect(Collectors.toList())
+      );
     }
     CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
   }
@@ -248,22 +248,6 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     return getConfigurationService()
       .getEngineConfiguration(DEFAULT_ENGINE_ALIAS)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Missing default engine configuration"));
-  }
-
-  public void makeSureAllScheduledJobsAreFinished() {
-    final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.getImportMediators()
-        .stream()
-        .map(EngineImportMediator::getImportJobExecutor)
-        .forEach(importJobExecutor -> {
-          final CompletableFuture<Void> toComplete = new CompletableFuture<>();
-          synchronizationCompletables.add(toComplete);
-          importJobExecutor.executeImportJob(new SynchronizationElasticsearchImportJob(toComplete));
-        });
-    }
-
-    CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
   }
 
   public void ensureImportSchedulerIsIdle(long timeoutSeconds) {
@@ -486,17 +470,16 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     return getApplicationContext().getBean(IdentityService.class);
   }
 
+  @SneakyThrows
   public void processEvents() {
     EventTraceStateProcessingScheduler eventProcessingScheduler = getEventProcessingScheduler();
 
     // run one cycle
     eventProcessingScheduler.getImportMediators().forEach(EngineImportMediator::resetBackoff);
-    eventProcessingScheduler.runImportCycle();
-    waitForEventProcessingRoundToComplete(eventProcessingScheduler);
+    eventProcessingScheduler.runImportCycle().get();
 
     // do final progress update
-    eventProcessingScheduler.getEventProcessingProgressMediator().runImport();
-    waitForEventProcessingRoundToComplete(eventProcessingScheduler);
+    eventProcessingScheduler.getEventProcessingProgressMediator().runImport().get();
   }
 
   public ExternalEventService getEventService() {
@@ -535,17 +518,4 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     this.resetImportOnStart = resetImportOnStart;
   }
 
-  private void waitForEventProcessingRoundToComplete(final EventTraceStateProcessingScheduler eventProcessingScheduler) {
-    final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    eventProcessingScheduler.getImportMediators()
-      .stream()
-      .map(EngineImportMediator::getImportJobExecutor)
-      .forEach(importJobExecutor -> {
-        final CompletableFuture<Void> toComplete = new CompletableFuture<>();
-        synchronizationCompletables.add(toComplete);
-        importJobExecutor.executeImportJob(new SynchronizationElasticsearchImportJob(toComplete));
-      });
-
-    CompletableFuture.allOf(synchronizationCompletables.toArray(new CompletableFuture[0])).join();
-  }
 }

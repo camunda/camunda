@@ -21,18 +21,12 @@ public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
-  private final Runnable callback;
+  private final Runnable importCompleteCallback;
 
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
 
-  protected ElasticsearchImportJob() {
-    // @formatter:off
-    this(() -> { });
-    // @formatter:on
-  }
-
-  protected ElasticsearchImportJob(Runnable callback) {
-    this.callback = callback;
+  protected ElasticsearchImportJob(final Runnable importCompleteCallback) {
+    this.importCompleteCallback = importCompleteCallback;
   }
 
   /**
@@ -76,7 +70,7 @@ public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements
     } else {
       logger.debug("Import job with no new entities, import bulk execution is skipped.");
     }
-    callback.run();
+    importCompleteCallback.run();
   }
 
   protected abstract void persistEntities(List<OPT> newOptimizeEntities) throws Exception;

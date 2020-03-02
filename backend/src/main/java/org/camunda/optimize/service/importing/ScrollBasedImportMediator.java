@@ -18,16 +18,19 @@ public abstract class ScrollBasedImportMediator<T extends ScrollBasedImportIndex
   protected abstract List<DTO> getEntities(IdSetBasedImportPage page);
 
   @Override
-  protected boolean importNextPage() {
+  protected boolean importNextPage(final Runnable importCompleteCallback) {
     IdSetBasedImportPage page = importIndexHandler.getNextPage();
     if (!page.getIds().isEmpty()) {
       List<DTO> entities = getEntities(page);
       if (!entities.isEmpty()) {
         importIndexHandler.updateIndex(page.getIds().size());
-        importService.executeImport(entities);
+        importService.executeImport(entities, importCompleteCallback);
+      } else {
+        importCompleteCallback.run();
       }
       return true;
     }
+    importCompleteCallback.run();
     return false;
   }
 

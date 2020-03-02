@@ -17,16 +17,16 @@ public class CompletedProcessInstanceElasticsearchImportJob extends Elasticsearc
   private CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private CamundaEventImportService camundaEventService;
 
-  public CompletedProcessInstanceElasticsearchImportJob(CompletedProcessInstanceWriter completedProcessInstanceWriter,
-                                                        CamundaEventImportService camundaEventService,
-                                                        Runnable callback) {
-    super(callback);
+  public CompletedProcessInstanceElasticsearchImportJob(final CompletedProcessInstanceWriter completedProcessInstanceWriter,
+                                                        final CamundaEventImportService camundaEventService,
+                                                        final Runnable importCompleteCallback) {
+    super(importCompleteCallback);
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.camundaEventService = camundaEventService;
   }
 
   @Override
-  protected void persistEntities(List<ProcessInstanceDto> processInstances) throws Exception {
+  protected void persistEntities(List<ProcessInstanceDto> processInstances) {
     completedProcessInstanceWriter.importProcessInstances(processInstances);
     camundaEventService.importCompletedProcessInstances(processInstances);
   }

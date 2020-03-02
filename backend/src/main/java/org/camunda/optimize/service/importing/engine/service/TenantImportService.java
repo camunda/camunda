@@ -26,18 +26,13 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
   private final TenantWriter tenantWriter;
 
   @Override
-  public void executeImport(List<TenantEngineDto> pageOfEngineEntities) {
+  public void executeImport(final List<TenantEngineDto> pageOfEngineEntities, final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<TenantDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      addElasticsearchImportJobToQueue(createElasticsearchImportJob(newOptimizeEntities));
+      addElasticsearchImportJobToQueue(createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback));
     }
-  }
-
-  @Override
-  public void executeImport(final List<TenantEngineDto> pageOfEngineEntities, final Runnable callback) {
-    executeImport(pageOfEngineEntities);
   }
 
   private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
@@ -50,8 +45,12 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<TenantDto> createElasticsearchImportJob(final List<TenantDto> tenantDtos) {
-    final TenantElasticsearchImportJob importJob = new TenantElasticsearchImportJob(tenantWriter);
+  private ElasticsearchImportJob<TenantDto> createElasticsearchImportJob(final List<TenantDto> tenantDtos,
+                                                                         final Runnable importCompleteCallback) {
+    final TenantElasticsearchImportJob importJob = new TenantElasticsearchImportJob(
+      tenantWriter,
+      importCompleteCallback
+    );
     importJob.setEntitiesToImport(tenantDtos);
     return importJob;
   }

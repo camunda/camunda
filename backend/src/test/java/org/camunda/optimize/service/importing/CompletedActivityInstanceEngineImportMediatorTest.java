@@ -61,7 +61,7 @@ public class CompletedActivityInstanceEngineImportMediatorTest extends Timestamp
   @Test
   public void testImportNextEnginePage_returnsFalse() {
     // when
-    final boolean result = underTest.importNextPage();
+    final boolean result = underTest.importNextPage(() -> {});
 
     // then
     assertThat(result, is(false));
@@ -77,7 +77,7 @@ public class CompletedActivityInstanceEngineImportMediatorTest extends Timestamp
     configurationService.setEngineImportActivityInstanceMaxPageSize(1);
 
     // when
-    final boolean result = underTest.importNextPage();
+    final boolean result = underTest.importNextPage(() -> {});
 
     // then
     assertThat(result, is(true));

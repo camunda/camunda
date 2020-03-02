@@ -50,14 +50,17 @@ public class DecisionDefinitionEngineImportMediator
   }
 
   @Override
-  protected boolean importNextPage() {
+  protected boolean importNextPage(final Runnable importCompleteCallback) {
     List<DecisionDefinitionEngineDto> entities = engineEntityFetcher.fetchDecisionDefinitions();
     List<DecisionDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
 
     if (!newEntities.isEmpty()) {
-      definitionImportService.executeImport(newEntities);
+      definitionImportService.executeImport(newEntities, importCompleteCallback);
       importIndexHandler.addImportedDefinitions(newEntities);
+    } else {
+      importCompleteCallback.run();
     }
+
     return !newEntities.isEmpty();
   }
 

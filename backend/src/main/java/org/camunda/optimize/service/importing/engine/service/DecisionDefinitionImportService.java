@@ -26,27 +26,19 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   private final DecisionDefinitionWriter decisionDefinitionWriter;
 
   @Override
-  public void executeImport(final List<DecisionDefinitionEngineDto> engineDtoList) {
+  public void executeImport(final List<DecisionDefinitionEngineDto> pageOfEngineEntities,
+                            final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
-    final boolean newDataIsAvailable = !engineDtoList.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<DecisionDefinitionOptimizeDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(
-        engineDtoList
+        pageOfEngineEntities
       );
       final ElasticsearchImportJob<DecisionDefinitionOptimizeDto> elasticsearchImportJob = createElasticsearchImportJob(
-        optimizeDtos
+        optimizeDtos, importCompleteCallback
       );
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
     }
-  }
-
-  @Override
-  public void executeImport(final List<DecisionDefinitionEngineDto> pageOfEngineEntities, final Runnable callback) {
-    executeImport(pageOfEngineEntities);
-  }
-
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
@@ -57,9 +49,10 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   }
 
   private ElasticsearchImportJob<DecisionDefinitionOptimizeDto> createElasticsearchImportJob(
-    final List<DecisionDefinitionOptimizeDto> optimizeDtos) {
+    final List<DecisionDefinitionOptimizeDto> optimizeDtos,
+    final Runnable importCompleteCallback) {
     final DecisionDefinitionElasticsearchImportJob importJob = new DecisionDefinitionElasticsearchImportJob(
-      decisionDefinitionWriter
+      decisionDefinitionWriter, importCompleteCallback
     );
     importJob.setEntitiesToImport(optimizeDtos);
     return importJob;

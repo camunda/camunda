@@ -54,7 +54,8 @@ public class EventProcessInstanceImportMediator {
     this.lastImportedEntityTimestamp = eventImportSourceDto.getLastImportedEventTimestamp().toInstant().toEpochMilli();
   }
 
-  public void importNextPage(final CompletableFuture<Void> importCompleted) {
+  public CompletableFuture<Void> importNextPage() {
+    final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     try {
       final List<EventDto> lastTimeStampEvents = eventService.getEventsIngestedAt(lastImportedEntityTimestamp);
       final List<EventDto> nextPageEvents = eventService.getEventsIngestedAfter(
@@ -84,6 +85,7 @@ public class EventProcessInstanceImportMediator {
       log.error("Failure during event process import.", e);
       importCompleted.complete(null);
     }
+    return importCompleted;
   }
 
   public boolean canImport() {

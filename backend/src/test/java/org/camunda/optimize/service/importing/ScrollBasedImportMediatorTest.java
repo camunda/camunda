@@ -82,7 +82,7 @@ public class ScrollBasedImportMediatorTest {
     when(importIndexHandler.getNextPage()).thenReturn(page);
 
     // when
-    final boolean result = underTest.importNextPage();
+    final boolean result = underTest.importNextPage(() -> {});
 
     // then
     assertThat(result, is(false));
@@ -104,12 +104,13 @@ public class ScrollBasedImportMediatorTest {
       .thenReturn(resultList);
 
     // when
-    final boolean result = underTest.importNextPage();
+    final Runnable importCompleteCallback = () -> { };
+    final boolean result = underTest.importNextPage(importCompleteCallback);
 
     // then
     assertThat(result, is(true));
     verify(importIndexHandler, times(1)).updateIndex(testIds.size());
-    verify(importService, times(1)).executeImport(resultList);
+    verify(importService, times(1)).executeImport(resultList, importCompleteCallback);
   }
 
 }

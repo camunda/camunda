@@ -68,10 +68,11 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
       .stream()
       .filter(EventProcessInstanceImportMediator::canImport)
       .map(eventProcessInstanceImportMediator -> {
-        final CompletableFuture<Void> importCompletedFuture = eventBasedProcessIndexManager
+        final CompletableFuture<Void> indexUsageFinishedFuture = eventBasedProcessIndexManager
           .registerIndexUsageAndReturnFinishedHandler(eventProcessInstanceImportMediator.getPublishedProcessStateId());
-        eventProcessInstanceImportMediator.importNextPage(importCompletedFuture);
-        return importCompletedFuture;
+        final CompletableFuture<Void> importCompleteFuture = eventProcessInstanceImportMediator.importNextPage();
+        importCompleteFuture.whenComplete((aVoid, throwable) -> indexUsageFinishedFuture.complete(null));
+        return importCompleteFuture;
       })
       .toArray(CompletableFuture[]::new);
 

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.user_task;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
+import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -36,6 +37,7 @@ import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -55,7 +57,8 @@ public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private ObjectMapper objectMapper;
 
@@ -106,6 +109,7 @@ public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
     }
   }
 
+  @SneakyThrows
   private void performOrderedImport(List<String> mediatorOrder) {
     for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerFactory()
       .getImportSchedulers()) {
@@ -115,9 +119,13 @@ public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
         .sorted(Comparator.comparingInt(o -> mediatorOrder.indexOf(o.getClass())))
         .collect(toList());
 
-      sortedMediators.forEach(EngineImportMediator::runImport);
+      CompletableFuture.allOf(
+        sortedMediators
+          .stream()
+          .map(EngineImportMediator::runImport)
+          .toArray(CompletableFuture[]::new)
+      ).get();
     }
-    embeddedOptimizeExtension.makeSureAllScheduledJobsAreFinished();
   }
 
   private void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto, final long idleDuration) {

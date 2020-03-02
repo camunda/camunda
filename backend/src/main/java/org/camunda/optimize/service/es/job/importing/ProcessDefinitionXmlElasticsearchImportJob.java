@@ -15,13 +15,14 @@ public class ProcessDefinitionXmlElasticsearchImportJob extends ElasticsearchImp
 
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
-  public ProcessDefinitionXmlElasticsearchImportJob(ProcessDefinitionXmlWriter processDefinitionXmlWriter) {
-    super();
+  public ProcessDefinitionXmlElasticsearchImportJob(final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
+                                                    final Runnable importCompleteCallback) {
+    super(importCompleteCallback);
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
   }
 
   @Override
-  protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
     processDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
   }
 }

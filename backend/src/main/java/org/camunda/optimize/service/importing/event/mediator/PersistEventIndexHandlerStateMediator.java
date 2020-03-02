@@ -22,6 +22,7 @@ import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static java.util.stream.Collectors.toList;
 
@@ -56,17 +57,19 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   }
 
   @Override
-  public void runImport() {
+  public CompletableFuture<Void> runImport() {
+    final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
       final List<ImportIndexDto> importIndices = importIndexHandlerRegistry.getAllHandlers()
         .stream()
         .map(ImportIndexHandler::createIndexInformationForStoring)
         .collect(toList());
-      importService.executeImport(importIndices);
+      importService.executeImport(importIndices, () -> importCompleted.complete(null));
     } catch (Exception e) {
       log.error("Could not execute import for storing event processing index handlers!", e);
     }
+    return importCompleted;
   }
 
   @Override
