@@ -15,9 +15,16 @@ exports[`should match snapshot 1`] = `
       disabled={false}
       label="Show suggested Events"
       onChange={[Function]}
+      title={false}
     />
     <EventSources
-      sources={Array []}
+      sources={
+        Array [
+          Object {
+            "type": "external",
+          },
+        ]
+      }
     />
     <div
       className="searchContainer"
@@ -36,6 +43,14 @@ exports[`should match snapshot 1`] = `
         value=""
       />
     </div>
+    <ForwardRef(Button)
+      className="collapseButton"
+      onClick={[Function]}
+    >
+      <Icon
+        type="collapse"
+      />
+    </ForwardRef(Button)>
   </div>
   <Table
     body={
@@ -49,6 +64,7 @@ exports[`should match snapshot 1`] = `
               type="checkbox"
             />,
             <Select
+              disabled={false}
               onChange={[Function]}
               onOpen={[Function]}
               value="end"
@@ -72,7 +88,8 @@ exports[`should match snapshot 1`] = `
             10,
           ],
           "props": Object {
-            "className": "mapped",
+            "className": "OrderProcessed mapped",
+            "onClick": [Function],
           },
         },
         Object {
@@ -83,18 +100,24 @@ exports[`should match snapshot 1`] = `
               onChange={[Function]}
               type="checkbox"
             />,
-            "--",
+            <span
+              className="disabled"
+            >
+              --
+            </span>,
             "OrderAccepted",
             "eventGroup",
             "order-service",
             10,
           ],
           "props": Object {
-            "className": "disabled",
+            "className": "OrderAccepted disabled",
+            "onClick": [Function],
           },
         },
       ]
     }
+    className=""
     disablePagination={true}
     head={
       Array [

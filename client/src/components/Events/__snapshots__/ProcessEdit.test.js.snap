@@ -25,12 +25,14 @@ exports[`should match snapshot 1`] = `
       name="Process Name"
       onChange={[Function]}
       onSelectNode={[Function]}
+      setViewer={[Function]}
     />
   </Themed(BPMNDiagramErrorHandler)>
   <EventTableErrorHandler
     eventSources={Array []}
     mappings={Object {}}
     onMappingChange={[Function]}
+    onSelectEvent={[Function]}
     onSourcesChange={[Function]}
     selection={null}
     xml="Process XML"

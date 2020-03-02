@@ -129,3 +129,29 @@ it('should update mappings when a node is removed', () => {
 
   expect(getCleanedMappings).toHaveBeenCalled();
 });
+
+it('should select an element from the event table', () => {
+  const endEvent = {eventName: '1', group: 'test', source: 'test'};
+
+  loadProcess.mockReturnValueOnce({
+    name: 'Process Name',
+    xml: 'Process XML',
+    mappings: {a: {end: endEvent, start: null}}
+  });
+  const node = shallow(<ProcessEdit {...props} />);
+
+  node.instance().viewer = {
+    get: el => {
+      if (el === 'elementRegistry') {
+        return [{id: 'a'}];
+      }
+      return {
+        reset: jest.fn(),
+        select: jest.fn(),
+        viewbox: () => ({x: 5, y: 5, width: 5, height: 5})
+      };
+    }
+  };
+
+  node.find(EventTable).prop('onSelectEvent')(endEvent);
+});

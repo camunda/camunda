@@ -48,7 +48,8 @@ const props = {
   onMappingChange: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   xml: 'some xml',
-  eventSources: []
+  eventSources: [{type: 'external'}],
+  onSelectEvent: jest.fn()
 };
 
 it('should match snapshot', () => {
@@ -67,7 +68,7 @@ it('should load events', () => {
 it('should disable table if no node is selected', () => {
   const node = shallow(<EventTable {...props} selection={null} />);
 
-  expect(node.find(Table).prop('body')[0].props.className).toBe('disabled');
+  expect(node.find(Table).prop('body')[0].props.className).toContain('disabled');
 });
 
 it('should allow searching for events', () => {
@@ -79,7 +80,7 @@ it('should allow searching for events', () => {
 
   node.find('.searchInput').prop('onChange')({target: {value: 'some String'}});
 
-  expect(loadEvents).toHaveBeenCalledWith({eventSources: []}, 'some String');
+  expect(loadEvents).toHaveBeenCalledWith({eventSources: props.eventSources}, 'some String');
 });
 
 it('should call callback when changing mapping', () => {
@@ -106,7 +107,7 @@ it('should pass payload to backend when loading events for suggestions', () => {
       targetFlowNodeId: 'a',
       xml: 'some xml',
       mappings: props.mappings,
-      eventSources: []
+      eventSources: props.eventSources
     },
     ''
   );
@@ -179,9 +180,36 @@ it('should not show events from hidden sources in the table', () => {
       count: 10
     }
   ]);
-  const node = shallow(<EventTable {...props} eventSources={[{type: 'external', hidden: true}]} />);
+
+  const node = shallow(
+    <EventTable
+      {...props}
+      eventSources={[{type: 'external', hidden: true}, {processDefinitionKey: 'bookrequest'}]}
+    />
+  );
 
   const events = node.find(Table).prop('body');
   expect(events).toHaveLength(1);
   expect(events[0].content).toContain('bookrequest');
+});
+
+it('invoke onSelectEvent when clicking on an element', () => {
+  const node = shallow(<EventTable {...props} />);
+
+  const events = node.find(Table).prop('body');
+  events[0].props.onClick({target: {getAttribute: () => null}});
+
+  expect(props.onSelectEvent).toHaveBeenCalledWith({
+    count: 10,
+    eventName: 'OrderProcessed',
+    group: 'eventGroup',
+    source: 'order-service'
+  });
+});
+
+it('Should collapse the table on collapse button click', () => {
+  const node = shallow(<EventTable {...props} />);
+  node.find('.collapseButton').simulate('click');
+
+  expect(node.find(Table).hasClass('collapsed')).toBe(true);
 });

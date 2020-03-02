@@ -1,17 +1,22 @@
+@import 'shared-styles/shared-styles.scss';
+
 .EventTable {
   border: solid 1px #dfdfdf;
   border-bottom: none;
+  width: 100vw;
+  margin-left: -20px;
 
   > .header {
     border-bottom: solid 1px #dfdfdf;
     background-color: #f8f8f8;
     display: flex;
     align-items: flex-start;
+    min-height: 43px;
 
     .Switch {
       font-size: 14px;
       color: #787878;
-      margin-top: 9px;
+      margin-top: 12px;
       .label {
         white-space: nowrap;
       }
@@ -20,14 +25,15 @@
     b {
       font-size: 14px;
       color: #434343;
-      margin: 9px 20px;
+      margin: 12px 20px;
       white-space: nowrap;
     }
 
     .searchContainer {
       position: relative;
-      margin-top: 2px;
-      margin-right: 2px;
+      margin-top: 5px;
+      border-right: 1px solid #ddd;
+      padding-right: 10px;
 
       .searchIcon {
         position: absolute;
@@ -42,6 +48,20 @@
         padding: 6px 35px;
       }
     }
+
+    .collapseButton {
+      margin-top: 5px;
+      border: none;
+
+      &:hover,
+      &:active {
+        background-color: unset;
+      }
+
+      .Icon {
+        margin-right: 0;
+      }
+    }
   }
 
   .Table {
@@ -49,6 +69,11 @@
     flex-direction: column;
     height: 300px;
     width: 100%;
+    transition: height 0.25s;
+
+    &.collapsed {
+      height: 0;
+    }
 
     .rt-noData {
       pointer-events: all;
@@ -93,17 +118,28 @@
         }
       }
 
-      .rt-tr.disabled {
-        opacity: 0.36;
-      }
+      .rt-tr {
+        &.mapped:hover {
+          background-color: $silver-darken-94;
+          cursor: pointer;
+        }
 
-      .rt-tr.mapped,
-      .rt-tr.mapped:hover {
-        background-color: #c5dbfe;
-      }
+        &:not(.disabled).mapped {
+          color: white;
+          background-color: $blue-darken-62;
 
-      .rt-tr.suggested {
-        border-left: 10px solid #1a6ef4;
+          .Button {
+            color: White;
+          }
+        }
+
+        &.suggested {
+          border-left: 10px solid #1a6ef4;
+        }
+
+        span.disabled {
+          opacity: 0.36;
+        }
       }
     }
   }

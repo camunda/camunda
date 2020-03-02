@@ -10,6 +10,7 @@ import mappedIcon from './icons/mapped.svg';
 
 export default function ProcessRenderer({
   viewer,
+  setViewer = () => {},
   name = '',
   mappings = {},
   onChange = () => {},
@@ -33,6 +34,7 @@ export default function ProcessRenderer({
   }
 
   useEffect(() => {
+    setViewer(viewer);
     const eventBus = viewer.get('eventBus');
 
     eventBus.on('commandStack.changed', onChangeWithViewer);

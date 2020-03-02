@@ -42,6 +42,8 @@ import {ReactComponent as arrowRight} from './arrow-right.svg';
 import {ReactComponent as calender} from './calender.svg';
 import {ReactComponent as user} from './user.svg';
 import {ReactComponent as group} from './usergroup.svg';
+import {ReactComponent as collapse} from './collapse.svg';
+import {ReactComponent as expand} from './expand.svg';
 
 const icons = {
   autorefresh,
@@ -81,7 +83,9 @@ const icons = {
   'arrow-right': arrowRight,
   calender,
   user,
-  group
+  group,
+  collapse,
+  expand
 };
 
 export default icons;

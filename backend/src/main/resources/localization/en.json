@@ -133,7 +133,8 @@
       "allMapped": "No Events available.",
       "seeDocs": "No Events available. To add events, see ",
       "documentation": "Documentation",
-      "showSuggestions": "Show suggested Events"
+      "showSuggestions": "Show suggested Events",
+      "noSuggestionsMessage": "Available for External events only"
     },
     "deleteWarning": "The '{name}' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections.",
     "publishModal": {

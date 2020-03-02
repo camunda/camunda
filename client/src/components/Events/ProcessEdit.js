@@ -20,6 +20,8 @@ import EventTable from './EventTable';
 
 import './ProcessEdit.scss';
 
+const asMapping = ({group, source, eventName}) => ({group, source, eventName});
+
 export default withErrorHandling(
   class ProcessEdit extends React.Component {
     constructor(props) {
@@ -193,6 +195,10 @@ export default withErrorHandling(
       }
     };
 
+    setViewer = viewer => {
+      this.viewer = viewer;
+    };
+
     render() {
       const {name, mappings, selectedNode, xml, eventSources} = this.state;
 
@@ -219,6 +225,7 @@ export default withErrorHandling(
             <ProcessRenderer
               name={name}
               mappings={mappings}
+              setViewer={this.setViewer}
               onChange={this.updateXml}
               onSelectNode={({newSelection}) => {
                 if (newSelection.length !== 1) {
@@ -236,9 +243,47 @@ export default withErrorHandling(
             xml={xml}
             onMappingChange={this.setMapping}
             onSourcesChange={this.updateSources}
+            onSelectEvent={event => {
+              const selected = findSelectedNode(this.viewer, mappings, event);
+              this.viewer.get('zoomScroll').reset();
+              this.viewer.get('selection').select(selected);
+              centerElement(this.viewer, selected);
+              this.setState({selectedNode: selected.businessObject});
+            }}
           />
         </div>
       );
     }
   }
 );
+
+function findSelectedNode(viewer, mappings, event) {
+  let selected;
+  viewer.get('elementRegistry').forEach(element => {
+    const {start, end} = mappings[element.id] || {};
+    if (deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event))) {
+      selected = element;
+    }
+  });
+  return selected;
+}
+
+function centerElement(viewer, el) {
+  // assuming we center on a shape.
+  // for connections we must compute the bounding box
+  // based on the connection's waypoints
+  const canvas = viewer.get('canvas');
+  var currentViewbox = canvas.viewbox();
+
+  var elementMid = {
+    x: el.x + el.width / 2,
+    y: el.y + el.height / 2
+  };
+
+  canvas.viewbox({
+    x: elementMid.x - currentViewbox.width / 2,
+    y: elementMid.y - currentViewbox.height / 2,
+    width: currentViewbox.width,
+    height: currentViewbox.height
+  });
+}

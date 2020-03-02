@@ -9,7 +9,7 @@ import debounce from 'debounce';
 import classnames from 'classnames';
 import deepEqual from 'deep-equal';
 
-import {Table, LoadingIndicator, Input, Select, Switch, Icon} from 'components';
+import {Table, LoadingIndicator, Input, Select, Switch, Icon, Button} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -119,7 +119,7 @@ export default withErrorHandling(
       const selectionCleared = prevSelection && !selection;
 
       if (selectionMade || selectionChanged || selectionCleared) {
-        if (showSuggested) {
+        if (!this.camundaSourcesAdded() && showSuggested) {
           this.loadEvents(searchQuery);
         } else {
           this.scrollToSelectedElement();
@@ -128,17 +128,22 @@ export default withErrorHandling(
     };
 
     scrollToSelectedElement = () => {
-      const mappedElement =
-        this.container.current && this.container.current.querySelector('.mapped');
-      if (mappedElement) {
-        mappedElement.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+      const {selection, mappings} = this.props;
+      const {start, end} = (selection && mappings[selection.id]) || {};
+      const event = start || end;
+      if (event) {
+        const mappedElement =
+          this.container.current && this.container.current.querySelector('.' + event.eventName);
+        if (mappedElement) {
+          mappedElement.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+        }
       }
     };
 
-    inHiddenSources = (event, sources) => {
-      const hiddenSources = sources.filter(src => src.hidden);
+    inShownSources = event => {
+      const shownSources = this.props.eventSources.filter(src => !src.hidden);
 
-      return hiddenSources.some(({processDefinitionKey, type}) => {
+      return shownSources.some(({processDefinitionKey, type}) => {
         if (type === 'external') {
           return event.source !== 'camunda';
         } else {
@@ -150,25 +155,14 @@ export default withErrorHandling(
     camundaSourcesAdded = () =>
       this.props.eventSources.filter(src => src.type !== 'external').length > 0;
 
-    isEventAvailable = event => {
-      const {selection, mappings, eventSources} = this.props;
-      const {start, end} = (selection && mappings[selection.id]) || {};
-      const mappedToSelection =
-        deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event));
-
-      return (
-        !this.inHiddenSources(event, eventSources) && (!this.mappedAs(event) || mappedToSelection)
-      );
-    };
-
     render() {
-      const {events, searchQuery, showSuggested} = this.state;
+      const {events, searchQuery, showSuggested, collapsed} = this.state;
       const {selection, onMappingChange, mappings, eventSources} = this.props;
 
       const {start, end} = (selection && mappings[selection.id]) || {};
       const numberOfMappings = !!start + !!end;
       const numberOfPotentialMappings = this.getNumberOfPotentialMappings(selection);
-      const disabled = numberOfPotentialMappings <= numberOfMappings;
+      const allMapped = numberOfPotentialMappings <= numberOfMappings;
       const externalEvents = eventSources.some(src => src.type === 'external');
 
       return (
@@ -181,6 +175,7 @@ export default withErrorHandling(
               onChange={({target: {checked}}) =>
                 this.setState({showSuggested: checked}, () => this.loadEvents(searchQuery))
               }
+              title={this.camundaSourcesAdded() && t('events.table.noSuggestionsMessage')}
               label={t('events.table.showSuggestions')}
             />
             <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
@@ -196,8 +191,15 @@ export default withErrorHandling(
                 onClear={() => this.searchFor('')}
               />
             </div>
+            <Button
+              onClick={() => this.setState({collapsed: !collapsed})}
+              className="collapseButton"
+            >
+              <Icon type={collapsed ? 'expand' : 'collapse'} />
+            </Button>
           </div>
           <Table
+            className={classnames({collapsed})}
             head={[
               'checked',
               t('events.table.mapping'),
@@ -208,18 +210,20 @@ export default withErrorHandling(
             ]}
             body={
               events
-                ? events.filter(this.isEventAvailable).map(event => {
-                    const {group, source, eventName, count, suggested} = event;
+                ? events.filter(this.inShownSources).map(event => {
+                    const {group, source, eventLabel, eventName, count, suggested} = event;
                     const mappedAs = this.mappedAs(event);
                     const eventAsMapping = asMapping(event);
-                    const isDisabled = disabled && !mappedAs;
+                    const mappedToSelection =
+                      deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event));
+                    const disabled = !selection || (!mappedToSelection && (allMapped || mappedAs));
 
                     return {
                       content: [
                         <Input
                           type="checkbox"
                           checked={!!mappedAs}
-                          disabled={isDisabled}
+                          disabled={disabled}
                           onChange={({target: {checked}}) =>
                             onMappingChange(eventAsMapping, checked)
                           }
@@ -227,6 +231,7 @@ export default withErrorHandling(
                         mappedAs ? (
                           <Select
                             value={mappedAs}
+                            disabled={disabled}
                             onOpen={isOpen => {
                               if (isOpen) {
                                 // due to how we integrate Dropdowns in React Table, we need to manually
@@ -254,19 +259,27 @@ export default withErrorHandling(
                             </Select.Option>
                           </Select>
                         ) : (
-                          '--'
+                          <span className={classnames({disabled})}>--</span>
                         ),
-                        eventName,
+                        eventLabel || eventName,
                         group,
                         source,
                         count
                       ],
                       props: {
-                        className: classnames({
-                          disabled: isDisabled,
+                        className: classnames(eventName, {
+                          disabled,
                           mapped: mappedAs,
                           suggested
-                        })
+                        }),
+                        onClick: evt => {
+                          if (
+                            mappedAs &&
+                            !['button', 'checkbox'].includes(evt.target.getAttribute('type'))
+                          ) {
+                            this.props.onSelectEvent(event);
+                          }
+                        }
                       }
                     };
                   })
@@ -285,7 +298,7 @@ export default withErrorHandling(
                   t('events.sources.empty')}
               </>
             }
-            noHighlight={disabled}
+            noHighlight={true}
           />
         </div>
       );
