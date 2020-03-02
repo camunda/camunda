@@ -182,6 +182,7 @@
                 <echo message="Optimize has benn booted up." />
 
                 <echo message="Waiting for Optimize Import to finish..." />
+                <sleep seconds="5"/>
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
@@ -319,29 +320,30 @@
                 <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
                   <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
                 </exec>
-                  <echo message="Waiting for Optimize to start..." />
-                  <exec executable="/bin/bash" failonerror="true">
-                    <arg value="-c" />
-                    <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
-                  </exec>
+                <echo message="Waiting for Optimize to start..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
+                </exec>
 
-                  <echo message="Waiting for Optimize Import to finish..." />
-                  <exec executable="/bin/bash" failonerror="true">
-                    <arg value="-c" />
-                    <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
-                  </exec>
+                <echo message="Waiting for Optimize Import to finish..." />
+                <sleep seconds="5"/>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
+                </exec>
 
-                  <echo message="Authenticating on optimize api..." />
-                  <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
-                    <arg value="-c" />
-                    <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie -o authResponse" />
-                  </exec>
+                <echo message="Authenticating on optimize api..." />
+                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie -o authResponse" />
+                </exec>
 
-                  <echo message="Reading all reports from optimize api..." />
-                  <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
-                    <arg value="-c" />
-                    <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
-                  </exec>
+                <echo message="Reading all reports from optimize api..." />
+                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
+                </exec>
 
                 <!--assert document counts are the same as before the migration-->
                 <exec executable="/bin/bash" failonerror="true">
@@ -378,7 +380,6 @@
                   <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize-decision-definition/_count | jq .count" />
                 </exec>
 
-
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="echo Comparing Process Instance count ${pi_count} = ${post_migration_pi_count}; test ${pi_count} -eq ${post_migration_pi_count}" />
@@ -408,13 +409,11 @@
                   <arg value="echo Comparing Variable count ${var_count} = ${post_migration_var_count}; test ${var_count} -eq ${post_migration_var_count}" />
                 </exec>
 
-
-
                 <echo message="Killing Optimize ${project.version}..." />
-                  <exec executable="/bin/bash" failonerror="true">
-                    <arg value="-c" />
-                    <arg value="pkill -f org.camunda.optimize.Main" />
-                  </exec>
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="pkill -f org.camunda.optimize.Main" />
+                </exec>
               </target>
             </configuration>
           </execution>
