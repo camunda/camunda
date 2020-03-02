@@ -24,7 +24,7 @@ CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 
 String getCamBpmDockerImage(String camBpmVersion) {
-  return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
+  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
 /************************ START OF PIPELINE ***********************/

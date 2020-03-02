@@ -10,7 +10,7 @@ def static NODE_POOL() { return "slaves-ssd-stable" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
-  return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}"
+  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
 }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {

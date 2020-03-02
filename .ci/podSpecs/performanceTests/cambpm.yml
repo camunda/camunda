@@ -30,7 +30,7 @@ spec:
           emptyDir: {}
       containers:
         - name: cambpm
-          image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION}
+          image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION}
           env:
             - name: JAVA_OPTS
               value: "-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"

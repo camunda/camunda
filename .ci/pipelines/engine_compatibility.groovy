@@ -180,7 +180,7 @@ String integrationTestPodSpec(String camBpmVersion, def esVersion) {
 }
 
 String getCamBpmDockerImage(String camBpmVersion) {
-  return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
+  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
 void gitCheckoutOptimize() {
