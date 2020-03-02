@@ -59,9 +59,9 @@ export const TR = themed(styled.tr`
     background-color: ${({theme, selected}) => {
       if (selected) {
         if (theme === 'dark') {
-          return '#3a527d';
+          return Colors.darkSelectedOdd;
         } else {
-          return '#bfd6fe';
+          return Colors.lightSelectedOdd;
         }
       } else {
         if (theme === 'dark') {
@@ -77,9 +77,9 @@ export const TR = themed(styled.tr`
     background-color: ${({theme, selected}) => {
       if (selected) {
         if (theme === 'dark') {
-          return '#3e5681';
+          return Colors.darkSelectedEven;
         } else {
-          return '#bdd4fd';
+          return Colors.lightSelectedEven;
         }
       } else {
         if (theme === 'dark') {

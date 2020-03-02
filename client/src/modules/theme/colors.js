@@ -31,10 +31,10 @@ const Colors = {
   lightItemEven: '#f9fafc',
 
   // Selection Colors
-  darkInstanceOdd: '#3a527d',
-  darkInstanceEven: '#3e5681',
-  lightInstanceEven: '#bdd4fd',
-  lightInstanceOdd: '#bfd6fe',
+  darkSelectedOdd: '#3a527d',
+  darkSelectedEven: '#3e5681',
+  lightSelectedEven: '#bdd4fd',
+  lightSelectedOdd: '#bfd6fe',
 
   // Menu Colors
   darkActive: '#393a42',

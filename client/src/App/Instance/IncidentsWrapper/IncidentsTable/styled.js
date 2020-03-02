@@ -87,20 +87,20 @@ export const IncidentTR = themed(styled(TR)`
   &:nth-child(odd) {
     background-color: ${themeStyle({
       dark: ({isSelected}) => {
-        return isSelected ? Colors.darkInstanceOdd : Colors.darkItemOd;
+        return isSelected ? Colors.darkSelectedOdd : Colors.darkItemOd;
       },
       light: ({isSelected}) => {
-        return isSelected ? Colors.lightInstanceOdd : Colors.lightItemOdd;
+        return isSelected ? Colors.lightSelectedOdd : Colors.lightItemOdd;
       }
     })};
   }
   &:nth-child(even) {
     background-color: ${themeStyle({
       dark: ({isSelected}) => {
-        return isSelected ? Colors.darkInstanceEven : Colors.darkItemEven;
+        return isSelected ? Colors.darkSelectedEven : Colors.darkItemEven;
       },
       light: ({isSelected}) => {
-        return isSelected ? Colors.lightInstanceEven : Colors.lightItemEven;
+        return isSelected ? Colors.lightSelectedEven : Colors.lightItemEven;
       }
     })};
   }

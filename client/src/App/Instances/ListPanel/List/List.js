@@ -140,7 +140,7 @@ const Body = function(props) {
       {data.slice(0, rowsToDisplay).map((instance, idx) => {
         const isSelected = isInstanceChecked(instance.id);
         return (
-          <TR key={idx}>
+          <TR key={idx} selected={isSelected}>
             <TD>
               <Styled.Cell>
                 <Styled.SelectionStatusIndicator selected={isSelected} />
