@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.filter.decision;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
+import lombok.SneakyThrows;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -18,9 +19,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -40,6 +44,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT {
+
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
+    engineIntegrationExtension.getEngineName()
+  );
 
   @Test
   public void resultFilterByFixedEvaluationDateStartFrom() {
@@ -186,10 +196,11 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
   @ParameterizedTest
   @MethodSource("supportedRelativeDateFilterUnits")
+  @SneakyThrows
   public void resultFilterByRelativeEvaluationDateStartFrom(DateFilterUnit dateFilterUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -304,10 +315,11 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
   @ParameterizedTest
   @MethodSource("dateFilterUnits")
+  @SneakyThrows
   public void resultFilterByRollingEvaluationDateCurrentInterval(DateFilterUnit dateFilterUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -326,10 +338,11 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
   @ParameterizedTest
   @MethodSource("dateFilterUnits")
+  @SneakyThrows
   public void resultFilterByRollingEvaluationDatePreviousInterval(DateFilterUnit dateFilterUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -344,6 +357,14 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     assertThat(result.getInstanceCount(), is(0L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(0));
+  }
+
+  @SneakyThrows
+  private void freezeCurrentTimeAndStartDecisionInstance(final DecisionDefinitionEngineDto decisionDefinitionDto) {
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now());
+    final OffsetDateTime frozenTime = LocalDateUtil.getCurrentDateTime();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(decisionDefinitionDto.getId(), frozenTime);
   }
 
   private static Stream<DateFilterUnit> supportedRelativeDateFilterUnits() {
