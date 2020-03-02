@@ -11,6 +11,7 @@ import {
   fetchWorkflowInstance,
   fetchWorkflowInstances,
   fetchWorkflowInstanceIncidents,
+  fetchSequenceFlows,
   fetchVariables,
   applyBatchOperation,
   applyOperation
@@ -41,7 +42,8 @@ const {
   LOAD_STATE_STATISTICS,
   LOAD_STATE_DEFINITIONS,
   LOAD_BATCH_OPERATIONS,
-  CREATE_BATCH_OPERATION
+  CREATE_BATCH_OPERATION,
+  LOAD_SEQUENCE_FLOWS
 } = SUBSCRIPTION_TOPIC;
 
 export class DataManager {
@@ -185,6 +187,14 @@ export class DataManager {
 
   getBatchOperations(params) {
     this.fetchAndPublish(LOAD_BATCH_OPERATIONS, fetchBatchOperations, params);
+  }
+
+  getSequenceFlows(workflowInstanceId) {
+    this.fetchAndPublish(
+      LOAD_SEQUENCE_FLOWS,
+      fetchSequenceFlows,
+      workflowInstanceId
+    );
   }
 
   /** Update Data */

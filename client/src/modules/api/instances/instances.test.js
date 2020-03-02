@@ -16,7 +16,8 @@ import {
   fetchWorkflowInstances,
   fetchGroupedWorkflows,
   fetchWorkflowInstancesStatistics,
-  fetchWorkflowInstancesByIds
+  fetchWorkflowInstancesByIds,
+  fetchSequenceFlows
 } from './instances';
 
 const successResponse = {
@@ -178,6 +179,22 @@ describe('instances api', () => {
         OPERATION_TYPE.RESOLVE_INCIDENT
       );
       expect(wrappers.post.mock.calls[0][1].incidentId).toBe('incident_1');
+    });
+  });
+
+  describe('fetchSequenceFlows', () => {
+    it('should call get with the right url', async () => {
+      // given
+      const workflowId = 100;
+
+      // when
+      await fetchSequenceFlows(workflowId);
+
+      // then
+      expect(wrappers.get.mock.calls[0][0]).toBe(
+        `/api/workflow-instances/${workflowId}/sequence-flows`
+      );
+      expect(successResponse.json).toBeCalled();
     });
   });
 });

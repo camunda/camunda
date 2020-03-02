@@ -28,6 +28,11 @@ export async function fetchWorkflowInstances(options) {
   return await response.json();
 }
 
+export async function fetchSequenceFlows(workflowInstanceId) {
+  const response = await get(`${URL}/${workflowInstanceId}/sequence-flows`);
+  return await response.json();
+}
+
 export async function fetchGroupedWorkflows() {
   try {
     const response = await get('/api/workflows/grouped');

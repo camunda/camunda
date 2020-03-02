@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 import {flatMap} from 'lodash';
 
-import {themed} from 'modules/theme';
+import {themed, Colors} from 'modules/theme';
 
 import {STATE, EXPAND_STATE} from 'modules/constants';
 
@@ -32,6 +32,7 @@ class Diagram extends React.PureComponent {
     onDiagramLoaded: PropTypes.func,
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
+    processedSequenceFlows: PropTypes.arrayOf(PropTypes.string),
     selectedFlowNodeId: PropTypes.string,
     selectedFlowNodeName: PropTypes.string,
     onFlowNodeSelection: PropTypes.func,
@@ -72,12 +73,16 @@ class Diagram extends React.PureComponent {
     theme: prevTheme,
     definitions: prevDefinitions,
     selectedFlowNodeId,
+    processedSequenceFlows: prevSequenceFlows,
     expandState: prevExpandState
   }) {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
 
-    const {expandState} = this.props;
+    const {
+      expandState,
+      processedSequenceFlows: currentSequenceFlows
+    } = this.props;
 
     if (
       expandState !== prevExpandState &&
@@ -93,6 +98,9 @@ class Diagram extends React.PureComponent {
     const hasSelectedFlowNodeChanged =
       this.props.selectedFlowNodeId !== selectedFlowNodeId;
 
+    const hasProcessedSequenceFlowsChanged =
+      prevSequenceFlows !== currentSequenceFlows;
+
     // In case only the selectedFlowNode changed.
     // This also means that the Viewer is already initiated so we can safely
     // call this.handleSelectedFlowNode.
@@ -100,6 +108,12 @@ class Diagram extends React.PureComponent {
       this.handleSelectedFlowNode(
         this.props.selectedFlowNodeId,
         selectedFlowNodeId
+      );
+    }
+    if (this.state.isViewerLoaded && hasProcessedSequenceFlowsChanged) {
+      this.handleProcessedSequenceFlowsChange(
+        prevSequenceFlows,
+        currentSequenceFlows
       );
     }
   }
@@ -132,11 +146,16 @@ class Diagram extends React.PureComponent {
       this.handleSelectedFlowNode(this.props.selectedFlowNodeId);
     }
 
+    if (this.props.processedSequenceFlows) {
+      this.handleProcessedSequenceFlows(this.props.processedSequenceFlows);
+    }
+
     this.handleNonSelectableFlowNodes();
   };
 
   initViewer = () => {
     // colors config for bpmnRenderer
+
     this.Viewer = new BPMNViewer({
       container: this.myRef.current,
       bpmnRenderer: getDiagramColors(this.props.theme)
@@ -194,7 +213,41 @@ class Diagram extends React.PureComponent {
 
   removeMarker = (id, className) => {
     const canvas = this.Viewer.get('canvas');
+
     canvas.removeMarker(id, className);
+  };
+
+  colorElement = (id, color) => {
+    var elementRegistry = this.Viewer.get('elementRegistry');
+    var graphicsFactory = this.Viewer.get('graphicsFactory');
+    var element = elementRegistry.get(id);
+    if (element.businessObject && element.businessObject.di) {
+      element.businessObject.di.set('stroke', color);
+
+      var gfx = elementRegistry.getGraphics(element);
+      var type = element.waypoints ? 'connection' : 'shape';
+
+      graphicsFactory.update(type, element, gfx);
+    }
+  };
+
+  handleProcessedSequenceFlows = processedSequenceFlows => {
+    processedSequenceFlows.forEach(id => {
+      this.colorElement(id, Colors.selections);
+    });
+  };
+
+  handleProcessedSequenceFlowsChange = (
+    prevSequenceFlows,
+    currentSequenceFlows
+  ) => {
+    prevSequenceFlows.forEach(id => {
+      this.colorElement(id);
+    });
+
+    currentSequenceFlows.forEach(id => {
+      this.colorElement(id, Colors.selections);
+    });
   };
 
   handleSelectableFlowNodes = selectableFlowNodes => {

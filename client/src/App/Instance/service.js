@@ -149,6 +149,12 @@ function hasMultiInstanceActivities(instances) {
   return instances.some(instance => instance.type === TYPE.MULTI_INSTANCE_BODY);
 }
 
+export function getProcessedSequenceFlows(response) {
+  return response
+    .map(item => item.activityId)
+    .filter((value, index, self) => self.indexOf(value) === index);
+}
+
 function filterMultiInstanceActivities(activityInstancesMap, filterFn) {
   const activityInstances = [...activityInstancesMap.values()];
 
