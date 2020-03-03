@@ -109,15 +109,6 @@ public final class Broker implements AutoCloseable {
     return startFuture;
   }
 
-  // TODO: Added this API for testing. When http endpoint is available, this can be removed.
-  // https://github.com/zeebe-io/zeebe/issues/3833
-  public boolean isHealthy() {
-    if (healthCheckService != null) {
-      return healthCheckService.isBrokerHealthy();
-    }
-    return false;
-  }
-
   private void internalStart() {
     final BrokerCfg brokerCfg = getConfig();
     final StartProcess startProcess = initStart();
