@@ -50,12 +50,9 @@ public class StandaloneBroker implements CommandLineRunner {
     final Broker broker;
 
     if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
-      // creates a broker in the base directory that will run with the configuration provided by
-      // Spring Boot
       broker = createBrokerInBaseDirectory();
     } else {
-      // creates a broker in a temp directory that runs with the default configuration
-      broker = createDefaultBrokerInTempDirectory();
+      broker = createBrokerInTempDirectory();
     }
 
     broker.start();
@@ -85,13 +82,12 @@ public class StandaloneBroker implements CommandLineRunner {
     return new Broker(configuration, basePath, null);
   }
 
-  private Broker createDefaultBrokerInTempDirectory() {
+  private Broker createBrokerInTempDirectory() {
     Loggers.SYSTEM_LOGGER.info("No configuration file specified. Using default configuration.");
 
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-      final BrokerCfg defaultConfiguration = new BrokerCfg();
-      return new Broker(defaultConfiguration, tempFolder, null);
+      return new Broker(configuration, tempFolder, null);
     } catch (final IOException e) {
       throw new RuntimeException("Could not start broker", e);
     }

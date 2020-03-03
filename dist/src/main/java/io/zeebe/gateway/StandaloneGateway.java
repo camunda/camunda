@@ -15,7 +15,6 @@ import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
-import io.zeebe.EnvironmentHelper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -120,12 +119,7 @@ public class StandaloneGateway implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
-    final GatewayCfg gatewayCfg;
-    if (EnvironmentHelper.isProductionEnvironment(springEnvironment)) {
-      gatewayCfg = configuration;
-    } else {
-      gatewayCfg = new GatewayCfg();
-    }
+    final GatewayCfg gatewayCfg = configuration;
     gatewayCfg.init();
     new StandaloneGateway(gatewayCfg).run();
   }
