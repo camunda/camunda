@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import com.google.common.collect.Lists;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -58,6 +59,7 @@ public class ConfigurationValidator {
     validateNoDeprecatedConfigKeysUsed(configurationService.getConfigJsonContext());
     validateUIConfiguration(configurationService);
     configurationService.getEmailAuthenticationConfiguration().validate();
+    validateWebhooks(configurationService);
   }
 
   public static ConfigurationValidator createValidatorWithoutDeprecations() {
@@ -108,6 +110,52 @@ public class ConfigurationValidator {
         "The stated background color [%s] for the header customization is not valid. Please configure valid " +
           "hexadecimal encoded color.", backgroundColor);
       throw new OptimizeConfigurationException(message, e);
+    }
+  }
+
+  private void validateWebhooks(final ConfigurationService configurationService) {
+    final Map<String, WebhookConfiguration> webhookMap = configurationService.getConfiguredWebhooks();
+    final List<String> webhooksWithoutPayload = Lists.newArrayList();
+    final List<String> webhooksWithoutPlaceholder = Lists.newArrayList();
+    final List<String> webhooksWithoutUrl = Lists.newArrayList();
+
+    for (Map.Entry<String, WebhookConfiguration> webhookConfigEntry : webhookMap.entrySet()) {
+      final String defaultPayload = webhookConfigEntry.getValue().getDefaultPayload();
+      final String url = webhookConfigEntry.getValue().getUrl();
+      final boolean usesPlaceholderString = defaultPayload.contains(WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER);
+
+      if (url.isEmpty()) {
+        webhooksWithoutUrl.add(webhookConfigEntry.getKey());
+      }
+      if (defaultPayload.isEmpty()) {
+        webhooksWithoutPayload.add(webhookConfigEntry.getKey());
+      } else if (!usesPlaceholderString) {
+        webhooksWithoutPlaceholder.add(webhookConfigEntry.getKey());
+      }
+    }
+
+    String errorMsg = "";
+    if (!webhooksWithoutPayload.isEmpty()) {
+      errorMsg = errorMsg + String.format(
+        "The following webhooks are missing their payload configuration: %s.%n",
+        webhooksWithoutPayload
+      );
+    }
+    if (!webhooksWithoutUrl.isEmpty()) {
+      errorMsg = errorMsg + String.format(
+        "The following webhooks are missing their URL configuration: %s.%n",
+        webhooksWithoutUrl
+      );
+    }
+    if (!webhooksWithoutPlaceholder.isEmpty()) {
+      errorMsg = errorMsg + String.format(
+        "The alert placeholder String '%s' is not used in the following webhooks: %s",
+        WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER,
+        webhooksWithoutPlaceholder
+      );
+    }
+    if (!errorMsg.isEmpty()) {
+      throw new OptimizeConfigurationException(errorMsg);
     }
   }
 }

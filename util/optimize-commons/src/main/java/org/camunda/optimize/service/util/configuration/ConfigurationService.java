@@ -22,6 +22,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,8 @@ public class ConfigurationService {
   private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
     new TypeRef<HashMap<String, EngineConfiguration>>() {};
   private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<List<String>>() {};
+  private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF =
+    new TypeRef<HashMap<String, WebhookConfiguration>>() {};
   // @formatter:on
 
   private ReadContext configJsonContext;
@@ -150,6 +153,8 @@ public class ConfigurationService {
   private String alertEmailHostname;
   private Integer alertEmailPort;
   private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
+
+  private Map<String, WebhookConfiguration> configuredWebhooks;
 
   private Integer exportCsvLimit;
 
@@ -826,6 +831,19 @@ public class ConfigurationService {
       alertEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT, Integer.class);
     }
     return alertEmailPort;
+  }
+
+  public Map<String, WebhookConfiguration> getConfiguredWebhooks() {
+    if (configuredWebhooks == null) {
+      configuredWebhooks = configJsonContext.read(
+        ConfigurationServiceConstants.CONFIGURED_WEBHOOKS,
+        WEBHOOKS_MAP_TYPEREF
+      );
+      if (configuredWebhooks == null) {
+        configuredWebhooks = Collections.emptyMap();
+      }
+    }
+    return configuredWebhooks;
   }
 
   public Integer getExportCsvLimit() {

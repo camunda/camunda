@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -245,6 +246,66 @@ public class ConfigurationValidatorTest {
     // then an exception is thrown
   }
 
+  @Test(expected = OptimizeConfigurationException.class)
+  public void missingWebhookUrlThrowsError() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
+      "myWeebhook",
+      "",
+      new HashMap<>(),
+      "POST",
+      WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER
+    );
+    configurationService.setConfiguredWebhooks(webhooks);
+
+    // when
+    underTest.validate(configurationService);
+
+    // then an exception is thrown
+  }
+
+  @Test(expected = OptimizeConfigurationException.class)
+  public void missingWebhookPayloadThrowsError() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
+      "myWeebhook",
+      "someurl",
+      new HashMap<>(),
+      "POST",
+      ""
+    );
+    configurationService.setConfiguredWebhooks(webhooks);
+
+    // when
+    underTest.validate(configurationService);
+
+    // then an exception is thrown
+  }
+
+  @Test(expected = OptimizeConfigurationException.class)
+  public void webhookPayloadWithoutPlaceholderThrowsError() {
+    // given
+    ConfigurationService configurationService = createConfiguration();
+    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
+    Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
+      "myWeebhook",
+      "",
+      new HashMap<>(),
+      "POST",
+      "aPayloadWithoutPlaceholder"
+    );
+    configurationService.setConfiguredWebhooks(webhooks);
+
+    // when
+    underTest.validate(configurationService);
+
+    // then an exception is thrown
+  }
+
   private String createAbsolutePath(final String relativePathToLogo) {
     return Objects.requireNonNull(ConfigurationValidatorTest.class.getClassLoader().getResource(relativePathToLogo))
       .getPath();
@@ -258,6 +319,21 @@ public class ConfigurationValidatorTest {
     UIConfiguration uiConfiguration = new UIConfiguration();
     uiConfiguration.setHeader(headerCustomization);
     return uiConfiguration;
+  }
+
+  private HashMap<String, WebhookConfiguration> createSingleWebhookConfiguration(final String name,
+                                                                                 final String url,
+                                                                                 final Map<String, String> headers,
+                                                                                 final String httpMethod,
+                                                                                 final String payload) {
+    final HashMap<String, WebhookConfiguration> webhookMap = new HashMap<>();
+    WebhookConfiguration webhookConfiguration = new WebhookConfiguration();
+    webhookConfiguration.setUrl(url);
+    webhookConfiguration.setHeaders(headers);
+    webhookConfiguration.setHttpMethod(httpMethod);
+    webhookConfiguration.setDefaultPayload(payload);
+    webhookMap.put(name, webhookConfiguration);
+    return webhookMap;
   }
 
   private ConfigurationService createConfiguration(final String... overwriteConfigFiles) {
