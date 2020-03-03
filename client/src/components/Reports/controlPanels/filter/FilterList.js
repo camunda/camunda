@@ -14,6 +14,15 @@ import './FilterList.scss';
 
 import {t} from 'translation';
 
+const instanceFilters = [
+  'runningInstancesOnly',
+  'completedInstancesOnly',
+  'canceledInstancesOnly',
+  'nonCanceledInstancesOnly',
+  'suspendedInstancesOnly',
+  'nonSuspendedInstancesOnly'
+];
+
 export default class FilterList extends React.Component {
   createOperator = name => <span> {name} </span>;
 
@@ -173,7 +182,7 @@ export default class FilterList extends React.Component {
               </ActionItem>
             </li>
           );
-        } else if (filter.type === 'runningInstancesOnly') {
+        } else if (instanceFilters.includes(filter.type)) {
           list.push(
             <li key={i} className="listItem notEditable">
               <ActionItem
@@ -182,46 +191,7 @@ export default class FilterList extends React.Component {
                   this.props.deleteFilter(filter);
                 }}
               >
-                <span className="parameterName">{t('common.filter.list.running')}</span>
-              </ActionItem>
-            </li>
-          );
-        } else if (filter.type === 'completedInstancesOnly') {
-          list.push(
-            <li key={i} className="listItem notEditable">
-              <ActionItem
-                onClick={evt => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{t('common.filter.list.completed')}</span>
-              </ActionItem>
-            </li>
-          );
-        } else if (filter.type === 'canceledInstancesOnly') {
-          list.push(
-            <li key={i} className="listItem notEditable">
-              <ActionItem
-                onClick={evt => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{t('common.filter.list.canceled')}</span>
-              </ActionItem>
-            </li>
-          );
-        } else if (filter.type === 'nonCanceledInstancesOnly') {
-          list.push(
-            <li key={i} className="listItem notEditable">
-              <ActionItem
-                onClick={evt => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{t('common.filter.list.nonCanceled')}</span>
+                <span className="parameterName">{t('common.filter.types.' + filter.type)}</span>
               </ActionItem>
             </li>
           );

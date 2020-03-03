@@ -127,6 +127,14 @@ test('instance state filters', async t => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Non Canceled Instances Only'));
   await t.expect(Report.reportRenderer.visible).ok();
+  await t.click(Report.filterRemoveButton);
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Suspended Instances Only'));
+  await t.expect(Report.reportRenderer.visible).ok();
+  await t.click(Report.filterRemoveButton);
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Non Suspended Instances Only'));
+  await t.expect(Report.reportRenderer.visible).ok();
 });
 
 test('pick a start date from the date picker', async t => {

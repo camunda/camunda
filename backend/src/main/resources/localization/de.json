@@ -602,10 +602,12 @@
     },
     "filter": {
       "types": {
-        "running": "Nur laufende Instanzen",
-        "completed": "Nur abgeschlossene Instanzen",
-        "canceled": "Nur abgebrochene Instanzen",
-        "nonCanceled": "Nur nicht abgebrochene Instanzen",
+        "runningInstancesOnly": "Nur laufende Instanzen",
+        "completedInstancesOnly": "Nur abgeschlossene Instanzen",
+        "canceledInstancesOnly": "Nur abgebrochene Instanzen",
+        "nonCanceledInstancesOnly": "Nur nicht abgebrochene Instanzen",
+        "suspendedInstancesOnly": "Nur suspendierte Instanzen",
+        "nonSuspendedInstancesOnly": "Nur nicht suspendierte Instanzen",
         "startDate": "Startdatum",
         "endDate": "Enddatum",
         "duration": "Dauer",
@@ -633,10 +635,6 @@
           "null": "null",
           "undefined": "nicht definiert"
         },
-        "running": "Nur laufende Prozessinstanzen",
-        "completed": "Nur abgeschlossene Prozessinstanzen",
-        "canceled": "Nur abgebrochene Prozessinstanzen",
-        "nonCanceled": "Nur nicht abgebrochene Prozessinstanzen",
         "executedFlowNode": "Ausgeführter Prozessknoten",
         "executingFlowNode": "Prozessknoten in Ausführung"
       },

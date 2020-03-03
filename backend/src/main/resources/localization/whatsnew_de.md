@@ -9,3 +9,7 @@ Beim Hinzufügen oder Verschieben eines Berichts werden andere Berichte im Dashb
 ## Verbesserungen der Benutzeraufgabenberichte
 
 Wenn Sie Benutzeraufgaben nach Verantwortlichen gruppieren, können Sie jetzt Benutzeraufgaben anzeigen, die niemandem zugewiesen sind.
+
+## Filter für suspendierte/nicht suspendierte Instanzen für Prozessbericht
+
+Ein neuer Filter wird hinzugefügt, um die Prozessinstanzen zu filtern, die sich im suspendierten/nicht suspendierten Zustand befinden.

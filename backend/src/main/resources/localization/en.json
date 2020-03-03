@@ -602,10 +602,12 @@
     },
     "filter": {
       "types": {
-        "running": "Running Instances Only",
-        "completed": "Completed Instances Only",
-        "canceled": "Canceled Instances Only",
-        "nonCanceled": "Non Canceled Instances Only",
+        "runningInstancesOnly": "Running Instances Only",
+        "completedInstancesOnly": "Completed Instances Only",
+        "canceledInstancesOnly": "Canceled Instances Only",
+        "nonCanceledInstancesOnly": "Non Canceled Instances Only",
+        "suspendedInstancesOnly": "Suspended Instances Only",
+        "nonSuspendedInstancesOnly": "Non Suspended Instances Only",
         "startDate": "Start Date",
         "endDate": "End Date",
         "duration": "Duration",
@@ -633,10 +635,6 @@
           "null": "null",
           "undefined": "undefined"
         },
-        "running": "Running Process Instances Only",
-        "completed": "Completed Process Instances Only",
-        "canceled": "Canceled Process Instances Only",
-        "nonCanceled": "Non Canceled Process Instances Only",
         "executedFlowNode": "Executed Flow Node",
         "executingFlowNode": "Executing Flow Node"
       },

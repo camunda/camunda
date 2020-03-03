@@ -149,16 +149,22 @@ export default class Filter extends React.Component {
           className="Filter__dropdown"
         >
           <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>
-            {t('common.filter.types.running')}
+            {t('common.filter.types.runningInstancesOnly')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.filterByInstancesOnly('completedInstancesOnly')}>
-            {t('common.filter.types.completed')}
+            {t('common.filter.types.completedInstancesOnly')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.filterByInstancesOnly('canceledInstancesOnly')}>
-            {t('common.filter.types.canceled')}
+            {t('common.filter.types.canceledInstancesOnly')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.filterByInstancesOnly('nonCanceledInstancesOnly')}>
-            {t('common.filter.types.nonCanceled')}
+            {t('common.filter.types.nonCanceledInstancesOnly')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('suspendedInstancesOnly')}>
+            {t('common.filter.types.suspendedInstancesOnly')}
+          </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('nonSuspendedInstancesOnly')}>
+            {t('common.filter.types.nonSuspendedInstancesOnly')}
           </Dropdown.Option>
           <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
             {t('common.filter.types.startDate')}

@@ -9,3 +9,7 @@ When adding or moving a report, other reports on the dashboard automatically mov
 ## User Task Report Improvements
 
 When grouping user tasks by assignee, it is now possible to see user tasks that are not assigned to anyone.
+
+## Suspended/Non-suspended instances filter for process report
+
+ A new filter is added to allow for filtering the process instances that are in the suspended/non-suspended state. 
