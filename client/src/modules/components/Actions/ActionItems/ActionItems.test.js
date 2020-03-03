@@ -55,7 +55,7 @@ describe('ActionItems', () => {
     });
 
     it('should execute the passed method when clicked', () => {
-      node.find(Styled.Button).simulate('click');
+      node.find(Styled.Li).simulate('click');
       expect(mockOnClick).toHaveBeenCalled();
     });
   });
@@ -83,7 +83,7 @@ describe('ActionItems', () => {
     });
 
     it('should execute the passed method when clicked', () => {
-      node.find(Styled.Button).simulate('click');
+      node.find(Styled.Li).simulate('click');
       expect(mockOnClick).toHaveBeenCalled();
     });
   });

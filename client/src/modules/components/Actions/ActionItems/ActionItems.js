@@ -28,8 +28,8 @@ ActionItems.propTypes = {
 ActionItems.Item = function Item({title, onClick, type, ...rest}) {
   return (
     iconsMap.hasOwnProperty(type) && (
-      <Styled.Li>
-        <Styled.Button {...rest} type={type} title={title} onClick={onClick}>
+      <Styled.Li onClick={onClick}>
+        <Styled.Button {...rest} type={type} title={title}>
           {iconsMap[type]}
         </Styled.Button>
       </Styled.Li>
