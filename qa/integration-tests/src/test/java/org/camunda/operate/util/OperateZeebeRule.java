@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
@@ -40,6 +41,7 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 public class OperateZeebeRule extends TestWatcher {
 
   private static final String REQUEST_TIMEOUT_IN_MILLISECONDS = "15000"; // 15 seconds
+  private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearch";
 
   private static final Logger logger = LoggerFactory.getLogger(OperateZeebeRule.class);
   public static final String YYYY_MM_DD = "uuuu-MM-dd";
@@ -66,16 +68,18 @@ public class OperateZeebeRule extends TestWatcher {
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
-    brokerRule.getBrokerCfg().getExporters().stream().filter(ec -> ec.getId().equals("elasticsearch")).forEach(ec -> {
-      @SuppressWarnings("unchecked")
-      final Map<String,String> indexArgs = (Map<String,String>) ec.getArgs().get("index");
-      if (indexArgs != null) {
-        indexArgs.put("prefix", prefix);
-      } else {
-        Assertions.fail("Unable to configure Elasticsearch exporter");
-      }
-    });
+    injectPrefixToZeebeConfig(prefix);
     start();
+  }
+
+  private void injectPrefixToZeebeConfig(String prefix) {
+    final ExporterCfg exporterCfg = brokerRule.getBrokerCfg().getExporters().get(ELASTICSEARCH_EXPORTER_ID);
+    final Map<String, String> indexArgs = (Map<String, String>) exporterCfg.getArgs().get("index");
+    if (indexArgs != null) {
+      indexArgs.put("prefix", prefix);
+    } else {
+      Assertions.fail("Unable to configure Elasticsearch exporter");
+    }
   }
 
   public void updateRefreshInterval(String value) {

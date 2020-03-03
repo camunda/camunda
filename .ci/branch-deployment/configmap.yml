@@ -6,6 +6,11 @@ metadata:
     app: @BRANCH@-operate-camunda-cloud
     branch: @BRANCH@
 data:
+  zeebe.cfg.yaml: |
+    zeebe.broker.exporters.elasticsearch:
+      className: io.zeebe.exporter.ElasticsearchExporter
+      args.url: http://localhost:9200
+
   zeebe.cfg.toml: |
     [[exporters]]
     id = "elasticsearch"

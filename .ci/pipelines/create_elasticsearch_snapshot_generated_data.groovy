@@ -110,8 +110,8 @@ spec:
       env:
       volumeMounts:
         - name: zeebe-configuration
-          mountPath: /usr/local/zeebe/conf/zeebe.cfg.toml
-          subPath: zeebe.cfg.toml
+          mountPath: /usr/local/zeebe/config/application.yml
+          subPath: zeebe.cfg.yaml
       resources:
         limits:
           cpu: 4
@@ -131,8 +131,8 @@ spec:
     configMap:
       name: zeebe-configuration
       items:
-      - key: zeebe.cfg.toml
-        path: zeebe.cfg.toml
+      - key: zeebe.cfg.yaml
+        path: zeebe.cfg.yaml
 """
 }
 

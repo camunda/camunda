@@ -52,7 +52,7 @@ services:
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
-      - ZEEBE_PARTITIONS_COUNT=2
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26501:26501
@@ -60,7 +60,7 @@ services:
       - 8000:8000
     restart: always
     volumes:
-      - ./config/zeebe.cfg.toml:/usr/local/zeebe/conf/zeebe.cfg.toml
+      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yml
 
   generator:
     container_name: generator
