@@ -7,12 +7,12 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import io.zeebe.util.ByteValueParser;
-import io.zeebe.util.DurationUtil;
-import io.zeebe.util.Environment;
+import static io.zeebe.util.StringUtil.LIST_SANITIZER;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.util.unit.DataSize;
 
 public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
@@ -20,22 +20,16 @@ public final class DataCfg implements ConfigurationEntry {
   // Hint: do not use Collections.singletonList as this does not support replaceAll
   private List<String> directories = Arrays.asList(DEFAULT_DIRECTORY);
 
-  private String logSegmentSize = "512M";
+  private DataSize logSegmentSize = DataSize.ofMegabytes(512);
 
-  private String snapshotPeriod = "15m";
+  private Duration snapshotPeriod = Duration.ofMinutes(15);
 
   private int maxSnapshots = 3;
 
   @Override
-  public void init(
-      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
 
-    applyEnvironment(environment);
     directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
-  }
-
-  private void applyEnvironment(final Environment environment) {
-    environment.getList(EnvironmentConstants.ENV_DIRECTORIES).ifPresent(v -> directories = v);
   }
 
   public List<String> getDirectories() {
@@ -43,43 +37,27 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   public void setDirectories(final List<String> directories) {
-    this.directories = directories;
+    this.directories = LIST_SANITIZER.apply(directories);
   }
 
-  public Long getLogSegmentSizeInBytes() {
-    if (logSegmentSize != null) {
-      return ByteValueParser.fromString(logSegmentSize).toBytes();
-    } else {
-      return null;
-    }
+  public long getLogSegmentSizeInBytes() {
+    return logSegmentSize.toBytes();
   }
 
-  public String getLogSegmentSize() {
+  public DataSize getLogSegmentSize() {
     return logSegmentSize;
   }
 
-  public void setLogSegmentSize(final String logSegmentSize) {
-    if (logSegmentSize != null) {
-      // call parsing logic to provoke any exceptions that might occur during parsing
-      ByteValueParser.fromString(logSegmentSize);
-    }
-
+  public void setLogSegmentSize(final DataSize logSegmentSize) {
     this.logSegmentSize = logSegmentSize;
   }
 
-  public String getSnapshotPeriod() {
+  public Duration getSnapshotPeriod() {
     return snapshotPeriod;
   }
 
-  public void setSnapshotPeriod(final String snapshotPeriod) {
-    // call parsing to provoke any exceptions that might occur during parsing
-    DurationUtil.parse(snapshotPeriod);
-
+  public void setSnapshotPeriod(final Duration snapshotPeriod) {
     this.snapshotPeriod = snapshotPeriod;
-  }
-
-  public Duration getSnapshotPeriodAsDuration() {
-    return DurationUtil.parse(snapshotPeriod);
   }
 
   public int getMaxSnapshots() {

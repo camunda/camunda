@@ -7,10 +7,27 @@
  */
 package io.zeebe.util;
 
+import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toList;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 public final class StringUtil {
+
+  /** Helper functions that removes nulls and empty strings and trims all remaining strings */
+  public static final UnaryOperator<List<String>> LIST_SANITIZER =
+      input ->
+          Optional.ofNullable(input).orElse(Collections.emptyList()).stream()
+              .filter(Objects::nonNull)
+              .map(String::trim)
+              .filter(not(String::isEmpty))
+              .collect(toList());
 
   public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 

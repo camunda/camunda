@@ -10,8 +10,8 @@ package io.zeebe.test.exporter;
 import static io.zeebe.test.EmbeddedBrokerRule.TEST_RECORD_EXPORTER_ID;
 import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 
-import com.moandjiezana.toml.Toml;
-import com.moandjiezana.toml.TomlWriter;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.client.ClientProperties;
@@ -26,6 +26,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.io.InputStream;
@@ -33,6 +34,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -123,6 +126,8 @@ public class ExporterIntegrationRule extends ExternalResource {
           .endEvent()
           .done();
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   private final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   private ClientRule clientRule;
 
@@ -152,8 +157,9 @@ public class ExporterIntegrationRule extends ExternalResource {
 
   /** @return the currently configured exporters */
   public List<ExporterCfg> getConfiguredExporters() {
-    return getBrokerConfig().getExporters().stream()
-        .filter(cfg -> !cfg.getId().equals(TEST_RECORD_EXPORTER_ID))
+    return getBrokerConfig().getExporters().entrySet().stream()
+        .filter(entry -> !entry.getKey().equals(TEST_RECORD_EXPORTER_ID))
+        .map(Entry::getValue)
         .collect(Collectors.toList());
   }
 
@@ -171,22 +177,20 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @return instantiated configuration class based on the exporter args map
    */
   public <T> T getExporterConfiguration(final String id, final Class<T> configurationClass) {
-    return getConfiguredExporters().stream()
-        .filter(cfg -> cfg.getId().equals(id))
-        .findFirst()
+    return Optional.ofNullable(getBrokerConfig().getExporters().get(id))
         .map(cfg -> convertMapToConfig(cfg.getArgs(), configurationClass))
         .orElseThrow(
             () -> new IllegalArgumentException("No exporter with ID " + id + " configured"));
   }
 
   /**
-   * Configures the broker to add whatever exporters are defined in the TOML represented by the
+   * Configures the broker to add whatever exporters are defined in the yaml represented by the
    * input stream.
    *
-   * @param toml input stream wrapping a TOML document
+   * @param yaml input stream wrapping a yaml document
    */
-  public ExporterIntegrationRule configure(final InputStream toml) {
-    final BrokerCfg config = new Toml().read(toml).to(BrokerCfg.class);
+  public ExporterIntegrationRule configure(final InputStream yaml) {
+    final BrokerCfg config = new TestConfigurationFactory().create(yaml, BrokerCfg.class);
     return configure(config.getExporters());
   }
 
@@ -216,11 +220,10 @@ public class ExporterIntegrationRule extends ExternalResource {
   public <E extends Exporter> ExporterIntegrationRule configure(
       final String id, final Class<E> exporterClass, final Map<String, Object> arguments) {
     final ExporterCfg config = new ExporterCfg();
-    config.setId(id);
     config.setClassName(exporterClass.getCanonicalName());
     config.setArgs(arguments);
 
-    return configure(Collections.singletonList(config));
+    return configure(Collections.singletonMap(id, config));
   }
 
   /**
@@ -384,17 +387,17 @@ public class ExporterIntegrationRule extends ExternalResource {
     return properties;
   }
 
-  private ExporterIntegrationRule configure(final List<ExporterCfg> exporters) {
-    getBrokerConfig().getExporters().addAll(exporters);
+  private ExporterIntegrationRule configure(final Map<String, ExporterCfg> exporters) {
+    getBrokerConfig().getExporters().putAll(exporters);
 
     return this;
   }
 
   private <T> Map<String, Object> convertConfigToMap(final T configuration) {
-    return new Toml().read(new TomlWriter().write(configuration)).toMap();
+    return OBJECT_MAPPER.convertValue(configuration, new TypeReference<Map<String, Object>>() {});
   }
 
   private <T> T convertMapToConfig(final Map<String, Object> map, final Class<T> configClass) {
-    return new Toml().read(new TomlWriter().write(map)).to(configClass);
+    return OBJECT_MAPPER.convertValue(map, configClass);
   }
 }

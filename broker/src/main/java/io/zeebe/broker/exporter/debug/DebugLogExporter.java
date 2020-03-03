@@ -81,10 +81,13 @@ public class DebugLogExporter implements Exporter {
 
   public static ExporterCfg defaultConfig(final boolean prettyPrint) {
     final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setId("debug");
     exporterCfg.setClassName(DebugLogExporter.class.getName());
     exporterCfg.setArgs(Collections.singletonMap("prettyPrint", prettyPrint));
     return exporterCfg;
+  }
+
+  public static String defaultExporterId() {
+    return DebugLogExporter.class.getSimpleName();
   }
 
   public static class DebugExporterConfiguration {

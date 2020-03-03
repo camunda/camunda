@@ -59,9 +59,8 @@ public final class ExporterRepository {
     return descriptor;
   }
 
-  public ExporterDescriptor load(final ExporterCfg config)
+  public ExporterDescriptor load(final String id, final ExporterCfg config)
       throws ExporterLoadException, ExporterJarLoadException {
-    final String id = config.getId();
     final ClassLoader classLoader;
     final Class<? extends Exporter> exporterClass;
 

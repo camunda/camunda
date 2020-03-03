@@ -82,6 +82,8 @@
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>0.31.0</version.zeebe-test-container>
     <version.feel-scala>1.10.1</version.feel-scala>
+    <version.spring-framework>5.2.3.RELEASE</version.spring-framework>
+    <version.spring-boot>2.2.4.RELEASE</version.spring-boot>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
@@ -107,6 +109,7 @@
     <plugin.version.spotbugs>3.1.12.2</plugin.version.spotbugs>
     <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
+
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
@@ -546,6 +549,34 @@
         <groupId>org.camunda.bpm.extension.feel.scala</groupId>
         <artifactId>feel-engine</artifactId>
         <version>${version.feel-scala}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-beans</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-core</artifactId>
+        <version>${version.spring-framework}</version>
+      </dependency>
+
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot</artifactId>
+        <version>${version.spring-boot}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-autoconfigure</artifactId>
+        <version>${version.spring-boot}</version>
       </dependency>
 
     </dependencies>

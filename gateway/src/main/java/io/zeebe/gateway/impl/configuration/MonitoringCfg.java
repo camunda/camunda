@@ -9,9 +9,6 @@ package io.zeebe.gateway.impl.configuration;
 
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MONITORING_ENABLED;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MONITORING_PORT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_ENABLED;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_HOST;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_PORT;
 
 import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.Environment;
@@ -25,10 +22,6 @@ public final class MonitoringCfg {
   private int port = DEFAULT_MONITORING_PORT;
 
   public void init(final Environment environment, final String defaultHost) {
-    environment.getBool(ENV_GATEWAY_MONITORING_ENABLED).ifPresent(this::setEnabled);
-    environment.get(ENV_GATEWAY_MONITORING_HOST).ifPresent(this::setHost);
-    environment.getInt(ENV_GATEWAY_MONITORING_PORT).ifPresent(this::setPort);
-
     if (host == null) {
       host = defaultHost;
     }

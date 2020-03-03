@@ -66,11 +66,10 @@ public final class ExporterRepositoryTest {
     // given
     final ExporterCfg config = new ExporterCfg();
     config.setClassName(ControlledTestExporter.class.getCanonicalName());
-    config.setId("controlled");
     config.setJarPath(null);
 
     // when
-    final ExporterDescriptor descriptor = repository.load(config);
+    final ExporterDescriptor descriptor = repository.load("controlled", config);
 
     // then
     assertThat(config.isExternal()).isFalse();
@@ -87,7 +86,6 @@ public final class ExporterRepositoryTest {
 
     // when
     config.setClassName(exportedClass.getCanonicalName());
-    config.setId("exported");
     config.setJarPath(jarFile.getAbsolutePath());
     config.setArgs(args);
 
@@ -95,12 +93,12 @@ public final class ExporterRepositoryTest {
     args.put("bar", false);
 
     // when
-    final ExporterDescriptor descriptor = repository.load(config);
+    final ExporterDescriptor descriptor = repository.load("exported", config);
 
     // then
     assertThat(config.isExternal()).isTrue();
     assertThat(descriptor.getConfiguration().getArguments()).isEqualTo(config.getArgs());
-    assertThat(descriptor.getConfiguration().getId()).isEqualTo(config.getId());
+    assertThat(descriptor.getConfiguration().getId()).isEqualTo("exported");
     assertThat(descriptor.newInstance().getClass().getCanonicalName())
         .isEqualTo(exportedClass.getCanonicalName());
   }
@@ -115,12 +113,11 @@ public final class ExporterRepositoryTest {
 
     // when
     config.setClassName(exportedClass.getCanonicalName());
-    config.setId("exported");
     config.setJarPath(jarFile.getAbsolutePath());
     config.setArgs(args);
 
     // then
-    assertThatThrownBy(() -> repository.load(config))
+    assertThatThrownBy(() -> repository.load("exported", config))
         .isInstanceOf(ExporterLoadException.class)
         .hasCauseInstanceOf(ClassCastException.class);
   }
@@ -135,12 +132,11 @@ public final class ExporterRepositoryTest {
 
     // when
     config.setClassName("xyz.i.dont.Exist");
-    config.setId("exported");
     config.setJarPath(jarFile.getAbsolutePath());
     config.setArgs(args);
 
     // then
-    assertThatThrownBy(() -> repository.load(config))
+    assertThatThrownBy(() -> repository.load("exported", config))
         .isInstanceOf(ExporterLoadException.class)
         .hasCauseInstanceOf(ClassNotFoundException.class);
   }

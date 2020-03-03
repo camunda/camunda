@@ -26,11 +26,10 @@ import org.junit.rules.Timeout;
 
 public class HealthMonitoringTest {
   public static final String JOB_TYPE = "testTask";
-  private static final long SNAPSHOT_PERIOD_MINUTES = 5;
+  private static final Duration SNAPSHOT_PERIOD_MINUTES = Duration.ofMinutes(5);
   public final Timeout testTimeout = Timeout.seconds(120);
   public final ClusteringRule clusteringRule =
-      new ClusteringRule(
-          1, 3, 3, cfg -> cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD_MINUTES + "m"));
+      new ClusteringRule(1, 3, 3, cfg -> cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD_MINUTES));
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
@@ -49,7 +48,7 @@ public class HealthMonitoringTest {
 
     // do some work to create a snapshot
     clientRule.createSingleJob(JOB_TYPE);
-    clusteringRule.getClock().addTime(Duration.ofMinutes(SNAPSHOT_PERIOD_MINUTES));
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD_MINUTES);
     clusteringRule.waitForValidSnapshotAtBroker(leader);
     followers.forEach(clusteringRule::waitForValidSnapshotAtBroker);
 

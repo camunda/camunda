@@ -288,7 +288,7 @@ public final class ClusteringRule extends ExternalResource {
     gatewayCfg.getNetwork().setPort(SocketUtil.getNextAddress().getPort());
     gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().getPort());
     // temporarily increase request time out, but we should make this configurable per test
-    gatewayCfg.getCluster().setRequestTimeout("45s");
+    gatewayCfg.getCluster().setRequestTimeout(Duration.ofSeconds(45));
     gatewayCfg.init();
 
     gatewayConfigurator.accept(gatewayCfg);

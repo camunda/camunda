@@ -33,10 +33,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.springframework.util.unit.DataSize;
 
 @RunWith(Parameterized.class)
 public final class ClusteredDataDeletionTest {
-  private static final int SNAPSHOT_PERIOD_SECONDS = 30;
+  private static final Duration SNAPSHOT_PERIOD = Duration.ofSeconds(30);
   private static final int MAX_SNAPSHOTS = 1;
   @Rule public final ClusteringRule clusteringRule;
 
@@ -60,27 +61,26 @@ public final class ClusteredDataDeletionTest {
   private static void configureNoExporters(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setMaxSnapshots(MAX_SNAPSHOTS);
-    data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
-    data.setLogSegmentSize("8k");
-    brokerCfg.getNetwork().setMaxMessageSize("8K");
+    data.setSnapshotPeriod(SNAPSHOT_PERIOD);
+    data.setLogSegmentSize(DataSize.ofKilobytes(8));
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
 
-    brokerCfg.setExporters(Collections.emptyList());
+    brokerCfg.setExporters(Collections.emptyMap());
   }
 
   private static void configureCustomExporter(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
     data.setMaxSnapshots(MAX_SNAPSHOTS);
-    data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
-    data.setLogSegmentSize("8k");
-    brokerCfg.getNetwork().setMaxMessageSize("8K");
+    data.setSnapshotPeriod(SNAPSHOT_PERIOD);
+    data.setLogSegmentSize(DataSize.ofKilobytes(8));
+    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(TestExporter.class.getName());
-    exporterCfg.setId("data-delete-test-exporter");
 
     // overwrites RecordingExporter on purpose because since it doesn't update its position
     // we wouldn't be able to delete data
-    brokerCfg.setExporters(Collections.singletonList(exporterCfg));
+    brokerCfg.setExporters(Collections.singletonMap("data-delete-test-exporter", exporterCfg));
   }
 
   @Test
@@ -148,7 +148,7 @@ public final class ClusteredDataDeletionTest {
           segmentCounts.put(nodeId, getSegments(b).size());
         });
 
-    clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
     brokers.forEach(clusteringRule::waitForValidSnapshotAtBroker);
     return segmentCounts;
   }

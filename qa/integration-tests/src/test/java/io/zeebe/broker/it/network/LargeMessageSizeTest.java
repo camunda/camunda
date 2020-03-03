@@ -14,17 +14,17 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.util.ByteValue;
-import io.zeebe.util.ByteValueParser;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.springframework.util.unit.DataSize;
 
 public final class LargeMessageSizeTest {
 
-  private static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
+  private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
   // only use half of the max message size because some commands produce two events
   private static final long LARGE_SIZE = ByteValue.ofMegabytes(2);
   private static final long METADATA_SIZE = 512;
@@ -32,10 +32,7 @@ public final class LargeMessageSizeTest {
   private static final String LARGE_TEXT = "x".repeat((int) (LARGE_SIZE - METADATA_SIZE));
 
   private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(
-          b ->
-              b.getNetwork()
-                  .setMaxMessageSize(ByteValueParser.ofBytes(MAX_MESSAGE_SIZE).toString()));
+      new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule

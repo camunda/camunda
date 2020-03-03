@@ -81,7 +81,7 @@
 * [Zeebe Operations](operations/index.md)
     * [Resource Planning](operations/resource-planning.md)
     * [Network Ports](operations/network-ports.md)
-    * [The zeebe.cfg.toml file](operations/the-zeebecfgtoml-file.md)
+    * [The zeebe.cfg.yaml file](operations/the-zeebecfgyaml-file.md)
     * [Setting up a cluster](operations/setting-up-a-cluster.md)
     * [Metrics](operations/metrics.md)
     * [Deploying to Kubernetes](operations/kubernetes.md)

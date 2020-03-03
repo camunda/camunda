@@ -7,39 +7,24 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.broker.system.configuration.BrokerCfg.ENV_DEBUG_EXPORTER;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CLUSTER_SIZE;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_ADVERTISED_HOST;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_NAME;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_SIZE;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DEBUG_EXPORTER;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PARTITIONS_COUNT;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_STEP_TIMEOUT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_INTERNAL_API_PORT;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING_API_PORT;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
-import io.zeebe.util.TomlConfigurationReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
@@ -48,14 +33,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.springframework.boot.context.properties.bind.BindException;
 
 public final class BrokerCfgTest {
 
   public static final String BROKER_BASE = "test";
+
+  private static final String ZEEBE_BROKER_CLUSTER_NODE_ID = "zeebe.broker.cluster.nodeId";
+  private static final String ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS =
+      "zeebe.broker.cluster.initialContactPoints";
+  private static final String ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT =
+      "zeebe.broker.cluster.partitionsCount";
+  private static final String ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR =
+      "zeebe.broker.cluster.replicationFactor";
+  private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE =
+      "zeebe.broker.cluster.clusterSize";
+  private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
+      "zeebe.broker.cluster.clusterName";
+
+  private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
+
+  private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
+  private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
+      "zeebe.broker.network.advertised-host";
+  private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe.broker.network.portOffset";
+
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   public final Map<String, String> environment = new HashMap<>();
@@ -67,50 +74,24 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseClusterNameFromEnvironment() {
-    environment.put(ENV_CLUSTER_NAME, "test-cluster");
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_NAME, "test-cluster");
     assertDefaultClusterName("test-cluster");
   }
 
   @Test
   public void shouldUseDefaultStepTimeout() {
-    assertDefaultStepTimeout("5m");
+    assertDefaultStepTimeout(Duration.ofMinutes(5));
   }
 
   @Test
   public void shouldUseStepTimeout() {
-    assertStepTimeout("step-timeout-cfg", "2m");
+    assertStepTimeout("step-timeout-cfg", Duration.ofMinutes(2));
   }
 
   @Test
   public void shouldUseStepTimeoutFromEnv() {
-    environment.put(ENV_STEP_TIMEOUT, "1m");
-    assertDefaultStepTimeout("1m");
-  }
-
-  @Test
-  public void shouldThrowExceptionWhenTryingToSetInvalidStepTimeout() {
-    // given
-    final var sutBrokerCfg = new BrokerCfg();
-
-    // when
-    final var catchedThrownBy = assertThatThrownBy(() -> sutBrokerCfg.setStepTimeout("invalid"));
-
-    // then
-    catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  public void shouldConvertStepTimeoutToDuration() {
-    // given
-    final Duration expected = Duration.ofMinutes(13);
-    final var sutBrokerCfg = new BrokerCfg();
-    sutBrokerCfg.setStepTimeout("13m");
-
-    // when
-    final Duration actual = sutBrokerCfg.getStepTimeoutAsDuration();
-
-    // then
-    assertThat(actual).isEqualTo(expected);
+    environment.put("zeebe.broker.stepTimeout", Duration.ofMinutes(1).toString());
+    assertDefaultStepTimeout(Duration.ofMinutes(1));
   }
 
   @Test
@@ -120,20 +101,24 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseNodeIdFromEnvironment() {
-    environment.put(ENV_NODE_ID, "42");
+    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "42");
     assertDefaultNodeId(42);
   }
 
   @Test
   public void shouldUseNodeIdFromEnvironmentWithSpecifiedNodeId() {
-    environment.put(ENV_NODE_ID, "42");
+    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "42");
     assertNodeId("specific-node-id", 42);
   }
 
   @Test
-  public void shouldIgnoreInvalidNodeIdFromEnvironment() {
-    environment.put(ENV_NODE_ID, "a");
-    assertDefaultNodeId(DEFAULT_NODE_ID);
+  public void shouldRejectInvalidNodeIdFromEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "a");
+
+    // when + then
+    Assertions.assertThatThrownBy(() -> assertDefaultNodeId(DEFAULT_NODE_ID))
+        .isInstanceOf(BindException.class);
   }
 
   @Test
@@ -165,7 +150,7 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUsePortOffsetFromEnvironment() {
-    environment.put(ENV_PORT_OFFSET, "5");
+    environment.put(ZEEBE_BROKER_NETWORK_PORT_OFFSET, "5");
     final int offset = 50;
     assertDefaultPorts(
         DEFAULT_COMMAND_API_PORT + offset,
@@ -175,21 +160,29 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
-    environment.put(ENV_PORT_OFFSET, "3");
+    environment.put(ZEEBE_BROKER_NETWORK_PORT_OFFSET, "3");
     final int offset = 30;
     assertPorts("specific-ports", 1 + offset, 5 + offset, 6 + offset);
   }
 
   @Test
-  public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
-    environment.put(ENV_PORT_OFFSET, "a");
-    assertDefaultPorts(
-        DEFAULT_COMMAND_API_PORT, DEFAULT_INTERNAL_API_PORT, DEFAULT_MONITORING_API_PORT);
+  public void shouldRejectInvalidPortOffsetFromEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_NETWORK_PORT_OFFSET, "a");
+
+    // when + then
+    Assertions.assertThatThrownBy(
+            () ->
+                assertDefaultPorts(
+                    DEFAULT_COMMAND_API_PORT,
+                    DEFAULT_INTERNAL_API_PORT,
+                    DEFAULT_MONITORING_API_PORT))
+        .isInstanceOf(BindException.class);
   }
 
   @Test
   public void shouldOverridePortOffsetFromEnvironment() {
-    environment.put(ENV_PORT_OFFSET, "7");
+    environment.put(ZEEBE_BROKER_NETWORK_PORT_OFFSET, "7");
     final int offset = 70;
     assertPorts(
         "port-offset",
@@ -201,18 +194,19 @@ public final class BrokerCfgTest {
   @Test
   public void shouldExpandExporterJarPathRelativeToBrokerBaseIffPresent() {
     // given
-    final InputStream input =
-        new ByteArrayInputStream(
-            ("[[exporters]]\n"
-                    + "id=\"external\"\n"
-                    + "jarPath=\"exporters/exporter.jar\"\n"
-                    + "[[exporters]]\n"
-                    + "id=\"internal-1\"\n"
-                    + "jarPath=\"\"\n"
-                    + "[[exporters]]\n"
-                    + "id=\"internal-2\"")
-                .getBytes());
-    final BrokerCfg config = TomlConfigurationReader.read(input, BrokerCfg.class);
+    final ExporterCfg exporterCfgExternal = new ExporterCfg();
+    exporterCfgExternal.setJarPath("exporters/exporter.jar");
+
+    final ExporterCfg exporterCfgInternal1 = new ExporterCfg();
+    exporterCfgInternal1.setJarPath("");
+
+    final ExporterCfg exporterCfgInternal2 = new ExporterCfg();
+
+    final BrokerCfg config = new BrokerCfg();
+    config.getExporters().put("external", exporterCfgExternal);
+    config.getExporters().put("internal-1", exporterCfgInternal1);
+    config.getExporters().put("internal-2", exporterCfgInternal2);
+
     final String base = temporaryFolder.getRoot().getAbsolutePath();
     final String jarFile = Paths.get(base, "exporters", "exporter.jar").toAbsolutePath().toString();
 
@@ -221,11 +215,11 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(config.getExporters()).hasSize(3);
-    assertThat(config.getExporters().get(0))
+    assertThat(config.getExporters().get("external"))
         .hasFieldOrPropertyWithValue("jarPath", jarFile)
         .is(new Condition<>(ExporterCfg::isExternal, "is external"));
-    assertThat(config.getExporters().get(1).isExternal()).isFalse();
-    assertThat(config.getExporters().get(2).isExternal()).isFalse();
+    assertThat(config.getExporters().get("internal-1").isExternal()).isFalse();
+    assertThat(config.getExporters().get("internal-2").isExternal()).isFalse();
   }
 
   @Test
@@ -269,19 +263,19 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseHostFromEnvironment() {
-    environment.put(ENV_HOST, "2.2.2.2");
+    environment.put(ZEEBE_BROKER_NETWORK_HOST, "2.2.2.2");
     assertDefaultHost("2.2.2.2");
   }
 
   @Test
   public void shouldUseHostFromEnvironmentWithGlobalHost() {
-    environment.put(ENV_HOST, "myHost");
+    environment.put(ZEEBE_BROKER_NETWORK_HOST, "myHost");
     assertHost("host", "myHost");
   }
 
   @Test
   public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
-    environment.put(ENV_HOST, "myHost");
+    environment.put(ZEEBE_BROKER_NETWORK_HOST, "myHost");
     assertHost(
         "specific-hosts", "myHost", "gatewayHost", "commandHost", "internalHost", "monitoringHost");
   }
@@ -298,32 +292,26 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseContactPointsFromEnvironment() {
-    environment.put(ENV_INITIAL_CONTACT_POINTS, "foo,bar");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "foo,bar");
     assertDefaultContactPoints("foo", "bar");
   }
 
   @Test
   public void shouldUseContactPointsFromEnvironmentWithSpecifiedContactPoints() {
-    environment.put(ENV_INITIAL_CONTACT_POINTS, "1.1.1.1,2.2.2.2");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "1.1.1.1,2.2.2.2");
     assertContactPoints("contact-points", "1.1.1.1", "2.2.2.2");
   }
 
   @Test
   public void shouldUseSingleContactPointFromEnvironment() {
-    environment.put(ENV_INITIAL_CONTACT_POINTS, "hello");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "hello");
     assertContactPoints("contact-points", "hello");
   }
 
   @Test
   public void shouldClearContactPointFromEnvironment() {
-    environment.put(ENV_INITIAL_CONTACT_POINTS, "");
+    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "");
     assertContactPoints("contact-points");
-  }
-
-  @Test
-  public void shouldIgnoreTrailingCommaContactPointFromEnvironment() {
-    environment.put(ENV_INITIAL_CONTACT_POINTS, "foo,bar,");
-    assertContactPoints("contact-points", "foo", "bar");
   }
 
   @Test
@@ -338,26 +326,20 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseDirectoriesFromEnvironment() {
-    environment.put(ENV_DIRECTORIES, "foo,bar");
+    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
     assertDefaultDirectories("foo", "bar");
   }
 
   @Test
   public void shouldUseDirectoriesFromEnvironmentWithSpecifiedDirectories() {
-    environment.put(ENV_DIRECTORIES, "foo,bar");
+    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "foo,bar");
     assertDirectories("directories", "foo", "bar");
   }
 
   @Test
   public void shouldUseSingleDirectoryFromEnvironment() {
-    environment.put(ENV_DIRECTORIES, "hello");
+    environment.put(ZEEBE_BROKER_DATA_DIRECTORIES, "hello");
     assertDirectories("directories", "hello");
-  }
-
-  @Test
-  public void shouldIgnoreTrailingCommaDirectoriesFromEnvironment() {
-    environment.put(ENV_DIRECTORIES, "foo,bar,");
-    assertDirectories("directories", "foo", "bar");
   }
 
   @Test
@@ -400,7 +382,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideReplicationFactorViaEnvironment() {
     // given
-    environment.put(ENV_REPLICATION_FACTOR, "2");
+    environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "2");
 
     // when
     final BrokerCfg cfg = readConfig("cluster-cfg");
@@ -413,7 +395,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverridePartitionsCountViaEnvironment() {
     // given
-    environment.put(ENV_PARTITIONS_COUNT, "2");
+    environment.put(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
 
     // when
     final BrokerCfg cfg = readConfig("cluster-cfg");
@@ -426,7 +408,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideClusterSizeViaEnvironment() {
     // given
-    environment.put(ENV_CLUSTER_SIZE, "2");
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "2");
 
     // when
     final BrokerCfg cfg = readConfig("cluster-cfg");
@@ -439,10 +421,10 @@ public final class BrokerCfgTest {
   @Test
   public void shouldOverrideAllClusterPropertiesViaEnvironment() {
     // given
-    environment.put(ENV_CLUSTER_SIZE, "1");
-    environment.put(ENV_PARTITIONS_COUNT, "2");
-    environment.put(ENV_REPLICATION_FACTOR, "3");
-    environment.put(ENV_NODE_ID, "4");
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "1");
+    environment.put(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
+    environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "3");
+    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "4");
 
     // when
     final BrokerCfg cfg = readConfig("cluster-cfg");
@@ -468,7 +450,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldSetEmbedGatewayViaEnvironment() {
     // given
-    environment.put(ENV_EMBED_GATEWAY, "true");
+    environment.put("zeebe.broker.gateway.enable", "true");
     // then
     assertEmbeddedGatewayEnabled("disabled-gateway", true);
   }
@@ -509,7 +491,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldUseDefaultAdvertisedHostFromEnv() {
     // given
-    environment.put(ENV_ADVERTISED_HOST, "zeebe.io");
+    environment.put("zeebe.broker.network.advertisedHost", "zeebe.io");
 
     // then
     assertAdvertisedAddress("default", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
@@ -517,14 +499,15 @@ public final class BrokerCfgTest {
   }
 
   private BrokerCfg readConfig(final String name) {
-    final String configPath = "/system/" + name + ".toml";
-    final InputStream resourceAsStream = BrokerCfgTest.class.getResourceAsStream(configPath);
-    assertThat(resourceAsStream)
-        .withFailMessage("Unable to read configuration file %s", configPath)
-        .isNotNull();
+    final String configPath = "/system/" + name + ".yaml";
 
-    final BrokerCfg config = TomlConfigurationReader.read(resourceAsStream, BrokerCfg.class);
-    config.init(BROKER_BASE, new Environment(environment));
+    final Environment environmentVariables = new Environment(environment);
+
+    final BrokerCfg config =
+        new TestConfigurationFactory()
+            .create(environmentVariables, "zeebe.broker", configPath, BrokerCfg.class);
+    config.init(BROKER_BASE, environmentVariables);
+
     return config;
   }
 
@@ -548,12 +531,12 @@ public final class BrokerCfgTest {
     assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
   }
 
-  private void assertDefaultStepTimeout(final String stepTimeout) {
+  private void assertDefaultStepTimeout(final Duration stepTimeout) {
     assertStepTimeout("default", stepTimeout);
     assertStepTimeout("empty", stepTimeout);
   }
 
-  private void assertStepTimeout(final String configFileName, final String stepTimeout) {
+  private void assertStepTimeout(final String configFileName, final Duration stepTimeout) {
     final BrokerCfg cfg = readConfig(configFileName);
     assertThat(cfg.getStepTimeout()).isEqualTo(stepTimeout);
   }
@@ -667,7 +650,7 @@ public final class BrokerCfgTest {
     final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
     final BrokerCfg brokerCfg = readConfig(configFileName);
 
-    assertThat(brokerCfg.getExporters())
+    assertThat(brokerCfg.getExporters().values())
         .usingRecursiveFieldByFieldElementComparator()
         .contains(exporterCfg);
   }

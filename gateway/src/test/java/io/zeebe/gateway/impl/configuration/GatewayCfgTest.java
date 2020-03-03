@@ -7,28 +7,11 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CERTIFICATE_PATH;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_HOST;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_MEMBER_ID;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_PORT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_KEEP_ALIVE_INTERVAL;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_SIZE;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_ENABLED;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_HOST;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_PORT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PRIVATE_KEY_PATH;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
-import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_SECURITY_ENABLED;
-
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
-import io.zeebe.util.TomlConfigurationReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
@@ -36,10 +19,10 @@ import org.junit.Test;
 
 public final class GatewayCfgTest {
 
-  private static final String DEFAULT_CFG_FILENAME = "/configuration/gateway.default.toml";
+  private static final String DEFAULT_CFG_FILENAME = "/configuration/gateway.default.yaml";
   private static final GatewayCfg DEFAULT_CFG = new GatewayCfg();
-  private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.toml";
-  private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.toml";
+  private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.yaml";
+  private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.yaml";
   private static final GatewayCfg CUSTOM_CFG = new GatewayCfg();
 
   static {
@@ -49,11 +32,17 @@ public final class GatewayCfgTest {
     CUSTOM_CFG
         .getCluster()
         .setContactPoint("foobar:1234")
-        .setRequestTimeout("123h")
+        .setRequestTimeout(Duration.ofHours(123))
         .setClusterName("testCluster")
         .setMemberId("testMember")
         .setHost("1.2.3.4")
         .setPort(12321);
+    CUSTOM_CFG
+        .getSecurity()
+        .setEnabled(true)
+        .setCertificateChainPath("certificateChainPath")
+        .setPrivateKeyPath("privateKeyPath");
+    CUSTOM_CFG.getMonitoring().setEnabled(true).setHost("monitoringHost").setPort(1234);
     CUSTOM_CFG.getThreads().setManagementThreads(100);
   }
 
@@ -89,40 +78,43 @@ public final class GatewayCfgTest {
   @Test
   public void shouldUseEnvironmentVariables() {
     // given
-    setEnv(ENV_GATEWAY_HOST, "zeebe");
-    setEnv(ENV_GATEWAY_PORT, "5432");
-    setEnv(ENV_GATEWAY_CONTACT_POINT, "broker:432");
-    setEnv(ENV_GATEWAY_MAX_MESSAGE_SIZE, "1G");
-    setEnv(ENV_GATEWAY_MANAGEMENT_THREADS, "32");
-    setEnv(ENV_GATEWAY_REQUEST_TIMEOUT, "43m");
-    setEnv(ENV_GATEWAY_CLUSTER_NAME, "envCluster");
-    setEnv(ENV_GATEWAY_CLUSTER_MEMBER_ID, "envMember");
-    setEnv(ENV_GATEWAY_CLUSTER_HOST, "envHost");
-    setEnv(ENV_GATEWAY_CLUSTER_PORT, "12345");
-    setEnv(ENV_GATEWAY_MONITORING_ENABLED, "true");
-    setEnv(ENV_GATEWAY_MONITORING_HOST, "monitorHost");
-    setEnv(ENV_GATEWAY_MONITORING_PORT, "231");
-    setEnv(ENV_GATEWAY_SECURITY_ENABLED, String.valueOf(true));
+    setEnv("zeebe.gateway.network.host", "zeebe");
+    setEnv("zeebe.gateway.network.port", "5432");
+    setEnv("zeebe.gateway.cluster.contactPoint", "broker:432");
+    setEnv("zeebe.gateway.threads.managementThreads", "32");
+    setEnv("zeebe.gateway.cluster.requestTimeout", Duration.ofMinutes(43).toString());
+    setEnv("zeebe.gateway.cluster.clusterName", "envCluster");
+    setEnv("zeebe.gateway.cluster.memberId", "envMember");
+    setEnv("zeebe.gateway.cluster.host", "envHost");
+    setEnv("zeebe.gateway.cluster.port", "12345");
+    setEnv("zeebe.gateway.monitoring.enabled", "true");
+    setEnv("zeebe.gateway.monitoring.host", "monitorHost");
+    setEnv("zeebe.gateway.monitoring.port", "231");
+    setEnv("zeebe.gateway.security.enabled", String.valueOf(false));
     setEnv(
-        ENV_GATEWAY_PRIVATE_KEY_PATH,
+        "zeebe.gateway.security.privateKeyPath",
         GatewayCfgTest.class
             .getClassLoader()
             .getResource("security/test-server.key.pem")
             .getPath());
     setEnv(
-        ENV_GATEWAY_CERTIFICATE_PATH,
+        "zeebe.gateway.security.certificateChainPath",
         GatewayCfgTest.class
             .getClassLoader()
             .getResource("security/test-chain.cert.pem")
             .getPath());
-    setEnv(ENV_GATEWAY_KEEP_ALIVE_INTERVAL, "30s");
+    setEnv("zeebe.gateway.network.minKeepAliveInterval", Duration.ofSeconds(30).toString()); //
 
     final GatewayCfg expected = new GatewayCfg();
-    expected.getNetwork().setHost("zeebe").setPort(5432).setMinKeepAliveInterval("30s");
+    expected
+        .getNetwork()
+        .setHost("zeebe")
+        .setPort(5432)
+        .setMinKeepAliveInterval(Duration.ofSeconds(30));
     expected
         .getCluster()
         .setContactPoint("broker:432")
-        .setRequestTimeout("43m")
+        .setRequestTimeout(Duration.ofMinutes(43))
         .setClusterName("envCluster")
         .setMemberId("envMember")
         .setHost("envHost")
@@ -131,7 +123,7 @@ public final class GatewayCfgTest {
     expected.getMonitoring().setEnabled(true).setHost("monitorHost").setPort(231);
     expected
         .getSecurity()
-        .setEnabled(true)
+        .setEnabled(false)
         .setPrivateKeyPath(
             getClass().getClassLoader().getResource("security/test-server.key.pem").getPath())
         .setCertificateChainPath(
@@ -163,8 +155,10 @@ public final class GatewayCfgTest {
   private GatewayCfg readConfig(final String filename) {
     try (final InputStream inputStream = GatewayCfgTest.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
-        final GatewayCfg gatewayCfg = TomlConfigurationReader.read(inputStream, GatewayCfg.class);
-        gatewayCfg.init(new Environment(environment));
+        final GatewayCfg gatewayCfg =
+            new TestConfigurationFactory()
+                .create(new Environment(environment), "zeebe.gateway", filename, GatewayCfg.class);
+        gatewayCfg.init();
         return gatewayCfg;
       } else {
         throw new AssertionError("Unable to find configuration file: " + filename);

@@ -8,36 +8,26 @@
 package io.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 
 public class DataCfgTest {
 
   @Test
-  public void shouldThrowExceptionWhenTryingToSetInvalidSnaphotPeriod() {
+  public void shouldSanitizeDirectories() {
     // given
-    final var sutDataCfg = new DataCfg();
+    final DataCfg sutDataCfg = new DataCfg();
+    final List<String> input = Arrays.asList("", "foo ", null, "   ", "bar");
+    final List<String> expected = Arrays.asList("foo", "bar");
 
     // when
-    final var catchedThrownBy = assertThatThrownBy(() -> sutDataCfg.setSnapshotPeriod("invalid"));
+    sutDataCfg.setDirectories(input);
 
     // then
-    catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
-  }
+    final List<String> actual = sutDataCfg.getDirectories();
 
-  @Test
-  public void shouldConvertSnapshotPeriodToDuration() {
-    // given
-    final Duration expected = Duration.ofMinutes(13);
-    final var sutDataCfg = new DataCfg();
-    sutDataCfg.setSnapshotPeriod("13m");
-
-    // when
-    final Duration actual = sutDataCfg.getSnapshotPeriodAsDuration();
-
-    // then
     assertThat(actual).isEqualTo(expected);
   }
 }

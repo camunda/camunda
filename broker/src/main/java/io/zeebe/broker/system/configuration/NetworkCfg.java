@@ -7,16 +7,11 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_ADVERTISED_HOST;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
-import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
-
 import io.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
-import io.zeebe.util.ByteValueParser;
-import io.zeebe.util.Environment;
 import java.util.Optional;
+import org.springframework.util.unit.DataSize;
 
 public final class NetworkCfg implements ConfigurationEntry {
 
@@ -24,11 +19,11 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final int DEFAULT_MONITORING_API_PORT = 9600;
-  public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
+  public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
-  private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
+  private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private String advertisedHost;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
@@ -36,18 +31,10 @@ public final class NetworkCfg implements ConfigurationEntry {
   private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
   @Override
-  public void init(
-      final BrokerCfg brokerCfg, final String brokerBase, final Environment environment) {
-    applyEnvironment(environment);
+  public void init(final BrokerCfg brokerCfg, final String brokerBase) {
     commandApi.applyDefaults(this);
     internalApi.applyDefaults(this);
     monitoringApi.applyDefaults(this);
-  }
-
-  private void applyEnvironment(final Environment environment) {
-    environment.get(ENV_HOST).ifPresent(this::setHost);
-    environment.getInt(ENV_PORT_OFFSET).ifPresent(this::setPortOffset);
-    environment.get(ENV_ADVERTISED_HOST).ifPresent(this::setAdvertisedHost);
   }
 
   public String getHost() {
@@ -74,18 +61,15 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.portOffset = portOffset;
   }
 
-  public String getMaxMessageSize() {
+  public long getMaxMessageSizeInBytes() {
+    return maxMessageSize.toBytes();
+  }
+
+  public DataSize getMaxMessageSize() {
     return maxMessageSize;
   }
 
-  public long getMaxMessageSizeInBytes() {
-    return ByteValueParser.fromString(maxMessageSize).toBytes();
-  }
-
-  public void setMaxMessageSize(final String maxMessageSize) {
-    // call parsing logic to provoke any exceptions that might occur during parsing
-    ByteValueParser.fromString(maxMessageSize);
-
+  public void setMaxMessageSize(final DataSize maxMessageSize) {
     this.maxMessageSize = maxMessageSize;
   }
 

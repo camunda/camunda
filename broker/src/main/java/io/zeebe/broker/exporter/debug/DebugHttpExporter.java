@@ -61,7 +61,6 @@ public final class DebugHttpExporter implements Exporter {
 
   public static ExporterCfg defaultConfig() {
     final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setId("http");
     exporterCfg.setClassName(DebugHttpExporter.class.getName());
     return exporterCfg;
   }

@@ -17,12 +17,12 @@ import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -40,7 +40,7 @@ import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource {
 
-  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
+  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.yaml";
   public static final int DEFAULT_TIMEOUT = 25;
   public static final String TEST_RECORD_EXPORTER_ID = "test-recorder";
   protected static final Logger LOG = new ZbLogger("io.zeebe.test");
@@ -89,7 +89,9 @@ public class EmbeddedBrokerRule extends ExternalResource {
       if (configStream == null) {
         brokerCfg = new BrokerCfg();
       } else {
-        brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
+        brokerCfg =
+            new TestConfigurationFactory()
+                .create(null, "zeebe-broker", configStream, BrokerCfg.class);
       }
       configureBroker(brokerCfg);
     } catch (final IOException e) {
@@ -206,9 +208,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public void configureBroker(final BrokerCfg brokerCfg) {
     // build-in exporters
     final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setId(TEST_RECORD_EXPORTER_ID);
     exporterCfg.setClassName(RecordingExporter.class.getName());
-    brokerCfg.getExporters().add(exporterCfg);
+    brokerCfg.getExporters().put(TEST_RECORD_EXPORTER_ID, exporterCfg);
 
     // custom configurators
     for (final Consumer<BrokerCfg> configurator : configurators) {

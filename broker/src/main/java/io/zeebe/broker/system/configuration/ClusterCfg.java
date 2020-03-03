@@ -8,8 +8,8 @@
 package io.zeebe.broker.system.configuration;
 
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+import static io.zeebe.util.StringUtil.LIST_SANITIZER;
 
-import io.zeebe.util.Environment;
 import java.util.Collections;
 import java.util.List;
 import org.agrona.collections.IntArrayList;
@@ -42,10 +42,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private long gossipProbeInterval = DEFAULT_GOSSIP_PROBE_INTERVAL;
 
   @Override
-  public void init(
-      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
-    applyEnvironment(environment);
-
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
     initPartitionIds();
   }
 
@@ -59,27 +56,12 @@ public final class ClusterCfg implements ConfigurationEntry {
     partitionIds = Collections.unmodifiableList(list);
   }
 
-  private void applyEnvironment(final Environment environment) {
-    environment.getInt(EnvironmentConstants.ENV_NODE_ID).ifPresent(v -> nodeId = v);
-    environment.getInt(EnvironmentConstants.ENV_CLUSTER_SIZE).ifPresent(v -> clusterSize = v);
-    environment.get(EnvironmentConstants.ENV_CLUSTER_NAME).ifPresent(v -> clusterName = v);
-    environment
-        .getInt(EnvironmentConstants.ENV_PARTITIONS_COUNT)
-        .ifPresent(v -> partitionsCount = v);
-    environment
-        .getInt(EnvironmentConstants.ENV_REPLICATION_FACTOR)
-        .ifPresent(v -> replicationFactor = v);
-    environment
-        .getList(EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS)
-        .ifPresent(v -> initialContactPoints = v);
-  }
-
   public List<String> getInitialContactPoints() {
     return initialContactPoints;
   }
 
   public void setInitialContactPoints(final List<String> initialContactPoints) {
-    this.initialContactPoints = initialContactPoints;
+    this.initialContactPoints = LIST_SANITIZER.apply(initialContactPoints);
   }
 
   public int getNodeId() {
