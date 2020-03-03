@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,7 +39,7 @@ public class CombinedProcessReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final Set<String> excludedColumns) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
     Optional<ResultType> resultType = reportResult.getSingleReportResultType();
     return resultType.map(r -> mapCombinedReportResultsToCsvList(limit, offset, r))
       .orElseGet(() -> {
@@ -126,7 +125,7 @@ public class CombinedProcessReportResult
     return combinedResult.getData().values()
       .stream()
       .map(reportResultMapper::apply)
-      .map(reportResult -> reportResult.getResultAsCsv(limit, offset, Collections.emptySet()))
+      .map(reportResult -> reportResult.getResultAsCsv(limit, offset))
       .collect(Collectors.toList());
   }
 

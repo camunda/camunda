@@ -15,16 +15,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Path("/export")
@@ -41,16 +36,12 @@ public class ExportRestService {
   @Path("csv/{reportId}/{fileName}")
   public Response getCsvReport(@Context ContainerRequestContext requestContext,
                                @PathParam("reportId") String reportId,
-                               @PathParam("fileName") String fileName,
-                               @QueryParam("excludedColumns") String excludedColumnsString) {
+                               @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
-    final Set<String> excludedColumns = Optional.ofNullable(excludedColumnsString)
-      .map(strings -> Arrays.stream(strings.split(",")).collect(Collectors.toSet()))
-      .orElse(Collections.emptySet());
 
     final Optional<byte[]> csvForReport =
-      exportService.getCsvBytesForEvaluatedReportResult(userId, reportId, excludedColumns);
+      exportService.getCsvBytesForEvaluatedReportResult(userId, reportId);
 
     return csvForReport
       .map(csvBytes -> Response

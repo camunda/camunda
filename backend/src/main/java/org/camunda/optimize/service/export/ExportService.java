@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @AllArgsConstructor
 @Component
@@ -25,8 +24,7 @@ public class ExportService {
   private final ConfigurationService configurationService;
 
   public Optional<byte[]> getCsvBytesForEvaluatedReportResult(final String userId,
-                                                              final String reportId,
-                                                              final Set<String> excludedColumns) {
+                                                              final String reportId) {
     log.debug("Exporting report with id [{}] as csv.", reportId);
     final Integer exportCsvLimit = configurationService.getExportCsvLimit();
 
@@ -35,7 +33,7 @@ public class ExportService {
         userId, reportId, exportCsvLimit
       );
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
-        .getResultAsCsv(exportCsvLimit, 0, excludedColumns);
+        .getResultAsCsv(exportCsvLimit, 0);
       return Optional.of(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv));
     } catch (Exception e) {
       log.debug("Could not evaluate report to export the result to csv!", e);

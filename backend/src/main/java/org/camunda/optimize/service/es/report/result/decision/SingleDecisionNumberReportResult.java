@@ -13,7 +13,6 @@ import org.camunda.optimize.service.es.report.result.NumberResult;
 import javax.validation.constraints.NotNull;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 public class SingleDecisionNumberReportResult
   extends ReportEvaluationResult<NumberResultDto, SingleDecisionReportDefinitionDto>
@@ -25,7 +24,7 @@ public class SingleDecisionNumberReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
     final List<String[]> csvStrings = new LinkedList<>();
     csvStrings.add(new String[]{String.valueOf(reportResult.getData())});
 

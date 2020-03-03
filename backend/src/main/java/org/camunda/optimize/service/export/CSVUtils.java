@@ -23,7 +23,6 @@ import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,14 +69,12 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> mapRawProcessReportInstances(List<RawDataProcessInstanceDto> rawData) {
-    return mapRawProcessReportInstances(rawData, null, null, Collections.emptySet());
-  }
+
 
   public static List<String[]> mapRawProcessReportInstances(List<RawDataProcessInstanceDto> rawData,
                                                             Integer limit,
                                                             Integer offset,
-                                                            Set<String> excludedColumns) {
+                                                            List<String> excludedColumns) {
     final List<String[]> result = new ArrayList<>();
 
     // column names contain prefixes that must be stripped off to get the plain keys needed for exclusion
@@ -112,14 +109,10 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> mapRawDecisionReportInstances(List<RawDataDecisionInstanceDto> rawData) {
-    return mapRawDecisionReportInstances(rawData, null, null, Collections.emptySet());
-  }
-
   public static List<String[]> mapRawDecisionReportInstances(List<RawDataDecisionInstanceDto> rawData,
                                                              Integer limit,
                                                              Integer offset,
-                                                             Set<String> excludedColumns) {
+                                                             List<String> excludedColumns) {
     final List<String[]> result = new ArrayList<>();
 
     final List<String> includedDtoFields = extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class);
@@ -203,7 +196,7 @@ public class CSVUtils {
     return currentKey.replace(prefix, "");
   }
 
-  private static Set<String> stripOffPrefixes(Set<String> excludedColumns, String... prefixes) {
+  private static Set<String> stripOffPrefixes(List<String> excludedColumns, String... prefixes) {
     final String prefixRegex = Arrays.stream(prefixes).map(Pattern::quote).collect(joining("|"));
     return excludedColumns.stream()
       .map(columnName -> columnName.replaceAll(prefixRegex, ""))

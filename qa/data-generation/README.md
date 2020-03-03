@@ -62,7 +62,6 @@ Availible processes are:
 * MultiInstanceSubprocessRequest  
 * HiringProcess  
 * ExtendedOrder  
-* ContactInterview  
 * DmnTable  
 * LeadQualification  
 * Invoice  
@@ -78,6 +77,8 @@ Availible processes are:
 * ReviewCase  
 * AnalysisTesting
 * GroupElements
+* DRIProcessWithLoadsOfVariables
+
 
 ### Data generation progress
 Once the data generation is started, it will print out the progress of

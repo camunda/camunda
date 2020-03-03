@@ -55,7 +55,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when
-    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, null);
+    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
 
 
     // then
@@ -70,7 +70,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when (limit = 0)
-    resultAsCsv = underTest.getResultAsCsv(0, 0, null);
+    resultAsCsv = underTest.getResultAsCsv(0, 0);
 
 
     // then
@@ -84,7 +84,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when (offset = 1)
-    resultAsCsv = underTest.getResultAsCsv(0, 1, null);
+    resultAsCsv = underTest.getResultAsCsv(0, 1);
 
 
     // then
@@ -102,10 +102,10 @@ public class CombinedProcessReportResultTest {
 
     // given
     final NumberResultDto numberResultDto1 = new NumberResultDto();
-    numberResultDto1.setData(5l);
+    numberResultDto1.setData(5L);
 
     final NumberResultDto numberResultDto2 = new NumberResultDto();
-    numberResultDto2.setData(2l);
+    numberResultDto2.setData(2L);
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       numberResultDto1,
@@ -119,7 +119,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, null);
+    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
 
 
     // then
@@ -155,7 +155,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, null);
+    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
 
     // then
     assertCsvByAggregationType(resultAsCsv, aggregationType);
@@ -202,7 +202,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, null);
+    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
 
     // then
     assertThat(
@@ -223,7 +223,7 @@ public class CombinedProcessReportResultTest {
     assertThat(new String[]{"test2", "6", "", "test2", "6"}, is(resultAsCsv.get(4)));
 
     // when (limit = 0)
-    resultAsCsv = underTest.getResultAsCsv(0, 0, null);
+    resultAsCsv = underTest.getResultAsCsv(0, 0);
 
 
     //then
@@ -245,7 +245,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when (offset = 1)
-    resultAsCsv = underTest.getResultAsCsv(0, 1, null);
+    resultAsCsv = underTest.getResultAsCsv(0, 1);
 
 
     //then
@@ -276,7 +276,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, null);
+    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
 
     // then
     assertThat(new String[]{}, is((resultAsCsv.get(0))));

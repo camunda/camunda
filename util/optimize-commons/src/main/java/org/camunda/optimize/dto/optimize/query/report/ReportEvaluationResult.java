@@ -9,7 +9,6 @@ import lombok.NonNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public abstract class ReportEvaluationResult<Result extends ReportResultDto,
   ReportDefinition extends ReportDefinitionDto> {
@@ -32,7 +31,7 @@ public abstract class ReportEvaluationResult<Result extends ReportResultDto,
     return reportResult;
   }
 
-  public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns);
+  public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset);
 
   public ReportDefinition getReportDefinition() {
     return reportDefinition;

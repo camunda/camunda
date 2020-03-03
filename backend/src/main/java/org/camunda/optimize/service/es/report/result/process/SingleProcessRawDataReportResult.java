@@ -13,7 +13,6 @@ import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Set;
 
 public class SingleProcessRawDataReportResult
   extends ReportEvaluationResult<RawDataProcessReportResultDto, SingleProcessReportDefinitionDto> {
@@ -24,9 +23,14 @@ public class SingleProcessRawDataReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
     List<RawDataProcessInstanceDto> rawData = reportResult.getData();
-    return CSVUtils.mapRawProcessReportInstances(rawData, limit, offset, excludedColumns);
+    return CSVUtils.mapRawProcessReportInstances(
+      rawData,
+      limit,
+      offset,
+      reportDefinition.getData().getConfiguration().getExcludedColumns()
+    );
   }
 
 }

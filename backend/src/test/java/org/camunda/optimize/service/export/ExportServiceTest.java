@@ -23,11 +23,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -62,7 +60,7 @@ public class ExportServiceTest {
     ));
 
     // when
-    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
+    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "");
     assertThat(csvContent.isPresent(), is(true));
 
     String actualContent = new String(csvContent.get());
@@ -86,7 +84,7 @@ public class ExportServiceTest {
     ));
 
     // when
-    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
+    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "");
 
     assertThat(csvContent.isPresent(), is(true));
 

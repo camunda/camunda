@@ -434,7 +434,7 @@ public class SimpleEngineClient {
         "data",
         process.getBytes(StandardCharsets.UTF_8),
         ContentType.APPLICATION_OCTET_STREAM,
-        "hiring_process.bpmn"
+        "some_process.bpmn"
       ).build();
       post.setEntity(entity);
       return post;

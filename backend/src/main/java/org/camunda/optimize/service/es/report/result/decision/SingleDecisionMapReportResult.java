@@ -12,7 +12,6 @@ import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Set;
 
 public class SingleDecisionMapReportResult
   extends ReportEvaluationResult<ReportMapResultDto, SingleDecisionReportDefinitionDto> {
@@ -23,7 +22,7 @@ public class SingleDecisionMapReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
     final List<String[]> csvStrings = CSVUtils.map(reportResult.getData(), limit, offset);
 
     final String normalizedCommandKey =
