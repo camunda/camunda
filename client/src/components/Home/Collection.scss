@@ -30,13 +30,13 @@
 
     .text {
       display: inline-block;
-      top: 39px;
+      top: 35px;
       position: absolute;
       left: 97px;
       right: 100px;
       font-size: 17px;
-      height: 22px;
-      line-height: 22px;
+      height: 32px;
+      line-height: 32px;
       color: $grey-darken-33;
 
       span {
@@ -44,27 +44,44 @@
         overflow: hidden;
         text-overflow: ellipsis;
         display: inline-block;
-        line-height: 100%;
         max-width: calc(100% - 43px);
+        height: 100%;
+        vertical-align: middle;
+        padding-top: 1px;
       }
 
       .Dropdown {
-        margin-left: 8px;
-        width: 24px;
-        height: 100%;
+        margin-left: 4px;
+        width: 32px;
+        height: 32px;
 
         .activateButton {
-          width: 24px;
-          padding: 0 24px 0 0;
-          height: 100%;
+          width: 32px;
+          height: 32px;
           background-color: white;
           color: $grey-darken-23;
           border: none;
+          border-radius: 50%;
+          padding: 0;
+          transform: translate(0, -1px);
+
+          &:hover {
+            background-color: $silver-darken-94;
+          }
+
+          &.isActive {
+            background-color: $silver-darken-80;
+          }
+
+          .Icon {
+            margin: 4px;
+            margin-top: 2px;
+          }
         }
 
         .menu {
-          top: 0;
-          left: 24px !important; // the calculateMenuStyle method of the Dropdown sets inline styles
+          margin-top: 2px;
+          margin-left: 9px;
         }
 
         .DropdownOption {
@@ -100,13 +117,18 @@
 
       li {
         display: inline-block;
-        padding: 4px 8px;
         margin-right: 20px;
         color: $grey-darken-36;
 
         a {
+          padding: 4px 8px;
+          display: inline-block;
           color: inherit;
           text-decoration: inherit;
+        }
+
+        &:hover {
+          box-shadow: 0 3px 0 $silver-darken-80;
         }
 
         &.active {
