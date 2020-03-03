@@ -79,7 +79,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   private void onComponentRecovered(final String componentName) {
     actor.run(
         () -> {
-          log.error("{} recovered, marking it as healthy", componentName);
+          log.debug("{} recovered, marking it as healthy", componentName);
           componentHealth.put(componentName, HealthStatus.HEALTHY);
         });
   }
