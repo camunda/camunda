@@ -42,6 +42,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
   protected static final TenantRestDto TENANT_NONE_DTO = new TenantRestDto(null, TENANT_NONE_NAME);
   protected static final TenantRestDto TENANT_1_DTO = new TenantRestDto("tenant1", "Tenant 1");
   protected static final TenantRestDto TENANT_2_DTO = new TenantRestDto("tenant2", "Tenant 2");
+  protected static final String EXPECTED_DEFINITION_NOT_FOUND_MESSAGE = "Could not find xml for definition with key";
 
   @Test
   public void testGetDefinitionVersionsWithTenants() {
@@ -287,9 +288,11 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     return getDefinitionVersionsWithTenantsAsUser(DEFAULT_USERNAME, collectionId);
   }
 
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId){
+  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId) {
     return getDefinitionVersionsWithTenantsAsUser(userId, null);
-  };
+  }
+
+  ;
 
   protected abstract List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId,
                                                                                                        String collectionId);

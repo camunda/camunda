@@ -47,12 +47,6 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
 
   public Optional<String> getProcessDefinitionXml(final String userId,
                                                   final String definitionKey,
-                                                  final List<String> definitionVersions) {
-    return getProcessDefinitionXml(userId, definitionKey, definitionVersions, (String) null);
-  }
-
-  public Optional<String> getProcessDefinitionXml(final String userId,
-                                                  final String definitionKey,
                                                   final String version,
                                                   final String tenantId) {
     return getProcessDefinitionXml(
@@ -61,13 +55,6 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
       Collections.singletonList(version),
       Collections.singletonList(tenantId)
     );
-  }
-
-  public Optional<String> getProcessDefinitionXml(final String userId,
-                                                  final String definitionKey,
-                                                  final List<String> definitionVersions,
-                                                  final String tenantId) {
-    return getProcessDefinitionXml(userId, definitionKey, definitionVersions, Collections.singletonList(tenantId));
   }
 
   public Optional<String> getProcessDefinitionXml(final String userId,
@@ -91,18 +78,6 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
           throw new ForbiddenException("Current user is not authorized to access data of the process definition");
         }
       });
-  }
-
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXmlAsService(final String definitionKey,
-                                                                                     final String definitionVersion,
-                                                                                     final String tenantId) {
-    return getProcessDefinitionWithXmlAsService(
-      definitionKey,
-      Collections.singletonList(definitionVersion),
-      Optional.ofNullable(tenantId)
-        .map(Collections::singletonList)
-        .orElse(Collections.emptyList())
-    );
   }
 
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXmlAsService(final String definitionKey,
@@ -145,7 +120,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(@NonNull final String userId) {
-    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, PROCESS);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(PROCESS, userId);
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(@NonNull final String userId,
@@ -153,7 +128,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
       .getAvailableKeysAndTenantsFromCollectionScope(userId, IdentityType.USER, collectionId);
 
-    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, keysAndTenants, PROCESS);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(PROCESS, userId, keysAndTenants);
   }
 
   private List<ProcessDefinitionOptimizeDto> filterAuthorizedProcessDefinitions(
@@ -161,7 +136,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     final List<ProcessDefinitionOptimizeDto> processDefinitions) {
     return processDefinitions
       .stream()
-      .filter(def -> def.getIsEventBased() || isAuthorizedToReadProcessDefinition(userId, def))
+      .filter(def -> isAuthorizedToReadProcessDefinition(userId, def))
       .collect(toList());
   }
 

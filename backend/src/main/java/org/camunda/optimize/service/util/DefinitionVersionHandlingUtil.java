@@ -14,10 +14,40 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @UtilityClass
 public class DefinitionVersionHandlingUtil {
 
+  public static String convertToValidDefinitionVersion(@NonNull List<String> definitionVersions,
+                                                       @NonNull Supplier<String> latestVersionSupplier) {
+    Optional<String> isDefinitionVersionSetToAllOrLatest = definitionVersions.stream()
+      .filter(
+        version -> ReportConstants.ALL_VERSIONS.equalsIgnoreCase(version) ||
+          ReportConstants.LATEST_VERSION.equalsIgnoreCase(version)
+      )
+      .findFirst();
+    if (isDefinitionVersionSetToAllOrLatest.isPresent()) {
+      return latestVersionSupplier.get();
+    } else {
+      return definitionVersions.stream()
+        .filter(StringUtils::isNumeric)
+        .map(Integer::parseInt)
+        .max(Integer::compareTo)
+        .map(Object::toString)
+        .orElse(getLastEntryInList(definitionVersions));
+    }
+  }
+
+  public static String convertToValidVersion(final String processDefinitionVersion,
+                                             final Supplier<String> latestVersionSupplier) {
+    return convertToValidDefinitionVersion(
+      ImmutableList.of(processDefinitionVersion),
+      latestVersionSupplier
+    );
+  }
+
+  @Deprecated
   public static String convertToValidDefinitionVersion(@NonNull String processDefinitionKey,
                                                        @NonNull List<String> processDefinitionVersions,
                                                        @NonNull Function<String, String> getLatestVersionToKey) {
@@ -39,6 +69,7 @@ public class DefinitionVersionHandlingUtil {
     }
   }
 
+  @Deprecated
   public static String convertToValidVersion(String processDefinitionKey,
                                              String processDefinitionVersion,
                                              Function<String, String> getLatestVersionToKey) {

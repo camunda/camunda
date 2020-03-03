@@ -249,7 +249,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
-    assertThat(message, containsString("Could not find xml for decision definition with key"));
+    assertThat(message, containsString(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE));
   }
 
   @Test
@@ -266,7 +266,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
-    assertThat(message, containsString("Could not find xml for decision definition with key"));
+    assertThat(message, containsString(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE));
   }
 
   @Override

@@ -57,7 +57,7 @@ public class DecisionDefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/definitionVersionsWithTenants")
-  public List<DefinitionVersionsWithTenantsRestDto> getProcessDefinitionVersionsWithTenants(
+  public List<DefinitionVersionsWithTenantsRestDto> getDecisionDefinitionVersionsWithTenants(
     @Context final ContainerRequestContext requestContext,
     @QueryParam("filterByCollectionScope") final String collectionId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);

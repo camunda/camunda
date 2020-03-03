@@ -42,7 +42,6 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   private static final String NOT_EVENT_BASED = "not event based";
   private static final String ALL_VERSIONS_STRING = "ALL";
   private static final String EVENT_PROCESS_NAME = "someName";
-  private static final String EXPECTED_404_MESSAGE = "Could not find xml for process definition with key";
 
   private static Stream<String> processDefinitionTypes() {
     return Stream.of(EVENT_BASED, NOT_EVENT_BASED);
@@ -358,7 +357,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
-    assertThat(message.contains(EXPECTED_404_MESSAGE), is(true));
+    assertThat(message.contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE), is(true));
   }
 
   @ParameterizedTest(name = "Get {0} process definition with nonexistent key returns 404 message.")
@@ -378,7 +377,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .buildGetProcessDefinitionXmlRequest("nonsense", processDefinitionOptimizeDto.getVersion())
         .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
-    assertThat(message.contains(EXPECTED_404_MESSAGE), is(true));
+    assertThat(message.contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE), is(true));
   }
 
   @Test

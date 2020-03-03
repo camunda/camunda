@@ -13,11 +13,12 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.service.ProcessDefinitionService;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -55,7 +56,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class BranchAnalysisReader {
 
   private OptimizeElasticsearchClient esClient;
-  private ProcessDefinitionService definitionService;
+  private DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
   private ProcessDefinitionReader processDefinitionReader;
@@ -114,7 +115,8 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private boolean isPathPossible(final FlowNode currentNode, final FlowNode targetNode, final Set<FlowNode> visitedNodes) {
+  private boolean isPathPossible(final FlowNode currentNode, final FlowNode targetNode,
+                                 final Set<FlowNode> visitedNodes) {
     visitedNodes.add(currentNode);
     final List<FlowNode> succeedingNodes = currentNode.getSucceedingNodes().list();
     boolean pathFound = false;
@@ -238,10 +240,21 @@ public class BranchAnalysisReader {
                                                            final List<String> definitionVersions,
                                                            final List<String> tenantIds) {
     final Optional<String> processDefinitionXml = tenantIds.stream()
-      .map(tenantId -> definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersions, tenantId))
+      .map(tenantId -> definitionService.getDefinitionXml(
+        DefinitionType.PROCESS,
+        userId,
+        definitionKey,
+        definitionVersions,
+        tenantId
+      ))
       .filter(Optional::isPresent)
       .findFirst()
-      .orElse(definitionService.getProcessDefinitionXml(userId, definitionKey, definitionVersions));
+      .orElse(definitionService.getDefinitionXml(
+        DefinitionType.PROCESS,
+        userId,
+        definitionKey,
+        definitionVersions
+      ));
 
     return processDefinitionXml
       .map(xml -> Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));

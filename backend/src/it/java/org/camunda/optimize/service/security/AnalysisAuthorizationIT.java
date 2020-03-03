@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.security;
 
 import com.google.common.collect.Lists;
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;

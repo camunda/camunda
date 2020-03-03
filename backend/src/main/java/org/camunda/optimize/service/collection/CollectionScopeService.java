@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -118,6 +119,19 @@ public class CollectionScopeService {
           .thenComparing(CollectionScopeEntryRestDto::getDefinitionName)
       )
       .collect(Collectors.toList());
+  }
+
+  public List<DefinitionAvailableVersionsWithTenants> getCollectionDefinitionsGroupedByVersionAndTenantForType(
+    final DefinitionType type,
+    final String userId,
+    final String collectionId) {
+    final Map<String, List<String>> keysAndTenants = getAvailableKeysAndTenantsFromCollectionScope(
+      userId,
+      IdentityType.USER,
+      collectionId
+    );
+
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(type, userId, keysAndTenants);
   }
 
   public void addScopeEntriesToCollection(final String userId,

@@ -35,9 +35,9 @@ import java.util.Set;
 public class CollectionService {
 
   private final AuthorizedCollectionService authorizedCollectionService;
-  private final CollectionWriter collectionWriter;
   private final CollectionRelationService collectionRelationService;
   private final CollectionEntityService collectionEntityService;
+  private final CollectionWriter collectionWriter;
 
   public IdDto createNewCollectionAndReturnId(final String userId,
                                               final PartialCollectionDefinitionDto partialCollectionDefinitionDto) {

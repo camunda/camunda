@@ -7,11 +7,12 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
-import org.camunda.optimize.service.ProcessDefinitionService;
+import org.camunda.optimize.service.DefinitionService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
@@ -28,7 +29,7 @@ import java.util.Optional;
 @Slf4j
 public class FlowNodeRestService {
 
-  private final ProcessDefinitionService processDefinitionService;
+  private final DefinitionService definitionService;
 
   @POST
   @Path("/flowNodeNames")
@@ -38,9 +39,12 @@ public class FlowNodeRestService {
   public FlowNodeNamesResponseDto getFlowNodeNames(final FlowNodeIdsToNamesRequestDto request) {
     final FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
 
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = processDefinitionService
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = definitionService
       .getProcessDefinitionWithXmlAsService(
-        request.getProcessDefinitionKey(), request.getProcessDefinitionVersion(), request.getTenantId()
+        DefinitionType.PROCESS,
+        request.getProcessDefinitionKey(),
+        request.getProcessDefinitionVersion(),
+        request.getTenantId()
       );
 
     if (processDefinitionXmlDto.isPresent()) {

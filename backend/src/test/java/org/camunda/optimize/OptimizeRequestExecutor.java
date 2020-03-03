@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
@@ -680,7 +679,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetProcessDefinitionsRequest() {
-    this.path = "process-definition";
+    this.path = "definition/process";
     this.method = GET;
     return this;
   }
@@ -690,7 +689,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId) {
-    this.path = "process-definition/definitionVersionsWithTenants";
+    this.path = "definition/process/definitionVersionsWithTenants";
     this.method = GET;
     addSingleQueryParam("filterByCollectionScope", collectionId);
     return this;
@@ -701,14 +700,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetProcessDefinitionXmlRequest(String key, Object version, String tenantId) {
-    this.path = "process-definition/xml";
-    this.addSingleQueryParam("processDefinitionKey", key);
-    this.addSingleQueryParam("processDefinitionVersion", version);
+    this.path = "definition/process/xml";
+    this.addSingleQueryParam("key", key);
+    this.addSingleQueryParam("version", version);
     this.addSingleQueryParam("tenantId", tenantId);
     this.method = GET;
     return this;
   }
-
 
   public OptimizeRequestExecutor buildProcessDefinitionCorrelation(BranchAnalysisQueryDto entity) {
     this.path = "analysis/correlation";
@@ -772,12 +770,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetOptimizeVersionRequest() {
-    this.path = "meta/version";
-    this.method = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildLogOutRequest() {
     this.path = "authentication/logout";
     this.method = GET;
@@ -822,7 +814,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetDecisionDefinitionsRequest() {
-    this.path = "decision-definition";
+    this.path = "definition/decision";
     this.method = GET;
     return this;
   }
@@ -832,7 +824,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants(final String collectionId) {
-    this.path = "decision-definition/definitionVersionsWithTenants";
+    this.path = "definition/decision/definitionVersionsWithTenants";
     this.method = GET;
     addSingleQueryParam("filterByCollectionScope", collectionId);
     return this;
@@ -843,7 +835,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetDecisionDefinitionXmlRequest(String key, Object version, String tenantId) {
-    this.path = "decision-definition/xml";
+    this.path = "definition/decision/xml";
     this.addSingleQueryParam("key", key);
     this.addSingleQueryParam("version", version);
     this.addSingleQueryParam("tenantId", tenantId);

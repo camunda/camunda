@@ -80,7 +80,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId) {
-    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, DECISION);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(DECISION, userId);
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId,
@@ -88,7 +88,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
       .getAvailableKeysAndTenantsFromCollectionScope(userId, IdentityType.USER, collectionId);
 
-    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(userId, keysAndTenants, DECISION);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(DECISION, userId, keysAndTenants);
   }
 
   private List<DecisionDefinitionOptimizeDto> filterAuthorizedDecisionDefinitions(

@@ -10,11 +10,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.LabeledEventTypeDto;
-import org.camunda.optimize.service.ProcessDefinitionService;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.springframework.stereotype.Component;
@@ -131,7 +132,7 @@ public class CamundaEventService {
     .build();
 
   private final CamundaActivityEventReader camundaActivityEventReader;
-  private final ProcessDefinitionService processDefinitionService;
+  private final DefinitionService definitionService;
 
   public List<EventDto> getCamundaEventsForDefinitionAfter(final String definitionKey,
                                                            final Long eventTimestamp, final int limit) {
@@ -242,8 +243,8 @@ public class CamundaEventService {
                                                  final String definitionKey,
                                                  final List<String> versions,
                                                  final List<String> tenants) {
-    final String processDefinitionXml = processDefinitionService
-      .getProcessDefinitionXml(userId, definitionKey, versions, tenants)
+    final String processDefinitionXml = definitionService
+      .getDefinitionXml(DefinitionType.PROCESS, userId, definitionKey, versions, tenants)
       .orElseThrow(() -> new OptimizeValidationException(String.format(
         "Could not find process definition for eventSource entry: [key: %s, versions: %s, tenants: %s].",
         definitionKey, versions, tenants
