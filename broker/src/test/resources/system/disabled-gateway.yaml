@@ -1,3 +1,4 @@
-zeebe-broker:
-  gateway:
-    enable: false
+zeebe:
+  broker:
+    gateway:
+      enable: false

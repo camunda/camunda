@@ -1,3 +1,4 @@
-zeebe-broker:
-  cluster:
-    initialContactPoints: [ broker1, broker2, broker3 ]
+zeebe:
+  broker:
+    cluster:
+      initialContactPoints: [ broker1, broker2, broker3 ]

@@ -78,32 +78,32 @@ public final class GatewayCfgTest {
   @Test
   public void shouldUseEnvironmentVariables() {
     // given
-    setEnv("zeebe-gateway.network.host", "zeebe");
-    setEnv("zeebe-gateway.network.port", "5432");
-    setEnv("zeebe-gateway.cluster.contactPoint", "broker:432");
-    setEnv("zeebe-gateway.threads.managementThreads", "32");
-    setEnv("zeebe-gateway.cluster.requestTimeout", Duration.ofMinutes(43).toString());
-    setEnv("zeebe-gateway.cluster.clusterName", "envCluster");
-    setEnv("zeebe-gateway.cluster.memberId", "envMember");
-    setEnv("zeebe-gateway.cluster.host", "envHost");
-    setEnv("zeebe-gateway.cluster.port", "12345");
-    setEnv("zeebe-gateway.monitoring.enabled", "true");
-    setEnv("zeebe-gateway.monitoring.host", "monitorHost");
-    setEnv("zeebe-gateway.monitoring.port", "231");
-    setEnv("zeebe-gateway.security.enabled", String.valueOf(false));
+    setEnv("zeebe.gateway.network.host", "zeebe");
+    setEnv("zeebe.gateway.network.port", "5432");
+    setEnv("zeebe.gateway.cluster.contactPoint", "broker:432");
+    setEnv("zeebe.gateway.threads.managementThreads", "32");
+    setEnv("zeebe.gateway.cluster.requestTimeout", Duration.ofMinutes(43).toString());
+    setEnv("zeebe.gateway.cluster.clusterName", "envCluster");
+    setEnv("zeebe.gateway.cluster.memberId", "envMember");
+    setEnv("zeebe.gateway.cluster.host", "envHost");
+    setEnv("zeebe.gateway.cluster.port", "12345");
+    setEnv("zeebe.gateway.monitoring.enabled", "true");
+    setEnv("zeebe.gateway.monitoring.host", "monitorHost");
+    setEnv("zeebe.gateway.monitoring.port", "231");
+    setEnv("zeebe.gateway.security.enabled", String.valueOf(false));
     setEnv(
-        "zeebe-gateway.security.privateKeyPath",
+        "zeebe.gateway.security.privateKeyPath",
         GatewayCfgTest.class
             .getClassLoader()
             .getResource("security/test-server.key.pem")
             .getPath());
     setEnv(
-        "zeebe-gateway.security.certificateChainPath",
+        "zeebe.gateway.security.certificateChainPath",
         GatewayCfgTest.class
             .getClassLoader()
             .getResource("security/test-chain.cert.pem")
             .getPath());
-    setEnv("zeebe-gateway.network.minKeepAliveInterval", Duration.ofSeconds(30).toString()); //
+    setEnv("zeebe.gateway.network.minKeepAliveInterval", Duration.ofSeconds(30).toString()); //
 
     final GatewayCfg expected = new GatewayCfg();
     expected
@@ -157,7 +157,7 @@ public final class GatewayCfgTest {
       if (inputStream != null) {
         final GatewayCfg gatewayCfg =
             new TestConfigurationFactory()
-                .create(new Environment(environment), "zeebe-gateway", filename, GatewayCfg.class);
+                .create(new Environment(environment), "zeebe.gateway", filename, GatewayCfg.class);
         gatewayCfg.init();
         return gatewayCfg;
       } else {

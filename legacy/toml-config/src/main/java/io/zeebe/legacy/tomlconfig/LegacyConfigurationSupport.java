@@ -24,83 +24,83 @@ public final class LegacyConfigurationSupport {
 
   static { // static initialization for mapping tables
 
-    // zeebe-gateway.network
-    MAPPING_GATEWAY.put("ZEEBE_GATEWAY_HOST", new Replacement("zeebe-gateway.network.host"));
-    MAPPING_GATEWAY.put("ZEEBE_GATEWAY_PORT", new Replacement("zeebe-gateway.network.port"));
+    // zeebe.gateway.network
+    MAPPING_GATEWAY.put("ZEEBE_GATEWAY_HOST", new Replacement("zeebe.gateway.network.host"));
+    MAPPING_GATEWAY.put("ZEEBE_GATEWAY_PORT", new Replacement("zeebe.gateway.network.port"));
     MAPPING_GATEWAY.put(
         "ZEEBE_GATEWAY_KEEP_ALIVE_INTERVAL",
-        new Replacement("zeebe-gateway.network.minKeepAliveInterval"));
+        new Replacement("zeebe.gateway.network.minKeepAliveInterval"));
 
-    // zeebe-gateway.cluster
+    // zeebe.gateway.cluster
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_REQUEST_TIMEOUT", new Replacement("zeebe-gateway.cluster.requestTimeout"));
+        "ZEEBE_GATEWAY_REQUEST_TIMEOUT", new Replacement("zeebe.gateway.cluster.requestTimeout"));
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_CONTACT_POINT", new Replacement("zeebe-gateway.cluster.contactPoint"));
+        "ZEEBE_GATEWAY_CONTACT_POINT", new Replacement("zeebe.gateway.cluster.contactPoint"));
     VALUE_CONVERTERS_GATEWAY.put(
         "ZEEBE_GATEWAY_CONTACT_POINT",
         value -> value.contains(":") ? value : value + ":" + DEFAULT_CONTACT_POINT_PORT);
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_CLUSTER_NAME", new Replacement("zeebe-gateway.cluster.clusterName"));
+        "ZEEBE_GATEWAY_CLUSTER_NAME", new Replacement("zeebe.gateway.cluster.clusterName"));
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_CLUSTER_MEMBER_ID", new Replacement("zeebe-gateway.cluster.memberId"));
+        "ZEEBE_GATEWAY_CLUSTER_MEMBER_ID", new Replacement("zeebe.gateway.cluster.memberId"));
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_CLUSTER_HOST", new Replacement("zeebe-gateway.cluster.host"));
+        "ZEEBE_GATEWAY_CLUSTER_HOST", new Replacement("zeebe.gateway.cluster.host"));
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_CLUSTER_PORT", new Replacement("zeebe-gateway.cluster.port"));
+        "ZEEBE_GATEWAY_CLUSTER_PORT", new Replacement("zeebe.gateway.cluster.port"));
 
-    // zeebe-gateway.monitoring
+    // zeebe.gateway.monitoring
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_MONITORING_ENABLED", new Replacement("zeebe-gateway.monitoring.enadbled"));
+        "ZEEBE_GATEWAY_MONITORING_ENABLED", new Replacement("zeebe.gateway.monitoring.enadbled"));
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_MONITORING_HOST", new Replacement("zeebe-gateway.monitoring.host"));
+        "ZEEBE_GATEWAY_MONITORING_HOST", new Replacement("zeebe.gateway.monitoring.host"));
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_MONITORING_PORT", new Replacement("zeebe-gateway.monitoring.port"));
+        "ZEEBE_GATEWAY_MONITORING_PORT", new Replacement("zeebe.gateway.monitoring.port"));
 
-    // zeebe-gateway.threads
+    // zeebe.gateway.threads
     MAPPING_GATEWAY.put(
         "ZEEBE_GATEWAY_MANAGEMENT_THREADS",
-        new Replacement("zeebe-gateway.threads.managementThreads"));
+        new Replacement("zeebe.gateway.threads.managementThreads"));
 
-    // zeebe-gateway.security
+    // zeebe.gateway.security
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_SECURITY_ENABLED", new Replacement("zeebe-gateway.security.enabled"));
+        "ZEEBE_GATEWAY_SECURITY_ENABLED", new Replacement("zeebe.gateway.security.enabled"));
     MAPPING_GATEWAY.put(
         "ZEEBE_GATEWAY_CERTIFICATE_PATH",
-        new Replacement("zeebe-gateway.security.certificateChainPath"));
+        new Replacement("zeebe.gateway.security.certificateChainPath"));
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_PRIVATE_KEY_PATH", new Replacement("zeebe-gateway.security.privateKeyPath"));
+        "ZEEBE_GATEWAY_PRIVATE_KEY_PATH", new Replacement("zeebe.gateway.security.privateKeyPath"));
 
-    // zeebe-broker ----------------------------------------
-    MAPPING_BROKER.put("ZEEBE_STEP_TIMEOUT", new Replacement("zeebe-broker.stepTimeout"));
+    // zeebe.broker ----------------------------------------
+    MAPPING_BROKER.put("ZEEBE_STEP_TIMEOUT", new Replacement("zeebe.broker.stepTimeout"));
 
-    // zeebe-broker.cluster
-    MAPPING_BROKER.put("ZEEBE_NODE_ID", new Replacement("zeebe-broker.cluster.nodeId"));
+    // zeebe.broker.cluster
+    MAPPING_BROKER.put("ZEEBE_NODE_ID", new Replacement("zeebe.broker.cluster.nodeId"));
     MAPPING_BROKER.put(
-        "ZEEBE_CONTACT_POINTS", new Replacement("zeebe-broker.cluster.initialContactPoints"));
+        "ZEEBE_CONTACT_POINTS", new Replacement("zeebe.broker.cluster.initialContactPoints"));
     MAPPING_BROKER.put(
-        "ZEEBE_PARTITIONS_COUNT", new Replacement("zeebe-broker.cluster.partitionsCount"));
+        "ZEEBE_PARTITIONS_COUNT", new Replacement("zeebe.broker.cluster.partitionsCount"));
     MAPPING_BROKER.put(
-        "ZEEBE_REPLICATION_FACTOR", new Replacement("zeebe-broker.cluster.replicationFactor"));
-    MAPPING_BROKER.put("ZEEBE_CLUSTER_SIZE", new Replacement("zeebe-broker.cluster.clusterSize"));
-    MAPPING_BROKER.put("ZEEBE_CLUSTER_NAME", new Replacement("zeebe-broker.cluster.clusterName"));
+        "ZEEBE_REPLICATION_FACTOR", new Replacement("zeebe.broker.cluster.replicationFactor"));
+    MAPPING_BROKER.put("ZEEBE_CLUSTER_SIZE", new Replacement("zeebe.broker.cluster.clusterSize"));
+    MAPPING_BROKER.put("ZEEBE_CLUSTER_NAME", new Replacement("zeebe.broker.cluster.clusterName"));
 
-    // zeebe-broker.data
-    MAPPING_BROKER.put("ZEEBE_DIRECTORIES", new Replacement("zeebe-broker.data.directories"));
+    // zeebe.broker.data
+    MAPPING_BROKER.put("ZEEBE_DIRECTORIES", new Replacement("zeebe.broker.data.directories"));
 
-    // zeebe-broker.gateway
-    MAPPING_BROKER.put("ZEEBE_EMBED_GATEWAY", new Replacement("zeebe-broker.gateway.enable"));
+    // zeebe.broker.gateway
+    MAPPING_BROKER.put("ZEEBE_EMBED_GATEWAY", new Replacement("zeebe.broker.gateway.enable"));
 
     /* this essentially copies all entries from the gateway mapping table, but modifies
-     * the new environment variables from "zeebe-gateway.*" to "zeebe-broker.gateway.*"
+     * the new environment variables from "zeebe.gateway.*" to "zeebe.broker.gateway.*"
      */
     MAPPING_GATEWAY.forEach(LegacyConfigurationSupport::appendCorrespondingBrokerEntry);
     VALUE_CONVERTERS_BROKER.putAll(VALUE_CONVERTERS_GATEWAY);
 
-    // zeebe-broker.network
-    MAPPING_BROKER.put("ZEEBE_HOST", new Replacement("zeebe-broker.network.host"));
+    // zeebe.broker.network
+    MAPPING_BROKER.put("ZEEBE_HOST", new Replacement("zeebe.broker.network.host"));
     MAPPING_BROKER.put(
-        "ZEEBE_ADVERTISED_HOST", new Replacement("zeebe-broker.network.advertisedHost"));
-    MAPPING_BROKER.put("ZEEBE_PORT_OFFSET", new Replacement("zeebe-broker.network.portOffset"));
+        "ZEEBE_ADVERTISED_HOST", new Replacement("zeebe.broker.network.advertisedHost"));
+    MAPPING_BROKER.put("ZEEBE_PORT_OFFSET", new Replacement("zeebe.broker.network.portOffset"));
   }
 
   private final Scope scope;
@@ -212,17 +212,17 @@ public final class LegacyConfigurationSupport {
 
   /**
    * This essentially copies an entry from the gateway mapping table into the broker mapping table,
-   * but modifies the new environment variables from "zeebe-gateway.*" to "zeebe-broker.gateway.*"
+   * but modifies the new environment variables from "zeebe.gateway.*" to "zeebe.broker.gateway.*"
    */
   private static void appendCorrespondingBrokerEntry(
       String oldEnvironmentVariable, Replacement replacement) {
     final String newEnvironmentVariableInGatewayContext = replacement.getCanonicalRepresentation();
 
-    assert newEnvironmentVariableInGatewayContext.startsWith("zeebe-");
-    final int insertionPoint = "zeebe-".length();
+    assert newEnvironmentVariableInGatewayContext.startsWith("zeebe.");
+    final int insertionPoint = "zeebe.".length();
 
     final String newEnvironmentVariableInBrokerContext =
-        newEnvironmentVariableInGatewayContext.substring(0, insertionPoint) // "zeebe-"
+        newEnvironmentVariableInGatewayContext.substring(0, insertionPoint) // "zeebe."
             + "broker."
             + newEnvironmentVariableInGatewayContext.substring(insertionPoint); // "gateway.*"
 

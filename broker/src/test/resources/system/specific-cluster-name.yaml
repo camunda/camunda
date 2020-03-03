@@ -1,3 +1,4 @@
-zeebe-broker:
-  cluster:
-    clusterName: cluster-name
+zeebe:
+  broker:
+    cluster:
+      clusterName: cluster-name

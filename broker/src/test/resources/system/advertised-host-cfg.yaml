@@ -1,4 +1,5 @@
-zeebe-broker:
-  network:
-    commandApi:
-      advertisedHost: zeebe.io
+zeebe:
+  broker:
+    network:
+      commandApi:
+        advertisedHost: zeebe.io

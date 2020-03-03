@@ -1,10 +1,11 @@
-zeebe-broker:
-  network:
-    commandApi:
-      port: 1
+zeebe:
+  broker:
+    network:
+      commandApi:
+        port: 1
 
-    internalApi:
-      port: 5
+      internalApi:
+        port: 5
 
-    monitoringApi:
-      port: 6
+      monitoringApi:
+        port: 6

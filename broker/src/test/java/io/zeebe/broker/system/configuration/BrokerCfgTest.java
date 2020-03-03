@@ -44,24 +44,24 @@ public final class BrokerCfgTest {
 
   public static final String BROKER_BASE = "test";
 
-  private static final String ZEEBE_BROKER_CLUSTER_NODE_ID = "zeebe-broker.cluster.nodeId";
+  private static final String ZEEBE_BROKER_CLUSTER_NODE_ID = "zeebe.broker.cluster.nodeId";
   private static final String ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS =
-      "zeebe-broker.cluster.initialContactPoints";
+      "zeebe.broker.cluster.initialContactPoints";
   private static final String ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT =
-      "zeebe-broker.cluster.partitionsCount";
+      "zeebe.broker.cluster.partitionsCount";
   private static final String ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR =
-      "zeebe-broker.cluster.replicationFactor";
+      "zeebe.broker.cluster.replicationFactor";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE =
-      "zeebe-broker.cluster.clusterSize";
+      "zeebe.broker.cluster.clusterSize";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
-      "zeebe-broker.cluster.clusterName";
+      "zeebe.broker.cluster.clusterName";
 
-  private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe-broker.data.directories";
+  private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
-  private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe-broker.network.host";
+  private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
-      "zeebe-broker.network.advertised-host";
-  private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe-broker.network.portOffset";
+      "zeebe.broker.network.advertised-host";
+  private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe.broker.network.portOffset";
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -90,7 +90,7 @@ public final class BrokerCfgTest {
 
   @Test
   public void shouldUseStepTimeoutFromEnv() {
-    environment.put("zeebe-broker.stepTimeout", Duration.ofMinutes(1).toString());
+    environment.put("zeebe.broker.stepTimeout", Duration.ofMinutes(1).toString());
     assertDefaultStepTimeout(Duration.ofMinutes(1));
   }
 
@@ -450,7 +450,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldSetEmbedGatewayViaEnvironment() {
     // given
-    environment.put("zeebe-broker.gateway.enable", "true");
+    environment.put("zeebe.broker.gateway.enable", "true");
     // then
     assertEmbeddedGatewayEnabled("disabled-gateway", true);
   }
@@ -491,7 +491,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldUseDefaultAdvertisedHostFromEnv() {
     // given
-    environment.put("zeebe-broker.network.advertisedHost", "zeebe.io");
+    environment.put("zeebe.broker.network.advertisedHost", "zeebe.io");
 
     // then
     assertAdvertisedAddress("default", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
@@ -505,7 +505,7 @@ public final class BrokerCfgTest {
 
     final BrokerCfg config =
         new TestConfigurationFactory()
-            .create(environmentVariables, "zeebe-broker", configPath, BrokerCfg.class);
+            .create(environmentVariables, "zeebe.broker", configPath, BrokerCfg.class);
     config.init(BROKER_BASE, environmentVariables);
 
     return config;

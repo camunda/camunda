@@ -13,7 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "zeebe-gateway")
+@ConfigurationProperties(prefix = "zeebe.gateway")
 public class GatewayCfg {
 
   private NetworkCfg network = new NetworkCfg();

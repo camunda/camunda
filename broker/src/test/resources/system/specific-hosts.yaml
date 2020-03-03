@@ -1,14 +1,15 @@
-zeebe-broker:
-  gateway:
+zeebe:
+  broker:
+    gateway:
+      network:
+        host: gatewayHost
+
     network:
-      host: gatewayHost
+      commandApi:
+        host: commandHost
 
-  network:
-    commandApi:
-      host: commandHost
+      internalApi:
+        host: internalHost
 
-    internalApi:
-      host: internalHost
-
-    monitoringApi:
-      host: monitoringHost
+      monitoringApi:
+        host: monitoringHost

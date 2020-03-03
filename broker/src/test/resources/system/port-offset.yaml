@@ -1,3 +1,4 @@
-zeebe-broker:
-  network:
-    portOffset: 5
+zeebe:
+  broker:
+    network:
+      portOffset: 5

@@ -17,7 +17,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "zeebe-broker")
+@ConfigurationProperties(prefix = "zeebe.broker")
 public final class BrokerCfg {
 
   protected static final String ENV_DEBUG_EXPORTER = "ZEEBE_DEBUG";
