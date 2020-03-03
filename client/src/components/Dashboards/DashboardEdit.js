@@ -29,6 +29,8 @@ export default class DashboardEdit extends React.Component {
     };
   }
 
+  contentContainer = React.createRef();
+
   mousePosition = {x: 0, y: 0};
   mouseTracker = evt => {
     this.mousePosition.x = evt.clientX;
@@ -36,12 +38,57 @@ export default class DashboardEdit extends React.Component {
   };
 
   componentDidMount() {
+    document.addEventListener('mousedown', this.setDraggedItem);
     document.addEventListener('mousemove', this.mouseTracker);
+    document.addEventListener('mouseup', this.clearDraggedItem);
   }
 
   componentWillUnmount() {
+    document.removeEventListener('mousedown', this.setDraggedItem);
     document.removeEventListener('mousemove', this.mouseTracker);
+    document.removeEventListener('mouseup', this.clearDraggedItem);
   }
+
+  draggedItem = null;
+  setDraggedItem = evt => {
+    this.draggedItem = evt.target.closest('.grid-entry');
+    if (this.draggedItem) {
+      // We need to prevent the browser scroll that occurs when resizing
+      evt.preventDefault();
+
+      // We need to give the library time to process the grab before
+      // artificially generating mousemove events
+      setTimeout(this.autoScroll);
+    }
+  };
+
+  autoScroll = () => {
+    if (this.draggedItem) {
+      const container = this.contentContainer.current;
+      const containerTop = container.offsetTop;
+      const containerBottom = containerTop + container.offsetHeight;
+
+      const deltaTop = this.mousePosition.y - containerTop;
+      const deltaBottom = containerBottom - this.mousePosition.y;
+      if (deltaTop < 30) {
+        container.scrollTop -= (30 - deltaTop) / 5;
+      } else if (deltaBottom < 30) {
+        container.scrollTop += (30 - deltaBottom) / 5;
+      }
+      this.draggedItem.dispatchEvent(createEvent('mousemove', this.mousePosition));
+      this.autoScrollHandle = requestAnimationFrame(this.autoScroll);
+    }
+  };
+
+  clearDraggedItem = () => {
+    this.draggedItem = null;
+
+    // since we need to timeout the start of the autoscroll, we also need
+    // to timeout the cancel to prevent a "cancel before start" bug
+    setTimeout(() => {
+      cancelAnimationFrame(this.autoScrollHandle);
+    });
+  };
 
   updateLayout = layout => {
     this.setState(({reports}) => {
@@ -144,7 +191,7 @@ export default class DashboardEdit extends React.Component {
             </div>
           </div>
         </div>
-        <div className="content">
+        <div className="content" ref={this.contentContainer}>
           <DashboardRenderer
             disableReportInteractions
             reports={reports}
