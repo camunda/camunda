@@ -191,15 +191,7 @@ void gitCheckoutOptimize() {
 }
 
 pipeline {
-  agent {
-    kubernetes {
-      cloud 'optimize-ci'
-      label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-      defaultContainer 'jnlp'
-      yaml mavenAgent()
-    }
-  }
-
+  agent none
   environment {
     CAM_REGISTRY = credentials('repository-camunda-cloud')
     NODE_ENV = "ci"
@@ -209,7 +201,14 @@ pipeline {
   
   stages {
     stage("Prepare") {
-      agent none
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml mavenAgent()
+        }
+      }
       steps {
         gitCheckoutOptimize()
         script {

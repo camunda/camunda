@@ -212,15 +212,7 @@ void integrationTestStepsAWS() {
 }
 
 pipeline {
-  agent {
-    kubernetes {
-      cloud 'optimize-ci'
-      label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-      defaultContainer 'jnlp'
-      yaml mavenAgent()
-    }
-  }
-
+  agent none
   environment {
     NEXUS = credentials("camunda-nexus")
   }
@@ -233,6 +225,14 @@ pipeline {
 
   stages {
     stage("Prepare") {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml mavenAgent()
+        }
+      }
       steps {
         gitCheckoutOptimize()
         script {
