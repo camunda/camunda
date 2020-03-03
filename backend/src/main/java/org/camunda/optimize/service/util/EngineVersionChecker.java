@@ -71,7 +71,7 @@ public class EngineVersionChecker {
     }
   }
 
-  private static boolean isVersionSupported(String currentVersion, List<String> supportedVersions) {
+  public static boolean isVersionSupported(String currentVersion, List<String> supportedVersions) {
     String currentMajorAndMinor = getMajorAndMinor(currentVersion);
 
     return supportedVersions.stream()

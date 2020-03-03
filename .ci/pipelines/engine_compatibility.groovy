@@ -256,6 +256,26 @@ pipeline {
             }
           }
         }
+        // this makes sure that we test the DMN 1.2/1.3 compatibility.
+        // Will be removed with OPT-3372 once Optimize only supports engines with DMN 1.3 support.
+        stage('IT 7.13-alpha2 - DMN compatibility') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.13-alpha2_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec('7.13.0-alpha2', env.ES_VERSION)
+            }
+          }
+          steps {
+            integrationTestSteps('7.13')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
       }
     }
   }

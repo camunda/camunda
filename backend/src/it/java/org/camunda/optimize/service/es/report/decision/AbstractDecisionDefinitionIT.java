@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static java.util.stream.Collectors.toMap;
@@ -127,15 +128,17 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
                                                                              final String camInputVariable,
                                                                              final String ruleExpression,
                                                                              final DecisionTypeRef type) {
+    // @formatter:off
     final DmnModelGenerator dmnModelGenerator = DmnModelGenerator.create()
       .decision()
       .addInput("input", camInputVariable, type)
       .addOutput("output", outputClauseId, camInputVariable, type)
       .rule()
-      .addStringInputEntry(type == DecisionTypeRef.STRING ? String.format("'%s'", ruleExpression) : ruleExpression)
-      .addStringOutputEntry(camInputVariable)
+        .addStringInputEntry(type == DecisionTypeRef.STRING ? String.format("\"%s\"", ruleExpression) : ruleExpression)
+        .addStringOutputEntry(camInputVariable)
       .buildRule()
       .buildDecision();
+    // @formatter:on
     return engineIntegrationExtension.deployDecisionDefinition(dmnModelGenerator.build());
   }
 
@@ -161,7 +164,7 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
   }
 
   protected void startDecisionInstanceWithInputVars(final String id,
-                                                    final HashMap<String, InputVariableEntry> inputVariables) {
+                                                    final Map<String, InputVariableEntry> inputVariables) {
     engineIntegrationExtension.startDecisionInstance(
       id,
       inputVariables.entrySet().stream().collect(toMap(
