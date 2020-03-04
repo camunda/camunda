@@ -2,6 +2,9 @@
 # ! ! ! ! ! ! ! ! ! !
 # In order to activate the settings in this file, please set the following environment variable:
 # export SPRING_CONFIG_LOCATION='file:./config/zeebe.cfg.yaml'
+#
+# Alternatively, you can also pass it as a command line argument:
+# ./bin/broker --spring.config.location=file:./config/zeebe.cfg.yaml
 # ! ! ! ! ! ! ! ! ! !
 
 # Overview -------------------------------------------

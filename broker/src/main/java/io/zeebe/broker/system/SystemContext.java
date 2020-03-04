@@ -41,7 +41,7 @@ public final class SystemContext {
   }
 
   private void initSystemContext(final ActorClock clock, final String basePath) {
-    LOG.debug("Initializing configuration with base path {}", basePath);
+    LOG.debug("Initializing system with base path {}", basePath);
 
     brokerCfg.init(basePath);
     validateConfiguration();

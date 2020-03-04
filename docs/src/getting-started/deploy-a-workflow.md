@@ -18,11 +18,17 @@ If you are using individual components, then you will need to manually configure
 
 _These instructions are for using separate components, and are not necessary when using Docker._
 
-First, open the `zeebe.cfg.yaml` file (in the `config` directory of the Zeebe broker) and enable the Zeebe Elasticsearch exporter.
+First, copy the following lines into a new file `getting-started.yaml` file (in the `config` directory of the Zeebe broker).
 
-Note that you need to un-comment _only_ these three lines to enable the exporter:
+```
+zeebe:
+  broker:
+    exporters:
+      elasticsearch:
+        className: io.zeebe.exporter.ElasticsearchExporter
+```
+These settings enable the Zeebe Elasticsearch exporter.
 
-![Zeebe Configuration File](/getting-started/img/tutorial-3.1-zeebe-conf-file.png)
 
 > **Note:** Some command examples might not work on Windows if you use cmd or
 > Powershell. For Windows users we recommend to use a bash-like shell, i.e. Git
@@ -64,8 +70,7 @@ Then start the Zeebe broker in another Terminal window.
 
 
 ```
-cd zeebe-broker-0.17.0
-./bin/broker
+./bin/broker --spring.config.location=file:./config/getting-started.yaml
 ```
 
 

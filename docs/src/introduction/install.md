@@ -33,7 +33,7 @@ Docker configurations for starting a single Zeebe broker using `docker-compose`,
 You can run Zeebe with Docker:
 
 ```bash
-docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
+docker run --name zeebe -p 26500-26502:26500-26502 camunda/zeebe:latest
 ```
 
 ### Exposed Ports
@@ -53,16 +53,14 @@ The Zeebe configuration is located at `/usr/local/zeebe/config/zeebe.cfg.yaml`.
 The logging configuration is located at `/usr/local/zeebe/config/log4j2.xml`.
 
 The configuration of the docker image can also be changed by using environment
-variables.
+variables. The configuration template file also contains information on the environment
+variables to use for each configuration setting.
 
 Available environment variables:
 
  - `ZEEBE_LOG_LEVEL`: Sets the log level of the Zeebe Logger (default: `info`).
- - `ZEEBE_HOST`: Sets the host address to bind to instead of the IP of the container.
- - `BOOTSTRAP`: Sets the replication factor of the `internal-system` partition.
- - `ZEEBE_CONTACT_POINTS`: Sets the contact points of other brokers in a cluster setup.
- - `DEPLOY_ON_KUBERNETES`: If set to `true`, it applies some configuration changes in order to run Zeebe
- in a Kubernetes environment.
+ - `ZEEBE_BROKER_NETWORK_HOST`: Sets the host address to bind to instead of the IP of the container.
+ - `ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS`: Sets the contact points of other brokers in a cluster setup.
 
 ### Mac and Windows users
 

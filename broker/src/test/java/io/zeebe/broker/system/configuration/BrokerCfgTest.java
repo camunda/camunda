@@ -498,6 +498,20 @@ public final class BrokerCfgTest {
     assertAdvertisedAddress("empty", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
   }
 
+  @Test
+  public void shouldReadExporterConfigWithMinimalInfo() {
+    // given
+    final ExporterCfg expected = new ExporterCfg();
+    expected.setClassName("io.zeebe.exporter.ElasticsearchExporter");
+
+    final BrokerCfg actual = readConfig("exporters");
+
+    // then
+    assertThat(actual.getExporters()).hasSize(1);
+    assertThat(actual.getExporters()).containsKey("elasticsearch");
+    assertThat(actual.getExporters().get("elasticsearch")).isEqualTo(expected);
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".yaml";
 
