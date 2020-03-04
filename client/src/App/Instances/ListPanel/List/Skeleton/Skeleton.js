@@ -8,7 +8,7 @@ import React from 'react';
 import * as Styled from './styled';
 import MultiRow from 'modules/components/MultiRow';
 
-export function InstanceRow() {
+function InstanceRow() {
   return (
     <tr>
       <Styled.td>
@@ -37,10 +37,14 @@ export function InstanceRow() {
   );
 }
 
-export default React.memo(function Skeleton(props) {
+function Skeleton(props) {
   return (
     <tbody>
       <MultiRow Component={InstanceRow} {...props} />
     </tbody>
   );
-});
+}
+
+Skeleton.Checkbox = Styled.SkeletonCheckboxBlock;
+
+export default Skeleton;

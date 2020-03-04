@@ -192,23 +192,25 @@ const Header = function(props) {
     <THead {...props}>
       <Styled.TR>
         <TH>
-          <React.Fragment>
-            <Styled.CheckAll>
+          <Styled.CheckAll shouldShowOffset={!isDataLoaded}>
+            {isDataLoaded ? (
               <Checkbox
                 disabled={isListEmpty}
                 isChecked={isAllChecked}
                 onChange={handleCheckAll}
                 title="Select all instances"
               />
-            </Styled.CheckAll>
-            <ColumnHeader
-              disabled={isListEmpty}
-              onSort={onSort}
-              label="Workflow"
-              sortKey="workflowName"
-              sorting={sorting}
-            />
-          </React.Fragment>
+            ) : (
+              <BaseSkeleton.Checkbox />
+            )}
+          </Styled.CheckAll>
+          <ColumnHeader
+            disabled={isListEmpty}
+            onSort={onSort}
+            label="Workflow"
+            sortKey="workflowName"
+            sorting={sorting}
+          />
         </TH>
         <TH>
           <ColumnHeader
