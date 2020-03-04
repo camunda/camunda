@@ -33,27 +33,19 @@ export async function loadDefinitions(type, collectionId) {
     params.filterByCollectionScope = collectionId;
   }
 
-  const response = await get(`api/${type}-definition/definitionVersionsWithTenants`, params);
+  const response = await get(`api/definition/${type}/definitionVersionsWithTenants`, params);
 
   return await response.json();
 }
 
-export async function loadProcessDefinitionXml(
-  processDefinitionKey,
-  processDefinitionVersion,
-  tenantId
-) {
-  const payload = {
-    processDefinitionKey,
-    processDefinitionVersion
-  };
-
+export async function loadProcessDefinitionXml(key, version, tenantId) {
+  const payload = {key, version};
   if (tenantId) {
     payload.tenantId = tenantId;
   }
 
   try {
-    const response = await get('api/process-definition/xml', payload);
+    const response = await get('api/definition/process/xml', payload);
 
     return await response.text();
   } catch (e) {
@@ -67,7 +59,7 @@ export async function loadDecisionDefinitionXml(key, version, tenantId) {
     payload.tenantId = tenantId;
   }
   try {
-    const response = await get('api/decision-definition/xml', payload);
+    const response = await get('api/definition/decision/xml', payload);
 
     return await response.text();
   } catch (e) {
