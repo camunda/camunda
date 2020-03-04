@@ -275,7 +275,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(content, containsString(simpleAlert.getName()));
     assertThat(
       content,
-      containsString(String.format("http://localhost:%d/#/report/" + reportId, getOptimizeHttpPort()))
+      containsString(String.format("http://localhost:%d/#/report/%s/", getOptimizeHttpPort(), reportId))
     );
   }
 
