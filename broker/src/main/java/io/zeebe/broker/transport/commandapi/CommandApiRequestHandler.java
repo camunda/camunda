@@ -197,11 +197,7 @@ final class CommandApiRequestHandler implements RequestHandler {
   void removePartition(final LogStream logStream) {
     cmdQueue.add(
         () -> {
-          final var recordWriter = leadingStreams.remove(logStream.getPartitionId());
-          if (recordWriter != null) {
-            recordWriter.close();
-          }
-
+          leadingStreams.remove(logStream.getPartitionId());
           partitionLimiters.remove(logStream.getPartitionId());
         });
   }

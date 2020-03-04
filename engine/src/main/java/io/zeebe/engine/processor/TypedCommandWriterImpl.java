@@ -120,9 +120,4 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   public long flush() {
     return batchWriter.tryWrite();
   }
-
-  @Override
-  public void close() {
-    batchWriter.close();
-  }
 }
