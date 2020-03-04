@@ -72,6 +72,7 @@ pipeline {
         }
 
         stage('Test (Go)') {
+            when { branch 'develop' }
             steps {
                 container('golang') {
                     sh '.ci/scripts/distribution/test-go.sh'
