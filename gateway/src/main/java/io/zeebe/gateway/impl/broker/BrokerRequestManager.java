@@ -14,6 +14,7 @@ import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.cmd.ClientResponseException;
 import io.zeebe.gateway.cmd.IllegalBrokerResponseException;
 import io.zeebe.gateway.cmd.NoTopologyAvailableException;
+import io.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.zeebe.gateway.impl.ErrorResponseHandler;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
@@ -165,7 +166,14 @@ public final class BrokerRequestManager extends Actor {
       final BrokerRequest<T> request,
       final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
       final Duration requestTimeout) {
-    final BrokerAddressProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
+
+    final BrokerAddressProvider nodeIdProvider;
+    try {
+      nodeIdProvider = determineBrokerNodeIdProvider(request);
+    } catch (PartitionNotFoundException e) {
+      responseConsumer.accept(null, e);
+      return;
+    }
 
     final ActorFuture<DirectBuffer> responseFuture =
         clientTransport.sendRequestWithRetry(
@@ -193,6 +201,10 @@ public final class BrokerRequestManager extends Actor {
 
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
     if (request.addressesSpecificPartition()) {
+      final BrokerClusterState topology = topologyManager.getTopology();
+      if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
+        throw new PartitionNotFoundException(request.getPartitionId());
+      }
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {

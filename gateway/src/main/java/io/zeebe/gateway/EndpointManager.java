@@ -17,6 +17,7 @@ import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.cmd.GrpcStatusException;
 import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
+import io.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
@@ -387,6 +388,8 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
               "Time out between gateway and broker: " + cause.getMessage());
     } else if (cause instanceof GrpcStatusException) {
       status = ((GrpcStatusException) cause).getGrpcStatus();
+    } else if (cause instanceof PartitionNotFoundException) {
+      status = Status.NOT_FOUND.augmentDescription(cause.getMessage());
     } else {
       status = status.augmentDescription("Unexpected error occurred during the request processing");
     }

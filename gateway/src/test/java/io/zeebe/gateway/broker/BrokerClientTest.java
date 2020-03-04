@@ -9,6 +9,7 @@ package io.zeebe.gateway.broker;
 
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -22,6 +23,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -206,6 +208,23 @@ public final class BrokerClientTest {
 
     // when
     client.sendRequest(new BrokerCompleteJobRequest(1, DocumentValue.EMPTY_DOCUMENT)).join();
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenPartitionNotFound() {
+    // given
+    final var request = new BrokerSetVariablesRequest();
+    request.setElementInstanceKey(0);
+    request.setPartitionId(0);
+    request.setLocal(false);
+
+    // when
+    final var async = client.sendRequest(request);
+
+    // then
+    assertThatThrownBy(async::join)
+        .isInstanceOf(ExecutionException.class)
+        .hasMessageContaining("Unknown partition '0'");
   }
 
   @Test
