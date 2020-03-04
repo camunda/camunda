@@ -233,7 +233,38 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
   }
 
   @Test
-  public void instancesAreGeneratedFromCamundaEventImportSource_correlatedByVariable_variableNotFound() {
+  public void instancesAreGeneratedFromCamundaEventImportSource_correlatedByVariable_variableNotFoundAmongImportedVariables() {
+    // given
+    final String otherVariable = "variableForProcessInstance";
+    final String otherVariableValue = "someValue";
+    final String tracingVariable = "tracingVariableNotUsedIntoProcess";
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcessWithVariables(Maps.newHashMap(
+      otherVariable,
+      otherVariableValue
+    ));
+    publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
+      processInstanceEngineDto,
+      createMappingsForEventProcess(
+        processInstanceEngineDto,
+        BPMN_START_EVENT_ID,
+        applyCamundaTaskStartEventSuffix(BPMN_INTERMEDIATE_EVENT_ID),
+        BPMN_END_EVENT_ID
+      ),
+      tracingVariable
+    );
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    importEngineEntities();
+
+    // when
+    executeImportCycle();
+
+    // then
+    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances).isEmpty();
+  }
+
+  @Test
+  public void instancesAreGeneratedFromCamundaEventImportSource_correlatedByVariable_noVariablesImported() {
     // given
     final String tracingVariable = "tracingVariableNotUsedIntoProcess";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();

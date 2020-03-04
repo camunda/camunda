@@ -134,7 +134,12 @@ public class CustomTracedCamundaEventFetcherService implements EventFetcherServi
         .collect(Collectors.toList());
     } else {
       correlatedEvents = eventDtosToImport.stream()
-        .filter(eventDto -> processInstanceToVariableUpdates.get(eventDto.getTraceId()) != null)
+        .filter(eventDto -> {
+          final List<VariableUpdateInstanceDto> variablesForTraceId =
+            processInstanceToVariableUpdates.get(eventDto.getTraceId());
+          return variablesForTraceId != null && variablesForTraceId.stream()
+            .anyMatch(var -> var.getName().equalsIgnoreCase(eventSource.getTraceVariable()));
+        })
         .peek(eventDto -> {
           // if the value of the correlation key changes during the running of the instance, we take the original value
           VariableUpdateInstanceDto firstUpdate = processInstanceToVariableUpdates.get(eventDto.getTraceId())
