@@ -225,9 +225,7 @@ class Diagram extends React.PureComponent {
       element.businessObject.di.set('stroke', color);
 
       var gfx = elementRegistry.getGraphics(element);
-      var type = element.waypoints ? 'connection' : 'shape';
-
-      graphicsFactory.update(type, element, gfx);
+      graphicsFactory.update('connection', element, gfx);
     }
   };
 
