@@ -92,7 +92,7 @@ function CollapsablePanel({
           {label}
           {renderHeader()}
         </Styled.Header>
-        <Panel.Body>{children}</Panel.Body>
+        <Panel.Body scrollable>{children}</Panel.Body>
         {renderFooter ? <Panel.Footer>{renderFooter()}</Panel.Footer> : ''}
       </Styled.ExpandedPanel>
     </Styled.Collapsable>
