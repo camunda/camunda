@@ -10,9 +10,10 @@ class Modeler {
       zoom: jest.fn(),
       addMarker: jest.fn(),
       removeMarker: jest.fn(),
-      resized: jest.fn()
+      resized: jest.fn(),
+      viewbox: jest.fn().mockReturnValue({})
     };
-    this.zoomScroll = {stepZoom: jest.fn()};
+    this.zoomScroll = {stepZoom: jest.fn(), reset: jest.fn()};
     this.container = container;
     this.bpmnRenderer = bpmnRenderer;
     this.elementRegistry = {
@@ -24,6 +25,7 @@ class Modeler {
     };
     this.eventBus = {on: jest.fn()};
     this.overlays = {add: jest.fn(), remove: jest.fn()};
+    this.selection = {select: jest.fn()};
   }
 
   _container = {

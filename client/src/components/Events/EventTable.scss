@@ -3,7 +3,7 @@
 .EventTable {
   border: solid 1px #dfdfdf;
   border-bottom: none;
-  width: 100vw;
+  width: calc(100% + 40px);
   margin-left: -20px;
 
   > .header {
@@ -73,6 +73,7 @@
 
     &.collapsed {
       height: 0;
+      overflow: hidden;
     }
 
     .rt-noData {
@@ -134,7 +135,7 @@
         }
 
         &.suggested {
-          border-left: 10px solid #1a6ef4;
+          border-left: 10px solid $blue-darken-62;
         }
 
         span.disabled {

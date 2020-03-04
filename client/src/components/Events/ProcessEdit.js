@@ -20,8 +20,6 @@ import EventTable from './EventTable';
 
 import './ProcessEdit.scss';
 
-const asMapping = ({group, source, eventName}) => ({group, source, eventName});
-
 export default withErrorHandling(
   class ProcessEdit extends React.Component {
     constructor(props) {
@@ -32,7 +30,8 @@ export default withErrorHandling(
         xml: null,
         selectedNode: null,
         mappings: {},
-        eventSources: null
+        eventSources: null,
+        selectedEvent: null
       };
     }
 
@@ -195,12 +194,16 @@ export default withErrorHandling(
       }
     };
 
-    setViewer = viewer => {
-      this.viewer = viewer;
+    onSelectNode = ({newSelection}) => {
+      if (newSelection.length !== 1) {
+        this.setState({selectedNode: null});
+      } else {
+        this.setState({selectedNode: newSelection[0].businessObject});
+      }
     };
 
     render() {
-      const {name, mappings, selectedNode, xml, eventSources} = this.state;
+      const {name, mappings, selectedNode, xml, eventSources, selectedEvent} = this.state;
 
       if (!xml) {
         return <LoadingIndicator />;
@@ -224,16 +227,10 @@ export default withErrorHandling(
           <BPMNDiagram xml={xml} allowModeling>
             <ProcessRenderer
               name={name}
+              selectedEvent={selectedEvent}
               mappings={mappings}
-              setViewer={this.setViewer}
               onChange={this.updateXml}
-              onSelectNode={({newSelection}) => {
-                if (newSelection.length !== 1) {
-                  this.setState({selectedNode: null});
-                } else {
-                  this.setState({selectedNode: newSelection[0].businessObject});
-                }
-              }}
+              onSelectNode={this.onSelectNode}
             />
           </BPMNDiagram>
           <EventTable
@@ -243,12 +240,9 @@ export default withErrorHandling(
             xml={xml}
             onMappingChange={this.setMapping}
             onSourcesChange={this.updateSources}
-            onSelectEvent={event => {
-              const selected = findSelectedNode(this.viewer, mappings, event);
-              this.viewer.get('zoomScroll').reset();
-              this.viewer.get('selection').select(selected);
-              centerElement(this.viewer, selected);
-              this.setState({selectedNode: selected.businessObject});
+            onSelectEvent={selectedEvent => {
+              console.log('changed');
+              this.setState({selectedEvent});
             }}
           />
         </div>
@@ -256,34 +250,3 @@ export default withErrorHandling(
     }
   }
 );
-
-function findSelectedNode(viewer, mappings, event) {
-  let selected;
-  viewer.get('elementRegistry').forEach(element => {
-    const {start, end} = mappings[element.id] || {};
-    if (deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event))) {
-      selected = element;
-    }
-  });
-  return selected;
-}
-
-function centerElement(viewer, el) {
-  // assuming we center on a shape.
-  // for connections we must compute the bounding box
-  // based on the connection's waypoints
-  const canvas = viewer.get('canvas');
-  var currentViewbox = canvas.viewbox();
-
-  var elementMid = {
-    x: el.x + el.width / 2,
-    y: el.y + el.height / 2
-  };
-
-  canvas.viewbox({
-    x: elementMid.x - currentViewbox.width / 2,
-    y: elementMid.y - currentViewbox.height / 2,
-    width: currentViewbox.width,
-    height: currentViewbox.height
-  });
-}

@@ -15,7 +15,7 @@ exports[`should match snapshot 1`] = `
       disabled={false}
       label="Show suggested Events"
       onChange={[Function]}
-      title={false}
+      title=""
     />
     <EventSources
       sources={

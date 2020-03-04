@@ -132,8 +132,7 @@ export default withErrorHandling(
       const {start, end} = (selection && mappings[selection.id]) || {};
       const event = start || end;
       if (event) {
-        const mappedElement =
-          this.container.current && this.container.current.querySelector('.' + event.eventName);
+        const mappedElement = this.container.current?.querySelector('.' + event.eventName);
         if (mappedElement) {
           mappedElement.scrollIntoView({behavior: 'smooth', block: 'nearest'});
         }
@@ -175,7 +174,7 @@ export default withErrorHandling(
               onChange={({target: {checked}}) =>
                 this.setState({showSuggested: checked}, () => this.loadEvents(searchQuery))
               }
-              title={this.camundaSourcesAdded() && t('events.table.noSuggestionsMessage')}
+              title={this.camundaSourcesAdded() ? t('events.table.noSuggestionsMessage') : ''}
               label={t('events.table.showSuggestions')}
             />
             <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
@@ -298,7 +297,7 @@ export default withErrorHandling(
                   t('events.sources.empty')}
               </>
             }
-            noHighlight={true}
+            noHighlight
           />
         </div>
       );

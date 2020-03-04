@@ -5,16 +5,18 @@
  */
 
 import {useEffect} from 'react';
-
+import deepEqual from 'deep-equal';
 import mappedIcon from './icons/mapped.svg';
+
+const asMapping = ({group, source, eventName}) => ({group, source, eventName});
 
 export default function ProcessRenderer({
   viewer,
-  setViewer = () => {},
   name = '',
   mappings = {},
   onChange = () => {},
-  onSelectNode = () => {}
+  onSelectNode = () => {},
+  selectedEvent
 }) {
   let isRemoveEvent = false;
 
@@ -34,7 +36,6 @@ export default function ProcessRenderer({
   }
 
   useEffect(() => {
-    setViewer(viewer);
     const eventBus = viewer.get('eventBus');
 
     eventBus.on('commandStack.changed', onChangeWithViewer);
@@ -75,6 +76,16 @@ export default function ProcessRenderer({
     };
   });
 
+  useEffect(() => {
+    if (selectedEvent) {
+      const selected = findSelectedNode(viewer, mappings, selectedEvent);
+      viewer.get('zoomScroll').reset();
+      viewer.get('selection').select(selected);
+      centerElement(viewer, selected);
+      onSelectNode({newSelection: [selected]});
+    }
+  }, [mappings, selectedEvent, viewer, onSelectNode]);
+
   viewer.get('elementRegistry').forEach(({businessObject}) => {
     if (businessObject.$instanceOf('bpmn:Process')) {
       businessObject.name = name;
@@ -82,4 +93,35 @@ export default function ProcessRenderer({
   });
 
   return null;
+}
+
+function findSelectedNode(viewer, mappings, event) {
+  let selected;
+  viewer.get('elementRegistry').forEach(element => {
+    const {start, end} = mappings[element.id] || {};
+    if (deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event))) {
+      selected = element;
+    }
+  });
+  return selected;
+}
+
+function centerElement(viewer, el) {
+  // assuming we center on a shape.
+  // for connections we must compute the bounding box
+  // based on the connection's waypoints
+  const canvas = viewer.get('canvas');
+  var currentViewbox = canvas.viewbox();
+
+  var elementMid = {
+    x: el.x + el.width / 2,
+    y: el.y + el.height / 2
+  };
+
+  canvas.viewbox({
+    x: elementMid.x - currentViewbox.width / 2,
+    y: elementMid.y - currentViewbox.height / 2,
+    width: currentViewbox.width,
+    height: currentViewbox.height
+  });
 }

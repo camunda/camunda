@@ -25,7 +25,7 @@ exports[`should match snapshot 1`] = `
       name="Process Name"
       onChange={[Function]}
       onSelectNode={[Function]}
-      setViewer={[Function]}
+      selectedEvent={null}
     />
   </Themed(BPMNDiagramErrorHandler)>
   <EventTableErrorHandler
