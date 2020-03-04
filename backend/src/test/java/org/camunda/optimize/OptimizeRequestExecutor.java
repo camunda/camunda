@@ -294,6 +294,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetAllWebhooksRequest() {
+    this.path = "webhooks";
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildUpdateSingleReportRequest(String id,
                                                                 ReportDefinitionDto entity) {
     switch (entity.getReportType()) {
