@@ -15,9 +15,9 @@ export const Login = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 128px auto 0 auto;
-  width: 489px;
+  padding-top: 128px;
   font-family: IBMPlexSans;
+  height: 100%;
 `;
 
 export const LoginHeader = themed(styled.div`
@@ -119,11 +119,12 @@ export const Disclaimer = themed(styled.div`
   })};
   opacity: 0.9;
   font-size: 12px;
-  width: 100%;
   margin-top: 35px;
+  width: 489px;
 `);
 
 export const Copyright = styled(BasicCopyright)`
-  position: absolute;
-  bottom: 8px;
+  margin-top: auto;
+  padding-bottom: 8px;
+  padding-top: 70px;
 `;
