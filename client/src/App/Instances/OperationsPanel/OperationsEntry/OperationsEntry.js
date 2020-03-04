@@ -12,6 +12,7 @@ import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {isBatchOperationRunning} from '../service';
+import ProgressBar from './ProgressBar';
 
 const {
   UPDATE_VARIABLE,
@@ -26,7 +27,14 @@ const TYPE_LABELS = {
 };
 
 const OperationsEntry = ({batchOperation, onInstancesClick}) => {
-  const {id, type, endDate, instancesCount} = batchOperation;
+  const {
+    id,
+    type,
+    endDate,
+    instancesCount,
+    operationsTotalCount,
+    operationsFinishedCount
+  } = batchOperation;
 
   return (
     <Styled.Entry isRunning={isBatchOperationRunning(batchOperation)}>
@@ -38,6 +46,12 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
 
         <OperationIcon operationType={type} data-test="operation-icon" />
       </Styled.EntryStatus>
+      {!endDate && (
+        <ProgressBar
+          totalCount={operationsTotalCount}
+          finishedCount={operationsFinishedCount}
+        />
+      )}
       <Styled.EntryDetails>
         <Styled.InstancesCount
           onClick={() => onInstancesClick(id)}
@@ -53,7 +67,9 @@ OperationsEntry.propTypes = {
     id: PropTypes.string.isRequired,
     type: PropTypes.oneOf(Object.values(OPERATION_TYPES)).isRequired,
     endDate: PropTypes.string,
-    instancesCount: PropTypes.number.isRequired
+    instancesCount: PropTypes.number.isRequired,
+    operationsTotalCount: PropTypes.number.isRequired,
+    operationsFinishedCount: PropTypes.number.isRequired
   }).isRequired,
   onInstancesClick: PropTypes.func.isRequired
 };

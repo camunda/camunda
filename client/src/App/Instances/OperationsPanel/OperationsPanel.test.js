@@ -153,13 +153,17 @@ describe('OperationsPanel', () => {
       id: '1234',
       type: 'RESOLVE_INCIDENT',
       endDate: null,
-      instancesCount: 1
+      instancesCount: 1,
+      operationsFinishedCount: 0,
+      operationsTotalCount: 1
     });
     expect(secondEntry.prop('batchOperation')).toEqual({
       id: '5678',
       type: 'CANCEL_WORKFLOW_INSTANCE',
       endDate: '2020-02-06T15:37:29.699+0100',
-      instancesCount: 2
+      instancesCount: 2,
+      operationsFinishedCount: 2,
+      operationsTotalCount: 2
     });
   });
 

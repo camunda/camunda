@@ -20,9 +20,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         batchOperation={{
-          id: OPERATIONS.RETRY.id,
-          type: OPERATIONS.RETRY.type,
-          endDate: OPERATIONS.RETRY.endDate,
+          ...OPERATIONS.RETRY,
           instancesCount: 1
         }}
       />
@@ -45,9 +43,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         batchOperation={{
-          id: OPERATIONS.CANCEL.id,
-          type: OPERATIONS.CANCEL.type,
-          endDate: OPERATIONS.CANCEL.endDate,
+          ...OPERATIONS.CANCEL,
           instancesCount: 1
         }}
       />
@@ -71,9 +67,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         batchOperation={{
-          id: OPERATIONS.EDIT.id,
-          type: OPERATIONS.EDIT.type,
-          endDate: OPERATIONS.EDIT.endDate,
+          ...OPERATIONS.EDIT,
           instancesCount: 1
         }}
       />
@@ -98,9 +92,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         batchOperation={{
-          id: OPERATIONS.EDIT.id,
-          type: OPERATIONS.EDIT.type,
-          endDate: OPERATIONS.EDIT.endDate,
+          ...OPERATIONS.EDIT,
           instancesCount: 1
         }}
       />
@@ -120,9 +112,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         batchOperation={{
-          id: OPERATIONS.EDIT.id,
-          type: OPERATIONS.EDIT.type,
-          endDate: OPERATIONS.EDIT.endDate,
+          ...OPERATIONS.EDIT,
           instancesCount: 3
         }}
       />
@@ -142,9 +132,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         batchOperation={{
-          id: OPERATIONS.EDIT.id,
-          type: OPERATIONS.EDIT.type,
-          endDate: OPERATIONS.EDIT.endDate,
+          ...OPERATIONS.EDIT,
           instancesCount: 3
         }}
       />

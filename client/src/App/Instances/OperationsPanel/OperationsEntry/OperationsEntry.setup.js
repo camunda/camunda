@@ -10,17 +10,23 @@ export const OPERATIONS = {
   RETRY: {
     id: 'b42fd629-73b1-4709-befb-7ccd900fb18d',
     type: OPERATION_TYPES.RESOLVE_INCIDENT,
-    endDate: null
+    endDate: null,
+    operationsTotalCount: 2,
+    operationsFinishedCount: 1
   },
   CANCEL: {
     id: '393ad666-d7f0-45c9-a679-ffa0ef82f88a',
     type: OPERATION_TYPES.CANCEL_WORKFLOW_INSTANCE,
-    endDate: '2020-02-06T14:56:17.932+0100'
+    endDate: '2020-02-06T14:56:17.932+0100',
+    operationsTotalCount: 2,
+    operationsFinishedCount: 2
   },
   EDIT: {
     id: 'df325d44-6a4c-4428-b017-24f923f1d052',
     type: OPERATION_TYPES.UPDATE_VARIABLE,
-    endDate: '2020-02-06T14:56:17.932+0100'
+    endDate: '2020-02-06T14:56:17.932+0100',
+    operationsTotalCount: 4,
+    operationsFinishedCount: 4
   }
 };
 
