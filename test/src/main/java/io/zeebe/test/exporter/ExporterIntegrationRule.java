@@ -57,7 +57,7 @@ import org.junit.rules.ExternalResource;
  * explicitly configured, it must be started explicitly using {@link
  * ExporterIntegrationRule#start()}.
  *
- * <p>The broker is configured either implicitly through "zeebe.test.cfg.toml" (found in the
+ * <p>The broker is configured either implicitly through "zeebe.test.cfg.yaml" (found in the
  * resource classpath) or explicitly through one of the configure methods.
  *
  * <p>An example integration test suite could look like:

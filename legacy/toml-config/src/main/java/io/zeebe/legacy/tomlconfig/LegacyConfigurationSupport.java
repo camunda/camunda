@@ -7,7 +7,6 @@
  */
 package io.zeebe.legacy.tomlconfig;
 
-import io.zeebe.legacy.tomlconfig.util.Loggers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -114,18 +113,18 @@ public final class LegacyConfigurationSupport {
    * prints out a warning.
    */
   public void checkForLegacyTomlConfigurationArgument(
-      final String[] args, final String recommendedSetting) {
+      final String[] args, final String configFileName) {
     if (args.length == 1 && args[0].endsWith(".toml")) {
       final String configFileArgument = args[0];
       Loggers.LEGACY_LOGGER.warn(
           "Found command line argument "
               + configFileArgument
-              + " which might be a TOML configuration file.");
+              + " which appears to be a TOML configuration file.");
       Loggers.LEGACY_LOGGER.info(
           "TOML configuration files are no longer supported. Please specify a YAML configuration file"
-              + "and set it via environment variable \"spring.config.additional-location\" (e.g. "
-              + "\"export spring.config.additional-location='file:./config/"
-              + recommendedSetting
+              + "and set it via environment variable \"SPRING_CONFIG_LOCATION\" (e.g. "
+              + "\"export SPRING_CONFIG_LOCATION='file:./config/"
+              + configFileName
               + "'\").");
       Loggers.LEGACY_LOGGER.info(
           "The ./config/ folder contains a configuration file template. Alternatively, you can also use environment variables.");
