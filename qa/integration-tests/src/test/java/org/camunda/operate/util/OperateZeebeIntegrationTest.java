@@ -47,7 +47,7 @@ import io.zeebe.test.EmbeddedBrokerRule;
 
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
 
-  private static final String DEFAULT_ZEEBE_CONFIG_FILE = "zeebe.test.config.yaml";
+  private static final String DEFAULT_ZEEBE_CONFIG_FILE = "zeebe.test.cfg.yaml";
 
   protected static final String POST_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/%s/operation";
   private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/batch-operation";
