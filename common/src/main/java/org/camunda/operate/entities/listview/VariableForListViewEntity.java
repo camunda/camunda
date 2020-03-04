@@ -8,10 +8,7 @@ package org.camunda.operate.entities.listview;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 
-import io.zeebe.protocol.record.value.VariableRecordValue;
-
-
-public class VariableForListViewEntity extends OperateZeebeEntity<VariableForListViewEntity> {
+public class VariableForListViewEntity extends OperateZeebeEntity {
 
   private Long workflowInstanceKey;
   private Long scopeKey;
@@ -24,8 +21,8 @@ public class VariableForListViewEntity extends OperateZeebeEntity<VariableForLis
     return workflowInstanceKey;
   }
   
-  public static String getIdBy(VariableRecordValue recordValue) {
-    return String.format("%s-%s", recordValue.getScopeKey(), recordValue.getName());
+  public static String getIdBy(long scopeKey, String name) {
+    return String.format("%d-%s", scopeKey, name);
   }
 
   public void setWorkflowInstanceKey(Long workflowInstanceKey) {

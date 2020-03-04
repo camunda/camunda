@@ -12,13 +12,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "org.camunda.operate",
   excludeFilters = {
     @ComponentScan.Filter(type=FilterType.REGEX,pattern="org\\.camunda\\.operate\\.util\\.apps\\..*"),
     @ComponentScan.Filter(type=FilterType.ASSIGNABLE_TYPE,value = Application.class),
-  })
+  },
+  nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class TestApplication {
 
   public static void main(String[] args) throws Exception {

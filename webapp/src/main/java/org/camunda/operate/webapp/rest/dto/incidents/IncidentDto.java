@@ -129,7 +129,7 @@ public class IncidentDto {
     incident.setFlowNodeId(incidentEntity.getFlowNodeId());
     incident.setFlowNodeInstanceId(ConversionUtils.toStringOrNull(incidentEntity.getFlowNodeInstanceKey()));
     incident.setErrorMessage(incidentEntity.getErrorMessage());
-    incident.setErrorType(IncidentEntity.getErrorTypeTitle(incidentEntity.getErrorType()));
+    incident.setErrorType(incidentEntity.getErrorType().getTitle());
     incident.setJobId(ConversionUtils.toStringOrNull(incidentEntity.getJobKey()));
     incident.setCreationTime(incidentEntity.getCreationTime());
 

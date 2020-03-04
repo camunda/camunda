@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.archiver;
 
-import javax.annotation.PreDestroy;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -76,6 +75,7 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
     this.partitionIds = partitionIds;
   }
 
+  @Override
   public ArchiveBatch getNextBatch() {
 
     final String datesAgg = "datesAgg";
@@ -140,6 +140,7 @@ public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
         .recordCallable(callable);
   }
 
+  @Override
   public int archiveBatch(WorkflowInstancesArchiverJob.ArchiveBatch archiveBatch) throws ArchiverException {
     if (archiveBatch != null) {
       logger.debug("Following workflow instances are found for archiving: {}", archiveBatch);

@@ -13,6 +13,9 @@
     <module>common</module>
     <module>els-schema</module>
     <module>data-generator</module>
+    <module>importer-common</module>
+    <module>importer-022</module>
+    <module>importer-023</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
@@ -27,7 +30,7 @@
 
     <version.zeebe>0.23.0-SNAPSHOT</version.zeebe>
     <version.elasticsearch>6.8.6</version.elasticsearch>
-    <version.spring.boot>2.2.2.RELEASE</version.spring.boot>
+    <version.spring.boot>2.2.4.RELEASE</version.spring.boot>
 
     <version.junit>4.13</version.junit>
 
@@ -41,6 +44,9 @@
     <maven.compiler.source>11</maven.compiler.source>
 
     <skip.fe.build>false</skip.fe.build>
+
+    <plugin.version.license>3.0</plugin.version.license>
+    <license.header>${project.baseUri}/../license/license-header</license.header>
   </properties>
 
   <dependencyManagement>
@@ -228,6 +234,31 @@
               <goals>
                 <goal>integration-test</goal>
                 <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- LICENSE PLUGIN -->
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${plugin.version.license}</version>
+          <configuration>
+            <header>${license.header}</header>
+            <includes>
+              <include>**/*.java</include>
+            </includes>
+            <mapping>
+              <java>SLASHSTAR_STYLE</java>
+            </mapping>
+          </configuration>
+          <executions>
+            <execution>
+              <id>add-license</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>format</goal>
               </goals>
             </execution>
           </executions>

@@ -11,11 +11,6 @@
   <name>Camunda Operate Webapp</name>
   <artifactId>camunda-operate-webapp</artifactId>
 
-  <properties>
-    <plugin.version.license>3.0</plugin.version.license>
-    <license.header>${project.baseUri}/../license/license-header</license.header>
-  </properties>
-
   <dependencies>
 
     <dependency>
@@ -47,10 +42,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <!-- SPRING BOOT -->
@@ -157,25 +148,6 @@
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>${plugin.version.license}</version>
-        <configuration>
-          <header>${license.header}</header>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-        </configuration>
-        <executions>
-          <execution>
-            <id>add-license</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>

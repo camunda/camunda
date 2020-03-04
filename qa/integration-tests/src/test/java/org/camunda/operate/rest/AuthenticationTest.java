@@ -56,7 +56,7 @@ import org.springframework.util.MultiValueMap;
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-@ActiveProfiles("auth")
+@ActiveProfiles({"auth", "test"})
 public class AuthenticationTest {
 
   private static final String SET_COOKIE_HEADER = "Set-Cookie";

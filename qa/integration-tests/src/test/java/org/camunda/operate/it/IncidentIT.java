@@ -11,6 +11,7 @@ import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFL
 import java.util.List;
 import java.util.Optional;
 
+import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -21,10 +22,8 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import io.zeebe.protocol.record.value.ErrorType;
-
 public class IncidentIT extends OperateZeebeIntegrationTest {
-  
+
   @Test
   public void testUnhandledErrorEventAsEndEvent() {
     // Given
@@ -39,7 +38,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     assertThat(incidents.size()).isEqualTo(1);
     assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
   }
-  
+
   @Test
   public void testUnhandledErrorEvent() {
     // Given
@@ -48,9 +47,9 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
       .startWorkflowInstance("errorProcess")
     // when
     .throwError("errorTask", "this-errorcode-does-not-exists", "Workflow error")
-    .then().waitUntil() 
+    .then().waitUntil()
     .incidentIsActive();
-    
+
     // then
     List<IncidentEntity> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
@@ -96,15 +95,15 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     assertErrorType(incidentResponse, ErrorType.EXTRACT_VALUE_ERROR, 1);
     assertErrorType(incidentResponse, ErrorType.CONDITION_ERROR, 1);
   }
-  
+
   protected void assertIncidentEntity(IncidentEntity anIncident,ErrorType anErrorType,String anErrorTypeTitle) {
     assertThat(anIncident.getErrorType()).isEqualTo(anErrorType);
-    assertThat(IncidentEntity.getErrorTypeTitle(anIncident.getErrorType())).isEqualTo(anErrorTypeTitle);
+    assertThat(anIncident.getErrorType().getTitle()).isEqualTo(anErrorTypeTitle);
     assertThat(anIncident.getWorkflowInstanceKey()).isEqualTo(tester.getWorkflowInstanceKey());
-  }  
+  }
 
   protected void assertErrorType(IncidentResponseDto incidentResponse, ErrorType errorType, int count) {
-    assertThat(incidentResponse.getErrorTypes()).filteredOn(et -> et.getErrorType().equals(IncidentEntity.getErrorTypeTitle(errorType))).hasSize(1)
+    assertThat(incidentResponse.getErrorTypes()).filteredOn(et -> et.getErrorType().equals(errorType.getTitle())).hasSize(1)
       .allMatch(et -> et.getCount() == count);
   }
 
@@ -113,7 +112,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   }
 
   protected void assertIncident(IncidentResponseDto incidentResponse, String errorMsg, String activityId, ErrorType errorType) {
-    final Optional<IncidentDto> incidentOpt = incidentResponse.getIncidents().stream().filter(inc -> inc.getErrorType().equals(IncidentEntity.getErrorTypeTitle(errorType))).findFirst();
+    final Optional<IncidentDto> incidentOpt = incidentResponse.getIncidents().stream().filter(inc -> inc.getErrorType().equals(errorType.getTitle())).findFirst();
     assertThat(incidentOpt).isPresent();
     final IncidentDto inc = incidentOpt.get();
     assertThat(inc.getId()).as(activityId + ".id").isNotNull();

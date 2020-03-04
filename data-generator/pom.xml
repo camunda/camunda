@@ -11,11 +11,6 @@
     <name>Camunda Operate Data Generator</name>
     <artifactId>camunda-operate-data-generator</artifactId>
 
-    <properties>
-        <plugin.version.license>3.0</plugin.version.license>
-        <license.header>${project.baseUri}/../license/license-header</license.header>
-    </properties>
-
     <dependencies>
 
         <dependency>
@@ -46,25 +41,6 @@
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
-                <version>${plugin.version.license}</version>
-                <configuration>
-                    <header>${license.header}</header>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                    <mapping>
-                        <java>SLASHSTAR_STYLE</java>
-                    </mapping>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>add-license</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>format</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
 
         </plugins>

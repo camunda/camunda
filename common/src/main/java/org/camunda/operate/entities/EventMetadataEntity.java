@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.entities;
 
-import io.zeebe.protocol.record.value.ErrorType;
 import java.time.OffsetDateTime;
 import java.util.Map;
 

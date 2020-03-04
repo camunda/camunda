@@ -8,9 +8,11 @@ package org.camunda.operate.zeebeimport;
 import java.util.ArrayList;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.NoBeansTest;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.zeebe.ImportValueType;
+import org.camunda.operate.zeebeimport.v23.processors.ElasticsearchBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,12 +25,17 @@ import org.springframework.stereotype.Component;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(
     classes = { TestApplicationWithNoBeans.class, ImportJob.class, ImportListenerTest.TestImportListener.class })
 public class ImportListenerTest extends NoBeansTest {
+
+  @MockBean
+  private ImportBatchProcessorFactory importBatchProcessorFactory;
 
   @MockBean
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
@@ -42,6 +49,9 @@ public class ImportListenerTest extends NoBeansTest {
 
   @MockBean
   private RecordsReaderHolder recordsReaderHolder;
+
+  @MockBean
+  private OperateProperties operateProperties;
 
   @Autowired
   private BeanFactory beanFactory;
@@ -94,13 +104,14 @@ public class ImportListenerTest extends NoBeansTest {
 
   @Test
   public void testFinished() {
-    ImportBatch importBatch = new ImportBatch(1, ImportValueType.WORKFLOW_INSTANCE, new ArrayList<>(), null);
+    ImportBatch importBatch = new ImportBatch(1, ImportValueType.WORKFLOW_INSTANCE, new ArrayList<>(), "some_name");
     ImportPositionEntity previousPosition = new ImportPositionEntity("alias", 1, 0);
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
 
     //mock import methods
     try {
-      doNothing().when(elasticsearchBulkProcessor).persistZeebeRecords(importBatch);
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString())).thenReturn(elasticsearchBulkProcessor);
+      doNothing().when(elasticsearchBulkProcessor).performImport(importBatch);
     } catch (PersistenceException e) {
       //ignore
     }
@@ -121,7 +132,7 @@ public class ImportListenerTest extends NoBeansTest {
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
     //mock import methods
     try {
-      doThrow(new PersistenceException()).when(elasticsearchBulkProcessor).persistZeebeRecords(importBatch);
+      doThrow(new PersistenceException()).when(elasticsearchBulkProcessor).performImport(importBatch);
     } catch (PersistenceException e) {
       //ignore
     }

@@ -5,10 +5,10 @@
  */
 package org.camunda.operate.webapp.rest.dto;
 
-import io.zeebe.protocol.record.value.ErrorType;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
+import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.util.ConversionUtils;
 

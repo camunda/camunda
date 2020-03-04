@@ -14,6 +14,8 @@
   <properties>
     <plugin.version.license>3.0</plugin.version.license>
     <license.header>${project.baseUri}/../../license/license-header</license.header>
+    <zeebe-test-container.version>0.31.0</zeebe-test-container.version>
+    <elasticsearch-test-container.version>1.12.5</elasticsearch-test-container.version>
   </properties>
 
   <dependencies>
@@ -35,6 +37,13 @@
     <dependency>
       <groupId>org.camunda.operate</groupId>
       <artifactId>camunda-operate-archiver</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-qa-util</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -76,6 +85,20 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
+    </dependency>
+
+    <!-- TEST CONTAINERS -->
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-container</artifactId>
+      <version>${zeebe-test-container.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <version>${elasticsearch-test-container.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
