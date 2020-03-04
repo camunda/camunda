@@ -34,6 +34,14 @@ public class ProcessFilterBuilder {
     return NonCanceledInstancesOnlyFilterBuilder.construct(this);
   }
 
+  public SuspendedInstancesOnlyFilterBuilder suspendedInstancesOnly() {
+    return SuspendedInstancesOnlyFilterBuilder.construct(this);
+  }
+
+  public NonSuspendedInstancesOnlyFilterBuilder nonSuspendedInstancesOnly() {
+    return NonSuspendedInstancesOnlyFilterBuilder.construct(this);
+  }
+
   public CompletedInstancesOnlyFilterBuilder completedInstancesOnly() {
     return CompletedInstancesOnlyFilterBuilder.construct(this);
   }

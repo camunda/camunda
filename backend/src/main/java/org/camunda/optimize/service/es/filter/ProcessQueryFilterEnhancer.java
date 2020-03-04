@@ -14,11 +14,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndD
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonSuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +40,8 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
   private final CanceledInstancesOnlyQueryFilter canceledInstancesOnlyQueryFilter;
   private final NonCanceledInstancesOnlyQueryFilter nonCanceledInstancesOnlyQueryFilter;
+  private final SuspendedInstancesOnlyQueryFilter suspendedInstancesOnlyQueryFilter;
+  private final NonSuspendedInstancesOnlyQueryFilter nonSuspendedInstancesOnlyQueryFilter;
 
   @Override
   public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto> filter) {
@@ -58,6 +61,14 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       nonCanceledInstancesOnlyQueryFilter.addFilters(
         query,
         extractFilters(filter, NonCanceledInstancesOnlyFilterDto.class)
+      );
+      suspendedInstancesOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filter, SuspendedInstancesOnlyFilterDto.class)
+      );
+      nonSuspendedInstancesOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filter, NonSuspendedInstancesOnlyFilterDto.class)
       );
     }
   }

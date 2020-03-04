@@ -28,6 +28,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
   @JsonSubTypes.Type(value = CompletedInstancesOnlyFilterDto.class, name = "completedInstancesOnly"),
   @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
   @JsonSubTypes.Type(value = NonCanceledInstancesOnlyFilterDto.class, name = "nonCanceledInstancesOnly"),
+  @JsonSubTypes.Type(value = SuspendedInstancesOnlyFilterDto.class, name = "suspendedInstancesOnly"),
+  @JsonSubTypes.Type(value = NonSuspendedInstancesOnlyFilterDto.class, name = "nonSuspendedInstancesOnly"),
 })
 @Data
 @NoArgsConstructor
