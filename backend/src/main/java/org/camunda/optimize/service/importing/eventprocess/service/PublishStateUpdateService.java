@@ -59,13 +59,22 @@ public class PublishStateUpdateService {
 
   private Double getProgressForImportSource(EventImportSourceDto eventImportSourceDto) {
     if (eventImportSourceDto.getLastImportedEventTimestamp().toInstant().toEpochMilli() == 0) {
-      return  0.0D;
-    } else if (eventImportSourceDto.getLastEventForSourceAtTimeOfPublishTimestamp().toInstant().toEpochMilli() == 0) {
-      return 100.0D;
+      return 0.0D;
     }
-    return Math.min(
-      betweenFirstAndLastCurrentlyImportedEvent(eventImportSourceDto) / betweenFirstAndLastEventToImport(eventImportSourceDto)
-        * 100.0D, 100.0D);
+
+    final double durationBetweenFirstAndLastEventAtTimeOfPublish =
+      betweenFirstAndLastEventToImport(eventImportSourceDto);
+    final double durationBetweenFirstAndLastImportedEvent =
+      betweenFirstAndLastCurrentlyImportedEvent(eventImportSourceDto);
+
+    if (durationBetweenFirstAndLastEventAtTimeOfPublish == 0.0D) {
+      return 100.0D;
+    } else {
+      return Math.min(
+        durationBetweenFirstAndLastImportedEvent / durationBetweenFirstAndLastEventAtTimeOfPublish * 100.0D,
+        100.0D
+      );
+    }
   }
 
   private double betweenFirstAndLastCurrentlyImportedEvent(final EventImportSourceDto eventImportSourceDto) {
