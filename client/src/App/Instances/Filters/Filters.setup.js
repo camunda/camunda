@@ -32,6 +32,15 @@ export const mockProps = {
   }
 };
 
+export const mockPropsWithEmptyLocationSearch = {
+  onFilterChange: jest.fn(),
+  onFilterReset: jest.fn(),
+  selectableFlowNodes: [],
+  location: {
+    search: ''
+  }
+};
+
 export const mockPropsWithSelectableFlowNodes = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),

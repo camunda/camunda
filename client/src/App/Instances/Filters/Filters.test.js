@@ -19,11 +19,13 @@ import * as api from 'modules/api/instances/instances';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import Filters from './Filters';
+import FiltersPanel from './FiltersPanel';
 import * as Styled from './styled';
 import {
   groupedWorkflowsMock,
   workflows,
   mockProps,
+  mockPropsWithEmptyLocationSearch,
   mockPropsWithSelectableFlowNodes,
   mockPropsWithInitFilter,
   mockPropsWithDefaultFilter,
@@ -41,6 +43,20 @@ describe('Filters', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.clearAllTimers();
+  });
+
+  it('should render filters panel if no filter is applied in querystring', () => {
+    // given
+    const node = shallow(
+      <Filters.WrappedComponent
+        groupedWorkflows={workflows}
+        {...mockPropsWithEmptyLocationSearch}
+        filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+      />
+    );
+
+    // then
+    expect(node.find(FiltersPanel).exists()).toBe(true);
   });
 
   it('should render with the right initial state', () => {
