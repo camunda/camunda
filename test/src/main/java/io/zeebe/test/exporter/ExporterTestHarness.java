@@ -68,12 +68,13 @@ public class ExporterTestHarness {
    *
    * <p>The given YAML document can be a partial document which contains strictly the exporter
    * definition. For example: <code>
-   * zeebe-broker:
-   *   exporters:
-   *     elasticsearsch:
-   *       className = "io.zeebe.exporter.ElasticsearchExporter"
-   *       args:
-   *       ...
+   * zeebe:
+   *   broker:
+   *     exporters:
+   *       elasticsearsch:
+   *         className: io.zeebe.exporter.ElasticsearchExporter
+   *         args:
+   *         ...
    * </code>
    *
    * <p>NOTE: the ID of the exporter in the YAML document MUST match the given ID here to avoid any

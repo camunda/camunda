@@ -91,7 +91,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       } else {
         brokerCfg =
             new TestConfigurationFactory()
-                .create(null, "zeebe-broker", configStream, BrokerCfg.class);
+                .create(null, "zeebe.broker", configStream, BrokerCfg.class);
       }
       configureBroker(brokerCfg);
     } catch (final IOException e) {
