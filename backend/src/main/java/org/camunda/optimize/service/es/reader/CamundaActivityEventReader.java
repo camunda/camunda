@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -16,9 +18,12 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.springframework.stereotype.Component;
@@ -28,15 +33,19 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
@@ -45,6 +54,10 @@ import static org.elasticsearch.search.sort.SortOrder.ASC;
 @Component
 @Slf4j
 public class CamundaActivityEventReader {
+
+  private static final String MIN_AGG = "min";
+  private static final String MAX_AGG = "max";
+
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter formatter;
@@ -83,8 +96,13 @@ public class CamundaActivityEventReader {
     final Long endTimestamp,
     final int limit) {
     log.debug(
-      "Fetching camunda activity events for key [{}] with versions [{}], tenant IDs [{}] and with timestamp between {} and {}",
-      definitionKey, versions, tenantIds, startTimestamp, endTimestamp
+      "Fetching camunda activity events for key [{}] with versions [{}], tenant IDs [{}] and with timestamp between " +
+        "{} and {}",
+      definitionKey,
+      versions,
+      tenantIds,
+      startTimestamp,
+      endTimestamp
     );
 
     final BoolQueryBuilder eventsQuery = buildQueryForVersionsAndTenants(versions, tenantIds)
@@ -111,6 +129,45 @@ public class CamundaActivityEventReader {
               .gte(formatter.format(convertToOffsetDateTime(eventTimestamp))));
 
     return getPageOfEventsForDefinitionKeySortedByTimestamp(definitionKey, eventsQuery, MAX_RESPONSE_SIZE_LIMIT);
+  }
+
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
+    log.debug("Fetching min and max timestamp for ingested camunda events");
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .fetchSource(false)
+      .aggregation(AggregationBuilders.min(MIN_AGG).field(CamundaActivityEventIndex.TIMESTAMP))
+      .aggregation(AggregationBuilders.max(MAX_AGG).field(CamundaActivityEventIndex.TIMESTAMP))
+      .size(0);
+
+    try {
+      String indexName = new CamundaActivityEventIndex(processDefinitionKey).getIndexName();
+      boolean indexExists = esClient.exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+      if (indexExists) {
+        final SearchResponse searchResponse = esClient.search(
+          new SearchRequest(indexName)
+            .source(searchSourceBuilder), RequestOptions.DEFAULT);
+        return ImmutablePair.of(
+          extractTimestampForAggregation(searchResponse.getAggregations().get(MIN_AGG)),
+          extractTimestampForAggregation(searchResponse.getAggregations().get(MAX_AGG))
+        );
+      } else {
+        log.debug("{} Index does not exist", indexName);
+        return ImmutablePair.of(Optional.empty(), Optional.empty());
+      }
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve min and max camunda activity ingestion timestamps!", e);
+    }
+  }
+
+  private Optional<OffsetDateTime> extractTimestampForAggregation(ParsedSingleValueNumericMetricsAggregation aggregation) {
+    try {
+      return Optional.of(OffsetDateTime.parse(aggregation.getValueAsString(), DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT)));
+    } catch (DateTimeParseException ex) {
+      log.warn("Could not find the {} camunda activity ingestion timestamp.", aggregation.getType());
+      return Optional.empty();
+    }
   }
 
   private BoolQueryBuilder buildQueryForVersionsAndTenants(final List<String> versions, final List<String> tenantIds) {

@@ -22,7 +22,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @FieldNameConstants
 @ToString
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)

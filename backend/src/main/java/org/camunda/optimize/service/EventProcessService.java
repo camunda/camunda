@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -32,7 +33,10 @@ import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
+import org.camunda.optimize.service.events.CamundaEventService;
+import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.ReportRelationService;
@@ -83,6 +87,9 @@ public class EventProcessService {
   private final ReportService reportService;
   private final ReportRelationService reportRelationService;
   private final CollectionWriter collectionWriter;
+
+  private final ExternalEventService externalEventService;
+  private final CamundaEventService camundaEventService;
 
   private final EventProcessMappingReader eventProcessMappingReader;
   private final EventProcessMappingWriter eventProcessMappingWriter;
@@ -229,10 +236,27 @@ public class EventProcessService {
   }
 
   private EventImportSourceDto createEventImportSourceFromDataSource(EventSourceEntryDto eventSourceEntryDto) {
+    Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps;
+    if (eventSourceEntryDto.getType().equals(EventSourceType.EXTERNAL)) {
+      minAndMaxEventTimestamps = externalEventService.getMinAndMaxIngestedTimestamps();
+    } else if (eventSourceEntryDto.getType().equals(EventSourceType.CAMUNDA)) {
+      minAndMaxEventTimestamps =
+        camundaEventService.getMinAndMaxIngestedTimestampsForDefinition(eventSourceEntryDto.getProcessDefinitionKey());
+    } else {
+      throw new OptimizeRuntimeException(String.format(
+        "Cannot create import source from type: %s", eventSourceEntryDto.getType()
+      ));
+    }
     return EventImportSourceDto.builder()
-      .lastImportedEventTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
+      .firstEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
+      .lastEventForSourceAtTimeOfPublishTimestamp(minAndMaxEventTimestamps.getRight().orElse(getEpochMilliTimestamp()))
+      .lastImportedEventTimestamp(getEpochMilliTimestamp())
       .eventSource(eventSourceEntryDto)
       .build();
+  }
+
+  private OffsetDateTime getEpochMilliTimestamp() {
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault());
   }
 
   public void cancelPublish(final String userId, final String eventProcessMappingId) {

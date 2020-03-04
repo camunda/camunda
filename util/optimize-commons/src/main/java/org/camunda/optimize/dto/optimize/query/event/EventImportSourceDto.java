@@ -22,6 +22,8 @@ import java.time.OffsetDateTime;
 @EqualsAndHashCode
 public class EventImportSourceDto {
 
+  OffsetDateTime firstEventForSourceAtTimeOfPublishTimestamp;
+  OffsetDateTime lastEventForSourceAtTimeOfPublishTimestamp;
   OffsetDateTime lastImportedEventTimestamp;
   EventSourceEntryDto eventSource;
 

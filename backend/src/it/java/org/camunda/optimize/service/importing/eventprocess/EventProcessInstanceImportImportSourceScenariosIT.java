@@ -571,12 +571,6 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     return createCamundaEventSourceEntryForDeployedProcess(processInstanceEngineDto, null, versions);
   }
 
-  private void importEngineEntities() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
   @SneakyThrows
   public void deleteBusinessKeyFromElasticsearchForProcessInstance(String processInstanceId) {
     DeleteRequest request =

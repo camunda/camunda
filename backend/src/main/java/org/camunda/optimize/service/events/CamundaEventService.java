@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
@@ -20,6 +21,7 @@ import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -174,6 +176,10 @@ public class CamundaEventService {
         throw new OptimizeValidationException("Unsupported event scope for camunda events : [" + eventScope + "].");
     }
     return result;
+  }
+
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
+    return camundaActivityEventReader.getMinAndMaxIngestedTimestampsForDefinition(processDefinitionKey);
   }
 
   private List<LabeledEventTypeDto> createLabeledProcessInstanceStartEndEventTypeDtos(final String definitionKey) {

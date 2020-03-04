@@ -70,6 +70,8 @@ public class UpgradeFrom27To30 extends UpgradeProcedure {
         "];\n" +
         "Map importSource = [\n" +
           "\"lastImportedEventTimestamp\": ctx._source.lastImportedEventIngestDateTime,\n" +
+          "\"firstEventForSourceAtTimeOfPublishTimestamp\": ctx._source.lastImportedEventIngestDateTime,\n" +
+          "\"lastEventForSourceAtTimeOfPublishTimestamp\": ctx._source.lastImportedEventIngestDateTime,\n" +
           "\"eventSource\": externalEventSource\n" +
         "];\n" +
         "ctx._source.eventImportSources = new ArrayList();\n" +

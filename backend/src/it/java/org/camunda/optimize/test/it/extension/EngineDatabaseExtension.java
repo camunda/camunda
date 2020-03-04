@@ -221,14 +221,29 @@ public class EngineDatabaseExtension implements TestWatcher {
     connection.commit();
   }
 
-  public void changeFirstActivityInstanceEndDate(String activityInstanceId,
+  public void changeActivityInstanceEndDate(String processInstanceId,
+                                            String activityId,
+                                            OffsetDateTime endDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET END_TIME_ = ? WHERE " +
+      "PROC_INST_ID_ = ?" +
+      "AND ACT_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
+    statement.setString(2, processInstanceId);
+    statement.setString(3, activityId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeFirstActivityInstanceEndDate(String activityId,
                                                  OffsetDateTime endDate) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET END_TIME_ = ? WHERE " +
       "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY END_TIME_ LIMIT 1) ";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
-    statement.setString(2, activityInstanceId);
+    statement.setString(2, activityId);
     statement.executeUpdate();
     connection.commit();
   }

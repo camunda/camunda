@@ -6,7 +6,6 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableMap;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;

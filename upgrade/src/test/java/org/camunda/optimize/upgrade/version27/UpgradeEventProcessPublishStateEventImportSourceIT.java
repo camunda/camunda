@@ -55,6 +55,8 @@ public class UpgradeEventProcessPublishStateEventImportSourceIT extends Abstract
         .hasSize(1)
         .allSatisfy(importSource -> {
           assertThat(importSource.getLastImportedEventTimestamp()).isNotNull();
+          assertThat(importSource.getLastEventForSourceAtTimeOfPublishTimestamp()).isNotNull();
+          assertThat(importSource.getFirstEventForSourceAtTimeOfPublishTimestamp()).isNotNull();
           assertThat(importSource.getEventSource())
             .satisfies(source -> {
               assertThat(source.getId()).isNotNull();

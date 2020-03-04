@@ -219,6 +219,12 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
+  protected void importEngineEntities() {
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
   @SneakyThrows
   protected Map<String, List<AliasMetaData>> getEventProcessInstanceIndicesWithAliasesFromElasticsearch() {
     final OptimizeIndexNameService indexNameService = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()

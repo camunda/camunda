@@ -43,6 +43,8 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
   public static final String SOURCE = EventTypeDto.Fields.source;
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
 
+  public static final String FIRST_EVENT_FOR_IMPORT_SOURCE_TIMESTAMP = EventImportSourceDto.Fields.firstEventForSourceAtTimeOfPublishTimestamp;
+  public static final String PUBLISH_COMPLETED_TIMESTAMP = EventImportSourceDto.Fields.lastEventForSourceAtTimeOfPublishTimestamp;
   public static final String LAST_IMPORTED_EVENT_TIMESTAMP = EventImportSourceDto.Fields.lastImportedEventTimestamp;
   public static final String EVENT_SOURCE = EventImportSourceDto.Fields.eventSource;
 
@@ -153,6 +155,14 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
     XContentBuilder newXContentBuilder =
     // @formatter:off
     xContentBuilder
+      .startObject(FIRST_EVENT_FOR_IMPORT_SOURCE_TIMESTAMP)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(PUBLISH_COMPLETED_TIMESTAMP)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
       .startObject(LAST_IMPORTED_EVENT_TIMESTAMP)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)

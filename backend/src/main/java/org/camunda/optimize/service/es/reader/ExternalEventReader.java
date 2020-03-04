@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
@@ -15,19 +17,25 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
 
@@ -35,6 +43,9 @@ import static org.elasticsearch.search.sort.SortOrder.ASC;
 @Component
 @Slf4j
 public class ExternalEventReader {
+
+  private static final String MIN_AGG = "min";
+  private static final String MAX_AGG = "max";
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -57,18 +68,35 @@ public class ExternalEventReader {
     return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
   }
 
-  public Long countEventsIngestedBeforeAndAtIngestTimestamp(final Long ingestTimestamp) {
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(rangeQuery(EventIndex.INGESTION_TIMESTAMP).lte(ingestTimestamp));
+  public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestamps() {
+    log.debug("Fetching min and max timestamp for ingested external events");
 
-    final CountRequest countRequest = new CountRequest(EXTERNAL_EVENTS_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .fetchSource(false)
+      .aggregation(AggregationBuilders.min(MIN_AGG).field(EventIndex.INGESTION_TIMESTAMP))
+      .aggregation(AggregationBuilders.max(MAX_AGG).field(EventIndex.INGESTION_TIMESTAMP))
+      .size(0);
 
     try {
-      final CountResponse countResponse = esClient.count(countRequest, RequestOptions.DEFAULT);
-      return countResponse.getCount();
+      final SearchResponse searchResponse = esClient.search(
+        new SearchRequest(EXTERNAL_EVENTS_INDEX_NAME)
+          .source(searchSourceBuilder), RequestOptions.DEFAULT);
+      return ImmutablePair.of(
+        extractTimestampForAggregation(searchResponse.getAggregations().get(MIN_AGG)),
+        extractTimestampForAggregation(searchResponse.getAggregations().get(MAX_AGG))
+      );
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Was not able to retrieve ingested events count!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve min and max event ingestion timestamps!", e);
+    }
+  }
+
+  private Optional<OffsetDateTime> extractTimestampForAggregation(ParsedSingleValueNumericMetricsAggregation aggregation) {
+    try {
+      return Optional.of(OffsetDateTime.ofInstant(Instant.parse(aggregation.getValueAsString()), ZoneId.systemDefault()));
+    } catch (DateTimeParseException ex) {
+      log.warn("Could not find the {} external event ingestion timestamp.", aggregation.getType());
+      return Optional.empty();
     }
   }
 

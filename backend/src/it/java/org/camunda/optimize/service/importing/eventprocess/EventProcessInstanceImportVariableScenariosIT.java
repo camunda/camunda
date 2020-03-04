@@ -193,12 +193,6 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     );
   }
 
-  private void importEngineEntities() {
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
   private Map<String, Object> convertToVariables(final Map<VariableType, Map<String, Object>> variableTypeToVariableMap) {
     return variableTypeToVariableMap.values()
       .stream()

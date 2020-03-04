@@ -107,7 +107,7 @@ public class EventProcessPublishStateWriter {
     } catch (ElasticsearchStatusException e) {
       String errorMessage = String.format(
         "Was not able to update event process publish state with id [%s]." +
-          " Event event process publish state does not exist!",
+          " Event process publish state does not exist!",
         id
       );
       log.error(errorMessage, e);
