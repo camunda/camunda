@@ -31,17 +31,9 @@ export default class ReportView extends React.Component {
   shouldShowCSVDownload = () => typeof this.props.report.result !== 'undefined';
 
   constructCSVDownloadLink = () => {
-    const {excludedColumns} = this.props.report.data.configuration;
-
-    const queryString = excludedColumns
-      ? `?excludedColumns=${excludedColumns
-          .map(column => column.replace('var__', 'variable:'))
-          .join(',')}`
-      : '';
-
     return `api/export/csv/${this.props.report.id}/${encodeURIComponent(
       this.props.report.name.replace(/\s/g, '_')
-    )}.csv${queryString}`;
+    )}.csv`;
   };
 
   render() {

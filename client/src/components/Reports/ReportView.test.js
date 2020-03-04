@@ -112,18 +112,6 @@ it('should show a download csv button even if the result is 0', () => {
   expect(node.find('.Report__csv-download-button')).toExist();
 });
 
-it('should reflect excluded columns in the csv download link', () => {
-  const newReport = {
-    ...report,
-    data: {...report.data, configuration: {excludedColumns: ['prop1', 'var__VariableName']}}
-  };
-  const node = shallow(<ReportView report={newReport} />);
-  expect(node.find('.Report__csv-download-button')).toExist();
-
-  const href = node.find('.Report__csv-download-button').props().href;
-  expect(href).toContain('?excludedColumns=prop1,variable:VariableName');
-});
-
 it('should provide conflict check method to Deleter', () => {
   const node = shallow(<ReportView report={report} />);
 
