@@ -261,14 +261,25 @@ public final class ZeebePartition extends Actor
     LOG.debug("Installing leader partition service for partition {}", atomixRaftPartition.id());
     final var installFuture = new CompletableActorFuture<Void>();
 
-    basePartitionInstallation()
+    logStream
+        .enableWriters()
         .onComplete(
-            (success, errorOnBaseInstallation) -> {
-              if (errorOnBaseInstallation == null) {
-                installProcessingPartition(installFuture);
+            (opened, errorOpenWriter) -> {
+              if (errorOpenWriter == null) {
+                basePartitionInstallation()
+                    .onComplete(
+                        (success, errorOnBaseInstallation) -> {
+                          if (errorOnBaseInstallation == null) {
+                            installProcessingPartition(installFuture);
+                          } else {
+                            LOG.error(
+                                "Unexpected error on base installation.", errorOnBaseInstallation);
+                            installFuture.completeExceptionally(errorOnBaseInstallation);
+                          }
+                        });
               } else {
-                LOG.error("Unexpected error on base installation.", errorOnBaseInstallation);
-                installFuture.completeExceptionally(errorOnBaseInstallation);
+                LOG.error("Unexpected error on opening log stream writers.", errorOpenWriter);
+                installFuture.completeExceptionally(errorOpenWriter);
               }
             });
 
@@ -421,13 +432,17 @@ public final class ZeebePartition extends Actor
         (v, t) -> {
           if (t == null) {
             tearDownBaseInstallation();
-            closingPartitionFuture.complete(null);
+            closeLogStreamWriters(closingPartitionFuture);
           } else {
             closingPartitionFuture.completeExceptionally(t);
           }
         });
 
     return closingPartitionFuture;
+  }
+
+  private void closeLogStreamWriters(final CompletableActorFuture closeFuture) {
+    logStream.closeWriters().onComplete(closeFuture);
   }
 
   private void tearDownBaseInstallation() {
@@ -581,6 +596,7 @@ public final class ZeebePartition extends Actor
                         logStreamCloseFuture.onComplete(closeFuture);
                       } else {
                         // we want to close the log stream any way
+                        closeFuture.completeExceptionally(t);
                         logStreamCloseFuture.onComplete(
                             (v2, t2) -> closeFuture.completeExceptionally(t));
                       }

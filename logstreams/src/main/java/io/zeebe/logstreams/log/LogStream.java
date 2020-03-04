@@ -7,6 +7,7 @@
  */
 package io.zeebe.logstreams.log;
 
+import io.zeebe.logstreams.impl.log.LogStorageAppender;
 import io.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -82,4 +83,8 @@ public interface LogStream extends AutoCloseable {
    * @param condition the condition which should be removed
    */
   void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
+
+  ActorFuture<Void> closeWriters();
+
+  ActorFuture<LogStorageAppender> enableWriters();
 }

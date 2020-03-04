@@ -92,6 +92,43 @@ public final class LogStreamTest {
     assertThatThrownBy(() -> logStream.newLogStreamBatchWriter()).hasMessage("Actor is closed");
   }
 
+  @Test
+  public void shouldNotCreateWritersWhenDisabled() {
+    // when
+    logStream.getAsyncLogStream().closeWriters().join();
+
+    // then
+    assertThatThrownBy(() -> logStream.newLogStreamRecordWriter())
+        .hasMessage("Logstream is not writable, cannot create a writer");
+    assertThatThrownBy(() -> logStream.newLogStreamBatchWriter())
+        .hasMessage("Logstream is not writable, cannot create a writer");
+  }
+
+  @Test
+  public void shouldNotWriteAfterClosed() {
+    // given
+    final LogStreamRecordWriter oldWriter = logStream.newLogStreamRecordWriter();
+
+    // when
+    logStream.getAsyncLogStream().closeWriters().join();
+
+    // then
+    assertThat(oldWriter.value(wrapString("value")).tryWrite()).isEqualTo(-1);
+  }
+
+  @Test
+  public void shouldCreateNewWritersAfterReopen() {
+    // given
+    logStream.getAsyncLogStream().closeWriters().join();
+
+    // when
+    logStream.getAsyncLogStream().enableWriters().join();
+
+    // then
+    final LogStreamRecordWriter writer = logStream.newLogStreamRecordWriter();
+    assertThat(writer.value(wrapString("value")).tryWrite()).isPositive();
+  }
+
   static long writeEvent(final SynchronousLogStream logStream) {
     return writeEvent(logStream, wrapString("event"));
   }
