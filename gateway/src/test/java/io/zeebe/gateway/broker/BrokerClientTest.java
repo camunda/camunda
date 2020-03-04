@@ -47,6 +47,7 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -202,12 +203,14 @@ public final class BrokerClientTest {
     // given
     broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
 
-    // then
-    exception.expect(ExecutionException.class);
-    exception.expectMessage("Request timed out after PT3S");
-
     // when
-    client.sendRequest(new BrokerCompleteJobRequest(1, DocumentValue.EMPTY_DOCUMENT)).join();
+    final long key = Protocol.encodePartitionId(1, 123);
+    final var request = new BrokerCompleteJobRequest(key, DocumentValue.EMPTY_DOCUMENT);
+    request.setPartitionId(1);
+    final var async = client.sendRequest(request, Duration.ofMillis(100));
+
+    // then
+    assertThatThrownBy(async::join).hasRootCauseInstanceOf(TimeoutException.class);
   }
 
   @Test
@@ -222,9 +225,11 @@ public final class BrokerClientTest {
     final var async = client.sendRequest(request);
 
     // then
+    final String expectedMessage =
+        "The request targeted an element on partition '0', which cannot be found in the cluster.";
     assertThatThrownBy(async::join)
         .isInstanceOf(ExecutionException.class)
-        .hasMessageContaining("Unknown partition '0'");
+        .hasMessageContaining(expectedMessage);
   }
 
   @Test
