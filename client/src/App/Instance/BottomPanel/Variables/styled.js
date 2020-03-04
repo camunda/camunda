@@ -194,6 +194,7 @@ export const VariablesFooter = styled(Panel.Footer)`
 
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   height: 41px;
 `;
 
@@ -203,6 +204,7 @@ export const Button = styled(DefaultButton)`
   align-items: center;
   height: 22px;
   width: 119px;
+  margin-left: 16px;
 `;
 
 export const Plus = styled(DefaultPlus)`
