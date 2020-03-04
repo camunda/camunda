@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -26,9 +27,12 @@ import org.elasticsearch.client.indices.GetFieldMappingsRequest;
 import org.elasticsearch.client.indices.GetFieldMappingsResponse;
 import org.elasticsearch.client.indices.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class SchemaInitializerIT extends AbstractIT {
 
@@ -105,7 +110,7 @@ public class SchemaInitializerIT extends AbstractIT {
       assertIndexExists(mapping.getIndexName());
     }
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
-    assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
+    assertMappingSettings(mappings, getSettingsResponse);
   }
 
   @Test
@@ -141,7 +146,7 @@ public class SchemaInitializerIT extends AbstractIT {
     // then the settings contain the updated value
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
 
-    assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
+    assertMappingSettings(mappings, getSettingsResponse);
   }
 
   @Test
@@ -165,7 +170,7 @@ public class SchemaInitializerIT extends AbstractIT {
     // then the settings contain the updated value
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
 
-    assertDynamicSettingsComplyWithDefaultAndCustomSettings(mappings, getSettingsResponse);
+    assertMappingSettings(mappings, getSettingsResponse);
   }
 
   @Test
@@ -193,8 +198,8 @@ public class SchemaInitializerIT extends AbstractIT {
     )).isInstanceOf(ElasticsearchStatusException.class);
   }
 
-  private void assertDynamicSettingsComplyWithDefaultAndCustomSettings(final List<IndexMappingCreator> mappings,
-                                                                       final GetSettingsResponse getSettingsResponse) throws IOException {
+  private void assertMappingSettings(final List<IndexMappingCreator> mappings,
+                                     final GetSettingsResponse getSettingsResponse) throws IOException {
     for (IndexMappingCreator mapping : mappings) {
       Settings dynamicSettings = IndexSettingsBuilder.buildDynamicSettings(
         embeddedOptimizeExtension.getConfigurationService());
@@ -206,16 +211,29 @@ public class SchemaInitializerIT extends AbstractIT {
           );
           assertThat(setting).isEqualTo(dynamicSettings.get(settingName));
         });
-      Settings customSettings = IndexSettingsBuilder.buildCustomSettings(mapping);
-      customSettings.keySet().forEach(
+      Settings staticSettings =
+        buildStaticSettings(mapping, embeddedOptimizeExtension.getConfigurationService());
+      staticSettings.keySet().forEach(
         settingName -> {
           final String setting = getSettingsResponse.getSetting(
             indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping),
             "index." + settingName
           );
-          assertThat(setting).isEqualTo(customSettings.get(settingName));
+          assertThat(setting).isEqualTo(staticSettings.get(settingName));
         });
     }
+  }
+
+  private static Settings buildStaticSettings(IndexMappingCreator indexMappingCreator,
+                                              ConfigurationService configurationService) throws IOException {
+    XContentBuilder builder = jsonBuilder();
+    // @formatter:off
+    builder
+      .startObject();
+        indexMappingCreator.getStaticSettings(builder, configurationService)
+      .endObject();
+    // @formatter:on
+    return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
 
   private void modifyDynamicIndexSetting(final List<IndexMappingCreator> mappings) throws IOException {

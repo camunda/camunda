@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -92,9 +93,11 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
   }
 
   @Override
-  public XContentBuilder getCustomSettings(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
+                                           ConfigurationService configurationService) throws IOException {
     // @formatter:off
-    return xContentBuilder
+    final XContentBuilder newXContentBuilder = super.getStaticSettings(xContentBuilder, configurationService);
+    return newXContentBuilder
       .startObject(SORT_SETTING)
         .field(SORT_FIELD_SETTING, TIMESTAMP)
         .field(SORT_ORDER_SETTING, "asc")

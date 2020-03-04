@@ -5,14 +5,18 @@
  */
 package org.camunda.optimize.service.schema.type;
 
+import com.google.gson.internal.$Gson$Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.index.MetadataIndex.SCHEMA_VERSION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Slf4j
@@ -56,8 +60,9 @@ public class MyUpdatedEventIndex implements IndexMappingCreator {
   }
 
   @Override
-  public XContentBuilder getCustomSettings(XContentBuilder xContentBuilder) {
-    return xContentBuilder;
+  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
+                                           ConfigurationService configurationService) throws IOException {
+    return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, IndexSettingsBuilder.DEFAULT_SHARD_NUMBER);
   }
 
 }

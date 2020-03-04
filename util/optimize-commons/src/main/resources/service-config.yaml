@@ -252,7 +252,8 @@ es:
       prefix: 'optimize'
       # How often should the data replicated in case of node failure.
       number_of_replicas: 1
-      # How many shards should be used in the cluster.
+      # How many shards should be used in the cluster for process instance and decision instance indices.
+      # All other indices will be made up of a single shard
       # NOTE: this property only applies the first time Optimize is started and
       # the schema/mapping is deployed on Elasticsearch. If you want to take
       # this property to take effect again, you need to delete all indexes (with it all data)

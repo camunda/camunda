@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema;
 
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -27,6 +28,7 @@ public interface IndexMappingCreator {
 
   XContentBuilder getSource();
 
-  XContentBuilder getCustomSettings(XContentBuilder xContentBuilder) throws IOException;
+  XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
+                                    ConfigurationService configurationService) throws IOException;
 
 }

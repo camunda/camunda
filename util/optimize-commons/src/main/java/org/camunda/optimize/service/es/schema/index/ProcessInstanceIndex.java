@@ -14,13 +14,16 @@ import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @NoArgsConstructor
@@ -336,4 +339,11 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
     return builder;
     // @formatter:on
   }
+
+  @Override
+  public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
+                                           ConfigurationService configurationService) throws IOException {
+    return xContentBuilder.field(NUMBER_OF_SHARDS_SETTING, configurationService.getEsNumberOfShards());
+  }
+
 }
