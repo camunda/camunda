@@ -14,10 +14,14 @@ import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import useBatchOperations from './useBatchOperations';
 import * as Styled from './styled';
 import * as CONSTANTS from './constants';
-import {isBatchOperationRunning, hasBatchOperations} from './service';
+import {hasBatchOperations} from './service';
 import OperationsEntry from './OperationsEntry';
 
-function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
+function OperationsPanel({
+  isOperationsCollapsed,
+  toggleOperations,
+  onInstancesClick
+}) {
   const {batchOperations, requestBatchOperations} = useBatchOperations();
 
   useEffect(requestBatchOperations, []);
@@ -37,11 +41,9 @@ function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
         {hasBatchOperations(batchOperations) ? (
           batchOperations.map(batchOperation => (
             <OperationsEntry
-              isRunning={isBatchOperationRunning(batchOperation)}
-              id={batchOperation.id}
-              type={batchOperation.type}
-              endDate={batchOperation.endDate}
+              onInstancesClick={onInstancesClick}
               key={batchOperation.id}
+              batchOperation={batchOperation}
               data-test="operations-entry"
             />
           ))
@@ -56,7 +58,8 @@ function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
 OperationsPanel.propTypes = {
   isOperationsCollapsed: PropTypes.bool.isRequired,
   toggleOperations: PropTypes.func.isRequired,
-  dataManager: PropTypes.object
+  dataManager: PropTypes.object,
+  onInstancesClick: PropTypes.func.isRequired
 };
 
 export default withCollapsablePanel(OperationsPanel);

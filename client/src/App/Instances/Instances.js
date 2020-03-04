@@ -46,6 +46,8 @@ export default class Instances extends Component {
       batchOperationId: PropTypes.string
     }).isRequired,
     filterCount: PropTypes.number.isRequired,
+    resetFilters: PropTypes.bool,
+    afterFilterReset: PropTypes.func,
     groupedWorkflows: PropTypes.object.isRequired,
     workflowInstances: PropTypes.array.isRequired,
     firstElement: PropTypes.number.isRequired,
@@ -59,11 +61,12 @@ export default class Instances extends Component {
       bpmnElements: PropTypes.object,
       definitions: PropTypes.object
     }).isRequired,
-    statistics: PropTypes.array.isRequired
+    statistics: PropTypes.array.isRequired,
+    onInstancesClick: PropTypes.func.isRequired
   };
 
   render() {
-    const {filter, groupedWorkflows} = this.props;
+    const {filter, groupedWorkflows, resetFilters} = this.props;
 
     const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
     const {ids: selectableIds, flowNodes: selectableFlowNodes} = getFlowNodes(
@@ -86,6 +89,8 @@ export default class Instances extends Component {
                   ...DEFAULT_FILTER_CONTROLLED_VALUES,
                   ...this.props.filter
                 }}
+                resetFilters={resetFilters}
+                afterFilterReset={this.props.afterFilterReset}
                 onFilterReset={() => this.props.onFilterReset(DEFAULT_FILTER)}
                 onFilterChange={this.props.onFilterChange}
               />
@@ -112,7 +117,7 @@ export default class Instances extends Component {
               />
             </Styled.SplitPane>
           </Styled.Content>
-          <OperationsPanel />
+          <OperationsPanel onInstancesClick={this.props.onInstancesClick} />
         </Styled.Instances>
       </InstancesPollProvider>
     );

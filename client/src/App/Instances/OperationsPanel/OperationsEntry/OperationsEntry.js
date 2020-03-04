@@ -10,6 +10,8 @@ import {OPERATION_TYPES} from './constants';
 import OperationIcon from 'modules/components/OperationIcon';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
+import pluralSuffix from 'modules/utils/pluralSuffix';
+import {isBatchOperationRunning} from '../service';
 
 const {
   UPDATE_VARIABLE,
@@ -23,9 +25,11 @@ const TYPE_LABELS = {
   [CANCEL_WORKFLOW_INSTANCE]: 'Cancel'
 };
 
-const OperationsEntry = ({id, type, isRunning, endDate}) => {
+const OperationsEntry = ({batchOperation, onInstancesClick}) => {
+  const {id, type, endDate, instancesCount} = batchOperation;
+
   return (
-    <Styled.Entry isRunning={isRunning}>
+    <Styled.Entry isRunning={isBatchOperationRunning(batchOperation)}>
       <Styled.EntryStatus>
         <div>
           <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
@@ -34,16 +38,24 @@ const OperationsEntry = ({id, type, isRunning, endDate}) => {
 
         <OperationIcon operationType={type} data-test="operation-icon" />
       </Styled.EntryStatus>
-      {endDate && <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>}
+      <Styled.EntryDetails>
+        <Styled.InstancesCount
+          onClick={() => onInstancesClick(id)}
+        >{`${pluralSuffix(instancesCount, 'Instance')}`}</Styled.InstancesCount>
+        {endDate && <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>}
+      </Styled.EntryDetails>
     </Styled.Entry>
   );
 };
 
 OperationsEntry.propTypes = {
-  id: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(Object.values(OPERATION_TYPES)).isRequired,
-  endDate: PropTypes.string,
-  isRunning: PropTypes.bool.isRequired
+  batchOperation: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(Object.values(OPERATION_TYPES)).isRequired,
+    endDate: PropTypes.string,
+    instancesCount: PropTypes.number.isRequired
+  }).isRequired,
+  onInstancesClick: PropTypes.func.isRequired
 };
 
 OperationsEntry.defaultProps = {};

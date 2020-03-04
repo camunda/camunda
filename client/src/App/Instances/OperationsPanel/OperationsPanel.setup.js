@@ -7,11 +7,17 @@
 export const mockOperationRunning = {
   id: '1234',
   type: 'RESOLVE_INCIDENT',
-  endDate: null
+  endDate: null,
+  instancesCount: 1
 };
 
 export const mockOperationFinished = {
   id: '5678',
   type: 'CANCEL_WORKFLOW_INSTANCE',
-  endDate: '2020-02-06T15:37:29.699+0100'
+  endDate: '2020-02-06T15:37:29.699+0100',
+  instancesCount: 2
+};
+
+export const mockProps = {
+  onInstancesClick: jest.fn()
 };

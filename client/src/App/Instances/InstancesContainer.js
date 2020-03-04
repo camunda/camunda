@@ -12,6 +12,7 @@ import {withData} from 'modules/DataManager';
 import withSharedState from 'modules/components/withSharedState';
 import {
   DEFAULT_FILTER,
+  DEFAULT_FILTER_CONTROLLED_VALUES,
   DEFAULT_SORTING,
   SORT_ORDER,
   DEFAULT_MAX_RESULTS,
@@ -67,6 +68,8 @@ class InstancesContainer extends Component {
       statistics: [],
       filter: {},
       filterCount: 0,
+      resetFilters: false,
+      operationId: '',
       groupedWorkflows: {},
       workflowInstances: [],
       firstElement: DEFAULT_FIRST_ELEMENT,
@@ -328,6 +331,24 @@ class InstancesContainer extends Component {
 
   handleFirstElementChange = firstElement => this.setState({firstElement});
 
+  handleInstancesClick = operationId => {
+    this.setState({resetFilters: true, operationId: operationId});
+  };
+
+  setOperationIdFilter = () => {
+    this.setState(
+      {resetFilters: false},
+      this.setFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        active: true,
+        incidents: true,
+        completed: true,
+        canceled: true,
+        batchOperationId: this.state.operationId
+      })
+    );
+  };
+
   sanitizeFilter = (
     filter,
     groupedWorkflows,
@@ -435,6 +456,7 @@ class InstancesContainer extends Component {
 
   render() {
     const {filter, groupedWorkflows} = this.state;
+
     return (
       <FilterContext.Provider
         value={{query: this.getQuery(filter, groupedWorkflows)}}
@@ -442,11 +464,14 @@ class InstancesContainer extends Component {
         <Instances
           {...this.state}
           filter={decodeFields(this.state.filter)}
+          resetFilters={this.state.resetFilters}
+          afterFilterReset={this.setOperationIdFilter}
           onFilterChange={this.setFilterFromInput}
           onFilterReset={this.handleFilterReset}
           onFirstElementChange={this.handleFirstElementChange}
           onFlowNodeSelection={this.setFilterFromSelection}
           onSort={this.handleSortingChange}
+          onInstancesClick={this.handleInstancesClick}
         />
       </FilterContext.Provider>
     );

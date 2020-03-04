@@ -54,11 +54,27 @@ export const Type = styled.div`
   margin-bottom: 6px;
 `;
 
-export const Id = themed(styled.div`
+export const Id = styled.div`
   font-size: 11px;
-`);
+`;
 
-export const EndDate = themed(styled.div`
+export const EntryDetails = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+`;
+
+export const EndDate = styled.div`
   font-size: 14px;
-  align-self: flex-end;
+`;
+
+export const InstancesCount = themed(styled.div`
+  font-size: 14px;
+  color: ${themeStyle({
+    dark: `${Colors.darkLinkDefault}`,
+    light: `${Colors.lightLinkDefault}`
+  })};
+  text-decoration: underline;
+
+  cursor: pointer;
 `);
