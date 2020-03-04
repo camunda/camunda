@@ -116,7 +116,6 @@ describe('Diagram', () => {
       theme: 'dark',
       expandState: 'DEFAULT'
     });
-    const resetZoom = jest.spyOn(node.instance(), 'handleZoomReset');
     const oldViewer = node.instance().Viewer;
 
     // when

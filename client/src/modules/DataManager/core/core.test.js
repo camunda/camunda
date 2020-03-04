@@ -5,7 +5,7 @@
  */
 
 import {mockResolvedAsyncFn} from 'modules/testUtils';
-import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
+import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 import {DataManager} from './core';
 
 import * as instancesApi from 'modules/api/instances/instances';
@@ -39,7 +39,6 @@ console.warn = jest.fn();
 
 describe('DataManager', () => {
   let dataManager;
-  let publishSpy;
   let subscribeSpy;
   let unsubscribeSpy;
   let pubLoadingStatesSpy;
@@ -48,7 +47,6 @@ describe('DataManager', () => {
 
   beforeEach(() => {
     dataManager = new DataManager();
-    publishSpy = jest.spyOn(dataManager.publisher, 'publish');
     subscribeSpy = jest.spyOn(dataManager.publisher, 'subscribe');
     unsubscribeSpy = jest.spyOn(dataManager.publisher, 'unsubscribe');
     pubLoadingStatesSpy = jest

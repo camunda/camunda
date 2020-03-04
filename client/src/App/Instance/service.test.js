@@ -50,5 +50,17 @@ describe('instance service', () => {
         'SequenceFlow_1fgekwd'
       ]);
     });
+
+    it('should return empty array id processed sequence flows is an empty array', () => {
+      // given
+      const processedSequenceFlows = [];
+
+      // when
+      const activityIds = getProcessedSequenceFlows(processedSequenceFlows);
+
+      // then
+      expect(activityIds.length).toBe(0);
+      expect(activityIds).toEqual([]);
+    });
   });
 });
