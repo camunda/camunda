@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
@@ -53,8 +52,6 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   private long commitPosition;
   private Throwable closeError; // set if any error occurred during closeAsync
   private final String actorName;
-
-  private final AtomicInteger openWriterCount = new AtomicInteger(0);
 
   LogStreamImpl(
       final ActorScheduler actorScheduler,
@@ -101,50 +98,6 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   }
 
   @Override
-  public String getName() {
-    return actorName;
-  }
-
-  @Override
-  public void close() {
-    closeAsync().join();
-  }
-
-  @Override
-  protected void onActorClosing() {
-    LOG.info("On closing logstream {} close {} readers", logName, readers.size());
-    readers.forEach(LogStreamReader::close);
-    LOG.info("Close log storage with name {}", logName);
-    logStorage.close();
-  }
-
-  @Override
-  protected void onActorClosed() {
-    if (closeError != null) {
-      closeFuture.completeExceptionally(closeError);
-    } else {
-      closeFuture.complete(null);
-    }
-  }
-
-  @Override
-  public ActorFuture<Void> closeAsync() {
-    if (actor.isClosed()) {
-      return closeFuture;
-    }
-
-    actor.call(
-        () ->
-            closeAppender()
-                .onComplete(
-                    (nothing, appenderError) -> {
-                      closeError = appenderError;
-                      actor.close();
-                    }));
-    return closeFuture;
-  }
-
-  @Override
   public ActorFuture<Long> getCommitPositionAsync() {
     return actor.call(() -> commitPosition);
   }
@@ -152,22 +105,6 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   @Override
   public void setCommitPosition(final long commitPosition) {
     actor.call(() -> internalSetCommitPosition(commitPosition));
-  }
-
-  private void internalSetCommitPosition(final long commitPosition) {
-    this.commitPosition = commitPosition;
-
-    onCommitPositionUpdatedConditions.signalConsumers();
-  }
-
-  @Override
-  public void registerOnCommitPositionUpdatedCondition(final ActorCondition condition) {
-    actor.call(() -> onCommitPositionUpdatedConditions.registerConsumer(condition));
-  }
-
-  @Override
-  public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
-    actor.call(() -> onCommitPositionUpdatedConditions.removeConsumer(condition));
   }
 
   @Override
@@ -204,21 +141,75 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
     return writerFuture;
   }
 
+  @Override
+  public void registerOnCommitPositionUpdatedCondition(final ActorCondition condition) {
+    actor.call(() -> onCommitPositionUpdatedConditions.registerConsumer(condition));
+  }
+
+  @Override
+  public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
+    actor.call(() -> onCommitPositionUpdatedConditions.removeConsumer(condition));
+  }
+
+  @Override
+  public String getName() {
+    return actorName;
+  }
+
+  @Override
+  protected void onActorClosing() {
+    LOG.info("On closing logstream {} close {} readers", logName, readers.size());
+    readers.forEach(LogStreamReader::close);
+    LOG.info("Close log storage with name {}", logName);
+    logStorage.close();
+  }
+
+  @Override
+  protected void onActorClosed() {
+    if (closeError != null) {
+      closeFuture.completeExceptionally(closeError);
+    } else {
+      closeFuture.complete(null);
+    }
+  }
+
+  @Override
+  public void close() {
+    closeAsync().join();
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    if (actor.isClosed()) {
+      return closeFuture;
+    }
+
+    actor.call(
+        () ->
+            closeAppender()
+                .onComplete(
+                    (nothing, appenderError) -> {
+                      closeError = appenderError;
+                      actor.close();
+                    }));
+    return closeFuture;
+  }
+
+  private void internalSetCommitPosition(final long commitPosition) {
+    if (commitPosition > this.commitPosition) {
+      this.commitPosition = commitPosition;
+      onCommitPositionUpdatedConditions.signalConsumers();
+    }
+  }
+
   private <T extends LogStreamWriter> void createWriter(
       final CompletableActorFuture<T> writerFuture, final WriterCreator<T> creator) {
-    final var alreadyOpenWriters = openWriterCount.getAndIncrement();
-    if (alreadyOpenWriters == 0) {
-      openAppender().onComplete(onOpenAppender(writerFuture, creator));
-    } else if (appender != null) {
-      writerFuture.complete(creator.create(partitionId, writeBuffer, this::releaseWriter));
+    if (appender != null) {
+      writerFuture.complete(creator.create(partitionId, writeBuffer));
     } else if (appenderFuture != null) {
       appenderFuture.onComplete(onOpenAppender(writerFuture, creator));
     } else {
-      final var errorMsg =
-          String.format(
-              "Expected to have an open appender, since we have already %d open writers",
-              alreadyOpenWriters);
-      writerFuture.completeExceptionally(new IllegalStateException(errorMsg));
+      openAppender().onComplete(onOpenAppender(writerFuture, creator));
     }
   }
 
@@ -226,21 +217,11 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
       final CompletableActorFuture<T> writerFuture, final WriterCreator<T> creator) {
     return (openedAppender, errorOnOpeningAppender) -> {
       if (errorOnOpeningAppender == null) {
-        writerFuture.complete(creator.create(partitionId, writeBuffer, this::releaseWriter));
+        writerFuture.complete(creator.create(partitionId, writeBuffer));
       } else {
         writerFuture.completeExceptionally(errorOnOpeningAppender);
       }
     };
-  }
-
-  private void releaseWriter() {
-    actor.run(
-        () -> {
-          final var remainingOpenWriters = openWriterCount.decrementAndGet();
-          if (remainingOpenWriters == 0) {
-            closeAppender();
-          }
-        });
   }
 
   private ActorFuture<Void> closeAppender() {
@@ -336,6 +317,6 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
 
   @FunctionalInterface
   private interface WriterCreator<T extends LogStreamWriter> {
-    T create(int partitionId, Dispatcher dispatcher, Runnable closeCallback);
+    T create(int partitionId, Dispatcher dispatcher);
   }
 }

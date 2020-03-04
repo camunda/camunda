@@ -37,15 +37,16 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
+  protected void onActorStarting() {
+    final SubscriptionCommandMessageHandler messageHandler =
+        new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
+    atomix.getCommunicationService().subscribe("subscription", messageHandler);
+  }
+
+  @Override
   public void onBecomingFollower(
       final int partitionId, final long term, final LogStream logStream) {
-    actor.submit(
-        () -> {
-          final var recordWriter = leaderPartitions.remove(partitionId);
-          if (recordWriter != null) {
-            recordWriter.close();
-          }
-        });
+    actor.submit(() -> leaderPartitions.remove(partitionId));
   }
 
   @Override
@@ -67,12 +68,5 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
                     }
                   });
         });
-  }
-
-  @Override
-  protected void onActorStarting() {
-    final SubscriptionCommandMessageHandler messageHandler =
-        new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
-    atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }
 }

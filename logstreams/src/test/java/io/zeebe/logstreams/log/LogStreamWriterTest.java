@@ -62,7 +62,6 @@ public final class LogStreamWriterTest {
 
   @After
   public void tearDown() {
-    writer.close();
     writer = null;
   }
 
@@ -195,8 +194,6 @@ public final class LogStreamWriterTest {
     final long firstPosition = writer.key(123L).value(EVENT_VALUE).tryWrite();
 
     // when
-    writer.close();
-
     final SynchronousLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamRecordWriter();
     final long secondPosition = writer.key(124L).value(EVENT_VALUE).tryWrite();
@@ -214,7 +211,6 @@ public final class LogStreamWriterTest {
     writerRule.waitForPositionToBeAppended(firstPosition);
 
     // when
-    writer.close();
     writerRule.closeWriter();
 
     final SynchronousLogStream logStream = logStreamRule.getLogStream();

@@ -371,7 +371,6 @@ public final class TestStreams {
 
     @Override
     public void close() {
-      logStreamWriter.close();
       logStream.close();
       logStorageRule.close();
     }

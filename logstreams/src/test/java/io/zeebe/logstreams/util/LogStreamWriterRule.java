@@ -36,10 +36,7 @@ public final class LogStreamWriterRule extends ExternalResource {
   }
 
   public void closeWriter() {
-    if (logStreamWriter != null) {
-      logStreamWriter.close();
-      logStreamWriter = null;
-    }
+    logStreamWriter = null;
   }
 
   public long writeEvents(final int count, final DirectBuffer event) {
