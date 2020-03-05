@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.alert;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -54,6 +55,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.bpm.engine.EntityTypes.REPORT;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.CHECK_INTERVAL;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.EMAIL;
@@ -79,6 +84,8 @@ public class AlertService implements ReportReferencingService {
 
   @PostConstruct
   public void init() {
+    List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
+    checkAlertWebhooksAllExist(alerts);
     try {
       if (schedulerFactoryBean == null) {
         QuartzJobFactory sampleJobFactory = new QuartzJobFactory();
@@ -87,8 +94,6 @@ public class AlertService implements ReportReferencingService {
         schedulerFactoryBean = new SchedulerFactoryBean();
         schedulerFactoryBean.setOverwriteExistingJobs(true);
         schedulerFactoryBean.setJobFactory(sampleJobFactory);
-
-        List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
 
         Map<AlertDefinitionDto, JobDetail> checkingDetails = createCheckDetails(alerts);
         List<Trigger> checkingTriggers = createCheckTriggers(checkingDetails);
@@ -188,6 +193,24 @@ public class AlertService implements ReportReferencingService {
     return new ReminderHandlingListener(alertReminderJobFactory);
   }
 
+  private void checkAlertWebhooksAllExist(List<AlertDefinitionDto> alerts) {
+    final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
+    final Map<String, List<String>> missingWebhookMap = alerts.stream()
+      .filter(alert -> StringUtils.isNotEmpty(alert.getWebhook()) && !webhooks.contains(alert.getWebhook()))
+      .collect(groupingBy(alert -> alert.getWebhook(), mapping(alert -> alert.getId(), toList())));
+    if (!missingWebhookMap.isEmpty()) {
+      final String missingWebhookSummary = missingWebhookMap.entrySet()
+        .stream()
+        .map(entry -> String.format("Webhook: [%s] - Associated with alert(s): %s", entry.getKey(), entry.getValue()))
+        .collect(Collectors.joining("\n"));
+      final String errorMsg = String.format(
+        "The following webhooks no longer exist in the service-config, yet are associated with existing alerts:%n%s",
+        missingWebhookSummary
+      );
+      logger.error(errorMsg);
+    }
+  }
+
   public Scheduler getScheduler() {
     return schedulerFactoryBean.getObject();
   }
@@ -197,7 +220,7 @@ public class AlertService implements ReportReferencingService {
       .findAndFilterReports(userId)
       .stream()
       .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
-      .collect(Collectors.toList());
+      .collect(toList());
 
     return alertReader.findFirstAlertsForReports(authorizedReportIds);
   }
@@ -207,7 +230,7 @@ public class AlertService implements ReportReferencingService {
       .findAndFilterReports(userId, collectionId)
       .stream()
       .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
-      .collect(Collectors.toList());
+      .collect(toList());
 
     return alertReader.findFirstAlertsForReports(authorizedReportIds);
   }
@@ -425,7 +448,7 @@ public class AlertService implements ReportReferencingService {
   private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {
     return alertsForReport.stream()
       .map(alertDto -> new ConflictedItemDto(alertDto.getId(), ConflictedItemType.ALERT, alertDto.getName()))
-      .collect(Collectors.toSet());
+      .collect(toSet());
   }
 
   private void verifyUserAuthorizedToEditAlertOrFail(
