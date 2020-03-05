@@ -14514,16 +14514,17 @@ test-exclude@^5.2.3:
     read-pkg-up "^4.0.0"
     require-main-filename "^2.0.0"
 
-testcafe-browser-provider-browserstack@^1.11.0:
-  version "1.11.0"
-  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.11.0.tgz#21eb5ec1e88d7e4d0500df99c64d8188a891dd8d"
-  integrity sha512-4BOE4VAPyQKZComI6XoHUOfglfCMkqQihKHGx+NrnsOSarw/zbe80N5cQLRXjDmiUTyfrXgbyii9Quzrrmxj5A==
+testcafe-browser-provider-browserstack@^1.12.0:
+  version "1.12.0"
+  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.12.0.tgz#d777ce0d350c9b9588c248d525468cda2df09825"
+  integrity sha512-9w/Awrggnb1RMz9Q8WtB1dqLSz1fCD3POXk8el7/46eqecQe9iLKTT/ruXwLL19M+9Ft10BJyHQ6RqukZ8dsKQ==
   dependencies:
     babel-runtime "^6.11.6"
     browserstack-local "^1.3.6"
     dedent "^0.7.0"
     desired-capabilities "^0.1.0"
     jimp "^0.6.4"
+    lodash "^4.17.15"
     os-family "^1.0.0"
     pinkie "^2.0.4"
     request "^2.88.0"
