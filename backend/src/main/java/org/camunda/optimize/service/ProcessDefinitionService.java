@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -35,7 +35,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   private final CollectionScopeService collectionScopeService;
 
   public ProcessDefinitionService(final TenantService tenantService,
-                                  final DefinitionAuthorizationService definitionAuthorizationService,
+                                  final EngineDefinitionAuthorizationService definitionAuthorizationService,
                                   final ProcessDefinitionReader processDefinitionReader,
                                   final DefinitionService definitionService,
                                   final CollectionScopeService collectionScopeService) {

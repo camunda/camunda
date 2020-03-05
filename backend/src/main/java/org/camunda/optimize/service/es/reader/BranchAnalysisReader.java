@@ -23,7 +23,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
@@ -57,7 +57,7 @@ public class BranchAnalysisReader {
 
   private OptimizeElasticsearchClient esClient;
   private DefinitionService definitionService;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
   private ProcessDefinitionReader processDefinitionReader;
 

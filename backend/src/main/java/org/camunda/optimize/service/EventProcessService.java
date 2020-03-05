@@ -41,7 +41,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BpmnModelUtility;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -82,7 +82,7 @@ public class EventProcessService {
     EventProcessState.PUBLISH_PENDING, EventProcessState.PUBLISHED, EventProcessState.UNPUBLISHED_CHANGES
   );
 
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private final ConfigurationService configurationService;
   private final ReportService reportService;
   private final ReportRelationService reportRelationService;

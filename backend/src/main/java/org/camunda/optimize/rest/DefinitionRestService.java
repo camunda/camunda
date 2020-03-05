@@ -99,7 +99,7 @@ public class DefinitionRestService {
   @Path("/_groupByTenant")
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant(@Context ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return definitionService.getDefinitionsGroupedByTenantForUser(userId);
+    return definitionService.getDefinitionsGroupedByTenant(userId);
   }
 
   /**

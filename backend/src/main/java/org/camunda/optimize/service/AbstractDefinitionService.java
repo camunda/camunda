@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenants;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 abstract class AbstractDefinitionService {
   protected TenantService tenantService;
-  protected DefinitionAuthorizationService definitionAuthorizationService;
+  protected EngineDefinitionAuthorizationService definitionAuthorizationService;
 
   List<DefinitionAvailableVersionsWithTenants> createDefinitionsWithAvailableVersionsAndTenants(
     @NonNull final String userId,

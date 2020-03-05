@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.persistence;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Getter
+@Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants(asEnum = true)
 public class TenantDto implements OptimizeDto {

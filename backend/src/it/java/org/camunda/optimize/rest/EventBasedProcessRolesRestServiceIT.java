@@ -185,8 +185,8 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    final ErrorResponseDto updateResponse = eventProcessClient
-      .createUpdateEventProcessMappingRolesRequest(
+    final ErrorResponseDto updateResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateEventProcessRolesRequest(
         eventProcessMappingId,
         Collections.singletonList(new EventProcessRoleDto<>(new UserDto("invalid")))
       )

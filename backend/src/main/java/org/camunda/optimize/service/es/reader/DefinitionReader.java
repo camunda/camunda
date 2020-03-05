@@ -288,7 +288,7 @@ public class DefinitionReader {
     }
   }
 
-  public Map<String, DefinitionAvailableVersionsWithTenants> getDefinitionsGroupedByVersionAndTenantForType(final DefinitionType type) {
+  public List<DefinitionAvailableVersionsWithTenants> getDefinitionsWithVersionsAndTenantsForType(final DefinitionType type) {
     // 5 aggregations over 3 layers:
     // 1. key
     // | - 2.1 name
@@ -334,12 +334,9 @@ public class DefinitionReader {
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       final Terms keyResult = searchResponse.getAggregations().get(DEFINITION_KEY_AGGREGATION);
-      Map<String, DefinitionAvailableVersionsWithTenants> resultMap = keyResult.getBuckets().stream()
-        .collect(toMap(
-          keyBucket -> keyBucket.getKeyAsString(),
-          keyBucket -> getDefinitionVersionsWithTenantsDtosForKeyBucket(keyBucket)
-        ));
-      return resultMap;
+      return keyResult.getBuckets().stream()
+        .map(this::getDefinitionVersionsWithTenantsDtosForKeyBucket)
+        .collect(toList());
     } catch (IOException e) {
       final String reason = String.format("Was not able to fetch definitions for type [%s].", type);
       log.error(reason, e);

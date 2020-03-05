@@ -29,7 +29,7 @@ public class ReportAuthorizationService {
 
   private final IdentityService identityService;
   private final DefinitionService definitionService;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionAuthorizationService;
   private final ReportReader reportReader;
 

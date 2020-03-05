@@ -13,7 +13,7 @@ import lombok.NonNull;
 import lombok.ToString;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 
 import java.util.List;
 
@@ -23,13 +23,13 @@ import java.util.List;
 @ToString(callSuper = true)
 public class DefinitionWithTenantsDto extends SimpleDefinitionDto {
   @NonNull
-  private List<TenantRestDto> tenants;
+  private List<TenantDto> tenants;
 
   public DefinitionWithTenantsDto(@NonNull final String key,
                                   final String name,
                                   @NonNull final DefinitionType type,
                                   final Boolean isEventProcess,
-                                  @NonNull final List<TenantRestDto> tenants) {
+                                  @NonNull final List<TenantDto> tenants) {
     super(key, name, type, isEventProcess);
     this.tenants = tenants;
   }
@@ -37,7 +37,7 @@ public class DefinitionWithTenantsDto extends SimpleDefinitionDto {
   public DefinitionWithTenantsDto(@NonNull final String key,
                                   final String name,
                                   @NonNull final DefinitionType type,
-                                  @NonNull final List<TenantRestDto> tenants) {
+                                  @NonNull final List<TenantDto> tenants) {
     super(key, name, type, false);
     this.tenants = tenants;
   }

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -33,7 +33,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
   private final DefinitionService definitionService;
 
   public DecisionDefinitionService(final TenantService tenantService,
-                                   final DefinitionAuthorizationService definitionAuthorizationService,
+                                   final EngineDefinitionAuthorizationService definitionAuthorizationService,
                                    final DecisionDefinitionReader decisionDefinitionReader,
                                    final CollectionScopeService collectionScopeService,
                                    final DefinitionService definitionService) {

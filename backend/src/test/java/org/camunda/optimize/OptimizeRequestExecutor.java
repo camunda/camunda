@@ -690,6 +690,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetProcessDefinitionByKeyRequest(String key) {
+    this.path = "definition/process/" + key;
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants() {
     return buildGetProcessDefinitionVersionsWithTenants(null);
   }

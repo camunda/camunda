@@ -19,7 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CollectionRoleService {
   private final AuthorizedCollectionService authorizedCollectionService;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private final CollectionWriter collectionWriter;
   private final IdentityService identityService;
 

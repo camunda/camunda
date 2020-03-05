@@ -32,7 +32,7 @@ import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -63,7 +63,7 @@ public class CollectionScopeService {
 
   private final TenantService tenantService;
   private final DefinitionService definitionService;
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private final ReportReader reportReader;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;

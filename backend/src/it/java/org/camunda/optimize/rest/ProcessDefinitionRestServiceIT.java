@@ -8,12 +8,16 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,7 +31,9 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -108,8 +114,8 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     engineIntegrationExtension.addUser(kermitUser, kermitUser);
     engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
     grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey);
-    final IdDto notAuthorizedToSeeIdDto = new IdDto(addSimpleEventProcessToElasticsearch(
-      notAuthorizedDefinitionKey).getId());
+    final IdDto notAuthorizedToSeeIdDto =
+      new IdDto(addSimpleEventProcessToElasticsearch(notAuthorizedDefinitionKey).getId());
     final IdDto authorizedToSeeIdDto = new IdDto(addSimpleEventProcessToElasticsearch(authorizedDefinitionKey).getId());
 
     // when
@@ -615,6 +621,18 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   protected EventProcessDefinitionDto addSimpleEventProcessToElasticsearch(final String key,
                                                                            final String version,
                                                                            final String name) {
+    final IndexableEventProcessMappingDto eventProcessMappingDto = IndexableEventProcessMappingDto.builder()
+      .id(key)
+      .roles(ImmutableList.of(
+        new EventProcessRoleDto<>(new UserDto(AuthorizationClient.KERMIT_USER)),
+        new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))
+      ))
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      EVENT_PROCESS_MAPPING_INDEX_NAME,
+      eventProcessMappingDto.getId(),
+      eventProcessMappingDto
+    );
     final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
       .id(key + "-" + version)
       .key(key)
@@ -640,7 +658,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
   private void createEventProcessDefinitionsForKey(String key, int count) {
     IntStream.range(0, count).forEach(
-      i -> addSimpleEventProcessToElasticsearch(key, String.valueOf(i), EVENT_PROCESS_NAME)
+      i -> addSimpleEventProcessToElasticsearch(key, String.valueOf(i), key)
     );
   }
 }

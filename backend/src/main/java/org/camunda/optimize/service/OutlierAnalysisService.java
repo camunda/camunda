@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParamet
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.service.es.reader.DurationOutliersReader;
-import org.camunda.optimize.service.security.DefinitionAuthorizationService;
+import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -26,7 +26,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class OutlierAnalysisService {
 
-  private final DefinitionAuthorizationService definitionAuthorizationService;
+  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private final DurationOutliersReader outliersReader;
 
   public Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams,

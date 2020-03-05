@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
@@ -19,12 +20,15 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
@@ -61,6 +65,7 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 
 public class CollectionScopeAuthorizationIT extends AbstractIT {
 
@@ -116,8 +121,8 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     final String key1 = "eventBasedKey1";
     final String key2 = "eventBasedKey2";
 
-    addEventProcessDefinitionDtoToElasticsearch(key1);
-    addEventProcessDefinitionDtoToElasticsearch(key2);
+    addEventProcessDefinitionDtoToElasticsearch(key1, new UserDto(KERMIT_USER));
+    addEventProcessDefinitionDtoToElasticsearch(key2, new UserDto(KERMIT_USER));
 
     final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, key1, RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -542,8 +547,8 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     final String key1 = "eventBasedKey1";
     final String key2 = "eventBasedKey2";
 
-    addEventProcessDefinitionDtoToElasticsearch(key1);
-    addEventProcessDefinitionDtoToElasticsearch(key2);
+    addEventProcessDefinitionDtoToElasticsearch(key1, new UserDto(KERMIT_USER));
+    addEventProcessDefinitionDtoToElasticsearch(key2, new UserDto(KERMIT_USER));
 
     final String collectionId = collectionClient.createNewCollection();
     List<CollectionScopeEntryDto> entries = new ArrayList<>();
@@ -647,7 +652,20 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
-  private EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
+  private EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                                final IdentityDto identityDto) {
+    final IndexableEventProcessMappingDto.IndexableEventProcessMappingDtoBuilder eventProcessMappingDtoBuilder =
+      IndexableEventProcessMappingDto.builder()
+        .id(key);
+    if (identityDto != null) {
+      eventProcessMappingDtoBuilder.roles(ImmutableList.of(new EventProcessRoleDto<>(identityDto)));
+    }
+    final IndexableEventProcessMappingDto eventProcessMappingDto = eventProcessMappingDtoBuilder.build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      EVENT_PROCESS_MAPPING_INDEX_NAME,
+      eventProcessMappingDto.getId(),
+      eventProcessMappingDto
+    );
     final String version = "1";
     final String name = "eventBasedName";
     final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
