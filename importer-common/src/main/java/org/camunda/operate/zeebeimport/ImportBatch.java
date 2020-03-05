@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.zeebeimport;
 
+import java.io.IOException;
 import java.util.List;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebe.ZeebeESConstants;
@@ -91,7 +92,7 @@ public class ImportBatch {
           return node.get(ZeebeESConstants.POSITION_FIELD_NAME).longValue();
         }
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       logger.warn(String.format("Unable to parse Zeebe object: %s", e.getMessage()), e);
     }
     return 0;
