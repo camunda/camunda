@@ -49,7 +49,7 @@
     "react-test-renderer": "^16.12.0"
   },
   "lint-staged": {
-    "src/**/*.js": [
+    "{src,e2e}/**/*.js": [
       "eslint",
       "prettier --write",
       "git add"

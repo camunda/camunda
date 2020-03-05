@@ -1,0 +1,13 @@
+{
+  "name": "operate-e2e",
+  "version": "1.0.0",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "testcafe chrome:headless tests/*.js"
+  },
+  "devDependencies": {
+    "testcafe": "^1.7.1",
+    "zeebe-node": "^0.22.1"
+  }
+}
