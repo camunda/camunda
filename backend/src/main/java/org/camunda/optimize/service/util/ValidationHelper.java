@@ -52,6 +52,14 @@ public class ValidationHelper {
     }
   }
 
+  public static void ensureNotBothEmpty(String fieldName1, String fieldName2, Object target1, Object target2) {
+    if ((target1 == null || target1.toString().isEmpty())
+      && (target2 == null || target2.toString().isEmpty())) {
+      throw new OptimizeValidationException("The fields " + fieldName1 + " and " + fieldName2 + " are not allowed to " +
+                                              "both be empty. At least one of them must be set.");
+    }
+  }
+
   public static void ensureListNotEmpty(String fieldName, List target) {
     if (target == null || target.isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");

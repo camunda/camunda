@@ -7,6 +7,7 @@ package org.camunda.optimize.service.alert;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -78,9 +79,9 @@ public class AlertJob implements Job {
         alertWriter.writeAlertStatus(false, alertId);
 
         if (alert.isFixNotification()) {
-          notificationService.notifyRecipient(
+          notifyAvailableTargets(
             composeFixText(alert, reportDefinition, reportResult),
-            alert.getEmail()
+            alert
           );
         }
       }
@@ -168,18 +169,28 @@ public class AlertJob implements Job {
     AlertJobResult alertJobResult = new AlertJobResult(alert);
 
     if (haveToNotify) {
-      log.debug("Sending reminder notification!");
       alertWriter.writeAlertStatus(true, alertId);
 
-      notificationService.notifyRecipient(
+      notifyAvailableTargets(
         composeAlertText(alert, reportDefinition, result),
-        alert.getEmail()
+        alert
       );
 
       alertJobResult.setStatusChanged(true);
     }
 
     return alertJobResult;
+  }
+
+  private void notifyAvailableTargets(final String alertContent, final AlertDefinitionDto alert) {
+    if (StringUtils.isNotEmpty(alert.getEmail())) {
+      log.debug("Sending email notification.");
+      notificationService.notifyRecipient(alertContent, alert.getEmail());
+    }
+    if (StringUtils.isNotEmpty(alert.getWebhook())) {
+      log.debug("Sending webhook notification.");
+      // TODO with OPT-3234
+    }
   }
 
   private boolean isReminder(JobKey key) {

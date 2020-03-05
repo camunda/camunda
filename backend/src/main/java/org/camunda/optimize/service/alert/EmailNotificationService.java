@@ -37,7 +37,7 @@ public class EmailNotificationService implements NotificationService {
         );
       }
     } else {
-      log.warn("The email service is not enabled and thus no email could be send. " +
+      log.warn("The email service is not enabled and thus no email could be sent. " +
                  "Please check the Optimize documentation on how to enable email notifications!");
     }
   }

@@ -28,8 +28,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Order;
@@ -64,7 +64,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected String createAlert(AlertCreationDto simpleAlert) {
     return embeddedOptimizeExtension
@@ -212,7 +213,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
   protected String createNewProcessReportAsUser(final String collectionId,
-                                              final ProcessDefinitionEngineDto processDefinition) {
+                                                final ProcessDefinitionEngineDto processDefinition) {
     SingleProcessReportDefinitionDto procReport = getProcessNumberReportDefinitionDto(
       collectionId,
       processDefinition
@@ -414,7 +415,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       .setAlertEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
     EmailAuthenticationConfiguration emailAuthenticationConfiguration =
       embeddedOptimizeExtension.getConfigurationService()
-      .getEmailAuthenticationConfiguration();
+        .getEmailAuthenticationConfiguration();
     emailAuthenticationConfiguration.setEnabled(true);
     emailAuthenticationConfiguration.setUsername("demo");
     emailAuthenticationConfiguration.setPassword("demo");

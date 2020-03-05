@@ -28,6 +28,7 @@ public class AlertIndex extends StrictIndexMappingCreator {
   public static final String LAST_MODIFIER = "lastModifier";
   public static final String REPORT_ID = "reportId";
   public static final String EMAIL = "email";
+  public static final String WEBHOOK = "webhook";
   public static final String THRESHOLD = "threshold";
   public static final String THRESHOLD_OPERATOR = "thresholdOperator";
   public static final String FIX_NOTIFICATION = "fixNotification";
@@ -76,6 +77,9 @@ public class AlertIndex extends StrictIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(EMAIL)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(WEBHOOK)
         .field("type", "keyword")
       .endObject()
       .startObject(THRESHOLD_OPERATOR)

@@ -17,4 +17,5 @@ public class AlertCreationDto {
   protected boolean fixNotification;
   protected AlertInterval reminder;
   protected String email;
+  protected String webhook;
 }

@@ -54,6 +54,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.bpm.engine.EntityTypes.REPORT;
+import static org.camunda.optimize.service.es.schema.index.AlertIndex.CHECK_INTERVAL;
+import static org.camunda.optimize.service.es.schema.index.AlertIndex.EMAIL;
+import static org.camunda.optimize.service.es.schema.index.AlertIndex.INTERVAL_UNIT;
+import static org.camunda.optimize.service.es.schema.index.AlertIndex.THRESHOLD_OPERATOR;
+import static org.camunda.optimize.service.es.schema.index.AlertIndex.WEBHOOK;
+
 @RequiredArgsConstructor
 @Component
 public class AlertService implements ReportReferencingService {
@@ -236,13 +243,13 @@ public class AlertService implements ReportReferencingService {
         "Alerts cannot be created for private reports, only for reports within a collection.");
     }
 
-    ValidationHelper.ensureNotEmpty("report", report);
+    ValidationHelper.ensureNotEmpty(REPORT, report);
 
-    ValidationHelper.ensureNotEmpty("operator", toCreate.getThresholdOperator());
-    ValidationHelper.ensureNotNull("check interval", toCreate.getCheckInterval());
-    ValidationHelper.ensureNotEmpty("check interval unit", toCreate.getCheckInterval().getUnit());
+    ValidationHelper.ensureNotEmpty(THRESHOLD_OPERATOR, toCreate.getThresholdOperator());
+    ValidationHelper.ensureNotNull(CHECK_INTERVAL, toCreate.getCheckInterval());
+    ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());
 
-    ValidationHelper.ensureNotEmpty("email", toCreate.getEmail());
+    ValidationHelper.ensureNotBothEmpty(EMAIL, WEBHOOK, toCreate.getEmail(), toCreate.getWebhook());
   }
 
   private AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
