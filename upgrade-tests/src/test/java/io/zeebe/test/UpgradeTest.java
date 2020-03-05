@@ -19,6 +19,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -42,6 +43,7 @@ public class UpgradeTest {
   private static final String CURRENT_VERSION = "current-test";
   private static final String PROCESS_ID = "process";
   private static final String TASK = "task";
+  private static final String MESSAGE = "message";
   private static final File SHARED_DATA;
   private static String lastVersion = VersionUtil.getPreviousVersion();
 
@@ -77,6 +79,13 @@ public class UpgradeTest {
                 .beforeUpgrade(activateJob())
                 .afterUpgrade(completeJob())
           },
+          {
+            "message",
+            scenario()
+                .createInstance(messageWorkflow())
+                .beforeUpgrade(awaitOpenMessageSubscription())
+                .afterUpgrade(publishMessage())
+          }
         });
   }
 
@@ -152,6 +161,36 @@ public class UpgradeTest {
         state.client().newCompleteCommand(key).send().join();
   }
 
+  private static BpmnModelInstance messageWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .intermediateCatchEvent(
+            "catch", b -> b.message(m -> m.name(MESSAGE).zeebeCorrelationKey("key")))
+        .endEvent()
+        .done();
+  }
+
+  private static Function<ContainerStateRule, Long> awaitOpenMessageSubscription() {
+    return (ContainerStateRule state) -> {
+      TestUtil.waitUntil(() -> state.findLogContaining("WORKFLOW_INSTANCE_SUBSCRIPTION", "OPENED"));
+      return -1L;
+    };
+  }
+
+  private static BiConsumer<ContainerStateRule, Long> publishMessage() {
+    return (ContainerStateRule state, Long key) -> {
+      state
+          .client()
+          .newPublishMessageCommand()
+          .messageName(MESSAGE)
+          .correlationKey("123")
+          .send()
+          .join();
+
+      TestUtil.waitUntil(() -> state.hasMessageInState(MESSAGE, "PUBLISHED"));
+    };
+  }
+
   private static TestCase scenario() {
     return new TestCase();
   }
@@ -169,6 +208,7 @@ public class UpgradeTest {
                 .newCreateInstanceCommand()
                 .bpmnProcessId(PROCESS_ID)
                 .latestVersion()
+                .variables(Map.of("key", "123"))
                 .send()
                 .join();
           };
