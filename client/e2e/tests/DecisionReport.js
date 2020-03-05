@@ -111,32 +111,32 @@ test('create a single number report', async t => {
     .maximizeWindow();
 });
 
-test('create a report grouped by evaluation date', async t => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
-
-  await u.selectDefinition(t, 'Assign Approver Group');
-  await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'Evaluation Date', 'Automatic');
-
-  await t.click(Report.visualizationDropdown);
-
-  await checkVisualizations(t);
-
-  await t.click(Report.option('Table'));
-
-  await t.expect(Report.reportTable.visible).ok();
-
-  await u.selectVisualization(t, 'Line Chart');
-
-  await t.typeText(Report.nameEditField, 'Decision Evaluations', {replace: true});
-
-  await t
-    .resizeWindow(1400, 700)
-    .takeElementScreenshot(Report.report, 'decision/single-report/dmn_date_chart.png')
-    .maximizeWindow();
-});
+//test('create a report grouped by evaluation date', async t => {
+//  await t.click(Homepage.createNewMenu);
+//  await t.click(Homepage.option('New Report'));
+//  await t.click(Homepage.submenuOption('Decision Report'));
+//
+//  await u.selectDefinition(t, 'Assign Approver Group');
+//  await u.selectView(t, 'Evaluation Count');
+//  await u.selectGroupby(t, 'Evaluation Date', 'Automatic');
+//
+//  await t.click(Report.visualizationDropdown);
+//
+//  await checkVisualizations(t);
+//
+//  await t.click(Report.option('Table'));
+//
+//  await t.expect(Report.reportTable.visible).ok();
+//
+//  await u.selectVisualization(t, 'Line Chart');
+//
+//  await t.typeText(Report.nameEditField, 'Decision Evaluations', {replace: true});
+//
+//  await t
+//    .resizeWindow(1400, 700)
+//    .takeElementScreenshot(Report.report, 'decision/single-report/dmn_date_chart.png')
+//    .maximizeWindow();
+//});
 
 test('create a report grouped by Input variable', async t => {
   await t.click(Homepage.createNewMenu);
@@ -166,23 +166,23 @@ test('create a report grouped by Input variable', async t => {
     .maximizeWindow();
 });
 
-test('filters', async t => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
-
-  await u.selectDefinition(t, 'Assign Approver Group');
-  await u.selectView(t, 'Evaluation Count');
-  await u.selectGroupby(t, 'Rules');
-
-  await t.click(Report.filterButton);
-  await t.hover(Report.filterOption('Output Variable'));
-
-  await t
-    .resizeWindow(1400, 700)
-    .takeScreenshot('decision/filter/report-with-filterlist-open.png', {fullPage: true})
-    .maximizeWindow();
-});
+//test('filters', async t => {
+//  await t.click(Homepage.createNewMenu);
+//  await t.click(Homepage.option('New Report'));
+//  await t.click(Homepage.submenuOption('Decision Report'));
+//
+//  await u.selectDefinition(t, 'Assign Approver Group');
+//  await u.selectView(t, 'Evaluation Count');
+//  await u.selectGroupby(t, 'Rules');
+//
+//  await t.click(Report.filterButton);
+//  await t.hover(Report.filterOption('Output Variable'));
+//
+//  await t
+//    .resizeWindow(1400, 700)
+//    .takeScreenshot('decision/filter/report-with-filterlist-open.png', {fullPage: true})
+//    .maximizeWindow();
+//});
 
 async function checkVisualizations(t) {
   await t.expect(Report.option('Number').hasAttribute('disabled')).ok();
