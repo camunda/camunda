@@ -15,7 +15,7 @@ exports[`should render a Dashboard Report for every Report in the props 1`] = `
   }
   isDraggable={false}
   isResizable={false}
-  measureBeforeMount={false}
+  measureBeforeMount={true}
   rowHeight={94}
   style={Object {}}
 >

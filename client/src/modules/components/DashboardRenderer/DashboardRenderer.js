@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 
 import {Responsive, WidthProvider} from 'react-grid-layout';
 
@@ -39,8 +39,14 @@ export default function DashboardRenderer({
     style.minHeight = (lowerEdge + 9) * (rowHeight + cellMargin) + 'px';
   }
 
+  // I don't know why, but this fixes this bug: https://jira.camunda.com/browse/OPT-3387
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'));
+  });
+
   return (
     <GridLayout
+      measureBeforeMount
       cols={{all: columns}}
       breakpoints={{all: 0}}
       rowHeight={rowHeight}
