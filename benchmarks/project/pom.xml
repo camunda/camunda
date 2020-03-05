@@ -38,7 +38,7 @@
     <!-- maven plugin versions -->
     <plugin.version.exec>1.6.0</plugin.version.exec>
     <plugin.version.shade>3.2.1</plugin.version.shade>
-    <plugin.version.fmt>2.6.0</plugin.version.fmt>
+    <plugin.version.fmt>2.9</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
   </properties>
 
