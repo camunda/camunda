@@ -12,10 +12,6 @@
 	<name>Camunda Operate ELS schema</name>
 	<artifactId>camunda-operate-els-schema</artifactId>
 
-	<properties>
-		<plugin.version.license>3.0</plugin.version.license>
-		<license.header>${project.baseUri}/../license/license-header</license.header>
-	</properties>
 	<build>
 		<plugins>
 	        <!-- 

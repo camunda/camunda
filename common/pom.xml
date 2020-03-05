@@ -19,8 +19,8 @@
 			<artifactId>camunda-operate-els-schema</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<!-- SPRING BOOT -->
 
+		<!-- SPRING BOOT -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -41,7 +41,6 @@
 			<artifactId>spring-boot-starter-log4j2</artifactId>
 		</dependency>
 
-
 		<!-- ELASTICSEARCH -->
 		<dependency>
 			<groupId>org.elasticsearch.client</groupId>
@@ -49,14 +48,12 @@
 		</dependency>
 
 		<!-- ZEEBE -->
-
 		<dependency>
 			<groupId>io.zeebe</groupId>
 			<artifactId>zeebe-client-java</artifactId>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
-
 		<dependency>
 			<groupId>org.glassfish</groupId>
 			<artifactId>javax.json</artifactId>
