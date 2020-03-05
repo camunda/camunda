@@ -89,7 +89,9 @@ export class Home extends React.Component {
 
     return (
       <div className="Home">
-        <div className="welcomeMessage">Welcome, {this.props.user?.name}</div>
+        <div className="welcomeMessage">
+          {t('home.welcome')}, {this.props.user?.name}
+        </div>
         <div className="content">
           <EntityList
             name={t('home.title')}

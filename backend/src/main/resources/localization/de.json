@@ -106,7 +106,8 @@
       "unauthorizedTenant": "(nicht autorisierter Mandant)"
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
-    "empty": "Es wurde noch nichts erstellt"
+    "empty": "Es wurde noch nichts erstellt",
+    "welcome": "Willkommen"
   },
   "events": {
     "new": "Neuer Prozess",
