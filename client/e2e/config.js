@@ -5,7 +5,10 @@
  */
 
 export default {
-  endpoint: 'http://localhost:8080/',
+  endpoint:
+    process.env.ENV === 'ci'
+      ? 'http://localhost:8080/'
+      : 'http://localhost:3000',
   agentUser: {
     username: 'demo',
     password: 'demo'
