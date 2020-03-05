@@ -44,7 +44,8 @@ public class ZeebeIndexTest {
     // then
     assertThat(zeebeIndexAdapter.lookupPosition(1)).isEqualTo(-1);
     assertThat(zeebeIndexAdapter.lookupPosition(16)).isEqualTo(-1);
-    assertThat(zeebeIndexAdapter.lookupPosition(21)).isEqualTo(5);
+    assertThat(zeebeIndexAdapter.lookupPosition(20)).isEqualTo(5);
+    assertThat(zeebeIndexAdapter.lookupPosition(26)).isEqualTo(5);
   }
 
   @Test
@@ -54,11 +55,12 @@ public class ZeebeIndexTest {
 
     // when
     zeebeIndexAdapter.index(
-        new Indexed(5, new InitializeEntry(0, System.currentTimeMillis()), 10), 10);
+        new Indexed<>(5, new InitializeEntry(0, System.currentTimeMillis()), 10), 10);
 
     // then
     assertThat(zeebeIndexAdapter.lookupPosition(1)).isEqualTo(-1);
     assertThat(zeebeIndexAdapter.lookupPosition(16)).isEqualTo(-1);
+    assertThat(zeebeIndexAdapter.lookupPosition(20)).isEqualTo(-1);
     assertThat(zeebeIndexAdapter.lookupPosition(21)).isEqualTo(-1);
   }
 
@@ -79,6 +81,7 @@ public class ZeebeIndexTest {
     zeebeIndexAdapter.index(asZeebeEntry(8, 35), 16);
 
     // then
+    assertThat(zeebeIndexAdapter.lookupPosition(20)).isEqualTo(5);
     assertThat(zeebeIndexAdapter.lookupPosition(21)).isEqualTo(5);
     assertThat(zeebeIndexAdapter.lookupPosition(31)).isEqualTo(5);
     assertThat(zeebeIndexAdapter.lookupPosition(35)).isEqualTo(5);
@@ -103,7 +106,8 @@ public class ZeebeIndexTest {
     zeebeIndexAdapter.index(asZeebeEntry(10, 45), 20);
 
     // then
-    assertThat(zeebeIndexAdapter.lookupPosition(21)).isEqualTo(5);
+    assertThat(zeebeIndexAdapter.lookupPosition(20)).isEqualTo(5);
+    assertThat(zeebeIndexAdapter.lookupPosition(31)).isEqualTo(5);
     assertThat(zeebeIndexAdapter.lookupPosition(45)).isEqualTo(10);
     assertThat(zeebeIndexAdapter.lookupPosition(46)).isEqualTo(10);
   }
@@ -128,7 +132,7 @@ public class ZeebeIndexTest {
     zeebeIndexAdapter.truncate(8);
 
     // then
-    assertThat(zeebeIndexAdapter.lookupPosition(21)).isEqualTo(5);
+    assertThat(zeebeIndexAdapter.lookupPosition(20)).isEqualTo(5);
     assertThat(zeebeIndexAdapter.lookupPosition(31)).isEqualTo(5);
     assertThat(zeebeIndexAdapter.lookupPosition(35)).isEqualTo(5);
     assertThat(zeebeIndexAdapter.lookupPosition(45)).isEqualTo(5);
@@ -216,7 +220,7 @@ public class ZeebeIndexTest {
     assertThat(zeebeIndexAdapter.lookupPosition(46)).isEqualTo(10);
   }
 
-  private static Indexed asZeebeEntry(long index, long lowestPos) {
+  private static Indexed asZeebeEntry(final long index, final long lowestPos) {
     return new Indexed(
         index,
         new ZeebeEntry(0, System.currentTimeMillis(), lowestPos, lowestPos, ByteBuffer.allocate(0)),

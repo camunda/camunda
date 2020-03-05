@@ -24,12 +24,12 @@ public final class ZeebeIndexAdapter implements JournalIndex, ZeebeIndexMapping 
   private final SparseJournalIndex sparseJournalIndex;
   private final int density;
 
-  private ZeebeIndexAdapter(int density) {
+  private ZeebeIndexAdapter(final int density) {
     this.density = density;
     sparseJournalIndex = new SparseJournalIndex(density);
   }
 
-  public static ZeebeIndexAdapter ofDensity(int density) {
+  public static ZeebeIndexAdapter ofDensity(final int density) {
     return new ZeebeIndexAdapter(density);
   }
 
@@ -51,13 +51,11 @@ public final class ZeebeIndexAdapter implements JournalIndex, ZeebeIndexMapping 
 
   @Override
   public long lookupPosition(final long position) {
-    var index = positionIndexMapping.getOrDefault(position, -1L);
+    long index = -1L;
 
-    if (index == -1) {
-      final var lowerEntry = positionIndexMapping.lowerEntry(position);
-      if (lowerEntry != null) {
-        index = lowerEntry.getValue();
-      }
+    final var lowerEntry = positionIndexMapping.floorEntry(position);
+    if (lowerEntry != null) {
+      index = lowerEntry.getValue();
     }
 
     return index;
@@ -85,7 +83,7 @@ public final class ZeebeIndexAdapter implements JournalIndex, ZeebeIndexMapping 
   }
 
   @Override
-  public void compact(long index) {
+  public void compact(final long index) {
     final var lowerEntry = indexPositionMapping.lowerEntry(index);
 
     if (lowerEntry != null) {
