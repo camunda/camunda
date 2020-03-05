@@ -7,10 +7,19 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.protocols.raft.partition.RaftPartition;
+import io.atomix.protocols.raft.storage.log.RaftLogReader;
+import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.storage.journal.Indexed;
+import io.atomix.storage.journal.JournalReader.Mode;
+import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.client.api.response.PartitionInfo;
@@ -18,6 +27,7 @@ import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -25,6 +35,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // FIXME: rewrite tests now that leader election is not controllable
 public final class BrokerLeaderChangeTest {
@@ -79,6 +91,86 @@ public final class BrokerLeaderChangeTest {
     jobCompleter.waitForJobCompletion();
 
     jobCompleter.close();
+  }
+
+  @Test
+  public void shouldHaveConsistentLogPositionsAfterRoleChanges() {
+    // given
+    final int firstLeader = clusteringRule.getLeaderForPartition(1).getNodeId();
+    clientRule.createSingleJob(JOB_TYPE);
+    final Logger log = LoggerFactory.getLogger("FINDME");
+    log.info("First leader {}", firstLeader);
+
+    stepDown(firstLeader);
+    final int newLeader = clusteringRule.getLeaderForPartition(1).getNodeId();
+    log.info("Second leader {}", newLeader);
+
+    final int follower =
+        clusteringRule.getBrokers().stream()
+            .map(b -> b.getConfig().getCluster().getNodeId())
+            .filter(b -> !Set.of(firstLeader, newLeader).contains(b))
+            .findFirst()
+            .get();
+    log.info("Stopping follower {}", follower);
+    clusteringRule.stopBroker(follower); // So we have better control on who is leader
+    clientRule.createSingleJob(JOB_TYPE);
+
+    // when
+    // clusteringRule.stopBroker(newLeader.getNodeId());
+    clusteringRule.getBroker(newLeader).close();
+    clusteringRule.restartBrokerNoWait(follower); // Since follower's log is not uptodate
+
+    log.info("Third leader {}", clusteringRule.getLeaderForPartition(1).getNodeId());
+    assertThat(clusteringRule.getLeaderForPartition(1).getNodeId()).isEqualTo(firstLeader);
+
+    clientRule.createSingleJob(JOB_TYPE);
+
+    // then
+    verifyConsistentLog(firstLeader);
+  }
+
+  private void verifyConsistentLog(final int nodeId) {
+
+    final Broker broker = clusteringRule.getBroker(nodeId);
+    final RaftPartition raftPartition =
+        (RaftPartition)
+            broker
+                .getAtomix()
+                .getPartitionService()
+                .getPartitionGroup(GROUP_NAME)
+                .getPartition(PartitionId.from(GROUP_NAME, 1));
+    final RaftLogReader raftLogReader = raftPartition.getServer().openReader(-1, Mode.COMMITS);
+
+    long prevPos = -1;
+    while (raftLogReader.hasNext()) {
+      final Indexed<RaftLogEntry> entry = raftLogReader.next();
+      if (entry.type() == ZeebeEntry.class) {
+        final ZeebeEntry zeebeEntry = (ZeebeEntry) entry.entry();
+        assertThat(zeebeEntry.lowestPosition()).isGreaterThan(prevPos);
+        prevPos = zeebeEntry.highestPosition();
+      }
+    }
+  }
+
+  private void stepDown(final int nodeId) {
+    final Broker broker = clusteringRule.getBroker(nodeId);
+    final RaftPartition raftPartition =
+        (RaftPartition)
+            broker
+                .getAtomix()
+                .getPartitionService()
+                .getPartitionGroup(GROUP_NAME)
+                .getPartition(PartitionId.from(GROUP_NAME, 1));
+    raftPartition.stepDown().join();
+    waitUntil(
+        () -> {
+          if (clusteringRule.getLeaderForPartition(1).getNodeId() == nodeId) {
+            raftPartition.stepDown().join();
+            return false;
+          }
+          return true;
+        },
+        500);
   }
 
   class JobCompleter {

@@ -431,6 +431,13 @@ public final class ClusteringRule extends ExternalResource {
     waitForPartitionReplicationFactor();
   }
 
+  public void restartBrokerNoWait(final int nodeId) {
+    stopBroker(nodeId);
+    final Broker broker = getBroker(nodeId).start().join();
+    final SocketAddress commandApi = broker.getConfig().getNetwork().getCommandApi().getAddress();
+    waitUntilBrokerIsAddedToTopology(commandApi);
+  }
+
   private void waitUntilBrokerIsAddedToTopology(final SocketAddress socketAddress) {
     waitForTopology(
         topology ->
