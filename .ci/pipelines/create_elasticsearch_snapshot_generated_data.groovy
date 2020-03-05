@@ -107,6 +107,7 @@ spec:
           memory: 4Gi
     - name: zeebe
       image: camunda/zeebe:SNAPSHOT
+      imagePullPolicy: Always   #comment this out when using NOT snapshot dependency
       env:
       volumeMounts:
         - name: zeebe-configuration

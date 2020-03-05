@@ -116,6 +116,7 @@ spec:
             memory: 512Mi
       - name: zeebe
         image: camunda/zeebe:SNAPSHOT
+        imagePullPolicy: Always   #comment this out when using NOT snapshot dependency
         command: ["/bin/sh"]
         args: ["-c", "sleep 20 && tini -s /usr/local/bin/startup.sh"]
         env:
