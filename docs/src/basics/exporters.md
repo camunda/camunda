@@ -16,7 +16,7 @@ With it, you can:
 * Persist historical data by pushing it to an external data warehouse
 * Export records to a visualization tool (e.g. [zeebe-simple-monitor](https://github.com/zeebe-io/zeebe-simple-monitor/))
 
-Zeebe will only load exporters which are configured through the main Zeebe TOML
+Zeebe will only load exporters which are configured through the main Zeebe YAML
 configuration file.
 
 Once an exporter is configured, the next time Zeebe is started, the exporter

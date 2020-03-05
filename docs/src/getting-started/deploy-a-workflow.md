@@ -18,7 +18,7 @@ If you are using individual components, then you will need to manually configure
 
 _These instructions are for using separate components, and are not necessary when using Docker._
 
-First, open the `zeebe.cfg.toml` file (in the `conf` directory of the Zeebe broker) and enable the Zeebe Elasticsearch exporter.
+First, open the `zeebe.cfg.yaml` file (in the `config` directory of the Zeebe broker) and enable the Zeebe Elasticsearch exporter.
 
 Note that you need to un-comment _only_ these three lines to enable the exporter:
 
