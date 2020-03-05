@@ -11,11 +11,10 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportIndexHandler;
-import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -31,14 +30,13 @@ public class EngineImportIndexHandlerProvider {
 
   @Autowired
   private BeanFactory beanFactory;
-  private ApplicationContext applicationContext;
 
   private final EngineContext engineContext;
 
   private List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers;
   private List<ScrollBasedImportIndexHandler> scrollBasedHandlers;
-  private List<TimestampBasedImportIndexHandler> timestampBasedHandlers;
-  private Map<String, ImportIndexHandler> allHandlers;
+  private List<TimestampBasedEngineImportIndexHandler> timestampBasedEngineHandlers;
+  private Map<String, ImportIndexHandler<?, ?>> allHandlers;
 
   public EngineImportIndexHandlerProvider(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -50,17 +48,18 @@ public class EngineImportIndexHandlerProvider {
 
     scrollBasedHandlers = new ArrayList<>();
     allEntitiesBasedHandlers = new ArrayList<>();
-    timestampBasedHandlers = new ArrayList<>();
+    timestampBasedEngineHandlers = new ArrayList<>();
 
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
       .whitelistPackages(this.getClass().getPackage().getName())
       .scan()) {
 
-      scanResult.getSubclasses(TimestampBasedImportIndexHandler.class.getName())
+      scanResult.getSubclasses(TimestampBasedEngineImportIndexHandler.class.getName())
         .forEach(t -> {
-          ImportIndexHandler importIndexHandlerInstance = (ImportIndexHandler) getImportIndexHandlerInstance(engineContext, t.loadClass());
-          timestampBasedHandlers.add((TimestampBasedImportIndexHandler) importIndexHandlerInstance);
+          final TimestampBasedEngineImportIndexHandler importIndexHandlerInstance =
+            (TimestampBasedEngineImportIndexHandler) getImportIndexHandlerInstance(engineContext, t.loadClass());
+          timestampBasedEngineHandlers.add(importIndexHandlerInstance);
           allHandlers.put(t.loadClass().getSimpleName(), importIndexHandlerInstance);
         });
 
@@ -84,8 +83,8 @@ public class EngineImportIndexHandlerProvider {
     return allEntitiesBasedHandlers;
   }
 
-  public List<TimestampBasedImportIndexHandler> getTimestampBasedHandlers() {
-    return timestampBasedHandlers;
+  public List<TimestampBasedEngineImportIndexHandler> getTimestampBasedEngineHandlers() {
+    return timestampBasedEngineHandlers;
   }
 
   public List<ScrollBasedImportIndexHandler> getScrollBasedHandlers() {

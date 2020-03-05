@@ -10,5 +10,4 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 public interface ImportIndexDto extends OptimizeDto {
   String getEngine();
   String getEsTypeIndexRefersTo();
-
 }

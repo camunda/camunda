@@ -75,9 +75,11 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
       final List<ImportIndexDto> importIndexes = Stream
         .concat(
           createStreamForHandlers(importIndexHandlerRegistry.getAllEntitiesBasedHandlers(engineContext.getEngineAlias())),
-          createStreamForHandlers(importIndexHandlerRegistry.getTimestampBasedHandlers(engineContext.getEngineAlias()))
+          createStreamForHandlers(importIndexHandlerRegistry.getTimestampEngineBasedHandlers(engineContext.getEngineAlias()))
         )
-        .map(ImportIndexHandler::createIndexInformationForStoring)
+        .map(ImportIndexHandler::getIndexStateDto)
+        .filter(indexStateDto -> indexStateDto instanceof ImportIndexDto)
+        .map(indexStateDto -> (ImportIndexDto) indexStateDto)
         .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));
@@ -111,6 +113,11 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
   @Override
   public void resetBackoff() {
     this.dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
+  }
+
+  @Override
+  public void shutdown() {
+    elasticsearchImportJobExecutor.stopExecutingImportJobs();
   }
 
 }

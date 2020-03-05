@@ -6,14 +6,14 @@
 package org.camunda.optimize.service.importing.engine.handler;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
+import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class IdentityLinkLogImportIndexHandler extends TimestampBasedImportIndexHandler {
+public class IdentityLinkLogImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
   private static final String IDENTITY_LINK_LOG_IMPORT_INDEX_DOC_ID = "identityLinkLogImportIndex";
 
