@@ -79,11 +79,72 @@ public final class AsyncSnapshotDirector extends Actor {
     logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
 
     lastValidSnapshotPosition = -1;
+    actor.runOnCompletionBlockingCurrentPhase(
+        streamProcessor.getLastProcessedPositionAsync(),
+        (position, error) -> {
+          if (error == null) {
+            lastValidSnapshotPosition = position;
+            LOG.debug(
+                "The position of the last valid snapshot is '{}'. Taking snapshots beyond this position.",
+                lastValidSnapshotPosition);
+          } else {
+            LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
+          }
+        });
   }
 
   @Override
   protected void onActorCloseRequested() {
     logStream.removeOnCommitPositionUpdatedCondition(commitCondition);
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+    actor.call(
+        () ->
+            actor.runOnCompletion(
+                streamProcessor.getLastWrittenPositionAsync(),
+                (writtenPosition, ex1) -> {
+                  if (ex1 == null) {
+                    actor.runOnCompletion(
+                        streamProcessor.getLastProcessedPositionAsync(),
+                        (processedPosition, ex2) -> {
+                          if (ex2 == null) {
+
+                            logStream
+                                .getCommitPositionAsync()
+                                .onComplete(
+                                    (commitPosition, errorOnRetrieveCommitPos) -> {
+                                      if (errorOnRetrieveCommitPos == null) {
+                                        enforceSnapshotCreation(
+                                            commitPosition, writtenPosition, processedPosition);
+                                        super.closeAsync();
+                                        future.complete(null);
+                                      } else {
+                                        LOG.error(
+                                            "Unexpected error on retrieving commit position", ex2);
+                                        future.completeExceptionally(errorOnRetrieveCommitPos);
+                                        super.closeAsync();
+                                      }
+                                    });
+
+                          } else {
+                            LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
+                            super.closeAsync();
+                            future.completeExceptionally(ex2);
+                          }
+                        });
+
+                  } else {
+                    LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, ex1);
+                    super.closeAsync();
+                    future.completeExceptionally(ex1);
+                  }
+                }));
+
+    return future;
   }
 
   private String getConditionNameForPosition() {
@@ -198,53 +259,5 @@ public final class AsyncSnapshotDirector extends Actor {
         LOG.error(ERROR_MSG_ENFORCED_SNAPSHOT, ex);
       }
     }
-  }
-
-  public ActorFuture<Void> closeAsync() {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
-    actor.call(
-        () ->
-            actor.runOnCompletion(
-                streamProcessor.getLastWrittenPositionAsync(),
-                (writtenPosition, ex1) -> {
-                  if (ex1 == null) {
-                    actor.runOnCompletion(
-                        streamProcessor.getLastProcessedPositionAsync(),
-                        (processedPosition, ex2) -> {
-                          if (ex2 == null) {
-
-                            logStream
-                                .getCommitPositionAsync()
-                                .onComplete(
-                                    (commitPosition, errorOnRetrieveCommitPos) -> {
-                                      if (errorOnRetrieveCommitPos == null) {
-                                        enforceSnapshotCreation(
-                                            commitPosition, writtenPosition, processedPosition);
-                                        super.closeAsync();
-                                        future.complete(null);
-                                      } else {
-                                        LOG.error(
-                                            "Unexpected error on retrieving commit position", ex2);
-                                        future.completeExceptionally(errorOnRetrieveCommitPos);
-                                        super.closeAsync();
-                                      }
-                                    });
-
-                          } else {
-                            LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
-                            super.closeAsync();
-                            future.completeExceptionally(ex2);
-                          }
-                        });
-
-                  } else {
-                    LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, ex1);
-                    super.closeAsync();
-                    future.completeExceptionally(ex1);
-                  }
-                }));
-
-    return future;
   }
 }

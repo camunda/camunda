@@ -102,6 +102,7 @@ public final class AsyncSnapshotingTest {
     mockStreamProcessor = mock(StreamProcessor.class);
 
     when(mockStreamProcessor.getLastProcessedPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(0L))
         .thenReturn(CompletableActorFuture.completed(25L))
         .thenReturn(CompletableActorFuture.completed(32L));
 
@@ -334,7 +335,7 @@ public final class AsyncSnapshotingTest {
 
     // when
     final InOrder inOrder = Mockito.inOrder(snapshotController, mockStreamProcessor);
-    inOrder.verify(mockStreamProcessor, TIMEOUT).getLastProcessedPositionAsync();
+    inOrder.verify(mockStreamProcessor, TIMEOUT.times(2)).getLastProcessedPositionAsync();
     inOrder.verify(snapshotController, TIMEOUT).takeTempSnapshot(anyLong());
     inOrder.verify(snapshotController, TIMEOUT).commitSnapshot(any(Snapshot.class));
     inOrder.verify(snapshotController, TIMEOUT).replicateLatestSnapshot(any());
