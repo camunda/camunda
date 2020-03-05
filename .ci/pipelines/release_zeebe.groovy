@@ -36,10 +36,10 @@ spec:
       resources:
         limits:
           cpu: 2
-          memory: 1Gi
+          memory: 16Gi
         requests:
           cpu: 2
-          memory: 1Gi
+          memory: 16Gi
     - name: golang
       image: golang:1.13.4
       command: ["cat"]
