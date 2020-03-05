@@ -16,9 +16,9 @@ import {t} from 'translation';
 const {convertCamelToSpaces} = formatters;
 
 const labels = {
-  var: 'variable',
-  inp: 'inputVariable',
-  out: 'outputVariable'
+  inputVariables: 'input',
+  outputVariables: 'output',
+  variables: 'variable'
 };
 
 export default function ColumnSelection({report, onChange}) {
@@ -35,7 +35,7 @@ export default function ColumnSelection({report, onChange}) {
     if (typeof value !== 'object' || value === null) {
       return [...prev, curr];
     } else {
-      return [...prev, ...Object.keys(value).map(key => `${curr.substring(0, 3)}__${key}`)];
+      return [...prev, ...Object.keys(value).map(key => `${labels[curr]}:${key}`)];
     }
   }, []);
 
@@ -49,14 +49,17 @@ export default function ColumnSelection({report, onChange}) {
       {allColumns.map(column => {
         let prefix, name;
 
-        if (column.includes('__')) {
-          [prefix, name] = column.split('__');
-          if (prefix === 'inp') {
+        if (column.includes(':')) {
+          [prefix, name] = column.split(':');
+          let type = 'variable';
+          if (prefix === 'input') {
             name = columns.inputVariables[name].name;
-          } else if (prefix === 'out') {
+            type = 'inputVariable';
+          } else if (prefix === 'output') {
             name = columns.outputVariables[name].name;
+            type = 'outputVariable';
           }
-          prefix = t(`common.filter.types.${labels[prefix]}`) + ': ';
+          prefix = t(`common.filter.types.${type}`) + ': ';
         } else {
           prefix = '';
           name = convertCamelToSpaces(column);

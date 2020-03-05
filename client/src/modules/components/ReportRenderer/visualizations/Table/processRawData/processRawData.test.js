@@ -36,7 +36,10 @@ const result = {
 it('should transform data to table compatible format', () => {
   expect(processRawData({report: {data, result}})).toEqual({
     head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var1', 'var2']}],
-    body: [['foo', 'bar', '12', ''], ['xyz', 'abc', '', 'true']]
+    body: [
+      ['foo', 'bar', '12', ''],
+      ['xyz', 'abc', '', 'true']
+    ]
   });
 });
 
@@ -48,19 +51,25 @@ it('should not include columns that are hidden', () => {
   };
   expect(processRawData({report: {data, result}})).toEqual({
     head: ['Process Instance Id', {label: 'Variables', columns: ['var1', 'var2']}],
-    body: [['foo', '12', ''], ['xyz', '', 'true']]
+    body: [
+      ['foo', '12', ''],
+      ['xyz', '', 'true']
+    ]
   });
 });
 
-it('should exclude variable columns using the var__ prefix', () => {
+it('should exclude variable columns using the variable prefix', () => {
   const data = {
     configuration: {
-      excludedColumns: ['var__var1']
+      excludedColumns: ['variable:var1']
     }
   };
   expect(processRawData({report: {data, result}})).toEqual({
     head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var2']}],
-    body: [['foo', 'bar', ''], ['xyz', 'abc', 'true']]
+    body: [
+      ['foo', 'bar', ''],
+      ['xyz', 'abc', 'true']
+    ]
   });
 });
 
@@ -131,7 +140,7 @@ it('should not make the processInstanceId a link if no endpoint is specified', (
 it('should show no data message when all column are excluded', () => {
   const data = {
     configuration: {
-      excludedColumns: ['processInstanceId', 'prop2', 'var__var1', 'var__var2']
+      excludedColumns: ['processInstanceId', 'prop2', 'variable:var1', 'variable:var2']
     }
   };
   expect(processRawData({report: {data, result}})).toEqual({

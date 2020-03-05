@@ -42,7 +42,7 @@ exports[`should provde a sane interface for decision tables 1`] = `
   <Switch
     checked={true}
     className="ColumnSelectionSwitch"
-    key="inp__crypticId"
+    key="input:crypticId"
     label={
       <React.Fragment>
         <b>
@@ -56,7 +56,7 @@ exports[`should provde a sane interface for decision tables 1`] = `
   <Switch
     checked={true}
     className="ColumnSelectionSwitch"
-    key="out__clause7"
+    key="output:clause7"
     label={
       <React.Fragment>
         <b>

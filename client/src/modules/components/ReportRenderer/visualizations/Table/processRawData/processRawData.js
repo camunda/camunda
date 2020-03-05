@@ -37,7 +37,7 @@ export default function processRawData(
     entry => entry !== 'variables' && !excludedColumns.includes(entry)
   );
   const variableNames = Object.keys(result[0].variables).filter(
-    entry => !excludedColumns.includes('var__' + entry)
+    entry => !excludedColumns.includes('variable:' + entry)
   );
 
   const body = result.map(instance => {

@@ -71,11 +71,17 @@ it('should return correct table props for decision tables', () => {
       'Prop2',
       {
         label: 'Input Variables',
-        columns: [{id: 'var1', label: 'Var 1'}, {id: 'var2', label: 'Var 2'}]
+        columns: [
+          {id: 'var1', label: 'Var 1'},
+          {id: 'var2', label: 'Var 2'}
+        ]
       },
       {label: 'Output Variables', columns: [{id: 'result', label: 'Result'}]}
     ],
-    body: [['foo', 'bar', '12', '', '1'], ['xyz', 'abc', '', 'true', '8']]
+    body: [
+      ['foo', 'bar', '12', '', '1'],
+      ['xyz', 'abc', '', 'true', '8']
+    ]
   });
 });
 
@@ -101,7 +107,7 @@ it('should show no data message when all column are excluded for decision tables
         result,
         data: {
           configuration: {
-            excludedColumns: ['decisionInstanceId', 'prop2', 'inp__var1', 'out__result']
+            excludedColumns: ['decisionInstanceId', 'prop2', 'input:var1', 'output:result']
           }
         }
       }

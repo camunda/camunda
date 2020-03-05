@@ -30,10 +30,10 @@ export default function processDecisionRawData(
   );
 
   const inputVariables = Object.keys(result[0].inputVariables).filter(
-    entry => !excludedColumns.includes('inp__' + entry)
+    entry => !excludedColumns.includes('input:' + entry)
   );
   const outputVariables = Object.keys(result[0].outputVariables).filter(
-    entry => !excludedColumns.includes('out__' + entry)
+    entry => !excludedColumns.includes('output:' + entry)
   );
 
   if (instanceProps.length + inputVariables.length + outputVariables.length === 0) {
