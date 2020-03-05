@@ -9,15 +9,19 @@ package io.zeebe.el.impl;
 
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
+import io.zeebe.el.EvaluationContext;
 import io.zeebe.el.EvaluationResult;
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
+import io.zeebe.el.impl.feel.FeelEvaluationResult;
+import io.zeebe.el.impl.feel.FeelToMessagePackTransformer;
+import io.zeebe.el.impl.feel.FeelVariableContext;
+import io.zeebe.el.impl.feel.MessagePackValueMapper;
 import java.util.regex.Pattern;
-import org.agrona.DirectBuffer;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
 import org.camunda.feel.ParsedExpression;
-import org.camunda.feel.spi.JavaValueMapper;
+import org.camunda.feel.interpreter.Val;
 import scala.util.Either;
 
 /**
@@ -29,13 +33,14 @@ import scala.util.Either;
  */
 public final class FeelExpressionLanguage implements ExpressionLanguage {
 
-  private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\=(.+)");
+  private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\=(.+)", Pattern.DOTALL);
   private static final Pattern STATIC_VALUE_PATTERN = Pattern.compile("[a-zA-Z][a-zA-Z0-9_\\-]*");
 
   private final FeelEngine feelEngine =
-      new FeelEngine.Builder().customValueMapper(new JavaValueMapper()).build();
+      new FeelEngine.Builder().customValueMapper(new MessagePackValueMapper()).build();
 
-  private final MessagePackConverter messagePackConverter = new MessagePackConverter();
+  private final FeelToMessagePackTransformer messagePackTransformer =
+      new FeelToMessagePackTransformer();
 
   @Override
   public Expression parseExpression(final String expression) {
@@ -63,9 +68,9 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   @Override
   public EvaluationResult evaluateExpression(
-      final Expression expression, final DirectBuffer variables) {
+      final Expression expression, final EvaluationContext context) {
     ensureNotNull("expression", expression);
-    ensureNotNull("variables", variables);
+    ensureNotNull("context", context);
 
     if (!expression.isValid()) {
       final var failureMessage = expression.getFailureMessage();
@@ -77,7 +82,7 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
     } else if (expression instanceof FeelExpression) {
       final var feelExpression = (FeelExpression) expression;
-      return evaluateFeelExpression(expression, variables, feelExpression);
+      return evaluateFeelExpression(expression, context, feelExpression);
     }
 
     throw new IllegalArgumentException(
@@ -99,21 +104,30 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   private EvaluationResult evaluateFeelExpression(
       final Expression expression,
-      final DirectBuffer variables,
+      final EvaluationContext context,
       final FeelExpression feelExpression) {
 
     final var parsedExpression = feelExpression.getParsedExpression();
-    final var variablesAsMap = messagePackConverter.readMessagePack(variables);
+    final var feelContext = new FeelVariableContext(context);
 
-    final Either<Failure, Object> evalResult = feelEngine.eval(parsedExpression, variablesAsMap);
+    final Either<Failure, Object> evalResult = feelEngine.eval(parsedExpression, feelContext);
 
     if (evalResult.isLeft()) {
       final var failure = evalResult.left().get();
       return new EvaluationFailure(expression, failure.message());
+    }
+
+    final var result = evalResult.right().get();
+
+    if (result instanceof Val) {
+      return new FeelEvaluationResult(
+          expression, (Val) result, messagePackTransformer::toMessagePack);
 
     } else {
-      final var result = evalResult.right().get();
-      return new FeelEvaluationResult(expression, result);
+      throw new IllegalStateException(
+          String.format(
+              "Expected FEEL evaluation result to be of type '%s' but was '%s'",
+              Val.class, result.getClass()));
     }
   }
 }

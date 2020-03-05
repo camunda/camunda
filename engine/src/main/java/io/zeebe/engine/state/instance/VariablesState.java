@@ -221,6 +221,46 @@ public class VariablesState {
     return variablesColumnFamily.get(scopeKeyVariableNameKey);
   }
 
+  /**
+   * Find the variable with the given name. If the variable is not present in the given scope then
+   * it looks in the parent scope and continues until it is found.
+   *
+   * @param scopeKey the key of the variable scope to start from
+   * @param name the name of the variable
+   * @return the value of the variable, or {@code null} if it is not present in the variable scope
+   */
+  public DirectBuffer getVariable(final long scopeKey, final DirectBuffer name) {
+    return getVariable(scopeKey, name, 0, name.capacity());
+  }
+
+  /**
+   * Find the variable with the given name. If the variable is not present in the given scope then
+   * it looks in the parent scope and continues until it is found.
+   *
+   * @param scopeKey the key of the variable scope to start from
+   * @param name the buffer that contains the name of the variable
+   * @param nameOffset the offset of name in the buffer
+   * @param nameLength the length of the name in the buffer
+   * @return the value of the variable, or {@code null} if it is not present in the variable scope
+   */
+  public DirectBuffer getVariable(
+      final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
+
+    long currentScopeKey = scopeKey;
+    do {
+      final VariableInstance variable =
+          getVariableLocal(currentScopeKey, name, nameOffset, nameLength);
+
+      if (variable != null) {
+        return variable.getValue();
+      }
+
+      currentScopeKey = getParent(currentScopeKey);
+    } while (currentScopeKey >= 0);
+
+    return null;
+  }
+
   public void setVariablesFromDocument(
       final long scopeKey, final long workflowKey, final DirectBuffer document) {
     // 1. index entries in the document
