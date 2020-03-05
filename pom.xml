@@ -17,6 +17,7 @@
     <module>bom</module>
     <module>parent</module>
     <module>broker</module>
+    <module>benchmarks/project/</module>
     <module>qa</module>
     <module>protocol-test-util</module>
     <module>samples</module>
