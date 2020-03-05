@@ -4,5 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export * from './InstancesPollContext';
-export * from './useInstancesPollContext';
+import {useContext} from 'react';
+import {InstancesPollContext} from './InstancesPollContext';
+
+const useInstancesPollContext = () => useContext(InstancesPollContext);
+
+export {useInstancesPollContext};
