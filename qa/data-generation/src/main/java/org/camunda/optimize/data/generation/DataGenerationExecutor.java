@@ -10,6 +10,7 @@ import io.github.classgraph.ScanResult;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
+import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -28,54 +29,59 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class DataGenerationExecutor {
 
-  private Long totalInstanceCount;
-  private String engineRestEndpoint;
-  private boolean removeDeployments;
-  private SimpleEngineClient engineClient;
-  private HashMap<String, Integer> definitions;
+  private final DataGenerationInformation dataGenerationInformation;
 
-  private List<DataGenerator> dataGenerators;
+  private SimpleEngineClient engineClient;
+
+  private List<DataGenerator> allDataGenerators = new ArrayList<>();
   private ThreadPoolExecutor importExecutor;
-  private BlockingQueue<Runnable> importJobsQueue;
 
   private ScheduledExecutorService progressReporter;
   private UserGenerator userGenerator;
 
-  public DataGenerationExecutor(final long totalInstanceCount,
-                                final String engineRestEndpoint,
-                                final boolean removeDeployments,
-                                HashMap<String, Integer> definitions) {
-    this.totalInstanceCount = totalInstanceCount;
-    this.engineRestEndpoint = engineRestEndpoint;
-    this.removeDeployments = removeDeployments;
-    this.definitions = definitions;
+  public DataGenerationExecutor(final DataGenerationInformation dataGenerationInformation) {
+    this.dataGenerationInformation = dataGenerationInformation;
+    init();
   }
 
   private void init() {
     final int queueSize = 100;
-    importJobsQueue = new ArrayBlockingQueue<>(queueSize);
+    final BlockingQueue<Runnable> importJobsQueue = new ArrayBlockingQueue<>(queueSize);
     importExecutor = new ThreadPoolExecutor(
       1, 1, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
-    engineClient = new SimpleEngineClient(engineRestEndpoint);
+    engineClient = new SimpleEngineClient(dataGenerationInformation.getEngineRestEndpoint());
     engineClient.initializeStandardUserAndGroupAuthorizations();
 
-    if (this.removeDeployments) {
+    if (dataGenerationInformation.isRemoveDeployments()) {
       engineClient.cleanUpDeployments();
     }
-    initGenerators(engineClient);
+    initGenerators();
   }
 
-  private void initGenerators(final SimpleEngineClient engineClient) {
+  private void initGenerators() {
     userGenerator = new UserGenerator(engineClient);
+    List<DataGenerator> processDataGenerators = createGenerators(
+      dataGenerationInformation.getProcessDefinitions(),
+      dataGenerationInformation.getProcessInstanceCountToGenerate()
+    );
+    List<DataGenerator> decisionDataGenerators = createGenerators(
+      dataGenerationInformation.getDecisionDefinitions(),
+      dataGenerationInformation.getDecisionInstanceCountToGenerate()
+    );
+    allDataGenerators.addAll(processDataGenerators);
+    allDataGenerators.addAll(decisionDataGenerators);
+  }
 
-    dataGenerators = new ArrayList<>();
+  private List<DataGenerator> createGenerators(final HashMap<String, Integer> definitions,
+                                               final Long instanceCountToGenerate) {
+    List<DataGenerator> dataGenerators = new ArrayList<>();
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
       .whitelistPackages(DataGenerator.class.getPackage().getName())
       .scan()) {
       scanResult.getSubclasses(DataGenerator.class.getName()).stream()
-        .filter(g -> definitions.keySet().contains(g.getSimpleName()))
+        .filter(g -> definitions.containsKey(g.getSimpleName()))
         .forEach(s -> {
           try {
             dataGenerators.add((DataGenerator) s.loadClass()
@@ -86,13 +92,15 @@ public class DataGenerationExecutor {
           }
         });
     }
-    setInstanceNumberToGenerateForEachGenerator();
+    addInstanceCountToGenerators(dataGenerators, instanceCountToGenerate);
+    return dataGenerators;
   }
 
-  private void setInstanceNumberToGenerateForEachGenerator() {
+  private void addInstanceCountToGenerators(final List<DataGenerator> dataGenerators,
+                                            final Long instanceCountToGenerate) {
     int nGenerators = dataGenerators.size();
-    int stepSize = totalInstanceCount.intValue() / nGenerators;
-    int missingCount = totalInstanceCount.intValue() % nGenerators;
+    int stepSize = instanceCountToGenerate.intValue() / nGenerators;
+    int missingCount = instanceCountToGenerate.intValue() % nGenerators;
     dataGenerators.forEach(
       generator -> generator.setInstanceCountToGenerate(stepSize)
     );
@@ -100,12 +108,11 @@ public class DataGenerationExecutor {
   }
 
   public void executeDataGeneration() {
-    init();
     userGenerator.generateUsers();
-    for (DataGenerator dataGenerator : getDataGenerators()) {
+    for (DataGenerator dataGenerator : allDataGenerators) {
       importExecutor.execute(dataGenerator);
     }
-    progressReporter = reportDataGenerationProgress(importJobsQueue);
+    progressReporter = reportDataGenerationProgress();
   }
 
   public void awaitDataGenerationTermination() {
@@ -132,14 +139,14 @@ public class DataGenerationExecutor {
     exec.shutdownNow();
   }
 
-  private ScheduledExecutorService reportDataGenerationProgress(BlockingQueue<Runnable> importJobsQueue) {
+  private ScheduledExecutorService reportDataGenerationProgress() {
     ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
     Runnable reportFunc = () -> {
       RuntimeMXBean rb = ManagementFactory.getRuntimeMXBean();
-      log.info("Progress report for running data generators (total: {} generators)", getTotalDataGeneratorCount());
+      log.info("Progress report for running data generators (total: {} generators)", allDataGenerators.size());
       int totalInstancesToGenerate = 0;
       int finishedInstances = 0;
-      for (DataGenerator dataGenerator : getDataGenerators()) {
+      for (DataGenerator dataGenerator : allDataGenerators) {
         totalInstancesToGenerate += dataGenerator.getInstanceCountToGenerate();
         finishedInstances += dataGenerator.getStartedInstanceCount();
         if (dataGenerator.getStartedInstanceCount() > 0
@@ -171,7 +178,7 @@ public class DataGenerationExecutor {
     return exec;
   }
 
-  private class WaitHandler implements RejectedExecutionHandler {
+  private static class WaitHandler implements RejectedExecutionHandler {
     @Override
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
       try {
@@ -183,11 +190,4 @@ public class DataGenerationExecutor {
 
   }
 
-  private int getTotalDataGeneratorCount() {
-    return dataGenerators.size();
-  }
-
-  private List<DataGenerator> getDataGenerators() {
-    return dataGenerators;
-  }
 }

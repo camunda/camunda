@@ -63,7 +63,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.6.0</version>
         <configuration>
-          <mainClass>org.camunda.optimize.data.generation.Main</mainClass>
+          <mainClass>org.camunda.optimize.data.generation.DataGenerationMain</mainClass>
           <arguments>
             <!-- Add your arguments here. Example arguments:-->
             <!--<argument>-numberOfProcessInstances</argument>-->

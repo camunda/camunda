@@ -12,7 +12,10 @@ with variables containing each possible variable type in Camunda.
 Before you can start the data generation the Camunda BPM platform
 must have already been started.  
 
-**Important note:** the user operations log will only be written to the Engine if the property `restrictUserOperationLogToAuthenticatedUsers` is set to false in the configuration. So before generating data with this module, you need to add the following line to the properties section of your Engine configuration:
+**Important note:** the user operations log will only be written to the Engine if the property 
+`restrictUserOperationLogToAuthenticatedUsers` is set to false in the configuration. So before 
+generating data with this module, you need to add the following line to the properties section 
+of your Engine configuration:
 ```
 <property name="restrictUserOperationLogToAuthenticatedUsers">false</property>
 ```
@@ -29,6 +32,14 @@ To configure the data generation, you have the following two possibilities:
 * adjust the number of process instances that are being generated (the default value is displayed):
 ```
 mvn clean compile exec:java -Dexec.args="--numberOfProcessInstances 100000"
+```
+
+* adjust the number of decision instances that are being evaluated (the default value is displayed).
+Please note that some of the DMN diagrams contain DRDs (Decision Requirement Diagrams). That means 
+ at the end you'll end up with more decision instances than you stated in the generation (because
+ decision tables are connected and the output of one decision triggers another decision):
+```
+mvn clean compile exec:java -Dexec.args="--numberOfDecisionInstances 10000"
 ```
 
 * adjust the rest endpoint to the engine (the default value is displayed):
@@ -49,20 +60,21 @@ mvn clean compile exec:java -Dexec.args="--timeoutInHours 16"
 mvn clean compile exec:java -Dexec.args="--removeDeployments true"
 ```
 
-* specify process definitions and number of version to deploy (default value includes all of the 20 processes, so an example value is displayed)  
-List comma separated definitions specifying the number of versions to deploy after a colon. Random number of versions is deployed if the number is not specified explicitly.
+* specify **process definitions** and number of versions to deploy (default value includes all 
+of the 25 processes, so an example value is displayed) List comma-separated definitions specifying 
+the number of versions to deploy after a colon. A random number of versions are deployed if the number 
+is not specified explicitly.
 
 ```
-mvn clean compile exec:java -Dexec.args="--definitions Invoice:10,ChangeContactData:,BookRequest:5"
+mvn clean compile exec:java -Dexec.args="--processDefinitions Invoice:10,ChangeContactData:3,BookRequest:5"
 ```
-Availible processes are:  
+Available processes are:  
 * BranchAnalysis  
 * BookRequest  
 * EmbeddedSubprocessRequest  
 * MultiInstanceSubprocessRequest  
 * HiringProcess  
 * ExtendedOrder  
-* DmnTable  
 * LeadQualification  
 * Invoice  
 * OrderConfirmation  
@@ -79,6 +91,23 @@ Availible processes are:
 * GroupElements
 * DRIProcessWithLoadsOfVariables
 
+* specify **decision definitions** and number of versions to deploy (default value includes all of 
+the 6 decisions, so an example value is displayed)  List comma-separated definitions specifying the 
+number of versions to deploy after a colon. A random number of versions are deployed if the number 
+is not specified explicitly.
+
+```
+mvn clean compile exec:java -Dexec.args="--decisionDefinitions DecideDish:10,InvoiceBusinessDecisions:5"
+```
+
+Available decisions are:
+* DecideDish
+* ExampleDmn11
+* ExampleDmn12
+* ExampleDmn13
+* InvoiceBusinessDecisions
+* InvoiceBusinessDecisionsFor2TenantsAndShared
+
 
 ### Data generation progress
 Once the data generation is started, it will print out the progress of
@@ -94,4 +123,5 @@ HiringProcess - 5 tenant specific definitions (tenants: hr, engineering, sales, 
 InvoiceData - 2 tenant specific definitions (tenants: sales, engineering) & shared definition
 ```
 ### Analysis testing
-AnalysisTesting process contains outlier instances and is suitable to test branch and outlier analysis (e.g. in the E2E tests)
+AnalysisTesting process contains outlier instances and is suitable to test branch and outlier 
+analysis (e.g. in the E2E tests)

@@ -32,7 +32,7 @@ public class UserTaskCompleter {
   private static final OffsetDateTime OFFSET_DATE_TIME_OF_EPOCH = OffsetDateTime.from(
     Instant.EPOCH.atZone(ZoneId.of("UTC"))
   );
-  public static final int OUTLIER_DELAY = 5000;
+  private static final int OUTLIER_DELAY = 5000;
 
   private final String processDefinitionId;
   private ExecutorService taskExecutorService;

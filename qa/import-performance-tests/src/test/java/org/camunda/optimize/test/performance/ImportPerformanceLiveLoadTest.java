@@ -6,12 +6,14 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.data.generation.DataGenerationExecutor;
+import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
+import org.camunda.optimize.data.generation.generators.impl.decision.DecisionDataGenerator;
+import org.camunda.optimize.data.generation.generators.impl.process.ProcessDataGenerator;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,8 +21,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.camunda.optimize.data.generation.Main.getDefaultDefinitions;
-import static org.camunda.optimize.data.generation.Main.parseDefinitions;
+import static org.camunda.optimize.data.generation.DataGenerationMain.getDefaultDefinitionsOfClass;
+import static org.camunda.optimize.data.generation.DataGenerationMain.parseDefinitions;
 
 public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
 
@@ -65,23 +67,24 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
 
   private void waitForDataGenerationTaskToComplete(Future<Long> dataGenerationTask)
     throws Exception {
-    final Long dataGenerationDurationMinutes = dataGenerationTask.get(30, TimeUnit.MINUTES);
+    final Long dataGenerationDurationMinutes = dataGenerationTask.get(40, TimeUnit.MINUTES);
     logger.info("Data generation took [{}] min", dataGenerationDurationMinutes);
   }
 
-  private Future<Long> startDataGeneration(int totalInstanceCount) {
+  private Future<Long> startDataGeneration(int instanceCountToGenerate) {
     final ExecutorService executor = Executors.newSingleThreadExecutor();
     // when I start data generation and wait for it to finish
     return executor.submit(() -> {
       //given I have data in the data
       final OffsetDateTime beforeDataGeneration = OffsetDateTime.now();
-      HashMap<String, Integer> definitions = parseDefinitions(getDefaultDefinitions());
-      final DataGenerationExecutor dataGenerationExecutor = new DataGenerationExecutor(
-        totalInstanceCount,
-        configurationService.getEngineRestApiEndpointOfCustomEngine("camunda-bpm"),
-        false,
-        definitions
-      );
+      DataGenerationInformation dataGenerationInformation = new DataGenerationInformation()
+        .setProcessInstanceCountToGenerate((long) instanceCountToGenerate)
+        .setDecisionInstanceCountToGenerate((long) instanceCountToGenerate)
+        .setProcessDefinitions(parseDefinitions(getDefaultDefinitionsOfClass(ProcessDataGenerator.class)))
+        .setDecisionDefinitions(parseDefinitions(getDefaultDefinitionsOfClass(DecisionDataGenerator.class)))
+        .setEngineRestEndpoint(configurationService.getEngineRestApiEndpointOfCustomEngine("camunda-bpm"))
+        .setRemoveDeployments(false);
+      final DataGenerationExecutor dataGenerationExecutor = new DataGenerationExecutor(dataGenerationInformation);
       dataGenerationExecutor.executeDataGeneration();
       dataGenerationExecutor.awaitDataGenerationTermination();
       return ChronoUnit.MINUTES.between(beforeDataGeneration, OffsetDateTime.now());

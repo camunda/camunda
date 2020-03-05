@@ -36,6 +36,7 @@ import org.camunda.optimize.data.generation.generators.client.dto.MessageCorrela
 import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
 import org.camunda.optimize.data.generation.generators.client.dto.VariableValue;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -222,6 +223,32 @@ public class SimpleEngineClient {
     }
   }
 
+  public void startDecisionInstance(String decisionDefinitionId,
+                                    Map<String, Object> variables) {
+    final HttpPost post = new HttpPost(getStartDecisionInstanceUri(decisionDefinitionId));
+    post.addHeader("Content-Type", ContentType.APPLICATION_JSON.toString());
+    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
+    try {
+      try (final CloseableHttpResponse response = client.execute(post)) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
+          String body = "";
+          if (response.getEntity() != null) {
+            body = EntityUtils.toString(response.getEntity());
+          }
+          throw new RuntimeException(
+            "Could not start the decision definition. " +
+              "Request: [" + post.toString() + "]. " +
+              "Response: [" + body + "]"
+          );
+        }
+      }
+    } catch (IOException e) {
+      final String message = "Could not start the given decision model!";
+      log.error(message, e);
+      throw new RuntimeException(message, e);
+    }
+  }
+
   public void correlateMessage(String messageName) {
     HttpPost post = new HttpPost(engineRestEndpoint + "/message/");
     post.setHeader("Content-type", "application/json");
@@ -320,6 +347,19 @@ public class SimpleEngineClient {
     }
   }
 
+  public List<String> deployDecisions(DmnModelInstance modelInstance, int nVersions, List<String> tenants) {
+    List<String> result = new ArrayList<>();
+    IntStream.rangeClosed(1, nVersions)
+      .mapToObj(n -> deployDecisionAndGetIds(modelInstance, tenants))
+      .collect(Collectors.toList()).forEach(result::addAll);
+    return result;
+  }
+
+  private List<String> deployDecisionAndGetIds(DmnModelInstance modelInstance, List<String> tenants) {
+    List<DeploymentDto> deploymentDto = deployDecisionDefinition(modelInstance, tenants);
+    return deploymentDto.stream().map(this::getDecisionDefinitionId).collect(Collectors.toList());
+  }
+
   public List<DeploymentDto> deployDecisionDefinition(DmnModelInstance dmnModelInstance, List<String> tenants) {
     String decision = Dmn.convertToString(dmnModelInstance);
     List<HttpPost> deploymentRequest = createDecisionDeploymentRequest(decision, tenants);
@@ -343,6 +383,41 @@ public class SimpleEngineClient {
     List<DeploymentDto> deploymentDto = deployProcess(modelInstance, tenants);
     return deploymentDto.stream().map(this::getProcessDefinitionId).collect(Collectors.toList());
   }
+
+  private String getDecisionDefinitionId(DeploymentDto deployment) {
+    List<DecisionDefinitionEngineDto> decisionDefinitions = getAllDecisionDefinitions(deployment);
+    if (decisionDefinitions.size() != 1) {
+      log.warn("Deployment should contain only one decision definition!");
+    }
+    return decisionDefinitions.get(0).getId();
+  }
+
+  private List<DecisionDefinitionEngineDto> getAllDecisionDefinitions(DeploymentDto deployment) {
+    HttpRequestBase get = new HttpGet(getDecisionDefinitionUri());
+    URI uri = null;
+    try {
+      uri = new URIBuilder(get.getURI())
+        .addParameter("deploymentId", deployment.getId())
+        .build();
+    } catch (URISyntaxException e) {
+      log.error("Could not build uri!", e);
+    }
+    get.setURI(uri);
+    List<DecisionDefinitionEngineDto> result = new ArrayList<>();
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+      result = objectMapper.readValue(
+        responseString,
+        new TypeReference<List<DecisionDefinitionEngineDto>>() {
+        }
+      );
+    } catch (Exception e) {
+      log.error("Could not fetch all decision definitions for given deployment!", e);
+    }
+
+    return result;
+  }
+
 
   private String getProcessDefinitionId(DeploymentDto deployment) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment);
@@ -514,6 +589,10 @@ public class SimpleEngineClient {
     return engineRestEndpoint + "/process-definition/" + procDefId + "/start";
   }
 
+  private String getStartDecisionInstanceUri(final String decisionDefinitionId) {
+    return engineRestEndpoint + "/decision-definition/" + decisionDefinitionId + "/evaluate";
+  }
+
   private String getTaskListCreatedAfterUri(final String processDefinitionId, long limit,
                                             final OffsetDateTime createdAfter) {
     return engineRestEndpoint + "/task?active=true&sortBy=created&sortOrder=asc" +
@@ -530,6 +609,10 @@ public class SimpleEngineClient {
 
   private String getProcessDefinitionUri() {
     return engineRestEndpoint + "/process-definition";
+  }
+
+  private String getDecisionDefinitionUri() {
+    return engineRestEndpoint + "/decision-definition";
   }
 
   private String getCreateDeploymentUri() {

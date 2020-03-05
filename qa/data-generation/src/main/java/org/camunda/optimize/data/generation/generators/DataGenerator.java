@@ -7,17 +7,13 @@ package org.camunda.optimize.data.generation.generators;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.dmn.Dmn;
-import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -32,11 +28,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-public abstract class DataGenerator implements Runnable {
+public abstract class DataGenerator<ModelType extends ModelInstance> implements Runnable {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private int nVersions;
+  protected int nVersions;
   private int instanceCountToGenerate;
   private MessageEventCorrelater messageEventCorrelater;
   private BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
@@ -51,9 +47,9 @@ public abstract class DataGenerator implements Runnable {
     this.engineClient = engineClient;
   }
 
-  protected abstract BpmnModelInstance retrieveDiagram();
+  protected abstract ModelType retrieveDiagram();
 
-  protected abstract Map<String, Object> createVariablesForProcess();
+  protected abstract Map<String, Object> createVariables();
 
   public int getInstanceCountToGenerate() {
     return instanceCountToGenerate;
@@ -74,22 +70,24 @@ public abstract class DataGenerator implements Runnable {
   @Override
   public void run() {
     logger.info("Start {}...", getClass().getSimpleName());
-    final BpmnModelInstance instance = retrieveDiagram();
+    final ModelType instance = retrieveDiagram();
     try {
       this.tenants.stream()
         .filter(Objects::nonNull)
         .forEach(tenantId -> engineClient.createTenant(tenantId));
       createMessageEventCorrelater();
-      List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions, tenants);
+      List<String> definitionIds = deployDiagrams(instance);
       deployAdditionalDiagrams();
-      List<Integer> processInstanceSizePerDefinition = createProcessInstanceSizePerDefinition();
-      startProcessInstances(processInstanceSizePerDefinition, processDefinitionIds);
+      List<Integer> instanceSizePerDefinition = createInstanceSizePerDefinition();
+      startInstances(instanceSizePerDefinition, definitionIds);
     } catch (Exception e) {
       logger.error("Error while generating the data", e);
     } finally {
       logger.info("{} finished data generation!", getClass().getSimpleName());
     }
   }
+
+  protected abstract List<String> deployDiagrams(final ModelType instance);
 
   protected void generateTenants() {
     this.tenants = Collections.singletonList(null);
@@ -143,18 +141,18 @@ public abstract class DataGenerator implements Runnable {
     return new String[]{};
   }
 
-  private void startProcessInstances(final List<Integer> batchSizes,
-                                     final List<String> processDefinitionIds) {
+  private void startInstances(final List<Integer> batchSizes,
+                              final List<String> definitionIds) {
     for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
-      final String processDefinitionId = processDefinitionIds.get(ithBatch);
-      final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(processDefinitionId, engineClient);
+      final String definitionId = definitionIds.get(ithBatch);
+      final UserTaskCompleter userTaskCompleter = new UserTaskCompleter(definitionId, engineClient);
       userTaskCompleter.startUserTaskCompletion();
       IntStream
         .range(0, batchSizes.get(ithBatch))
         .forEach(i -> {
-          final Map<String, Object> variables = createVariablesForProcess();
+          final Map<String, Object> variables = createVariables();
           variables.putAll(createSimpleVariables());
-          startProcessInstance(processDefinitionId, variables);
+          startInstanceWithBackoff(definitionId, variables);
           try {
             Thread.sleep(5L);
           } catch (InterruptedException e) {
@@ -169,26 +167,25 @@ public abstract class DataGenerator implements Runnable {
         });
 
       messageEventCorrelater.correlateMessages();
-      logger.info("[process-definition-id:{}] Finished batch execution", processDefinitionId);
+      logger.info("[definition-id:{}] Finished batch execution", definitionId);
 
-      logger.info("[process-definition-id:{}] Awaiting user task completion.", processDefinitionId);
+      logger.info("[definition-id:{}] Awaiting user task completion.", definitionId);
       userTaskCompleter.shutdown();
       userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
-      logger.info("[process-definition-id:{}] User tasks completion finished.", processDefinitionId);
+      logger.info("[definition-id:{}] User tasks completion finished.", definitionId);
 
       if (Thread.currentThread().isInterrupted()) {
         return;
       }
     }
-
   }
 
-  private void startProcessInstance(final String procDefId, final Map<String, Object> variables) {
-    boolean couldStartProcessInstance = false;
-    while (!couldStartProcessInstance) {
+  private void startInstanceWithBackoff(final String definitionId, final Map<String, Object> variables) {
+    boolean couldStartInstance = false;
+    while (!couldStartInstance) {
       try {
-        engineClient.startProcessInstance(procDefId, variables);
-        couldStartProcessInstance = true;
+        startInstance(definitionId, variables);
+        couldStartInstance = true;
       } catch (Exception exception) {
         logError(exception);
         long timeToSleep = backoffCalculator.calculateSleepTime();
@@ -198,6 +195,8 @@ public abstract class DataGenerator implements Runnable {
     }
     backoffCalculator.resetBackoff();
   }
+
+  protected abstract void startInstance(final String definitionId, final Map<String, Object> variables);
 
   private void sleep(long timeToSleep) {
     try {
@@ -209,17 +208,17 @@ public abstract class DataGenerator implements Runnable {
 
   private void logDebugSleepInformation(long sleepTime) {
     logger.debug(
-      "Sleeping for [{}] ms and retrying to start process instance afterwards.",
+      "Sleeping for [{}] ms and retrying to start instance afterwards.",
       sleepTime
     );
   }
 
   private void logError(Exception e) {
-    logger.error("Error during start of process instance. Please check the connection with [{}]!", e);
+    logger.error("Error during start of instance. Please check the connection!", e);
   }
 
 
-  private List<Integer> createProcessInstanceSizePerDefinition() {
+  private List<Integer> createInstanceSizePerDefinition() {
     int deploymentCount = nVersions * tenants.size();
     int maxBulkSizeCount = instanceCountToGenerate / deploymentCount;
     int finalBulkSize = instanceCountToGenerate % deploymentCount;
@@ -228,16 +227,6 @@ public abstract class DataGenerator implements Runnable {
       bulkSizes.addLast(bulkSizes.removeLast() + finalBulkSize);
     }
     return bulkSizes;
-  }
-
-  public BpmnModelInstance readProcessDiagramAsInstance(String diagramPath) {
-    InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(diagramPath);
-    return Bpmn.readModelFromStream(inputStream);
-  }
-
-  protected DmnModelInstance readDmnTableAsInstance(String dmnPath) {
-    InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(dmnPath);
-    return Dmn.readModelFromStream(inputStream);
   }
 
   public int getStartedInstanceCount() {
