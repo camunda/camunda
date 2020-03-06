@@ -7,6 +7,7 @@ package org.camunda.operate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.HashMap;
@@ -41,7 +42,7 @@ public class StackdriverJSONLayoutTest {
   }
 
   @Test
-  public void testJSONOutput() throws JsonMappingException, JsonProcessingException {
+  public void testJSONOutput() throws IOException {
     // Given
     createTestAppenderWithLayout(new StackdriverJSONLayout());
     // when
@@ -53,7 +54,7 @@ public class StackdriverJSONLayoutTest {
     assertThat(jsonMap).containsEntry("logger", logger.getName());
   }
 
-  private Map<String, String> logOutputToJSONMap() throws JsonProcessingException, JsonMappingException {
+  private Map<String, String> logOutputToJSONMap() throws IOException {
     return jsonReader.withValueToUpdate(new HashMap<String, String>()).readValue(logOutput.toString());
   }
 

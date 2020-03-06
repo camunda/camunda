@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.es;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,7 +65,7 @@ public class OperationsManager {
           + "if (ctx._source." + BatchOperationTemplate.OPERATIONS_FINISHED_COUNT + " == ctx._source." + BatchOperationTemplate.OPERATIONS_TOTAL_COUNT + ") "
           + "   ctx._source." + BatchOperationTemplate.END_DATE + " = params.now;";
       return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       logger.error("Error preparing the query to update batch operation", e);
       throw new PersistenceException("Error preparing the query to insert workflow", e);
     }
