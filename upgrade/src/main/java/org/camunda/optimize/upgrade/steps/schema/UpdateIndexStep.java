@@ -49,7 +49,7 @@ public class UpdateIndexStep implements UpgradeStep {
       esIndexAdjuster.createOrUpdateTemplateWithoutAliases(index, indexAlias);
       final Map<String, Set<AliasMetaData>> indexAliasMap = esIndexAdjuster.getAliasMap(indexAlias);
       for (String sourceIndex : indexAliasMap.keySet()) {
-        String suffix = "";
+        String suffix;
         String sourceIndexNameWithSuffix;
         Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);
 
@@ -59,7 +59,7 @@ public class UpdateIndexStep implements UpgradeStep {
           sourceIndexNameWithSuffix = sourceIndexName + suffix;
         } else {
           // sourceIndex is not yet suffixed, use default suffix
-          suffix = index.getIndexNameSuffix();
+          suffix = index.getIndexNameInitialSuffix();
           sourceIndexNameWithSuffix = sourceIndexName;
         }
         final String targetIndexNameWithSuffix = targetIndexName + suffix;

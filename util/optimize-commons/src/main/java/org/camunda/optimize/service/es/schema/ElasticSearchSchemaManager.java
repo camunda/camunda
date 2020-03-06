@@ -33,8 +33,6 @@ import org.elasticsearch.rest.RestStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -148,7 +146,7 @@ public class ElasticSearchSchemaManager {
                                   final Set<String> readOnlyAliases) {
     final Set<String> prefixedReadOnlyAliases =
       readOnlyAliases.stream()
-        .map(aliasName -> indexNameService.getOptimizeIndexAliasForIndex(aliasName))
+        .map(indexNameService::getOptimizeIndexAliasForIndex)
         .collect(toSet());
     final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
     final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
@@ -158,8 +156,8 @@ public class ElasticSearchSchemaManager {
       if (mapping.getCreateFromTemplate()) {
         // Creating template without alias and adding aliases manually to indices created from this template to
         // ensure correct alias handling on rollover
-        createOrUpdateTemplateWithoutAliases(
-          esClient, mapping, indexName, defaultAliasName, prefixedReadOnlyAliases, indexSettings
+        createOrUpdateTemplateWithAliases(
+          esClient, mapping, defaultAliasName, prefixedReadOnlyAliases, indexSettings
         );
         createOptimizeIndexWithWriteAliasFromTemplate(esClient, indexName, defaultAliasName);
       } else {
@@ -183,7 +181,8 @@ public class ElasticSearchSchemaManager {
 
   private void createOptimizeIndexFromRequest(final OptimizeElasticsearchClient esClient,
                                               final IndexMappingCreator mapping,
-                                              final String indexName, final String defaultAliasName,
+                                              final String indexName,
+                                              final String defaultAliasName,
                                               final Set<String> additionalAliases,
                                               final Settings indexSettings) throws
                                                                             IOException,
@@ -201,40 +200,35 @@ public class ElasticSearchSchemaManager {
     esClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
   }
 
-  private void createOrUpdateTemplateWithoutAliases(final OptimizeElasticsearchClient esClient,
-                                                    final IndexMappingCreator mappingCreator,
-                                                    final String templateName, final String defaultAliasName,
-                                                    final Set<String> additionalAliases,
-                                                    final Settings indexSettings) {
-    log.info("Creating template with name {}", templateName);
-    final String indexNameWithoutSuffix = indexNameService.getOptimizeIndexNameForAliasAndVersion(
+  private void createOrUpdateTemplateWithAliases(final OptimizeElasticsearchClient esClient,
+                                                 final IndexMappingCreator mappingCreator,
+                                                 final String defaultAliasName,
+                                                 final Set<String> additionalAliases,
+                                                 final Settings indexSettings) {
+    final String templateName = indexNameService.getOptimizeIndexNameForAliasAndVersion(
       mappingCreator);
-    final List<Alias> readOnlyAliases = new ArrayList<>();
-    for (String aliasName : additionalAliases) {
-      if (!defaultAliasName.equals(aliasName)) {
-        Alias alias = new Alias(aliasName);
-        alias.writeIndex(false);
-        readOnlyAliases.add(alias);
-      }
-    }
+    log.info("Creating or updating template with name {}", templateName);
 
-    final String pattern = String.format("%s-%s", indexNameWithoutSuffix, "*");
-    final List<String> patterns = Arrays.asList(pattern);
-
-    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(indexNameWithoutSuffix)
+    final String pattern = String.format("%s-%s", templateName, "*");
+    PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
       .version(mappingCreator.getVersion())
       .mapping(mappingCreator.getSource())
       .settings(indexSettings)
-      .patterns(patterns);
+      .patterns(Collections.singletonList(pattern));
 
-    for (Alias alias : readOnlyAliases) {
-      templateRequest.alias(alias);
-    }
+    additionalAliases.stream()
+      .filter(aliasName -> !aliasName.equals(defaultAliasName))
+      .map(aliasName -> {
+        final Alias alias = new Alias(aliasName);
+        alias.writeIndex(false);
+        return alias;
+      })
+      .forEach(templateRequest::alias);
 
     try {
       esClient.getHighLevelClient().indices().putTemplate(templateRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not create template %s", templateName);
+      String message = String.format("Could not create or update template %s", templateName);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
@@ -334,10 +328,9 @@ public class ElasticSearchSchemaManager {
   private void updateTemplateDynamicSettingsAndMappings(OptimizeElasticsearchClient esClient,
                                                         IndexMappingCreator mappingCreator) {
     final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mappingCreator);
     final Settings indexSettings = createIndexSettings(mappingCreator);
-    createOrUpdateTemplateWithoutAliases(
-      esClient, mappingCreator, indexName, defaultAliasName, Sets.newHashSet(), indexSettings
+    createOrUpdateTemplateWithAliases(
+      esClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettings
     );
   }
 

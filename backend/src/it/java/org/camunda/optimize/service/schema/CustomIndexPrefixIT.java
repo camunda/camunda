@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersionAndSuffix;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -86,9 +86,9 @@ public class CustomIndexPrefixIT extends AbstractIT {
         mapping.getIndexName(),
         CUSTOM_PREFIX
       );
-      final String expectedIndexName = getOptimizeIndexNameForAliasAndVersionAndSuffix(
-        expectedAliasName, String.valueOf(mapping.getVersion()), mapping.getIndexNameSuffix()
-      );
+      final String expectedIndexName = getOptimizeIndexNameForAliasAndVersion(
+        expectedAliasName, String.valueOf(mapping.getVersion()))
+        + mapping.getIndexNameInitialSuffix();
 
       final RestHighLevelClient highLevelClient =
         customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()

@@ -6,14 +6,13 @@
 package org.camunda.optimize.service.es;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.rollover.Condition;
-import org.elasticsearch.action.admin.indices.rollover.MaxAgeCondition;
-import org.elasticsearch.action.admin.indices.rollover.MaxDocsCondition;
 import org.elasticsearch.action.admin.indices.rollover.MaxSizeCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -60,6 +59,7 @@ import java.util.Arrays;
  * For low level operations it still exposes the underlying {@link RestHighLevelClient},
  * as well as the {@link OptimizeIndexNameService}.
  */
+@Slf4j
 public class OptimizeElasticsearchClient {
 
   @Getter
@@ -180,7 +180,7 @@ public class OptimizeElasticsearchClient {
   }
 
   public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
-    rolloverRequest = applyAliasPrefix(rolloverRequest);
+    rolloverRequest = applyAliasPrefixAndRolloverConditions(rolloverRequest);
     return highLevelClient.indices().rollover(rolloverRequest, RequestOptions.DEFAULT);
   }
 
@@ -201,16 +201,14 @@ public class OptimizeElasticsearchClient {
       .toArray(String[]::new);
   }
 
-  private RolloverRequest applyAliasPrefix(final RolloverRequest request) {
+  private RolloverRequest applyAliasPrefixAndRolloverConditions(final RolloverRequest request) {
     RolloverRequest requestWithPrefix = new RolloverRequest(
       indexNameService.getOptimizeIndexAliasForIndex(request.getAlias()), null);
     for (Condition condition : request.getConditions().values()) {
-      if (condition instanceof MaxAgeCondition) {
-        requestWithPrefix.addMaxIndexAgeCondition(((MaxAgeCondition) condition).value());
-      } else if (condition instanceof MaxDocsCondition) {
-        requestWithPrefix.addMaxIndexDocsCondition(((MaxDocsCondition) condition).value());
-      } else if (condition instanceof MaxSizeCondition) {
+      if (condition instanceof MaxSizeCondition) {
         requestWithPrefix.addMaxIndexSizeCondition(((MaxSizeCondition) condition).value());
+      } else {
+        log.warn("Rollover condition not supported: {}", condition.name());
       }
     }
     return requestWithPrefix;

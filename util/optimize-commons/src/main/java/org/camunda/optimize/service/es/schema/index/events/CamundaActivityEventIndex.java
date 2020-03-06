@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.schema.index.events;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -43,6 +44,16 @@ public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  @Override
+  public String getIndexNameInitialSuffix() {
+    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+  }
+
+  @Override
+  public Boolean getCreateFromTemplate() {
+    return true;
   }
 
   @Override

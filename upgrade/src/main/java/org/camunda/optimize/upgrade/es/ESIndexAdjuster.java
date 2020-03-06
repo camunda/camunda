@@ -13,6 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -45,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -214,13 +214,12 @@ public class ESIndexAdjuster {
     final Settings indexSettings = createIndexSettings(mappingCreator);
 
     final String pattern = String.format("%s-%s", indexNameWithoutSuffix, "*");
-    final List<String> patterns = Arrays.asList(pattern);
-
+    logger.debug("creating or updating template with name {}", indexNameWithoutSuffix);
     PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(indexNameWithoutSuffix)
       .version(mappingCreator.getVersion())
       .mapping(mappingCreator.getSource())
       .settings(indexSettings)
-      .patterns(patterns);
+      .patterns(Collections.singletonList(pattern));
 
     try {
       restClient.indices().putTemplate(templateRequest, RequestOptions.DEFAULT);

@@ -194,9 +194,9 @@ public class ElasticsearchHelper {
     try {
       RolloverResponse rolloverResponse = esClient.rollover(rolloverRequest);
       if (rolloverResponse.isRolledOver()) {
-        log.info("Index {} has been rolled over. New index name: {}", indexAliasName, rolloverResponse.getNewIndex());
+        log.info("Index with alias {} has been rolled over. New index name: {}", indexAliasName, rolloverResponse.getNewIndex());
       } else {
-        log.debug("Index {} has not been rolled over.", indexAliasName);
+        log.debug("Index with alias {} has not been rolled over.", indexAliasName);
       }
       return rolloverResponse.isRolledOver();
     } catch (Exception e) {

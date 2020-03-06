@@ -38,7 +38,7 @@ public class EventIndex extends StrictIndexMappingCreator {
   }
 
   @Override
-  public String getIndexNameSuffix() {
+  public String getIndexNameInitialSuffix() {
     return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
 

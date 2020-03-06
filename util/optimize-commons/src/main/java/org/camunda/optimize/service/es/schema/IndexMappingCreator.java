@@ -9,14 +9,12 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
 
 public interface IndexMappingCreator {
 
   String getIndexName();
 
-  default String getIndexNameSuffix() {
+  default String getIndexNameInitialSuffix() {
     return "";
   }
 

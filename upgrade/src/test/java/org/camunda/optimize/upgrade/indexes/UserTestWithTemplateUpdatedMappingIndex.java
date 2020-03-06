@@ -23,7 +23,7 @@ public class UserTestWithTemplateUpdatedMappingIndex extends StrictIndexMappingC
   }
 
   @Override
-  public String getIndexNameSuffix() {
+  public String getIndexNameInitialSuffix() {
     return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
