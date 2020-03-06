@@ -164,6 +164,18 @@ public final class FailJobTest {
   }
 
   @Test
+  public void shouldFailIfJobCreated() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+
+    // when
+    final Record<JobRecordValue> jobRecord = ENGINE.job().withKey(job.getKey()).fail();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+  }
+
+  @Test
   public void shouldRejectFailIfJobNotFound() {
     // given
     final int key = 123;
@@ -191,20 +203,6 @@ public final class FailJobTest {
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
     assertThat(jobRecord.getRejectionReason()).contains("it is in state 'FAILED'");
-  }
-
-  @Test
-  public void shouldRejectFailIfJobCreated() {
-    // given
-    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
-
-    // when
-    final Record<JobRecordValue> jobRecord =
-        ENGINE.job().withKey(job.getKey()).withRetries(3).expectRejection().fail();
-
-    // then
-    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.INVALID_STATE);
-    assertThat(jobRecord.getRejectionReason()).contains("it is in state 'ACTIVATABLE'");
   }
 
   @Test

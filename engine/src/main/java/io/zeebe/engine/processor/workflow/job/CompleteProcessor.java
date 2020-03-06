@@ -10,40 +10,32 @@ package io.zeebe.engine.processor.workflow.job;
 import io.zeebe.engine.processor.CommandProcessor;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.state.instance.JobState;
-import io.zeebe.engine.state.instance.JobState.State;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 
 public final class CompleteProcessor implements CommandProcessor<JobRecord> {
-  public static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to complete job with key '%d', but no such job was found";
-  public static final String FAILED_JOB_MESSAGE =
-      "Expected to complete job with key '%d', but the job is marked as failed";
 
   private final JobState state;
+  private final DefaultJobCommandProcessor<JobRecord> defaultProcessor;
 
   public CompleteProcessor(final JobState state) {
     this.state = state;
+    this.defaultProcessor =
+        new DefaultJobCommandProcessor<>("complete", this.state, this::acceptCommand);
   }
 
   @Override
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+    return defaultProcessor.onCommand(command, commandControl);
+  }
+
+  private void acceptCommand(
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
-    final JobState.State jobState = state.getState(jobKey);
-
-    if (jobState == State.NOT_FOUND) {
-      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
-    } else if (jobState == State.FAILED) {
-      commandControl.reject(RejectionType.INVALID_STATE, String.format(FAILED_JOB_MESSAGE, jobKey));
-    } else {
-      final JobRecord job = state.getJob(jobKey);
-      job.setVariables(command.getValue().getVariablesBuffer());
-
-      state.complete(jobKey, job);
-      commandControl.accept(JobIntent.COMPLETED, job);
-    }
-    return true;
+    final JobRecord job = state.getJob(jobKey);
+    job.setVariables(command.getValue().getVariablesBuffer());
+    state.complete(jobKey, job);
+    commandControl.accept(JobIntent.COMPLETED, job);
   }
 }
