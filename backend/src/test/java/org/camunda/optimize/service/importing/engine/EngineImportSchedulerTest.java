@@ -47,7 +47,7 @@ public class EngineImportSchedulerTest {
     Mockito.lenient().when(mockedImportMediator.runImport()).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
-    underTest.runImportRound();
+    underTest.scheduleNextRound();
 
     // then
     assertThat(underTest.isImporting(), is(true));
@@ -62,14 +62,14 @@ public class EngineImportSchedulerTest {
     Mockito.lenient().when(mockedImportMediator.runImport()).thenReturn(CompletableFuture.completedFuture(null));
 
     // first round of importing
-    underTest.runImportRound();
+    underTest.scheduleNextRound();
 
     Mockito.when(mockedImportMediator.canImport()).thenReturn(false);
     Mockito.when(mockedImportMediator.getImportJobExecutor()).thenReturn(mockedImportJobExecutor);
     Mockito.when(mockedImportJobExecutor.isActive()).thenReturn(true);
 
     // when
-    underTest.runImportRound();
+    underTest.scheduleNextRound();
 
     // then
     assertThat(underTest.isImporting(), is(true));
@@ -83,14 +83,14 @@ public class EngineImportSchedulerTest {
     Mockito.lenient().when(mockedImportMediator.runImport()).thenReturn(CompletableFuture.completedFuture(null));
 
     // first round of importing
-    underTest.runImportRound();
+    underTest.scheduleNextRound();
 
     Mockito.when(mockedImportMediator.canImport()).thenReturn(false);
     Mockito.when(mockedImportMediator.getImportJobExecutor()).thenReturn(mockedImportJobExecutor);
     Mockito.when(mockedImportJobExecutor.isActive()).thenReturn(false);
 
     // when
-    underTest.runImportRound();
+    underTest.scheduleNextRound();
 
     // then
     assertThat(underTest.isImporting(), is(false));
