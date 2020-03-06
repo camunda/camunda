@@ -26,6 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.stream.Collectors.toList;
+
 @Slf4j
 public class DataGenerationExecutor {
 
@@ -33,7 +35,7 @@ public class DataGenerationExecutor {
 
   private SimpleEngineClient engineClient;
 
-  private List<DataGenerator> allDataGenerators = new ArrayList<>();
+  private List<DataGenerator<?>> allDataGenerators = new ArrayList<>();
   private ThreadPoolExecutor importExecutor;
 
   private ScheduledExecutorService progressReporter;
@@ -61,21 +63,29 @@ public class DataGenerationExecutor {
 
   private void initGenerators() {
     userGenerator = new UserGenerator(engineClient);
-    List<DataGenerator> processDataGenerators = createGenerators(
+    List<DataGenerator<?>> processDataGenerators = createGenerators(
       dataGenerationInformation.getProcessDefinitions(),
       dataGenerationInformation.getProcessInstanceCountToGenerate()
     );
-    List<DataGenerator> decisionDataGenerators = createGenerators(
+    log.info(
+      "Created the following process instance generators: {}",
+      processDataGenerators.stream().map(Object::getClass).map(Class::getSimpleName).collect(toList())
+    );
+    List<DataGenerator<?>> decisionDataGenerators = createGenerators(
       dataGenerationInformation.getDecisionDefinitions(),
       dataGenerationInformation.getDecisionInstanceCountToGenerate()
+    );
+    log.info(
+      "Created the following decision instance generators: {}",
+      decisionDataGenerators.stream().map(Object::getClass).map(Class::getSimpleName).collect(toList())
     );
     allDataGenerators.addAll(processDataGenerators);
     allDataGenerators.addAll(decisionDataGenerators);
   }
 
-  private List<DataGenerator> createGenerators(final HashMap<String, Integer> definitions,
+  private List<DataGenerator<?>> createGenerators(final HashMap<String, Integer> definitions,
                                                final Long instanceCountToGenerate) {
-    List<DataGenerator> dataGenerators = new ArrayList<>();
+    List<DataGenerator<?>> dataGenerators = new ArrayList<>();
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
       .whitelistPackages(DataGenerator.class.getPackage().getName())
@@ -84,7 +94,7 @@ public class DataGenerationExecutor {
         .filter(g -> definitions.containsKey(g.getSimpleName()))
         .forEach(s -> {
           try {
-            dataGenerators.add((DataGenerator) s.loadClass()
+            dataGenerators.add((DataGenerator<?>) s.loadClass()
               .getConstructor(SimpleEngineClient.class, Integer.class)
               .newInstance(engineClient, definitions.get(s.getSimpleName())));
           } catch (Exception e) {
@@ -96,7 +106,7 @@ public class DataGenerationExecutor {
     return dataGenerators;
   }
 
-  private void addInstanceCountToGenerators(final List<DataGenerator> dataGenerators,
+  private void addInstanceCountToGenerators(final List<DataGenerator<?>> dataGenerators,
                                             final Long instanceCountToGenerate) {
     int nGenerators = dataGenerators.size();
     int stepSize = instanceCountToGenerate.intValue() / nGenerators;
@@ -109,7 +119,7 @@ public class DataGenerationExecutor {
 
   public void executeDataGeneration() {
     userGenerator.generateUsers();
-    for (DataGenerator dataGenerator : allDataGenerators) {
+    for (DataGenerator<?> dataGenerator : allDataGenerators) {
       importExecutor.execute(dataGenerator);
     }
     progressReporter = reportDataGenerationProgress();
@@ -146,7 +156,7 @@ public class DataGenerationExecutor {
       log.info("Progress report for running data generators (total: {} generators)", allDataGenerators.size());
       int totalInstancesToGenerate = 0;
       int finishedInstances = 0;
-      for (DataGenerator dataGenerator : allDataGenerators) {
+      for (DataGenerator<?> dataGenerator : allDataGenerators) {
         totalInstancesToGenerate += dataGenerator.getInstanceCountToGenerate();
         finishedInstances += dataGenerator.getStartedInstanceCount();
         if (dataGenerator.getStartedInstanceCount() > 0

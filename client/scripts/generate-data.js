@@ -14,14 +14,13 @@ console.debug('executing generate-data script in [ci=true]');
 const e2ePresetsFile = path.resolve(__dirname, '..', 'e2e_presets.json');
 
 const e2ePresets = JSON.parse(fs.readFileSync(e2ePresetsFile));
+const dataGenerationParameters = Object.keys(e2ePresets)
+  .map(key => `--${key} ${e2ePresets[key]}`)
+  .join('');
 
 const generateDataProcess = spawn(
   'mvn',
-  [
-    'exec:java',
-    '-f ./qa/data-generation/pom.xml',
-    `-Dexec.args="--numberOfProcessInstances ${e2ePresets.numberOfProcessInstances} --processDefinitions ${e2ePresets.definitions}"`
-  ],
+  ['exec:java', '-f ./qa/data-generation/pom.xml', `-Dexec.args="${dataGenerationParameters}"`],
   {
     cwd: path.resolve(__dirname, '..', '..'),
     stdio: 'inherit',

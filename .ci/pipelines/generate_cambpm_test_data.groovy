@@ -251,9 +251,11 @@ pipeline {
                             cloneGitRepo()
                             // Generate Data
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+                                // the line jq -r 'to_entries|map("--\(.key) \(.value|tostring)")| @tsv'
+                                // maps key and values of json to one line, e.g. { "processInstanceCount": 123} => --processInstanceCount 123
                                 sh("""
                                   if [ "${USE_E2E_PRESETS}" = true ]; then
-                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="--removeDeployments false --numberOfProcessInstances \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances) --processDefinitions \$(cat client/e2e_presets.json | jq -r .definitions)"
+                                    mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="\$(cat client/e2e_presets.json | jq -r 'to_entries|map("--\\(.key) \\(.value|tostring)")| .[]' | tr '\\n' ' ')"
                                   else
                                     mvn -T1C -B -s \$MAVEN_SETTINGS_XML -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances ${NUM_INSTANCES}"
                                   fi

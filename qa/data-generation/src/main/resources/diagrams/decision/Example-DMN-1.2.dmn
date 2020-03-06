@@ -3,7 +3,7 @@
              id="definitions"
              name="definitions"
              namespace="http://camunda.org/schema/1.0/dmn">
-  <decision id="decision12" name="Check Order 1.2">
+  <decision id="decision12" name="Check Order - DMN 1.2">
     <decisionTable id="decisionTable">
       <input id="input1" label="Customer Status">
         <inputExpression id="inputExpression1" typeRef="string">
