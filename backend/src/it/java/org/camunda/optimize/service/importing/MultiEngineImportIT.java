@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;

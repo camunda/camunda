@@ -11,10 +11,9 @@ import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionWithTenantsRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.service.TenantService;
 import org.junit.jupiter.api.Test;
 
@@ -38,10 +37,17 @@ import static org.hamcrest.Matchers.lessThan;
 public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
 
   protected static final String VERSION_TAG = "aVersionTag";
-  private static final String TENANT_NONE_NAME = TenantService.TENANT_NOT_DEFINED.getName();
-  protected static final TenantRestDto TENANT_NONE_DTO = new TenantRestDto(null, TENANT_NONE_NAME);
-  protected static final TenantRestDto TENANT_1_DTO = new TenantRestDto("tenant1", "Tenant 1");
-  protected static final TenantRestDto TENANT_2_DTO = new TenantRestDto("tenant2", "Tenant 2");
+  protected static final TenantDto TENANT_NONE_DTO = TenantService.TENANT_NOT_DEFINED;
+  protected static final TenantDto TENANT_1_DTO = TenantDto.builder()
+    .id("tenant1")
+    .name("Tenant 1")
+    .engine(DEFAULT_ENGINE_ALIAS)
+    .build();
+  protected static final TenantDto TENANT_2_DTO = TenantDto.builder()
+    .id("tenant2")
+    .name("Tenant 2")
+    .engine(DEFAULT_ENGINE_ALIAS)
+    .build();
   protected static final String EXPECTED_DEFINITION_NOT_FOUND_MESSAGE = "Could not find xml for definition with key";
 
   @Test
@@ -58,33 +64,33 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(2));
     // first definition
-    final DefinitionVersionsWithTenantsRestDto firstDefinition = definitions.get(0);
+    final DefinitionVersionsWithTenantsDto firstDefinition = definitions.get(0);
     assertThat(firstDefinition.getKey(), is(definitionKey1));
-    final List<TenantRestDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
+    final List<TenantDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
       TENANT_NONE_DTO, TENANT_1_DTO, TENANT_2_DTO
     );
     assertThat(firstDefinition.getAllTenants(), is(expectedDefinition1AllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition1 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
+    final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition1 = ImmutableList.of(
+      new DefinitionVersionWithTenantsDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
+      new DefinitionVersionWithTenantsDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
     );
     assertThat(firstDefinition.getVersions(), is(expectedVersionForDefinition1));
     // second definition
-    final DefinitionVersionsWithTenantsRestDto secondDefinition = definitions.get(1);
+    final DefinitionVersionsWithTenantsDto secondDefinition = definitions.get(1);
     assertThat(secondDefinition.getKey(), is(definitionKey2));
-    final List<TenantRestDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
+    final List<TenantDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
     assertThat(secondDefinition.getAllTenants(), is(expectedDefinition2AllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition2 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
+    final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition2 = ImmutableList.of(
+      new DefinitionVersionWithTenantsDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
+      new DefinitionVersionWithTenantsDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
     );
     assertThat(secondDefinition.getVersions(), is(expectedVersionForDefinition2));
   }
@@ -106,16 +112,16 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions =
+    final List<DefinitionVersionsWithTenantsDto> definitions =
       getDefinitionVersionsWithTenantsAsUser(tenant1UserId);
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(1));
-    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
+    final DefinitionVersionsWithTenantsDto availableDefinition = definitions.get(0);
     assertThat(availableDefinition.getKey(), is(definitionKey));
     assertThat(availableDefinition.getAllTenants(), contains(TENANT_1_DTO));
-    final List<DefinitionVersionWithTenantsRestDto> definitionVersions = availableDefinition.getVersions();
+    final List<DefinitionVersionWithTenantsDto> definitionVersions = availableDefinition.getVersions();
     definitionVersions.forEach(
       versionWithTenants -> assertThat(versionWithTenants.getTenants(), contains(TENANT_1_DTO))
     );
@@ -132,19 +138,19 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(1));
-    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
+    final DefinitionVersionsWithTenantsDto availableDefinition = definitions.get(0);
     assertThat(availableDefinition.getKey(), is(definitionKey1));
-    final List<TenantRestDto> expectedAllTenantsOrdered = ImmutableList.of(TENANT_NONE_DTO, TENANT_1_DTO);
+    final List<TenantDto> expectedAllTenantsOrdered = ImmutableList.of(TENANT_NONE_DTO, TENANT_1_DTO);
     assertThat(availableDefinition.getAllTenants(), is(expectedAllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition1 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, ImmutableList.of(TENANT_1_DTO)),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, expectedAllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, expectedAllTenantsOrdered)
+    final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition1 = ImmutableList.of(
+      new DefinitionVersionWithTenantsDto("2", VERSION_TAG, ImmutableList.of(TENANT_1_DTO)),
+      new DefinitionVersionWithTenantsDto("1", VERSION_TAG, expectedAllTenantsOrdered),
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, expectedAllTenantsOrdered)
     );
     assertThat(availableDefinition.getVersions(), is(expectedVersionForDefinition1));
   }
@@ -165,17 +171,17 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions =
+    final List<DefinitionVersionsWithTenantsDto> definitions =
       getDefinitionVersionsWithTenantsAsUser(tenant1UserId);
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(1));
-    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
+    final DefinitionVersionsWithTenantsDto availableDefinition = definitions.get(0);
     assertThat(availableDefinition.getKey(), is(definitionKey));
-    final List<TenantRestDto> expectedAllTenantsOrdered = ImmutableList.of(TENANT_NONE_DTO, TENANT_1_DTO);
+    final List<TenantDto> expectedAllTenantsOrdered = ImmutableList.of(TENANT_NONE_DTO, TENANT_1_DTO);
     assertThat(availableDefinition.getAllTenants(), is(expectedAllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> definitionVersions = availableDefinition.getVersions();
+    final List<DefinitionVersionWithTenantsDto> definitionVersions = availableDefinition.getVersions();
     definitionVersions.forEach(
       versionWithTenants -> assertThat(versionWithTenants.getTenants(), is(expectedAllTenantsOrdered))
     );
@@ -193,7 +199,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     assertThat(definitions.get(0).getKey(), is("z"));
     assertThat(definitions.get(1).getKey(), is("x"));
@@ -222,10 +228,10 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     collectionClient.createScopeForCollection(
       collectionId, definitionKey1, getDefinitionType(), Lists.newArrayList(TENANT_1_DTO.getId()));
 
-    List<DefinitionVersionWithTenantsRestDto> expectedVersions = Lists.newArrayList(
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, Lists.newArrayList(TENANT_1_DTO))
+    List<DefinitionVersionWithTenantsDto> expectedVersions = Lists.newArrayList(
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, Lists.newArrayList(TENANT_1_DTO))
     );
-    DefinitionVersionsWithTenantsRestDto expectedDefinition1 = new DefinitionVersionsWithTenantsRestDto(
+    DefinitionVersionsWithTenantsDto expectedDefinition1 = new DefinitionVersionsWithTenantsDto(
       definitionKey1,
       null,
       expectedVersions,
@@ -233,7 +239,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     );
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitionVersionsWithTenants =
+    final List<DefinitionVersionsWithTenantsDto> definitionVersionsWithTenants =
       getDefinitionVersionsWithTenants(collectionId);
 
     // then
@@ -250,7 +256,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     IntStream.range(0, tenantCount)
       .mapToObj(String::valueOf)
       .parallel()
-      .forEach(value -> createTenant(new TenantRestDto(value, value)));
+      .forEach(value -> createTenant(TenantDto.builder().id(value).name(value).engine(DEFAULT_ENGINE_ALIAS).build()));
 
     IntStream.range(0, definitionCount)
       .mapToObj(String::valueOf)
@@ -265,37 +271,37 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
 
     // when
     long startTimeMillis = System.currentTimeMillis();
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
     long responseTimeMillis = System.currentTimeMillis() - startTimeMillis;
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(definitionCount));
-    definitions.forEach(definitionVersionsWithTenantsRestDto -> {
-      assertThat(definitionVersionsWithTenantsRestDto.getVersions().size(), is(versionCount));
-      assertThat(definitionVersionsWithTenantsRestDto.getAllTenants().size(), is(tenantCount));
+    definitions.forEach(DefinitionAvailableVersionsWithTenants -> {
+      assertThat(DefinitionAvailableVersionsWithTenants.getVersions().size(), is(versionCount));
+      assertThat(DefinitionAvailableVersionsWithTenants.getAllTenants().size(), is(tenantCount));
     });
     assertThat(responseTimeMillis, is(lessThan(2000L)));
 
     embeddedOptimizeExtension.getImportSchedulerFactory().shutdown();
   }
 
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenants() {
+  protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants() {
     return getDefinitionVersionsWithTenantsAsUser(DEFAULT_USERNAME);
   }
 
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenants(String collectionId) {
+  protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants(String collectionId) {
     return getDefinitionVersionsWithTenantsAsUser(DEFAULT_USERNAME, collectionId);
   }
 
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId) {
+  protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId) {
     return getDefinitionVersionsWithTenantsAsUser(userId, null);
   }
 
   ;
 
-  protected abstract List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId,
-                                                                                                       String collectionId);
+  protected abstract List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId,
+                                                                                                   String collectionId);
 
   protected void createDefinitionsForKey(final String definitionKey, final int versionCount) {
     createDefinitionsForKey(definitionKey, versionCount, null);
@@ -344,12 +350,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     engineIntegrationExtension.grantUserOptimizeAccess(tenantUser);
   }
 
-  protected void createTenant(final TenantRestDto tenantRestDto) {
-    createTenant(tenantRestDto.getId(), tenantRestDto.getName());
-  }
-
-  protected void createTenant(final String id, final String name) {
-    final TenantDto tenantDto = new TenantDto(id, name, DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, id, tenantDto);
+  protected void createTenant(final TenantDto tenantDto) {
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantDto.getId(), tenantDto);
   }
 }

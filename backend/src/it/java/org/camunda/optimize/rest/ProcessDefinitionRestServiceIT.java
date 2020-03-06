@@ -8,14 +8,14 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionWithTenantsRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
@@ -394,16 +394,16 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(1));
-    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
+    final DefinitionVersionsWithTenantsDto availableDefinition = definitions.get(0);
     assertThat(availableDefinition.getKey(), is(KEY));
-    final List<TenantRestDto> expectedTenantList = ImmutableList.of(TENANT_NONE_DTO);
+    final List<TenantDto> expectedTenantList = ImmutableList.of(TENANT_NONE_DTO);
     assertThat(availableDefinition.getAllTenants(), is(expectedTenantList));
-    final List<DefinitionVersionWithTenantsRestDto> definitionVersions = availableDefinition.getVersions();
+    final List<DefinitionVersionWithTenantsDto> definitionVersions = availableDefinition.getVersions();
     definitionVersions.forEach(
       versionWithTenants -> assertThat(versionWithTenants.getTenants(), is(expectedTenantList))
     );
@@ -427,45 +427,45 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(3));
 
     // first definition
-    final DefinitionVersionsWithTenantsRestDto firstDefinition = definitions.get(0);
+    final DefinitionVersionsWithTenantsDto firstDefinition = definitions.get(0);
     assertThat(firstDefinition.getKey(), is(definitionKey1));
-    final List<TenantRestDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
+    final List<TenantDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
       TENANT_NONE_DTO, TENANT_1_DTO, TENANT_2_DTO
     );
     assertThat(firstDefinition.getAllTenants(), is(expectedDefinition1AllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition1 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
+    final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition1 = ImmutableList.of(
+      new DefinitionVersionWithTenantsDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
+      new DefinitionVersionWithTenantsDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
     );
     assertThat(firstDefinition.getVersions(), is(expectedVersionForDefinition1));
 
     // second definition
-    final DefinitionVersionsWithTenantsRestDto secondDefinition = definitions.get(1);
+    final DefinitionVersionsWithTenantsDto secondDefinition = definitions.get(1);
     assertThat(secondDefinition.getKey(), is(definitionKey2));
-    final List<TenantRestDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
+    final List<TenantDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
     assertThat(secondDefinition.getAllTenants(), is(expectedDefinition2AllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition2 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
+    final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition2 = ImmutableList.of(
+      new DefinitionVersionWithTenantsDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
+      new DefinitionVersionWithTenantsDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
     );
     assertThat(secondDefinition.getVersions(), is(expectedVersionForDefinition2));
 
 
     // event based definition
-    final DefinitionVersionsWithTenantsRestDto eventProcessDefinition = definitions.get(2);
+    final DefinitionVersionsWithTenantsDto eventProcessDefinition = definitions.get(2);
     assertThat(eventProcessDefinition.getKey(), is(eventKey));
-    final List<TenantRestDto> expectedEventBasedTenantList = ImmutableList.of(TENANT_NONE_DTO);
+    final List<TenantDto> expectedEventBasedTenantList = ImmutableList.of(TENANT_NONE_DTO);
     assertThat(eventProcessDefinition.getAllTenants(), is(expectedEventBasedTenantList));
-    final List<DefinitionVersionWithTenantsRestDto> definitionVersions = eventProcessDefinition.getVersions();
+    final List<DefinitionVersionWithTenantsDto> definitionVersions = eventProcessDefinition.getVersions();
     definitionVersions.forEach(
       versionWithTenants -> assertThat(versionWithTenants.getTenants(), is(expectedEventBasedTenantList))
     );
@@ -483,7 +483,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     assertThat(definitions.get(0).getKey(), is("z"));
     assertThat(definitions.get(1).getKey(), is("x"));
@@ -509,15 +509,15 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
     // when
     long startTimeMillis = System.currentTimeMillis();
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants();
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
     long responseTimeMillis = System.currentTimeMillis() - startTimeMillis;
 
     // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(definitionCount));
-    definitions.forEach(definitionVersionsWithTenantsRestDto -> {
-      assertThat(definitionVersionsWithTenantsRestDto.getVersions().size(), is(versionCount));
-      assertThat(definitionVersionsWithTenantsRestDto.getAllTenants().size(), is(1)); // only null tenant
+    definitions.forEach(DefinitionVersionsWithTenantsDto -> {
+      assertThat(DefinitionVersionsWithTenantsDto.getVersions().size(), is(versionCount));
+      assertThat(DefinitionVersionsWithTenantsDto.getAllTenants().size(), is(1)); // only null tenant
     });
     assertThat(responseTimeMillis, is(lessThan(2000L)));
 
@@ -525,13 +525,13 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   }
 
   @Override
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId,
+  protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId,
                                                                                               String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(userId, userId)
       .buildGetProcessDefinitionVersionsWithTenants(collectionId)
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
   }
 
   @Override

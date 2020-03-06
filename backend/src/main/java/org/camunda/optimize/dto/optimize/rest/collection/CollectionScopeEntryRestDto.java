@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.rest.collection;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 
 import java.util.ArrayList;
 import java.util.List;

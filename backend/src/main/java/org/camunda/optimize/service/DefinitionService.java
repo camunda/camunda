@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenants;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
@@ -88,11 +88,11 @@ public class DefinitionService {
     return definitionsResult;
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getDefinitionsGroupedByVersionAndTenantForType(
+  public List<DefinitionVersionsWithTenantsDto> getDefinitionsGroupedByVersionAndTenantForType(
     final DefinitionType definitionType,
     final String userId) {
 
-    final List<DefinitionAvailableVersionsWithTenants> definitionsWithVersionsAndTenants =
+    final List<DefinitionVersionsWithTenantsDto> definitionsWithVersionsAndTenants =
       definitionReader.getDefinitionsWithVersionsAndTenantsForType(definitionType);
 
     return definitionsWithVersionsAndTenants
@@ -106,7 +106,7 @@ public class DefinitionService {
       .collect(toList());
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getDefinitionsGroupedByVersionAndTenantForType(
+  public List<DefinitionVersionsWithTenantsDto> getDefinitionsGroupedByVersionAndTenantForType(
     final DefinitionType definitionType,
     final String userId,
     final Map<String, List<String>> definitionKeyAndTenantFilter) {
@@ -124,7 +124,7 @@ public class DefinitionService {
           .stream()
           .filter(tenant -> collectionTenantIds.contains(tenant.getId()))
           .collect(toList());
-        List<DefinitionVersionWithTenants> filteredVersions = def.getVersions()
+        List<DefinitionVersionWithTenantsDto> filteredVersions = def.getVersions()
           .stream()
           .peek(versionWithTenants -> versionWithTenants.getTenants().retainAll(filteredAllTenants))
           .filter(versionWithTenants -> !versionWithTenants.getTenants().isEmpty())
@@ -137,11 +137,11 @@ public class DefinitionService {
       .collect(toList());
   }
 
-  private DefinitionAvailableVersionsWithTenants filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
-    final DefinitionAvailableVersionsWithTenants definitionDto,
+  private DefinitionVersionsWithTenantsDto filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
+    final DefinitionVersionsWithTenantsDto definitionDto,
     final DefinitionType definitionType,
     final String userId) {
-    List<DefinitionVersionWithTenants> filteredVersions = definitionDto.getVersions()
+    List<DefinitionVersionWithTenantsDto> filteredVersions = definitionDto.getVersions()
       .stream()
       .map(definitionVersionWithTenants -> {
         final List<TenantDto> tenantDtos = definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
@@ -150,7 +150,7 @@ public class DefinitionService {
           definitionType,
           definitionVersionWithTenants.getTenants().stream().map(TenantDto::getId).collect(toList())
         );
-        return new DefinitionVersionWithTenants(
+        return new DefinitionVersionWithTenantsDto(
           definitionVersionWithTenants.getKey(),
           definitionVersionWithTenants.getName(),
           definitionVersionWithTenants.getVersion(),
@@ -161,7 +161,7 @@ public class DefinitionService {
       .filter(v -> !v.getTenants().isEmpty())
       .collect(toList());
 
-    return new DefinitionAvailableVersionsWithTenants(
+    return new DefinitionVersionsWithTenantsDto(
       definitionDto.getKey(),
       definitionDto.getName(),
       filteredVersions,

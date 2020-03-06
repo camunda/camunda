@@ -9,7 +9,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.es.reader.TenantReader;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;

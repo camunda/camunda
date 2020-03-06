@@ -8,9 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
-import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.ProcessDefinitionService;
@@ -59,17 +57,17 @@ public class ProcessDefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/definitionVersionsWithTenants")
-  public List<DefinitionVersionsWithTenantsRestDto> getProcessDefinitionVersionsWithTenants(
+  public List<DefinitionVersionsWithTenantsDto> getProcessDefinitionVersionsWithTenants(
     @Context final ContainerRequestContext requestContext,
     @QueryParam("filterByCollectionScope") final String collectionId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
-    final List<DefinitionAvailableVersionsWithTenants> definitionVersionsWithTenants = optionalCollectionId
+    final List<DefinitionVersionsWithTenantsDto> definitionVersionsWithTenants = optionalCollectionId
       .map(id -> processDefinitionService.getProcessDefinitionVersionsWithTenants(userId, id))
       .orElseGet(() -> processDefinitionService.getProcessDefinitionVersionsWithTenants(userId));
 
-    return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(definitionVersionsWithTenants);
+    return definitionVersionsWithTenants;
   }
 
   /**

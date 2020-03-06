@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -270,13 +270,13 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Override
-  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(String userId,
-                                                                                              String collectionId) {
+  protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId,
+                                                                                          String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(userId, userId)
       .buildGetDecisionDefinitionVersionsWithTenants(collectionId)
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
   }
 
   @Override

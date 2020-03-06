@@ -9,9 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenants;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 
 import java.util.ArrayList;
@@ -28,13 +28,13 @@ abstract class AbstractDefinitionService {
   protected TenantService tenantService;
   protected EngineDefinitionAuthorizationService definitionAuthorizationService;
 
-  List<DefinitionAvailableVersionsWithTenants> createDefinitionsWithAvailableVersionsAndTenants(
+  List<DefinitionVersionsWithTenantsDto> createDefinitionsWithAvailableVersionsAndTenants(
     @NonNull final String userId,
     @NonNull final List<? extends DefinitionOptimizeDto> definitions) {
     return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions, null);
   }
 
-  List<DefinitionAvailableVersionsWithTenants> createDefinitionsWithAvailableVersionsAndTenants(
+  List<DefinitionVersionsWithTenantsDto> createDefinitionsWithAvailableVersionsAndTenants(
     @NonNull final String userId,
     @NonNull final List<? extends DefinitionOptimizeDto> definitions,
     final Map<String, List<String>> scopeKeysAndTenants) {
@@ -43,7 +43,7 @@ abstract class AbstractDefinitionService {
       userId, definitions
     );
 
-    List<DefinitionAvailableVersionsWithTenants> definitionAvailableVersionsWithTenants =
+    List<DefinitionVersionsWithTenantsDto> definitionAvailableVersionsWithTenants =
       mapToAvailableDefinitionVersionsWithTenants(byKeyMap);
 
     if (scopeKeysAndTenants != null) {
@@ -56,8 +56,8 @@ abstract class AbstractDefinitionService {
     return definitionAvailableVersionsWithTenants;
   }
 
-  private List<DefinitionAvailableVersionsWithTenants> filterDefinitionAvailableVersionsWithTenantsByKeysAndTenants(
-    final List<DefinitionAvailableVersionsWithTenants> definitionsWithAvailableVersionsAndTenants,
+  private List<DefinitionVersionsWithTenantsDto> filterDefinitionAvailableVersionsWithTenantsByKeysAndTenants(
+    final List<DefinitionVersionsWithTenantsDto> definitionsWithAvailableVersionsAndTenants,
     final Map<String, List<String>> collectionScope) {
     return definitionsWithAvailableVersionsAndTenants
       .stream()
@@ -123,27 +123,27 @@ abstract class AbstractDefinitionService {
       .collect(Collectors.toMap(TenantDto::getId, v -> v));
   }
 
-  private List<DefinitionAvailableVersionsWithTenants> mapToAvailableDefinitionVersionsWithTenants(
+  private List<DefinitionVersionsWithTenantsDto> mapToAvailableDefinitionVersionsWithTenants(
     final Map<String, Map<String, InternalDefinitionVersionWithTenants>> byKeyMap) {
 
     return byKeyMap.entrySet().stream()
       .map(byKeyEntry -> {
         final String definitionName = byKeyEntry.getValue().values().iterator().next().getName();
         final Set<TenantDto> allVersionsTenants = new HashSet<>();
-        final List<DefinitionVersionWithTenants> versions = byKeyEntry.getValue().values().stream()
-          .map(internalDto -> new DefinitionVersionWithTenants(
+        final List<DefinitionVersionWithTenantsDto> versions = byKeyEntry.getValue().values().stream()
+          .map(internalDto -> new DefinitionVersionWithTenantsDto(
             internalDto.key,
             internalDto.name,
             internalDto.version,
             internalDto.versionTag,
             new ArrayList<>(internalDto.tenants)
           ))
-          .peek(DefinitionVersionWithTenants::sort)
+          .peek(DefinitionVersionWithTenantsDto::sort)
           .peek(definitionWithTenants -> allVersionsTenants.addAll(definitionWithTenants.getTenants()))
           .collect(Collectors.toList());
 
-        final DefinitionAvailableVersionsWithTenants definitionVersionsWithTenants =
-          new DefinitionAvailableVersionsWithTenants(
+        final DefinitionVersionsWithTenantsDto definitionVersionsWithTenants =
+          new DefinitionVersionsWithTenantsDto(
             byKeyEntry.getKey(), definitionName, versions, new ArrayList<>(allVersionsTenants)
           );
         definitionVersionsWithTenants.sort();

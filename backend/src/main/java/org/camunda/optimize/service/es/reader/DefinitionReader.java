@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenants;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -288,7 +288,7 @@ public class DefinitionReader {
     }
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getDefinitionsWithVersionsAndTenantsForType(final DefinitionType type) {
+  public List<DefinitionVersionsWithTenantsDto> getDefinitionsWithVersionsAndTenantsForType(final DefinitionType type) {
     // 5 aggregations over 3 layers:
     // 1. key
     // | - 2.1 name
@@ -382,7 +382,7 @@ public class DefinitionReader {
     );
   }
 
-  private DefinitionAvailableVersionsWithTenants getDefinitionVersionsWithTenantsDtosForKeyBucket(final Terms.Bucket keyBucket) {
+  private DefinitionVersionsWithTenantsDto getDefinitionVersionsWithTenantsDtosForKeyBucket(final Terms.Bucket keyBucket) {
     final Terms nameResult = keyBucket.getAggregations().get(NAME_AGGREGATION);
     final Optional<? extends Terms.Bucket> nameBucket = nameResult.getBuckets().stream().findFirst();
     final String definitionName = nameBucket.isPresent()
@@ -390,7 +390,7 @@ public class DefinitionReader {
       : null;
 
     final Terms versionsResult = keyBucket.getAggregations().get(VERSION_AGGREGATION);
-    final List<DefinitionVersionWithTenants> versions = versionsResult.getBuckets().stream()
+    final List<DefinitionVersionWithTenantsDto> versions = versionsResult.getBuckets().stream()
       .map(versionBucket -> {
         final Terms versionTagsResult = versionBucket.getAggregations().get(VERSION_TAG_AGGREGATION);
         final Optional<? extends Terms.Bucket> versionTagBucket = versionTagsResult.getBuckets().stream().findFirst();
@@ -404,19 +404,19 @@ public class DefinitionReader {
           versionTag
         );
       })
-      .sorted(Comparator.comparing(DefinitionVersionWithTenants::getVersion).reversed())
+      .sorted(Comparator.comparing(DefinitionVersionWithTenantsDto::getVersion).reversed())
       .collect(toList());
     final List<TenantDto> allTenants = versions.stream()
       .flatMap(v -> v.getTenants().stream())
       .distinct()
       .collect(toList());
-    DefinitionAvailableVersionsWithTenants groupedDefinition = new DefinitionAvailableVersionsWithTenants(
+    DefinitionVersionsWithTenantsDto groupedDefinition = new DefinitionVersionsWithTenantsDto(
       keyBucket.getKeyAsString(), definitionName, versions, allTenants);
     groupedDefinition.sort();
     return groupedDefinition;
   }
 
-  private DefinitionVersionWithTenants getDefinitionVersionWithTenantsDtoForVersionAndVersionTagBucket(
+  private DefinitionVersionWithTenantsDto getDefinitionVersionWithTenantsDtoForVersionAndVersionTagBucket(
     final String definitionName,
     final String definitionKey,
     final Terms.Bucket versionBucket,
@@ -430,7 +430,7 @@ public class DefinitionReader {
         return new TenantDto(tenantId, null, null);
       }).collect(toList());
 
-    return new DefinitionVersionWithTenants(
+    return new DefinitionVersionWithTenantsDto(
       definitionKey,
       definitionName,
       versionBucket.getKeyAsString(),

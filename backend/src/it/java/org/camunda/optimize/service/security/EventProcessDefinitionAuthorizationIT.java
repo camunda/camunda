@@ -12,12 +12,12 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
@@ -241,12 +241,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     addSimpleEventProcessToElasticsearch(definitionKey2, new GroupDto("otherGroup"));
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitionsWithVersionsAndTenants =
+    final List<DefinitionVersionsWithTenantsDto> definitionsWithVersionsAndTenants =
       getProcessDefinitionVersionsWithTenantsAsUser(KERMIT_USER);
 
     // then
     assertThat(definitionsWithVersionsAndTenants)
-      .extracting(DefinitionVersionsWithTenantsRestDto::getKey)
+      .extracting(DefinitionVersionsWithTenantsDto::getKey)
       .containsExactly(definitionKey1);
   }
 
@@ -262,12 +262,12 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     addSimpleEventProcessToElasticsearch(definitionKey2, new UserDto(DEFAULT_USERNAME));
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitionsWithVersionsAndTenants =
+    final List<DefinitionVersionsWithTenantsDto> definitionsWithVersionsAndTenants =
       getProcessDefinitionVersionsWithTenantsAsUser(KERMIT_USER);
 
     // then
     assertThat(definitionsWithVersionsAndTenants)
-      .extracting(DefinitionVersionsWithTenantsRestDto::getKey)
+      .extracting(DefinitionVersionsWithTenantsDto::getKey)
       .containsExactly(definitionKey1);
   }
 
@@ -392,13 +392,13 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
   }
 
-  private List<DefinitionVersionsWithTenantsRestDto> getProcessDefinitionVersionsWithTenantsAsUser(
+  private List<DefinitionVersionsWithTenantsDto> getProcessDefinitionVersionsWithTenantsAsUser(
     final String user) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionVersionsWithTenants()
       .withUserAuthentication(user, user)
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
+      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ProcessDefinitionOptimizeDto getProcessDefinitionByKeyAsUser(final String key, final String user) {

@@ -6,12 +6,13 @@
 
 package org.camunda.optimize.dto.optimize.query.definition;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 
 import java.util.Comparator;
 import java.util.List;
@@ -21,15 +22,25 @@ import static java.util.Comparator.naturalOrder;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-public class DefinitionVersionWithTenants {
+public class DefinitionVersionWithTenantsDto {
+  @JsonIgnore
   @NonNull
   private String key;
+  @JsonIgnore
   private String name;
   @NonNull
   private String version;
   private String versionTag;
   @NonNull
   private List<TenantDto> tenants;
+
+  public DefinitionVersionWithTenantsDto(@NonNull final String version,
+                                         final String versionTag,
+                                         @NonNull final List<TenantDto> tenants) {
+    this.version = version;
+    this.versionTag = versionTag;
+    this.tenants = tenants;
+  }
 
   public void sort() {
     tenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));

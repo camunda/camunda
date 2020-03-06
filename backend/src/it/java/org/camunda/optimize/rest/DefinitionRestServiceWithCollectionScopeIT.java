@@ -6,22 +6,19 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.TenantService;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
@@ -79,7 +76,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
 
     // then
     assertThat(definitions).hasSize(1);
@@ -106,10 +103,10 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
 
     // then
-    assertThat(definitions.stream().map(DefinitionVersionsWithTenantsRestDto::getKey))
+    assertThat(definitions.stream().map(DefinitionVersionsWithTenantsDto::getKey))
       .containsExactlyInAnyOrder(definitionKey1, definitionKey2);
   }
 
@@ -124,7 +121,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
 
     // then
     assertThat(definitions).isEmpty();
@@ -153,17 +150,17 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
 
     // then
     assertThat(definitions)
       .hasOnlyOneElementSatisfying(definitionEntry -> {
-        assertThat(definitionEntry.getAllTenants().stream().map(TenantRestDto::getId))
+        assertThat(definitionEntry.getAllTenants().stream().map(TenantDto::getId))
           .containsExactlyElementsOf(scopeTenantIds);
 
         assertThat(definitionEntry.getVersions())
           .hasOnlyOneElementSatisfying(
-            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
+            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantDto::getId))
               .containsExactlyElementsOf(scopeTenantIds)
           );
       });
@@ -191,16 +188,16 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
 
     // then
     assertThat(definitions)
       .hasOnlyOneElementSatisfying(definitionEntry -> {
-        assertThat(definitionEntry.getAllTenants().stream().map(TenantRestDto::getId))
+        assertThat(definitionEntry.getAllTenants().stream().map(TenantDto::getId))
           .containsExactlyElementsOf(scopeTenantIds);
         assertThat(definitionEntry.getVersions())
           .hasOnlyOneElementSatisfying(
-            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
+            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantDto::getId))
               .containsExactlyElementsOf(scopeTenantIds)
           );
       });
@@ -228,34 +225,34 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
 
     // then
     assertThat(definitions)
       .hasOnlyOneElementSatisfying(definitionEntry -> {
-        assertThat(definitionEntry.getAllTenants().stream().map(TenantRestDto::getId))
+        assertThat(definitionEntry.getAllTenants().stream().map(TenantDto::getId))
           .containsExactlyElementsOf(scopeTenantIds);
         assertThat(definitionEntry.getVersions())
           .hasOnlyOneElementSatisfying(
-            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
+            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantDto::getId))
               .containsExactlyElementsOf(scopeTenantIds)
           );
       });
   }
 
-  private List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenants(final DefinitionType type,
-                                                                                      final String collectionId) {
+  private List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants(final DefinitionType type,
+                                                                                  final String collectionId) {
     switch (type) {
       case PROCESS:
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildGetProcessDefinitionVersionsWithTenants(collectionId)
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
+          .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
       case DECISION:
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildGetDecisionDefinitionVersionsWithTenants(collectionId)
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
+          .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + type);
     }

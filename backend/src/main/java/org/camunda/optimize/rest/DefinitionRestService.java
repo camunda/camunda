@@ -9,11 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
-import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DefinitionService;
@@ -80,18 +78,16 @@ public class DefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}/definitionVersionsWithTenants")
-  public List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenants(
+  public List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants(
     @Context final ContainerRequestContext requestContext,
     @PathParam("type") DefinitionType type,
     @QueryParam("filterByCollectionScope") final String collectionId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
 
-    final List<DefinitionAvailableVersionsWithTenants> definitionVersionsWithTenants = optionalCollectionId
+    return optionalCollectionId
       .map(id -> collectionScopeService.getCollectionDefinitionsGroupedByVersionAndTenantForType(type, userId, id))
       .orElseGet(() -> definitionService.getDefinitionsGroupedByVersionAndTenantForType(type, userId));
-
-    return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(definitionVersionsWithTenants);
   }
 
   @GET

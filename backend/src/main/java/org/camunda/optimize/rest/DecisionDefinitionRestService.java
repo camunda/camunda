@@ -9,9 +9,7 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
-import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.rest.providers.CacheRequest;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.DecisionDefinitionService;
@@ -57,17 +55,17 @@ public class DecisionDefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/definitionVersionsWithTenants")
-  public List<DefinitionVersionsWithTenantsRestDto> getDecisionDefinitionVersionsWithTenants(
+  public List<DefinitionVersionsWithTenantsDto> getDecisionDefinitionVersionsWithTenants(
     @Context final ContainerRequestContext requestContext,
     @QueryParam("filterByCollectionScope") final String collectionId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
 
-    final List<DefinitionAvailableVersionsWithTenants> definitionVersionsWithTenants = optionalCollectionId
+    final List<DefinitionVersionsWithTenantsDto> definitionVersionsWithTenants = optionalCollectionId
       .map(id -> decisionDefinitionService.getDecisionDefinitionVersionsWithTenants(userId, id))
       .orElseGet(() -> decisionDefinitionService.getDecisionDefinitionVersionsWithTenants(userId));
 
-    return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(definitionVersionsWithTenants);
+    return definitionVersionsWithTenants;
   }
 
   /**

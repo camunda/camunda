@@ -10,7 +10,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
@@ -79,12 +79,12 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
     return definitionsResult;
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId) {
+  public List<DefinitionVersionsWithTenantsDto> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId) {
     return definitionService.getDefinitionsGroupedByVersionAndTenantForType(DECISION, userId);
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId,
-                                                                                               @NonNull final String collectionId) {
+  public List<DefinitionVersionsWithTenantsDto> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId,
+                                                                                         @NonNull final String collectionId) {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
       .getAvailableKeysAndTenantsFromCollectionScope(userId, IdentityType.USER, collectionId);
 

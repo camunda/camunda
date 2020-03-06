@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.security;
 
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.TenantService;
@@ -171,7 +170,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     deployStartAndImportDefinitionsWithSameKeyOnAllEngines(definitionResourceType);
 
     //when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions =
+    final List<DefinitionVersionsWithTenantsDto> definitions =
       getDefinitionVersionsWithTenantsAsKermit(definitionResourceType);
 
     //then
@@ -179,8 +178,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     assertThat(definitions.get(0).getVersions().size(), is(1));
     assertThat(definitions.get(0).getVersions().get(0).getTenants().size(), is(2));
     assertThat(
-      definitions.get(0).getVersions().get(0)
-        .getTenants().stream().map(TenantRestDto::getId).collect(Collectors.toList()),
+      definitions.get(0).getVersions().get(0).getTenants().stream().map(TenantDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(tenantId1, tenantId2)
     );
   }
@@ -205,7 +203,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     deployStartAndImportDefinitionsWithSameKeyOnAllEngines(definitionResourceType);
 
     //when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions =
+    final List<DefinitionVersionsWithTenantsDto> definitions =
       getDefinitionVersionsWithTenantsAsKermit(definitionResourceType);
 
     //then
@@ -228,7 +226,10 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
         engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
-        secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
+        secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(
+          createSimpleDmnModel(DECISION_KEY_1),
+          tenantId
+        );
         break;
       default:
         throw new OptimizeIntegrationTestException("Unsupported resource type: " + definitionResourceType);
@@ -237,23 +238,23 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsKermit(
+  private List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsKermit(
     final int definitionResourceType) {
-    final List<DefinitionVersionsWithTenantsRestDto> definitions;
+    final List<DefinitionVersionsWithTenantsDto> definitions;
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         definitions = embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(KERMIT_USER, KERMIT_USER)
           .buildGetProcessDefinitionVersionsWithTenants()
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
+          .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
         definitions = embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(KERMIT_USER, KERMIT_USER)
           .buildGetDecisionDefinitionVersionsWithTenants()
-          .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, Response.Status.OK.getStatusCode());
+          .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
         break;
       default:
         throw new OptimizeIntegrationTestException("Unsupported resource type: " + definitionResourceType);
