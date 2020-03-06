@@ -13,14 +13,18 @@ import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
 import java.time.Duration;
 import java.util.Arrays;
-import org.junit.rules.ExternalResource;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 
-class ContainerStateRule extends ExternalResource {
+class ContainerStateRule extends TestWatcher {
 
+  private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateRule.class);
   private ZeebeBrokerContainer broker;
@@ -37,7 +41,8 @@ class ContainerStateRule extends ExternalResource {
   }
 
   @Override
-  public void after() {
+  protected void failed(Throwable e, Description description) {
+    super.failed(e, description);
     if (broker != null) {
       log("Broker", broker.getLogs());
     }
@@ -45,7 +50,10 @@ class ContainerStateRule extends ExternalResource {
     if (gateway != null) {
       log("Gateway", gateway.getLogs());
     }
+  }
 
+  @Override
+  protected void finished(Description description) {
     close();
   }
 
@@ -91,7 +99,7 @@ class ContainerStateRule extends ExternalResource {
       LOG.error(
           String.format(
               "%n===============================================%n%s logs%n===============================================%n%s",
-              type, log.replaceAll("\n\n", "\n")));
+              type, log.replaceAll(DOUBLE_NEWLINE.pattern(), "\n")));
     }
   }
 
@@ -100,21 +108,47 @@ class ContainerStateRule extends ExternalResource {
    *     false
    */
   public boolean hasElementInState(final String elementId, final String intent) {
-    return findLogContaining(
+    return hasLogContaining(
         String.format("\"elementId\":\"%s\"", elementId),
         String.format("\"intent\":\"%s\"", intent));
   }
 
   /** @return true if the message was found in the specified intent. Otherwise, returns false */
   public boolean hasMessageInState(final String name, final String intent) {
-    return findLogContaining(
+    return hasLogContaining(
         String.format("\"name\":\"%s\"", name), String.format("\"intent\":\"%s\"", intent));
   }
 
   // returns true if it finds a line that contains every piece.
-  boolean findLogContaining(final String... pieces) {
+  boolean hasLogContaining(final String... pieces) {
+    return getLogContaining(pieces) != null;
+  }
+
+  public String getLogContaining(final String... pieces) {
     final String[] lines = broker.getLogs().split("\n");
-    return Arrays.stream(lines).anyMatch(line -> Arrays.stream(pieces).allMatch(line::contains));
+
+    return Arrays.stream(lines)
+        .filter(line -> Arrays.stream(pieces).allMatch(line::contains))
+        .findFirst()
+        .orElse(null);
+  }
+
+  public long getIncidentKey() {
+    final String incidentCreated = getLogContaining("INCIDENT", "CREATED");
+
+    final Pattern pattern = Pattern.compile("(\"key\":)(\\d+)", Pattern.CASE_INSENSITIVE);
+    final Matcher matcher = pattern.matcher(incidentCreated);
+
+    long incidentKey = -1;
+    if (matcher.find()) {
+      try {
+        incidentKey = Long.parseLong(matcher.group(2));
+      } catch (NumberFormatException | IndexOutOfBoundsException e) {
+        // no key was found
+      }
+    }
+
+    return incidentKey;
   }
 
   /** Close all opened resources. */

@@ -9,22 +9,22 @@ package io.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
+import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.UpgradeTestCase.TestCaseBuilder;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.VersionUtil;
+import io.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import org.agrona.IoUtil;
 import org.assertj.core.util.Files;
 import org.junit.Rule;
@@ -40,8 +40,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class UpgradeTest {
 
+  public static final String PROCESS_ID = "process";
+  public static final String CHILD_PROCESS_ID = "childProc";
   private static final String CURRENT_VERSION = "current-test";
-  private static final String PROCESS_ID = "process";
   private static final String TASK = "task";
   private static final String MESSAGE = "message";
   private static final File SHARED_DATA;
@@ -66,7 +67,7 @@ public class UpgradeTest {
   @Parameter public String name;
 
   @Parameter(1)
-  public TestCase testCase;
+  public UpgradeTestCase testCase;
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
@@ -75,16 +76,94 @@ public class UpgradeTest {
           {
             "job",
             scenario()
-                .createInstance(jobWorkflow())
-                .beforeUpgrade(activateJob())
-                .afterUpgrade(completeJob())
+                .deployWorkflow(jobWorkflow())
+                .createInstance()
+                .beforeUpgrade(UpgradeTest::activateJob)
+                .afterUpgrade(UpgradeTest::completeJob)
+                .done()
           },
           {
-            "message",
+            "message subscription",
             scenario()
-                .createInstance(messageWorkflow())
-                .beforeUpgrade(awaitOpenMessageSubscription())
-                .afterUpgrade(publishMessage())
+                .deployWorkflow(messageWorkflow())
+                .createInstance(Map.of("key", "123"))
+                .beforeUpgrade(UpgradeTest::awaitOpenMessageSubscription)
+                .afterUpgrade(UpgradeTest::publishMessage)
+                .done()
+          },
+          {
+            "message start event",
+            scenario()
+                .deployWorkflow(msgStartWorkflow())
+                .beforeUpgrade(UpgradeTest::awaitStartMessageSubscription)
+                .afterUpgrade(UpgradeTest::publishMessage)
+                .done()
+          },
+          {
+            "timer",
+            scenario()
+                .deployWorkflow(timerWorkflow())
+                .beforeUpgrade(UpgradeTest::awaitTimerCreation)
+                .afterUpgrade(UpgradeTest::timerTriggered)
+                .done()
+          },
+          {
+            "incident",
+            scenario()
+                .deployWorkflow(incidentWorkflow())
+                .createInstance()
+                .beforeUpgrade(UpgradeTest::awaitIncidentCreation)
+                .afterUpgrade(UpgradeTest::resolveIncident)
+                .done()
+          },
+          {
+            "publish message",
+            scenario()
+                .deployWorkflow(messageWorkflow())
+                .beforeUpgrade(
+                    state -> {
+                      publishMessage(state, -1L, -1L);
+                      return -1L;
+                    })
+                .afterUpgrade(
+                    (state, l1, l2) -> {
+                      state
+                          .client()
+                          .newCreateInstanceCommand()
+                          .bpmnProcessId(PROCESS_ID)
+                          .latestVersion()
+                          .variables(Map.of("key", "123"))
+                          .send();
+                      TestUtil.waitUntil(() -> state.hasLogContaining(MESSAGE, "CORRELATED"));
+                    })
+                .done()
+          },
+          {
+            "call activity",
+            scenario()
+                .deployWorkflow(
+                    new Tuple<>(parentWorkflow(), PROCESS_ID),
+                    new Tuple<>(childWorkflow(), CHILD_PROCESS_ID))
+                .createInstance()
+                .afterUpgrade(
+                    (state, wfKey, key) -> {
+                      final ActivatedJob job =
+                          state
+                              .client()
+                              .newActivateJobsCommand()
+                              .jobType(TASK)
+                              .maxJobsToActivate(1)
+                              .send()
+                              .join()
+                              .getJobs()
+                              .iterator()
+                              .next();
+
+                      state.client().newCompleteCommand(job.getKey()).send().join();
+                      TestUtil.waitUntil(
+                          () -> state.hasLogContaining(CHILD_PROCESS_ID, "COMPLETED"));
+                    })
+                .done()
           }
         });
   }
@@ -96,13 +175,13 @@ public class UpgradeTest {
         .broker(CURRENT_VERSION, tmpFolder.getRoot().getPath())
         .withStandaloneGateway(lastVersion)
         .start();
-    testCase.createInstance().accept(state.client());
+    final long wfInstanceKey = testCase.setUp(state.client());
 
     // when
-    final long key = testCase.before().apply(state);
+    final long key = testCase.runBefore(state);
 
     // then
-    testCase.after().accept(state, key);
+    testCase.runAfter(state, wfInstanceKey, key);
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
 
@@ -119,8 +198,8 @@ public class UpgradeTest {
   private void upgradeZeebe(final boolean deleteSnapshot) {
     // given
     state.broker(lastVersion, tmpFolder.getRoot().getPath()).start();
-    testCase.createInstance().accept(state.client());
-    final Long key = testCase.before().apply(state);
+    final long wfInstanceKey = testCase.setUp(state.client());
+    final long key = testCase.runBefore(state);
 
     // when
     state.close();
@@ -133,7 +212,7 @@ public class UpgradeTest {
 
     // then
     state.broker(CURRENT_VERSION, tmpFolder.getRoot().getPath()).start();
-    testCase.after().accept(state, key);
+    testCase.runAfter(state, wfInstanceKey, key);
 
     TestUtil.waitUntil(() -> state.hasElementInState(PROCESS_ID, "ELEMENT_COMPLETED"));
   }
@@ -146,19 +225,17 @@ public class UpgradeTest {
         .done();
   }
 
-  private static Function<ContainerStateRule, Long> activateJob() {
-    return (ContainerStateRule state) -> {
-      final ActivateJobsResponse jobsResponse =
-          state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
+  private static long activateJob(final ContainerStateRule state) {
+    final ActivateJobsResponse jobsResponse =
+        state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
 
-      TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
-      return jobsResponse.getJobs().get(0).getKey();
-    };
+    TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
+    return jobsResponse.getJobs().get(0).getKey();
   }
 
-  private static BiConsumer<ContainerStateRule, Long> completeJob() {
-    return (ContainerStateRule state, Long key) ->
-        state.client().newCompleteCommand(key).send().join();
+  private static void completeJob(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
+    state.client().newCompleteCommand(key).send().join();
   }
 
   private static BpmnModelInstance messageWorkflow() {
@@ -170,80 +247,100 @@ public class UpgradeTest {
         .done();
   }
 
-  private static Function<ContainerStateRule, Long> awaitOpenMessageSubscription() {
-    return (ContainerStateRule state) -> {
-      TestUtil.waitUntil(() -> state.findLogContaining("WORKFLOW_INSTANCE_SUBSCRIPTION", "OPENED"));
-      return -1L;
-    };
+  private static long awaitOpenMessageSubscription(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("MESSAGE_SUBSCRIPTION", "OPENED"));
+    return -1L;
   }
 
-  private static BiConsumer<ContainerStateRule, Long> publishMessage() {
-    return (ContainerStateRule state, Long key) -> {
-      state
-          .client()
-          .newPublishMessageCommand()
-          .messageName(MESSAGE)
-          .correlationKey("123")
-          .send()
-          .join();
+  private static void publishMessage(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
+    state
+        .client()
+        .newPublishMessageCommand()
+        .messageName(MESSAGE)
+        .correlationKey("123")
+        .timeToLive(Duration.ofMinutes(5))
+        .send()
+        .join();
 
-      TestUtil.waitUntil(() -> state.hasMessageInState(MESSAGE, "PUBLISHED"));
-    };
+    TestUtil.waitUntil(() -> state.hasMessageInState(MESSAGE, "PUBLISHED"));
   }
 
-  private static TestCase scenario() {
-    return new TestCase();
+  private static BpmnModelInstance msgStartWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .message(b -> b.zeebeCorrelationKey("key").name(MESSAGE))
+        .endEvent()
+        .done();
   }
 
-  private static class TestCase {
-    private Consumer<ZeebeClient> createInstance;
-    private Function<ContainerStateRule, Long> before;
-    private BiConsumer<ContainerStateRule, Long> after;
+  private static long awaitStartMessageSubscription(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("MESSAGE_START_EVENT_SUBSCRIPTION", "OPENED"));
+    return -1L;
+  }
 
-    TestCase createInstance(final BpmnModelInstance model) {
-      this.createInstance =
-          client -> {
-            client.newDeployCommand().addWorkflowModel(model, PROCESS_ID + ".bpmn").send().join();
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(PROCESS_ID)
-                .latestVersion()
-                .variables(Map.of("key", "123"))
-                .send()
-                .join();
-          };
-      return this;
-    }
+  private static BpmnModelInstance timerWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .timerWithCycle("R/PT1S")
+        .endEvent()
+        .done();
+  }
 
-    /**
-     * Should make zeebe write records and write to state of the feature being tested (e.g., jobs,
-     * messages). The workflow should be left in a waiting state so Zeebe can be restarted and
-     * execution can be continued after. Takes the container rule as input and outputs a long which
-     * can be used after the upgrade to continue the execution.
-     */
-    TestCase beforeUpgrade(final Function<ContainerStateRule, Long> func) {
-      this.before = func;
-      return this;
-    }
-    /**
-     * Should continue the instance after the upgrade in a way that will complete the workflow.
-     * Takes the container rule and a long (e.g., a key) as input.
-     */
-    TestCase afterUpgrade(final BiConsumer<ContainerStateRule, Long> func) {
-      this.after = func;
-      return this;
-    }
+  private static long awaitTimerCreation(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("TIMER", "CREATED"));
+    return -1L;
+  }
 
-    public Consumer<ZeebeClient> createInstance() {
-      return createInstance;
-    }
+  private static void timerTriggered(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("TIMER", "TRIGGERED"));
+  }
 
-    public Function<ContainerStateRule, Long> before() {
-      return before;
-    }
+  private static BpmnModelInstance incidentWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask("failingTask", t -> t.zeebeTaskType(TASK).zeebeInput("foo", "foo"))
+        .done();
+  }
 
-    public BiConsumer<ContainerStateRule, Long> after() {
-      return after;
-    }
+  private static long awaitIncidentCreation(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasLogContaining("INCIDENT", "CREATED"));
+    return state.getIncidentKey();
+  }
+
+  private static void resolveIncident(
+      final ContainerStateRule state, final long wfInstanceKey, final long key) {
+    state
+        .client()
+        .newSetVariablesCommand(wfInstanceKey)
+        .variables(Map.of("foo", "bar"))
+        .send()
+        .join();
+
+    state.client().newResolveIncidentCommand(key).send().join();
+    final ActivateJobsResponse job =
+        state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
+    state.client().newCompleteCommand(job.getJobs().get(0).getKey()).send().join();
+  }
+
+  private static BpmnModelInstance parentWorkflow() {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .callActivity("c", b -> b.zeebeProcessId(CHILD_PROCESS_ID))
+        .endEvent()
+        .done();
+  }
+
+  private static BpmnModelInstance childWorkflow() {
+    return Bpmn.createExecutableProcess(CHILD_PROCESS_ID)
+        .startEvent()
+        .serviceTask(TASK, b -> b.zeebeTaskType(TASK))
+        .endEvent()
+        .done();
+  }
+
+  private static TestCaseBuilder scenario() {
+    return UpgradeTestCase.builder();
   }
 }
