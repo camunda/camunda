@@ -17,6 +17,8 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.util.health.FailureListener;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -30,7 +32,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
-public final class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
+public final class LogStreamImpl extends Actor implements LogStream, FailureListener {
   private static final long INVALID_ADDRESS = -1L;
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -52,6 +54,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
   private long commitPosition;
   private Throwable closeError; // set if any error occurred during closeAsync
   private final String actorName;
+  private FailureListener failureListener;
 
   LogStreamImpl(
       final ActorScheduler actorScheduler,
@@ -288,6 +291,7 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
                             appenderFuture.completeExceptionally(t);
                           } else {
                             appenderFuture.complete(appender);
+                            appender.addFailureListener(this);
                           }
                         });
               } else {
@@ -312,6 +316,31 @@ public final class LogStreamImpl extends Actor implements LogStream, AutoCloseab
       }
 
       return dispatcherPartitionId;
+    }
+  }
+
+  @Override
+  public HealthStatus getHealthStatus() {
+    return actor.isClosed() ? HealthStatus.UNHEALTHY : HealthStatus.HEALTHY;
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(() -> this.failureListener = failureListener);
+  }
+
+  @Override
+  public void onFailure() {
+    if (failureListener != null) {
+      failureListener.onFailure();
+    }
+    closeAsync();
+  }
+
+  @Override
+  public void onRecovered() {
+    if (failureListener != null) {
+      failureListener.onRecovered();
     }
   }
 

@@ -299,6 +299,7 @@ public final class ZeebePartition extends Actor
                   logStream.setCommitPosition(deferredCommitPosition);
                   deferredCommitPosition = -1;
                 }
+                criticalComponentsHealthMonitor.registerComponent("logstream", logStream);
                 installStorageServices()
                     .onComplete(
                         (deletionService, errorInstall) -> {
@@ -494,6 +495,7 @@ public final class ZeebePartition extends Actor
       return CompletableActorFuture.completed(null);
     }
 
+    criticalComponentsHealthMonitor.removeComponent("logstream");
     final LogStream logStreamToClose = logStream;
     logStream = null;
     return logStreamToClose.closeAsync();
