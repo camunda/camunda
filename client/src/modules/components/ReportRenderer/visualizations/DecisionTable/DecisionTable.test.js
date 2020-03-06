@@ -6,26 +6,26 @@
 
 import React from 'react';
 
-import ThemedDecisionTable from './DecisionTable';
+import {DecisionTable} from './DecisionTable';
 import Viewer from 'dmn-js';
 
 import {shallow} from 'enzyme';
-
-const DecisionTable = ThemedDecisionTable.WrappedComponent;
 
 jest.mock('dmn-js', () =>
   jest.fn().mockImplementation(() => ({
     importXML: jest.fn().mockImplementation((xml, callback) => callback()),
     open: jest.fn(),
-    getViews: jest
-      .fn()
-      .mockReturnValue([
-        {type: 'decisionTable', element: {id: 'a'}},
-        {type: 'decisionTable', element: {id: 'key'}},
-        {type: 'decisionTable', element: {id: 'c'}}
-      ])
+    getViews: jest.fn().mockReturnValue([
+      {type: 'decisionTable', element: {id: 'a'}},
+      {type: 'decisionTable', element: {id: 'key'}},
+      {type: 'decisionTable', element: {id: 'c'}}
+    ])
   }))
 );
+
+const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+
+jest.mock('@bpmn-io/dmn-migrate', () => ({migrateDiagram: xml => xml}));
 
 const props = {
   report: {
@@ -37,9 +37,13 @@ const props = {
     },
     result: {
       instanceCount: 3,
-      data: [{key: 'a', value: 1}, {key: 'b', value: 2}]
+      data: [
+        {key: 'a', value: 1},
+        {key: 'b', value: 2}
+      ]
     }
-  }
+  },
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
 
 it('should construct a new Viewer instance', () => {
@@ -48,15 +52,17 @@ it('should construct a new Viewer instance', () => {
   expect(Viewer).toHaveBeenCalled();
 });
 
-it('should import the provided xml', () => {
+it('should import the provided xml', async () => {
   const node = shallow(<DecisionTable {...props} />);
+  await flushPromises();
 
   expect(node.instance().viewer.importXML).toHaveBeenCalled();
   expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe('dmn xml string');
 });
 
-it('should open the view of the appropriate decision table', () => {
+it('should open the view of the appropriate decision table', async () => {
   const node = shallow(<DecisionTable {...props} />);
+  await flushPromises();
 
   expect(node.instance().viewer.open).toHaveBeenCalled();
   expect(node.instance().viewer.open.mock.calls[0][0]).toEqual({
@@ -83,7 +89,10 @@ it('should render content in DmnJsPortals', () => {
 
 it('should display meaningful data if there are no evaluations', () => {
   const node = shallow(
-    <DecisionTable report={{data: props.report.data, result: {instanceCount: 0, data: []}}} />
+    <DecisionTable
+      {...props}
+      report={{data: props.report.data, result: {instanceCount: 0, data: []}}}
+    />
   );
 
   node.setState({

@@ -4,6 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
+    "@bpmn-io/dmn-migrate": "^0.4.3",
     "@ibm/plex": "^4.0.2",
     "array-includes": "^3.1.1",
     "array.prototype.find": "^2.1.1",
@@ -13,7 +14,7 @@
     "classnames": "^2.2.6",
     "debounce": "^1.2.0",
     "deep-equal": "^2.0.1",
-    "dmn-js": "^7.4.3",
+    "dmn-js": "^8.0.1",
     "element-closest": "^3.0.2",
     "es6-shim": "^0.35.5",
     "focus-visible": "^5.0.2",
