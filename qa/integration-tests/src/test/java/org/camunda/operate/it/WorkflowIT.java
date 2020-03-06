@@ -19,7 +19,6 @@ import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.webapp.rest.dto.WorkflowGroupDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -39,7 +38,6 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   private WorkflowReader workflowReader;
 
   @Test
-  @Ignore("OPE-896")
   public void testWorkflowCreated() {
     //when
     final Long workflowKey = deployWorkflow("demoProcess_v_1.bpmn");
@@ -86,7 +84,6 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-896")
   public void testWorkflowsGrouped() throws Exception {
     //given
     final String demoProcessId = "demoProcess";

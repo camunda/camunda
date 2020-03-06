@@ -5,10 +5,7 @@
  */
 package org.camunda.operate.zeebeimport.v23.processors;
 
-import javax.xml.parsers.SAXParser;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import javax.xml.parsers.SAXParserFactory;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -26,6 +23,7 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
+import org.camunda.operate.zeebeimport.util.XMLUtil;
 import org.camunda.operate.zeebeimport.v23.record.value.DeploymentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -35,9 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
@@ -71,7 +66,10 @@ public class WorkflowZeebeRecordProcessor {
   private WorkflowIndex workflowIndex;
 
   @Autowired
-  private SAXParser saxParser;
+  private SAXParserFactory saxParserFactory;
+
+  @Autowired
+  private XMLUtil xmlUtil;
 
   public void processDeploymentRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final String intentStr = record.getIntent().name();
@@ -135,8 +133,7 @@ public class WorkflowZeebeRecordProcessor {
       String resourceName = resource.getResourceName();
       workflowEntity.setResourceName(resourceName);
 
-      InputStream is = new ByteArrayInputStream(byteArray);
-      final Optional<WorkflowEntity> diagramData = extractDiagramData(is);
+      final Optional<WorkflowEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
       if(diagramData.isPresent()) {
         workflowEntity.setName(diagramData.get().getName());
       }
@@ -149,32 +146,4 @@ public class WorkflowZeebeRecordProcessor {
     return resources.stream().collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
-  private Optional<WorkflowEntity> extractDiagramData(InputStream xmlInputStream) {
-    BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
-    try {
-      saxParser.parse(xmlInputStream, handler);
-      return Optional.of(handler.getWorkflowEntity());
-    } catch (SAXException | IOException e) {
-      logger.warn("Unable to parse diagram: " + e.getMessage(), e);
-      return Optional.empty();
-    }
-  }
-
-  public static class BpmnXmlParserHandler extends DefaultHandler {
-
-    WorkflowEntity workflowEntity = new WorkflowEntity();
-
-    @Override
-    public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-      if (localName.equalsIgnoreCase("process")) {
-        if (attributes.getValue("name") != null) {
-          workflowEntity.setName(attributes.getValue("name"));
-        }
-      }
-    }
-
-    public WorkflowEntity getWorkflowEntity() {
-      return workflowEntity;
-    }
-  }
 }

@@ -5,17 +5,15 @@
  */
 package org.camunda.operate.zeebeimport;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-
-import org.camunda.operate.zeebeimport.v23.processors.WorkflowZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.util.XMLUtil;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+import static org.junit.Assert.assertEquals;
 
 public class XXEPreventionTest {
 
@@ -31,7 +29,7 @@ public class XXEPreventionTest {
     InputStream xmlInputStream = new ByteArrayInputStream(xxeAttack.getBytes(StandardCharsets.UTF_8));
     StringBuilder elementContent = new StringBuilder();
     
-    new SAXParserHolder().getSAXParser().parse(xmlInputStream, new DefaultHandler() {
+    new XMLUtil().getSAXParserFactory().newSAXParser().parse(xmlInputStream, new DefaultHandler() {
       @Override
       public void characters(char ch[], int start, int length) throws SAXException {
         elementContent.append(new String(ch, start, length));
