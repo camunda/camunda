@@ -104,29 +104,29 @@ export default withErrorHandling(
         <div className="Collection">
           <div className="header">
             <Icon size="24" type="collection" />
-            <div className="text">
-              {collection && (
-                <>
-                  <span title={collection.name}>{collection.name}</span>
-                  {collection.currentUserRole === 'manager' && (
-                    <Dropdown label={<Icon type="context-menu" size="24px" />}>
-                      <Dropdown.Option onClick={this.startEditingCollection}>
-                        <Icon type="edit" />
-                        {t('common.edit')}
-                      </Dropdown.Option>
-                      <Dropdown.Option onClick={() => this.setState({copying: collectionEntity})}>
-                        <Icon type="copy-document" />
-                        {t('common.copy')}
-                      </Dropdown.Option>
-                      <Dropdown.Option onClick={() => this.setState({deleting: collectionEntity})}>
-                        <Icon type="delete" />
-                        {t('common.delete')}
-                      </Dropdown.Option>
-                    </Dropdown>
-                  )}
-                </>
-              )}
-            </div>
+            {collection && (
+              <>
+                <span className="text" title={collection.name}>
+                  {collection.name}
+                </span>
+                {collection.currentUserRole === 'manager' && (
+                  <Dropdown label={<Icon type="context-menu" size="24px" />}>
+                    <Dropdown.Option onClick={this.startEditingCollection}>
+                      <Icon type="edit" />
+                      {t('common.edit')}
+                    </Dropdown.Option>
+                    <Dropdown.Option onClick={() => this.setState({copying: collectionEntity})}>
+                      <Icon type="copy-document" />
+                      {t('common.copy')}
+                    </Dropdown.Option>
+                    <Dropdown.Option onClick={() => this.setState({deleting: collectionEntity})}>
+                      <Icon type="delete" />
+                      {t('common.delete')}
+                    </Dropdown.Option>
+                  </Dropdown>
+                )}
+              </>
+            )}
             <ul className="navigation">
               <li className={classnames({active: homeTab})}>
                 <Link to=".">{t('home.collectionTitleWithAmpersand')}</Link>

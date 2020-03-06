@@ -11,48 +11,45 @@ exports[`should render content depending on the selected tab 1`] = `
       size="24"
       type="collection"
     />
-    <div
+    <span
       className="text"
+      title="aCollectionName"
     >
-      <span
-        title="aCollectionName"
+      aCollectionName
+    </span>
+    <Dropdown
+      label={
+        <Icon
+          size="24px"
+          type="context-menu"
+        />
+      }
+    >
+      <ForwardRef(DropdownOption)
+        onClick={[Function]}
       >
-        aCollectionName
-      </span>
-      <Dropdown
-        label={
-          <Icon
-            size="24px"
-            type="context-menu"
-          />
-        }
+        <Icon
+          type="edit"
+        />
+        Edit
+      </ForwardRef(DropdownOption)>
+      <ForwardRef(DropdownOption)
+        onClick={[Function]}
       >
-        <ForwardRef(DropdownOption)
-          onClick={[Function]}
-        >
-          <Icon
-            type="edit"
-          />
-          Edit
-        </ForwardRef(DropdownOption)>
-        <ForwardRef(DropdownOption)
-          onClick={[Function]}
-        >
-          <Icon
-            type="copy-document"
-          />
-          Copy
-        </ForwardRef(DropdownOption)>
-        <ForwardRef(DropdownOption)
-          onClick={[Function]}
-        >
-          <Icon
-            type="delete"
-          />
-          Delete
-        </ForwardRef(DropdownOption)>
-      </Dropdown>
-    </div>
+        <Icon
+          type="copy-document"
+        />
+        Copy
+      </ForwardRef(DropdownOption)>
+      <ForwardRef(DropdownOption)
+        onClick={[Function]}
+      >
+        <Icon
+          type="delete"
+        />
+        Delete
+      </ForwardRef(DropdownOption)>
+    </Dropdown>
     <ul
       className="navigation"
     >
