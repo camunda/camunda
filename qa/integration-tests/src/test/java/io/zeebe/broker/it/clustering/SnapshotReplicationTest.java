@@ -10,11 +10,9 @@ package io.zeebe.broker.it.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.clustering.ClusteredDataDeletionTest.TestExporter;
+import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotMetadata;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -22,44 +20,32 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.zip.CRC32C;
-import java.util.zip.CheckedInputStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
-import org.springframework.util.unit.DataSize;
 
 public final class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
-  private static final Duration SNAPSHOT_PERIOD = Duration.ofSeconds(30);
-
-  // ensures we do not trigger deletion after replication; if we do, then the followers might open
-  // the database which causes extra files to appear and messes up the checksum counting
-  private static final int MAX_SNAPSHOTS = 2;
-
+  private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
+  private static final int MAX_SNAPSHOTS = 3;
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+  private static final String WORKFLOW_RESOURCE_NAME = "workflow.bpmn";
 
-  // NOTE: the configuration removes the RecordingExporter from the broker's configuration to enable
-  // data deletion so it can't be used in tests
-  public final ClusteringRule clusteringRule =
-      new ClusteringRule(PARTITION_COUNT, 3, 3, SnapshotReplicationTest::configureCustomExporter);
+  private final ClusteringRule clusteringRule =
+      new ClusteringRule(PARTITION_COUNT, 3, 3, SnapshotReplicationTest::configureBroker);
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
-
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
-
-  @Rule public ExpectedException expectedException = ExpectedException.none();
-
   private ZeebeClient client;
 
   @Before
@@ -70,35 +56,123 @@ public final class SnapshotReplicationTest {
   @Test
   public void shouldReplicateSnapshots() {
     // given
-    client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
     final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final Broker leader = clusteringRule.getBroker(leaderNodeId);
-    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
 
-    // when - snapshot
+    // when
+    triggerSnapshotCreation();
     clusteringRule.waitForValidSnapshotAtBroker(leader);
-
     final List<Broker> otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
     for (final Broker broker : otherBrokers) {
       clusteringRule.waitForValidSnapshotAtBroker(broker);
     }
 
-    // then - replicated
-    final Collection<Broker> brokers = clusteringRule.getBrokers();
-    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = new HashMap<>();
-    for (final Broker broker : brokers) {
-      final Map<String, Long> checksums = createSnapshotDirectoryChecksums(broker);
-      brokerSnapshotChecksums.put(broker.getConfig().getCluster().getNodeId(), checksums);
-    }
-
+    // then
+    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
     final Map<String, Long> checksumFirstNode = brokerSnapshotChecksums.get(0);
     assertThat(checksumFirstNode).isEqualTo(brokerSnapshotChecksums.get(1));
     assertThat(checksumFirstNode).isEqualTo(brokerSnapshotChecksums.get(2));
   }
 
+  @Test
+  public void shouldReceiveLatestSnapshotOnRejoin() {
+    // given
+    final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    final var otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
+    final var firstFollowerId = otherBrokers.get(0).getConfig().getCluster().getNodeId();
+    final var secondFollowerId = otherBrokers.get(1).getConfig().getCluster().getNodeId();
+
+    // when - snapshot
+    clusteringRule.stopBroker(firstFollowerId);
+    triggerSnapshotCreation();
+    clusteringRule.restartBroker(firstFollowerId);
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 1);
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 1);
+
+    // then - replicated
+    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
+    final var leaderChecksums = Objects.requireNonNull(brokerSnapshotChecksums.get(leaderNodeId));
+    assertThat(brokerSnapshotChecksums.get(firstFollowerId)).containsAllEntriesOf(leaderChecksums);
+    assertThat(brokerSnapshotChecksums.get(secondFollowerId)).containsAllEntriesOf(leaderChecksums);
+  }
+
+  @Test
+  public void shouldReceiveNewSnapshotsOnRejoin() {
+    // given
+    final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    final var otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
+    final var firstFollowerId = otherBrokers.get(0).getConfig().getCluster().getNodeId();
+    final var secondFollowerId = otherBrokers.get(1).getConfig().getCluster().getNodeId();
+
+    // when - snapshot
+    clusteringRule.stopBroker(firstFollowerId);
+    triggerSnapshotCreation();
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 1);
+    clusteringRule.restartBroker(firstFollowerId);
+
+    triggerSnapshotCreation();
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 2);
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 2);
+
+    // then - replicated
+    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
+    final var leaderChecksums = Objects.requireNonNull(brokerSnapshotChecksums.get(leaderNodeId));
+    assertThat(brokerSnapshotChecksums.get(firstFollowerId)).containsAllEntriesOf(leaderChecksums);
+    assertThat(brokerSnapshotChecksums.get(secondFollowerId)).containsAllEntriesOf(leaderChecksums);
+  }
+
+  private void triggerSnapshotCreation() {
+    client.newDeployCommand().addWorkflowModel(WORKFLOW, WORKFLOW_RESOURCE_NAME).send().join();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+  }
+
+  @Test
+  public void shouldReplicateSnapshotsOnLeaderChange() {
+    // given
+    final var oldLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    final var otherBrokers = clusteringRule.getOtherBrokerObjects(oldLeaderId);
+    final var firstFollowerId = otherBrokers.get(0).getConfig().getCluster().getNodeId();
+    final var secondFollowerId = otherBrokers.get(1).getConfig().getCluster().getNodeId();
+
+    // when
+    triggerSnapshotCreation();
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 1);
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 1);
+
+    triggerLeaderChange(oldLeaderId);
+    triggerSnapshotCreation();
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 2);
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 2);
+    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(oldLeaderId), 3);
+
+    // then
+    // the old leader will have an extra snapshot it created on shut down, so we swap the condition
+    // to check that the other nodes contain a subset of the old leader's snapshots
+    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
+    final var oldLeaderChecks = Objects.requireNonNull(brokerSnapshotChecksums.get(oldLeaderId));
+    assertThat(oldLeaderChecks).containsAllEntriesOf(brokerSnapshotChecksums.get(firstFollowerId));
+    assertThat(oldLeaderChecks).containsAllEntriesOf(brokerSnapshotChecksums.get(secondFollowerId));
+  }
+
+  private Map<Integer, Map<String, Long>> getBrokerSnapshotChecksums() {
+    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = new HashMap<>();
+    for (final var broker : clusteringRule.getBrokers()) {
+      final var checksums = createSnapshotDirectoryChecksums(broker);
+      brokerSnapshotChecksums.put(broker.getConfig().getCluster().getNodeId(), checksums);
+    }
+    return brokerSnapshotChecksums;
+  }
+
+  private void triggerLeaderChange(final int oldLeaderId) {
+    long newLeaderId;
+    do {
+      clusteringRule.restartBroker(oldLeaderId);
+      newLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
+    } while (newLeaderId == oldLeaderId);
+  }
+
   private Map<String, Long> createSnapshotDirectoryChecksums(final Broker broker) {
     final File snapshotsDir = clusteringRule.getSnapshotsDirectory(broker);
-
     final Map<String, Long> checksums = createChecksumsForSnapshotDirectory(snapshotsDir);
 
     assertThat(checksums.size()).isGreaterThan(0);
@@ -107,48 +181,59 @@ public final class SnapshotReplicationTest {
 
   private Map<String, Long> createChecksumsForSnapshotDirectory(final File snapshotDirectory) {
     final Map<String, Long> checksums = new HashMap<>();
-    final File[] snapshotDirs = snapshotDirectory.listFiles();
-    if (snapshotDirs != null) {
-      Arrays.stream(snapshotDirs)
-          .filter(f -> !f.getName().contains("tmp"))
-          .forEach(
-              validSnapshotDir -> {
-                final File[] snapshotFiles = validSnapshotDir.listFiles();
-                if (snapshotFiles != null) {
-                  for (final File snapshotFile : snapshotFiles) {
-                    final long checksum = createCheckSumForFile(snapshotFile);
-                    checksums.put(snapshotFile.getName(), checksum);
-                  }
-                }
-              });
+    final var snapshotPath = snapshotDirectory.toPath();
+    try (final var snapshots = Files.newDirectoryStream(snapshotPath)) {
+      for (final var validSnapshotDir : snapshots) {
+        final Map<String, Long> snapshotChecksum = createChecksumsForSnapshot(validSnapshotDir);
+        checksums.putAll(snapshotChecksum);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
 
     return checksums;
   }
 
-  private long createCheckSumForFile(final File snapshotFile) {
-    try (final CheckedInputStream checkedInputStream =
-        new CheckedInputStream(Files.newInputStream(snapshotFile.toPath()), new CRC32C())) {
-      while (checkedInputStream.skip(512) > 0) {}
-
-      return checkedInputStream.getChecksum().getValue();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+  /**
+   * Builds a map where each entry is a file of the snapshot, with the key being its filename
+   * prefixed with the snapshot index/term/timestamp, and the value the checksum of the file. We
+   * ignore the position in the prefix because it can differ, as snapshots taking by the async
+   * director will have a lower bound estimate of the last processed position, but snapshots
+   * replicated through Atomix actually read the snapshot for the real last processed position which
+   * may be slightly different.
+   */
+  private Map<String, Long> createChecksumsForSnapshot(final Path validSnapshotDir)
+      throws IOException {
+    final var snapshotMetadata =
+        DbSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
+    final String prefix =
+        String.format(
+            "%d-%d-%d",
+            snapshotMetadata.getIndex(),
+            snapshotMetadata.getTerm(),
+            snapshotMetadata.getTimestamp().unixTimestamp());
+    try (final var files = Files.list(validSnapshotDir)) {
+      return files.collect(
+          Collectors.toMap(
+              p -> prefix + "/" + p.getFileName().toString(), this::createCheckSumForFile));
     }
   }
 
-  private static void configureCustomExporter(final BrokerCfg brokerCfg) {
-    final DataCfg data = brokerCfg.getData();
-    data.setMaxSnapshots(MAX_SNAPSHOTS);
-    data.setSnapshotPeriod(SNAPSHOT_PERIOD);
-    data.setLogSegmentSize(DataSize.ofKilobytes(8));
-    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
+  private long createCheckSumForFile(final Path snapshotFile) {
+    final var checksum = new CRC32C();
+    final byte[] bytes;
+    try {
+      bytes = Files.readAllBytes(snapshotFile);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
 
-    final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setClassName(TestExporter.class.getName());
+    checksum.update(bytes, 0, bytes.length);
+    return checksum.getValue();
+  }
 
-    // overwrites RecordingExporter on purpose because since it doesn't update its position
-    // we wouldn't be able to delete data
-    brokerCfg.setExporters(Collections.singletonMap("data-delete-test-exporter", exporterCfg));
+  private static void configureBroker(final BrokerCfg brokerCfg) {
+    brokerCfg.getData().setMaxSnapshots(MAX_SNAPSHOTS);
+    brokerCfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
   }
 }

@@ -9,7 +9,6 @@ package io.zeebe.broker.engine.impl;
 
 import static io.zeebe.util.sched.Actor.buildActorName;
 
-import io.atomix.cluster.messaging.Subscription;
 import io.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.zeebe.engine.Loggers;
 import io.zeebe.logstreams.state.SnapshotChunk;
@@ -35,7 +34,6 @@ public final class StateReplication implements SnapshotReplication {
   private final String threadName;
 
   private ExecutorService executorService;
-  private Subscription subscription;
 
   public StateReplication(
       final PartitionMessagingService messagingService, final int partitionId, final int nodeId) {
