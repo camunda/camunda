@@ -66,7 +66,7 @@ public abstract class TimestampBasedImportMediatorTest {
     runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
-    verify(importIndexHandler, times(1)).updateLastImportExecutionTimestamp();
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     verify(importService, times(0)).executeImport(any(), any());
   }
 
@@ -83,7 +83,7 @@ public abstract class TimestampBasedImportMediatorTest {
 
     // then
     verify(importService, times(1)).executeImport(any(), any());
-    verify(importIndexHandler, times(1)).updateLastImportExecutionTimestamp();
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     verify(importIndexHandler, times(0)).updateTimestampOfLastEntity(any());
   }
 
@@ -99,7 +99,7 @@ public abstract class TimestampBasedImportMediatorTest {
     runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
-    verify(importIndexHandler, times(1)).updateLastImportExecutionTimestamp();
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     verify(importService, times(1)).executeImport(any(), any());
     verify(importIndexHandler, times(1)).updatePendingTimestampOfLastEntity(any());
     verify(importIndexHandler, times(1)).updateTimestampOfLastEntity(any());
@@ -114,7 +114,7 @@ public abstract class TimestampBasedImportMediatorTest {
     final boolean result = runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
-    verify(importIndexHandler, times(1)).updateLastImportExecutionTimestamp();
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     assertThat(result).isFalse();
   }
 
@@ -128,7 +128,7 @@ public abstract class TimestampBasedImportMediatorTest {
     final boolean result = runAndFinishImport(entitiesLastTimestamp, entitiesNextPage);
 
     // then
-    verify(importIndexHandler, times(1)).updateLastImportExecutionTimestamp();
+    verify(importIndexHandler, times(1)).updateLastImportedTimestamp();
     assertThat(result).isTrue();
   }
 

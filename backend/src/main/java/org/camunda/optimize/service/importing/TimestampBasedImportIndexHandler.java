@@ -5,28 +5,50 @@
  */
 package org.camunda.optimize.service.importing;
 
+import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 
-public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
-  implements ImportIndexHandler<TimestampBasedImportPage, INDEX_DTO> {
-  protected static final OffsetDateTime BEGINNING_OF_TIME = OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
+@RequiredArgsConstructor
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+public abstract class TimestampBasedImportIndexHandler
+  implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
+  private TimestampBasedImportIndexReader importIndexReader;
+  @Autowired
   protected ConfigurationService configurationService;
 
-  private OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
+  private OffsetDateTime lastImportExecutionTimestamp = getTimestampBeforeEngineExisted();
+  private OffsetDateTime persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
+  private OffsetDateTime timestampOfLastEntity = persistedTimestampOfLastEntity;
+
+  @PostConstruct
+  protected void init() {
+    readIndexFromElasticsearch();
+  }
+
+  /**
+   * States the Elasticsearch document name where the index information should be stored.
+   */
+  protected abstract String getElasticsearchDocID();
 
   public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
     final OffsetDateTime backOffWindowStart = reduceByCurrentTimeBackoff(
@@ -35,11 +57,11 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
     if (timestamp.isAfter(backOffWindowStart)) {
       logger.info(
         "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
-        getTipOfTimeBackoffMilliseconds()
+        configurationService.getCurrentTimeBackoffMilliseconds()
       );
-      updateLastPersistedEntityTimestamp(backOffWindowStart);
+      this.persistedTimestampOfLastEntity = backOffWindowStart;
     } else {
-      updateLastPersistedEntityTimestamp(timestamp);
+      this.persistedTimestampOfLastEntity = timestamp;
     }
   }
 
@@ -50,49 +72,77 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
     if (timestamp.isAfter(backOffWindowStart)) {
       logger.info(
         "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
-        getTipOfTimeBackoffMilliseconds()
+        configurationService.getCurrentTimeBackoffMilliseconds()
       );
-      updatePendingLastEntityTimestamp(backOffWindowStart);
+      this.timestampOfLastEntity = backOffWindowStart;
     } else {
-      updatePendingLastEntityTimestamp(timestamp);
+      this.timestampOfLastEntity = timestamp;
     }
   }
 
-  public void updateLastImportExecutionTimestamp() {
-    updateLastImportExecutionTimestamp(LocalDateUtil.getCurrentDateTime());
-  }
-
-  @Override
-  public void resetImportIndex() {
-    updateLastImportExecutionTimestamp(BEGINNING_OF_TIME);
-    updateLastPersistedEntityTimestamp(BEGINNING_OF_TIME);
-    updatePendingLastEntityTimestamp(BEGINNING_OF_TIME);
-  }
-
-  @Override
-  public TimestampBasedImportPage getNextPage() {
-    TimestampBasedImportPage page = new TimestampBasedImportPage();
-    page.setTimestampOfLastEntity(getTimestampOfLastEntity());
-    return page;
-  }
-
-  abstract protected void updateLastPersistedEntityTimestamp(OffsetDateTime timestamp);
-
-  abstract protected void updateLastImportExecutionTimestamp(OffsetDateTime timestamp);
-
-  protected void updatePendingLastEntityTimestamp(final OffsetDateTime timestamp) {
-    this.timestampOfLastEntity = timestamp;
+  public void updateLastImportedTimestamp() {
+    this.lastImportExecutionTimestamp = LocalDateUtil.getCurrentDateTime();
   }
 
   public OffsetDateTime getTimestampOfLastEntity() {
     return timestampOfLastEntity;
   }
 
-  private int getTipOfTimeBackoffMilliseconds() {
-    return configurationService.getCurrentTimeBackoffMilliseconds();
+  @Override
+  public void readIndexFromElasticsearch() {
+    Optional<TimestampBasedImportIndexDto> dto =
+      importIndexReader.getImportIndex(getElasticsearchDocID(), getEngineAlias());
+    if (dto.isPresent()) {
+      TimestampBasedImportIndexDto loadedImportIndex = dto.get();
+      persistedTimestampOfLastEntity = loadedImportIndex.getTimestampOfLastEntity();
+      timestampOfLastEntity = persistedTimestampOfLastEntity;
+      lastImportExecutionTimestamp = loadedImportIndex.getLastImportExecutionTimestamp();
+    }
+  }
+
+  @Override
+  public TimestampBasedImportPage getNextPage() {
+    TimestampBasedImportPage page = new TimestampBasedImportPage();
+    page.setTimestampOfLastEntity(timestampOfLastEntity);
+    return page;
+  }
+
+  @Override
+  public TimestampBasedImportIndexDto createIndexInformationForStoring() {
+    TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
+    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
+    indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
+    indexToStore.setEngine(getEngineAlias());
+    indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
+    return indexToStore;
+  }
+
+  @Override
+  public void resetImportIndex() {
+    lastImportExecutionTimestamp = getTimestampBeforeEngineExisted();
+    persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
+    timestampOfLastEntity = persistedTimestampOfLastEntity;
+  }
+
+  /**
+   * Resets the process definitions to import, but keeps the last timestamps
+   * for every respective process definition. Thus, we are not importing
+   * all the once again, but starting from the last point we stopped at.
+   */
+  public void executeAfterMaxBackoffIsReached() {
+    logger.debug("Restarting import cycle for document id [{}]", getElasticsearchDocID());
+  }
+
+  public void updateImportIndex() {
+    executeAfterMaxBackoffIsReached();
+  }
+
+  private OffsetDateTime getTimestampBeforeEngineExisted() {
+    return OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   }
 
   private OffsetDateTime reduceByCurrentTimeBackoff(OffsetDateTime currentDateTime) {
-    return currentDateTime.minus(getTipOfTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
+    return currentDateTime.minus(configurationService.getCurrentTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
   }
+
 }

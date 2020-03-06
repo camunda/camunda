@@ -31,6 +31,7 @@ import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
+import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
@@ -141,8 +142,15 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   @SneakyThrows
   public void importAllEngineData() {
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.runImportRound(true).get();
+    boolean importInProgress = true;
+    resetImportBackoff();
+    while (importInProgress) {
+      boolean currentImportInProgress = false;
+      for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+        scheduler.scheduleNextRound().get();
+        currentImportInProgress |= scheduler.isImporting();
+      }
+      importInProgress = currentImportInProgress;
     }
   }
 
@@ -183,23 +191,35 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     }
   }
 
-  @SneakyThrows
-  private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
-    scheduler.runImportRound(true).get();
-    runOnlyScrollBasedMediators(scheduler);
+  private void resetImportBackoff() {
+    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      scheduler
+        .getImportMediators()
+        .forEach(EngineImportMediator::resetBackoff);
+    }
   }
 
   @SneakyThrows
-  private void runOnlyScrollBasedMediators(EngineImportScheduler scheduler) {
-    final List<EngineImportMediator> scrollBasedMediators = scheduler.getImportMediators()
+  private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
+    resetImportBackoff();
+    scheduler.scheduleNextRound().get();
+    resetImportBackoff();
+    scheduleNextRoundScrollBasedOnly(scheduler);
+  }
+
+  @SneakyThrows
+  private void scheduleNextRoundScrollBasedOnly(EngineImportScheduler scheduler) {
+    final List<EngineImportMediator> currentImportRound = scheduler.getImportMediators()
       .stream()
-      .filter(mediator -> mediator instanceof ScrollBasedImportMediator)
+      .filter(EngineImportMediator::canImport)
+      .filter(e -> e instanceof ScrollBasedImportMediator)
       .collect(Collectors.toList());
-    scheduler.scheduleCurrentImportRound(scrollBasedMediators).get();
+    scheduler.scheduleCurrentImportRound(currentImportRound).get();
     // after each scroll import round, we need to reset the scrolls, since otherwise
     // we will have a lot of dangling scroll contexts in ElasticSearch in our integration tests.
-    scrollBasedMediators.stream()
-      .map(mediator -> (ScrollBasedImportMediator<?, ?>) mediator)
+    currentImportRound.stream()
+      .filter(e -> e instanceof ScrollBasedImportMediator)
+      .map(ScrollBasedImportMediator.class::cast)
       .forEach(ScrollBasedImportMediator::reset);
   }
 
@@ -368,7 +388,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
         .getAllEntitiesBasedHandlers(engineAlias)
         .forEach(handler -> indexes.add(handler.getImportIndex()));
       getIndexHandlerRegistry()
-        .getTimestampEngineBasedHandlers(engineAlias)
+        .getTimestampBasedHandlers(engineAlias)
         .forEach(handler -> {
           TimestampBasedImportPage page = handler.getNextPage();
           indexes.add(page.getTimestampOfLastEntity().toEpochSecond());
@@ -379,7 +399,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
   }
 
   public void resetImportStartIndexes() {
-    for (ImportIndexHandler<?, ?> importIndexHandler : getIndexHandlerRegistry().getAllHandlers()) {
+    for (ImportIndexHandler importIndexHandler : getIndexHandlerRegistry().getAllHandlers()) {
       importIndexHandler.resetImportIndex();
     }
   }
@@ -420,6 +440,20 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     return objectMapper;
   }
 
+  /**
+   * In case the engine got new entities, e.g., process definitions, those are then added to the import index
+   */
+  public void updateImportIndex() {
+    for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
+      if (getIndexHandlerRegistry().getTimestampBasedHandlers(engineAlias) != null) {
+        for (TimestampBasedImportIndexHandler importIndexHandler : getIndexHandlerRegistry().getTimestampBasedHandlers(
+          engineAlias)) {
+          importIndexHandler.updateImportIndex();
+        }
+      }
+    }
+  }
+
   public EngineImportIndexHandlerRegistry getIndexHandlerRegistry() {
     return getApplicationContext().getBean(EngineImportIndexHandlerRegistry.class);
   }
@@ -441,7 +475,8 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     EventTraceStateProcessingScheduler eventProcessingScheduler = getEventProcessingScheduler();
 
     // run one cycle
-    eventProcessingScheduler.runImportRound(true).get();
+    eventProcessingScheduler.getImportMediators().forEach(EngineImportMediator::resetBackoff);
+    eventProcessingScheduler.runImportCycle().get();
 
     // do final progress update
     eventProcessingScheduler.getEventProcessingProgressMediator().runImport().get();

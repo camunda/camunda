@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.engine.handler;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.service.importing.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
-import org.camunda.optimize.service.importing.TimestampBasedEngineImportIndexHandler;
+import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -36,12 +36,12 @@ public class EngineImportIndexHandlerRegistry {
     return result;
   }
 
-  public List<TimestampBasedEngineImportIndexHandler> getTimestampEngineBasedHandlers(String engineAlias) {
-    List<TimestampBasedEngineImportIndexHandler> result = new ArrayList<>();
+  public List<TimestampBasedImportIndexHandler> getTimestampBasedHandlers(String engineAlias) {
+    List<TimestampBasedImportIndexHandler> result = new ArrayList<>();
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getTimestampBasedEngineHandlers();
+      result = engineImportIndexHandlerProvider.getTimestampBasedHandlers();
     }
     return result;
   }

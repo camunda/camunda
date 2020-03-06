@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 import java.util.concurrent.CompletableFuture;
 
-public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> implements EngineImportMediator {
+public abstract class BackoffImportMediator<T extends ImportIndexHandler> implements EngineImportMediator {
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
@@ -77,11 +77,6 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> 
     return elasticsearchImportJobExecutor;
   }
 
-  @Override
-  public void shutdown() {
-    elasticsearchImportJobExecutor.stopExecutingImportJobs();
-  }
-
   protected abstract void init();
 
   protected abstract boolean importNextPage(Runnable importCompleteCallback);
@@ -110,7 +105,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> 
   }
 
   private void executeAfterMaxBackoffIsReached() {
-    importIndexHandler.resetImportIndex();
+    importIndexHandler.executeAfterMaxBackoffIsReached();
   }
 
   private void calculateNewDateUntilIsBlocked() {

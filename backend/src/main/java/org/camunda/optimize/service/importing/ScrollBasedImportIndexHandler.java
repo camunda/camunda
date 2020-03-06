@@ -37,7 +37,6 @@ public abstract class ScrollBasedImportIndexHandler
   @Autowired
   protected ConfigurationService configurationService;
 
-  private Long importIndex = 0L;
   protected String scrollId;
 
   @PostConstruct
@@ -45,45 +44,7 @@ public abstract class ScrollBasedImportIndexHandler
     readIndexFromElasticsearch();
   }
 
-  protected abstract Set<String> performScrollQuery();
-
-  protected abstract Set<String> performInitialSearchQuery();
-
-  protected abstract String getElasticsearchTypeForStoring();
-
-  @Override
-  public IdSetBasedImportPage getNextPage() {
-    Set<String> ids = fetchNextPageOfIds();
-    if (ids.isEmpty()) {
-      resetScroll();
-      //it might be the case that new PI's have been imported
-      ids = fetchNextPageOfIds();
-    }
-    IdSetBasedImportPage page = new IdSetBasedImportPage();
-    page.setIds(ids);
-    updateIndex(ids.size());
-    return page;
-  }
-
-  @Override
-  public AllEntitiesBasedImportIndexDto getIndexStateDto() {
-    AllEntitiesBasedImportIndexDto importIndexDto = new AllEntitiesBasedImportIndexDto();
-    importIndexDto.setEsTypeIndexRefersTo(getElasticsearchTypeForStoring());
-    importIndexDto.setImportIndex(importIndex);
-    importIndexDto.setEngine(getEngineAlias());
-    return importIndexDto;
-  }
-
-  @Override
-  public void resetImportIndex() {
-    logger.debug("Resetting import index");
-    resetScroll();
-    importIndex = 0L;
-  }
-
-  public void updateIndex(int pageSize) {
-    importIndex += pageSize;
-  }
+  private Long importIndex = 0L;
 
   private Set<String> fetchNextPageOfIds() {
     Set<String> ids;
@@ -104,6 +65,10 @@ public abstract class ScrollBasedImportIndexHandler
     return ids;
   }
 
+  protected abstract Set<String> performScrollQuery();
+
+  protected abstract Set<String> performInitialSearchQuery();
+
   private void resetScroll() {
     String currentScrollId = scrollId;
     scrollId = null;
@@ -117,16 +82,58 @@ public abstract class ScrollBasedImportIndexHandler
     }
   }
 
+  protected abstract String getElasticsearchTypeForStoring();
+
+  @Override
+  public IdSetBasedImportPage getNextPage() {
+    Set<String> ids = fetchNextPageOfIds();
+    if (ids.isEmpty()) {
+      resetScroll();
+      //it might be the case that new PI's have been imported
+      ids = fetchNextPageOfIds();
+    }
+    IdSetBasedImportPage page = new IdSetBasedImportPage();
+    page.setIds(ids);
+    updateIndex(ids.size());
+    return page;
+  }
+
+  public void updateIndex(int pageSize) {
+    importIndex += pageSize;
+  }
+
   private String getElasticsearchId() {
     return EsHelper.constructKey(getElasticsearchTypeForStoring(), getEngineAlias());
   }
 
-  private void readIndexFromElasticsearch() {
+  @Override
+  public AllEntitiesBasedImportIndexDto createIndexInformationForStoring() {
+    AllEntitiesBasedImportIndexDto importIndexDto = new AllEntitiesBasedImportIndexDto();
+    importIndexDto.setEsTypeIndexRefersTo(getElasticsearchTypeForStoring());
+    importIndexDto.setImportIndex(importIndex);
+    importIndexDto.setEngine(getEngineAlias());
+    return importIndexDto;
+  }
+
+  @Override
+  public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
       importIndexReader.getImportIndex(getElasticsearchId());
     storedIndex.ifPresent(
       allEntitiesBasedImportIndexDto -> importIndex = allEntitiesBasedImportIndexDto.getImportIndex()
     );
+  }
+
+  @Override
+  public void resetImportIndex() {
+    logger.debug("Resetting import index");
+    resetScroll();
+    importIndex = 0L;
+  }
+
+  @Override
+  public void executeAfterMaxBackoffIsReached() {
+    // nothing to do here
   }
 
 }

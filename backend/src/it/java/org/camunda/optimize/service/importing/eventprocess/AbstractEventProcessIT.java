@@ -213,7 +213,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler()
-      .runImportRound(true)
+      .runImportCycle()
       .get(10, TimeUnit.SECONDS);
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

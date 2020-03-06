@@ -54,7 +54,7 @@ public class EngineImportScheduler extends Thread {
 
   public void shutdown() {
     log.debug("Scheduler for engine {} will shutdown.", engineAlias);
-    getImportMediators().forEach(EngineImportMediator::shutdown);
+    getImportMediators().forEach(mediator -> mediator.getImportJobExecutor().stopExecutingImportJobs());
   }
 
   @Override
@@ -62,22 +62,15 @@ public class EngineImportScheduler extends Thread {
     while (isEnabled) {
       log.debug("Schedule next round!");
       try {
-        runImportRound();
+        scheduleNextRound();
       } catch (Exception e) {
         log.error("Could not schedule next import round!", e);
       }
     }
   }
 
-  public Future<Void> runImportRound() {
-    return runImportRound(false);
-  }
-
-  public Future<Void> runImportRound(final boolean forceImport) {
-    List<EngineImportMediator> currentImportRound = importMediators
-      .stream()
-      .filter(mediator -> forceImport || mediator.canImport())
-      .collect(Collectors.toList());
+  public Future<Void> scheduleNextRound() {
+    List<EngineImportMediator> currentImportRound = obtainActiveMediators();
     if (nothingToBeImported(currentImportRound)) {
       this.isImporting = false;
       if (!hasActiveImportJobs()) {
@@ -90,6 +83,13 @@ public class EngineImportScheduler extends Thread {
       notifyThatImportIsInProgress();
       return scheduleCurrentImportRound(currentImportRound);
     }
+  }
+
+  private List<EngineImportMediator> obtainActiveMediators() {
+    return importMediators
+      .stream()
+      .filter(EngineImportMediator::canImport)
+      .collect(Collectors.toList());
   }
 
   private boolean hasActiveImportJobs() {

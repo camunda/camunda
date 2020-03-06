@@ -20,7 +20,4 @@ public interface EngineImportMediator {
   boolean canImport();
 
   ImportJobExecutor getImportJobExecutor();
-
-  void shutdown();
-
 }

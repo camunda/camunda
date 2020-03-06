@@ -45,6 +45,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
+    embeddedOptimizeExtension.updateImportIndex();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -70,6 +71,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
+    embeddedOptimizeExtension.updateImportIndex();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -95,6 +97,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
+    embeddedOptimizeExtension.updateImportIndex();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -119,6 +122,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
+    embeddedOptimizeExtension.updateImportIndex();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -145,6 +149,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     secondaryEngineIntegrationExtension.createTenant(secondTenantId, tenantName);
 
     // when
+    embeddedOptimizeExtension.updateImportIndex();
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

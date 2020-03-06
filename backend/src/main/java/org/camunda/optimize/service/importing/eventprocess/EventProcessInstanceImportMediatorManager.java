@@ -5,14 +5,32 @@
  */
 package org.camunda.optimize.service.importing.eventprocess;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.reader.BusinessKeyReader;
+import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
+import org.camunda.optimize.service.es.reader.VariableUpdateInstanceReader;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
+import org.camunda.optimize.service.events.CustomTracedCamundaEventFetcherService;
+import org.camunda.optimize.service.events.EventFetcherService;
+import org.camunda.optimize.service.events.ExternalEventService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
-import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediatorFactory;
+import org.camunda.optimize.service.importing.eventprocess.service.EventProcessInstanceImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +41,16 @@ import java.util.stream.Collectors;
 @Component
 public class EventProcessInstanceImportMediatorManager implements ConfigurationReloadable {
 
+  private final ConfigurationService configurationService;
+  private final OptimizeElasticsearchClient elasticsearchClient;
+  private final ObjectMapper objectMapper;
+  private final ExternalEventService externalEventService;
+  private final CamundaActivityEventReader camundaActivityEventReader;
+  private final ProcessDefinitionReader processDefinitionReader;
   private final EventProcessInstanceIndexManager eventBasedProcessIndexManager;
-  private final EventProcessInstanceImportMediatorFactory mediatorFactory;
+  private final VariableUpdateInstanceReader variableUpdateInstanceReader;
+  private final BusinessKeyReader businessKeyReader;
+  private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
 
   private final Map<String, List<EventProcessInstanceImportMediator>> importMediators = new ConcurrentHashMap<>();
 
@@ -37,8 +63,8 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
   }
 
   public synchronized void refreshMediators() {
-    final Map<String, EventProcessPublishStateDto> availableInstanceIndices = eventBasedProcessIndexManager
-      .getPublishedInstanceIndicesMap();
+    final Map<String, EventProcessPublishStateDto> availableInstanceIndices =
+      eventBasedProcessIndexManager.getPublishedInstanceIndices();
 
     final List<String> removedPublishedIds = importMediators.keySet().stream()
       .filter(publishedStateId -> !availableInstanceIndices.containsKey(publishedStateId))
@@ -51,15 +77,71 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
     });
 
     availableInstanceIndices
-      .values()
+      .entrySet()
       .stream()
-      .filter(publishState -> !importMediators.containsKey(publishState.getId()))
-      .forEach(publishState -> {
+      .filter(entry -> !importMediators.containsKey(entry.getKey()))
+      .forEach(entry -> {
+        final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+          configurationService
+        );
+        elasticsearchImportJobExecutor.startExecutingImportJobs();
+        final EventProcessInstanceImportService eventProcessInstanceImportService =
+          createEventProcessInstanceImportServiceForProcess(entry, elasticsearchImportJobExecutor);
         importMediators.put(
-          publishState.getId(),
-          mediatorFactory.createEventProcessInstanceMediators(publishState)
+          entry.getKey(),
+          createEventProcessInstanceMediators(
+            entry.getValue(),
+            eventProcessInstanceImportService
+          )
         );
       });
+  }
+
+  private EventProcessInstanceImportService createEventProcessInstanceImportServiceForProcess(
+    final Map.Entry<String, EventProcessPublishStateDto> entry,
+    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor) {
+    return new EventProcessInstanceImportService(
+      entry.getValue(),
+      elasticsearchImportJobExecutor,
+      new EventProcessInstanceWriter(
+        new EventProcessInstanceIndex(entry.getKey()), elasticsearchClient, objectMapper
+      )
+    );
+  }
+
+  private List<EventProcessInstanceImportMediator> createEventProcessInstanceMediators(
+    final EventProcessPublishStateDto publishedStateDto,
+    final EventProcessInstanceImportService eventProcessInstanceImportService) {
+    return publishedStateDto.getEventImportSources().stream()
+      .map(importSource -> new EventProcessInstanceImportMediator(
+        publishedStateDto.getId(),
+        importSource,
+        configurationService,
+        getEventFetcherForEventSource(importSource.getEventSource()),
+        eventProcessInstanceImportService
+      ))
+      .collect(Collectors.toList());
+  }
+
+  private EventFetcherService getEventFetcherForEventSource(EventSourceEntryDto eventSourceEntryDto) {
+    switch (eventSourceEntryDto.getType()) {
+      case EXTERNAL:
+        return externalEventService;
+      case CAMUNDA:
+        return new CustomTracedCamundaEventFetcherService(
+          eventSourceEntryDto.getProcessDefinitionKey(),
+          eventSourceEntryDto,
+          new SimpleDateFormat(configurationService.getEngineDateFormat()),
+          camundaActivityEventReader,
+          processDefinitionReader,
+          variableUpdateInstanceReader,
+          businessKeyReader,
+          timestampBasedImportIndexReader
+        );
+      default:
+        throw new OptimizeRuntimeException("Cannot find event fetching service for event import source type: "
+                                             + eventSourceEntryDto.getType());
+    }
   }
 
   @Override

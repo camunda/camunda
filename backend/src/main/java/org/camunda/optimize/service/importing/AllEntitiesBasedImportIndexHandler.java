@@ -37,7 +37,10 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   public void readIndexFromElasticsearch() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), getEngineAlias()));
+      importIndexReader.getImportIndex(EsHelper.constructKey(
+        getElasticsearchImportIndexType(),
+        getEngineAlias()
+      ));
     storedIndex.ifPresent(
       allEntitiesBasedImportIndexDto -> importIndex =
         allEntitiesBasedImportIndexDto.getImportIndex()
@@ -45,7 +48,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
   }
 
   @Override
-  public AllEntitiesBasedImportIndexDto getIndexStateDto() {
+  public AllEntitiesBasedImportIndexDto createIndexInformationForStoring() {
     AllEntitiesBasedImportIndexDto indexToStore = new AllEntitiesBasedImportIndexDto();
     indexToStore.setImportIndex(importIndex);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchImportIndexType());
@@ -67,4 +70,8 @@ public abstract class AllEntitiesBasedImportIndexHandler
     importIndex = 0;
   }
 
+  @Override
+  public void executeAfterMaxBackoffIsReached() {
+    resetImportIndex();
+  }
 }
