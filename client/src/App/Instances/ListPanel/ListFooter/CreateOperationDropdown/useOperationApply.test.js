@@ -13,11 +13,18 @@ import React from 'react';
 
 import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 import FilterContext from 'modules/contexts/FilterContext';
-import {mockUseDataManager, mockData} from './useOperationApply.setup';
+import {
+  mockUseDataManager,
+  mockData,
+  mockUseInstancesPollContext
+} from './useOperationApply.setup';
 
 const OPERATION_TYPE = 'DUMMY';
 
 jest.mock('modules/hooks/useDataManager', () => () => mockUseDataManager);
+jest.mock('modules/contexts/InstancesPollContext', () => ({
+  useInstancesPollContext: () => mockUseInstancesPollContext
+}));
 
 function renderUseOperationApply({instanceSelectionContext, filterContext}) {
   const {result} = renderHook(() => useOperationApply(), {
@@ -91,5 +98,21 @@ describe('useOperationApply', () => {
       OPERATION_TYPE,
       expectedQuery
     );
+  });
+
+  it('should poll all visible instances', () => {
+    const {expectedQuery, ...context} = mockData.setFilterSelectAll;
+
+    renderUseOperationApply(context);
+
+    expect(mockUseInstancesPollContext.addAllVisibleIds).toHaveBeenCalled();
+  });
+
+  it('should poll the selected instances', () => {
+    const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
+
+    renderUseOperationApply(context);
+
+    expect(mockUseInstancesPollContext.addIds).toHaveBeenCalled();
   });
 });

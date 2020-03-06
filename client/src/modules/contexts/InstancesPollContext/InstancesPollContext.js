@@ -30,8 +30,12 @@ class InstancesPollProviderComp extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    visibleIdsInSelections: PropTypes.array,
+    visibleIdsInListPanel: PropTypes.array,
     filter: PropTypes.object
+  };
+
+  static defaultProps = {
+    visibleIdsInListPanel: []
   };
 
   constructor(props) {
@@ -133,10 +137,31 @@ class InstancesPollProviderComp extends React.Component {
     dataManager.update(updateParams);
   }
 
-  addIds = ids =>
+  addIds = ids => {
+    const {visibleIdsInListPanel} = this.props;
+
     this.setState(prevState => {
-      return {active: new Set([...prevState.active, ...ids])};
+      return {
+        active: new Set(
+          Array.from(prevState.active)
+            .concat(ids)
+            .filter(id => visibleIdsInListPanel.includes(id))
+        )
+      };
     });
+  };
+
+  addAllVisibleIds = deselectedIds => {
+    const {visibleIdsInListPanel} = this.props;
+
+    this.setState({
+      active: new Set(
+        Array.from(visibleIdsInListPanel).filter(
+          id => !deselectedIds.includes(id)
+        )
+      )
+    });
+  };
 
   /**
    * called only from listView when removing instance with active op. from view
@@ -149,7 +174,7 @@ class InstancesPollProviderComp extends React.Component {
     const remaningIds = [...this.state.active].filter(
       item =>
         removeIds.includes(item) &&
-        this.props.visibleIdsInSelections.includes(item)
+        this.props.visibleIdsInListPanel.includes(item)
     );
 
     Boolean(remaningIds.length) &&
@@ -160,7 +185,8 @@ class InstancesPollProviderComp extends React.Component {
     const contextValue = {
       ...this.state,
       addIds: this.addIds,
-      removeIds: this.removeIds
+      removeIds: this.removeIds,
+      addAllVisibleIds: this.addAllVisibleIds
     };
 
     return (
@@ -205,4 +231,9 @@ const withPoll = Component => {
 const InstancesPollProvider = withData(InstancesPollProviderComp);
 InstancesPollProvider.WrappedComponent = InstancesPollProviderComp;
 
-export {InstancesPollConsumer, InstancesPollProvider, withPoll};
+export {
+  InstancesPollConsumer,
+  InstancesPollProvider,
+  withPoll,
+  InstancesPollContext
+};

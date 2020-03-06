@@ -15,13 +15,8 @@ import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import {HashRouter as Router} from 'react-router-dom';
-import {formatGroupedWorkflows} from 'modules/utils/instance';
-import {FILTER_SELECTION, LOADING_STATE} from 'modules/constants';
-import {
-  flushPromises,
-  mockResolvedAsyncFn,
-  groupedWorkflowsMock
-} from 'modules/testUtils';
+import {LOADING_STATE} from 'modules/constants';
+import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 
 import {
   emptyList,

@@ -27,7 +27,7 @@ jest.mock('modules/utils/bpmn');
 const providerPropsMock = {
   onWorkflowInstancesRefresh: jest.fn(),
   onSelectionsRefresh: jest.fn(),
-  visibleIdsInSelections: ['4', '5', '6'],
+  visibleIdsInListPanel: ['1', '2', '3', '4'],
   filter: {workflow: 'asd', version: '1'}
 };
 

@@ -47,7 +47,7 @@ If an operation is started on a Selection, we also update the ListView, as the h
 
 The InstancesPollProvider will receive as props:
 - methods to refresh the Instances List (onWorkflowInstancesRefresh) & the Selections (onSelectionsRefresh)
-- the ids that are present in Instances List (visibleIdsInListView) & in Selections (visibleIdsInSelections). Based on these ids it decides what part of the page to update
+- the ids that are present in Instances List (visibleIdsInListView) & in Selections (visibleIdsInListPanel). Based on these ids it decides what part of the page to update
 
 The InstancesPollProvider will send to the consumers the props:
 - addIds: function to add the ids of the instances the operations have started on
