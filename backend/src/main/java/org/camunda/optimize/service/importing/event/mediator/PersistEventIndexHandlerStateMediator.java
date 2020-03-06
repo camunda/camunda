@@ -63,7 +63,9 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
     try {
       final List<ImportIndexDto> importIndices = importIndexHandlerRegistry.getAllHandlers()
         .stream()
-        .map(ImportIndexHandler::createIndexInformationForStoring)
+        .map(ImportIndexHandler::getIndexStateDto)
+        .filter(indexDto -> indexDto instanceof ImportIndexDto)
+        .map(indexDto -> (ImportIndexDto) indexDto)
         .collect(toList());
       importService.executeImport(importIndices, () -> importCompleted.complete(null));
     } catch (Exception e) {
@@ -89,6 +91,11 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   @Override
   public void resetBackoff() {
     this.dateUntilJobCreationIsBlocked = OffsetDateTime.MIN;
+  }
+
+  @Override
+  public void shutdown() {
+    elasticsearchImportJobExecutor.stopExecutingImportJobs();
   }
 
 }

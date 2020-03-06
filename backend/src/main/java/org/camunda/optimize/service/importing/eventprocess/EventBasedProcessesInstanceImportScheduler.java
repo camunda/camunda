@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing.eventprocess;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.service.EventProcessDefinitionImportService;
 import org.camunda.optimize.service.importing.eventprocess.service.PublishStateUpdateService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -55,22 +54,27 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
 
   @Override
   protected void run() {
-    runImportCycle();
+    runImportRound();
   }
 
-  public Future<Void> runImportCycle() {
+  public Future<Void> runImportRound() {
+    return runImportRound(false);
+  }
+
+  public Future<Void> runImportRound(final boolean forceImport) {
     eventBasedProcessIndexManager.syncAvailableIndices();
     eventBasedProcessIndexManager.cleanupIndexes();
     instanceImportMediatorManager.refreshMediators();
     publishStateUpdateService.updateEventProcessPublishStates();
     eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();
-    final CompletableFuture<?>[] importTaskFutures = instanceImportMediatorManager.getActiveMediators()
+    final CompletableFuture<?>[] importTaskFutures = instanceImportMediatorManager
+      .getActiveMediators()
       .stream()
-      .filter(EventProcessInstanceImportMediator::canImport)
-      .map(eventProcessInstanceImportMediator -> {
+      .filter(mediator -> forceImport || mediator.canImport())
+      .map(mediator -> {
         final CompletableFuture<Void> indexUsageFinishedFuture = eventBasedProcessIndexManager
-          .registerIndexUsageAndReturnFinishedHandler(eventProcessInstanceImportMediator.getPublishedProcessStateId());
-        final CompletableFuture<Void> importCompleteFuture = eventProcessInstanceImportMediator.importNextPage();
+          .registerIndexUsageAndReturnFinishedHandler(mediator.getPublishedProcessStateId());
+        final CompletableFuture<Void> importCompleteFuture = mediator.runImport();
         importCompleteFuture.whenComplete((aVoid, throwable) -> indexUsageFinishedFuture.complete(null));
         return importCompleteFuture;
       })

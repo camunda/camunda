@@ -25,7 +25,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +48,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
   public static final String PROCESS_KEY = "aProcess";
   public static final String DECISION_KEY = "aDecision";
 
-  private static final Stream<Integer> definitionType() {
+  private static Stream<Integer> definitionType() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 

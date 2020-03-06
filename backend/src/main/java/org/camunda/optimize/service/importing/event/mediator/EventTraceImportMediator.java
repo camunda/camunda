@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.event.mediator;
 
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.service.EventTraceStateService;
 import org.camunda.optimize.service.events.EventFetcherService;
@@ -23,13 +24,13 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class EventTraceImportMediator
-  extends TimestampBasedImportMediator<TimestampBasedImportIndexHandler, EventDto> {
+  extends TimestampBasedImportMediator<TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto>, EventDto> {
 
   private final EventFetcherService eventService;
   private final EventTraceStateService eventTraceStateService;
 
   public EventTraceImportMediator(final EventFetcherService eventService,
-                                  final TimestampBasedImportIndexHandler importIndexHandler,
+                                  final TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> importIndexHandler,
                                   final EventTraceStateService eventTraceStateService) {
     this.eventService = eventService;
     this.importIndexHandler = importIndexHandler;
@@ -65,4 +66,5 @@ public class EventTraceImportMediator
       importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli()
     );
   }
+
 }

@@ -17,6 +17,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +37,12 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
   final private Map<String, EventProcessPublishStateDto> publishedInstanceIndices = new HashMap<>();
   final private Map<String, AtomicInteger> usageCountPerIndex = new HashMap<>();
 
-  public synchronized Map<String, EventProcessPublishStateDto> getPublishedInstanceIndices() {
+  public synchronized Map<String, EventProcessPublishStateDto> getPublishedInstanceIndicesMap() {
     return publishedInstanceIndices;
+  }
+
+  public synchronized Collection<EventProcessPublishStateDto> getPublishedInstanceIndices() {
+    return publishedInstanceIndices.values();
   }
 
   public synchronized void cleanupIndexes() {

@@ -57,10 +57,24 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
     return super.startScheduling();
   }
 
-  public Future<Void> runImportCycle() {
+  @Override
+  protected Trigger getScheduleTrigger() {
+    return new PeriodicTrigger(getEventImportConfiguration().getImportIntervalInSec(), TimeUnit.SECONDS);
+  }
+
+  @Override
+  protected void run() {
+    runImportRound();
+  }
+
+  public Future<Void> runImportRound() {
+    return runImportRound(false);
+  }
+
+  public Future<Void> runImportRound(final boolean forceImport) {
     final CompletableFuture<?>[] importTaskFutures = getImportMediators()
       .stream()
-      .filter(EngineImportMediator::canImport)
+      .filter(mediator -> forceImport || mediator.canImport())
       .map(EngineImportMediator::runImport)
       .toArray(CompletableFuture[]::new);
 
@@ -72,16 +86,6 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
       Stream.of(eventProcessingProgressMediator),
       eventTraceImportMediatorManager.getEventTraceImportMediators().stream()
     ).collect(Collectors.toList());
-  }
-
-  @Override
-  protected Trigger getScheduleTrigger() {
-    return new PeriodicTrigger(getEventImportConfiguration().getImportIntervalInSec(), TimeUnit.SECONDS);
-  }
-
-  @Override
-  protected void run() {
-    runImportCycle();
   }
 
   private EventBasedProcessConfiguration getEventBasedProcessConfiguration() {

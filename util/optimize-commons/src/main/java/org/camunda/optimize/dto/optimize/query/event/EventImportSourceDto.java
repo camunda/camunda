@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,9 +23,17 @@ import java.time.OffsetDateTime;
 @EqualsAndHashCode
 public class EventImportSourceDto {
 
-  OffsetDateTime firstEventForSourceAtTimeOfPublishTimestamp;
-  OffsetDateTime lastEventForSourceAtTimeOfPublishTimestamp;
-  OffsetDateTime lastImportedEventTimestamp;
-  EventSourceEntryDto eventSource;
+  private OffsetDateTime firstEventForSourceAtTimeOfPublishTimestamp;
+  private OffsetDateTime lastEventForSourceAtTimeOfPublishTimestamp;
+
+  private OffsetDateTime lastImportedEventTimestamp;
+  private OffsetDateTime lastImportExecutionTimestamp;
+
+  private EventSourceEntryDto eventSource;
+
+  @JsonIgnore
+  public String getId() {
+    return eventSource.getId();
+  }
 
 }
