@@ -263,8 +263,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
     );
   }
 
-  private String createAndStoreDurationNumberReport(final String collectionId, final String processDefinitionKey,
-                                                    final String processDefinitionVersion) {
+  protected String createAndStoreDurationNumberReport(final String collectionId, final String processDefinitionKey,
+                                                      final String processDefinitionVersion) {
     return createAndStoreDurationNumberReportAsUser(
       collectionId, processDefinitionKey, processDefinitionVersion, DEFAULT_USERNAME, DEFAULT_PASSWORD
     );

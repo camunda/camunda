@@ -116,7 +116,12 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
     // when
-    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processInstance);
+    final String reportId = createAndStoreDurationNumberReport(
+      collectionId,
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion()
+    );
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setFixNotification(true);
 
@@ -141,7 +146,12 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     assertThat(content, containsString("is not exceeded anymore."));
     assertThat(
       content,
-      containsString(String.format("http://localhost:%d/#/report/" + reportId, getOptimizeHttpPort()))
+      containsString(String.format(
+        "http://localhost:%d/#/collection/%s/report/%s/",
+        getOptimizeHttpPort(),
+        collectionId,
+        reportId
+      ))
     );
   }
 

@@ -255,7 +255,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   public void testScheduleTriggers() throws Exception {
 
     //given
-    String reportId = startProcessAndCreateReport();
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+    final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     setEmailConfiguration();
 
     // when
@@ -275,14 +280,25 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(content, containsString(simpleAlert.getName()));
     assertThat(
       content,
-      containsString(String.format("http://localhost:%d/#/report/%s/", getOptimizeHttpPort(), reportId))
+      containsString(String.format(
+        "http://localhost:%d/#/collection/%s/report/%s/",
+        getOptimizeHttpPort(),
+        collectionId,
+        reportId
+      ))
     );
   }
 
   @Test
   public void testAccessUrlInAlertNotification() throws Exception {
     //given
-    String reportId = startProcessAndCreateReport();
+
+    final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
+    final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     setEmailConfiguration();
     embeddedOptimizeExtension.getConfigurationService().setContainerAccessUrlValue("http://test.de:8090");
 
@@ -300,7 +316,14 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(emails.length, is(1));
     String content = emails[0].getContent().toString();
-    assertThat(content, containsString("http://test.de:8090/#/report/" + reportId));
+    assertThat(
+      content,
+      containsString(String.format(
+        "http://test.de:8090/#/collection/%s/report/%s/",
+        collectionId,
+        reportId
+      ))
+    );
   }
 
   private String startProcessAndCreateReport() {

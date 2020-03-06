@@ -124,12 +124,6 @@ public class CollectionService {
     );
   }
 
-  private Set<ConflictedItemDto> getConflictedItemsForDelete(String userId, String collectionId) {
-    return collectionRelationService.getConflictedItemsForDelete(
-      getCollectionDefinition(userId, collectionId).getDefinitionDto()
-    );
-  }
-
   public IdDto copyCollection(String userId, String collectionId, String newCollectionName) {
     AuthorizedCollectionDefinitionDto oldCollection = authorizedCollectionService
       .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
@@ -152,6 +146,12 @@ public class CollectionService {
 
     collectionEntityService.copyCollectionEntities(userId, oldResolvedCollection, newCollection.getId());
     return new IdDto(newCollection.getId());
+  }
+
+  private Set<ConflictedItemDto> getConflictedItemsForDelete(String userId, String collectionId) {
+    return collectionRelationService.getConflictedItemsForDelete(
+      getCollectionDefinition(userId, collectionId).getDefinitionDto()
+    );
   }
 
   private AuthorizedCollectionDefinitionRestDto getCollectionDefinitionRestDto(

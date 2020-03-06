@@ -145,12 +145,28 @@ public class AlertJob implements Job {
     final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
 
     if (containerAccessUrl.isPresent()) {
-      return containerAccessUrl.get() + "/#/report/" + alert.getReportId() + "/";
+      return containerAccessUrl.get() + createViewLinkFragment(alert);
     } else {
       Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
       String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
       Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      return httpPrefix + configurationService.getContainerHost() + ":" + port + "/#/report/" + alert.getReportId() + "/";
+      return httpPrefix + configurationService.getContainerHost() + ":" + port + createViewLinkFragment(alert);
+    }
+  }
+
+  private String createViewLinkFragment(final AlertDefinitionDto alert) {
+    String collectionId = reportReader.getReport(alert.getReportId()).getCollectionId();
+    if (collectionId != null) {
+      return String.format(
+        "/#/collection/%s/report/%s/",
+        collectionId,
+        alert.getReportId()
+      );
+    } else {
+      return String.format(
+        "/#/report/%s/",
+        alert.getReportId()
+      );
     }
   }
 

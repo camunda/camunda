@@ -217,7 +217,8 @@ public class ReportService implements CollectionReferencingService {
       .filter(report -> report instanceof SingleProcessReportDefinitionDto)
       .filter(reportDefinitionDto -> Objects.equals(
         ((SingleProcessReportDefinitionDto) reportDefinitionDto).getData().getProcessDefinitionKey(),
-        processDefinitionKey))
+        processDefinitionKey
+      ))
       .collect(Collectors.toList());
     reportsForDefinitionKey.addAll(
       allReports.stream()
@@ -239,7 +240,7 @@ public class ReportService implements CollectionReferencingService {
     return filterAuthorizedReports(userId, reportsInCollection);
   }
 
-  private List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
+  public List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
     return reportReader.findReportsForCollectionOmitXml(collectionId);
   }
 
