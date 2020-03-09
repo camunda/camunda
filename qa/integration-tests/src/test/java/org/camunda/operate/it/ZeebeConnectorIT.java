@@ -6,6 +6,7 @@
 package org.camunda.operate.it;
 
 import org.assertj.core.api.Assertions;
+import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.camunda.operate.util.ElasticsearchTestRule;
@@ -21,8 +22,14 @@ import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
 import io.zeebe.test.EmbeddedBrokerRule;
 
+@SpringBootTest(
+    classes = { TestApplication.class},
+    properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+        OperateProperties.PREFIX + ".zeebe.brokerContactPoint = localhost:55500"})
 public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   @Rule
