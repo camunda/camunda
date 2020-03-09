@@ -577,7 +577,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       assertThat(DefinitionVersionsWithTenantsDto.getVersions().size(), is(versionCount));
       assertThat(DefinitionVersionsWithTenantsDto.getAllTenants().size(), is(1)); // only null tenant
     });
-    assertThat(responseTimeMillis, is(lessThan(2000L)));
+    assertThat(responseTimeMillis, is(lessThan(6000L)));
 
     embeddedOptimizeExtension.getImportSchedulerFactory().shutdown();
   }
