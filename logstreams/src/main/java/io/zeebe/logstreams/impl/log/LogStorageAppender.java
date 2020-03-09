@@ -56,7 +56,6 @@ public final class LogStorageAppender extends Actor {
     this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
     this.maxAppendBlockSize = maxBlockSize;
-
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
     final boolean isBackpressureEnabled =

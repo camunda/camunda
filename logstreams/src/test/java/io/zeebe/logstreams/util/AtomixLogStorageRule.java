@@ -26,6 +26,7 @@ import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogCompactor;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixReaderFactory;
+import io.zeebe.logstreams.storage.atomix.ZeebeIndexAdapter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -100,11 +101,10 @@ public final class AtomixLogStorageRule extends ExternalResource
     listener.onWrite(entry);
     raftLog.writer().commit(entry.index());
 
+    listener.onCommit(entry);
     if (positionListener != null) {
       positionListener.accept(findGreatestPosition(entry));
     }
-
-    listener.onCommit(entry);
   }
 
   @Override
@@ -146,12 +146,21 @@ public final class AtomixLogStorageRule extends ExternalResource
       throw new UncheckedIOException(e);
     }
 
-    raftStorage = builder.apply(buildDefaultStorage()).withDirectory(directory).build();
+    final var zeebeIndexAdapter = ZeebeIndexAdapter.ofDensity(1);
+    raftStorage =
+        builder
+            .apply(buildDefaultStorage())
+            .withDirectory(directory)
+            .withJournalIndexFactory(
+                () -> {
+                  return zeebeIndexAdapter;
+                })
+            .build();
     raftLog = raftStorage.openLog();
     snapshotStore = raftStorage.getSnapshotStore();
     metaStore = raftStorage.openMetaStore();
 
-    storage = spy(new AtomixLogStorage(this, this, this));
+    storage = spy(new AtomixLogStorage(zeebeIndexAdapter, this, this, this));
   }
 
   public void close() {

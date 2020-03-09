@@ -68,6 +68,7 @@ public final class LogStorageAppenderTest {
             .initialPartitionId(0)
             .build();
     final var subscription = dispatcher.openSubscription("log");
+
     appender =
         new LogStorageAppender(
             "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);

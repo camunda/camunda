@@ -35,7 +35,6 @@ public final class LogStreamReaderImpl implements LogStreamReader {
   // state
   private IteratorState state;
   private long nextLogStorageReadAddress;
-  private long lastReadAddress;
   private int bufferOffset;
 
   public LogStreamReaderImpl(final LogStorage logStorage) {
@@ -117,8 +116,8 @@ public final class LogStreamReaderImpl implements LogStreamReader {
   }
 
   @Override
-  public long lastReadAddress() {
-    return lastReadAddress;
+  public long lookupAddress(long position) {
+    return storageReader.lookUpApproximateAddress(position);
   }
 
   private boolean seekFrom(final long blockAddress, final long position) {
@@ -204,7 +203,6 @@ public final class LogStreamReaderImpl implements LogStreamReader {
       state = IteratorState.NOT_ENOUGH_DATA;
       return false;
     } else {
-      this.lastReadAddress = blockAddress;
       this.nextLogStorageReadAddress = result;
       return true;
     }
