@@ -16,7 +16,7 @@ import org.camunda.optimize.test.optimize.EventClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.test.optimize.ReportClient;
 import org.camunda.optimize.test.optimize.SharingClient;
-import org.camunda.optimize.test.optimize.WebhookClient;
+import org.camunda.optimize.test.optimize.UiConfigurationClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -44,9 +44,9 @@ public abstract class AbstractIT {
   protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);
   protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
   protected AlertClient alertClient = new AlertClient(optimizeRequestExecutorSupplier);
-  protected WebhookClient webhookClient = new WebhookClient(optimizeRequestExecutorSupplier);
   protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
   protected EventProcessClient eventProcessClient = new EventProcessClient(optimizeRequestExecutorSupplier);
   protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
   protected EventClient eventClient = new EventClient(embeddedOptimizeExtension);
+  protected UiConfigurationClient uiConfigurationClient = new UiConfigurationClient(optimizeRequestExecutorSupplier);
 }

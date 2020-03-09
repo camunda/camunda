@@ -22,11 +22,11 @@ import org.mockserver.verify.VerificationTimes;
 
 import javax.mail.internet.MimeMessage;
 
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_INVALID_PORT_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_METHOD;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_URL_PATH;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_INVALID_PORT_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_METHOD;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
