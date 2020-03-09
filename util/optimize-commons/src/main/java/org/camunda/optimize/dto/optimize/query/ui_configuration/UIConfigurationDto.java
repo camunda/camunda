@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -24,4 +25,5 @@ public class UIConfigurationDto {
   private boolean tenantsAvailable;
   private String optimizeVersion;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
+  private List<String> webhooks;
 }

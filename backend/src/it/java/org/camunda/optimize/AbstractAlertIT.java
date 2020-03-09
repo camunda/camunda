@@ -58,13 +58,13 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_INVALID_PORT_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_METHOD;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_NAME;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_URL_HOST;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_URL_INVALID_PORT;
-import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_URL_PATH;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_INVALID_PORT_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_METHOD;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_HOST;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_INVALID_PORT;
+import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -436,19 +436,19 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
     final String payload = "{'text': '" + WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER + "'}";
 
-    final WebhookConfiguration webhook1 = webhookClient.createWebhookConfiguration(
+    final WebhookConfiguration webhook1 = uiConfigurationClient.createWebhookConfiguration(
       TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
       ImmutableMap.of("Content-type", "application/json"),
       TEST_WEBHOOK_METHOD,
       payload
     );
-    final WebhookConfiguration webhook2 = webhookClient.createWebhookConfiguration(
+    final WebhookConfiguration webhook2 = uiConfigurationClient.createWebhookConfiguration(
       TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
       ImmutableMap.of("Content-type", "some/customType"),
       TEST_WEBHOOK_METHOD,
       payload
     );
-    final WebhookConfiguration webhook3 = webhookClient.createWebhookConfiguration(
+    final WebhookConfiguration webhook3 = uiConfigurationClient.createWebhookConfiguration(
       TEST_WEBHOOK_URL_INVALID_PORT + TEST_WEBHOOK_URL_PATH,
       ImmutableMap.of("Content-type", "application/json"),
       TEST_WEBHOOK_METHOD,

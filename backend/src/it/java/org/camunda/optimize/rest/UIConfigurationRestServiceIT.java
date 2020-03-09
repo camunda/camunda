@@ -5,17 +5,20 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.Sets;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
+import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.TextColorType;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
@@ -28,11 +31,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 
 public class UIConfigurationRestServiceIT extends AbstractIT {
+  private final String WEBHOOK_1_NAME = "webhook1";
+  private final String WEBHOOK_2_NAME = "webhook2";
 
   @Test
   public void getHeaderCustomization() {
     // when
-    final UIConfigurationDto actualConfiguration = getUIConfiguration();
+    final UIConfigurationDto actualConfiguration = uiConfigurationClient.getUIConfiguration();
 
     // then
     HeaderCustomizationDto configurationHeader = actualConfiguration.getHeader();
@@ -48,7 +53,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(true);
 
     // when
-    final UIConfigurationDto response = getUIConfiguration();
+    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isSharingEnabled(), is(true));
@@ -60,7 +65,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
 
     // when
-    final UIConfigurationDto response = getUIConfiguration();
+    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isSharingEnabled(), is(false));
@@ -69,7 +74,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   @Test
   public void getDefaultCamundaWebappsEndpoint() {
     // when
-    UIConfigurationDto response = getUIConfiguration();
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
@@ -86,7 +91,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     setWebappsEndpoint("foo");
 
     // when
-    UIConfigurationDto response = getUIConfiguration();
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
 
     // then
@@ -104,7 +109,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     setWebappsEnabled(false);
 
     // when
-    UIConfigurationDto response = getUIConfiguration();
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
 
     // then
@@ -121,7 +126,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
 
     // when
-    UIConfigurationDto response = getUIConfiguration();
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isEmailEnabled(), is(true));
@@ -133,7 +138,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(false);
 
     // when
-    UIConfigurationDto response = getUIConfiguration();
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isEmailEnabled(), is(false));
@@ -142,10 +147,27 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   @Test
   public void getOptimizeVersion() {
     // when
-    UIConfigurationDto response = getUIConfiguration();
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.getOptimizeVersion(), is(Version.RAW_VERSION));
+  }
+
+  @Test
+  public void getWebhooks() {
+    // given
+    Map<String, WebhookConfiguration> webhookMap = uiConfigurationClient.createSimpleWebhookConfigurationMap(
+      Sets.newHashSet(
+        WEBHOOK_2_NAME,
+        WEBHOOK_1_NAME
+      ));
+    embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookMap);
+
+    // when
+    List<String> allWebhooks = uiConfigurationClient.getUIConfiguration().getWebhooks();
+
+    // then
+    Assertions.assertThat(allWebhooks).containsExactly(WEBHOOK_1_NAME, WEBHOOK_2_NAME);
   }
 
   @Test
@@ -154,7 +176,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     createTenant("tenant1");
 
     // when
-    final UIConfigurationDto response = getUIConfiguration();
+    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isTenantsAvailable(), is(true));
@@ -165,17 +187,10 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     // given
 
     // when
-    final UIConfigurationDto response = getUIConfiguration();
+    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isTenantsAvailable(), is(false));
-  }
-
-  private UIConfigurationDto getUIConfiguration() {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withoutAuthentication()
-      .buildGetUIConfigurationRequest()
-      .execute(UIConfigurationDto.class, Response.Status.OK.getStatusCode());
   }
 
   private void setWebappsEndpoint(String webappsEndpoint) {

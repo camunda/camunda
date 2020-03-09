@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service;
 
+import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
@@ -20,6 +21,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.ui.HeaderLogoRetriever.readLogoAsBase64;
@@ -45,6 +47,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
+    uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     return uiConfigurationDto;
   }
 
@@ -62,6 +65,12 @@ public class UIConfigurationService implements ConfigurationReloadable {
       engineNameToEndpoints.put(entry.getKey(), webappsEndpoint);
     }
     return engineNameToEndpoints;
+  }
+
+  private List<String> getConfiguredWebhooks() {
+    List<String> sortedWebhooksList = Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
+    sortedWebhooksList.sort(String.CASE_INSENSITIVE_ORDER);
+    return sortedWebhooksList;
   }
 
   private HeaderCustomizationDto getHeaderCustomization() {

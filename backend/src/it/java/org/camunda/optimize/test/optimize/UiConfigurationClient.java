@@ -7,21 +7,18 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-
 @AllArgsConstructor
-public class WebhookClient {
+public class UiConfigurationClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
   public static final String TEST_WEBHOOK_NAME = "testWebhook";
   public static final String TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME = "testWebhook_NonStandardContentType";
@@ -30,20 +27,6 @@ public class WebhookClient {
   public static final String TEST_WEBHOOK_URL_HOST = "http://127.0.0.1:8787";
   public static final String TEST_WEBHOOK_URL_INVALID_PORT = "http://127.0.0.1:1080";
   public static final String TEST_WEBHOOK_URL_PATH = "/webhookpath";
-
-  public List<String> getAllWebhooks() {
-    return getRequestExecutor()
-      .buildGetAllWebhooksRequest()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
-  }
-
-  public Response getAllWebhooksWithoutAuthentication() {
-    return getRequestExecutor()
-      .buildGetAllWebhooksRequest()
-      .withoutAuthentication()
-      .execute();
-  }
 
   public Map<String, WebhookConfiguration> createSimpleWebhookConfigurationMap(Set<String> names) {
     Map<String, WebhookConfiguration> webhookMap = new HashMap<>();
@@ -60,6 +43,13 @@ public class WebhookClient {
     );
   }
 
+  public UIConfigurationDto getUIConfiguration() {
+    return requestExecutorSupplier.get()
+      .withoutAuthentication()
+      .buildGetUIConfigurationRequest()
+      .execute(UIConfigurationDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public WebhookConfiguration createWebhookConfiguration(final String url,
                                                          final Map<String, String> headers,
                                                          final String httpMethod,
@@ -70,9 +60,5 @@ public class WebhookClient {
     webhookConfiguration.setHttpMethod(httpMethod);
     webhookConfiguration.setDefaultPayload(payload);
     return webhookConfiguration;
-  }
-
-  private OptimizeRequestExecutor getRequestExecutor() {
-    return requestExecutorSupplier.get();
   }
 }
