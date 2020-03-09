@@ -8,57 +8,42 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.DbValue;
-import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.ObjectProperty;
 
-public final class StoredRecord implements DbValue {
+public final class StoredRecord extends UnpackedObject implements DbValue {
 
-  private static final int PURPOSE_OFFSET = 0;
-  private static final int PURPOSE_LENGTH = BitUtil.SIZE_OF_BYTE;
-  private static final int RECORD_OFFSET = PURPOSE_LENGTH;
-
-  private final IndexedRecord record;
-  private Purpose purpose;
+  private final ObjectProperty<IndexedRecord> recordProp =
+      new ObjectProperty<>("record", new IndexedRecord());
+  private final EnumProperty<Purpose> purposeProp = new EnumProperty<>("purpose", Purpose.class);
 
   public StoredRecord(final IndexedRecord record, final Purpose purpose) {
-    this.record = record;
-    this.purpose = purpose;
+    this();
+
+    recordProp
+        .getValue()
+        .setKey(record.getKey())
+        .setState(record.getState())
+        .setValue(record.getValue());
+    purposeProp.setValue(purpose);
   }
 
   /** deserialization constructor */
   public StoredRecord() {
-    this.record = new IndexedRecord();
+    declareProperty(purposeProp).declareProperty(recordProp);
   }
 
   public IndexedRecord getRecord() {
-    return record;
+    return recordProp.getValue();
   }
 
   public Purpose getPurpose() {
-    return purpose;
+    return purposeProp.getValue();
   }
 
   public long getKey() {
-    return record.getKey();
-  }
-
-  @Override
-  public int getLength() {
-    return PURPOSE_LENGTH + record.getLength();
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    buffer.putByte(PURPOSE_OFFSET, (byte) purpose.ordinal());
-    record.write(buffer, RECORD_OFFSET);
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    final int purposeOrdinal = buffer.getByte(offset + PURPOSE_OFFSET);
-    purpose = Purpose.values()[purposeOrdinal];
-    record.wrap(buffer, offset + RECORD_OFFSET, length - PURPOSE_LENGTH);
+    return recordProp.getValue().getKey();
   }
 
   public enum Purpose {

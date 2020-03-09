@@ -7,33 +7,41 @@
  */
 package io.zeebe.engine.state.instance;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
 import io.zeebe.db.DbValue;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.ObjectProperty;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public final class ElementInstance implements DbValue {
+public final class ElementInstance extends UnpackedObject implements DbValue {
 
-  private final IndexedRecord elementRecord;
-
-  private long parentKey = -1;
-  private int childCount;
-  private long jobKey;
-  private int activeTokens = 0;
-
-  private int multiInstanceLoopCounter = 0;
-  private long interruptingEventKey = -1;
-
-  private long calledChildInstanceKey = -1L;
+  private final LongProperty parentKeyProp = new LongProperty("parentKey", -1L);
+  private final IntegerProperty childCountProp = new IntegerProperty("childCount", 0);
+  private final LongProperty jobKeyProp = new LongProperty("jobKey", 0L);
+  private final IntegerProperty activeTokensProp = new IntegerProperty("activeTokens", 0);
+  private final IntegerProperty multiInstanceLoopCounterProp =
+      new IntegerProperty("multiInstanceLoopCounter", 0);
+  private final LongProperty interruptingEventKeyProp =
+      new LongProperty("interruptingEventKey", -1L);
+  private final LongProperty calledChildInstanceKeyProp =
+      new LongProperty("calledChildInstanceKey", -1L);
+  private final ObjectProperty<IndexedRecord> recordProp =
+      new ObjectProperty<>("elementRecord", new IndexedRecord());
 
   ElementInstance() {
-    elementRecord = new IndexedRecord();
+    declareProperty(parentKeyProp)
+        .declareProperty(childCountProp)
+        .declareProperty(jobKeyProp)
+        .declareProperty(activeTokensProp)
+        .declareProperty(multiInstanceLoopCounterProp)
+        .declareProperty(interruptingEventKeyProp)
+        .declareProperty(calledChildInstanceKeyProp)
+        .declareProperty(recordProp);
   }
 
   public ElementInstance(
@@ -41,46 +49,53 @@ public final class ElementInstance implements DbValue {
       final ElementInstance parent,
       final WorkflowInstanceIntent state,
       final WorkflowInstanceRecord value) {
-    elementRecord = new IndexedRecord(key, state, value);
-    parentKey = parent.getKey();
-    parent.childCount++;
+    this();
+
+    recordProp.getValue().setKey(key);
+    recordProp.getValue().setState(state);
+    recordProp.getValue().setValue(value);
+    if (parent != null) {
+      parentKeyProp.setValue(parent.getKey());
+      parent.childCountProp.setValue(parent.childCountProp.getValue() + 1);
+    }
   }
 
   public ElementInstance(
       final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
-    elementRecord = new IndexedRecord(key, state, value);
+    this(key, null, state, value);
   }
 
   public long getKey() {
-    return elementRecord.getKey();
+    return recordProp.getValue().getKey();
   }
 
   public WorkflowInstanceIntent getState() {
-    return elementRecord.getState();
+    return recordProp.getValue().getState();
   }
 
   public void setState(final WorkflowInstanceIntent state) {
-    elementRecord.setState(state);
+    recordProp.getValue().setState(state);
   }
 
   public WorkflowInstanceRecord getValue() {
-    return elementRecord.getValue();
+    return recordProp.getValue().getValue();
   }
 
   public void setValue(final WorkflowInstanceRecord value) {
-    elementRecord.setValue(value);
+    recordProp.getValue().setValue(value);
   }
 
   public long getJobKey() {
-    return jobKey;
+    return jobKeyProp.getValue();
   }
 
   public void setJobKey(final long jobKey) {
-    this.jobKey = jobKey;
+    jobKeyProp.setValue(jobKey);
   }
 
   public void decrementChildCount() {
-    childCount--;
+    final int childCount = childCountProp.getValue() - 1;
+    childCountProp.setValue(childCount);
 
     if (childCount < 0) {
       throw new IllegalStateException(
@@ -105,11 +120,12 @@ public final class ElementInstance implements DbValue {
   }
 
   public void spawnToken() {
-    activeTokens += 1;
+    activeTokensProp.setValue(activeTokensProp.getValue() + 1);
   }
 
   public void consumeToken() {
-    activeTokens -= 1;
+    final int activeTokens = activeTokensProp.getValue() - 1;
+    activeTokensProp.setValue(activeTokens);
 
     if (activeTokens < 0) {
       throw new IllegalStateException(
@@ -118,43 +134,43 @@ public final class ElementInstance implements DbValue {
   }
 
   public int getNumberOfActiveTokens() {
-    return activeTokens;
+    return activeTokensProp.getValue();
   }
 
   public int getNumberOfActiveElementInstances() {
-    return childCount;
+    return childCountProp.getValue();
   }
 
   public int getNumberOfActiveExecutionPaths() {
-    return activeTokens + childCount;
+    return activeTokensProp.getValue() + childCountProp.getValue();
   }
 
   public int getMultiInstanceLoopCounter() {
-    return multiInstanceLoopCounter;
+    return multiInstanceLoopCounterProp.getValue();
   }
 
   public void setMultiInstanceLoopCounter(final int loopCounter) {
-    multiInstanceLoopCounter = loopCounter;
+    multiInstanceLoopCounterProp.setValue(loopCounter);
   }
 
   public void incrementMultiInstanceLoopCounter() {
-    multiInstanceLoopCounter += 1;
+    multiInstanceLoopCounterProp.setValue(multiInstanceLoopCounterProp.getValue() + 1);
   }
 
   public long getCalledChildInstanceKey() {
-    return calledChildInstanceKey;
+    return calledChildInstanceKeyProp.getValue();
   }
 
   public void setCalledChildInstanceKey(final long calledChildInstanceKey) {
-    this.calledChildInstanceKey = calledChildInstanceKey;
+    calledChildInstanceKeyProp.setValue(calledChildInstanceKey);
   }
 
   public long getInterruptingEventKey() {
-    return interruptingEventKey;
+    return interruptingEventKeyProp.getValue();
   }
 
   public void setInterruptingEventKey(final long key) {
-    interruptingEventKey = key;
+    interruptingEventKeyProp.setValue(key);
   }
 
   public boolean isInterrupted() {
@@ -163,91 +179,13 @@ public final class ElementInstance implements DbValue {
 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    final int startOffset = offset;
-    childCount = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    jobKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    activeTokens = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    parentKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    offset = readIntoBuffer(buffer, offset, elementRecord);
-
-    multiInstanceLoopCounter = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    calledChildInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    interruptingEventKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    assert (offset - startOffset) == length : "End offset differs from length";
-  }
-
-  @Override
-  public int getLength() {
-    return 4 * Long.BYTES + 4 * Integer.BYTES + elementRecord.getLength();
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    final int startOffset = offset;
-
-    buffer.putInt(offset, childCount, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    buffer.putLong(offset, jobKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putInt(offset, activeTokens, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    buffer.putLong(offset, parentKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    offset = writeIntoBuffer(buffer, offset, elementRecord);
-
-    buffer.putInt(offset, multiInstanceLoopCounter, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    buffer.putLong(offset, calledChildInstanceKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putLong(offset, interruptingEventKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    assert (offset - startOffset) == getLength() : "End offset differs from getLength()";
+    final byte[] bytes = new byte[length];
+    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(mutableBuffer, 0, length);
   }
 
   public long getParentKey() {
-    return parentKey;
-  }
-
-  @Override
-  public String toString() {
-    return "ElementInstance{"
-        + "elementRecord="
-        + elementRecord
-        + ", parentKey="
-        + parentKey
-        + ", childCount="
-        + childCount
-        + ", jobKey="
-        + jobKey
-        + ", activeTokens="
-        + activeTokens
-        + ", multiInstanceLoopCounter="
-        + multiInstanceLoopCounter
-        + ", calledChildInstanceKey="
-        + calledChildInstanceKey
-        + ", interruptingEventKey="
-        + interruptingEventKey
-        + '}';
+    return parentKeyProp.getValue();
   }
 }
