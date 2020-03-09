@@ -7,7 +7,6 @@ package org.camunda.optimize.service.security;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
@@ -42,7 +41,7 @@ public class AuthorizedEntitiesService {
         final EntityDto entityDto = collectionEntityAndEntityDto.getValue();
         if (entityDto.getEntityType().equals(EntityType.REPORT)) {
           return reportAuthorizationService.isAuthorizedToAccessReportDefinition(
-            userId, IdentityType.USER, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey()
+            userId, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey()
           );
         } else {
           return true;
@@ -61,7 +60,7 @@ public class AuthorizedEntitiesService {
         final EntityDto entityDto = collectionEntityAndEntityDto.getValue();
         if (entityDto.getEntityType().equals(EntityType.REPORT)) {
           return reportAuthorizationService.isAuthorizedToAccessReportDefinition(
-            userId, IdentityType.USER, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey()
+            userId, (ReportDefinitionDto) collectionEntityAndEntityDto.getKey()
           );
         } else {
           return true;

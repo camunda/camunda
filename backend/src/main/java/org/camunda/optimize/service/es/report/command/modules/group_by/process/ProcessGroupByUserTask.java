@@ -136,8 +136,8 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
       .getProcessDefinitionFromFirstTenantIfAvailable(
         reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
       )
-      .orElse(new ProcessDefinitionOptimizeDto())
-      .getUserTaskNames();
+      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .orElse(Collections.emptyMap());
   }
 
   @Override

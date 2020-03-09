@@ -10,12 +10,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -74,8 +80,11 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
@@ -512,6 +521,45 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       storedEvents.add(camundaActivityEventDto);
     }
     return storedEvents;
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
+    return addEventProcessDefinitionDtoToElasticsearch(key, null);
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                               final IdentityDto identityDto) {
+    return addEventProcessDefinitionDtoToElasticsearch(key, "eventProcess-" + key, identityDto);
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                               final String name,
+                                                                               final IdentityDto identityDto) {
+    final IndexableEventProcessMappingDto.IndexableEventProcessMappingDtoBuilder eventProcessMappingDtoBuilder =
+      IndexableEventProcessMappingDto.builder()
+        .id(key);
+    if (identityDto != null) {
+      eventProcessMappingDtoBuilder.roles(ImmutableList.of(new EventProcessRoleDto<>(identityDto)));
+    } else {
+      eventProcessMappingDtoBuilder.roles(ImmutableList.of(new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))));
+    }
+    final IndexableEventProcessMappingDto eventProcessMappingDto = eventProcessMappingDtoBuilder.build();
+    addEntryToElasticsearch(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(), eventProcessMappingDto);
+
+    final String version = "version";
+    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
+      .id(key + "-" + version)
+      .key(key)
+      .name(name)
+      .version(version)
+      .bpmn20Xml(key + version)
+      .flowNodeNames(Collections.emptyMap())
+      .userTaskNames(Collections.emptyMap())
+      .build();
+    addEntryToElasticsearch(
+      EVENT_PROCESS_DEFINITION_INDEX_NAME, eventProcessDefinitionDto.getId(), eventProcessDefinitionDto
+    );
+    return eventProcessDefinitionDto;
   }
 
   public void deleteAllExternalEventIndices() {

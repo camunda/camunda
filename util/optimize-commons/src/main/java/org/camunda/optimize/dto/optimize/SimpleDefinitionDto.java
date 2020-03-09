@@ -5,18 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
-@Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleDefinitionDto {
   @EqualsAndHashCode.Include
@@ -26,5 +26,6 @@ public class SimpleDefinitionDto {
   @EqualsAndHashCode.Include
   @NonNull
   private DefinitionType type;
-  private Boolean isEventProcess;
+  @JsonIgnore
+  private Boolean isEventProcess = false;
 }

@@ -10,13 +10,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -28,6 +26,10 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
   @JsonIgnore
   private Boolean isEventBased;
 
+  public ProcessDefinitionOptimizeDto() {
+    this.setType(DefinitionType.PROCESS);
+  }
+
   public ProcessDefinitionOptimizeDto(final String id,
                                       final String key,
                                       final String version,
@@ -35,7 +37,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                       final String name,
                                       final String engine,
                                       final String tenantId) {
-    super(id, key, version, versionTag, name, engine, tenantId);
+    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.PROCESS);
   }
 
   public ProcessDefinitionOptimizeDto(final String id,
@@ -60,7 +62,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                       final String bpmn20Xml,
                                       final Map<String, String> flowNodeNames,
                                       final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, engine, tenantId);
+    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeNames = flowNodeNames;
     this.userTaskNames = userTaskNames;

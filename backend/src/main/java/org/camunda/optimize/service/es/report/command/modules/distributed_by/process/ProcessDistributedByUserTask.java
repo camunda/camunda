@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -86,8 +87,8 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByPart {
       .getProcessDefinitionFromFirstTenantIfAvailable(
         reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
       )
-      .orElse(new ProcessDefinitionOptimizeDto())
-      .getUserTaskNames();
+      .map(ProcessDefinitionOptimizeDto::getUserTaskNames)
+      .orElse(Collections.emptyMap());
   }
 
   @Override

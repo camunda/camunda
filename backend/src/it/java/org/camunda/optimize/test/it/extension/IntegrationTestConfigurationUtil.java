@@ -14,7 +14,7 @@ import java.util.Properties;
 
 @UtilityClass
 public class IntegrationTestConfigurationUtil {
-  private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
+  public static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
 
   public static String getDefaultEngineName() {

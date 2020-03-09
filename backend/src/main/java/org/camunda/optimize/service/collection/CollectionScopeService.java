@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.service.collection;
 
-import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
@@ -32,7 +30,7 @@ import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -44,7 +42,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -63,42 +60,28 @@ public class CollectionScopeService {
 
   private final TenantService tenantService;
   private final DefinitionService definitionService;
-  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
+  private final DefinitionAuthorizationService definitionAuthorizationService;
   private final ReportReader reportReader;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
   private final ReportService reportService;
 
-  public List<CollectionScopeEntryRestDto> getCollectionScope(final String identityId,
-                                                              final IdentityType identityType,
+  public List<CollectionScopeEntryRestDto> getCollectionScope(final String userId,
                                                               final String collectionId) {
-    final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(identityId)
-      .stream()
-      .collect(Collectors.toMap(TenantDto::getId, tenantDto -> tenantDto));
-    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(identityId, collectionId)
+    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
       .stream()
       .map(scope -> {
-        final List<String> tenantsToMask = scope.getTenants();
-        List<TenantDto> authorizedTenantDtos;
-        if (definitionService.isEventProcessDefinition(scope.getDefinitionKey())) {
-          authorizedTenantDtos = Lists.newArrayList(TenantService.TENANT_NOT_DEFINED);
-        } else {
-          authorizedTenantDtos = definitionAuthorizationService
-            .filterAuthorizedTenantsForDefinition(
-              identityId, identityType, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
-            )
-            .stream()
-            .peek(tenantsToMask::remove)
-            .map(tenantsForUserById::get)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toList());
-          authorizedTenantDtos.addAll(tenantsToMask.stream()
-                                        .map((t) -> UNAUTHORIZED_TENANT_MASK)
-                                        .collect(Collectors.toList()));
-        }
+        final List<TenantDto> authorizedTenantDtos = resolveAuthorizedTenantsForScopeEntry(userId, scope);
+
+        final List<String> unauthorizedTenantsIds = scope.getTenants();
+        authorizedTenantDtos.stream().map(TenantDto::getId).forEach(unauthorizedTenantsIds::remove);
+
+        authorizedTenantDtos.addAll(
+          unauthorizedTenantsIds.stream().map((t) -> UNAUTHORIZED_TENANT_MASK).collect(Collectors.toList())
+        );
         return new CollectionScopeEntryRestDto()
           .setId(scope.getId())
           .setDefinitionKey(scope.getDefinitionKey())
@@ -112,7 +95,7 @@ public class CollectionScopeService {
       // for all visible entries we need to resolve the actual definition name
       // we do it only after the filtering as only then it is ensured the user has access to that entry at all
       .peek(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.setDefinitionName(
-        getDefinitionName(identityId, collectionScopeEntryRestDto)
+        getDefinitionName(userId, collectionScopeEntryRestDto)
       ))
       .sorted(
         Comparator.comparing(CollectionScopeEntryRestDto::getDefinitionType)
@@ -127,12 +110,15 @@ public class CollectionScopeService {
     final String userId,
     final String collectionId) {
     final Map<String, List<String>> keysAndTenants = getAvailableKeysAndTenantsFromCollectionScope(
-      userId,
-      IdentityType.USER,
-      collectionId
+      userId, collectionId
     );
 
-    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(type, excludeEventProcesses, userId, keysAndTenants);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(
+      type,
+      excludeEventProcesses,
+      userId,
+      keysAndTenants
+    );
   }
 
   public void addScopeEntriesToCollection(final String userId,
@@ -146,20 +132,11 @@ public class CollectionScopeService {
   private void verifyUserIsAuthorizedToAccessScopesOrFail(final String userId,
                                                           final List<CollectionScopeEntryDto> scopeEntries) {
     scopeEntries.forEach(scopeEntry -> {
-      boolean isAuthorized = definitionAuthorizationService.isAuthorizedToSeeDefinition(
-        userId,
-        IdentityType.USER,
-        scopeEntry.getDefinitionKey(),
-        scopeEntry.getDefinitionType(),
-        scopeEntry.getTenants()
+      boolean isAuthorized = definitionAuthorizationService.isAuthorizedToAccessDefinition(
+        userId, scopeEntry.getDefinitionType(), scopeEntry.getDefinitionKey(), scopeEntry.getTenants()
       );
-      if (!isAuthorized && scopeEntry.getDefinitionType().equals(DefinitionType.PROCESS)) {
-        // if not authorized, check if provided key is for an event based process (to which all users have access)
-        isAuthorized = definitionService.isEventProcessDefinition(scopeEntry.getDefinitionKey());
-      }
       if (!isAuthorized) {
-        String message = String.format(
-          SCOPE_NOT_AUTHORIZED_MESSAGE, userId, scopeEntry.getId());
+        final String message = String.format(SCOPE_NOT_AUTHORIZED_MESSAGE, userId, scopeEntry.getId());
         throw new ForbiddenException(message);
       }
     });
@@ -350,35 +327,45 @@ public class CollectionScopeService {
     scopeUpdate.setTenants(allTenantsWithMaskedTenantsBeingResolved);
   }
 
-  public Map<String, List<String>> getAvailableKeysAndTenantsFromCollectionScope(final String identityId,
-                                                                                 final IdentityType identityType,
+  public Map<String, List<String>> getAvailableKeysAndTenantsFromCollectionScope(final String userId,
                                                                                  final String collectionId) {
     if (collectionId == null) {
       return Collections.emptyMap();
     }
-    return getAuthorizedCollectionScopeEntries(identityId, identityType, collectionId)
+    return getAuthorizedCollectionScopeEntries(userId, collectionId)
       .stream()
       .map(scopeEntryDto -> new AbstractMap.SimpleEntry<>(scopeEntryDto.getDefinitionKey(), scopeEntryDto.getTenants()))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String identityId,
-                                                                            final IdentityType identityType,
+  private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String userId,
                                                                             final String collectionId) {
-    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(identityId, collectionId)
+    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
       .stream()
       .peek(scope -> scope.setTenants(
-        definitionAuthorizationService
-          .filterAuthorizedTenantsForDefinition(
-            identityId, identityType, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
-          )
+        resolveAuthorizedTenantsForScopeEntry(userId, scope).stream().map(TenantDto::getId).collect(Collectors.toList())
       ))
       // at least one authorized tenant is required for an entry to be included in the result
       .filter(scopeEntryDto -> scopeEntryDto.getTenants().size() > 0)
       .collect(Collectors.toList());
+  }
+
+  private List<TenantDto> resolveAuthorizedTenantsForScopeEntry(final String userId,
+                                                                final CollectionScopeEntryDto scope) {
+    try {
+      return definitionService
+        .getDefinition(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
+        .map(DefinitionWithTenantsDto::getTenants)
+        .orElseGet(ArrayList::new)
+        .stream()
+        .filter(tenantDto -> scope.getTenants().contains(tenantDto.getId()))
+        .collect(Collectors.toList());
+    } catch (ForbiddenException e) {
+      return new ArrayList<>();
+    }
   }
 
   private String getDefinitionName(final String userId, final CollectionScopeEntryRestDto scope) {

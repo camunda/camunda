@@ -126,8 +126,8 @@ public class ProcessGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
       .getProcessDefinitionFromFirstTenantIfAvailable(
         reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
       )
-      .orElse(new ProcessDefinitionOptimizeDto())
-      .getFlowNodeNames();
+      .map(ProcessDefinitionOptimizeDto::getFlowNodeNames)
+      .orElse(Collections.emptyMap());
   }
 
   @Override

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import org.apache.http.HttpStatus;
 import org.assertj.core.util.Lists;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -13,7 +12,6 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -24,8 +22,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
@@ -48,7 +46,6 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 
 public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
@@ -417,7 +414,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   public void createEventProcessReport() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
     SingleProcessReportDefinitionDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
       null,
@@ -435,10 +432,10 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   }
 
   @Test
-  public void getEventProcessReport() {
+  public void getUnauthorizedEventProcessReport() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
 
@@ -450,14 +447,32 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void getEventProcessReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetReportRequest(reportId)
+      .execute();
+
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
-  public void evaluateEventProcessReport() {
+  public void evaluateUnauthorizedEventProcessReport() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
 
@@ -469,14 +484,32 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void evaluateEventProcessReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute();
+
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
-  public void updateEventProcessReport() {
+  public void updateUnauthorizedEventProcessReport() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
 
@@ -490,14 +523,34 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void updateEventProcessReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    ReportDefinitionDto updatedReport = createReportUpdate(RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateSingleReportRequest(reportId, updatedReport)
+      .execute();
+
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
-  public void deleteEventBasedReport() {
+  public void deleteUnauthorizedEventProcessReport() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
 
     String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
 
@@ -505,6 +558,24 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildDeleteReportRequest(reportId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @Test
+  public void deleteEventBasedReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+
+    String reportId = reportClient.createSingleReport(null, DefinitionType.PROCESS, PROCESS_KEY, Lists.emptyList());
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
       .buildDeleteReportRequest(reportId)
       .execute();
 
@@ -690,24 +761,4 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     }
   }
 
-
-  private EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
-    final String version = "1";
-    final String name = "eventBasedName";
-    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
-      .id(key + "-" + version)
-      .key(key)
-      .name(name)
-      .version(version)
-      .bpmn20Xml(key + version)
-      .flowNodeNames(Collections.emptyMap())
-      .userTaskNames(Collections.emptyMap())
-      .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      EVENT_PROCESS_DEFINITION_INDEX_NAME,
-      eventProcessDefinitionDto.getId(),
-      eventProcessDefinitionDto
-    );
-    return eventProcessDefinitionDto;
-  }
 }

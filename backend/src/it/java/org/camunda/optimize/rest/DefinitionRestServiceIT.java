@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -14,19 +13,14 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,10 +28,7 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
@@ -90,7 +81,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @Test
   public void getEventDefinitionByTypeAndKey() {
     //given
-    final DefinitionOptimizeDto expectedDefinition = createEventBasedDefinition("key", "1", "the name");
+    final DefinitionOptimizeDto expectedDefinition = createEventBasedDefinition("key", "the name");
 
     // when
     final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
@@ -268,13 +259,13 @@ public class DefinitionRestServiceIT extends AbstractIT {
       DECISION, "decision3", "1", null, "a decision Definition3"
     );
     final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
-      "eventProcess1", "1", "Event process Definition1"
+      "eventProcess1", "Event process Definition1"
     );
     final DefinitionOptimizeDto eventProcessDefinition2 = createEventBasedDefinition(
-      "eventProcess2", "1", "event process Definition2"
+      "eventProcess2", "event process Definition2"
     );
     final DefinitionOptimizeDto eventProcessDefinition3 = createEventBasedDefinition(
-      "eventProcess3", "1", "an event process Definition3"
+      "eventProcess3", "an event process Definition3"
     );
 
     // when
@@ -412,7 +403,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
       DECISION, "decision1", "1", null, "Decision Definition1"
     );
     final DefinitionOptimizeDto eventProcessDefinition1_1 = createEventBasedDefinition(
-      "eventProcess1", "1", "Event Process Definition1"
+      "eventProcess1", "Event Process Definition1"
     );
 
     // when
@@ -484,18 +475,18 @@ public class DefinitionRestServiceIT extends AbstractIT {
       decisionKey2, decisionName2, DefinitionType.DECISION, false
     );
 
-    final String eventProcessKey1 = "eventProcessKey1";
-    final String eventProcessName1 = "Event Process Definition1";
+    final DefinitionOptimizeDto eventProcess1 = createEventBasedDefinition(
+      "eventProcessKey1", "Event Process Definition1"
+    );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
-      eventProcessKey1, eventProcessName1, DefinitionType.PROCESS, true
+      eventProcess1.getKey(), eventProcess1.getName(), DefinitionType.PROCESS, true
     );
-    createEventBasedDefinition(eventProcessKey1, "1", eventProcessName1);
-    final String eventProcessKey2 = "eventProcessKey2";
-    final String eventProcessName2 = "Event Process Definition2";
+    final DefinitionOptimizeDto eventProcess2 = createEventBasedDefinition(
+      "eventProcessKey2", "Event Process Definition2"
+    );
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
-      eventProcessKey2, eventProcessName2, DefinitionType.PROCESS, true
+      eventProcess2.getKey(), eventProcess2.getName(), DefinitionType.PROCESS, true
     );
-    createEventBasedDefinition(eventProcessKey2, "1", eventProcessName2);
 
     // when
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
@@ -648,12 +639,12 @@ public class DefinitionRestServiceIT extends AbstractIT {
     );
     createDefinition(DECISION, decisionKey1, "1", null, decisionName1);
 
-    final String eventProcessKey1 = "eventProcess1";
-    final String eventProcessName1 = "Event Process Definition1";
-    final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
-      eventProcessKey1, decisionName1, PROCESS, true
+    final DefinitionOptimizeDto eventBasedDefinition1 = createEventBasedDefinition(
+      "eventProcess1", "Event Process Definition1"
     );
-    createEventBasedDefinition(eventProcessKey1, "1", eventProcessName1);
+    final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
+      eventBasedDefinition1.getKey(), eventBasedDefinition1.getName(), PROCESS, true
+    );
 
     // when
     final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
@@ -729,18 +720,18 @@ public class DefinitionRestServiceIT extends AbstractIT {
     final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
       decisionKey2, decisionName2, DefinitionType.DECISION, false
     );
-    final String eventProcessKey1 = "eventProcess1";
-    final String eventProcessName1 = "Event Process Definition1";
+    final DefinitionOptimizeDto eventBasedDefinition1 = createEventBasedDefinition(
+      "eventProcess1", "Event Process Definition1"
+    );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
-      eventProcessKey1, eventProcessName1, DefinitionType.PROCESS, true
+      eventBasedDefinition1.getKey(), eventBasedDefinition1.getName(), DefinitionType.PROCESS, true
     );
-    createEventBasedDefinition(eventProcessKey1, "1", eventProcessName1);
-    final String eventProcessKey2 = "eventProcess2";
-    final String eventProcessName2 = "An event Process Definition2";
+    final DefinitionOptimizeDto eventBasedDefinition2 = createEventBasedDefinition(
+      "eventProcess2", "An event Process Definition2"
+    );
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
-      eventProcessKey2, eventProcessName2, DefinitionType.PROCESS, true
+      eventBasedDefinition2.getKey(), eventBasedDefinition2.getName(), DefinitionType.PROCESS, true
     );
-    createEventBasedDefinition(eventProcessKey2, "1", eventProcessName2);
 
     // when
     final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
@@ -805,8 +796,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
-  private DefinitionOptimizeDto createEventBasedDefinition(final String key, final String version, final String name) {
-    return addEventProcessDefinitionDtoToElasticsearch(key, version, name);
+  private DefinitionOptimizeDto createEventBasedDefinition(final String key, final String name) {
+    return elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key, name, null);
   }
 
   private DefinitionOptimizeDto createDefinition(final DefinitionType definitionType,
@@ -864,36 +855,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
       expectedDto
     );
     return expectedDto;
-  }
-
-  private EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
-                                                                                final String version,
-                                                                                final String name) {
-    final IndexableEventProcessMappingDto eventProcessMappingDto =
-      IndexableEventProcessMappingDto.builder()
-        .id(key)
-        .roles(ImmutableList.of(new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))))
-        .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      EVENT_PROCESS_MAPPING_INDEX_NAME,
-      eventProcessMappingDto.getId(),
-      eventProcessMappingDto
-    );
-    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
-      .id(key + "-" + version)
-      .key(key)
-      .name(name)
-      .version(version)
-      .bpmn20Xml(key + version)
-      .flowNodeNames(Collections.emptyMap())
-      .userTaskNames(Collections.emptyMap())
-      .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      EVENT_PROCESS_DEFINITION_INDEX_NAME,
-      eventProcessDefinitionDto.getId(),
-      eventProcessDefinitionDto
-    );
-    return eventProcessDefinitionDto;
   }
 
   protected void createTenant(final TenantDto tenant) {

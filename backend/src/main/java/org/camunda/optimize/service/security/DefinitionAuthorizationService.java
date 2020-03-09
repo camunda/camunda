@@ -59,11 +59,7 @@ public class DefinitionAuthorizationService {
 
       return engineDefinitionAuthorizationService
         .filterAuthorizedTenantsForDefinition(
-          userId,
-          IdentityType.USER,
-          definitionDto.getKey(),
-          definitionDto.getType(),
-          tenantIdsToCheck
+          userId, IdentityType.USER, definitionDto.getKey(), definitionDto.getType(), tenantIdsToCheck
         )
         .stream()
         // resolve tenantDto for authorized tenantId
@@ -74,33 +70,31 @@ public class DefinitionAuthorizationService {
     }
   }
 
-  public <T extends DefinitionOptimizeDto> boolean isAuthorizedToReadDefinition(final DefinitionType type,
-                                                                                final String userId,
-                                                                                final T definition) {
+  public boolean isAuthorizedToAccessDefinition(final String userId,
+                                                final DefinitionType type,
+                                                final String definitionKey,
+                                                final List<String> tenantIds) {
+    if (definitionKey == null) {
+      return true;
+    }
     switch (type) {
       case PROCESS:
-        return isAuthorizedToReadProcessDefinition(userId, (ProcessDefinitionOptimizeDto) definition);
+        boolean authorized = eventProcessAuthorizationService.isAuthorizedToEventProcess(
+          userId, definitionKey
+        );
+        if (!authorized) {
+          authorized = engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+            userId, IdentityType.USER, definitionKey, tenantIds
+          );
+        }
+        return authorized;
       case DECISION:
-        return isAuthorizedToReadDecisionDefinition(userId, (DecisionDefinitionOptimizeDto) definition);
+        return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
+          userId, IdentityType.USER, definitionKey, type, tenantIds
+        );
       default:
-        throw new IllegalStateException("Unknown DefinitionType:" + type);
+        throw new IllegalArgumentException("Unsupported definition type: " + type);
     }
-  }
-
-  public boolean isAuthorizedToReadProcessDefinition(final String userId,
-                                                     final ProcessDefinitionOptimizeDto processDefinition) {
-    return processDefinition.getIsEventBased()
-      ? eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey())
-      : engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
-        userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
-      );
-  }
-
-  public boolean isAuthorizedToReadDecisionDefinition(final String userId,
-                                                      final DecisionDefinitionOptimizeDto decisionDefinition) {
-    return engineDefinitionAuthorizationService.isUserAuthorizedToSeeDecisionDefinition(
-      userId, decisionDefinition.getKey(), decisionDefinition.getTenantId(), decisionDefinition.getEngine()
-    );
   }
 
   public boolean isAuthorizedToAccessDefinition(final String userId,
@@ -115,6 +109,36 @@ public class DefinitionAuthorizationService {
     }
   }
 
+  public <T extends DefinitionOptimizeDto> boolean isAuthorizedToAccessDefinition(final String userId,
+                                                                                  final T definition) {
+    switch (definition.getType()) {
+      case PROCESS:
+        return isAuthorizedToAccessProcessDefinition(userId, (ProcessDefinitionOptimizeDto) definition);
+      case DECISION:
+        return isAuthorizedToAccessDecisionDefinition(userId, (DecisionDefinitionOptimizeDto) definition);
+      default:
+        throw new IllegalArgumentException("Unsupported definition type: " + definition.getType());
+    }
+  }
+
+  public boolean isAuthorizedToAccessProcessDefinition(final String userId,
+                                                       final ProcessDefinitionOptimizeDto processDefinition) {
+    if (processDefinition.getIsEventBased()) {
+      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey());
+    } else {
+      return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
+        userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
+      );
+    }
+  }
+
+  public boolean isAuthorizedToAccessDecisionDefinition(final String userId,
+                                                        final DecisionDefinitionOptimizeDto decisionDefinition) {
+    return engineDefinitionAuthorizationService.isUserAuthorizedToSeeDecisionDefinition(
+      userId, decisionDefinition.getKey(), decisionDefinition.getTenantId(), decisionDefinition.getEngine()
+    );
+  }
+
   private static <T> List<T> mergeTwoCollectionsWithDistinctValues(final Collection<T> firstCollection,
                                                                    final Collection<T> secondCollection) {
     return Stream.concat(secondCollection.stream(), firstCollection.stream())
@@ -124,10 +148,7 @@ public class DefinitionAuthorizationService {
 
   private Map<String, TenantDto> getAuthorizedTenantDtosForUser(final String userId) {
     return tenantService.getTenantsForUser(userId).stream()
-      .collect(toMap(
-        TenantDto::getId,
-        Function.identity()
-      ));
+      .collect(toMap(TenantDto::getId, Function.identity()));
   }
 
 }

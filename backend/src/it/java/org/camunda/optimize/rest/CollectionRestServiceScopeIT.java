@@ -41,11 +41,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 
 public class CollectionRestServiceScopeIT extends AbstractIT {
 
+  public static final String DEFAULT_DEFINITION_KEY = "_KEY_";
+
   @Test
   public void partialCollectionUpdateDoesNotAffectScopes() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    collectionClient.addScopeEntryToCollection(collectionId, createSimpleScopeEntry("_KEY_"));
+    collectionClient.addScopeEntryToCollection(collectionId, createSimpleScopeEntry(DEFAULT_DEFINITION_KEY));
     final List<CollectionScopeEntryRestDto> expectedCollectionScope = collectionClient.getCollectionScope(collectionId);
 
     // when
@@ -64,10 +66,14 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void getScopeForCollection() {
     // given
+    final String definitionKey = DEFAULT_DEFINITION_KEY;
+    addProcessDefinitionToElasticsearch(definitionKey, null);
     final String collectionId = collectionClient.createNewCollection();
-    final String definitionKey = "_KEY_";
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(definitionKey);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScope(collectionId);
@@ -120,8 +126,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addDefinitionScopeEntry() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntryToCollection(collectionId, entry);
@@ -137,8 +147,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -154,9 +168,15 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_addsToExistingScopes() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
+    final String anotherDefinitionKey = "_ANOTHER_KEY_";
+    addProcessDefinitionToElasticsearch(anotherDefinitionKey, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry("_ANOTHER_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+    final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry(anotherDefinitionKey);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -173,11 +193,15 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_addsTenantsToExistingScopes() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
     addTenantToElasticsearch("newTenant");
     entry.getTenants().add("newTenant");
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -194,14 +218,19 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_addsTenantsAndScopeToExistingScopes() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
+    final String anotherDefinitionKey = "_ANOTHER_KEY_";
+    addProcessDefinitionToElasticsearch(anotherDefinitionKey, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry("_ANOTHER_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+    final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry(anotherDefinitionKey);
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
     addTenantToElasticsearch("newTenant");
     entry.getTenants().add("newTenant");
 
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -220,11 +249,15 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_doesNotRemoveTenants() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
     addTenantToElasticsearch("newTenant");
     entry.setTenants(Collections.singletonList("newTenant"));
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -242,8 +275,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_sameScopeIsNotAddedTwice() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
@@ -261,7 +298,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   public void addScopeEntries_unknownCollectionResultsInNotFound() {
     // given
     collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -275,9 +312,16 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addMultipleDefinitionScopeEntries() {
     // given
+    final String definitionKey1 = "_KEY1_";
+    addProcessDefinitionToElasticsearch(definitionKey1, null);
+    final String definitionKey2 = "_KEY2_";
+    addProcessDefinitionToElasticsearch(definitionKey2, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry1 = createSimpleScopeEntry("_KEY1_");
-    final CollectionScopeEntryDto entry2 = createSimpleScopeEntry("_KEY2_");
+    final CollectionScopeEntryDto entry1 = createSimpleScopeEntry(definitionKey1);
+    final CollectionScopeEntryDto entry2 = createSimpleScopeEntry(definitionKey2);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.addScopeEntriesToCollection(collectionId, Lists.newArrayList(entry1, entry2));
@@ -293,9 +337,13 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void updateDefinitionScopeEntry_addTenant() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final String tenant1 = "tenant1";
@@ -320,11 +368,16 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void updateDefinitionScopeEntry_removeTenant() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
     final String tenant = "tenant";
     addTenantToElasticsearch(tenant);
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     entry.getTenants().add(tenant);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
@@ -349,7 +402,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   public void updateUnknownScopeThrowsNotFound() {
     // given
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
@@ -364,9 +417,13 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void updateUnknownTenantsAreFilteredOut() {
     // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     final String collectionId = collectionClient.createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     collectionClient.addScopeEntryToCollection(collectionId, entry);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final String tenant1 = "tenant1";
@@ -396,7 +453,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final String notExistingScopeEntryId = "PROCESS:abc";
 
     // when
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(
@@ -414,8 +471,13 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
   @Test
   public void removeScopeEntry() {
+    // given
+    addProcessDefinitionToElasticsearch(DEFAULT_DEFINITION_KEY, null);
     String collectionId = collectionClient.createNewCollection();
-    CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
@@ -423,24 +485,26 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     assertThat(scope.size()).isEqualTo(1);
 
+    // when
     embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
       .execute(Response.Status.NO_CONTENT.getStatusCode());
 
     scope = collectionClient.getCollectionScope(collectionId);
 
+    // then
     assertThat(scope.size()).isEqualTo(0);
   }
 
   @Test
   public void removeScopeDefinitionFailsDueReportConflict() {
     String collectionId = collectionClient.createNewCollection();
-    CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    CollectionScopeEntryDto entry = createSimpleScopeEntry(DEFAULT_DEFINITION_KEY);
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.getData().setProcessDefinitionKey("_KEY_");
+    singleProcessReportDefinitionDto.getData().setProcessDefinitionKey(DEFAULT_DEFINITION_KEY);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
     String reportId = createNewSingleProcessReport(singleProcessReportDefinitionDto);
 

@@ -6,7 +6,8 @@
 package org.camunda.optimize.service.security;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.IdentityType;
+import lombok.NonNull;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -15,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -28,18 +28,16 @@ import java.util.Optional;
 public class ReportAuthorizationService {
 
   private final IdentityService identityService;
-  private final DefinitionService definitionService;
-  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
+  private final DefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionAuthorizationService;
   private final ReportReader reportReader;
 
   public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
     final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
-    final boolean isEventBased = isEventProcessReport(report);
-    final Optional<RoleType> authorizedRole = isSuperUser || isEventBased
+    final Optional<RoleType> authorizedRole = isSuperUser
       ? Optional.of(RoleType.EDITOR)
       : getAuthorizedReportRole(userId, report);
-    return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, IdentityType.USER, report));
+    return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, report));
   }
 
   private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto report) {
@@ -53,59 +51,39 @@ public class ReportAuthorizationService {
     return Optional.ofNullable(role);
   }
 
-  public boolean isAuthorizedToAccessReportDefinition(final String identityId,
-                                                      final IdentityType identityType,
+  public boolean isAuthorizedToAccessReportDefinition(final String userId,
                                                       final ReportDefinitionDto report) {
-    return isAuthorizedToAccessReportDefinition(identityId, identityType, report, isEventProcessReport(report));
-  }
-
-  public boolean isAuthorizedToAccessReportDefinition(final String identityId,
-                                                      final IdentityType identityType,
-                                                      final ReportDefinitionDto report,
-                                                      final Boolean isEventProcessReport) {
-    boolean authorizedToAccessDefinition = false;
+    final boolean authorizedToAccessDefinition;
     if (report instanceof SingleProcessReportDefinitionDto) {
       final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionDto) report).getData();
-      authorizedToAccessDefinition =
-        isAuthorizedToAccessProcessReportDefinition(identityId, identityType, reportData, isEventProcessReport);
+      authorizedToAccessDefinition = isAuthorizedToAccessProcessReportDefinition(userId, reportData);
     } else if (report instanceof SingleDecisionReportDefinitionDto) {
       final DecisionReportDataDto reportData = ((SingleDecisionReportDefinitionDto) report).getData();
-      if (reportData != null) {
-        authorizedToAccessDefinition = definitionAuthorizationService.isUserAuthorizedToSeeDecisionDefinition(
-          identityId, identityType, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
-        );
-      }
+      authorizedToAccessDefinition = isAuthorizedToAccessDecisionReportDefinition(userId, reportData);
     } else if (report instanceof CombinedReportDefinitionDto) {
       final CombinedReportDataDto reportData = ((CombinedReportDefinitionDto) report).getData();
       authorizedToAccessDefinition = reportReader.getAllSingleProcessReportsForIdsOmitXml(reportData.getReportIds())
         .stream()
-        .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(
-          identityId,
-          identityType,
-          r.getData(),
-          isEventProcessReport
-        ));
+        .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(userId, r.getData()));
     } else {
       throw new OptimizeRuntimeException("Unsupported report type: " + report.getClass().getSimpleName());
     }
     return authorizedToAccessDefinition;
   }
 
-  private boolean isAuthorizedToAccessProcessReportDefinition(final String identityId,
-                                                              final IdentityType identityType,
-                                                              final ProcessReportDataDto reportData,
-                                                              final Boolean isEventProcessReport) {
-    if (reportData != null) {
-      return isEventProcessReport || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-        identityId, identityType, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
-      );
-    }
-    return false;
+  private boolean isAuthorizedToAccessDecisionReportDefinition(@NonNull final String userId,
+                                                               @NonNull final DecisionReportDataDto reportData) {
+    final boolean authorizedToAccessDefinition = definitionAuthorizationService.isAuthorizedToAccessDefinition(
+      userId, DefinitionType.DECISION, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
+    );
+    return authorizedToAccessDefinition;
   }
 
-  private Boolean isEventProcessReport(final ReportDefinitionDto report) {
-    return report instanceof SingleProcessReportDefinitionDto
-      && definitionService.isEventProcessDefinition(((ProcessReportDataDto) report.getData()).getProcessDefinitionKey());
+  private boolean isAuthorizedToAccessProcessReportDefinition(@NonNull final String userId,
+                                                              @NonNull final ProcessReportDataDto reportData) {
+    return definitionAuthorizationService.isAuthorizedToAccessDefinition(
+      userId, DefinitionType.PROCESS, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
+    );
   }
 
 }

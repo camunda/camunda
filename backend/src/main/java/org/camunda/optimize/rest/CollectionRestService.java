@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -184,7 +183,7 @@ public class CollectionRestService {
   public List<CollectionScopeEntryRestDto> getScopes(@Context ContainerRequestContext requestContext,
                                                      @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionScopeService.getCollectionScope(userId, IdentityType.USER, collectionId);
+    return collectionScopeService.getCollectionScope(userId, collectionId);
   }
 
   @GET

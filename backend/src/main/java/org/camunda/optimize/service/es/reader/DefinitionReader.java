@@ -603,7 +603,11 @@ public class DefinitionReader {
       try {
         T definitionDto = objectMapper.readValue(sourceAsString, type);
         if (ProcessDefinitionOptimizeDto.class.equals(type)) {
-          ((ProcessDefinitionOptimizeDto) definitionDto).setIsEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
+          ProcessDefinitionOptimizeDto processDefinition = (ProcessDefinitionOptimizeDto) definitionDto;
+          processDefinition.setType(DefinitionType.PROCESS);
+          processDefinition.setIsEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
+        } else {
+          definitionDto.setType(DefinitionType.DECISION);
         }
         return definitionDto;
       } catch (IOException e) {

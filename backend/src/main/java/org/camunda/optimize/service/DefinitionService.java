@@ -82,7 +82,7 @@ public class DefinitionService {
     List<T> definitionsResult = (List<T>) definitionReader.getFullyImportedDefinitions(type, withXml);
 
     if (userId != null) {
-      definitionsResult = filterAuthorizedDefinitions(type, userId, definitionsResult);
+      definitionsResult = filterAuthorizedDefinitions(userId, definitionsResult);
     }
 
     return definitionsResult;
@@ -160,9 +160,9 @@ public class DefinitionService {
         final String tenantId = tenantIdWithDefinitionsDto.getId();
         // now filter for tenant and definition key pair authorization
         final List<SimpleDefinitionDto> authorizedDefinitions = tenantIdWithDefinitionsDto.getDefinitions().stream()
-          .filter(definition -> definitionAuthorizationService
-            .isAuthorizedToAccessDefinition(userId, tenantId, definition)
-          )
+          .filter(definition -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
+            userId, tenantId, definition
+          ))
           // sort by name case insensitive
           .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
           .collect(toList());
@@ -218,7 +218,7 @@ public class DefinitionService {
                                                                             final List<String> tenantIds) {
     return getDefinitionWithXmlAsService(type, definitionKey, definitionVersions, tenantIds)
       .map(definitionOptimizeDto -> {
-        if (definitionAuthorizationService.isAuthorizedToReadDefinition(type, userId, definitionOptimizeDto)) {
+        if (definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, definitionOptimizeDto)) {
           return (T) definitionOptimizeDto;
         } else {
           throw new ForbiddenException("Current user is not authorized to access data of the definition with key " + definitionKey);
@@ -369,13 +369,11 @@ public class DefinitionService {
       ));
   }
 
-  private <T extends DefinitionOptimizeDto> List<T> filterAuthorizedDefinitions(
-    final DefinitionType type,
-    final String userId,
-    final List<T> definitions) {
+  private <T extends DefinitionOptimizeDto> List<T> filterAuthorizedDefinitions(final String userId,
+                                                                                final List<T> definitions) {
     return definitions
       .stream()
-      .filter(def -> definitionAuthorizationService.isAuthorizedToReadDefinition(type, userId, def))
+      .filter(definition -> definitionAuthorizationService.isAuthorizedToAccessDefinition(userId, definition))
       .collect(Collectors.toList());
   }
 

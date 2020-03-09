@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +26,8 @@ public abstract class DefinitionOptimizeDto implements Serializable, OptimizeDto
   private String name;
   private String engine;
   private String tenantId;
+  @JsonIgnore
+  private DefinitionType type;
 
   public DefinitionOptimizeDto(final String id, final String engine) {
     this.id = id;
