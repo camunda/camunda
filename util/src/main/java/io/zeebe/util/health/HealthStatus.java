@@ -8,6 +8,6 @@
 package io.zeebe.util.health;
 
 public enum HealthStatus {
-  HEALTHY,
-  UNHEALTHY
+  UNHEALTHY,
+  HEALTHY
 }
