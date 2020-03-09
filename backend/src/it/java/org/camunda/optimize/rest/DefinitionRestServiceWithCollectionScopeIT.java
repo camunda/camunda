@@ -5,17 +5,23 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.TenantService;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -25,7 +31,10 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
@@ -108,6 +117,36 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     // then
     assertThat(definitions.stream().map(DefinitionVersionsWithTenantsDto::getKey))
       .containsExactlyInAnyOrder(definitionKey1, definitionKey2);
+  }
+
+  @Test
+  public void testGetProcessDefinitionVersionsWithTenants_multipleInScope_excludeEventProcesses() {
+    //given
+    final String definitionKey1 = "definitionKey1";
+    createDefinition(DefinitionType.PROCESS, definitionKey1, "1", null, "the name");
+    final String definitionKey2 = "definitionKey2";
+    addSimpleEventProcessToElasticsearch(definitionKey2, "1", "eventProcess");
+
+    final String collectionId = addEmptyCollectionToOptimize();
+    final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(DefinitionType.PROCESS, definitionKey1, scopeTenantIds)
+    );
+    collectionClient.addScopeEntryToCollection(
+      collectionId, new CollectionScopeEntryDto(DefinitionType.PROCESS, definitionKey2, scopeTenantIds)
+    );
+
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionsWithTenantsDto> definitions = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetProcessDefinitionVersionsWithTenants(collectionId, true)
+      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(definitions.stream().map(DefinitionVersionsWithTenantsDto::getKey))
+      .containsExactlyInAnyOrder(definitionKey1);
   }
 
   @ParameterizedTest
@@ -256,6 +295,35 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + type);
     }
+  }
+
+  protected EventProcessDefinitionDto addSimpleEventProcessToElasticsearch(final String key,
+                                                                           final String version,
+                                                                           final String name) {
+    final IndexableEventProcessMappingDto eventProcessMappingDto = IndexableEventProcessMappingDto.builder()
+      .id(key)
+      .roles(ImmutableList.of(new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))))
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      EVENT_PROCESS_MAPPING_INDEX_NAME,
+      eventProcessMappingDto.getId(),
+      eventProcessMappingDto
+    );
+    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
+      .id(key + "-" + version)
+      .key(key)
+      .name(name)
+      .version(version)
+      .bpmn20Xml(key + version)
+      .flowNodeNames(Collections.emptyMap())
+      .userTaskNames(Collections.emptyMap())
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      EVENT_PROCESS_DEFINITION_INDEX_NAME,
+      eventProcessDefinitionDto.getId(),
+      eventProcessDefinitionDto
+    );
+    return eventProcessDefinitionDto;
   }
 
   private String addEmptyCollectionToOptimize() {

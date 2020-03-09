@@ -472,6 +472,64 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   }
 
   @Test
+  public void getProcessDefinitionVersionsWithTenants_excludeEventProcesses() {
+    //given event based
+    final String eventKey = "eventDefinitionKey";
+    createEventProcessDefinitionsForKey(eventKey, 4);
+
+    // given non event based
+    createTenant(TENANT_1_DTO);
+    createTenant(TENANT_2_DTO);
+    final String definitionKey1 = "definitionKey1";
+    final String definitionKey2 = "definitionKey2";
+    createDefinitionsForKey(definitionKey1, 3);
+    createDefinitionsForKey(definitionKey2, 2, TENANT_1_DTO.getId());
+    createDefinitionsForKey(definitionKey2, 3, TENANT_2_DTO.getId());
+
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(true);
+
+    // then
+    assertThat(definitions, is(notNullValue()));
+    assertThat(definitions.size(), is(2));
+
+    // first definition
+    final DefinitionVersionsWithTenantsDto firstDefinition = definitions.get(0);
+    assertThat(firstDefinition.getKey(), is(definitionKey1));
+    final List<TenantDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
+      TENANT_NONE_DTO, TENANT_1_DTO, TENANT_2_DTO
+    );
+    assertThat(firstDefinition.getAllTenants(), is(expectedDefinition1AllTenantsOrdered));
+    final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition1 = ImmutableList.of(
+      new DefinitionVersionWithTenantsDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
+      new DefinitionVersionWithTenantsDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
+    );
+    assertThat(firstDefinition.getVersions(), is(expectedVersionForDefinition1));
+
+    // second definition
+    final DefinitionVersionsWithTenantsDto secondDefinition = definitions.get(1);
+    assertThat(secondDefinition.getKey(), is(definitionKey2));
+    final List<TenantDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
+    assertThat(secondDefinition.getAllTenants(), is(expectedDefinition2AllTenantsOrdered));
+    final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition2 = ImmutableList.of(
+      new DefinitionVersionWithTenantsDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
+      new DefinitionVersionWithTenantsDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
+      new DefinitionVersionWithTenantsDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
+    );
+    assertThat(secondDefinition.getVersions(), is(expectedVersionForDefinition2));
+  }
+
+  protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants(final boolean excludeEventProcesses) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetProcessDefinitionVersionsWithTenants(null, excludeEventProcesses)
+      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  @Test
   public void getEventProcessDefinitionVersionsWithTenants_sorting() {
     addSimpleEventProcessToElasticsearch("z", "1", "a");
     addSimpleEventProcessToElasticsearch("x", "1", "b");
@@ -526,7 +584,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
   @Override
   protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId,
-                                                                                              String collectionId) {
+                                                                                          String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(userId, userId)

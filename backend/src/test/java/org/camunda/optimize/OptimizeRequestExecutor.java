@@ -701,9 +701,16 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId) {
+    return buildGetProcessDefinitionVersionsWithTenants(collectionId, null);
+  }
+
+  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId,
+                                                                              final Boolean excludeEventProcesses) {
     this.path = "definition/process/definitionVersionsWithTenants";
     this.method = GET;
     addSingleQueryParam("filterByCollectionScope", collectionId);
+    Optional.ofNullable(excludeEventProcesses)
+      .ifPresent(aBoolean -> addSingleQueryParam("excludeEventProcesses", aBoolean));
     return this;
   }
 

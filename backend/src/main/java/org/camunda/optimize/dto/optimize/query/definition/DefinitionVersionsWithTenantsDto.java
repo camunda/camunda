@@ -12,6 +12,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 
 import java.util.Comparator;
@@ -22,15 +24,23 @@ import static java.util.Comparator.naturalOrder;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-public class DefinitionVersionsWithTenantsDto {
+public class DefinitionVersionsWithTenantsDto extends SimpleDefinitionDto {
 
-  @NonNull
-  private String key;
-  private String name;
   @NonNull
   private List<DefinitionVersionWithTenantsDto> versions;
   @NonNull
   private List<TenantDto> allTenants;
+
+  public DefinitionVersionsWithTenantsDto(@NonNull final String key,
+                                          final String name,
+                                          @NonNull final DefinitionType type,
+                                          final Boolean isEventProcess,
+                                          @NonNull final List<DefinitionVersionWithTenantsDto> versions,
+                                          @NonNull final List<TenantDto> allTenants) {
+    super(key, name, type, isEventProcess);
+    this.versions = versions;
+    this.allTenants = allTenants;
+  }
 
   public void sort() {
     versions.sort(

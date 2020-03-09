@@ -48,9 +48,9 @@ import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 @Component
 @Slf4j
 public class DefinitionService {
+  private final DefinitionReader definitionReader;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
-  private final DefinitionReader definitionReader;
 
   public Optional<DefinitionWithTenantsDto> getDefinition(final DefinitionType type,
                                                           final String key,
@@ -90,15 +90,16 @@ public class DefinitionService {
 
   public List<DefinitionVersionsWithTenantsDto> getDefinitionsGroupedByVersionAndTenantForType(
     final DefinitionType definitionType,
+    final boolean excludeEventProcesses,
     final String userId) {
 
     final List<DefinitionVersionsWithTenantsDto> definitionsWithVersionsAndTenants =
-      definitionReader.getDefinitionsWithVersionsAndTenantsForType(definitionType);
+      definitionReader.getDefinitionsWithVersionsAndTenantsForType(definitionType, excludeEventProcesses);
 
     return definitionsWithVersionsAndTenants
       .stream()
       .map(definitionWithVersionsAndTenants -> filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
-        definitionWithVersionsAndTenants, definitionType, userId
+        definitionWithVersionsAndTenants, userId
       ))
       .filter(definition -> !definition.getAllTenants().isEmpty())
       // sort by name case insensitive
@@ -108,10 +109,11 @@ public class DefinitionService {
 
   public List<DefinitionVersionsWithTenantsDto> getDefinitionsGroupedByVersionAndTenantForType(
     final DefinitionType definitionType,
+    final boolean excludeEventProcesses,
     final String userId,
     final Map<String, List<String>> definitionKeyAndTenantFilter) {
 
-    return getDefinitionsGroupedByVersionAndTenantForType(definitionType, userId)
+    return getDefinitionsGroupedByVersionAndTenantForType(definitionType, excludeEventProcesses, userId)
       .stream()
       .filter(def -> definitionKeyAndTenantFilter.containsKey(def.getKey()))
       .peek(def -> {
@@ -283,38 +285,28 @@ public class DefinitionService {
 
   private DefinitionVersionsWithTenantsDto filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
     final DefinitionVersionsWithTenantsDto definitionDto,
-    final DefinitionType definitionType,
     final String userId) {
-    List<DefinitionVersionWithTenantsDto> filteredVersions = definitionDto.getVersions()
+    final List<DefinitionVersionWithTenantsDto> filteredVersions = definitionDto.getVersions()
       .stream()
-      .map(definitionVersionWithTenants -> {
+      .peek(definitionVersionWithTenants -> {
         final List<TenantDto> tenantDtos = definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
           userId,
-          definitionVersionWithTenants.getKey(),
-          definitionType,
+          definitionVersionWithTenants,
           definitionVersionWithTenants.getTenants().stream().map(TenantDto::getId).collect(toList())
         );
-        return new DefinitionVersionWithTenantsDto(
-          definitionVersionWithTenants.getKey(),
-          definitionVersionWithTenants.getName(),
-          definitionVersionWithTenants.getVersion(),
-          definitionVersionWithTenants.getVersionTag(),
-          tenantDtos
-        );
+        definitionVersionWithTenants.setTenants(tenantDtos);
       })
       .filter(v -> !v.getTenants().isEmpty())
       .collect(toList());
+    final List<TenantDto> filteredAllTenants = filteredVersions.stream()
+      .flatMap(v -> v.getTenants().stream())
+      .distinct()
+      .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
+      .collect(toList());
 
-    return new DefinitionVersionsWithTenantsDto(
-      definitionDto.getKey(),
-      definitionDto.getName(),
-      filteredVersions,
-      filteredVersions.stream()
-        .flatMap(v -> v.getTenants().stream())
-        .distinct()
-        .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
-        .collect(toList())
-    );
+    definitionDto.setVersions(filteredVersions);
+    definitionDto.setAllTenants(filteredAllTenants);
+    return definitionDto;
   }
 
   private void addSharedDefinitionsToAllAuthorizedTenantEntries(

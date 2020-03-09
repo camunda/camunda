@@ -13,9 +13,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -24,7 +22,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -39,19 +36,6 @@ public class DefinitionAuthorizationService {
   private final EngineDefinitionAuthorizationService engineDefinitionAuthorizationService;
   private final EventProcessAuthorizationService eventProcessAuthorizationService;
   private final TenantService tenantService;
-  private final ProcessDefinitionReader processDefinitionReader;
-
-  public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
-                                                            final String definitionKey,
-                                                            final DefinitionType type,
-                                                            final List<String> tenantIds) {
-    final Boolean isEventProcess = isEventProcessDefinition(definitionKey);
-    return resolveAuthorizedTenantsForProcess(
-      userId,
-      SimpleDefinitionDto.builder().key(definitionKey).isEventProcess(isEventProcess).type(type).build(),
-      tenantIds
-    );
-  }
 
   public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
                                                             final SimpleDefinitionDto definitionDto,
@@ -130,11 +114,6 @@ public class DefinitionAuthorizationService {
         userId, IdentityType.USER, definition.getKey(), definition.getType(), tenantId
       );
     }
-  }
-
-  public Boolean isEventProcessDefinition(final String key) {
-    Optional<DefinitionWithTenantIdsDto> definitionOpt = processDefinitionReader.getProcessDefinition(key);
-    return definitionOpt.map(SimpleDefinitionDto::getIsEventProcess).orElse(false);
   }
 
   private static <T> List<T> mergeTwoCollectionsWithDistinctValues(final Collection<T> firstCollection,

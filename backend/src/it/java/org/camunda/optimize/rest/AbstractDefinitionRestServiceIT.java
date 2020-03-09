@@ -234,6 +234,8 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
     DefinitionVersionsWithTenantsDto expectedDefinition1 = new DefinitionVersionsWithTenantsDto(
       definitionKey1,
       null,
+      getDefinitionType(),
+      false,
       expectedVersions,
       expectedVersions.stream().flatMap(v -> v.getTenants().stream()).collect(toList())
     );
@@ -281,7 +283,7 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
       assertThat(DefinitionAvailableVersionsWithTenants.getVersions().size(), is(versionCount));
       assertThat(DefinitionAvailableVersionsWithTenants.getAllTenants().size(), is(tenantCount));
     });
-    assertThat(responseTimeMillis, is(lessThan(3000L)));
+    assertThat(responseTimeMillis, is(lessThan(2000L)));
 
     embeddedOptimizeExtension.getImportSchedulerFactory().shutdown();
   }
@@ -297,8 +299,6 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractIT {
   protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId) {
     return getDefinitionVersionsWithTenantsAsUser(userId, null);
   }
-
-  ;
 
   protected abstract List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId,
                                                                                                    String collectionId);

@@ -123,6 +123,7 @@ public class CollectionScopeService {
 
   public List<DefinitionVersionsWithTenantsDto> getCollectionDefinitionsGroupedByVersionAndTenantForType(
     final DefinitionType type,
+    final boolean excludeEventProcesses,
     final String userId,
     final String collectionId) {
     final Map<String, List<String>> keysAndTenants = getAvailableKeysAndTenantsFromCollectionScope(
@@ -131,7 +132,7 @@ public class CollectionScopeService {
       collectionId
     );
 
-    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(type, userId, keysAndTenants);
+    return definitionService.getDefinitionsGroupedByVersionAndTenantForType(type, excludeEventProcesses, userId, keysAndTenants);
   }
 
   public void addScopeEntriesToCollection(final String userId,

@@ -6,12 +6,13 @@
 
 package org.camunda.optimize.dto.optimize.query.definition;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 
 import java.util.Comparator;
@@ -22,21 +23,21 @@ import static java.util.Comparator.naturalOrder;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-public class DefinitionVersionWithTenantsDto {
-  @JsonIgnore
-  @NonNull
-  private String key;
-  @JsonIgnore
-  private String name;
+public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
   @NonNull
   private String version;
   private String versionTag;
   @NonNull
   private List<TenantDto> tenants;
 
-  public DefinitionVersionWithTenantsDto(@NonNull final String version,
+  public DefinitionVersionWithTenantsDto(@NonNull final String key,
+                                         final String name,
+                                         @NonNull final DefinitionType type,
+                                         final Boolean isEventProcess,
+                                         @NonNull final String version,
                                          final String versionTag,
                                          @NonNull final List<TenantDto> tenants) {
+    super(key, name, type, isEventProcess);
     this.version = version;
     this.versionTag = versionTag;
     this.tenants = tenants;

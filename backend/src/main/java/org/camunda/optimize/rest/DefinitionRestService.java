@@ -81,13 +81,18 @@ public class DefinitionRestService {
   public List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants(
     @Context final ContainerRequestContext requestContext,
     @PathParam("type") DefinitionType type,
-    @QueryParam("filterByCollectionScope") final String collectionId) {
+    @QueryParam("filterByCollectionScope") final String collectionId,
+    @QueryParam("excludeEventProcesses") final boolean excludeEventProcesses) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
 
     return optionalCollectionId
-      .map(id -> collectionScopeService.getCollectionDefinitionsGroupedByVersionAndTenantForType(type, userId, id))
-      .orElseGet(() -> definitionService.getDefinitionsGroupedByVersionAndTenantForType(type, userId));
+      .map(id -> collectionScopeService.getCollectionDefinitionsGroupedByVersionAndTenantForType(
+        type, excludeEventProcesses, userId, id
+      ))
+      .orElseGet(() -> definitionService.getDefinitionsGroupedByVersionAndTenantForType(
+        type, excludeEventProcesses, userId
+      ));
   }
 
   @GET
