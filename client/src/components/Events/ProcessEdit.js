@@ -195,11 +195,12 @@ export default withErrorHandling(
     };
 
     onSelectNode = ({newSelection}) => {
-      if (newSelection.length !== 1) {
-        this.setState({selectedNode: null});
-      } else {
-        this.setState({selectedNode: newSelection[0].businessObject});
+      let selectedNode = null;
+      if (newSelection.length === 1) {
+        selectedNode = newSelection[0].businessObject;
       }
+
+      this.setState({selectedEvent: null, selectedNode});
     };
 
     render() {
@@ -240,10 +241,7 @@ export default withErrorHandling(
             xml={xml}
             onMappingChange={this.setMapping}
             onSourcesChange={this.updateSources}
-            onSelectEvent={selectedEvent => {
-              console.log('changed');
-              this.setState({selectedEvent});
-            }}
+            onSelectEvent={selectedEvent => this.setState({selectedEvent})}
           />
         </div>
       );

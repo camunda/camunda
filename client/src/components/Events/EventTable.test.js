@@ -193,7 +193,7 @@ it('should not show events from hidden sources in the table', () => {
   expect(events[0].content).toContain('bookrequest');
 });
 
-it('invoke onSelectEvent when clicking on an element', () => {
+it('should invoke onSelectEvent when clicking on an element', () => {
   const node = shallow(<EventTable {...props} />);
 
   const events = node.find(Table).prop('body');
@@ -205,6 +205,15 @@ it('invoke onSelectEvent when clicking on an element', () => {
     group: 'eventGroup',
     source: 'order-service'
   });
+});
+
+it('should reset the selected event when clicking on the checkbox', () => {
+  const node = shallow(<EventTable {...props} />);
+
+  const events = node.find(Table).prop('body');
+  events[0].props.onClick({target: {getAttribute: () => 'checkbox'}});
+
+  expect(props.onSelectEvent).toHaveBeenCalledWith(null);
 });
 
 it('Should collapse the table on collapse button click', () => {

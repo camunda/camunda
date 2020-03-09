@@ -32,8 +32,6 @@
     .searchContainer {
       position: relative;
       margin-top: 5px;
-      border-right: 1px solid #ddd;
-      padding-right: 10px;
 
       .searchIcon {
         position: absolute;
@@ -52,6 +50,9 @@
     .collapseButton {
       margin-top: 5px;
       border: none;
+      border-left: 1px solid #ddd;
+      margin-left: 10px;
+      border-radius: 0;
 
       &:hover,
       &:active {

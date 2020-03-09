@@ -272,11 +272,13 @@ export default withErrorHandling(
                           suggested
                         }),
                         onClick: evt => {
-                          if (
-                            mappedAs &&
-                            !['button', 'checkbox'].includes(evt.target.getAttribute('type'))
-                          ) {
-                            this.props.onSelectEvent(event);
+                          const type = evt.target.getAttribute('type');
+                          if (mappedAs) {
+                            if (type !== 'checkbox' && type !== 'button') {
+                              this.props.onSelectEvent(event);
+                            } else if (type === 'checkbox') {
+                              this.props.onSelectEvent(null);
+                            }
                           }
                         }
                       }
