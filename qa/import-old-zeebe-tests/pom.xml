@@ -8,15 +8,40 @@
     <version>0.23.0-SNAPSHOT</version>
   </parent>
 
-  <name>Camunda Operate Integration Tests</name>
-  <artifactId>camunda-operate-it-tests</artifactId>
+  <name>Camunda Operate Import from old Zeebe tests</name>
+  <artifactId>import-old-zeebe-tests</artifactId>
 
   <properties>
-    <zeebe-test-container.version>0.31.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.12.5</elasticsearch-test-container.version>
+    <plugin.version.license>3.0</plugin.version.license>
+    <license.header>${project.baseUri}/../../license/license-header</license.header>
+    <version.old.zeebe>0.22.1</version.old.zeebe>
   </properties>
 
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zeebe-bom</artifactId>
+        <version>${version.old.zeebe}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+
   <dependencies>
+
+    <!-- tests to run -->
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-it-tests</artifactId>
+      <version>${project.version}</version>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.camunda.operate</groupId>
@@ -47,11 +72,13 @@
     </dependency>
 
     <!-- ZEEBE -->
-
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
     <dependency>
       <groupId>io.zeebe</groupId>
@@ -76,22 +103,22 @@
     </dependency>
 
     <!-- ELASTICSEARCH -->
+
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- TEST CONTAINERS -->
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
-      <scope>test</scope>
+      <scope>compile</scope>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
@@ -99,14 +126,12 @@
     <dependency>
       <groupId>org.glassfish</groupId>
       <artifactId>javax.json</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- Micrometer Prometheus -->
     <dependency>
-  	  <groupId>io.micrometer</groupId>
-  	  <artifactId>micrometer-registry-prometheus</artifactId>
-      <scope>test</scope>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
 
     <!-- TEST -->
@@ -140,7 +165,7 @@
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
-    
+
   </dependencies>
 
   <build>
@@ -155,94 +180,40 @@
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <spring.profiles.active>test</spring.profiles.active>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
+          <forkCount>${env.OLD_ZEEBE_TESTS_THREADS}</forkCount>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <failIfNoTests>true</failIfNoTests>
+          <dependenciesToScan>
+            <dependency>org.camunda.operate:camunda-operate-it-tests</dependency>
+          </dependenciesToScan>
+          <includes>
+            <include>org/camunda/operate/zeebeimport/**/*.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/ImportSeveralVersionsTest.java</exclude>
+            <exclude>**/IncidentIT.java</exclude>
+          </excludes>
           <systemPropertyVariables>
-            <spring.profiles.active>test</spring.profiles.active>
+            <spring.profiles.active>test,old-zeebe</spring.profiles.active>
           </systemPropertyVariables>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.2.0</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
     </plugins>
   </build>
 
   <profiles>
-
     <profile>
-      <id>docker</id>
+      <id>skipTests</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
-      <build>
-        <plugins>
-
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>docker-start</id>
-                <phase>pre-integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
-                  <arguments>
-                    <argument>up</argument>
-                    <argument>-d</argument>
-                    <argument>elasticsearch</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-
-              <execution>
-                <id>docker-stop</id>
-                <phase>post-integration-test</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
-                  <arguments>
-                    <argument>down</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-        </plugins>
-      </build>
+      <properties>
+        <skipTests>true</skipTests>
+      </properties>
     </profile>
-
   </profiles>
 
 </project>
