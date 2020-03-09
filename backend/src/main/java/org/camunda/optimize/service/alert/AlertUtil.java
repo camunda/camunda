@@ -16,6 +16,7 @@ public class AlertUtil {
   public static void mapBasicFields(AlertCreationDto toCreate, AlertDefinitionDto result) {
     result.setCheckInterval(toCreate.getCheckInterval());
     result.setEmail(toCreate.getEmail());
+    result.setWebhook(toCreate.getWebhook());
     result.setFixNotification(toCreate.isFixNotification());
     result.setName(toCreate.getName());
     result.setReminder(toCreate.getReminder());

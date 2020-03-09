@@ -7,6 +7,7 @@ package org.camunda.optimize.service.alert;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
@@ -24,7 +25,8 @@ public class EmailNotificationService implements NotificationService {
 
   @Override
   public void notifyRecipient(String text, String destination) {
-    if (configurationService.getEmailEnabled()) {
+    if (configurationService.getEmailEnabled()
+      && StringUtils.isNotEmpty(destination)) {
       try {
         log.debug("sending email [{}] to [{}]", text, destination);
         sendEmail(destination, text);
@@ -37,8 +39,14 @@ public class EmailNotificationService implements NotificationService {
         );
       }
     } else {
-      log.warn("The email service is not enabled and thus no email could be sent. " +
-                 "Please check the Optimize documentation on how to enable email notifications!");
+      if (StringUtils.isEmpty(destination)) {
+        log.debug(
+          "There is not email destination specified in the alert, therefore not sending any email notifications.");
+      }
+      if (!configurationService.getEmailEnabled()) {
+        log.warn("The email service is not enabled and thus no email could be sent. " +
+                   "Please check the Optimize documentation on how to enable email notifications!");
+      }
     }
   }
 

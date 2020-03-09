@@ -23,6 +23,13 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 @AllArgsConstructor
 public class WebhookClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+  public static final String TEST_WEBHOOK_NAME = "testWebhook";
+  public static final String TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME = "testWebhook_NonStandardContentType";
+  public static final String TEST_INVALID_PORT_WEBHOOK_NAME = "testWebhook_InvalidUrl";
+  public static final String TEST_WEBHOOK_METHOD = "POST";
+  public static final String TEST_WEBHOOK_URL_HOST = "http://127.0.0.1:8787";
+  public static final String TEST_WEBHOOK_URL_INVALID_PORT = "http://127.0.0.1:1080";
+  public static final String TEST_WEBHOOK_URL_PATH = "/webhookpath";
 
   public List<String> getAllWebhooks() {
     return getRequestExecutor()
@@ -46,17 +53,17 @@ public class WebhookClient {
 
   public WebhookConfiguration createSimpleWebhookConfiguration() {
     return createWebhookConfiguration(
-      "someUrl",
+      TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
       Collections.emptyMap(),
-      "POST",
+      TEST_WEBHOOK_METHOD,
       WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER
     );
   }
 
-  private WebhookConfiguration createWebhookConfiguration(final String url,
-                                                          final Map<String, String> headers,
-                                                          final String httpMethod,
-                                                          final String payload) {
+  public WebhookConfiguration createWebhookConfiguration(final String url,
+                                                         final Map<String, String> headers,
+                                                         final String httpMethod,
+                                                         final String payload) {
     WebhookConfiguration webhookConfiguration = new WebhookConfiguration();
     webhookConfiguration.setUrl(url);
     webhookConfiguration.setHeaders(headers);

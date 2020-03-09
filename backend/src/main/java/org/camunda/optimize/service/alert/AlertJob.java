@@ -7,7 +7,6 @@ package org.camunda.optimize.service.alert;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -26,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +39,7 @@ public class AlertJob implements Job {
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
-  private NotificationService notificationService;
+  private List<NotificationService> notificationServices;
   @Autowired
   private AlertReader alertReader;
   @Autowired
@@ -53,7 +53,7 @@ public class AlertJob implements Job {
   public void execute(JobExecutionContext jobExecutionContext) {
     JobDataMap dataMap = jobExecutionContext.getJobDetail().getJobDataMap();
     String alertId = dataMap.getString("alertId");
-    log.debug("executing status check for alert [{}]", alertId);
+    log.debug("Executing status check for alert [{}]", alertId);
 
     AlertDefinitionDto alert = alertReader.getAlert(alertId);
 
@@ -88,15 +88,80 @@ public class AlertJob implements Job {
 
       jobExecutionContext.setResult(alertJobResult);
     } catch (Exception e) {
-      log.error("error while processing alert [{}] for report [{}]", alertId, alert.getReportId(), e);
+      log.error("Error while processing alert [{}] for report [{}]", alertId, alert.getReportId(), e);
     }
-
   }
 
-  private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberResult result) {
+  private AlertJobResult notifyIfNeeded(
+    JobKey key, String alertId,
+    AlertDefinitionDto alert,
+    ReportDefinitionDto reportDefinition,
+    NumberResult result
+  ) {
+    boolean haveToSendReminder = isReminder(key) && alert.isTriggered();
+    boolean haveToNotify = haveToSendReminder || !alert.isTriggered();
+    alert.setTriggered(true);
+
+    AlertJobResult alertJobResult = new AlertJobResult(alert);
+
+    if (haveToNotify) {
+      alertWriter.writeAlertStatus(true, alertId);
+
+      notifyAvailableTargets(
+        composeAlertText(alert, reportDefinition, result),
+        alert
+      );
+
+      alertJobResult.setStatusChanged(true);
+    }
+
+    return alertJobResult;
+  }
+
+  private void notifyAvailableTargets(final String alertContent, final AlertDefinitionDto alert) {
+    for (NotificationService notificationService : notificationServices) {
+      try {
+        String destination = "";
+        if (notificationService instanceof EmailNotificationService) {
+          destination = alert.getEmail();
+        } else if (notificationService instanceof WebhookNotificationService) {
+          destination = alert.getWebhook();
+        }
+        notificationService.notifyRecipient(alertContent, destination);
+      } catch (Exception e) {
+        log.error("Exception thrown while trying to send notification", e);
+      }
+    }
+  }
+
+  private boolean isReminder(JobKey key) {
+    return key.getName().toLowerCase().contains("reminder");
+  }
+
+  private String composeAlertText(
+    AlertDefinitionDto alert,
+    ReportDefinitionDto reportDefinition,
+    NumberResult result
+  ) {
+    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
+      ? "is not reached" : "was exceeded";
+    return composeAlertText(alert, reportDefinition, result, statusText);
+  }
+
+  private String composeFixText(
+    AlertDefinitionDto alert,
+    ReportDefinitionDto reportDefinition,
+    NumberResult result) {
     String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
       ? "has been reached" : "is not exceeded anymore";
-    String emailBody = "Camunda Optimize - Report Status\n" +
+    return composeAlertText(alert, reportDefinition, result, statusText);
+  }
+
+  private String composeAlertText(final AlertDefinitionDto alert,
+                                  final ReportDefinitionDto reportDefinition,
+                                  final NumberResult result,
+                                  final String statusText) {
+    return "Camunda Optimize - Report Status\n" +
       "Alert name: " + alert.getName() + "\n" +
       "Report name: " + reportDefinition.getName() + "\n" +
       "Status: Given threshold [" +
@@ -106,7 +171,16 @@ public class AlertJob implements Job {
       formatValueToHumanReadableString(result.getResultAsNumber(), reportDefinition) +
       ". Please check your Optimize report for more information! \n" +
       createViewLink(alert);
-    return emailBody;
+  }
+
+  private boolean thresholdExceeded(AlertDefinitionDto alert, NumberResult result) {
+    boolean exceeded = false;
+    if (AlertDefinitionDto.GREATER.equals(alert.getThresholdOperator())) {
+      exceeded = result.getResultAsNumber() > alert.getThreshold();
+    } else if (AlertDefinitionDto.LESS.equals(alert.getThresholdOperator())) {
+      exceeded = result.getResultAsNumber() < alert.getThreshold();
+    }
+    return exceeded;
   }
 
   private String formatValueToHumanReadableString(final long value, final ReportDefinitionDto reportDefinition) {
@@ -168,78 +242,5 @@ public class AlertJob implements Job {
         alert.getReportId()
       );
     }
-  }
-
-  private AlertJobResult notifyIfNeeded(
-    JobKey key, String alertId,
-    AlertDefinitionDto alert,
-    ReportDefinitionDto reportDefinition,
-    NumberResult result
-  ) {
-    boolean triggeredReminder = isReminder(key) && alert.isTriggered();
-    boolean haveToNotify = triggeredReminder || !alert.isTriggered();
-    if (haveToNotify) {
-      alert.setTriggered(true);
-    }
-
-    AlertJobResult alertJobResult = new AlertJobResult(alert);
-
-    if (haveToNotify) {
-      alertWriter.writeAlertStatus(true, alertId);
-
-      notifyAvailableTargets(
-        composeAlertText(alert, reportDefinition, result),
-        alert
-      );
-
-      alertJobResult.setStatusChanged(true);
-    }
-
-    return alertJobResult;
-  }
-
-  private void notifyAvailableTargets(final String alertContent, final AlertDefinitionDto alert) {
-    if (StringUtils.isNotEmpty(alert.getEmail())) {
-      log.debug("Sending email notification.");
-      notificationService.notifyRecipient(alertContent, alert.getEmail());
-    }
-    if (StringUtils.isNotEmpty(alert.getWebhook())) {
-      log.debug("Sending webhook notification.");
-      // TODO with OPT-3234
-    }
-  }
-
-  private boolean isReminder(JobKey key) {
-    return key.getName().toLowerCase().contains("reminder");
-  }
-
-  private String composeAlertText(
-    AlertDefinitionDto alert,
-    ReportDefinitionDto reportDefinition,
-    NumberResult result
-  ) {
-    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
-      ? "is not reached" : "was exceeded";
-    String emailBody = "Camunda Optimize - Report Status\n" +
-      "Alert name: " + alert.getName() + "\n" +
-      "Report name: " + reportDefinition.getName() + "\n" +
-      "Status: Given threshold [" +
-      formatValueToHumanReadableString(alert.getThreshold(), reportDefinition) +
-      "] " + statusText +
-      ". Current value: " +
-      formatValueToHumanReadableString(result.getResultAsNumber(), reportDefinition) +
-      ". Please check your Optimize report for more information!\n" +
-      createViewLink(alert);
-    return emailBody;
-  }
-
-  private boolean thresholdExceeded(AlertDefinitionDto alert, NumberResult result) {
-    boolean exceeded = false;
-    if (AlertDefinitionDto.GREATER.equals(alert.getThresholdOperator())) {
-      exceeded = result.getResultAsNumber() > alert.getThreshold();
-    } else if (AlertDefinitionDto.LESS.equals(alert.getThresholdOperator())) {
-      exceeded = result.getResultAsNumber() < alert.getThreshold();
-    }
-    return exceeded;
   }
 }

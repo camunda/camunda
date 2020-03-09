@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize;
 
+import com.google.common.collect.ImmutableMap;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -26,6 +27,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
+import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -56,6 +58,13 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.test.optimize.WebhookClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.WebhookClient.TEST_INVALID_PORT_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_METHOD;
+import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_NAME;
+import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_URL_HOST;
+import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_URL_INVALID_PORT;
+import static org.camunda.optimize.test.optimize.WebhookClient.TEST_WEBHOOK_URL_PATH;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -420,6 +429,37 @@ public abstract class AbstractAlertIT extends AbstractIT {
     emailAuthenticationConfiguration.setUsername("demo");
     emailAuthenticationConfiguration.setPassword("demo");
     emailAuthenticationConfiguration.setSecurityProtocol(NONE);
+  }
+
+  protected void setWebhookConfiguration() {
+    Map<String, WebhookConfiguration> webhookConfigurationMap = new HashMap<>();
+
+    final String payload = "{'text': '" + WebhookConfiguration.ALERT_MESSAGE_PLACEHOLDER + "'}";
+
+    final WebhookConfiguration webhook1 = webhookClient.createWebhookConfiguration(
+      TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
+      ImmutableMap.of("Content-type", "application/json"),
+      TEST_WEBHOOK_METHOD,
+      payload
+    );
+    final WebhookConfiguration webhook2 = webhookClient.createWebhookConfiguration(
+      TEST_WEBHOOK_URL_HOST + TEST_WEBHOOK_URL_PATH,
+      ImmutableMap.of("Content-type", "some/customType"),
+      TEST_WEBHOOK_METHOD,
+      payload
+    );
+    final WebhookConfiguration webhook3 = webhookClient.createWebhookConfiguration(
+      TEST_WEBHOOK_URL_INVALID_PORT + TEST_WEBHOOK_URL_PATH,
+      ImmutableMap.of("Content-type", "application/json"),
+      TEST_WEBHOOK_METHOD,
+      payload
+    );
+
+    webhookConfigurationMap.put(TEST_WEBHOOK_NAME, webhook1);
+    webhookConfigurationMap.put(TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME, webhook2);
+    webhookConfigurationMap.put(TEST_INVALID_PORT_WEBHOOK_NAME, webhook3);
+
+    embeddedOptimizeExtension.getConfigurationService().setConfiguredWebhooks(webhookConfigurationMap);
   }
 
   protected GreenMail initGreenMail() {
