@@ -48,9 +48,9 @@ import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 @Component
 @Slf4j
 public class DefinitionService {
-  private final DefinitionReader definitionReader;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
+  private final DefinitionReader definitionReader;
 
   public Optional<DefinitionWithTenantsDto> getDefinition(final DefinitionType type,
                                                           final String key,
@@ -135,42 +135,6 @@ public class DefinitionService {
       })
       .filter(def -> !def.getAllTenants().isEmpty())
       .collect(toList());
-  }
-
-  private DefinitionVersionsWithTenantsDto filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
-    final DefinitionVersionsWithTenantsDto definitionDto,
-    final DefinitionType definitionType,
-    final String userId) {
-    List<DefinitionVersionWithTenantsDto> filteredVersions = definitionDto.getVersions()
-      .stream()
-      .map(definitionVersionWithTenants -> {
-        final List<TenantDto> tenantDtos = definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
-          userId,
-          definitionVersionWithTenants.getKey(),
-          definitionType,
-          definitionVersionWithTenants.getTenants().stream().map(TenantDto::getId).collect(toList())
-        );
-        return new DefinitionVersionWithTenantsDto(
-          definitionVersionWithTenants.getKey(),
-          definitionVersionWithTenants.getName(),
-          definitionVersionWithTenants.getVersion(),
-          definitionVersionWithTenants.getVersionTag(),
-          tenantDtos
-        );
-      })
-      .filter(v -> !v.getTenants().isEmpty())
-      .collect(toList());
-
-    return new DefinitionVersionsWithTenantsDto(
-      definitionDto.getKey(),
-      definitionDto.getName(),
-      filteredVersions,
-      filteredVersions.stream()
-        .flatMap(v -> v.getTenants().stream())
-        .distinct()
-        .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
-        .collect(toList())
-    );
   }
 
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant(final String userId) {
@@ -315,6 +279,42 @@ public class DefinitionService {
   public Boolean isEventProcessDefinition(final String key) {
     Optional<DefinitionWithTenantIdsDto> definitionOpt = definitionReader.getDefinition(PROCESS, key);
     return definitionOpt.map(SimpleDefinitionDto::getIsEventProcess).orElse(false);
+  }
+
+  private DefinitionVersionsWithTenantsDto filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
+    final DefinitionVersionsWithTenantsDto definitionDto,
+    final DefinitionType definitionType,
+    final String userId) {
+    List<DefinitionVersionWithTenantsDto> filteredVersions = definitionDto.getVersions()
+      .stream()
+      .map(definitionVersionWithTenants -> {
+        final List<TenantDto> tenantDtos = definitionAuthorizationService.resolveAuthorizedTenantsForProcess(
+          userId,
+          definitionVersionWithTenants.getKey(),
+          definitionType,
+          definitionVersionWithTenants.getTenants().stream().map(TenantDto::getId).collect(toList())
+        );
+        return new DefinitionVersionWithTenantsDto(
+          definitionVersionWithTenants.getKey(),
+          definitionVersionWithTenants.getName(),
+          definitionVersionWithTenants.getVersion(),
+          definitionVersionWithTenants.getVersionTag(),
+          tenantDtos
+        );
+      })
+      .filter(v -> !v.getTenants().isEmpty())
+      .collect(toList());
+
+    return new DefinitionVersionsWithTenantsDto(
+      definitionDto.getKey(),
+      definitionDto.getName(),
+      filteredVersions,
+      filteredVersions.stream()
+        .flatMap(v -> v.getTenants().stream())
+        .distinct()
+        .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
+        .collect(toList())
+    );
   }
 
   private void addSharedDefinitionsToAllAuthorizedTenantEntries(

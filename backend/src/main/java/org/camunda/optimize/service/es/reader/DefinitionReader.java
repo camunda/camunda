@@ -61,6 +61,7 @@ import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionInd
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
+import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.ENGINE;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
@@ -344,6 +345,81 @@ public class DefinitionReader {
     }
   }
 
+  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionByKeyAndEngineOmitXml(final DefinitionType type,
+                                                                                          final String definitionKey,
+                                                                                          final String engineAlias) {
+
+    if (definitionKey == null) {
+      return Optional.empty();
+    }
+
+    final BoolQueryBuilder query = QueryBuilders.boolQuery()
+      .must(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
+      .must(termQuery(ENGINE, engineAlias));
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(1)
+      .fetchSource(null, resolveXmlFieldFromType(type));
+    SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch %s definition with key [%s], engine [%s]", type, definitionKey, engineAlias
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (searchResponse.getHits().getTotalHits().value == 0L) {
+      return Optional.empty();
+    }
+    return (Optional<T>) Optional.ofNullable(
+      createMappingFunctionForDefinitionType(resolveDefinitionClassFromType(type))
+        .apply(searchResponse.getHits().getAt(0)));
+  }
+
+  public String getLatestVersionToKey(final DefinitionType type, final String key) {
+    log.debug("Fetching latest [{}] definition for key [{}]", type, key);
+
+    Script script = createDefaultScript(
+      "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)",
+      Collections.emptyMap()
+    );
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(termQuery(resolveDefinitionKeyFieldFromType(type), key))
+      .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
+      .size(1);
+
+    SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch latest [%s] definition for key [%s]",
+        type,
+        key
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (searchResponse.getHits().getHits().length == 1) {
+      Map<String, Object> sourceAsMap = searchResponse.getHits().getAt(0).getSourceAsMap();
+      if (sourceAsMap.containsKey(resolveVersionFieldFromType(type))) {
+        return sourceAsMap.get(resolveVersionFieldFromType(type)).toString();
+      }
+    }
+    throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+  }
+
   private List<? extends DefinitionOptimizeDto> fetchDefinitions(final DefinitionType type,
                                                                  final boolean fullyImported,
                                                                  final boolean withXml,
@@ -505,43 +581,6 @@ public class DefinitionReader {
     }
   }
 
-  private String getLatestVersionToKey(final DefinitionType type, final String key) {
-    log.debug("Fetching latest [{}] definition for key [{}]", type, key);
-
-    Script script = createDefaultScript(
-      "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)",
-      Collections.emptyMap()
-    );
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termQuery(resolveDefinitionKeyFieldFromType(type), key))
-      .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
-      .size(1);
-
-    SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
-      .source(searchSourceBuilder);
-
-    SearchResponse searchResponse;
-    try {
-      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format(
-        "Was not able to fetch latest [%s] definition for key [%s]",
-        type,
-        key
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (searchResponse.getHits().getHits().length == 1) {
-      Map<String, Object> sourceAsMap = searchResponse.getHits().getAt(0).getSourceAsMap();
-      if (sourceAsMap.containsKey(resolveVersionFieldFromType(type))) {
-        return sourceAsMap.get(resolveVersionFieldFromType(type)).toString();
-      }
-    }
-    throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
-  }
-
   private <T extends DefinitionOptimizeDto> Function<SearchHit, T> createMappingFunctionForDefinitionType(
     final Class<T> type) {
     return hit -> {
@@ -560,26 +599,6 @@ public class DefinitionReader {
         throw new OptimizeRuntimeException(reason);
       }
     };
-  }
-
-
-  private <T extends DefinitionOptimizeDto> T mapSearchResponseToDefinitionOptimizeDto(
-    final Class<T> type,
-    final SearchHit hit) {
-    final String sourceAsString = hit.getSourceAsString();
-    try {
-      T definitionDto = objectMapper.readValue(sourceAsString, type);
-      if (ProcessDefinitionOptimizeDto.class.equals(type)) {
-        ((ProcessDefinitionOptimizeDto) definitionDto).setIsEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
-      }
-      return definitionDto;
-    } catch (IOException e) {
-      final String reason = "While mapping search results to class {} "
-        + "it was not possible to deserialize a hit from Elasticsearch!"
-        + " Hit response from Elasticsearch: " + sourceAsString;
-      log.error(reason, type.getSimpleName(), e);
-      throw new OptimizeRuntimeException(reason);
-    }
   }
 
   private DefinitionType resolveDefinitionTypeFromIndexAlias(String indexName) {

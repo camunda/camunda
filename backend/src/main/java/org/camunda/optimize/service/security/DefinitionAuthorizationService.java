@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.service.es.reader.DefinitionReader;
+import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 
 @RequiredArgsConstructor
@@ -40,7 +39,7 @@ public class DefinitionAuthorizationService {
   private final EngineDefinitionAuthorizationService engineDefinitionAuthorizationService;
   private final EventProcessAuthorizationService eventProcessAuthorizationService;
   private final TenantService tenantService;
-  private final DefinitionReader definitionReader;
+  private final ProcessDefinitionReader processDefinitionReader;
 
   public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
                                                             final String definitionKey,
@@ -134,7 +133,7 @@ public class DefinitionAuthorizationService {
   }
 
   public Boolean isEventProcessDefinition(final String key) {
-    Optional<DefinitionWithTenantIdsDto> definitionOpt = definitionReader.getDefinition(PROCESS, key);
+    Optional<DefinitionWithTenantIdsDto> definitionOpt = processDefinitionReader.getProcessDefinition(key);
     return definitionOpt.map(SimpleDefinitionDto::getIsEventProcess).orElse(false);
   }
 
