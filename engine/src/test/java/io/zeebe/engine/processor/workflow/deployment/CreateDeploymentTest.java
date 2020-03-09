@@ -253,7 +253,7 @@ public final class CreateDeploymentTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
     assertThat(rejectedDeployment.getRejectionReason())
         .contains("Element: flow2 > conditionExpression")
-        .contains("ERROR: Condition expression is invalid");
+        .contains("ERROR: failed to parse expression");
   }
 
   @Test

@@ -7,36 +7,30 @@
  */
 package io.zeebe.engine.processor.workflow.handlers.gateway;
 
+import io.zeebe.el.Expression;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableExclusiveGateway;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableSequenceFlow;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatingHandler;
-import io.zeebe.msgpack.el.CompiledJsonCondition;
-import io.zeebe.msgpack.el.JsonConditionException;
-import io.zeebe.msgpack.el.JsonConditionInterpreter;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.ErrorType;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import org.agrona.DirectBuffer;
+import java.util.Optional;
 
 public final class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclusiveGateway>
     extends ElementActivatingHandler<T> {
+
   private static final String NO_OUTGOING_FLOW_CHOSEN_ERROR =
       "Expected at least one condition to evaluate to true, or to have a default flow";
+
   private final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
-  private final JsonConditionInterpreter interpreter;
+  private final ExpressionProcessor expressionProcessor;
 
-  public ExclusiveGatewayElementActivatingHandler() {
-    this(new JsonConditionInterpreter());
-  }
-
-  public ExclusiveGatewayElementActivatingHandler(final JsonConditionInterpreter interpreter) {
+  public ExclusiveGatewayElementActivatingHandler(final ExpressionProcessor expressionProcessor) {
     super();
-    this.interpreter = interpreter;
+    this.expressionProcessor = expressionProcessor;
   }
 
   @Override
@@ -45,71 +39,56 @@ public final class ExclusiveGatewayElementActivatingHandler<T extends Executable
       return false;
     }
 
-    final WorkflowInstanceRecord value = context.getValue();
+    final ExecutableExclusiveGateway exclusiveGateway = context.getElement();
+    final var sequenceFlow = getSequenceFlowWithFulfilledCondition(context, exclusiveGateway);
 
-    final ExecutableSequenceFlow sequenceFlow;
-    try {
-      final ExecutableExclusiveGateway exclusiveGateway = context.getElement();
-      final DirectBuffer variables = determineVariables(context, exclusiveGateway);
-
-      sequenceFlow = getSequenceFlowWithFulfilledCondition(exclusiveGateway, variables);
-    } catch (final JsonConditionException e) {
-      context.raiseIncident(ErrorType.CONDITION_ERROR, e.getMessage());
-      return false;
+    if (sequenceFlow != null) {
+      // sequence is taken when the gateway is completed
+      deferSequenceFlowTaken(context, sequenceFlow);
+      return true;
     }
 
-    if (sequenceFlow == null) {
-      context.raiseIncident(ErrorType.CONDITION_ERROR, NO_OUTGOING_FLOW_CHOSEN_ERROR);
-      return false;
-    }
-
-    deferSequenceFlowTaken(context, value, sequenceFlow);
-    return true;
+    return false;
   }
 
-  private DirectBuffer determineVariables(
+  private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(
       final BpmnStepContext<T> context, final ExecutableExclusiveGateway exclusiveGateway) {
-    final List<ExecutableSequenceFlow> sequenceFlows = exclusiveGateway.getOutgoingWithCondition();
 
-    final Set<DirectBuffer> actualNeededVariables = new HashSet<>();
-    for (final ExecutableSequenceFlow seqFlow : sequenceFlows) {
-      final CompiledJsonCondition compiledCondition = seqFlow.getCondition();
-      final Set<DirectBuffer> variableNames = compiledCondition.getVariableNames();
-      actualNeededVariables.addAll(variableNames);
+    for (final ExecutableSequenceFlow sequenceFlow : exclusiveGateway.getOutgoingWithCondition()) {
+      final Expression condition = sequenceFlow.getCondition();
+
+      final Optional<Boolean> isFulfilled =
+          expressionProcessor.evaluateBooleanExpression(condition, context);
+
+      if (isFulfilled.isEmpty()) {
+        // the condition evaluation failed and an incident is raised
+        return null;
+
+      } else if (isFulfilled.get()) {
+        // the condition is fulfilled
+        return sequenceFlow;
+      }
     }
 
-    return context
-        .getElementInstanceState()
-        .getVariablesState()
-        .getVariablesAsDocument(context.getKey(), actualNeededVariables);
+    // no condition is fulfilled - take the default flow if exists
+    final var defaultFlow = exclusiveGateway.getDefaultFlow();
+    if (defaultFlow != null) {
+      return defaultFlow;
+
+    } else {
+      context.raiseIncident(ErrorType.CONDITION_ERROR, NO_OUTGOING_FLOW_CHOSEN_ERROR);
+      return null;
+    }
   }
 
   private void deferSequenceFlowTaken(
-      final BpmnStepContext<T> context,
-      final WorkflowInstanceRecord value,
-      final ExecutableSequenceFlow sequenceFlow) {
-    record.wrap(value);
+      final BpmnStepContext<T> context, final ExecutableSequenceFlow sequenceFlow) {
+    record.wrap(context.getValue());
     record.setElementId(sequenceFlow.getId());
     record.setBpmnElementType(BpmnElementType.SEQUENCE_FLOW);
 
     context
         .getOutput()
         .deferRecord(context.getKey(), record, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
-  }
-
-  private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(
-      final ExecutableExclusiveGateway exclusiveGateway, final DirectBuffer variables) {
-    final List<ExecutableSequenceFlow> sequenceFlows = exclusiveGateway.getOutgoingWithCondition();
-
-    for (final ExecutableSequenceFlow sequenceFlow : sequenceFlows) {
-      final CompiledJsonCondition compiledCondition = sequenceFlow.getCondition();
-      final boolean isFulFilled = interpreter.eval(compiledCondition, variables);
-
-      if (isFulFilled) {
-        return sequenceFlow;
-      }
-    }
-
-    return exclusiveGateway.getDefaultFlow();
   }
 }

@@ -48,7 +48,7 @@ public final class ExclusiveGatewayTest {
             .endEvent("a")
             .moveToLastGateway()
             .sequenceFlowId("s2")
-            .condition("foo >= 5 && foo < 10")
+            .condition("foo >= 5 and foo < 10")
             .endEvent("b")
             .moveToLastExclusiveGateway()
             .defaultFlow()
