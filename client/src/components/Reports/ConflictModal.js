@@ -46,13 +46,7 @@ export default function ConflictModal({conflict, onClose, onConfirm}) {
         <Button disabled={loading} className="close" onClick={onClose}>
           {t('saveGuard.no')}
         </Button>
-        <Button
-          disabled={loading}
-          variant="primary"
-          color="blue"
-          className="confirm"
-          onClick={confirm}
-        >
+        <Button disabled={loading} primary className="confirm" onClick={confirm}>
           {t('saveGuard.yes')}
         </Button>
       </Modal.Actions>

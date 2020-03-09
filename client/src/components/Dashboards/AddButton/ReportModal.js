@@ -130,7 +130,7 @@ export default withRouter(
           </Modal.Content>
           <Modal.Actions>
             <Button onClick={this.props.close}>{t('common.cancel')}</Button>
-            <Button variant="primary" color="blue" onClick={this.addReport} disabled={isInvalid}>
+            <Button primary onClick={this.addReport} disabled={isInvalid}>
               {t('dashboard.addButton.addReportLabel')}
             </Button>
           </Modal.Actions>

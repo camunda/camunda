@@ -419,7 +419,7 @@ export default class AlertModal extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" color="blue" onClick={this.confirm} disabled={invalid}>
+          <Button primary onClick={this.confirm} disabled={invalid}>
             {this.isInEditingMode() ? t('alert.apply') : t('alert.create')}
           </Button>
         </Modal.Actions>

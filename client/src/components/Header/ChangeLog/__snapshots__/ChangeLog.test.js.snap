@@ -5,8 +5,8 @@ exports[`show match snapshot 1`] = `
   className="ChangeLog"
 >
   <ForwardRef(Button)
+    link={true}
     onClick={[Function]}
-    variant="link"
   >
     What’s New
   </ForwardRef(Button)>

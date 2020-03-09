@@ -88,7 +88,7 @@ it('should call the onConfirm method', () => {
 
   node.setProps({initialAlert});
 
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -99,7 +99,7 @@ it('should disable the submit button if the name is empty', () => {
   node.setProps({initialAlert});
   node.setState({name: ''});
 
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });
 
 it('should disable the submit button if the email is not valid', () => {
@@ -107,7 +107,7 @@ it('should disable the submit button if the email is not valid', () => {
 
   node.setProps({initialAlert});
   node.setState({email: 'this is not a valid email'});
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });
 
 it('should disable the submit button if no report is selected', () => {
@@ -115,7 +115,7 @@ it('should disable the submit button if no report is selected', () => {
 
   node.setProps({initialAlert});
   node.setState({reportId: ''});
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
@@ -123,7 +123,7 @@ it('should disable the submit button if the threshold is not a number', () => {
 
   node.setProps({initialAlert});
   node.setState({threshold: 'five'});
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });
 
 it('should disable the submit button if the check interval is negative', () => {
@@ -136,7 +136,7 @@ it('should disable the submit button if the check interval is negative', () => {
       unit: 'seconds'
     }
   });
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });
 
 it('should enable the submit button if webhook is selected', () => {

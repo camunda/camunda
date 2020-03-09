@@ -47,10 +47,9 @@ exports[`should show the confirmation modal when entity is set 1`] = `
     </ForwardRef(Button)>
     <ForwardRef(Button)
       className="confirm"
-      color="red"
       disabled={false}
       onClick={[Function]}
-      variant="primary"
+      warning={true}
     >
       Delete
        

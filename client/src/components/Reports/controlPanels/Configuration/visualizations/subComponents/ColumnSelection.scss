@@ -1,3 +1,7 @@
-.ColumnSelectionSwitch .label {
-  white-space: nowrap;
+.ColumnSelection {
+  width: 300px;
+
+  .columnSelectionSwitch .label {
+    white-space: nowrap;
+  }
 }

@@ -243,8 +243,7 @@ export default withErrorHandling(
             </Button>
             <Button
               disabled={!this.isValid()}
-              variant="primary"
-              color="blue"
+              primary
               className="confirm"
               onClick={this.updateSources}
             >

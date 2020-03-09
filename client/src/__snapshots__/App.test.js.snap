@@ -6,8 +6,8 @@ exports[`should show an error message when it is not possible to initilize the t
   text="Optimize could not be loaded, please make sure the server is running"
 >
   <ForwardRef(Button)
+    link={true}
     onClick={[Function]}
-    variant="link"
   >
     Reload
   </ForwardRef(Button)>

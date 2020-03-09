@@ -76,8 +76,7 @@ export default withErrorHandling(
               {t('common.cancel')}
             </Button>
             <Button
-              variant="primary"
-              color="blue"
+              primary
               className="confirm"
               disabled={!this.state.name || this.state.loading}
               onClick={this.onConfirm}

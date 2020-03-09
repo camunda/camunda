@@ -80,7 +80,7 @@ it('should call the callback when adding a report', () => {
     selectedReportId: 'a'
   });
 
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     id: 'a'
@@ -126,5 +126,5 @@ it('should  disable the submit button if the url does not start with http in ext
 
   node.setState({external: true, externalUrl: 'Dear computer, please show me a report. Thanks.'});
 
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });

@@ -140,13 +140,7 @@ export default withErrorHandling(
             >
               {t('common.cancel')}
             </Button>
-            <Button
-              disabled={loading}
-              variant="primary"
-              color="red"
-              className="confirm"
-              onClick={this.delete}
-            >
+            <Button disabled={loading} warning className="confirm" onClick={this.delete}>
               {deleteText} {translatedType}
             </Button>
           </Modal.Actions>

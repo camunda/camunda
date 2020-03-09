@@ -1,33 +1,179 @@
 @import 'shared-styles/shared-styles.scss';
-@import './Button.colors.scss';
 
 .dark {
   .Button {
-    color: $text-dark;
-    background-color: $bg-dark;
-    border: 1px solid $border-dark;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
+    border: 1px solid $grey-base-40;
+    background-color: $grey-darken-13;
+    color: $silver-darken-87;
 
-    &:hover,
+    &:hover {
+      background-color: $grey-darken-23;
+    }
+
     &:active,
-    &.isActive {
-      color: $text-dark;
-      background-color: $bg-dark-active;
-      border: 1px solid $border-dark;
+    &.active {
+      border: 1px solid $grey-lighten-50;
+      background-color: $grey-darken-33;
+    }
+
+    &:disabled {
+      box-shadow: none;
+      border: 1px solid $grey-darken-33;
+      background-color: $grey-darken-13;
+      color: $grey-lighten-56;
+    }
+
+    &.primary {
+      border: 1px solid $blue-darken-48;
+      background-color: $blue-darken-55;
+
+      &:hover {
+        background-color: $blue-darken-62;
+      }
+
+      &:active,
+      &.active {
+        border: 1px solid $blue-darken-62;
+        background-color: $blue-base-65;
+      }
+
+      &:disabled {
+        border: 1px solid $blue-darken-32;
+        background-color: $blue-darken-18;
+      }
+    }
+
+    &.warning {
+      border: 1px solid $red-darken-38;
+      background-color: $red-darken-42;
+
+      &:hover {
+        border: 1px solid $red-darken-42;
+        background-color: $red-darken-52;
+      }
+
+      &:active,
+      &.active {
+        border: 1px solid $red-darken-52;
+        background-color: $red-base-62;
+      }
+
+      &:disabled {
+        border: 1px solid $red-darken-26;
+        background-color: $red-darken-18;
+      }
     }
   }
 }
 
-.Button,
-a.Button {
-  color: $text;
-  font-size: 0.875em; /* 14px/16px */
+.Button {
+  color: $grey-darken-33;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
   user-select: none;
-  padding: 6px 12px;
-  background-color: $bg;
-  border: 1px solid $border;
+  min-width: 117px;
+  height: 35px;
+  padding: 8px 17px;
+  background-color: $silver-base-97;
+  border: 1px solid $silver-darken-80;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
   border-radius: 3px;
   text-decoration: none;
   display: inline-block;
+  cursor: pointer;
+  transition: background-color 0.1s, border-color 0.1s;
+
+  &:hover {
+    background-color: $silver-darken-94;
+  }
+
+  &:active,
+  &.active {
+    background-color: $silver-darken-87;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    box-shadow: none;
+    border: 1px solid $silver-darken-87;
+    color: $grey-lighten-56;
+    background-color: $silver-base-97;
+  }
+
+  &.primary {
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35);
+    border: 1px solid $blue-darken-62;
+    background-color: $blue-base-65;
+    color: $silver-base-97;
+
+    &:hover {
+      border: 1px solid $blue-darken-55;
+      background-color: $blue-darken-62;
+    }
+
+    &:active,
+    &.active {
+      border: 1px solid $blue-darken-48;
+      background-color: $blue-darken-55;
+    }
+
+    &:disabled {
+      border: 1px solid $blue-lighten-82;
+      background-color: $blue-lighten-75;
+      box-shadow: none;
+    }
+  }
+
+  &.warning {
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.25);
+    border: 1px solid $red-darken-52;
+    background-color: $red-base-62;
+    color: $silver-base-97;
+
+    &:hover {
+      border: 1px solid $red-darken-42;
+      background-color: $red-darken-52;
+    }
+
+    &:active,
+    &.active {
+      border: 1px solid $red-darken-38;
+      background-color: $red-darken-42;
+    }
+
+    &:disabled {
+      border: 1px solid $red-lighten-85;
+      background-color: $red-lighten-85;
+      box-shadow: none;
+    }
+  }
+
+  &.icon {
+    width: 32px;
+    height: 32px;
+    background-color: white;
+    color: $grey-darken-23;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    min-width: 0;
+    box-shadow: none;
+
+    &:hover {
+      background-color: $silver-darken-94;
+    }
+
+    &:active,
+    &.active {
+      background-color: $silver-darken-80;
+    }
+
+    .Icon {
+      margin: 4px;
+    }
+  }
 
   &.link {
     display: inline;
@@ -41,6 +187,7 @@ a.Button {
     padding: 0;
     perspective-origin: 0 0;
     transform-origin: 0 0;
+    box-shadow: none;
 
     &:hover {
       background-color: transparent;
@@ -48,112 +195,6 @@ a.Button {
       border-color: $blue;
       border-style: none;
       text-decoration: underline;
-    }
-  }
-
-  &:hover {
-    color: $text;
-    cursor: pointer;
-    background-color: $bg-hover;
-    border: 1px solid $border-hover;
-    transition: background-color 0.3s, border-color 0.3s;
-  }
-
-  &[disabled]:hover,
-  &[disabled='disabled']:hover {
-    background-color: $bg;
-    border: 1px solid $border;
-    color: $text-disabled;
-    border: 1px solid $border-disabled;
-  }
-
-  &:active,
-  &.isActive {
-    color: $text-active;
-    background-color: $bg-active;
-    border: 1px solid $border-active;
-    transition: none;
-  }
-
-  &[disabled],
-  &[disabled='disabled'] {
-    color: $text-disabled;
-    border-color: $border-disabled;
-    cursor: not-allowed;
-  }
-
-  &.small {
-    font-size: 0.75em; /* 12px/16px */
-    padding: 4px 8px;
-  }
-
-  &.primary {
-    font-weight: bold;
-  }
-
-  &.blue {
-    color: white;
-    background-color: $blue;
-    border: 1px solid $blue;
-
-    &:focus,
-    &.isActive {
-      color: white;
-      background-color: darken($blue, 10%);
-      border: 1px solid darken($blue, 12%);
-    }
-
-    &:hover {
-      color: white;
-      background-color: darken($blue, 5%);
-      border: 1px solid darken($blue, 7%);
-    }
-
-    &[disabled],
-    &[disabled='disabled'],
-    &[disabled]:hover,
-    &[disabled='disabled']:hover {
-      color: white;
-      background-color: lighten($blue, 20%);
-      border: 1px solid lighten($blue, 20%);
-    }
-  }
-
-  &.red {
-    color: white;
-    background-color: $cam-red;
-    border: 1px solid $cam-red;
-
-    &:hover {
-      color: white;
-      background-color: darken($cam-red, 10%);
-      border: 1px solid darken($cam-red, 10%);
-    }
-
-    &[disabled]:hover,
-    &[disabled='disabled']:hover {
-      color: white;
-      background-color: $cam-red;
-      border: 1px solid $cam-red;
-    }
-  }
-
-  &.green {
-    color: white;
-    background-color: $cam-green;
-    border: 1px solid $cam-green;
-
-    &:hover {
-      color: white;
-      background-color: darken($cam-green, 10%);
-      border: 1px solid darken($cam-green, 10%);
-    }
-
-    &[disabled]:hover,
-    &[disabled='disabled']:hover {
-      color: white;
-      background-color: $cam-green;
-      border: 1px solid $cam-green;
     }
   }
 

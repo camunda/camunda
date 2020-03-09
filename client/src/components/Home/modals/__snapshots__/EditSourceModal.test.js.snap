@@ -57,10 +57,9 @@ exports[`should match snapshot 1`] = `
     </ForwardRef(Button)>
     <ForwardRef(Button)
       className="confirm"
-      color="blue"
       disabled={false}
       onClick={[Function]}
-      variant="primary"
+      primary={true}
     >
       Apply
     </ForwardRef(Button)>

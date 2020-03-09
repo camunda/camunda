@@ -44,10 +44,7 @@ export default class EventSources extends React.Component {
         <div className="sourcesList">
           {sources.map(source => {
             return (
-              <Dropdown
-                className={classnames({isActive: !source.hidden})}
-                {...getDropdownProps(source)}
-              >
+              <Dropdown primary={!source.hidden} {...getDropdownProps(source)}>
                 <Dropdown.Option onClick={() => this.toggleSource(source)}>
                   {source.hidden ? t('events.sources.show') : t('events.sources.hide')}
                 </Dropdown.Option>

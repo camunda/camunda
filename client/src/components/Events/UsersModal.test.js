@@ -58,7 +58,7 @@ it('should disable the save button if the user list is empty', () => {
     .data[0].meta3.props.onClick();
 
   expect(node.find('EntityList').props('data').data.length).toBe(0);
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });
 
 it('should show an error when adding already existing user/group', () => {
@@ -75,7 +75,7 @@ it('should show an error when adding already existing user/group', () => {
 
 it('should update the event with the selected users', () => {
   const node = shallow(<UsersModal {...props} />);
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(updateUsers).toHaveBeenCalled();
   expect(props.onClose).toHaveBeenCalledWith([

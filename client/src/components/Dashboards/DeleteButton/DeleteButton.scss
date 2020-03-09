@@ -11,6 +11,8 @@
   background-repeat: no-repeat;
   background-position: center;
   opacity: 0.75;
+  min-width: 0;
+  box-shadow: none;
 
   &:hover,
   &:active {

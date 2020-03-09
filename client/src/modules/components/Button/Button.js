@@ -6,29 +6,25 @@
 
 import React from 'react';
 import classnames from 'classnames';
-import {Link} from 'react-router-dom';
 
 import './Button.scss';
 
-export default React.forwardRef(function Button({active, color, variant, size, ...props}, ref) {
-  const className = classnames(props.className, 'Button', {
-    [variant]: variant,
-    [size]: size,
-    [color]: color,
-    isActive: active
-  });
-
-  if (props.tag === 'a') {
-    return (
-      <Link {...props} className={className}>
-        {props.children}
-      </Link>
-    );
-  } else {
-    return (
-      <button type="button" {...props} className={className} ref={ref}>
-        {props.children}
-      </button>
-    );
-  }
+export default React.forwardRef(function Button(
+  {active, primary, warning, icon, className, link, ...props},
+  ref
+) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className={classnames(className, 'Button', {
+        primary,
+        warning,
+        icon,
+        link,
+        active
+      })}
+      ref={ref}
+    />
+  );
 });

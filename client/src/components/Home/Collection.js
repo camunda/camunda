@@ -110,7 +110,7 @@ export default withErrorHandling(
                   {collection.name}
                 </span>
                 {collection.currentUserRole === 'manager' && (
-                  <Dropdown label={<Icon type="context-menu" size="24px" />}>
+                  <Dropdown icon label={<Icon type="context-menu" size="24px" />}>
                     <Dropdown.Option onClick={this.startEditingCollection}>
                       <Icon type="edit" />
                       {t('common.edit')}

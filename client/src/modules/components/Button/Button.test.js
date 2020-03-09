@@ -19,14 +19,6 @@ it('renders a <button> element by default', () => {
   expect(node).toHaveDisplayName('button');
 });
 
-it('renders a <a> element when specified as a property', () => {
-  const tag = 'a';
-
-  const node = shallow(<Button tag={tag} to="" />);
-
-  expect(node).toHaveDisplayName('Link');
-});
-
 it('renders a label as provided as a property', () => {
   const text = 'Click Me';
 
@@ -36,16 +28,9 @@ it('renders a label as provided as a property', () => {
 
 it('renders a modifier class name based on the type provided as a property', () => {
   const type = 'primary';
-  const node = shallow(<Button variant={type} />);
+  const node = shallow(<Button primary />);
 
   expect(node).toHaveClassName('primary');
-});
-
-it('renders a modifier class name based on the color provided as a property', () => {
-  const color = 'red';
-  const node = shallow(<Button color={color} />);
-
-  expect(node).toHaveClassName('red');
 });
 
 it('renders the id as provided as a property', () => {
@@ -67,9 +52,9 @@ it('does merge and render classNames provided as a property', () => {
   expect(node).toMatchSelector('.Button.foo');
 });
 
-it('adds an "isActive" class when "active" prop was provided', () => {
+it('adds an "active" class when "active" prop was provided', () => {
   const node = shallow(<Button active />);
-  expect(node).toMatchSelector('.Button.isActive');
+  expect(node).toMatchSelector('.Button.active');
 });
 
 it('executes a click handler as provided as a property', () => {

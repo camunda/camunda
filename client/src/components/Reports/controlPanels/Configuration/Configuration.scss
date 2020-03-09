@@ -1,5 +1,11 @@
 .Configuration {
+  .Popover > .Button {
+    min-width: 0;
+  }
+
   .Popover__dialog {
+    min-width: 300px;
+
     .Form:after {
       content: '';
       left: 0;

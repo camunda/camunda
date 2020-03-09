@@ -53,6 +53,8 @@
       border-left: 1px solid #ddd;
       margin-left: 10px;
       border-radius: 0;
+      min-width: 0;
+      box-shadow: none;
 
       &:hover,
       &:active {
@@ -112,6 +114,9 @@
           background: none;
           padding: 0 30px 0 0;
           font-size: 1em;
+          height: 100%;
+          min-width: 0;
+          box-shadow: none;
         }
 
         .menu {

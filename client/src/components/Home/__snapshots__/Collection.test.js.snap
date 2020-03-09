@@ -18,6 +18,7 @@ exports[`should render content depending on the selected tab 1`] = `
       aCollectionName
     </span>
     <Dropdown
+      icon={true}
       label={
         <Icon
           size="24px"

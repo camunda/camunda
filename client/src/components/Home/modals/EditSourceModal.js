@@ -81,8 +81,7 @@ export default withErrorHandling(
               {t('common.cancel')}
             </Button>
             <Button
-              variant="primary"
-              color="blue"
+              primary
               className="confirm"
               disabled={!selectedTenants.length}
               onClick={this.onConfirm}

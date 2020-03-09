@@ -194,7 +194,7 @@ export default class DateFilter extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={close}>{t('common.cancel')}</Button>
-          <Button variant="primary" color="blue" disabled={!this.isValid()} onClick={this.confirm}>
+          <Button primary disabled={!this.isValid()} onClick={this.confirm}>
             {filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>

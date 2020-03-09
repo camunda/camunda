@@ -65,7 +65,7 @@ it('should have a create filter button', () => {
   const spy = jest.fn();
   const filter = {type: 'startDate', data: {type: 'relative', start: {value: '5', unit: 'days'}}};
   const node = shallow(<DateFilter {...props} addFilter={spy} filterData={filter} />);
-  const addButton = node.find({variant: 'primary'});
+  const addButton = node.find('[primary]');
 
   addButton.simulate('click');
 

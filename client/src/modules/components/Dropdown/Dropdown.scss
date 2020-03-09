@@ -6,10 +6,13 @@
 
   .activateButton {
     position: relative;
-    padding-right: 30px;
-    padding-left: 20px;
     text-align: left;
     width: 100%;
+
+    &:not(.icon) {
+      padding-right: 30px;
+      padding-left: 20px;
+    }
 
     .downIcon {
       position: absolute;

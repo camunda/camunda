@@ -40,7 +40,7 @@ it('should have isInvalid prop on the input if value is invalid', async () => {
 it('should have a create filter button', () => {
   const spy = jest.fn();
   const node = shallow(<DurationFilter addFilter={spy} />);
-  const addButton = node.find({variant: 'primary'});
+  const addButton = node.find('[primary]');
 
   addButton.simulate('click');
 

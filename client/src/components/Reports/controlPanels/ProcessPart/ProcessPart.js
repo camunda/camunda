@@ -131,12 +131,7 @@ export default class ProcessPart extends React.Component {
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.closeModal}>{t('common.cancel')}</Button>
-          <Button
-            variant="primary"
-            color="blue"
-            onClick={this.applyPart}
-            disabled={!this.isValid()}
-          >
+          <Button primary onClick={this.applyPart} disabled={!this.isValid()}>
             {t('common.apply')}
           </Button>
         </Modal.Actions>

@@ -84,8 +84,7 @@ export default class CopyModal extends React.Component {
           </Button>
           <Button
             disabled={!name || (moving && !collection)}
-            variant="primary"
-            color="blue"
+            primary
             className="confirm"
             onClick={this.onConfirm}
           >

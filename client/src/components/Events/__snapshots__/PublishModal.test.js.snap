@@ -37,8 +37,8 @@ exports[`should show different text depending on the republish prop 1`] = `
       </h4>
       Private - Only you
       <ForwardRef(Button)
+        link={true}
         onClick={[Function]}
-        variant="link"
       >
         Change
         ...
@@ -55,10 +55,9 @@ exports[`should show different text depending on the republish prop 1`] = `
     </ForwardRef(Button)>
     <ForwardRef(Button)
       className="confirm"
-      color="blue"
       disabled={false}
       onClick={[Function]}
-      variant="primary"
+      primary={true}
     >
       Publish
     </ForwardRef(Button)>
@@ -88,8 +87,8 @@ exports[`should show different text depending on the republish prop 2`] = `
       </h4>
       Private - Only you
       <ForwardRef(Button)
+        link={true}
         onClick={[Function]}
-        variant="link"
       >
         Change
         ...
@@ -106,10 +105,9 @@ exports[`should show different text depending on the republish prop 2`] = `
     </ForwardRef(Button)>
     <ForwardRef(Button)
       className="confirm"
-      color="blue"
       disabled={false}
       onClick={[Function]}
-      variant="primary"
+      primary={true}
     >
       Publish
     </ForwardRef(Button)>
@@ -126,8 +124,8 @@ exports[`should show that access is granted if there are more than one user 1`] 
   </h4>
   User access granted
   <ForwardRef(Button)
+    link={true}
     onClick={[Function]}
-    variant="link"
   >
     Change
     ...

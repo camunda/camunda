@@ -8,13 +8,14 @@
 
     .Button,
     a.Button {
-      color: $text-disabled;
-      border-color: $border-disabled;
+      box-shadow: none;
+      border: 1px solid $silver-darken-87;
+      color: $grey-lighten-56;
 
-      &.isActive {
-        color: $text-disabled;
-        background: #ddd;
-        border: 1px solid #d7d7d7;
+      &.active {
+        color: $grey-lighten-56;
+        background-color: $silver-darken-87;
+        border: 1px solid $silver-darken-80;
       }
     }
   }
@@ -29,11 +30,10 @@
       border-right-width: 0;
     }
 
-    &.isActive {
-      color: white;
-      background-color: $blue;
-      border: 1px solid darken($blue, 5%);
-      transition: background-color 0.2s, border-color 0.2s;
+    &.active {
+      color: $silver-base-97;
+      background-color: $blue-darken-55;
+      border: 1px solid $blue-darken-48;
     }
 
     &:focus {

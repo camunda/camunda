@@ -3,8 +3,11 @@
 .Typeahead {
   width: 100%;
   position: relative;
+  height: 35px;
+
   .Input {
     width: 100%;
+    height: 100%;
     padding-right: 65px;
   }
 
@@ -18,6 +21,8 @@
     height: 100%;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+    min-width: 0;
+    padding: 8px 12px;
 
     .Icon {
       margin-right: 0px;

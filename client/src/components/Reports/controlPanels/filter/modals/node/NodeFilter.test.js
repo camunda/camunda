@@ -72,7 +72,7 @@ it('should create an executed node filter when operator is specified', () => {
     selectedNodes: [flowNode1, flowNode2]
   });
 
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'executedFlowNodes',
@@ -101,7 +101,7 @@ it('should create executing node filter when operator is undefined', () => {
     selectedNodes: [flowNode1]
   });
 
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     type: 'executingFlowNodes',
@@ -118,7 +118,7 @@ it('should disable create filter button if no node was selected', () => {
     selectedNodes: []
   });
 
-  expect(node.find({variant: 'primary'}).prop('disabled')).toBeTruthy(); // create filter
+  expect(node.find('[primary]').prop('disabled')).toBeTruthy(); // create filter
 });
 
 it('should create preview list of selected node', () => {

@@ -93,7 +93,7 @@ it('should take filter given by properties', async () => {
   const spy = jest.fn();
   const node = shallow(<VariableFilter {...props} filterData={filterData} addFilter={spy} />);
 
-  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
+  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -134,7 +134,7 @@ it('should create a new filter', () => {
     }
   });
 
-  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
+  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -160,7 +160,7 @@ it('should create a new filter even if only filter for undefined is checked', ()
     filterForUndefined: true
   });
 
-  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
+  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalledWith({
     type: 'variable',
@@ -206,7 +206,7 @@ it('should use custom filter adding logic from input components', () => {
 
   DateInput.addFilter.mockClear();
 
-  node.find({variant: 'primary'}).simulate('click', {preventDefault: jest.fn()});
+  node.find('[primary]').simulate('click', {preventDefault: jest.fn()});
 
   expect(DateInput.addFilter).toHaveBeenCalledWith(spy, selectedVariable, filter, false);
 });

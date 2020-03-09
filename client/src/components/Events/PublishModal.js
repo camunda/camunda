@@ -73,7 +73,7 @@ export class PublishModal extends React.Component {
           <div className="permission">
             <h4>{t('events.permissions.whoHasAccess')}</h4>
             {isPrivate ? t('events.permissions.private') : t('events.permissions.userGranted')}
-            <Button onClick={() => this.setState({editingAccess: id})} variant="link">
+            <Button onClick={() => this.setState({editingAccess: id})} link>
               {t('common.change')}...
             </Button>
           </div>
@@ -83,13 +83,7 @@ export class PublishModal extends React.Component {
           <Button disabled={loading} className="close" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button
-            disabled={loading}
-            variant="primary"
-            color="blue"
-            className="confirm"
-            onClick={this.publish}
-          >
+          <Button disabled={loading} primary className="confirm" onClick={this.publish}>
             {t(`events.publish`)}
           </Button>
         </Modal.Actions>

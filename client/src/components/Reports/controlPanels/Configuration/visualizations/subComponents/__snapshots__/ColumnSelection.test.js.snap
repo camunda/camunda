@@ -13,7 +13,7 @@ exports[`should provde a sane interface for decision tables 1`] = `
   />
   <Switch
     checked={true}
-    className="ColumnSelectionSwitch"
+    className="columnSelectionSwitch"
     key="decisionDefinitionId"
     label={
       <React.Fragment>
@@ -27,7 +27,7 @@ exports[`should provde a sane interface for decision tables 1`] = `
   />
   <Switch
     checked={true}
-    className="ColumnSelectionSwitch"
+    className="columnSelectionSwitch"
     key="decisionDefinitionKey"
     label={
       <React.Fragment>
@@ -41,7 +41,7 @@ exports[`should provde a sane interface for decision tables 1`] = `
   />
   <Switch
     checked={true}
-    className="ColumnSelectionSwitch"
+    className="columnSelectionSwitch"
     key="input:crypticId"
     label={
       <React.Fragment>
@@ -55,7 +55,7 @@ exports[`should provde a sane interface for decision tables 1`] = `
   />
   <Switch
     checked={true}
-    className="ColumnSelectionSwitch"
+    className="columnSelectionSwitch"
     key="output:clause7"
     label={
       <React.Fragment>

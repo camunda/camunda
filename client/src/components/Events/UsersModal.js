@@ -140,12 +140,7 @@ export default withErrorHandling(
             <Button disabled={loading} onClick={this.close}>
               {t('common.cancel')}
             </Button>
-            <Button
-              disabled={loading || !isValid}
-              variant="primary"
-              color="blue"
-              onClick={this.onConfirm}
-            >
+            <Button disabled={loading || !isValid} primary onClick={this.onConfirm}>
               {t('common.save')}
             </Button>
           </Modal.Actions>

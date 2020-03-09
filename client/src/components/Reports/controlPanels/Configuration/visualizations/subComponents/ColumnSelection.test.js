@@ -33,13 +33,13 @@ it('should change the switches labels to space case instead of camelCase for non
   );
   expect(
     node
-      .find('.ColumnSelectionSwitch')
+      .find('.columnSelectionSwitch')
       .at(0)
       .dive()
   ).toIncludeText('Process Definition Key');
   expect(
     node
-      .find('.ColumnSelectionSwitch')
+      .find('.columnSelectionSwitch')
       .at(1)
       .dive()
   ).toIncludeText('Variable: testVariable');

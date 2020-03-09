@@ -36,11 +36,13 @@
   .Button.close {
     position: absolute;
     right: 20px;
-    top: 20px;
+    top: 13px;
     background: transparent;
     border: none;
     color: #fff;
     padding: 1px;
+    min-width: 0;
+    box-shadow: none;
 
     .Icon {
       margin-right: 0;

@@ -37,7 +37,7 @@ const props = {
 it('should disable the submit button if no definition selected', () => {
   const node = shallow(<EventsSourceModal {...props} />);
 
-  expect(node.find({variant: 'primary'})).toBeDisabled();
+  expect(node.find('[primary]')).toBeDisabled();
 });
 
 it('should disable definition selection in editing mode', () => {
@@ -89,7 +89,7 @@ it('should edit a source when clicking confirm', () => {
     .at(3)
     .simulate('change');
 
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([
     {
@@ -117,7 +117,7 @@ it('should add a source when clicking confirm', () => {
 
   node.find('Typeahead').prop('onChange')('boolVar');
 
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([
     {
@@ -155,7 +155,7 @@ it('should add external sources', () => {
     .at(1)
     .simulate('click');
 
-  node.find({variant: 'primary'}).simulate('click');
+  node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith([{type: 'external'}]);
 });

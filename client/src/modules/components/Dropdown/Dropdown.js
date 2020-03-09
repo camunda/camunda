@@ -175,11 +175,22 @@ export default class Dropdown extends React.Component {
 
   render() {
     const {open, scrollable, menuStyle, listStyles} = this.state;
+    const {
+      icon,
+      id,
+      active,
+      disabled,
+      label,
+      children,
+      fixedOptions,
+      className,
+      primary
+    } = this.props;
 
     return (
       <div
-        id={this.props.id}
-        className={classnames(this.props.className, 'Dropdown', {
+        id={id}
+        className={classnames(className, 'Dropdown', {
           'is-open': open
         })}
         ref={this.storeContainer}
@@ -187,26 +198,26 @@ export default class Dropdown extends React.Component {
         onKeyDown={this.handleKeyPress}
       >
         <Button
-          color={this.props.color}
-          variant={this.props.color ? 'primary' : null}
+          icon={icon}
+          primary={primary}
           className="activateButton"
           aria-haspopup="true"
           aria-expanded={open ? 'true' : 'false'}
-          active={this.props.active || open}
-          disabled={this.props.disabled}
-          id={this.props.id ? this.props.id + '-button' : undefined}
+          active={active || open}
+          disabled={disabled}
+          id={id ? id + '-button' : undefined}
         >
-          {this.props.label}
+          {label}
           <Icon type="down" className="downIcon" />
         </Button>
         <div
           className="menu"
-          aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
+          aria-labelledby={id ? id + '-button' : ''}
           ref={this.menuContainer}
           style={menuStyle}
         >
           <ul className={classnames({scrollable})} style={listStyles}>
-            {React.Children.map(this.props.children, (child, idx) => (
+            {React.Children.map(children, (child, idx) => (
               <li key={idx}>
                 {child && (child.type === Submenu || child.type === Select.Submenu)
                   ? React.cloneElement(child, {
@@ -233,9 +244,9 @@ export default class Dropdown extends React.Component {
               </li>
             ))}
           </ul>
-          {this.props.fixedOptions && (
+          {fixedOptions && (
             <ul className="fixedList">
-              {this.props.fixedOptions.map((item, idx) => (
+              {fixedOptions.map((item, idx) => (
                 <li key={idx}>{item}</li>
               ))}
             </ul>

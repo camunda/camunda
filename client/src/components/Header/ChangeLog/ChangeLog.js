@@ -53,7 +53,7 @@ export default withErrorHandling(
 
       return (
         <div className="ChangeLog">
-          <Button variant="link" onClick={() => this.setState({open: true})}>
+          <Button link onClick={() => this.setState({open: true})}>
             {t('whatsNew.buttonTitle')}
           </Button>
           <Modal className="ChangeLogModal" open={open || !seen} onClose={this.closeModal}>

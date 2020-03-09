@@ -87,6 +87,7 @@ exports[`should match snapshot 1`] = `
           onClick={[Function]}
         >
           <Dropdown
+            icon={true}
             label={
               <Icon
                 size="24px"

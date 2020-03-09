@@ -39,6 +39,7 @@
     .searchContainer {
       margin-left: auto;
       position: relative;
+      height: 100%;
 
       .searchIcon {
         position: absolute;
@@ -56,7 +57,7 @@
   }
 
   .content {
-    padding-top: 75px;
+    padding-top: 77px;
   }
 
   ul {
@@ -97,16 +98,15 @@
         height: 100%;
 
         .activateButton {
-          width: 40px;
-          padding: 0 30px 0 10px;
-          height: 100%;
-          background-color: white;
-          border: none;
+          margin-top: 11px;
+          margin-right: 8px;
+          width: 32px;
         }
 
         .menu {
-          top: 10px;
-          left: 30px !important; // the calculateMenuStyle method of the Dropdown sets inline styles
+          top: 37px;
+          left: auto !important; // the calculateMenuStyle method of the Dropdown sets inline styles
+          right: 8px;
         }
 
         .DropdownOption {

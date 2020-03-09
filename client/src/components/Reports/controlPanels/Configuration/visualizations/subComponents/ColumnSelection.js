@@ -68,7 +68,7 @@ export default function ColumnSelection({report, onChange}) {
         return (
           <Switch
             key={column}
-            className="ColumnSelectionSwitch"
+            className="columnSelectionSwitch"
             checked={!excludedColumns.includes(column)}
             onChange={({target: {checked}}) => {
               if (checked) {

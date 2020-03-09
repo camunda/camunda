@@ -197,8 +197,7 @@ export default withErrorHandling(
               </Button>
               <Button
                 disabled={editLoading}
-                variant="primary"
-                color="blue"
+                primary
                 className="confirm"
                 onClick={() => this.editSource(tenants, true)}
               >

@@ -1,13 +1,20 @@
 @import 'shared-styles/shared-styles.scss';
 
-.Input.name-input {
-  font-size: 2em;
-  width: 100%;
-  font-weight: bold;
-  margin-bottom: 5px;
+.EntityNameForm {
+  .Input.name-input {
+    font-size: 2em;
+    width: 100%;
+    font-weight: bold;
+    margin-bottom: 5px;
 
-  @include placeholder {
-    font-weight: normal;
-    color: #bdbdbd;
+    @include placeholder {
+      font-weight: normal;
+      color: #bdbdbd;
+    }
+  }
+
+  .cancel-button {
+    color: $grey-darken-33;
+    text-decoration: none;
   }
 }

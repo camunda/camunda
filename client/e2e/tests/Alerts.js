@@ -90,7 +90,7 @@ test('create, edit and remove an alert', async t => {
   await t.click(Homepage.contextMenu(Alert.listItem));
   await t.click(Homepage.del(Alert.listItem));
 
-  await t.click(Alert.primaryModalButton);
+  await t.click(Alert.modalDeleteButton);
 
   await t.expect(Alert.list.textContent).notContains('Saved Alert');
 });

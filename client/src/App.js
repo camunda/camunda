@@ -70,7 +70,7 @@ class App extends React.Component {
           noLink
           text="Optimize could not be loaded, please make sure the server is running"
         >
-          <Button variant="link" onClick={() => window.location.reload(true)}>
+          <Button link onClick={() => window.location.reload(true)}>
             Reload
           </Button>
         </ErrorPage>

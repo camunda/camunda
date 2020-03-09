@@ -85,7 +85,7 @@ export default function EntityList({name, children, action, isLoading, data, emp
                     {link ? <Link to={link}>{content}</Link> : content}
                     {actions && actions.length > 0 && (
                       <div className="contextMenu" onClick={evt => evt.stopPropagation()}>
-                        <Dropdown label={<Icon type="context-menu" size="24px" />}>
+                        <Dropdown icon label={<Icon type="context-menu" size="24px" />}>
                           {actions.map(({action, icon, text}, idx) => (
                             <Dropdown.Option onClick={action} key={idx}>
                               <Icon type={icon} /> {text}
