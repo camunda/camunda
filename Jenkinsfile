@@ -107,15 +107,18 @@ pipeline {
             }
           }
         }
-        //stage('End to end - Tests'){
-        //  steps {
-        //	container('maven') {
-        //      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-        //        sh ('mvn -B -s $MAVEN_SETTINGS_XML -P client.e2etests-chromeheadless test')
-        //      }
-        //    }               
-        //  }
-		//}
+        stage('End to end - Tests'){
+          steps {
+            container('maven') {
+              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+              	sh ('mvn -B -s $MAVEN_SETTINGS_XML -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true')
+              	sh ('sleep 30')
+                sh ('mvn -B -s $MAVEN_SETTINGS_XML -f client/pom.xml -P client.e2etests-chromeheadless test')
+                sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
+              }
+            }               
+          }
+		}
       }
     }
     stage('Deploy') {
