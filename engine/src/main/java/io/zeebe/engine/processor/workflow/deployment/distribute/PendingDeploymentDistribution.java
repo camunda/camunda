@@ -7,79 +7,41 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.distribute;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-
 import io.zeebe.db.DbValue;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.DocumentProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
-public class PendingDeploymentDistribution implements DbValue {
+public class PendingDeploymentDistribution extends UnpackedObject implements DbValue {
 
-  private static final int DEPLOYMENT_LENGTH_OFFSET = SIZE_OF_LONG + SIZE_OF_INT;
-  private static final int DEPLOYMENT_OFFSET = DEPLOYMENT_LENGTH_OFFSET + SIZE_OF_INT;
-
-  private final DirectBuffer deployment;
-  private long sourcePosition;
-  private int distributionCount;
+  private final IntegerProperty distributionCountProp = new IntegerProperty("distributionCount", 0);
+  private final LongProperty sourcePositionProp = new LongProperty("sourcePosition", -1L);
+  private final DocumentProperty deploymentProp = new DocumentProperty("deployment");
 
   public PendingDeploymentDistribution(
       final DirectBuffer deployment, final long sourcePosition, final int distributionCount) {
-    this.deployment = deployment;
-    this.sourcePosition = sourcePosition;
-    this.distributionCount = distributionCount;
+    declareProperty(distributionCountProp)
+        .declareProperty(sourcePositionProp)
+        .declareProperty(deploymentProp);
+
+    deploymentProp.setValue(deployment);
+    sourcePositionProp.setValue(sourcePosition);
+    distributionCountProp.setValue(distributionCount);
   }
 
   public int decrementCount() {
-    return --distributionCount;
+    final int distributionCount = distributionCountProp.getValue() - 1;
+    distributionCountProp.setValue(distributionCount);
+    return distributionCount;
   }
 
   public DirectBuffer getDeployment() {
-    return deployment;
+    return deploymentProp.getValue();
   }
 
   public long getSourcePosition() {
-    return sourcePosition;
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    this.sourcePosition = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    this.distributionCount = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    final int deploymentSize = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    deployment.wrap(buffer, offset, deploymentSize);
-  }
-
-  @Override
-  public int getLength() {
-    final int deploymentSize = deployment.capacity();
-    final int length = DEPLOYMENT_OFFSET + deploymentSize;
-    return length;
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    final int startOffset = offset;
-    buffer.putLong(offset, sourcePosition, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putInt(offset, distributionCount, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    final int deploymentSize = deployment.capacity();
-    buffer.putInt(offset, deploymentSize, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    buffer.putBytes(offset, deployment, 0, deploymentSize);
-    offset += deploymentSize;
-
-    assert (startOffset + getLength()) == offset;
+    return sourcePositionProp.getValue();
   }
 }
