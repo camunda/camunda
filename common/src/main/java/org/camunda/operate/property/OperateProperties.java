@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
-  public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 10000L;
+  public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
 
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
@@ -104,7 +104,7 @@ public class OperateProperties {
   public void setBatchOperationMaxSize(Long batchOperationMaxSize) {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
-  
+
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }

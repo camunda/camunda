@@ -231,7 +231,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-791")
   public void testNoOperationsPersistedForNoIncidents() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -240,7 +239,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final MvcResult mvcResult = postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     //then
-    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(operationResponse.getCount()).isEqualTo(0);
     assertThat(operationResponse.getReason()).isEqualTo("No incidents found.");
     final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
@@ -251,12 +250,12 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operations).hasSize(0);
 
     final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
-    assertThat(batchOperations).hasSize(0);
+    assertThat(batchOperations).hasSize(1);
+    assertThat(batchOperations.get(0).getEndDate()).isNotNull();
 
   }
 
   @Test
-  @Ignore("OPE-791")
   public void testNoOperationsPersistedForNoWorkflowInstances() throws Exception {
     // given
     //no workflow instances
@@ -265,12 +264,12 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final MvcResult mvcResult = postBatchOperationWithOKResponse(ListViewQueryDto.createAllRunning(), OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
-    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<CreateOperationResponseDto>() {});
+    final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(operationResponse.getCount()).isEqualTo(0);
-    assertThat(operationResponse.getReason()).isEqualTo("No operations were scheduled.");
 
     final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
-    assertThat(batchOperations).hasSize(0);
+    assertThat(batchOperations).hasSize(1);
+    assertThat(batchOperations.get(0).getEndDate()).isNotNull();
   }
 
   @Test
