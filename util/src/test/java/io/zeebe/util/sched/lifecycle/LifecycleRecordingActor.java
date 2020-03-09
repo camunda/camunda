@@ -55,6 +55,11 @@ class LifecycleRecordingActor extends Actor {
     phases.add(actor.getLifecyclePhase());
   }
 
+  @Override
+  public void onActorFailed() {
+    phases.add(actor.getLifecyclePhase());
+  }
+
   protected void blockPhase() {
     blockPhase(new CompletableActorFuture<>(), mock(BiConsumer.class));
   }
