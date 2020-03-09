@@ -95,3 +95,16 @@ spec:
         requests:
           cpu: 1
           memory: 4Gi
+    - name: zeebe
+      image: camunda/zeebe:0.23.0-alpha2
+      #imagePullPolicy: Always   #this must be uncommented when snapshot is used
+      env:
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: io.zeebe.exporter.ElasticsearchExporter
+      resources:
+        limits:
+          cpu: 4
+          memory: 8Gi
+        requests:
+          cpu: 4
+          memory: 8Gi
