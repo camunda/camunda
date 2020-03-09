@@ -107,15 +107,15 @@ pipeline {
             }
           }
         }
-        stage('End to end - Tests'){
-          steps {
-        	container('maven') {
-              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML -P client.e2etests-chromeheadless test')
-              }
-            }               
-          }
-		}
+        //stage('End to end - Tests'){
+        //  steps {
+        //	container('maven') {
+        //      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+        //        sh ('mvn -B -s $MAVEN_SETTINGS_XML -P client.e2etests-chromeheadless test')
+        //      }
+        //    }               
+        //  }
+		//}
       }
     }
     stage('Deploy') {
