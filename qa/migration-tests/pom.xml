@@ -11,11 +11,6 @@
 	<name>Camunda Operate Migration tests</name>
 	<artifactId>migration-tests</artifactId>
 
-	<properties>
-		<plugin.version.license>3.0</plugin.version.license>
-		<license.header>${project.baseUri}/../../license/license-header</license.header>
-	</properties>
-
 	<dependencies>
 
 		<dependency>
@@ -58,24 +53,12 @@
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
-		
-		<dependency>
-			<groupId>org.camunda.operate</groupId>
-			<artifactId>camunda-operate-qa-util</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<!-- ELASTICSEARCH -->
-		<dependency>
-			<groupId>org.elasticsearch.client</groupId>
-			<artifactId>elasticsearch-rest-high-level-client</artifactId>
-		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
-			<!-- there are classes in main path dependening on test stuff, they should rather be moved to the test sources -->
-			<!--<scope>test</scope>-->
+			<!-- TODO there are classes in main path dependening on test stuff, they should rather be moved to the test sources -->
+<!--			<scope>test</scope>-->
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
@@ -93,25 +76,6 @@
 			<plugin>
 				<groupId>com.mycila</groupId>
 				<artifactId>license-maven-plugin</artifactId>
-				<version>${plugin.version.license}</version>
-				<configuration>
-					<header>${license.header}</header>
-					<includes>
-						<include>**/*.java</include>
-					</includes>
-					<mapping>
-						<java>SLASHSTAR_STYLE</java>
-					</mapping>
-				</configuration>
-				<executions>
-					<execution>
-						<id>add-license</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>format</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 
 			<plugin>

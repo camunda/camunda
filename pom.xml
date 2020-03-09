@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <name>Camunda Operate - Root POM</name>
@@ -33,9 +34,11 @@
     <version.spring.boot>2.2.4.RELEASE</version.spring.boot>
 
     <version.junit>4.13</version.junit>
-
     <version.swagger>2.9.2</version.swagger>
     <version.javax.json>1.1.4</version.javax.json>
+    <version.micrometer>1.3.5</version.micrometer>
+    <version.mockito>3.3.0</version.mockito>
+    <version.assertj-core>3.15.0</version.assertj-core>
 
     <version.node>v10.14.2</version.node>
     <version.yarn>v1.7.0</version.yarn>
@@ -70,27 +73,8 @@
       </dependency>
 
       <dependency>
-        <groupId>org.elasticsearch.distribution.zip</groupId>
-        <artifactId>elasticsearch-oss</artifactId>
-        <version>${version.elasticsearch}</version>
-        <type>zip</type>
-      </dependency>
-
-      <dependency>
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch.plugin</groupId>
-        <artifactId>transport-netty4-client</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
 
@@ -124,6 +108,23 @@
         <version>2.9.10.3</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-registry-prometheus</artifactId>
+        <version>${version.micrometer}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${version.mockito}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${version.assertj-core}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -204,6 +205,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.1.1</version>
           <configuration>
             <skip>true</skip>
           </configuration>
@@ -269,6 +271,11 @@
             </execution>
           </executions>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>3.2.1</version>
+        </plugin>
       </plugins>
 
     </pluginManagement>
@@ -277,6 +284,25 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M3</version>
+        <executions>
+          <execution>
+            <id>enforce</id>
+            <configuration>
+              <rules>
+                <requirePluginVersion/>
+                <banDuplicatePomDependencyVersions/>
+              </rules>
+            </configuration>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
