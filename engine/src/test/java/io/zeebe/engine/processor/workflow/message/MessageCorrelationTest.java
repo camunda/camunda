@@ -855,7 +855,7 @@ public final class MessageCorrelationTest {
         .publish();
 
     // - short TTL
-    final var messageTtl = Duration.ofSeconds(1);
+    final var messageTtl = Duration.ofSeconds(10);
 
     engine
         .message()

@@ -591,7 +591,7 @@ public final class MessageStartEventTest {
         .withVariables(Map.of("x", 1))
         .publish();
 
-    final var messageTTL = Duration.ofSeconds(1);
+    final var messageTTL = Duration.ofSeconds(10);
 
     engine
         .message()
