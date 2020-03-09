@@ -16,7 +16,7 @@ spec:
         privileged: true
   containers:
     - name: maven
-      image: maven:3.6.1-jdk-11
+      image: markhobson/maven-chrome:jdk-11
       command: ["cat"]
       tty: true
       env:
