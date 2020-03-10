@@ -30,6 +30,7 @@ import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -250,8 +251,12 @@ public class ExporterIntegrationRule extends ExternalResource {
   /** Runs a sample workload on the broker, exporting several records of different types. */
   public void performSampleWorkload() {
     deployWorkflow(SAMPLE_WORKFLOW, "sample_workflow.bpmn");
-    final long workflowInstanceKey =
-        createWorkflowInstance("testProcess", Collections.singletonMap("orderId", "foo-bar-123"));
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("orderId", "foo-bar-123");
+    variables.put("largeValue", "x".repeat(40_000));
+
+    final long workflowInstanceKey = createWorkflowInstance("testProcess", variables);
 
     // create job worker which fails on first try and sets retries to 0 to create an incident
     final AtomicBoolean fail = new AtomicBoolean(true);
