@@ -16,6 +16,8 @@ import java.util.Map;
 
 public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstance> {
 
+  private static final String CORRELATION_VARIABLE_NAME = "correlatingVariable";
+  private static final String CORRELATION_VALUE_PREFIX = "correlationValue_";
 
   public ProcessDataGenerator(final SimpleEngineClient engineClient, final Integer nVersions) {
     super(engineClient, nVersions);
@@ -23,7 +25,24 @@ public abstract class ProcessDataGenerator extends DataGenerator<BpmnModelInstan
 
   @Override
   protected void startInstance(final String definitionId, final Map<String, Object> variables) {
-    engineClient.startProcessInstance(definitionId, variables);
+    addCorrelatingVariable(variables);
+    engineClient.startProcessInstance(definitionId, variables, getBusinessKey());
+  }
+
+  private void addCorrelatingVariable(final Map<String, Object> variables) {
+    variables.put(getCorrelatingVariableName(), getCorrelatingValue());
+  }
+
+  protected String getBusinessKey() {
+    return getCorrelatingValue();
+  }
+
+  protected String getCorrelatingVariableName() {
+    return CORRELATION_VARIABLE_NAME;
+  }
+
+  protected String getCorrelatingValue() {
+    return CORRELATION_VALUE_PREFIX + getStartedInstanceCount();
   }
 
   @Override

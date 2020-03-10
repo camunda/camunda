@@ -66,17 +66,17 @@ the number of versions to deploy after a colon. A random number of versions are 
 is not specified explicitly.
 
 ```
-mvn clean compile exec:java -Dexec.args="--processDefinitions Invoice:10,ChangeContactData:3,BookRequest:5"
+mvn clean compile exec:java -Dexec.args="--processDefinitions Invoice:10,ChangeContactData:3,BookRequestNoBusinessKey:5"
 ```
 Available processes are:  
 * BranchAnalysis  
-* BookRequest  
+* BookRequestNoBusinessKey  
 * EmbeddedSubprocessRequest  
 * MultiInstanceSubprocessRequest  
-* HiringProcess  
+* HiringProcessWithUniqueCorrelationValues  
 * ExtendedOrder  
 * LeadQualification  
-* Invoice  
+* InvoiceWithAlternativeCorrelationVariable  
 * OrderConfirmation  
 * MultiParallel  
 * TransshipmentArrangement  
@@ -118,9 +118,16 @@ started.
 ### Tenant scenarios
 3 Process definitions contain distinct tenant scenarios.
 ```
-BookRequest - 1 tenant specific definition (tenant: library) & no shared definition
-HiringProcess - 5 tenant specific definitions (tenants: hr, engineering, sales, support, csm) & no shared definition
-InvoiceData - 2 tenant specific definitions (tenants: sales, engineering) & shared definition
+BookRequestNoBusinessKey - 1 tenant specific definition (tenant: library) & no shared definition
+HiringProcessWithUniqueCorrelationValues - 5 tenant specific definitions (tenants: hr, engineering, sales, support, csm) & no shared definition
+InvoiceWithAlternativeCorrelationVariable - 2 tenant specific definitions (tenants: sales, engineering) & shared definition
+```
+### Correlation scenarios
+Most definitions have a correlatable business key and a variable name (`correlatingVariable`). However, 3 Process definitions contain distinct correlation scenarios.
+```
+BookRequestNoBusinessKey - Instances have no business key
+HiringProcessWithUniqueCorrelationValues - This contains the `correlatingVariable` key, but its value will be unique to this process so cannot be used to correlate
+InvoiceWithAlternativeCorrelationVariable - This process can be correlated, but instead of `correlatingVariable`, it uses the key `alternativeCorrelationVariable`
 ```
 ### Analysis testing
 AnalysisTesting process contains outlier instances and is suitable to test branch and outlier 

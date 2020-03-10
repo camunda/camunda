@@ -8,7 +8,7 @@
     <participant id="Process_Engine_1" name="Invoice Receipt" processRef="invoice" />
     <association id="Association_1" sourceRef="DataStoreReference_1" targetRef="prepareBankTransfer" />
   </collaboration>
-  <process id="invoice" name="Invoice Receipt" isExecutable="true" camunda:versionTag="V2.0">
+  <process id="invoice" name="Invoice Receipt with alternative correlation variable" isExecutable="true" camunda:versionTag="V2.0">
     <laneSet id="laneSet_5">
       <lane id="Accountant" name="Accountant">
         <flowNodeRef>prepareBankTransfer</flowNodeRef>

@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class HiringProcessDataGenerator extends ProcessDataGenerator {
+public class HiringProcessWithUniqueCorrelationValuesDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "diagrams/process/hiring-process.bpmn";
   private static String TASK_AUTOMATICALLY_ASSIGNED = "Task_automatically_assigned";
@@ -25,12 +25,22 @@ public class HiringProcessDataGenerator extends ProcessDataGenerator {
   private static String[] allVariableNames = {TASK_AUTOMATICALLY_ASSIGNED, TASK_SCREEN_PROCEED, TASK_PHONE_PROCEED,
     TASK_ONSITE_INTERVIEW, TASK_MAKE_OFFER, TASK_OFFER_ACCEPTED};
 
-  public HiringProcessDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public HiringProcessWithUniqueCorrelationValuesDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
+  }
+
+  @Override
+  protected String getBusinessKey() {
+    return super.getCorrelatingValue();
+  }
+
+  @Override
+  protected String getCorrelatingValue() {
+    return "ValueUniqueToThisProcess_" + getStartedInstanceCount();
   }
 
   @Override

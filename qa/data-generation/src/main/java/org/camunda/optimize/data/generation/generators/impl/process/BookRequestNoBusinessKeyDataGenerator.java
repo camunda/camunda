@@ -11,16 +11,21 @@ import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient
 import java.util.HashMap;
 import java.util.Map;
 
-public class BookRequestDataGenerator extends ProcessDataGenerator {
+public class BookRequestNoBusinessKeyDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "diagrams/process/book-request.bpmn";
 
-  public BookRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public BookRequestNoBusinessKeyDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
+  }
+
+  @Override
+  protected String getBusinessKey() {
+    return null;
   }
 
   @Override

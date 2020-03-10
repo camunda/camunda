@@ -207,10 +207,11 @@ public class SimpleEngineClient {
     return Optional.ofNullable(variable.getValue()).map(Object::toString).map(Boolean::parseBoolean);
   }
 
-  public void startProcessInstance(String procDefId, Map<String, Object> variables) {
+  public void startProcessInstance(String procDefId, Map<String, Object> variables, String businessKey) {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("content-type", "application/json");
-    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
+    final String jsonEntity = convertVariableMapAndBusinessKeyToJsonString(variables, businessKey);
+    post.setEntity(new StringEntity(jsonEntity, StandardCharsets.UTF_8));
     try (CloseableHttpResponse response = client.execute(post)) {
       post.setURI(new URI(post.getURI().toString()));
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
@@ -475,6 +476,19 @@ public class SimpleEngineClient {
 
   @SneakyThrows
   private String convertVariableMapToJsonString(Map<String, Object> plainVariables) {
+    return convertVariableMapAndBusinessKeyToJsonString(plainVariables, null);
+  }
+
+  @SneakyThrows
+  private String convertVariableMapAndBusinessKeyToJsonString(Map<String, Object> plainVariables,
+                                                              String businessKey) {
+    Map<String, Object> jsonWrapper = new HashMap<>();
+    jsonWrapper.put("variables", extractVariablesJsonMap(plainVariables));
+    Optional.ofNullable(businessKey).ifPresent(key -> jsonWrapper.put("businessKey", businessKey));
+    return objectMapper.writeValueAsString(jsonWrapper);
+  }
+
+  private Map<String, Object> extractVariablesJsonMap(Map<String, Object> plainVariables) {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
       Object value = nameToValue.getValue();
@@ -487,9 +501,7 @@ public class SimpleEngineClient {
         variables.put(nameToValue.getKey(), fields);
       }
     }
-    Map<String, Object> variableWrapper = new HashMap<>();
-    variableWrapper.put("variables", variables);
-    return objectMapper.writeValueAsString(variableWrapper);
+    return variables;
   }
 
   private List<HttpPost> createProcessDeploymentRequest(String process, List<String> tenants) {

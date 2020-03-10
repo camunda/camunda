@@ -3,7 +3,7 @@
   <bpmn:collaboration id="Collaboration_137ednk">
     <bpmn:participant id="Participant_10seiuh" name="Hiring" processRef="hiring-demo" />
   </bpmn:collaboration>
-  <bpmn:process id="hiring-demo" name="Hiring Demo" isExecutable="true">
+  <bpmn:process id="hiring-demo" name="Hiring Demo with unique correlation values" isExecutable="true">
     <bpmn:laneSet>
       <bpmn:lane id="Lane_1ygz50j" name="HR">
         <bpmn:flowNodeRef>HiringManager</bpmn:flowNodeRef>

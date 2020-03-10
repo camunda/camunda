@@ -12,16 +12,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class InvoiceDataGenerator extends ProcessDataGenerator {
+public class InvoiceWithAlternativeCorrelationVariableDataGenerator extends ProcessDataGenerator {
 
   private static final String DIAGRAM = "diagrams/process/invoice.bpmn";
 
-  public InvoiceDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public InvoiceWithAlternativeCorrelationVariableDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
   }
 
   protected BpmnModelInstance retrieveDiagram() {
     return readProcessDiagramAsInstance(DIAGRAM);
+  }
+
+  protected String getCorrelatingVariableName() {
+    return "alternativeCorrelationVariable";
   }
 
   @Override
