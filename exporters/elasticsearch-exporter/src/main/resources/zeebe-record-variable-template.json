@@ -17,7 +17,7 @@
             },
             "value": {
               "type": "keyword",
-              "ignore_above": 32766
+              "ignore_above": 8191
             },
             "scopeKey": {
               "type": "long"
