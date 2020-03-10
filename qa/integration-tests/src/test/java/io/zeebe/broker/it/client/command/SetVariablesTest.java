@@ -153,11 +153,11 @@ public final class SetVariablesTest {
             .send();
 
     // then
+    final String expectedMessage =
+        "Expected to execute command, but this command refers to an element that doesn't exist.";
     assertThatThrownBy(command::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("This command refers to an element that doesn't exist.")
-        .hasRootCauseMessage(
-            "NOT_FOUND: This command refers to an element that doesn't exist."
-                + " Check the command arguments.");
+        .hasMessageContaining(expectedMessage)
+        .hasRootCauseMessage("NOT_FOUND: " + expectedMessage);
   }
 }
