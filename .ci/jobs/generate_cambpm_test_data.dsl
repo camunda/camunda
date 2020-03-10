@@ -16,7 +16,8 @@ pipelineJob('generate-cambpm-test-data') {
         stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
         choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc', 'optimize_large_data-e2e.sqlc'])
         booleanParam('USE_E2E_PRESETS', false, 'When enabled loads E2E test dataset presets and overwrites all of the below.')
-        stringParam('NUM_INSTANCES', '10000000', 'Number of process instances to generate.')
+        stringParam('NUM_PROCESS_INSTANCES', '10000000', 'Number of process instances to generate.')
+        stringParam('NUM_DECISION_INSTANCES', '100000', 'At least the number of decision instances stated here will be generated but due to the DRD structure about 1/3 more than that.')
     }
 
 }
