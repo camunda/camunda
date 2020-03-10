@@ -91,7 +91,10 @@ public final class SnapshotChunkImpl
     snapshotId = decoder.snapshotId();
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
-    decoder.wrapContent(content);
+
+    if (decoder.contentLength() > 0) {
+      decoder.wrapContent(content);
+    }
   }
 
   @Override
