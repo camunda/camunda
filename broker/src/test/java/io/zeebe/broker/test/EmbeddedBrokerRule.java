@@ -30,13 +30,13 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -161,7 +161,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     return broker.getAtomix();
   }
 
-  public SocketAddress getGatewayAddress() {
+  public InetSocketAddress getGatewayAddress() {
     return brokerCfg.getGateway().getNetwork().toSocketAddress();
   }
 

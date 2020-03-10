@@ -14,6 +14,7 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.util.SocketUtil;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
@@ -45,7 +46,8 @@ public final class RestoreTest {
       new GrpcClientRule(
           config ->
               config
-                  .brokerContactPoint(clusteringRule.getGatewayAddress().toString())
+                  .brokerContactPoint(
+                      SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))
                   .defaultRequestTimeout(Duration.ofMinutes(1))
                   .usePlaintext());
 

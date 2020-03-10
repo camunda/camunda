@@ -7,7 +7,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
-import io.zeebe.transport.impl.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -17,13 +17,13 @@ public final class TopologyBroker {
   protected final String host;
   protected final int port;
   private final Set<BrokerPartitionState> partitions = new LinkedHashSet<>();
-  private final SocketAddress address;
+  private final InetSocketAddress address;
 
   public TopologyBroker(final int nodeId, final String host, final int port) {
     this.nodeId = nodeId;
     this.host = host;
     this.port = port;
-    address = new SocketAddress(host, port);
+    address = new InetSocketAddress(host, port);
   }
 
   public int getNodeId() {
@@ -45,10 +45,6 @@ public final class TopologyBroker {
   public TopologyBroker addPartition(final BrokerPartitionState brokerPartitionState) {
     partitions.add(brokerPartitionState);
     return this;
-  }
-
-  public SocketAddress getAddress() {
-    return address;
   }
 
   @Override

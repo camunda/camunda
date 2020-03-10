@@ -70,7 +70,7 @@ public final class BrokerClientTest {
         .getCluster()
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
-        .setContactPoint(broker.getSocketAddress().toString())
+        .setContactPoint(io.zeebe.util.SocketUtil.toHostAndPortString(broker.getSocketAddress()))
         .setRequestTimeout(Duration.ofSeconds(3));
     configuration.init();
 

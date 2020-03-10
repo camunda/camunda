@@ -10,8 +10,8 @@ package io.zeebe.gateway.impl.configuration;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MONITORING_ENABLED;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MONITORING_PORT;
 
-import io.zeebe.transport.impl.SocketAddress;
 import io.zeebe.util.Environment;
+import java.net.InetSocketAddress;
 import java.util.Objects;
 
 public final class MonitoringCfg {
@@ -54,8 +54,8 @@ public final class MonitoringCfg {
     return this;
   }
 
-  public SocketAddress toSocketAddress() {
-    return new SocketAddress(host, port);
+  public InetSocketAddress toSocketAddress() {
+    return new InetSocketAddress(host, port);
   }
 
   @Override

@@ -550,8 +550,8 @@ public final class BrokerCfgTest {
       final String configFileName, final int command, final int internal, final int monitoring) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg network = brokerCfg.getNetwork();
-    assertThat(network.getCommandApi().getAddress().port()).isEqualTo(command);
-    assertThat(network.getCommandApi().getAdvertisedAddress().port()).isEqualTo(command);
+    assertThat(network.getCommandApi().getAddress().getPort()).isEqualTo(command);
+    assertThat(network.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(command);
     assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
     assertThat(network.getMonitoringApi().getPort()).isEqualTo(monitoring);
   }
@@ -576,7 +576,7 @@ public final class BrokerCfgTest {
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
-    assertThat(networkCfg.getCommandApi().getAddress().host()).isEqualTo(command);
+    assertThat(networkCfg.getCommandApi().getAddress().getHostString()).isEqualTo(command);
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
     assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
   }
@@ -584,15 +584,15 @@ public final class BrokerCfgTest {
   private void assertAdvertisedHost(final String configFileName, final String host) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
-    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().host()).isEqualTo(host);
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
   }
 
   private void assertAdvertisedAddress(
       final String configFileName, final String host, final int port) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
-    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().host()).isEqualTo(host);
-    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().port()).isEqualTo(port);
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getHostName()).isEqualTo(host);
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(port);
   }
 
   private void assertDefaultContactPoints(final String... contactPoints) {

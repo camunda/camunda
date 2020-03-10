@@ -27,14 +27,14 @@ public final class EmbeddedGatewayTest {
 
   @Test
   public void shouldConfigureGateway() {
-    InetSocketAddress address = brokerWithEnabledGateway.getGatewayAddress().toInetSocketAddress();
+    InetSocketAddress address = brokerWithEnabledGateway.getGatewayAddress();
     try (final Socket socket = new Socket(address.getHostName(), address.getPort())) {
       // expect no error
     } catch (final Exception e) {
       fail("Failed to connect to gateway with address: " + address, e);
     }
 
-    address = brokerWithDisabledGateway.getGatewayAddress().toInetSocketAddress();
+    address = brokerWithDisabledGateway.getGatewayAddress();
     try (final Socket socket = new Socket(address.getHostName(), address.getPort())) {
       fail("Unexpected to be able to connect to gateway with address: " + address);
     } catch (final Exception e) {

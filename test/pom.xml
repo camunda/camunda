@@ -15,7 +15,7 @@
 
   <build>
     <plugins>
-      <plugin> 
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
       </plugin>
@@ -57,12 +57,6 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-transport</artifactId>
-    </dependency>
-
 
     <dependency>
       <groupId>io.zeebe</groupId>

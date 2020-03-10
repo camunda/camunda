@@ -50,6 +50,7 @@ import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.SocketUtil;
 import io.zeebe.util.VersionUtil;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.Actor;
@@ -138,7 +139,8 @@ public final class Broker implements AutoCloseable {
     final ClusterCfg clusterCfg = brokerCfg.getCluster();
     final BrokerInfo localBroker =
         new BrokerInfo(
-            clusterCfg.getNodeId(), networkCfg.getCommandApi().getAdvertisedAddress().toString());
+            clusterCfg.getNodeId(),
+            SocketUtil.toHostAndPortString(networkCfg.getCommandApi().getAdvertisedAddress()));
 
     if (LOG.isInfoEnabled()) {
       LOG.info("Version: {}", VersionUtil.getVersion());
