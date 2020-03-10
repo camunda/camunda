@@ -225,11 +225,11 @@ public final class BrokerClientTest {
     final var async = client.sendRequest(request);
 
     // then
-    final String expectedMessage =
-        "The request targeted an element on partition '0', which cannot be found in the cluster.";
+    final String expected =
+        "Expected to execute command, but this command refers to an element that doesn't exist.";
     assertThatThrownBy(async::join)
         .isInstanceOf(ExecutionException.class)
-        .hasMessageContaining(expectedMessage);
+        .hasMessageContaining(expected);
   }
 
   @Test

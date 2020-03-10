@@ -203,7 +203,7 @@ public final class BrokerRequestManager extends Actor {
     if (request.addressesSpecificPartition()) {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
-        throw new PartitionNotFoundException(request.getPartitionId());
+        throw new PartitionNotFoundException();
       }
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());

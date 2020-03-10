@@ -157,8 +157,7 @@ public final class SetVariablesTest {
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("This command refers to an element that doesn't exist.")
         .hasRootCauseMessage(
-            "NOT_FOUND: This command refers to an element that doesn't exist. "
-                + "The request targeted an element on partition '0', "
-                + "which cannot be found in the cluster. Check the command arguments.");
+            "NOT_FOUND: This command refers to an element that doesn't exist."
+                + " Check the command arguments.");
   }
 }

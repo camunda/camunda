@@ -13,11 +13,7 @@ package io.zeebe.gateway.cmd;
  */
 public class PartitionNotFoundException extends ClientException {
 
-  public static final String MESSAGE_TEMPLATE =
-      "This command refers to an element that doesn't exist. The request targeted an element on "
-          + "partition '%d', which cannot be found in the cluster. Check the command arguments.";
-
-  public PartitionNotFoundException(final int partitionId) {
-    super(String.format(MESSAGE_TEMPLATE, partitionId));
+  public PartitionNotFoundException() {
+    super("Expected to execute command, but this command refers to an element that doesn't exist.");
   }
 }
