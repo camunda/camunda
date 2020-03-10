@@ -141,11 +141,7 @@ export class Home extends React.Component {
                 };
               })
             }
-          >
-            <div className="data-hint">
-              <Icon type="hint" size="14" /> {t('home.data-hint')}
-            </div>
-          </EntityList>
+          />
         </div>
         <Deleter
           entity={deleting}

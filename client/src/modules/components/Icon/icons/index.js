@@ -35,7 +35,6 @@ import {ReactComponent as checkLarge} from './check-large.svg';
 import {ReactComponent as collection} from './collection.svg';
 import {ReactComponent as search} from './search.svg';
 import {ReactComponent as clear} from './clear.svg';
-import {ReactComponent as hint} from './hint.svg';
 import {ReactComponent as publish} from './publish.svg';
 import {ReactComponent as cancel} from './cancel.svg';
 import {ReactComponent as arrowRight} from './arrow-right.svg';
@@ -59,7 +58,6 @@ const icons = {
   close,
   stop,
   link,
-  hint,
   embed,
   save,
   'context-menu': contextMenu,
