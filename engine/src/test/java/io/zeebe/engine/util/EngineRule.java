@@ -56,10 +56,13 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
@@ -75,6 +78,10 @@ public final class EngineRule extends ExternalResource {
   private final int partitionCount;
   private final boolean explicitStart;
   private Consumer<String> jobsAvailableCallback = type -> {};
+
+  private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
+      new Int2ObjectHashMap<>();
+  private final ExecutorService subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, false);
@@ -116,6 +123,7 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void after() {
+    subscriptionHandlerExecutor.shutdown();
     environmentRule = null;
   }
 
@@ -155,6 +163,12 @@ public final class EngineRule extends ExternalResource {
                           (key, partition) -> {},
                           jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor()));
+
+          // sequenialize the commands to avoid concurrency
+          subscriptionHandlers.put(
+              partitionId,
+              new SubscriptionCommandMessageHandler(
+                  subscriptionHandlerExecutor::submit, environmentRule::getLogStreamRecordWriter));
         });
   }
 
@@ -355,10 +369,6 @@ public final class EngineRule extends ExternalResource {
 
   private class PartitionCommandSenderImpl implements PartitionCommandSender {
 
-    private final SubscriptionCommandMessageHandler handler =
-        new SubscriptionCommandMessageHandler(
-            Runnable::run, environmentRule::getLogStreamRecordWriter);
-
     @Override
     public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {
 
@@ -366,7 +376,9 @@ public final class EngineRule extends ExternalResource {
       final UnsafeBuffer commandBuffer = new UnsafeBuffer(bytes);
       command.write(commandBuffer, 0);
 
-      handler.apply(bytes);
+      // delegate the command to the subscription handler of the receiver partition
+      subscriptionHandlers.get(receiverPartitionId).apply(bytes);
+
       return true;
     }
   }
