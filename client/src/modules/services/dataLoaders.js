@@ -27,8 +27,8 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
   }
 }
 
-export async function loadDefinitions(type, collectionId) {
-  const params = {};
+export async function loadDefinitions(type, collectionId, excludeEventProcesses = false) {
+  const params = {excludeEventProcesses};
   if (collectionId) {
     params.filterByCollectionScope = collectionId;
   }

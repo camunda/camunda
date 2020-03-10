@@ -140,14 +140,21 @@ it('should display a loading indicator', () => {
 it('should initially load all definitions', () => {
   shallow(<DefinitionSelection {...props} />);
 
-  expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined);
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined, undefined);
 });
 
 it('should load defintions in scope of collection', () => {
   getCollection.mockReturnValue('123');
   shallow(<DefinitionSelection {...props} />);
 
-  expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123');
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123', undefined);
+});
+
+it('should exclude event based processes', () => {
+  loadDefinitions.mockClear();
+  shallow(<DefinitionSelection {...props} excludeEventProcesses />);
+
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123', true);
 });
 
 it('should update to most recent version when key is selected', async () => {

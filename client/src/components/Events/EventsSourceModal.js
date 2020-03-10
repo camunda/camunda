@@ -162,6 +162,7 @@ export default withErrorHandling(
                   tenants={tenants}
                   disableDefinition={this.isEditing()}
                   expanded
+                  excludeEventProcesses
                   onChange={({key, name, versions, tenantIds}) => {
                     this.loadVariables(key, versions, tenantIds);
                     this.setState({

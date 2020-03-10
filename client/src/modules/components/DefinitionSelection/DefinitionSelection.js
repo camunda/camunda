@@ -31,9 +31,12 @@ export default withRouter(
     }
 
     componentDidMount = async () => {
-      const collectionId = getCollection(this.props.location.pathname);
+      const {type, excludeEventProcesses, location} = this.props;
+      const collectionId = getCollection(location.pathname);
       this.setState({
-        availableDefinitions: (await loadDefinitions(this.props.type, collectionId)).map(entry => ({
+        availableDefinitions: (
+          await loadDefinitions(type, collectionId, excludeEventProcesses)
+        ).map(entry => ({
           ...entry,
           id: entry.key
         })),
