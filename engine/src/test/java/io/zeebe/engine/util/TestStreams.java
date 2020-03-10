@@ -20,13 +20,10 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventRegistry;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
-import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -47,8 +44,6 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -214,8 +209,6 @@ public final class TestStreams {
         spy(new StateSnapshotController(zeebeDbFactory, storage));
     final String logName = stream.getLogName();
 
-    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
-
     try {
       currentSnapshotController.recover();
     } catch (final Exception e) {
@@ -229,21 +222,9 @@ public final class TestStreams {
             .actorScheduler(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
-            .streamProcessorFactory(
-                (context) -> {
-                  final TypedRecordProcessors processors = factory.createProcessors(context);
-                  processors.withListener(
-                      new StreamProcessorLifecycleAware() {
-                        @Override
-                        public void onOpen(final ReadonlyProcessingContext context) {
-                          openFuture.complete(null);
-                        }
-                      });
-                  return processors;
-                })
+            .streamProcessorFactory(factory)
             .build();
     streamProcessor.openAsync().join();
-    openFuture.join();
 
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(

@@ -61,7 +61,8 @@ public final class MessageStreamProcessorTest {
         .thenReturn(true);
 
     rule.startTypedStreamProcessor(
-        (typedRecordProcessors, zeebeState) -> {
+        (typedRecordProcessors, processingContext) -> {
+          final var zeebeState = processingContext.getZeebeState();
           MessageEventProcessors.addMessageProcessors(
               typedRecordProcessors, zeebeState, mockSubscriptionCommandSender);
           return typedRecordProcessors;

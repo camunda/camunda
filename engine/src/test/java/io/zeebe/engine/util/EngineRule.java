@@ -270,7 +270,7 @@ public final class EngineRule extends ExternalResource {
     private TypedEventImpl typedEvent;
 
     @Override
-    public void onOpen(final ReadonlyProcessingContext context) {
+    public void onRecovered(final ReadonlyProcessingContext context) {
       final int partitionId = context.getLogStream().getPartitionId();
       typedEvent = new TypedEventImpl(partitionId);
       final ActorControl actor = context.getActor();
@@ -285,6 +285,7 @@ public final class EngineRule extends ExternalResource {
               ((reader, throwable) -> {
                 if (throwable == null) {
                   logStreamReader = reader;
+                  onNewEventCommitted();
                 }
               }));
     }

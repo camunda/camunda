@@ -94,13 +94,9 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onOpen(final ReadonlyProcessingContext processingContext) {
+  public void onRecovered(final ReadonlyProcessingContext processingContext) {
     this.actor = processingContext.getActor();
     streamWriter = processingContext.getLogStreamWriter();
-  }
-
-  @Override
-  public void onRecovered(final ReadonlyProcessingContext processingContext) {
     // check if timers are due after restart
     triggerTimers();
   }

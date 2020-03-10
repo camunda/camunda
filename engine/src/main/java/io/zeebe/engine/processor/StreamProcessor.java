@@ -121,8 +121,6 @@ public class StreamProcessor extends Actor {
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
-
-      lifecycleAwareListeners.forEach(l -> l.onOpen(processingContext));
     } catch (final Throwable e) {
       onFailure(e);
       LangUtil.rethrowUnchecked(e);
@@ -135,7 +133,6 @@ public class StreamProcessor extends Actor {
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
-      processingContext.getLogStreamWriter().setDisabled(true);
       final ActorFuture<Void> recoverFuture =
           reProcessingStateMachine.startRecover(snapshotPosition);
 
@@ -146,7 +143,6 @@ public class StreamProcessor extends Actor {
               LOG.error("Unexpected error on recovery happens.", throwable);
               onFailure(throwable);
             } else {
-              processingContext.getLogStreamWriter().setDisabled(false);
               onRecovered();
             }
           });

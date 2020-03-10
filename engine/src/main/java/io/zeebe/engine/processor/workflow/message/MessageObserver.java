@@ -36,16 +36,12 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onOpen(final ReadonlyProcessingContext processingContext) {
-
-    final ActorControl actor = processingContext.getActor();
-
+  public void onRecovered(ReadonlyProcessingContext context) {
+    final ActorControl actor = context.getActor();
     // it is safe to reuse the write because we running in the same actor/thread
     final MessageTimeToLiveChecker timeToLiveChecker =
-        new MessageTimeToLiveChecker(processingContext.getLogStreamWriter(), messageState);
-    processingContext
-        .getActor()
-        .runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+        new MessageTimeToLiveChecker(context.getLogStreamWriter(), messageState);
+    context.getActor().runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
 
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
