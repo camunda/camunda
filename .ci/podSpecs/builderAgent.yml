@@ -21,18 +21,16 @@ spec:
       tty: true
       env:
         - name: LIMITS_CPU
-          valueFrom:
-            resourceFieldRef:
-              resource: limits.cpu
+          value: 4
         - name: DOCKER_HOST
           value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 4
-          memory: 8Gi
+          cpu: 6
+          memory: 12Gi
         requests:
-          cpu: 4
-          memory: 8Gi
+          cpu: 6
+          memory: 12Gi
     - name: node
       image: node:10.14.2-alpine
       command: ["cat"]
