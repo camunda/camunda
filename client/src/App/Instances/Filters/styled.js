@@ -75,4 +75,6 @@ export const ResetButtonContainer = themed(styled(Panel.Footer)`
   })};
   border-radius: 0;
   margin-top: auto;
+  position: sticky;
+  bottom: 0;
 `);
