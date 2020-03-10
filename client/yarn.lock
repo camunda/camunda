@@ -12503,10 +12503,10 @@ react-app-polyfill@^1.0.6:
     regenerator-runtime "^0.13.3"
     whatwg-fetch "^3.0.0"
 
-react-date-range@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/react-date-range/-/react-date-range-1.0.1.tgz#e1601b2d7bd407464d6655362fa893a43f2cb5ed"
-  integrity sha512-kU0XA73RlX0u90THcON4ICB22Nd+NKytWZY1PuKUZ2ji2HNFiCH5EIIjT8CWNIpLM3wAmklfidk8k+6pQsEKzg==
+react-date-range@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/react-date-range/-/react-date-range-1.0.3.tgz#effd22d7c743c9504583490ea02c10dfa3918eb9"
+  integrity sha512-OJU/UfiXDRnmiBC0fG51SsDIWMuUiRFyIbs9pFPKZLDWTmilhMkdNUdc20O1Kp9FJLQeMtumPpWtRPM9NtYIYg==
   dependencies:
     classnames "^2.2.6"
     prop-types "^15.7.2"
