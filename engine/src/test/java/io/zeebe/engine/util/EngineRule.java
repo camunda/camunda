@@ -185,11 +185,7 @@ public final class EngineRule extends ExternalResource {
     RecordingExporter.reset();
 
     startProcessors();
-    TestUtil.waitUntil(
-        () -> RecordingExporter.getRecords().size() >= lastSize,
-        "Failed to reprocess all events, only re-exported %d but expected %d",
-        RecordingExporter.getRecords().size(),
-        lastSize);
+    TestUtil.waitUntil(() -> RecordingExporter.getRecords().size() >= lastSize);
   }
 
   public List<Integer> getPartitionIds() {

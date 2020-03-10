@@ -29,7 +29,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   protected final LogStreamBatchWriter batchWriter;
 
   protected long sourceRecordPosition = -1;
-  private boolean disabled = false;
 
   public TypedCommandWriterImpl(final LogStreamBatchWriter batchWriter) {
     metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
@@ -71,8 +70,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
       final String rejectionReason,
       final UnpackedObject value,
       final Consumer<RecordMetadata> additionalMetadata) {
-    assert !disabled : "Command writer called in disabled mode, probably during reprocessing";
-
     final LogEntryBuilder event = batchWriter.event();
 
     if (sourceRecordPosition >= 0) {
@@ -91,11 +88,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     }
 
     event.metadataWriter(metadata).valueWriter(value).done();
-  }
-
-  @Override
-  public void setDisabled(boolean disabled) {
-    this.disabled = disabled;
   }
 
   @Override

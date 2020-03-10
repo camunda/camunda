@@ -32,12 +32,9 @@ public final class WorkflowEngineState implements StreamProcessorLifecycleAware 
     this.elementInstanceState = workflowState.getElementInstanceState();
 
     this.metrics = new WorkflowEngineMetrics(processingContext.getLogStream().getPartitionId());
-  }
 
-  @Override
-  public void onRecovered(ReadonlyProcessingContext context) {
     final UpdateVariableStreamWriter updateVariableStreamWriter =
-        new UpdateVariableStreamWriter(context.getLogStreamWriter());
+        new UpdateVariableStreamWriter(processingContext.getLogStreamWriter());
 
     elementInstanceState.getVariablesState().setListener(updateVariableStreamWriter);
   }
