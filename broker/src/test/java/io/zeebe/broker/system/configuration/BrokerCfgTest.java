@@ -576,7 +576,7 @@ public final class BrokerCfgTest {
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
-    assertThat(networkCfg.getCommandApi().getAddress().getHostName()).isEqualTo(command);
+    assertThat(networkCfg.getCommandApi().getAddress().getHostString()).isEqualTo(command);
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
     assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
   }
