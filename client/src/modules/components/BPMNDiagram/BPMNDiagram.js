@@ -60,6 +60,13 @@ export default themed(
           this.unattach(prevProps.xml, prevProps.theme);
           this.importXML(this.props.xml);
         }
+
+        // The diagram will not be mounted at the beggining when refreshing the page
+        // because we hide the the content of the privateRoute untill the page is loaded
+        // Therefore, we need to try to fit the diagram again after the component updates
+        if (isNaN(this.viewer?.get('canvas').viewbox().width)) {
+          this.fitDiagram();
+        }
       }
 
       unattach = (xml, theme) => {

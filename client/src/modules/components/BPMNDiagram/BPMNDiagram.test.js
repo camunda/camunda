@@ -28,7 +28,8 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
     constructor() {
       this.canvas = {
         resized: jest.fn(),
-        zoom: jest.fn()
+        zoom: jest.fn(),
+        viewbox: jest.fn().mockReturnValue({})
       };
 
       this.zoomScroll = {
@@ -65,7 +66,8 @@ jest.mock('bpmn-js/lib/Viewer', () => {
     constructor() {
       this.canvas = {
         resized: jest.fn(),
-        zoom: jest.fn()
+        zoom: jest.fn(),
+        viewbox: jest.fn().mockReturnValue({})
       };
     }
     attachTo = jest.fn();
