@@ -77,7 +77,7 @@
     <version.asm>7.3.1</version.asm>
     <version.testcontainers>1.13.0</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
-    <version.zeebe-test-container>0.31.0</version.zeebe-test-container>
+    <version.zeebe-test-container>0.32.0</version.zeebe-test-container>
     <version.feel-scala>1.10.1</version.feel-scala>
     <version.spring-framework>5.2.4.RELEASE</version.spring-framework>
     <version.spring-boot>2.2.5.RELEASE</version.spring-boot>
