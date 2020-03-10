@@ -165,7 +165,8 @@ public final class BpmnStepHandlers {
         BpmnStep.START_EVENT_EVENT_OCCURRED, new StartEventEventOccurredHandler<>(state));
 
     stepHandlers.put(
-        BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED, new EventSubProcessEventOccurredHandler<>());
+        BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED,
+        new EventSubProcessEventOccurredHandler<>(catchEventBehavior));
 
     stepHandlers.put(
         BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());
