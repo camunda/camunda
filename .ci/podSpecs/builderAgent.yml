@@ -26,11 +26,11 @@ spec:
           value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 6
-          memory: 12Gi
+          cpu: 5
+          memory: 10Gi
         requests:
-          cpu: 6
-          memory: 12Gi
+          cpu: 5
+          memory: 10Gi
     - name: node
       image: node:10.14.2-alpine
       command: ["cat"]
