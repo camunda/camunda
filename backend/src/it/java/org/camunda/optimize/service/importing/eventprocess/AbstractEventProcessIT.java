@@ -62,7 +62,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.events.CustomTracedCamundaEventFetcherService.EVENT_SOURCE_CAMUNDA;
+import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;

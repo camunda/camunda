@@ -449,6 +449,57 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
   }
 
   @Test
+  public void eventProcessCamundaEventSourceLastEventTimestampGetsUpdatedEvenIfNoFetchedEventsCanBeCorrelated() throws SQLException {
+    // given
+    final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
+    final String tracingVariable = "key";
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      deployAndStartProcessWithVariables(Maps.newHashMap(tracingVariable, "value"));
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
+
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), timeBaseLine.minusSeconds(60));
+    updateActivityStartEndTimestampInEngine(BPMN_START_EVENT_ID, timeBaseLine.minusSeconds(60), processInstanceEngineDto);
+    updateActivityStartEndTimestampInEngine(BPMN_INTERMEDIATE_EVENT_ID, timeBaseLine.minusSeconds(30), processInstanceEngineDto);
+    updateActivityStartEndTimestampInEngine(BPMN_END_EVENT_ID, timeBaseLine, processInstanceEngineDto);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
+
+    importEngineEntities();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
+      ImmutableMap.of(
+        BPMN_START_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_START_EVENT_ID, MappedEventType.START),
+        BPMN_INTERMEDIATE_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_INTERMEDIATE_EVENT_ID, MappedEventType.END),
+        BPMN_END_EVENT_ID, buildCamundaEventMapping(processInstanceEngineDto, BPMN_END_EVENT_ID, MappedEventType.START)
+      ),
+      Collections.singletonList(
+        camundaEventSource().toBuilder()
+          .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+          .tracedByBusinessKey(false)
+          .traceVariable("someOtherUncorrelateableVariable")
+          .build())
+    );
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+
+    // when the first import cycle completes the status has not been updated yet
+    executeImportCycle();
+    // then
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId))
+      .get()
+      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.state, EventProcessState.PUBLISH_PENDING)
+      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishProgress, 0.0D);
+
+    // when the second import cycle completes the publish state will be updated
+    executeImportCycle();
+    final EventProcessPublishStateDto publishState = getEventProcessPublishStateDtoFromElasticsearch(
+      eventProcessMappingId).get();
+    // then no events have been correlated
+    assertThat(getEventProcessInstancesFromElasticsearchForProcessMappingId(publishState.getId())).isEmpty();
+    // then the import source last imported timestamp reflects the latest imported event
+    assertThat(publishState.getEventImportSources().get(0).getLastImportedEventTimestamp()).isEqualTo(timeBaseLine.toString());
+  }
+
+  @Test
   public void eventsIngestedAfterPublishDontAffectPublishStateAndProgress() {
     // given
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();

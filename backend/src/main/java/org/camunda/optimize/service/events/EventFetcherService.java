@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.service.events;
 
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
 
 import java.util.List;
 
-public interface EventFetcherService {
-  List<EventDto> getEventsIngestedAfter(Long eventTimestamp, int limit);
+public interface EventFetcherService<T extends EventProcessEventDto> {
 
-  List<EventDto> getEventsIngestedAt(Long eventTimestamp);
+  List<T> getEventsIngestedAfter(Long eventTimestamp, int limit);
+
+  List<T> getEventsIngestedAt(Long eventTimestamp);
+
 }

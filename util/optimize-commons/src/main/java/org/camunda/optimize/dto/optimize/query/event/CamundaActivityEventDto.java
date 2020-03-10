@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
 
@@ -20,7 +21,7 @@ import java.time.OffsetDateTime;
 @Builder(toBuilder = true)
 @Getter
 @ToString
-public class CamundaActivityEventDto {
+public class CamundaActivityEventDto implements OptimizeDto, EventProcessEventDto {
 
   private String activityId;
   private String activityName;

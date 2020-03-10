@@ -7,11 +7,14 @@ package org.camunda.optimize.service.importing.eventprocess.mediator;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
 import org.camunda.optimize.service.events.EventFetcherService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.eventprocess.handler.EventProcessInstanceImportSourceIndexHandler;
-import org.camunda.optimize.service.importing.eventprocess.service.EventProcessInstanceImportService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -24,21 +27,21 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
-public class EventProcessInstanceImportMediator
-  extends TimestampBasedImportMediator<EventProcessInstanceImportSourceIndexHandler, EventDto> {
+public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
+  extends TimestampBasedImportMediator<EventProcessInstanceImportSourceIndexHandler, T> {
 
   @Getter
   private final String publishedProcessStateId;
-  private final EventFetcherService eventService;
+  private final EventFetcherService eventFetcherService;
 
   public EventProcessInstanceImportMediator(final String publishedProcessStateId,
                                             final EventProcessInstanceImportSourceIndexHandler importSourceIndexHandler,
-                                            final EventFetcherService eventService,
-                                            final EventProcessInstanceImportService eventProcessInstanceImportService) {
+                                            final EventFetcherService eventFetcherService,
+                                            final ImportService<T> eventProcessEventImportService) {
     this.publishedProcessStateId = publishedProcessStateId;
     this.importIndexHandler = importSourceIndexHandler;
-    this.eventService = eventService;
-    this.importService = eventProcessInstanceImportService;
+    this.eventFetcherService = eventFetcherService;
+    this.importService = eventProcessEventImportService;
   }
 
   @Override
@@ -52,21 +55,27 @@ public class EventProcessInstanceImportMediator
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final EventDto eventDto) {
-    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(eventDto.getIngestionTimestamp()), ZoneId.systemDefault());
+  protected OffsetDateTime getTimestamp(final T eventProcessEventDto) {
+    if (eventProcessEventDto instanceof EventDto) {
+      return OffsetDateTime.ofInstant(Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()), ZoneId.systemDefault());
+    } else if (eventProcessEventDto instanceof CamundaActivityEventDto) {
+      return ((CamundaActivityEventDto) eventProcessEventDto).getTimestamp();
+    } else {
+      throw new OptimizeRuntimeException("Cannot read import timestamp for unsupported entity");
+    }
   }
 
   @Override
-  protected List<EventDto> getEntitiesNextPage() {
-    return eventService.getEventsIngestedAfter(
+  protected List<T> getEntitiesNextPage() {
+    return eventFetcherService.getEventsIngestedAfter(
       importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli(),
       getMaxPageSize()
     );
   }
 
   @Override
-  protected List<EventDto> getEntitiesLastTimestamp() {
-    return eventService.getEventsIngestedAt(
+  protected List<T> getEntitiesLastTimestamp() {
+    return eventFetcherService.getEventsIngestedAt(
       importIndexHandler.getTimestampOfLastEntity().toInstant().toEpochMilli()
     );
   }

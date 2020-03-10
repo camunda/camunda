@@ -10,7 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
@@ -19,7 +18,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -34,20 +32,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex.PROCESS_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
 
 @AllArgsConstructor
@@ -88,47 +79,20 @@ public class CamundaActivityEventReader {
     return getPageOfEventsForDefinitionKeySortedByTimestamp(definitionKey, timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
   }
 
-  public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionWithVersionAndTenantBetween(
+  public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionBetween(
     final String definitionKey,
-    final List<String> versions,
-    final List<String> tenantIds,
     final Long startTimestamp,
     final Long endTimestamp,
     final int limit) {
     log.debug(
-      "Fetching camunda activity events for key [{}] with versions [{}], tenant IDs [{}] and with timestamp between " +
-        "{} and {}",
-      definitionKey,
-      versions,
-      tenantIds,
-      startTimestamp,
-      endTimestamp
-    );
+      "Fetching camunda activity events for key [{}] with timestamp between {} and {}",
+      definitionKey, startTimestamp, endTimestamp);
 
-    final BoolQueryBuilder eventsQuery = buildQueryForVersionsAndTenants(versions, tenantIds)
-      .must(rangeQuery(CamundaActivityEventIndex.TIMESTAMP)
-              .gt(formatter.format(convertToOffsetDateTime(startTimestamp)))
-              .lt(formatter.format(convertToOffsetDateTime(endTimestamp))));
+    final RangeQueryBuilder eventsQuery = rangeQuery(CamundaActivityEventIndex.TIMESTAMP)
+      .gt(formatter.format(convertToOffsetDateTime(startTimestamp)))
+      .lt(formatter.format(convertToOffsetDateTime(endTimestamp)));
 
     return getPageOfEventsForDefinitionKeySortedByTimestamp(definitionKey, eventsQuery, limit);
-  }
-
-  public List<CamundaActivityEventDto> getCamundaActivityEventsForDefinitionWithVersionAndTenantAt(
-    final String definitionKey,
-    final List<String> versions,
-    final List<String> tenantIds,
-    final Long eventTimestamp) {
-    log.debug(
-      "Fetching camunda activity events for key [{}] with versions [{}], tenant IDs [{}] and with timestamp at {}",
-      definitionKey, versions, tenantIds, eventTimestamp
-    );
-
-    final BoolQueryBuilder eventsQuery = buildQueryForVersionsAndTenants(versions, tenantIds)
-      .must(rangeQuery(CamundaActivityEventIndex.TIMESTAMP)
-              .lte(formatter.format(convertToOffsetDateTime(eventTimestamp)))
-              .gte(formatter.format(convertToOffsetDateTime(eventTimestamp))));
-
-    return getPageOfEventsForDefinitionKeySortedByTimestamp(definitionKey, eventsQuery, MAX_RESPONSE_SIZE_LIMIT);
   }
 
   public Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey) {
@@ -168,30 +132,6 @@ public class CamundaActivityEventReader {
       log.warn("Could not find the {} camunda activity ingestion timestamp.", aggregation.getType());
       return Optional.empty();
     }
-  }
-
-  private BoolQueryBuilder buildQueryForVersionsAndTenants(final List<String> versions, final List<String> tenantIds) {
-    final BoolQueryBuilder eventsQuery = boolQuery();
-    List<String> tenantsToFilterFor = new ArrayList<>(tenantIds);
-    boolean includeEmptyTenant = tenantsToFilterFor.contains(null);
-    tenantsToFilterFor.removeIf(Objects::isNull);
-    if (tenantsToFilterFor.isEmpty() || (tenantsToFilterFor.size() == 1 && includeEmptyTenant)) {
-      eventsQuery.mustNot(existsQuery(TENANT_ID));
-    } else {
-      eventsQuery.should(termsQuery(TENANT_ID, tenantsToFilterFor));
-      if (includeEmptyTenant) {
-        eventsQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
-      }
-    }
-
-    boolean useAllVersions = versions != null && versions.stream()
-      .filter(Objects::nonNull)
-      .anyMatch(version -> version.equalsIgnoreCase(ReportConstants.ALL_VERSIONS));
-    if (versions != null && !useAllVersions) {
-      versions.removeIf(Objects::isNull);
-      eventsQuery.must(termsQuery(PROCESS_DEFINITION_VERSION, versions));
-    }
-    return eventsQuery;
   }
 
   private OffsetDateTime convertToOffsetDateTime(final Long eventTimestamp) {

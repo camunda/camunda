@@ -18,6 +18,9 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -27,7 +30,7 @@ import javax.validation.constraints.NotNull;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
 @FieldNameConstants()
-public class EventDto implements OptimizeDto {
+public class EventDto implements OptimizeDto, EventProcessEventDto {
   @NotBlank
   @EqualsAndHashCode.Include
   @ToString.Include
@@ -49,4 +52,5 @@ public class EventDto implements OptimizeDto {
   @ToString.Include
   private String source;
   private Object data;
+
 }
