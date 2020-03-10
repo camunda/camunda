@@ -7,44 +7,54 @@
  */
 package io.zeebe.engine.state.message;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
 import io.zeebe.db.DbValue;
-import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.BooleanProperty;
+import io.zeebe.msgpack.property.EnumProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class WorkflowInstanceSubscription implements DbValue {
+public final class WorkflowInstanceSubscription extends UnpackedObject implements DbValue {
 
-  private static final int STATE_OPENING = 0;
-  private static final int STATE_OPENED = 1;
-  private static final int STATE_CLOSING = 2;
+  private final StringProperty messageNameProp = new StringProperty("messageName", "");
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
+  private final StringProperty targetElementIdProp = new StringProperty("targetElementId", "");
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
+  private final IntegerProperty subscriptionPartitionIdProp =
+      new IntegerProperty("subscriptionPartitionId", -1);
+  private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
+  private final BooleanProperty closeOnCorrelateProp =
+      new BooleanProperty("closeOnCorrelate", true);
+  private final EnumProperty<State> stateProp =
+      new EnumProperty<>("state", State.class, State.STATE_OPENING);
 
-  private final DirectBuffer messageName = new UnsafeBuffer();
-  private final DirectBuffer correlationKey = new UnsafeBuffer();
-  private final DirectBuffer targetElementId = new UnsafeBuffer();
-  private final DirectBuffer bpmnProcessId = new UnsafeBuffer();
-
-  private long workflowInstanceKey;
-  private long elementInstanceKey;
-  private int subscriptionPartitionId;
-  private long commandSentTime;
-  private boolean closeOnCorrelate = true;
-
-  private int state = STATE_OPENING;
-
-  public WorkflowInstanceSubscription() {}
+  public WorkflowInstanceSubscription() {
+    declareProperty(messageNameProp)
+        .declareProperty(correlationKeyProp)
+        .declareProperty(targetElementIdProp)
+        .declareProperty(bpmnProcessIdProp)
+        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(elementInstanceKeyProp)
+        .declareProperty(subscriptionPartitionIdProp)
+        .declareProperty(commandSentTimeProp)
+        .declareProperty(closeOnCorrelateProp)
+        .declareProperty(stateProp);
+  }
 
   public WorkflowInstanceSubscription(
       final long workflowInstanceKey,
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId) {
-    this.workflowInstanceKey = workflowInstanceKey;
-    this.elementInstanceKey = elementInstanceKey;
-    this.bpmnProcessId.wrap(bpmnProcessId);
+    this();
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    elementInstanceKeyProp.setValue(elementInstanceKey);
+    bpmnProcessIdProp.setValue(bpmnProcessId);
   }
 
   public WorkflowInstanceSubscription(
@@ -58,186 +68,112 @@ public final class WorkflowInstanceSubscription implements DbValue {
       final boolean closeOnCorrelate) {
     this(workflowInstanceKey, elementInstanceKey, bpmnProcessId);
 
-    this.targetElementId.wrap(targetElementId);
-    this.commandSentTime = commandSentTime;
-    this.messageName.wrap(messageName);
-    this.correlationKey.wrap(correlationKey);
-    this.closeOnCorrelate = closeOnCorrelate;
+    targetElementIdProp.setValue(targetElementId);
+    commandSentTimeProp.setValue(commandSentTime);
+    messageNameProp.setValue(messageName);
+    correlationKeyProp.setValue(correlationKey);
+    closeOnCorrelateProp.setValue(closeOnCorrelate);
   }
 
   public DirectBuffer getMessageName() {
-    return messageName;
+    return messageNameProp.getValue();
   }
 
   public void setMessageName(final DirectBuffer messageName) {
-    this.messageName.wrap(messageName);
+    messageNameProp.setValue(messageName);
   }
 
   public DirectBuffer getCorrelationKey() {
-    return correlationKey;
+    return correlationKeyProp.getValue();
   }
 
   public void setCorrelationKey(final DirectBuffer correlationKey) {
-    this.correlationKey.wrap(correlationKey);
+    correlationKeyProp.setValue(correlationKey);
   }
 
   public DirectBuffer getTargetElementId() {
-    return targetElementId;
+    return targetElementIdProp.getValue();
   }
 
   public void setTargetElementId(final DirectBuffer targetElementId) {
-    this.targetElementId.wrap(targetElementId);
+    targetElementIdProp.setValue(targetElementId);
   }
 
   public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+    return workflowInstanceKeyProp.getValue();
   }
 
   public void setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
   }
 
   public long getElementInstanceKey() {
-    return elementInstanceKey;
+    return elementInstanceKeyProp.getValue();
   }
 
   public void setElementInstanceKey(final long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
+    elementInstanceKeyProp.setValue(elementInstanceKey);
   }
 
   public DirectBuffer getBpmnProcessId() {
-    return bpmnProcessId;
+    return bpmnProcessIdProp.getValue();
   }
 
   public void setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    this.bpmnProcessId.wrap(bpmnProcessId);
+    bpmnProcessIdProp.setValue(bpmnProcessId);
   }
 
   public long getCommandSentTime() {
-    return commandSentTime;
+    return commandSentTimeProp.getValue();
   }
 
   public void setCommandSentTime(final long commandSentTime) {
-    this.commandSentTime = commandSentTime;
+    commandSentTimeProp.setValue(commandSentTime);
   }
 
   public int getSubscriptionPartitionId() {
-    return subscriptionPartitionId;
+    return subscriptionPartitionIdProp.getValue();
   }
 
   public void setSubscriptionPartitionId(final int subscriptionPartitionId) {
-    this.subscriptionPartitionId = subscriptionPartitionId;
+    subscriptionPartitionIdProp.setValue(subscriptionPartitionId);
   }
 
   public boolean shouldCloseOnCorrelate() {
-    return closeOnCorrelate;
+    return closeOnCorrelateProp.getValue();
   }
 
   public void setCloseOnCorrelate(final boolean closeOnCorrelate) {
-    this.closeOnCorrelate = closeOnCorrelate;
+    closeOnCorrelateProp.setValue(closeOnCorrelate);
   }
 
   public boolean isOpening() {
-    return state == STATE_OPENING;
+    return stateProp.getValue() == State.STATE_OPENING;
   }
 
   public boolean isClosing() {
-    return state == STATE_CLOSING;
+    return stateProp.getValue() == State.STATE_CLOSING;
   }
 
   public void setOpened() {
-    state = STATE_OPENED;
+    stateProp.setValue(State.STATE_OPENED);
   }
 
   public void setClosing() {
-    state = STATE_CLOSING;
+    stateProp.setValue(State.STATE_CLOSING);
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    final int startOffset = offset;
-    workflowInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    subscriptionPartitionId = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    commandSentTime = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    state = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    closeOnCorrelate = buffer.getByte(offset) == 1;
-    offset += 1;
-
-    offset = readIntoBuffer(buffer, offset, messageName);
-    offset = readIntoBuffer(buffer, offset, correlationKey);
-    offset = readIntoBuffer(buffer, offset, targetElementId);
-    offset = readIntoBuffer(buffer, offset, bpmnProcessId);
-
-    assert (offset - startOffset) == length : "End offset differs from length";
+    final byte[] bytes = new byte[length];
+    final MutableDirectBuffer newBuffer = new UnsafeBuffer(bytes);
+    buffer.getBytes(0, bytes, 0, length);
+    super.wrap(newBuffer, 0, length);
   }
 
-  @Override
-  public int getLength() {
-    return 1
-        + Long.BYTES * 3
-        + Integer.BYTES * 6
-        + messageName.capacity()
-        + correlationKey.capacity()
-        + targetElementId.capacity()
-        + bpmnProcessId.capacity();
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    buffer.putLong(offset, workflowInstanceKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putLong(offset, elementInstanceKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putInt(offset, subscriptionPartitionId, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    buffer.putLong(offset, commandSentTime, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putInt(offset, state, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    buffer.putByte(offset, (byte) (closeOnCorrelate ? 1 : 0));
-    offset += 1;
-
-    offset = writeIntoBuffer(buffer, offset, messageName);
-    offset = writeIntoBuffer(buffer, offset, correlationKey);
-    offset = writeIntoBuffer(buffer, offset, targetElementId);
-    offset = writeIntoBuffer(buffer, offset, bpmnProcessId);
-
-    assert offset == getLength() : "End offset differs with getLength()";
-  }
-
-  @Override
-  public String toString() {
-    return "WorkflowInstanceSubscription{"
-        + "elementInstanceKey="
-        + elementInstanceKey
-        + ", messageName="
-        + BufferUtil.bufferAsString(messageName)
-        + ", correlationKey="
-        + BufferUtil.bufferAsString(correlationKey)
-        + ", workflowInstanceKey="
-        + workflowInstanceKey
-        + ", subscriptionPartitionId="
-        + subscriptionPartitionId
-        + ", commandSentTime="
-        + commandSentTime
-        + ", state="
-        + state
-        + '}';
+  private enum State {
+    STATE_OPENING,
+    STATE_OPENED,
+    STATE_CLOSING,
   }
 }
