@@ -71,8 +71,8 @@ describe('CreateOperationDropdown', () => {
 
     retryButton.simulate('click');
 
-    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledWith(
+    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledTimes(1);
+    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE.RESOLVE_INCIDENT
     );
   });
@@ -93,13 +93,13 @@ describe('CreateOperationDropdown', () => {
 
     retryButton.simulate('click');
 
-    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledWith(
+    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledTimes(1);
+    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     );
   });
 
-  it('should call applyOperation', () => {
+  it('should call applyBatchOperation', () => {
     const node = mount(
       <CreateOperationDropdown label="MyLabel" selectedCount={2} />
     );
@@ -117,8 +117,8 @@ describe('CreateOperationDropdown', () => {
 
     retryButton.simulate('click');
 
-    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseOperationApply.applyOperation).toHaveBeenCalledWith(
+    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledTimes(1);
+    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     );
   });

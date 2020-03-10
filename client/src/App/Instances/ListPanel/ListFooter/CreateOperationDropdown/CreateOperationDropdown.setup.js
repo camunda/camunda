@@ -5,5 +5,5 @@
  */
 
 export const mockUseOperationApply = {
-  applyOperation: jest.fn()
+  applyBatchOperation: jest.fn()
 };

@@ -202,7 +202,7 @@ describe('InstancesContainer', () => {
       // thenw
       expect(dataManager.getWorkflowInstances).toHaveBeenCalled();
       const call = dataManager.getWorkflowInstances.mock.calls[0][0];
-      expect(call.queries[0]).toMatchObject({
+      expect(call).toMatchObject({
         ...expectedQuery
       });
       expect(call.firstResult).toEqual(node.state('firstElement'));
@@ -219,7 +219,7 @@ describe('InstancesContainer', () => {
       // then
       expect(dataManager.getWorkflowInstances).toHaveBeenCalled();
       const call = dataManager.getWorkflowInstances.mock.calls[0][0];
-      expect(call.queries[0]).toMatchObject({
+      expect(call).toMatchObject({
         ...expectedQuery
       });
       expect(call.firstResult).toEqual(node.state('firstElement'));
@@ -247,7 +247,7 @@ describe('InstancesContainer', () => {
       // then
       expect(dataManager.getWorkflowInstances).toHaveBeenCalled();
       const call = dataManager.getWorkflowInstances.mock.calls[0][0];
-      expect(call.queries[0]).toMatchObject({
+      expect(call).toMatchObject({
         ...expectedQuery
       });
       expect(call.maxResults).toEqual(DEFAULT_MAX_RESULTS);

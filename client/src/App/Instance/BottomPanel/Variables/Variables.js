@@ -20,8 +20,7 @@ export default function Variables({
   setEditMode,
   Placeholder,
   Overlay,
-  isLoading,
-  ...props
+  isLoading
 }) {
   const MODE = {EDIT: 'edit', ADD: 'add'};
 

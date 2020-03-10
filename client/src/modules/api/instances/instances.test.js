@@ -104,22 +104,18 @@ describe('instances api', () => {
       await fetchWorkflowInstancesByIds(ids);
       // then
 
-      expect(wrappers.post.mock.calls[0][0]).toBe(
-        `/api/workflow-instances?firstResult=0&maxResults=${ids.length}`
+      expect(wrappers.post).toHaveBeenCalledWith(
+        `/api/workflow-instances?firstResult=0&maxResults=${ids.length}`,
+        {
+          ids,
+          running: true,
+          active: true,
+          canceled: true,
+          completed: true,
+          finished: true,
+          incidents: true
+        }
       );
-      expect(wrappers.post.mock.calls[0][1]).toEqual({
-        queries: [
-          {
-            ids,
-            running: true,
-            active: true,
-            canceled: true,
-            completed: true,
-            finished: true,
-            incidents: true
-          }
-        ]
-      });
     });
   });
 

@@ -468,9 +468,9 @@ class Instance extends Component {
 
     return this.props.dataManager.applyOperation(id, {
       operationType: 'UPDATE_VARIABLE',
-      scopeId: treeRowIds[0],
-      name: key,
-      value
+      variableScopeId: treeRowIds[0],
+      variableName: key,
+      variableValue: value
     });
   };
 

@@ -249,7 +249,7 @@ class InstancesContainer extends Component {
   fetchWorkflowInstances = async (filter, groupedWorkflows) => {
     const {sorting, firstElement} = this.state;
     this.props.dataManager.getWorkflowInstances({
-      queries: [this.getQuery(filter, groupedWorkflows)],
+      ...this.getQuery(filter, groupedWorkflows),
       sorting,
       firstResult: firstElement,
       maxResults: DEFAULT_MAX_RESULTS
@@ -258,6 +258,7 @@ class InstancesContainer extends Component {
 
   fetchStatistics = () => {
     const {filter, groupedWorkflows} = this.state;
+    const {getWorkflowInstancesStatistics} = this.props.dataManager;
     const workflowByVersion = getWorkflowByVersion(
       groupedWorkflows[filter.workflow],
       filter.version
@@ -272,9 +273,9 @@ class InstancesContainer extends Component {
       groupedWorkflows
     );
 
-    return this.props.dataManager.getWorkflowInstancesStatistics({
-      queries: [parseFilterForRequest(decodeFields(filterWithWorkflowIds))]
-    });
+    return getWorkflowInstancesStatistics(
+      parseFilterForRequest(decodeFields(filterWithWorkflowIds))
+    );
   };
 
   /**

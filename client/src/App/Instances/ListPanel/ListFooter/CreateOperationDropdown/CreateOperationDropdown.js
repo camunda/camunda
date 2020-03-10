@@ -14,7 +14,7 @@ import Dropdown from 'modules/components/Dropdown';
 import useOperationApply from './useOperationApply';
 
 const CreateOperationDropdown = ({label}) => {
-  const {applyOperation} = useOperationApply();
+  const {applyBatchOperation} = useOperationApply();
 
   return (
     <Styled.DropdownContainer>
@@ -24,12 +24,12 @@ const CreateOperationDropdown = ({label}) => {
         label={label}
       >
         <Dropdown.Option
-          onClick={() => applyOperation(OPERATION_TYPE.RESOLVE_INCIDENT)}
+          onClick={() => applyBatchOperation(OPERATION_TYPE.RESOLVE_INCIDENT)}
           label="Retry"
         />
         <Dropdown.Option
           onClick={() =>
-            applyOperation(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)
+            applyBatchOperation(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)
           }
           label="Cancel"
         />
