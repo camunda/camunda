@@ -391,15 +391,6 @@ class InstancesContainer extends Component {
       return otherFilters;
     }
 
-    // (6) if activityId is invalid, remove it from the url filter
-    if (
-      activityId &&
-      diagramModel.bpmnElements &&
-      !diagramModel.bpmnElements[activityId]
-    ) {
-      return {...otherFilters, workflow, version};
-    }
-
     return filter;
   };
 

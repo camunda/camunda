@@ -540,29 +540,6 @@ describe('InstancesContainer', () => {
         expect(parseQueryString(search).filter).toEqual(rest);
       });
 
-      it('when the activityId in url is invalid', async () => {
-        const node = mount(
-          <InstancesContainerWrapped
-            {...{dataManager}}
-            {...mockLocalStorageProps}
-            {...getRouterProps({
-              ...mockFullFilterWithWorkflow,
-              activityId: 'x'
-            })}
-          />
-        );
-
-        // when
-        await flushPromises();
-        node.update();
-
-        // expect invalid activityId to have been removed
-        expect(pushMock).toHaveBeenCalled();
-        const search = pushMock.mock.calls[0][0].search;
-        const {activityId, ...rest} = mockFullFilterWithWorkflow;
-        expect(parseQueryString(search).filter).toEqual(rest);
-      });
-
       it('should remove activityId when version="all"', async () => {
         const node = mount(
           <InstancesContainerWrapped
