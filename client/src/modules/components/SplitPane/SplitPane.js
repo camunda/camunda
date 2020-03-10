@@ -12,27 +12,33 @@ import {PANE_ID, EXPAND_STATE} from 'modules/constants';
 import Pane from './Pane';
 import {twoNodesPropType} from './service';
 import * as Styled from './styled';
+import withSharedState from 'modules/components/withSharedState';
 
 const paneIds = [PANE_ID.TOP, PANE_ID.BOTTOM];
 
-export default class SplitPane extends React.Component {
+class SplitPane extends React.Component {
   static propTypes = {
+    getStateLocally: PropTypes.func.isRequired,
+    storeStateLocally: PropTypes.func.isRequired,
     children: twoNodesPropType,
+    expandedPaneId: PropTypes.string,
     titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string})
   };
 
   state = {
-    expandedPaneId: null
+    [this.props.expandedPaneId]: null
   };
 
   getPaneExpandedState = paneId => {
-    const {expandedPaneId} = this.state;
+    const {getStateLocally, expandedPaneId} = this.props;
 
-    if (expandedPaneId === null) {
+    const panelStates = getStateLocally('panelStates');
+
+    if (!panelStates[expandedPaneId]) {
       return EXPAND_STATE.DEFAULT;
     }
 
-    if (expandedPaneId === paneId) {
+    if (panelStates[expandedPaneId] === paneId) {
       return EXPAND_STATE.EXPANDED;
     }
 
@@ -53,9 +59,16 @@ export default class SplitPane extends React.Component {
   };
 
   handleExpand = paneId => {
-    const expandedPaneId = this.state.expandedPaneId === null ? paneId : null;
+    const {getStateLocally, storeStateLocally, expandedPaneId} = this.props;
+    const panelStates = getStateLocally('panelStates');
 
-    this.setState({expandedPaneId});
+    const expandState = {
+      [expandedPaneId]: !panelStates[expandedPaneId] ? paneId : null
+    };
+
+    storeStateLocally(expandState, 'panelStates');
+
+    this.setState(expandState);
   };
 
   render() {
@@ -65,4 +78,7 @@ export default class SplitPane extends React.Component {
   }
 }
 
-SplitPane.Pane = Pane;
+const SplitPaneWithSharedState = withSharedState(SplitPane);
+SplitPaneWithSharedState.Pane = Pane;
+
+export default SplitPaneWithSharedState;

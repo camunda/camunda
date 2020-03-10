@@ -6,6 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import withSharedState from 'modules/components/withSharedState';
 
 const CollapsablePanelContext = React.createContext();
 
@@ -15,6 +16,8 @@ const CollapsablePanelConsumer = CollapsablePanelContext.Consumer;
 // Top level component to pass down theme in the App
 class CollapsablePanelProvider extends React.Component {
   static propTypes = {
+    getStateLocally: PropTypes.func.isRequired,
+    storeStateLocally: PropTypes.func.isRequired,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
@@ -24,24 +27,47 @@ class CollapsablePanelProvider extends React.Component {
   // we start with both panels not collapsed
   state = {isFiltersCollapsed: false, isOperationsCollapsed: true};
 
-  toggle = target =>
-    this.setState(prevState => {
-      return {[target]: !prevState[target]};
-    });
+  toggle = function(target) {
+    const currentPanelState = this.getCurrentPanelState();
+    const expandState = {[target]: !currentPanelState[target]};
+
+    this.props.storeStateLocally(expandState, 'panelStates');
+    // components should be rerendered after panel states changed
+    this.setState(expandState);
+  };
 
   toggleFilters = () => this.toggle('isFiltersCollapsed');
 
   toggleOperations = () => this.toggle('isOperationsCollapsed');
 
-  expand = target => this.setState({[target]: false});
+  expand = function(target) {
+    const expandState = {[target]: false};
+    this.props.storeStateLocally(expandState, 'panelStates');
+    // components should be rerendered after panel states changed
+    this.setState(expandState);
+  };
 
   expandFilters = () => this.expand('isFiltersCollapsed');
 
   expandOperations = () => this.expand('isOperationsCollapsed');
 
+  getCurrentPanelState = function() {
+    const {
+      isFiltersCollapsed = false,
+      isOperationsCollapsed = true
+    } = this.props.getStateLocally('panelStates');
+
+    return {
+      isFiltersCollapsed,
+      isOperationsCollapsed
+    };
+  };
+
   render() {
+    const currentPanelState = this.getCurrentPanelState();
+
     const contextValue = {
-      ...this.state,
+      ...currentPanelState,
       toggleFilters: this.toggleFilters,
       toggleOperations: this.toggleOperations,
       expandFilters: this.expandFilters,
@@ -74,8 +100,11 @@ const withCollapsablePanel = Component => {
   return WithCollapsablePanel;
 };
 
+const CollapsablePanelProviderWithSharedState = withSharedState(
+  CollapsablePanelProvider
+);
 export {
   CollapsablePanelConsumer,
-  CollapsablePanelProvider,
+  CollapsablePanelProviderWithSharedState as CollapsablePanelProvider,
   withCollapsablePanel
 };

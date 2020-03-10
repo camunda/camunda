@@ -111,7 +111,10 @@ export default class Instances extends Component {
                 onFilterChange={onFilterChange}
               />
             </Styled.FilterSection>
-            <Styled.SplitPane titles={{top: 'Workflow', bottom: 'Instances'}}>
+            <Styled.SplitPane
+              titles={{top: 'Workflow', bottom: 'Instances'}}
+              expandedPaneId="instancesExpandedPaneId"
+            >
               <DiagramPanel
                 workflowName={workflowName}
                 onFlowNodeSelection={onFlowNodeSelection}
