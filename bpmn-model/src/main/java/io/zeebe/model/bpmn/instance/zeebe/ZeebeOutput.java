@@ -17,13 +17,9 @@ package io.zeebe.model.bpmn.instance.zeebe;
 
 import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
-public interface ZeebeOutput extends BpmnModelElementInstance {
-
-  String getSource();
+public interface ZeebeOutput extends BpmnModelElementInstance, ZeebeMapping {
 
   void setSource(String source);
-
-  String getTarget();
 
   void setTarget(String target);
 }

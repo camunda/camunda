@@ -227,7 +227,7 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeInput("x", "y")))
+        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeInputExpression("x", "y")))
         .deploy();
 
     // when
@@ -251,7 +251,7 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutput("x", "y")))
+        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutputExpression("x", "y")))
         .deploy();
 
     final var workflowInstanceKey =
@@ -368,7 +368,7 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutput("x", "y")))
+        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutputExpression("x", "y")))
         .deploy();
 
     final var workflowInstanceKey =
@@ -406,7 +406,8 @@ public final class CallActivityTest {
     ENGINE
         .deployment()
         .withXmlResource(
-            "wf-parent.bpmn", parentWorkflow(callActivity -> callActivity.zeebeInput("x", "y")))
+            "wf-parent.bpmn",
+            parentWorkflow(callActivity -> callActivity.zeebeInputExpression("x", "y")))
         .deploy();
 
     final var workflowInstanceKey =
@@ -470,7 +471,7 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeInput("x", "y")))
+        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeInputExpression("x", "y")))
         .deploy();
 
     // when

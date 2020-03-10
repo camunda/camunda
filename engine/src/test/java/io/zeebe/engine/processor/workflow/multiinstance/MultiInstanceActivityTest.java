@@ -729,8 +729,8 @@ public final class MultiInstanceActivityTest {
     final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
     final var workflow =
         task.builder()
-            .zeebeInput(INPUT_ELEMENT_VARIABLE, "x")
-            .zeebeInput("loopCounter", "y")
+            .zeebeInputExpression(INPUT_ELEMENT_VARIABLE, "x")
+            .zeebeInputExpression("loopCounter", "y")
             .done();
 
     ENGINE.deployment().withXmlResource(workflow).deploy();
@@ -777,8 +777,8 @@ public final class MultiInstanceActivityTest {
     final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
     final var workflow =
         task.builder()
-            .zeebeOutput("loopCounter", OUTPUT_ELEMENT_VARIABLE) // overrides the variable
-            .zeebeOutput("loopCounter", "global") // propagates to root scope
+            .zeebeOutputExpression("loopCounter", OUTPUT_ELEMENT_VARIABLE) // overrides the variable
+            .zeebeOutputExpression("loopCounter", "global") // propagates to root scope
             .done();
 
     ENGINE.deployment().withXmlResource(workflow).deploy();

@@ -75,8 +75,8 @@ public class ZeebeBuilderTest {
             .serviceTask(
                 "foo",
                 b ->
-                    b.zeebeInput("inputSource", "inputTarget")
-                        .zeebeOutput("outputSource", "outputTarget"))
+                    b.zeebeInputExpression("inputSource", "inputTarget")
+                        .zeebeOutputExpression("outputSource", "outputTarget"))
             .endEvent()
             .done();
 
@@ -89,11 +89,11 @@ public class ZeebeBuilderTest {
 
     final Collection<ZeebeInput> inputs = ioMapping.getInputs();
     assertThat(inputs).hasSize(1);
-    assertThat(inputs).element(0).matches(input("inputSource", "inputTarget"));
+    assertThat(inputs).element(0).matches(mapping("=inputSource", "inputTarget"));
 
     final Collection<ZeebeOutput> outputs = ioMapping.getOutputs();
     assertThat(outputs).hasSize(1);
-    assertThat(outputs).element(0).matches(output("outputSource", "outputTarget"));
+    assertThat(outputs).element(0).matches(mapping("=outputSource", "outputTarget"));
   }
 
   @Test
@@ -151,7 +151,6 @@ public class ZeebeBuilderTest {
     assertThat(subscription.getCorrelationKey()).isEqualTo("=correlationKey");
   }
 
-  @SuppressWarnings("unchecked")
   private <T extends BpmnModelElementInstance> T getExtensionElement(
       final BaseElement element, final Class<T> typeClass) {
     final T extensionElement =
@@ -164,11 +163,7 @@ public class ZeebeBuilderTest {
     return h -> key.equals(h.getKey()) && value.equals(h.getValue());
   }
 
-  private static Predicate<ZeebeInput> input(final String source, final String target) {
-    return h -> source.equals(h.getSource()) && target.equals(h.getTarget());
-  }
-
-  private static Predicate<ZeebeOutput> output(final String source, final String target) {
+  private static Predicate<ZeebeMapping> mapping(final String source, final String target) {
     return h -> source.equals(h.getSource()) && target.equals(h.getTarget());
   }
 }

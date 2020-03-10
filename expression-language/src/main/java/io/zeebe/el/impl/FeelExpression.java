@@ -41,4 +41,9 @@ public final class FeelExpression implements Expression {
   public ParsedExpression getParsedExpression() {
     return expression;
   }
+
+  @Override
+  public String toString() {
+    return "FeelExpression{" + "expression=" + expression + '}';
+  }
 }

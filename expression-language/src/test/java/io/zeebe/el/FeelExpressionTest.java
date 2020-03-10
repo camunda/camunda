@@ -15,7 +15,7 @@ import org.junit.Test;
 
 public class FeelExpressionTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = StaticEvaluationContext.empty();
+  private static final EvaluationContext EMPTY_CONTEXT = name -> null;
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage();
@@ -62,8 +62,8 @@ public class FeelExpressionTest {
 
   @Test
   public void pathExpression() {
-    final var context = StaticEvaluationContext.of(Map.of("x", asMsgPack(Map.of("y", "z"))));
-    final var evaluationResult = evaluateExpression("x.y", context);
+    final var context = Map.of("x", asMsgPack(Map.of("y", "z")));
+    final var evaluationResult = evaluateExpression("x.y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("z");
@@ -71,8 +71,8 @@ public class FeelExpressionTest {
 
   @Test
   public void comparison() {
-    final var context = StaticEvaluationContext.of(Map.of("x", asMsgPack("2")));
-    final var evaluationResult = evaluateExpression("x < 4", context);
+    final var context = Map.of("x", asMsgPack("2"));
+    final var evaluationResult = evaluateExpression("x < 4", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -81,11 +81,10 @@ public class FeelExpressionTest {
   @Test
   public void conjunction() {
     final var context =
-        StaticEvaluationContext.of(
-            Map.of(
-                "x", asMsgPack("true"),
-                "y", asMsgPack("false")));
-    final var evaluationResult = evaluateExpression("x and y", context);
+        Map.of(
+            "x", asMsgPack("true"),
+            "y", asMsgPack("false"));
+    final var evaluationResult = evaluateExpression("x and y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -94,11 +93,10 @@ public class FeelExpressionTest {
   @Test
   public void disjunction() {
     final var context =
-        StaticEvaluationContext.of(
-            Map.of(
-                "x", asMsgPack("true"),
-                "y", asMsgPack("false")));
-    final var evaluationResult = evaluateExpression("x or y", context);
+        Map.of(
+            "x", asMsgPack("true"),
+            "y", asMsgPack("false"));
+    final var evaluationResult = evaluateExpression("x or y", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -106,8 +104,8 @@ public class FeelExpressionTest {
 
   @Test
   public void someExpression() {
-    final var context = StaticEvaluationContext.of(Map.of("xs", asMsgPack("[1, 2, 3]")));
-    final var evaluationResult = evaluateExpression("some x in xs satisfies x > 2", context);
+    final var context = Map.of("xs", asMsgPack("[1, 2, 3]"));
+    final var evaluationResult = evaluateExpression("some x in xs satisfies x > 2", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(true);
@@ -115,8 +113,8 @@ public class FeelExpressionTest {
 
   @Test
   public void everyExpression() {
-    final var context = StaticEvaluationContext.of(Map.of("xs", asMsgPack("[1, 2, 3]")));
-    final var evaluationResult = evaluateExpression("every x in xs satisfies x > 2", context);
+    final var context = Map.of("xs", asMsgPack("[1, 2, 3]"));
+    final var evaluationResult = evaluateExpression("every x in xs satisfies x > 2", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.BOOLEAN);
     assertThat(evaluationResult.getBoolean()).isEqualTo(false);
@@ -124,8 +122,8 @@ public class FeelExpressionTest {
 
   @Test
   public void builtinFunctionInvocation() {
-    final var context = StaticEvaluationContext.of(Map.of("x", asMsgPack("\"foo\"")));
-    final var evaluationResult = evaluateExpression("upper case(x)", context);
+    final var context = Map.of("x", asMsgPack("\"foo\""));
+    final var evaluationResult = evaluateExpression("upper case(x)", context::get);
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("FOO");

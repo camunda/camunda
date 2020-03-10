@@ -7,8 +7,8 @@
  */
 package io.zeebe.engine.processor.workflow.variable.mapping;
 
+import static io.zeebe.engine.processor.workflow.variable.mapping.VariableValue.variable;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -21,7 +21,6 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,25 +46,35 @@ public final class ActivityInputMappingTest {
   public Consumer<SubProcessBuilder> mappings;
 
   @Parameter(2)
-  public List<Tuple> expectedActivityVariables;
+  public List<VariableValue> expectedActivityVariables;
 
   @Parameters(name = "from {0} to {2}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"{'x': 1}", mapping(b -> b.zeebeInput("x", "x")), activityVariables(tuple("x", "1"))},
-      {"{'x': 1}", mapping(b -> b.zeebeInput("x", "y")), activityVariables(tuple("y", "1"))},
       {
-        "{'x': 1, 'y': 2}", mapping(b -> b.zeebeInput("y", "z")), activityVariables(tuple("z", "2"))
+        "{'x': 1}",
+        mapping(b -> b.zeebeInputExpression("x", "x")),
+        activityVariables(variable("x", "1"))
+      },
+      {
+        "{'x': 1}",
+        mapping(b -> b.zeebeInputExpression("x", "y")),
+        activityVariables(variable("y", "1"))
+      },
+      {
+        "{'x': 1, 'y': 2}",
+        mapping(b -> b.zeebeInputExpression("y", "z")),
+        activityVariables(variable("z", "2"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeInput("x", "x")),
-        activityVariables(tuple("x", "{\"y\":2}"))
+        mapping(b -> b.zeebeInputExpression("x", "x")),
+        activityVariables(variable("x", "{\"y\":2}"))
       },
       {
         "{'x': {'y': 2}}",
-        mapping(b -> b.zeebeInput("x.y", "y")),
-        activityVariables(tuple("y", "2"))
+        mapping(b -> b.zeebeInputExpression("x.y", "y")),
+        activityVariables(variable("y", "2"))
       },
     };
   }
@@ -115,7 +124,7 @@ public final class ActivityInputMappingTest {
                 .withScopeKey(flowScopeKey)
                 .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
-        .extracting(v -> tuple(v.getName(), v.getValue()))
+        .extracting(v -> variable(v.getName(), v.getValue()))
         .hasSize(expectedActivityVariables.size())
         .containsAll(expectedActivityVariables);
   }
@@ -125,7 +134,7 @@ public final class ActivityInputMappingTest {
     return mappingBuilder;
   }
 
-  private static List<Tuple> activityVariables(final Tuple... variables) {
+  private static List<VariableValue> activityVariables(final VariableValue... variables) {
     return Arrays.asList(variables);
   }
 }

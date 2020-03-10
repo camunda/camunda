@@ -24,14 +24,14 @@ public final class ZeebeRuntimeValidators {
   public static final Collection<ModelElementValidator<?>> getValidators(
       final ExpressionLanguage expressionLanguage) {
     return List.of(
-        ZeebeJsonPathValidator.verifyThat(ZeebeInput.class)
-            .hasValidPathExpression(ZeebeInput::getSource)
-            .hasValidPathExpression(ZeebeInput::getTarget)
-            .build(),
-        ZeebeJsonPathValidator.verifyThat(ZeebeOutput.class)
-            .hasValidPathExpression(ZeebeOutput::getSource)
-            .hasValidPathExpression(ZeebeOutput::getTarget)
-            .build(),
+        ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
+            .hasValidNonStaticExpression(ZeebeInput::getSource)
+            .hasValidPath(ZeebeInput::getTarget)
+            .build(expressionLanguage),
+        ZeebeExpressionValidator.verifyThat(ZeebeOutput.class)
+            .hasValidNonStaticExpression(ZeebeOutput::getSource)
+            .hasValidPath(ZeebeOutput::getTarget)
+            .build(expressionLanguage),
         ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
             .hasValidExpression(ZeebeSubscription::getCorrelationKey)
             .build(expressionLanguage),

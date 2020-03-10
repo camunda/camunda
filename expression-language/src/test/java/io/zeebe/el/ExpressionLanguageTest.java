@@ -15,7 +15,7 @@ import org.junit.Test;
 
 public class ExpressionLanguageTest {
 
-  private static final EvaluationContext EMPTY_CONTEXT = StaticEvaluationContext.empty();
+  private static final EvaluationContext EMPTY_CONTEXT = name -> null;
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage();
@@ -81,8 +81,7 @@ public class ExpressionLanguageTest {
   public void shouldEvaluateExpression() {
     final var expression = expressionLanguage.parseExpression("=x");
     final var evaluationResult =
-        expressionLanguage.evaluateExpression(
-            expression, StaticEvaluationContext.of(Map.of("x", asMsgPack("\"x\""))));
+        expressionLanguage.evaluateExpression(expression, Map.of("x", asMsgPack("\"x\""))::get);
 
     assertThat(evaluationResult).isNotNull();
     assertThat(evaluationResult.isFailure()).isFalse();

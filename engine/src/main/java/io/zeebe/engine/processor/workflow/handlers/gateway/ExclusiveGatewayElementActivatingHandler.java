@@ -29,7 +29,7 @@ public final class ExclusiveGatewayElementActivatingHandler<T extends Executable
   private final ExpressionProcessor expressionProcessor;
 
   public ExclusiveGatewayElementActivatingHandler(final ExpressionProcessor expressionProcessor) {
-    super();
+    super(expressionProcessor);
     this.expressionProcessor = expressionProcessor;
   }
 

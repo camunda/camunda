@@ -106,8 +106,7 @@ public class EvaluationContextTest {
   private EvaluationResult evaluateExpressionWithContext(final DirectBuffer variable) {
     final var parseExpression = expressionLanguage.parseExpression("=x");
     final var evaluationResult =
-        expressionLanguage.evaluateExpression(
-            parseExpression, StaticEvaluationContext.of(Map.of("x", variable)));
+        expressionLanguage.evaluateExpression(parseExpression, Map.of("x", variable)::get);
 
     assertThat(evaluationResult.isFailure())
         .describedAs(evaluationResult.getFailureMessage())

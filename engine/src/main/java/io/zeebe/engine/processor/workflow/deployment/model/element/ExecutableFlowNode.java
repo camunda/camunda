@@ -7,17 +7,18 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.msgpack.mapping.Mappings;
+import io.zeebe.el.Expression;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ExecutableFlowNode extends AbstractFlowElement {
 
   private final List<ExecutableSequenceFlow> incoming = new ArrayList<>();
   private final List<ExecutableSequenceFlow> outgoing = new ArrayList<>();
 
-  private Mappings inputMappings = new Mappings();
-  private Mappings outputMappings = new Mappings();
+  private Optional<Expression> inputMappings = Optional.empty();
+  private Optional<Expression> outputMappings = Optional.empty();
 
   public ExecutableFlowNode(final String id) {
     super(id);
@@ -39,19 +40,19 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     incoming.add(flow);
   }
 
-  public Mappings getInputMappings() {
+  public Optional<Expression> getInputMappings() {
     return inputMappings;
   }
 
-  public void setInputMappings(final Mappings inputMappings) {
-    this.inputMappings = inputMappings;
+  public void setInputMappings(final Expression inputMappings) {
+    this.inputMappings = Optional.of(inputMappings);
   }
 
-  public Mappings getOutputMappings() {
+  public Optional<Expression> getOutputMappings() {
     return outputMappings;
   }
 
-  public void setOutputMappings(final Mappings outputMappings) {
-    this.outputMappings = outputMappings;
+  public void setOutputMappings(final Expression outputMappings) {
+    this.outputMappings = Optional.of(outputMappings);
   }
 }

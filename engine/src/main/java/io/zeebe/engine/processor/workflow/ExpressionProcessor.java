@@ -49,11 +49,11 @@ public final class ExpressionProcessor {
   public Optional<DirectBuffer> evaluateStringExpression(
       final Expression expression, final BpmnStepContext<?> context) {
 
-    return evaluateExpression(
-            expression,
-            context.getKey(),
-            new TypeVerifyingIncidentRaisingHandler<>(
-                ResultType.STRING, context, EvaluationResult::getString))
+    final var evaluationResult = evaluateExpression(expression, context.getKey());
+    return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
+        .flatMap(
+            result -> typeCheck(result, ResultType.STRING, ErrorType.EXTRACT_VALUE_ERROR, context))
+        .map(EvaluationResult::getString)
         .map(this::wrapResult);
   }
 
@@ -68,48 +68,80 @@ public final class ExpressionProcessor {
   public Optional<Boolean> evaluateBooleanExpression(
       final Expression expression, final BpmnStepContext<?> context) {
 
-    return evaluateExpression(
-        expression,
-        context.getKey(),
-        new TypeVerifyingIncidentRaisingHandler<Boolean>(
-            ResultType.BOOLEAN, context, EvaluationResult::getBoolean));
+    final var evaluationResult = evaluateExpression(expression, context.getKey());
+    return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
+        .flatMap(
+            result -> typeCheck(result, ResultType.BOOLEAN, ErrorType.EXTRACT_VALUE_ERROR, context))
+        .map(EvaluationResult::getBoolean);
   }
 
   /**
    * Evaluates the given expression and returns the result as String. If the evaluation fails or the
    * result is not a string or number (the latter of which is automatically converted to a string),
-   * then an exeption is thrown
+   * then an exception is thrown.
    *
-   * @param expression the expression to evaluate; must not be {@code null}
-   * @param context context object used to determine the varaible scope key; must not be {@code
-   *     null}
+   * @param expression the expression to evaluate
+   * @param context context object used to determine the variable scope key;
    * @return the evaluation result as String
+   * @throws MessageCorrelationKeyException if the evaluation fails or the result is not a string or
+   *     number
    */
   public String evaluateMessageCorrelationKeyExpression(
       final Expression expression, final MessageCorrelationKeyContext context) {
-    return evaluateExpression(
-        expression, context.getVariablesScopeKey(), new CorrelationKeyResultHandler(context));
+
+    final var evaluationResult = evaluateExpression(expression, context.getVariablesScopeKey());
+
+    final var resultHandler = new CorrelationKeyResultHandler(context);
+    return resultHandler.apply(evaluationResult);
   }
 
   /**
-   * Evaluates the given expression and passes the result to the {@code resultHandler}
+   * Evaluates the given expression of a variable mapping and returns the result as buffer. If the
+   * evaluation fails or the result is not a context then an incident is raised.
    *
-   * @param expression the expression to evaluate; must not be {@code null}
-   * @param variableScopeKey the key to identify the variable scope which will provide the context
-   *     in which the expression is evaluated
-   * @param resultHandler the result handler to process the evaluation result, and convert it to the
-   *     desired result type; must not be {@code null}
-   * @param <T> desired result type
-   * @return the result of the expression evaluation
+   * @param expression the expression to evaluate
+   * @param context the element context to load the variables from
+   * @return the evaluation result as buffer, or {@link Optional#empty()} if an incident is raised
    */
-  private <T> T evaluateExpression(
-      final Expression expression,
-      final long variableScopeKey,
-      final Function<EvaluationResult, T> resultHandler) {
+  public Optional<DirectBuffer> evaluateVariableMappingExpression(
+      final Expression expression, final BpmnStepContext<?> context) {
 
-    final var evaluationResult = evaluateExpression(expression, variableScopeKey);
+    final var evaluationResult = evaluateExpression(expression, context.getKey());
+    return failureCheck(evaluationResult, ErrorType.IO_MAPPING_ERROR, context)
+        .flatMap(
+            result -> typeCheck(result, ResultType.OBJECT, ErrorType.IO_MAPPING_ERROR, context))
+        .map(EvaluationResult::toBuffer);
+  }
 
-    return resultHandler.apply(evaluationResult);
+  private Optional<EvaluationResult> failureCheck(
+      final EvaluationResult result, final ErrorType errorType, final BpmnStepContext<?> context) {
+
+    if (result.isFailure()) {
+      context.raiseIncident(errorType, result.getFailureMessage());
+      return Optional.empty();
+
+    } else {
+      return Optional.of(result);
+    }
+  }
+
+  private Optional<EvaluationResult> typeCheck(
+      final EvaluationResult result,
+      final ResultType expectedResultType,
+      final ErrorType errorType,
+      final BpmnStepContext<?> context) {
+
+    if (result.getType() != expectedResultType) {
+      context.raiseIncident(
+          errorType,
+          String.format(
+              "Expected result of the expression '%s' to be '%s', but was '%s'.",
+              result.getExpression(), expectedResultType, result.getType()));
+      return Optional.empty();
+
+    } else {
+      return Optional.of(result);
+    }
   }
 
   private EvaluationResult evaluateExpression(
@@ -123,28 +155,6 @@ public final class ExpressionProcessor {
   private DirectBuffer wrapResult(final String result) {
     resultView.wrap(result.getBytes());
     return resultView;
-  }
-
-  private static class VariableStateEvaluationContext implements EvaluationContext {
-
-    private final DirectBuffer variableNameBuffer = new UnsafeBuffer();
-
-    private final VariablesState variablesState;
-
-    private long variableScopeKey;
-
-    public VariableStateEvaluationContext(final VariablesState variablesState) {
-      this.variablesState = variablesState;
-    }
-
-    @Override
-    public DirectBuffer getVariable(final String variableName) {
-      ensureGreaterThan("variable scope key", variableScopeKey, 0);
-
-      variableNameBuffer.wrap(variableName.getBytes());
-
-      return variablesState.getVariable(variableScopeKey, variableNameBuffer);
-    }
   }
 
   protected static final class CorrelationKeyResultHandler
@@ -178,46 +188,25 @@ public final class ExpressionProcessor {
     }
   }
 
-  /**
-   * This expression result handler raises an incident if the evaluation resulted in a failure or an
-   * unexpected type
-   *
-   * @param <T> target type to which the result of the expression shall be converted
-   */
-  protected final class TypeVerifyingIncidentRaisingHandler<T>
-      implements Function<EvaluationResult, Optional<T>> {
+  private static class VariableStateEvaluationContext implements EvaluationContext {
 
-    final ResultType expectedResultType;
-    final Function<EvaluationResult, T> resultExtractor;
-    final BpmnStepContext<?> context;
+    private final DirectBuffer variableNameBuffer = new UnsafeBuffer();
 
-    public TypeVerifyingIncidentRaisingHandler(
-        final ResultType expectedResultType,
-        final BpmnStepContext<?> context,
-        final Function<EvaluationResult, T> resultExtractor) {
-      this.expectedResultType = expectedResultType;
-      this.context = context;
+    private final VariablesState variablesState;
 
-      this.resultExtractor = resultExtractor;
+    private long variableScopeKey;
+
+    public VariableStateEvaluationContext(final VariablesState variablesState) {
+      this.variablesState = variablesState;
     }
 
     @Override
-    public Optional<T> apply(final EvaluationResult evaluationResult) {
-      if (evaluationResult.isFailure()) {
-        context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, evaluationResult.getFailureMessage());
-        return Optional.empty();
-      }
+    public DirectBuffer getVariable(final String variableName) {
+      ensureGreaterThan("variable scope key", variableScopeKey, 0);
 
-      if (evaluationResult.getType() != expectedResultType) {
-        context.raiseIncident(
-            ErrorType.EXTRACT_VALUE_ERROR,
-            String.format(
-                "Expected result of the expression '%s' to be '%s', but was '%s'.",
-                evaluationResult.getExpression(), expectedResultType, evaluationResult.getType()));
-        return Optional.empty();
-      }
+      variableNameBuffer.wrap(variableName.getBytes());
 
-      return Optional.of(resultExtractor.apply(evaluationResult));
+      return variablesState.getVariable(variableScopeKey, variableNameBuffer);
     }
   }
 }

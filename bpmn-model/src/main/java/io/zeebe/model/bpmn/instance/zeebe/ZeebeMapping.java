@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.model.bpmn.builder;
+package io.zeebe.model.bpmn.instance.zeebe;
 
-public interface ZeebeVariablesMappingBuilder<B> {
+public interface ZeebeMapping {
 
-  B zeebeInputExpression(String sourceExpression, String target);
+  String getSource();
 
-  B zeebeOutputExpression(String sourceExpression, String target);
-
-  B zeebeInput(String source, String target);
-
-  B zeebeOutput(String source, String target);
+  String getTarget();
 }

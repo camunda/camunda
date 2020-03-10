@@ -35,7 +35,7 @@ public final class CallActivityActivatingHandler
       final CatchEventSubscriber catchEventSubscriber,
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionProcessor) {
-    super(null, catchEventSubscriber);
+    super(null, catchEventSubscriber, expressionProcessor);
     this.keyGenerator = keyGenerator;
     this.expressionProcessor = expressionProcessor;
   }

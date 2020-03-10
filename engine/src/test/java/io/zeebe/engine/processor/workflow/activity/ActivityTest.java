@@ -39,7 +39,10 @@ public final class ActivityTest {
           .startEvent()
           .serviceTask(
               "task",
-              b -> b.zeebeJobType("type").zeebeInput("foo", "bar").zeebeOutput("bar", "oof"))
+              b ->
+                  b.zeebeJobType("type")
+                      .zeebeInputExpression("foo", "bar")
+                      .zeebeOutputExpression("bar", "oof"))
           .endEvent()
           .done();
   private static final BpmnModelInstance WITH_BOUNDARY_EVENTS =
