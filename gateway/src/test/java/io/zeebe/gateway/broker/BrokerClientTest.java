@@ -9,6 +9,7 @@ package io.zeebe.gateway.broker;
 
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -22,6 +23,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -45,6 +47,7 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -200,12 +203,33 @@ public final class BrokerClientTest {
     // given
     broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
 
+    // when
+    final long key = Protocol.encodePartitionId(1, 123);
+    final var request = new BrokerCompleteJobRequest(key, DocumentValue.EMPTY_DOCUMENT);
+    request.setPartitionId(1);
+    final var async = client.sendRequest(request, Duration.ofMillis(100));
+
     // then
-    exception.expect(ExecutionException.class);
-    exception.expectMessage("Request timed out after PT3S");
+    assertThatThrownBy(async::join).hasRootCauseInstanceOf(TimeoutException.class);
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenPartitionNotFound() {
+    // given
+    final var request = new BrokerSetVariablesRequest();
+    request.setElementInstanceKey(0);
+    request.setPartitionId(0);
+    request.setLocal(false);
 
     // when
-    client.sendRequest(new BrokerCompleteJobRequest(1, DocumentValue.EMPTY_DOCUMENT)).join();
+    final var async = client.sendRequest(request);
+
+    // then
+    final String expected =
+        "Expected to execute command, but this command refers to an element that doesn't exist.";
+    assertThatThrownBy(async::join)
+        .isInstanceOf(ExecutionException.class)
+        .hasMessageContaining(expected);
   }
 
   @Test
