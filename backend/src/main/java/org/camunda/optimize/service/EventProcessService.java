@@ -187,7 +187,11 @@ public class EventProcessService {
     final Map<String, EventProcessPublishStateDto> allPublishedStates =
       eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(false)
         .stream()
-        .collect(Collectors.toMap(EventProcessPublishStateDto::getProcessMappingId, Function.identity()));
+        .collect(Collectors.toMap(
+          EventProcessPublishStateDto::getProcessMappingId,
+          Function.identity(),
+          (mappingId1, mappingId2) -> mappingId2
+        ));
 
     List<EventProcessMappingDto> allEventProcessMappingsOmitXml =
       eventProcessMappingReader.getAllEventProcessMappingsOmitXml();
@@ -231,8 +235,12 @@ public class EventProcessService {
                             .collect(toList()))
       .build();
 
-    eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
-    eventProcessPublishStateWriter.createEventProcessPublishState(processPublishState);
+    final IdDto procesPublishStateId =
+      eventProcessPublishStateWriter.createEventProcessPublishState(processPublishState);
+    eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingIdExceptOne(
+      eventProcessMappingId,
+      procesPublishStateId.getId()
+    );
   }
 
   private EventImportSourceDto createEventImportSourceFromDataSource(EventSourceEntryDto eventSourceEntryDto) {

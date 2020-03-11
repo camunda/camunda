@@ -541,9 +541,18 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       .extracting(EventProcessPublishStateDto::getEventImportSources).asList()
       .hasSize(1)
       .containsExactly(EventImportSourceDto.builder()
-                         .firstEventForSourceAtTimeOfPublishTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
-                         .lastEventForSourceAtTimeOfPublishTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
-                         .lastImportedEventTimestamp(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
+                         .firstEventForSourceAtTimeOfPublishTimestamp(OffsetDateTime.ofInstant(
+                           Instant.ofEpochMilli(0L),
+                           ZoneId.systemDefault()
+                         ))
+                         .lastEventForSourceAtTimeOfPublishTimestamp(OffsetDateTime.ofInstant(
+                           Instant.ofEpochMilli(0L),
+                           ZoneId.systemDefault()
+                         ))
+                         .lastImportedEventTimestamp(OffsetDateTime.ofInstant(
+                           Instant.ofEpochMilli(0L),
+                           ZoneId.systemDefault()
+                         ))
                          .eventSource(convertToEventSourceEntryDto(storedEventProcessMapping.getEventSources().get(0)))
                          .build());
   }

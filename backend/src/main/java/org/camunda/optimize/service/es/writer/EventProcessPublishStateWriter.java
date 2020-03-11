@@ -12,7 +12,6 @@ import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -26,6 +25,7 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +35,7 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @AllArgsConstructor
@@ -122,7 +123,10 @@ public class EventProcessPublishStateWriter {
   }
 
   public boolean deleteAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
-    log.debug("Flagging event process publish state with processEventMappingId [{}] as deleted.", eventProcessMappingId);
+    log.debug(
+      "Flagging event process publish state with processEventMappingId [{}] as deleted.",
+      eventProcessMappingId
+    );
     final Script updateScript = ElasticsearchWriterUtil.createDefaultScript(
       ElasticsearchWriterUtil.createUpdateFieldsScript(
         ImmutableSet.of(IndexableEventProcessPublishStateDto.Fields.deleted)
@@ -136,6 +140,37 @@ public class EventProcessPublishStateWriter {
       "true",
       updateScript,
       termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId),
+      EVENT_PROCESS_PUBLISH_STATE_INDEX
+    );
+  }
+
+  public boolean deleteAllEventProcessPublishStatesForEventProcessMappingIdExceptOne(
+    final String eventProcessMappingId,
+    final String publishStateIdToExclude) {
+    log.debug(
+      "Flagging event process publish state with processEventMappingId [{}] as deleted, except for process publish " +
+        "state with ID [{}].",
+      eventProcessMappingId,
+      publishStateIdToExclude
+    );
+    final Script updateScript = ElasticsearchWriterUtil.createDefaultScript(
+      ElasticsearchWriterUtil.createUpdateFieldsScript(
+        ImmutableSet.of(IndexableEventProcessPublishStateDto.Fields.deleted)
+      ),
+      ImmutableMap.of(IndexableEventProcessPublishStateDto.Fields.deleted, true)
+    );
+
+    final BoolQueryBuilder query = boolQuery()
+      .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId))
+      .mustNot(termQuery(EventProcessPublishStateIndex.ID, publishStateIdToExclude));
+
+
+    return ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+      esClient,
+      "processPublishState.deleted",
+      "true",
+      updateScript,
+      query,
       EVENT_PROCESS_PUBLISH_STATE_INDEX
     );
   }
