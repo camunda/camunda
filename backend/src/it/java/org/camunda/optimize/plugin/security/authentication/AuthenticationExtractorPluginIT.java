@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.plugin.security.authentication;
 
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -23,14 +22,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AuthenticationExtractorPluginIT extends AbstractIT {
 
@@ -61,9 +57,8 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
-
 
   @Test
   public void signInWithCustomHeaderSetApiCall() {
@@ -80,8 +75,31 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    assertThat(response.getCookies().get(OPTIMIZE_AUTHORIZATION), is(notNullValue()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(response.getCookies()).hasEntrySatisfying(OPTIMIZE_AUTHORIZATION, authCookie -> {
+      assertThat(authCookie).isNotNull();
+    });
+  }
+
+  @Test
+  public void signInWithCustomHeaderSetApiCall_evenIfInvalidOptimizeAuthCookieIsPresent() {
+    // given
+    String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
+    addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetAllAlertsRequest()
+      .addSingleHeader("user", "demo")
+      .addSingleCookie(OPTIMIZE_AUTHORIZATION, "invalid")
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(response.getCookies()).hasEntrySatisfying(OPTIMIZE_AUTHORIZATION, authCookie -> {
+      assertThat(authCookie).isNotNull();
+    });
   }
 
   @Test
@@ -93,7 +111,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
 
     // then
-    assertThat(cookieThatWillBeSetInTheBrowser, nullValue());
+    assertThat(cookieThatWillBeSetInTheBrowser).isNull();
   }
 
   @Test
@@ -109,7 +127,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
 
     // then
-    assertThat(cookieThatWillBeSetInTheBrowser, nullValue());
+    assertThat(cookieThatWillBeSetInTheBrowser).isNull();
   }
 
   @Test
@@ -127,7 +145,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     optimizeAuthCookieIsBeingDeleted(response);
   }
 
@@ -146,7 +164,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
     optimizeAuthCookieIsBeingDeleted(response);
   }
 
@@ -166,7 +184,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then there are not definitions since kermit is not authorized to see definitions
-    assertThat(definitions.isEmpty(), is(true));
+    assertThat(definitions.isEmpty()).isTrue();
 
     // when session is expired then the session is renewed and the authorizations updated
     grantSingleDefinitionAuthorizationsForKermit();
@@ -180,7 +198,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .withoutAuthentication()
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   private void deployAndImportTestDefinition() {
@@ -218,9 +236,9 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
   private void optimizeAuthCookieIsBeingDeleted(Response response) {
     NewCookie deleteCookie = response.getCookies().get(OPTIMIZE_AUTHORIZATION);
-    assertThat(deleteCookie, notNullValue());
-    assertThat(deleteCookie.getValue(), is(""));
-    assertThat(deleteCookie.getPath(), is("/"));
+    assertThat(deleteCookie).isNotNull();
+    assertThat(deleteCookie.getValue()).isEqualTo("");
+    assertThat(deleteCookie.getPath()).isEqualTo("/");
   }
 
   private NewCookie simulateSingleSignOnAuthHeaderRequestAndReturnCookies(String headerValue) {
@@ -229,7 +247,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
     NewCookie cookieThatWillBeSetInTheBrowser =
       initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
-    assertThat(cookieThatWillBeSetInTheBrowser, notNullValue());
+    assertThat(cookieThatWillBeSetInTheBrowser).isNotNull();
     return cookieThatWillBeSetInTheBrowser;
   }
 

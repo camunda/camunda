@@ -21,12 +21,10 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 
@@ -61,7 +59,7 @@ public class SingleSignOnFilter implements Filter {
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
     throws IOException, ServletException {
-    logger.trace("Received new request.");
+    logger.debug("Received new request.");
     initBeans();
     HttpServletResponse servletResponse = (HttpServletResponse) response;
     HttpServletRequest servletRequest = (HttpServletRequest) request;
@@ -97,7 +95,7 @@ public class SingleSignOnFilter implements Filter {
   private void provideAuthentication(HttpServletResponse servletResponse, HttpServletRequest servletRequest) {
     boolean hasValidSession = sessionService.hasValidSession(servletRequest);
     if (!hasValidSession) {
-      logger.trace("Creating new auth header for the Optimize cookie.");
+      logger.debug("Creating new auth header for the Optimize cookie.");
       addTokenFromAuthenticationExtractorPlugins(servletRequest, servletResponse);
     }
   }
@@ -105,11 +103,12 @@ public class SingleSignOnFilter implements Filter {
   private void addTokenFromAuthenticationExtractorPlugins(HttpServletRequest servletRequest,
                                                           HttpServletResponse servletResponse) {
     for (AuthenticationExtractor plugin : authenticationExtractorProvider.getPlugins()) {
-      AuthenticationResult authenticationResult = plugin.extractAuthenticatedUser(servletRequest);
+      final AuthenticationResult authenticationResult = plugin.extractAuthenticatedUser(servletRequest);
       if (authenticationResult.isAuthenticated()) {
-        logger.trace("User [{}] could be authenticated.", authenticationResult.getAuthenticatedUser());
-        String userName = authenticationResult.getAuthenticatedUser();
+        logger.debug("User [{}] could be authenticated.", authenticationResult.getAuthenticatedUser());
+        final String userName = authenticationResult.getAuthenticatedUser();
         createSessionIfIsAuthorizedToAccessOptimize(servletRequest, servletResponse, userName);
+        break;
       }
     }
   }
@@ -119,41 +118,23 @@ public class SingleSignOnFilter implements Filter {
                                                            String userName) {
     boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(userName);
     if (isAuthorized) {
-      logger.trace("User [{}] was authorized to access Optimize.", userName);
-      manageUserSession(servletRequest, servletResponse, userName);
-    }
-  }
-
-  private void manageUserSession(HttpServletRequest servletRequest,
-                                 HttpServletResponse servletResponse,
-                                 String userName) {
-    Optional<Cookie> authCookie = retrieveOptimizeAuthCookie(servletRequest);
-    if (!authCookie.isPresent()) {
-      logger.trace("Creating new session for {}", userName);
+      logger.debug("User [{}] was authorized to access Optimize, creating new session token.", userName);
       String securityToken = sessionService.createAuthToken(userName);
-      setOptimizeAuthCookie(servletRequest, servletResponse, securityToken);
+      authorizeCurrentRequest(servletRequest, securityToken);
+      writeOptimizeAuthorizationCookieToResponse(servletResponse, securityToken);
     }
   }
 
-  private void setOptimizeAuthCookie(HttpServletRequest servletRequest,
-                                     HttpServletResponse servletResponse,
-                                     String token) {
-    final String optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token);
+  private void authorizeCurrentRequest(final HttpServletRequest servletRequest, final String token) {
     final String optimizeAuthToken = AuthCookieService.createOptimizeAuthCookieValue(token);
     // for direct access by request filters
     servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthToken);
-    servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
   }
 
-  private Optional<Cookie> retrieveOptimizeAuthCookie(HttpServletRequest servletRequest) {
-    if (servletRequest.getCookies() != null) {
-      for (Cookie cookie : servletRequest.getCookies()) {
-        if (OPTIMIZE_AUTHORIZATION.equals(cookie.getName())) {
-          return Optional.of(cookie);
-        }
-      }
-    }
-    return Optional.empty();
+  private void writeOptimizeAuthorizationCookieToResponse(final HttpServletResponse servletResponse,
+                                                          final String token) {
+    final String optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token);
+    servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
   }
 
   @Override

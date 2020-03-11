@@ -46,6 +46,7 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
       return;
     }
     try {
+      logger.debug("Checking for existing and valid session.");
       if (!sessionService.hasValidSession(requestContext)) {
         handleInvalidToken(requestContext);
       }
