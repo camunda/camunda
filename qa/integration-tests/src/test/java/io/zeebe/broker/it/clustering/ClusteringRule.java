@@ -607,17 +607,24 @@ public final class ClusteringRule extends ExternalResource {
   }
 
   public void waitForValidSnapshotAtBroker(final Broker broker) {
-    final File snapshotsDir = getSnapshotsDirectory(broker);
-    waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
+    waitForValidSnapshotAtBroker(broker, 1);
   }
 
-  public LogStream getLogStream(final int partitionId) {
+  void waitForValidSnapshotAtBroker(final Broker broker, final int snapshotCount) {
+    final File snapshotsDir = getSnapshotsDirectory(broker);
+    waitUntil(
+        () ->
+            Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0)
+                >= snapshotCount);
+  }
+
+  LogStream getLogStream(final int partitionId) {
     return logstreams.get(partitionId);
   }
 
   private class LeaderListener implements PartitionListener {
 
-    final CountDownLatch latch;
+    private final CountDownLatch latch;
 
     LeaderListener(final int partitionCount) {
       this.latch = new CountDownLatch(partitionCount);
@@ -634,7 +641,7 @@ public final class ClusteringRule extends ExternalResource {
       latch.countDown();
     }
 
-    public void awaitLeaders() throws InterruptedException {
+    void awaitLeaders() throws InterruptedException {
       latch.await(15, TimeUnit.SECONDS);
     }
   }

@@ -38,6 +38,7 @@ import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.zeebe.broker.system.monitoring.BrokerHttpServer;
 import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
+import io.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.engine.processor.ProcessingContext;
@@ -313,12 +314,17 @@ public final class Broker implements AutoCloseable {
       partitionStartProcess.addStep(
           "partition " + partitionId,
           () -> {
+            final var messagingService =
+                new AtomixPartitionMessagingService(
+                    atomix.getCommunicationService(),
+                    atomix.getMembershipService(),
+                    owningPartition.members());
             final ZeebePartition zeebePartition =
                 new ZeebePartition(
                     localBroker,
                     owningPartition,
                     partitionListeners,
-                    atomix.getEventService(),
+                    messagingService,
                     scheduler,
                     brokerCfg,
                     commandHandler,

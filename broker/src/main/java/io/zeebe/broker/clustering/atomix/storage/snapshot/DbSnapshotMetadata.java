@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 
-final class DbSnapshotMetadata implements DbSnapshotId {
+public final class DbSnapshotMetadata implements DbSnapshotId {
   private static final Logger LOGGER = new ZbLogger(DbSnapshotMetadata.class);
   private static final int METADATA_PARTS = 3;
 
@@ -28,7 +28,7 @@ final class DbSnapshotMetadata implements DbSnapshotId {
     this.timestamp = timestamp;
   }
 
-  static Optional<DbSnapshotMetadata> ofPath(final Path path) {
+  public static Optional<DbSnapshotMetadata> ofPath(final Path path) {
     return ofFileName(path.getFileName().toString());
   }
 
