@@ -13,6 +13,7 @@ pipelineJob('camunda-operate-release') {
   parameters {
     stringParam('RELEASE_VERSION', '1.0.0', 'Version to release. Applied to pom.xml and Git tag.')
     stringParam('DEVELOPMENT_VERSION', '1.1.0-SNAPSHOT', 'Next development version.')
+    stringParam('BRANCH', 'master', 'Branch to build the release from.')
     booleanParam('PUSH_CHANGES', true, 'Should the changes be pushed to remote locations (Nexus).')
     booleanParam('GITHUB_UPLOAD_RELEASE', false, 'Should upload the release to github.')
   }
