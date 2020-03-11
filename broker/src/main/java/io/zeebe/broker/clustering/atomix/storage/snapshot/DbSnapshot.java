@@ -41,7 +41,7 @@ public final class DbSnapshot implements Snapshot {
     this.metadata = new DbSnapshotMetadata(index, term, timestamp, position);
   }
 
-  public DbSnapshot(final Path directory, final DbSnapshotMetadata metadata) {
+  DbSnapshot(final Path directory, final DbSnapshotMetadata metadata) {
     this.directory = directory;
     this.metadata = metadata;
   }
@@ -103,7 +103,7 @@ public final class DbSnapshot implements Snapshot {
 
   @Override
   public Path getPath() {
-    return directory;
+    return getDirectory();
   }
 
   @Override

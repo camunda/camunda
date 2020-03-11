@@ -103,4 +103,12 @@ public interface SnapshotStorage extends AutoCloseable {
    * @param listener the listener to remove
    */
   void removeDeletionListener(SnapshotDeletionListener listener);
+
+  /**
+   * Returns a collection of snapshot related metrics, useful to observe snapshot and replication
+   * operations.
+   *
+   * @return a pre-instantiated metrics interface
+   */
+  SnapshotMetrics getMetrics();
 }
