@@ -101,8 +101,8 @@ public class CamundaActivityEventReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .fetchSource(false)
-      .aggregation(AggregationBuilders.min(MIN_AGG).field(CamundaActivityEventIndex.TIMESTAMP))
-      .aggregation(AggregationBuilders.max(MAX_AGG).field(CamundaActivityEventIndex.TIMESTAMP))
+      .aggregation(AggregationBuilders.min(MIN_AGG).field(CamundaActivityEventIndex.TIMESTAMP).format(OPTIMIZE_DATE_FORMAT))
+      .aggregation(AggregationBuilders.max(MAX_AGG).field(CamundaActivityEventIndex.TIMESTAMP).format(OPTIMIZE_DATE_FORMAT))
       .size(0);
 
     try {
@@ -127,7 +127,10 @@ public class CamundaActivityEventReader {
 
   private Optional<OffsetDateTime> extractTimestampForAggregation(ParsedSingleValueNumericMetricsAggregation aggregation) {
     try {
-      return Optional.of(OffsetDateTime.parse(aggregation.getValueAsString(), DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT)));
+      return Optional.of(OffsetDateTime.ofInstant(
+        OffsetDateTime.parse(aggregation.getValueAsString(), formatter).toInstant(),
+        ZoneId.systemDefault())
+      );
     } catch (DateTimeParseException ex) {
       log.warn("Could not find the {} camunda activity ingestion timestamp.", aggregation.getType());
       return Optional.empty();
