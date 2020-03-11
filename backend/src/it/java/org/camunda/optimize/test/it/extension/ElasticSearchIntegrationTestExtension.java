@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -93,6 +94,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -582,6 +584,18 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return eventProcessDefinitionDto;
   }
 
+  @SneakyThrows
+  public List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
+    SearchResponse response = getSearchResponseForAllDocumentsOfIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*");
+    List<VariableUpdateInstanceDto> storedVariableUpdateDtos = new ArrayList<>();
+    for (SearchHit searchHitFields : response.getHits()) {
+      final VariableUpdateInstanceDto variableUpdateInstanceDto = getObjectMapper().readValue(
+        searchHitFields.getSourceAsString(), VariableUpdateInstanceDto.class);
+      storedVariableUpdateDtos.add(variableUpdateInstanceDto);
+    }
+    return storedVariableUpdateDtos;
+  }
+
   public void deleteAllExternalEventIndices() {
     final DeleteIndexRequest deleteEventIndicesRequest = new DeleteIndexRequest(
       getIndexNameService().getOptimizeIndexAliasForIndex(EXTERNAL_EVENTS_INDEX_NAME + "_*")
@@ -621,6 +635,18 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not delete all event process indices.", e);
+    }
+  }
+
+  public void deleteAllVariableUpdateInstanceIndices() {
+    DeleteIndexRequest request = new DeleteIndexRequest(
+      getIndexNameService().getOptimizeIndexAliasForIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*")
+    );
+
+    try {
+      getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not delete all variable update instance indices.", e);
     }
   }
 

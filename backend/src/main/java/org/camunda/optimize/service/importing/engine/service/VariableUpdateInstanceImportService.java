@@ -50,7 +50,8 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   }
 
   @Override
-  public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities, Runnable importCompleteCallback) {
+  public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities,
+                            Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
@@ -69,7 +70,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   }
 
   private List<ProcessVariableDto> mapEngineEntitiesToOptimizeEntities(List<HistoricVariableUpdateInstanceDto>
-                                                                  engineEntities) {
+                                                                         engineEntities) {
     List<PluginVariableDto> pluginVariableList = mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates
       (engineEntities);
     for (VariableImportAdapter variableImportAdapter : importAdapterProvider.getPlugins()) {
@@ -217,7 +218,9 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   private ElasticsearchImportJob<ProcessVariableDto> createElasticsearchImportJob(List<ProcessVariableDto> processInstances,
                                                                                   Runnable callback) {
     VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(variableWriter,
-                                                                                              camundaEventService, callback);
+                                                                                              camundaEventService,
+                                                                                              callback
+    );
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

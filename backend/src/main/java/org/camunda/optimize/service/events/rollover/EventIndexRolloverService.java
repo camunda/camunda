@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -57,15 +58,16 @@ public class EventIndexRolloverService extends AbstractScheduledService {
     if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
       final Set<String> indicesToConsiderRolling = getCamundaActivityEventsIndexAliases();
       indicesToConsiderRolling.add(EXTERNAL_EVENTS_INDEX_NAME);
+      indicesToConsiderRolling.add(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
       indicesToConsiderRolling
-        .forEach(indexName -> {
+        .forEach(indexAlias -> {
           boolean isRolledOver = ElasticsearchHelper.triggerRollover(
             esClient,
-            indexName,
+            indexAlias,
             configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB()
           );
           if (isRolledOver) {
-            rolledOverIndexNames.add(indexName);
+            rolledOverIndexNames.add(indexAlias);
           }
         });
     }
@@ -84,5 +86,4 @@ public class EventIndexRolloverService extends AbstractScheduledService {
       .map(alias -> alias.substring(configurationService.getEsIndexPrefix().length() + 1))
       .collect(Collectors.toSet());
   }
-
 }
