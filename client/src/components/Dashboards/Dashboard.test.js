@@ -10,6 +10,9 @@ import {shallow} from 'enzyme';
 import DashboardWithErrorHandling from './Dashboard';
 import DashboardView from './DashboardView';
 import {loadEntity, createEntity} from 'services';
+import {showError} from 'notifications';
+
+jest.mock('notifications', () => ({showError: jest.fn()}));
 
 const {WrappedComponent: Dashboard} = DashboardWithErrorHandling;
 
@@ -47,6 +50,21 @@ it("should show an error page if dashboard doesn't exist", () => {
   });
 
   expect(node).toIncludeText('ErrorPage');
+});
+
+it('should show a notification error if dashboard fails to load on refresh', () => {
+  const node = shallow(<Dashboard {...props} />);
+
+  node.setState({
+    loaded: true
+  });
+
+  node.setProps({mightFail: (promise, cb, error) => error('Loading failed')});
+
+  node.instance().loadDashboard();
+
+  expect(showError).toHaveBeenCalled();
+  expect(node.find('.Dashboard')).toExist();
 });
 
 it('should display a loading indicator', () => {

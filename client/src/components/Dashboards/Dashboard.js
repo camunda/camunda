@@ -14,7 +14,7 @@ import {isSharingEnabled} from 'config';
 
 import {ErrorPage, LoadingIndicator} from 'components';
 
-import {addNotification} from 'notifications';
+import {addNotification, showError} from 'notifications';
 import {t} from 'translation';
 
 import {isAuthorizedToShareDashboard} from './service';
@@ -84,10 +84,12 @@ export default withErrorHandling(
             isAuthorizedToShare: await isAuthorizedToShareDashboard(this.getId())
           });
         },
-        ({status}) => {
-          this.setState({
-            serverError: status
-          });
+        err => {
+          if (!this.state.loaded) {
+            this.setState({serverError: err.status});
+          } else {
+            showError(err);
+          }
         }
       );
     };
