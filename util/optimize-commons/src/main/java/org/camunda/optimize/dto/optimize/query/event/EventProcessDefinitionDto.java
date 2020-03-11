@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 
 import java.util.Map;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {

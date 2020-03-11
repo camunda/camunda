@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
@@ -35,11 +36,6 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-
 
 public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
 
@@ -69,8 +65,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.get(0).getId(), is(processDefinitionOptimizeDto.getId()));
+    assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionOptimizeDto.getId());
   }
 
   @Test
@@ -98,10 +93,8 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then we only get 3 definitions, the one kermit is authorized to see and all event based definitions
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(3));
     assertThat(definitions)
-      .extracting(def -> def.getId())
+      .extracting(DefinitionOptimizeDto::getId)
       .containsExactlyInAnyOrder(authorizedProcessId, authorizedEventProcessId1, authorizedEventProcessId2);
   }
 
@@ -126,7 +119,6 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .executeAndReturnList(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions, is(notNullValue()));
     assertThat(definitions).containsExactlyInAnyOrder(notAuthorizedToSeeIdDto, authorizedToSeeIdDto);
   }
 
@@ -140,7 +132,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest(name = "Get {0} process definitions with XML.")
@@ -161,9 +153,8 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.get(0).getId(), is(processDefinitionOptimizeDto.getId()));
-    assertThat(definitions.get(0).getBpmn20Xml(), is(processDefinitionOptimizeDto.getBpmn20Xml()));
+    assertThat(definitions.get(0).getId()).isEqualTo(processDefinitionOptimizeDto.getId());
+    assertThat(definitions.get(0).getBpmn20Xml()).isEqualTo(processDefinitionOptimizeDto.getBpmn20Xml());
   }
 
   @ParameterizedTest(name = "Get XML of {0} process definition.")
@@ -180,7 +171,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(expectedDto.getBpmn20Xml()));
+    assertThat(actualXml).isEqualTo(expectedDto.getBpmn20Xml());
   }
 
   @ParameterizedTest(name = "Get the latest XML of {0} process definition.")
@@ -198,7 +189,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(expectedDto2.getBpmn20Xml()));
+    assertThat(actualXml).isEqualTo(expectedDto2.getBpmn20Xml());
   }
 
   @Test
@@ -220,8 +211,8 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXmlFirstTenant, is(firstTenantDefinition.getBpmn20Xml()));
-    assertThat(actualXmlSecondTenant, is(secondTenantDefinition.getBpmn20Xml()));
+    assertThat(actualXmlFirstTenant).isEqualTo(firstTenantDefinition.getBpmn20Xml());
+    assertThat(actualXmlSecondTenant).isEqualTo(secondTenantDefinition.getBpmn20Xml());
   }
 
   @Test
@@ -247,7 +238,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(secondTenantDefinition.getBpmn20Xml()));
+    assertThat(actualXml).isEqualTo(secondTenantDefinition.getBpmn20Xml());
   }
 
   @ParameterizedTest(name = "Get XML of {0} process definition for null tenant.")
@@ -267,7 +258,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(sharedTenantDefinition.getBpmn20Xml()));
+    assertThat(actualXml).isEqualTo(sharedTenantDefinition.getBpmn20Xml());
   }
 
   @ParameterizedTest(name = "Get XML of {0} process definition with null parameter returns 404.")
@@ -283,7 +274,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .execute();
 
     // then the status code is not found
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -298,7 +289,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -320,7 +311,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       ).execute();
 
     // then the status code is forbidden
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -342,7 +333,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       ).execute(String.class, Response.Status.OK.getStatusCode());
 
     // then the event based definition's xml is returned despite missing authorisation
-    assertThat(actualXml, is(expectedDefinition.getBpmn20Xml()));
+    assertThat(actualXml).isEqualTo(expectedDefinition.getBpmn20Xml());
   }
 
   @ParameterizedTest(name = "Get {0} process definition with nonexistent version returns 404 message.")
@@ -356,14 +347,14 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       );
 
     // when
-    String message =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest(processDefinitionOptimizeDto.getKey(), "nonsenseVersion")
-        .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetProcessDefinitionXmlRequest(processDefinitionOptimizeDto.getKey(), "nonsenseVersion")
+      .execute();
 
     // then
-    assertThat(message.contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE), is(true));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(response.readEntity(String.class)).contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE);
   }
 
   @ParameterizedTest(name = "Get {0} process definition with nonexistent key returns 404 message.")
@@ -377,13 +368,13 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       );
 
     // when
-    String message =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildGetProcessDefinitionXmlRequest("nonsense", processDefinitionOptimizeDto.getVersion())
-        .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetProcessDefinitionXmlRequest("nonsense", processDefinitionOptimizeDto.getVersion())
+      .execute();
 
-    assertThat(message.contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE), is(true));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(response.readEntity(String.class)).contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE);
   }
 
   @Test
@@ -397,15 +388,14 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).isNotNull().hasSize(1);
     final DefinitionVersionsWithTenantsDto availableDefinition = definitions.get(0);
-    assertThat(availableDefinition.getKey(), is(KEY));
+    assertThat(availableDefinition.getKey()).isEqualTo(KEY);
     final List<TenantDto> expectedTenantList = ImmutableList.of(TENANT_NONE_DTO);
-    assertThat(availableDefinition.getAllTenants(), is(expectedTenantList));
+    assertThat(availableDefinition.getAllTenants()).isEqualTo(expectedTenantList);
     final List<DefinitionVersionWithTenantsDto> definitionVersions = availableDefinition.getVersions();
     definitionVersions.forEach(
-      versionWithTenants -> assertThat(versionWithTenants.getTenants(), is(expectedTenantList))
+      versionWithTenants -> assertThat(versionWithTenants.getTenants()).isEqualTo(expectedTenantList)
     );
   }
 
@@ -430,44 +420,43 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
 
     // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(3));
+    assertThat(definitions).isNotNull().hasSize(3);
 
     // first definition
     final DefinitionVersionsWithTenantsDto firstDefinition = definitions.get(0);
-    assertThat(firstDefinition.getKey(), is(definitionKey1));
+    assertThat(firstDefinition.getKey()).isEqualTo(definitionKey1);
     final List<TenantDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
       TENANT_NONE_DTO, TENANT_1_DTO, TENANT_2_DTO
     );
-    assertThat(firstDefinition.getAllTenants(), is(expectedDefinition1AllTenantsOrdered));
+    assertThat(firstDefinition.getAllTenants()).isEqualTo(expectedDefinition1AllTenantsOrdered);
     final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition1 = ImmutableList.of(
       new DefinitionVersionWithTenantsDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
       new DefinitionVersionWithTenantsDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
       new DefinitionVersionWithTenantsDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
     );
-    assertThat(firstDefinition.getVersions(), is(expectedVersionForDefinition1));
+    assertThat(firstDefinition.getVersions()).isEqualTo(expectedVersionForDefinition1);
 
     // second definition
     final DefinitionVersionsWithTenantsDto secondDefinition = definitions.get(1);
-    assertThat(secondDefinition.getKey(), is(definitionKey2));
+    assertThat(secondDefinition.getKey()).isEqualTo(definitionKey2);
     final List<TenantDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
-    assertThat(secondDefinition.getAllTenants(), is(expectedDefinition2AllTenantsOrdered));
+    assertThat(secondDefinition.getAllTenants()).isEqualTo(expectedDefinition2AllTenantsOrdered);
     final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition2 = ImmutableList.of(
       new DefinitionVersionWithTenantsDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
       new DefinitionVersionWithTenantsDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
       new DefinitionVersionWithTenantsDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
     );
-    assertThat(secondDefinition.getVersions(), is(expectedVersionForDefinition2));
+    assertThat(secondDefinition.getVersions()).isEqualTo(expectedVersionForDefinition2);
 
 
     // event based definition
     final DefinitionVersionsWithTenantsDto eventProcessDefinition = definitions.get(2);
-    assertThat(eventProcessDefinition.getKey(), is(eventKey));
+    assertThat(eventProcessDefinition.getKey()).isEqualTo(eventKey);
     final List<TenantDto> expectedEventBasedTenantList = ImmutableList.of(TENANT_NONE_DTO);
-    assertThat(eventProcessDefinition.getAllTenants(), is(expectedEventBasedTenantList));
+    assertThat(eventProcessDefinition.getAllTenants()).isEqualTo(expectedEventBasedTenantList);
     final List<DefinitionVersionWithTenantsDto> definitionVersions = eventProcessDefinition.getVersions();
     definitionVersions.forEach(
-      versionWithTenants -> assertThat(versionWithTenants.getTenants(), is(expectedEventBasedTenantList))
+      versionWithTenants -> assertThat(versionWithTenants.getTenants()).isEqualTo(expectedEventBasedTenantList)
     );
   }
 
@@ -492,34 +481,33 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants(true);
 
     // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(2));
+    assertThat(definitions).isNotNull().hasSize(2);
 
     // first definition
     final DefinitionVersionsWithTenantsDto firstDefinition = definitions.get(0);
-    assertThat(firstDefinition.getKey(), is(definitionKey1));
+    assertThat(firstDefinition.getKey()).isEqualTo(definitionKey1);
     final List<TenantDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
       TENANT_NONE_DTO, TENANT_1_DTO, TENANT_2_DTO
     );
-    assertThat(firstDefinition.getAllTenants(), is(expectedDefinition1AllTenantsOrdered));
+    assertThat(firstDefinition.getAllTenants()).isEqualTo(expectedDefinition1AllTenantsOrdered);
     final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition1 = ImmutableList.of(
       new DefinitionVersionWithTenantsDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
       new DefinitionVersionWithTenantsDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
       new DefinitionVersionWithTenantsDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
     );
-    assertThat(firstDefinition.getVersions(), is(expectedVersionForDefinition1));
+    assertThat(firstDefinition.getVersions()).isEqualTo(expectedVersionForDefinition1);
 
     // second definition
     final DefinitionVersionsWithTenantsDto secondDefinition = definitions.get(1);
-    assertThat(secondDefinition.getKey(), is(definitionKey2));
+    assertThat(secondDefinition.getKey()).isEqualTo(definitionKey2);
     final List<TenantDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
-    assertThat(secondDefinition.getAllTenants(), is(expectedDefinition2AllTenantsOrdered));
+    assertThat(secondDefinition.getAllTenants()).isEqualTo(expectedDefinition2AllTenantsOrdered);
     final List<DefinitionVersionWithTenantsDto> expectedVersionForDefinition2 = ImmutableList.of(
       new DefinitionVersionWithTenantsDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
       new DefinitionVersionWithTenantsDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
       new DefinitionVersionWithTenantsDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
     );
-    assertThat(secondDefinition.getVersions(), is(expectedVersionForDefinition2));
+    assertThat(secondDefinition.getVersions()).isEqualTo(expectedVersionForDefinition2);
   }
 
   protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenants(final boolean excludeEventProcesses) {
@@ -542,13 +530,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
     // when
     final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
-
-    assertThat(definitions.get(0).getKey(), is("z"));
-    assertThat(definitions.get(1).getKey(), is("x"));
-    assertThat(definitions.get(2).getKey(), is("c"));
-    assertThat(definitions.get(3).getKey(), is("D"));
-    assertThat(definitions.get(4).getKey(), is("e"));
-    assertThat(definitions.get(5).getKey(), is("F"));
+    assertThat(definitions)
+      .extracting(DefinitionVersionsWithTenantsDto::getKey)
+      .containsExactly("z", "x", "c", "D", "e" ,"F");
   }
 
   @Test
@@ -571,13 +555,12 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     long responseTimeMillis = System.currentTimeMillis() - startTimeMillis;
 
     // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(definitionCount));
+    assertThat(definitions).isNotNull().hasSize(definitionCount);
     definitions.forEach(DefinitionVersionsWithTenantsDto -> {
-      assertThat(DefinitionVersionsWithTenantsDto.getVersions().size(), is(versionCount));
-      assertThat(DefinitionVersionsWithTenantsDto.getAllTenants().size(), is(1)); // only null tenant
+      assertThat(DefinitionVersionsWithTenantsDto.getVersions()).hasSize(versionCount);
+      assertThat(DefinitionVersionsWithTenantsDto.getAllTenants()).hasSize(1); // only null tenant
     });
-    assertThat(responseTimeMillis, is(lessThan(6000L)));
+    assertThat(responseTimeMillis).isLessThan(6000L);
 
     embeddedOptimizeExtension.getImportSchedulerFactory().shutdown();
   }

@@ -258,7 +258,7 @@ public class EngineDefinitionAuthorizationService
     }
 
     final ResolvedResourceTypeAuthorizations resourceAuthorizations =
-      Optional.of(authorizationsByEngine.get(engineAlias))
+      Optional.ofNullable(authorizationsByEngine.get(engineAlias))
         .map(groupedEngineAuthorizations -> resolveResourceAuthorizations(
           groupedEngineAuthorizations, RELEVANT_PERMISSIONS, mapToResourceType(definitionType)
         ))

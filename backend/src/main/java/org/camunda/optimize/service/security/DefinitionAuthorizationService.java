@@ -91,8 +91,7 @@ public class DefinitionAuthorizationService {
                                                      final ProcessDefinitionOptimizeDto processDefinition) {
     return processDefinition.getIsEventBased()
       ? eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey())
-      : engineDefinitionAuthorizationService
-      .isUserAuthorizedToSeeProcessDefinition(
+      : engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
         userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
       );
   }

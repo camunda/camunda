@@ -180,12 +180,12 @@ public class DefinitionService {
     return getDefinitionXml(type, userId, definitionKey, versions, (String) null);
   }
 
-  public Optional<String> getDefinitionXml(final DefinitionType type,
-                                           final String userId,
-                                           final String definitionKey,
-                                           final String version,
-                                           final String tenantId) {
-    return getDefinitionXml(
+  public <T extends DefinitionOptimizeDto> Optional<T> getDefinition(final DefinitionType type,
+                                                                     final String userId,
+                                                                     final String definitionKey,
+                                                                     final String version,
+                                                                     final String tenantId) {
+    return getDefinitionWithXml(
       type,
       userId,
       definitionKey,

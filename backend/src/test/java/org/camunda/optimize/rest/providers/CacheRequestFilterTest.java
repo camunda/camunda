@@ -9,6 +9,8 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -16,17 +18,17 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class CacheRequestFilterTest {
 
-  CacheRequestFilterFactory.CacheRequestFilter underTest;
+  private CacheRequestFilterFactory.CacheRequestFilter underTest;
 
   @Mock
   ContainerRequestContext requestContext;
@@ -37,13 +39,13 @@ public class CacheRequestFilterTest {
   @BeforeEach
   public void setup() {
     underTest = new CacheRequestFilterFactory.CacheRequestFilter();
-    MultivaluedMap<String, Object> headersMap = new MultivaluedHashMap<>();
-    when(responseContext.getHeaders()).thenReturn(headersMap);
+    when(responseContext.getHeaders()).thenReturn(new MultivaluedHashMap<>());
   }
 
   @Test
   public void filter_setsCacheControlMaxAge() {
     // given
+    when(responseContext.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
     OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
@@ -51,13 +53,27 @@ public class CacheRequestFilterTest {
     underTest.filter(requestContext, responseContext);
 
     // then
-    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL), is("max-age=21600"));
+    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL)).isEqualTo("max-age=21600");
   }
 
   @Test
-  public void filter_overwritesPreviousCacheControlHeaders() {
+  public void filter_doesNotOverwritePreviousCacheControlHeaders() {
     // given
     responseContext.getHeaders().putSingle(HttpHeaders.CACHE_CONTROL, "no-store");
+
+    // when
+    underTest.filter(requestContext, responseContext);
+
+    // then
+    assertThat(responseContext.getHeaders().get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
+    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL)).isEqualTo("no-store");
+  }
+
+  @ParameterizedTest
+  @MethodSource("unsuccessfulResponses")
+  public void filter_isNotSetOnUnsuccessfulResponse(Response.Status errorResponse) {
+    // given
+    when(responseContext.getStatus()).thenReturn(errorResponse.getStatusCode());
     OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
@@ -65,8 +81,15 @@ public class CacheRequestFilterTest {
     underTest.filter(requestContext, responseContext);
 
     // then
-    assertThat(responseContext.getHeaders().get(HttpHeaders.CACHE_CONTROL).size(), is(1));
-    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL), is("max-age=21600"));
+    assertThat(responseContext.getHeaders().get(HttpHeaders.CACHE_CONTROL)).isNull();
+  }
+
+  private static Stream<Response.Status> unsuccessfulResponses() {
+    return Stream.of(
+      Response.Status.BAD_REQUEST,
+      Response.Status.NOT_FOUND,
+      Response.Status.FORBIDDEN
+    );
   }
 
 }

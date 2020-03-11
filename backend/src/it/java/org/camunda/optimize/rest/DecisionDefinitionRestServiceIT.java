@@ -14,13 +14,10 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
 
@@ -38,8 +35,8 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.get(0).getId(), is(expectedDecisionDefinition.getId()));
+    assertThat(definitions).isNotNull();
+    assertThat(definitions.get(0).getId()).isEqualTo(expectedDecisionDefinition.getId());
   }
 
   @Test
@@ -63,9 +60,8 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then we only get 1 definition, the one kermit is authorized to see
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(authorizedToSee.getId()));
+    assertThat(definitions).isNotNull().hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(authorizedToSee.getId());
   }
 
   @Test
@@ -78,7 +74,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -95,9 +91,9 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.get(0).getId(), is(expectedDecisionDefinition.getId()));
-    assertThat(definitions.get(0).getDmn10Xml(), is(notNullValue()));
+    assertThat(definitions).isNotNull();
+    assertThat(definitions.get(0).getId()).isEqualTo(expectedDecisionDefinition.getId());
+    assertThat(definitions.get(0).getDmn10Xml()).isNotNull();
   }
 
   @Test
@@ -114,7 +110,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(expectedDefinitionDto.getDmn10Xml()));
+    assertThat(actualXml).isEqualTo(expectedDefinitionDto.getDmn10Xml());
   }
 
   @Test
@@ -134,7 +130,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(expectedDto2.getDmn10Xml()));
+    assertThat(actualXml).isEqualTo(expectedDto2.getDmn10Xml());
   }
 
   @Test
@@ -157,7 +153,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(firstTenantDefinition.getDmn10Xml()));
+    assertThat(actualXml).isEqualTo(firstTenantDefinition.getDmn10Xml());
   }
 
   @Test
@@ -179,7 +175,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(secondTenantDefinition.getDmn10Xml()));
+    assertThat(actualXml).isEqualTo(secondTenantDefinition.getDmn10Xml());
   }
 
   @Test
@@ -199,7 +195,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(actualXml, is(sharedDecisionDefinition.getDmn10Xml()));
+    assertThat(actualXml).isEqualTo(sharedDecisionDefinition.getDmn10Xml());
   }
 
   @Test
@@ -214,7 +210,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -232,7 +228,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
       .execute();
 
     // then the status code is forbidden
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -249,7 +245,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
-    assertThat(message, containsString(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE));
+    assertThat(message).contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE);
   }
 
   @Test
@@ -266,7 +262,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
         .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
-    assertThat(message, containsString(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE));
+    assertThat(message).contains(EXPECTED_DEFINITION_NOT_FOUND_MESSAGE);
   }
 
   @Override

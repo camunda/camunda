@@ -14,6 +14,7 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -36,12 +37,12 @@ public class CacheRequestFilterFactory implements DynamicFeature {
     @Override
     public void filter(ContainerRequestContext containerRequestContext,
                        ContainerResponseContext containerResponseContext) {
-
-      String cacheHeader = "max-age=" + getSecondsToMidnight();
-
-      containerResponseContext
-        .getHeaders()
-        .putSingle(HttpHeaders.CACHE_CONTROL, cacheHeader);
+      if (!containerResponseContext.getHeaders().containsKey(HttpHeaders.CACHE_CONTROL)
+        && Response.Status.Family.familyOf(containerResponseContext.getStatus()).equals(Response.Status.Family.SUCCESSFUL)) {
+        containerResponseContext
+          .getHeaders()
+          .putSingle(HttpHeaders.CACHE_CONTROL, "max-age=" + getSecondsToMidnight());
+      }
     }
 
     private String getSecondsToMidnight() {
