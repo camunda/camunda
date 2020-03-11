@@ -5,19 +5,59 @@
  */
 
 import React from 'react';
-import classnames from 'classnames';
+import {Link} from 'react-router-dom';
+
+import {Input, Icon, Dropdown} from 'components';
 
 import './ListItem.scss';
 
-export default function ListItem({className, children, onClick}) {
+export default function ListItem({
+  data: {type, name, link, icon, meta = [], actions = [], warning},
+  hasWarning
+}) {
+  const content = (
+    <>
+      {' '}
+      <Input type="checkbox" />
+      <Icon type={icon} />
+      <div className="name">
+        <span className="type">{type}</span>
+        <span className="entity" title={name}>
+          {name}
+        </span>
+      </div>
+      {meta.map((content, idx) => (
+        <div className="meta" key={idx}>
+          {content}
+        </div>
+      ))}
+      {hasWarning && (
+        <div className="warning">
+          {warning && (
+            <>
+              <Icon type="error" size="18" />
+              <div className="Tooltip dark">
+                <div className="Tooltip__text-bottom">{warning}</div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {actions.length > 0 ? (
+        <Dropdown icon label={<Icon type="context-menu" />}>
+          {actions.map(({action, icon, text}, idx) => (
+            <Dropdown.Option onClick={action} key={idx}>
+              <Icon type={icon} /> {text}
+            </Dropdown.Option>
+          ))}
+        </Dropdown>
+      ) : (
+        <div className="dropdownPlaceholder" />
+      )}
+    </>
+  );
+
   return (
-    <li className={classnames('ListItem', className, {clickable: onClick})} onClick={onClick}>
-      <div className="indicator" />
-      <ul>{children}</ul>
-    </li>
+    <li className="ListItem">{link ? <Link to={link}>{content}</Link> : <div>{content}</div>}</li>
   );
 }
-
-ListItem.Section = function ListItemSection({className, ...props}) {
-  return <li className={classnames('ListItemSection', className)} {...props} />;
-};

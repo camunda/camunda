@@ -40,9 +40,14 @@ import {ReactComponent as cancel} from './cancel.svg';
 import {ReactComponent as arrowRight} from './arrow-right.svg';
 import {ReactComponent as calender} from './calender.svg';
 import {ReactComponent as user} from './user.svg';
-import {ReactComponent as group} from './usergroup.svg';
+import {ReactComponent as userGroup} from './user-group.svg';
 import {ReactComponent as collapse} from './collapse.svg';
 import {ReactComponent as expand} from './expand.svg';
+import {ReactComponent as alert} from './alert.svg';
+import {ReactComponent as dashboard} from './dashboard.svg';
+import {ReactComponent as dataSource} from './data-source.svg';
+import {ReactComponent as report} from './report.svg';
+import {ReactComponent as process} from './process.svg';
 
 const icons = {
   autorefresh,
@@ -81,9 +86,14 @@ const icons = {
   'arrow-right': arrowRight,
   calender,
   user,
-  group,
+  'user-group': userGroup,
   collapse,
-  expand
+  expand,
+  alert,
+  dashboard,
+  'data-source': dataSource,
+  report,
+  process
 };
 
 export default icons;

@@ -70,7 +70,9 @@ test('create, edit and remove an alert', async t => {
     .maximizeWindow();
 
   // EDIT
-  await t.click(Alert.listItem);
+  await t.hover(Alert.listItem);
+  await t.click(Homepage.contextMenu(Alert.listItem));
+  await t.click(Homepage.edit(Alert.listItem));
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
 
@@ -78,7 +80,9 @@ test('create, edit and remove an alert', async t => {
 
   await t.expect(Alert.list.textContent).notContains('Edited Alert');
 
-  await t.click(Alert.listItem);
+  await t.hover(Alert.listItem);
+  await t.click(Homepage.contextMenu(Alert.listItem));
+  await t.click(Homepage.edit(Alert.listItem));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
 
   await t.click(Alert.primaryModalButton);

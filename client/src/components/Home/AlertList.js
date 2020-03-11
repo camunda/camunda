@@ -17,8 +17,6 @@ import AlertModal from './modals/AlertModal';
 
 import {loadAlerts, addAlert, editAlert, removeAlert} from './service';
 
-import {ReactComponent as AlertIcon} from './icons/alert.svg';
-
 import './AlertList.scss';
 
 const {duration, frequency} = formatters;
@@ -108,7 +106,11 @@ export default withErrorHandling(
           <EntityList
             name={t('alert.label-plural')}
             action={
-              !readOnly && <Button onClick={this.openAddAlertModal}>{t('alert.createNew')}</Button>
+              !readOnly && (
+                <Button primary onClick={this.openAddAlertModal}>
+                  {t('alert.createNew')}
+                </Button>
+              )
             }
             empty={t('alert.notCreated')}
             isLoading={isLoading}
@@ -119,13 +121,14 @@ export default withErrorHandling(
                 const inactive = webhook && !email && !webhooks?.includes(webhook);
 
                 return {
-                  icon: <AlertIcon />,
+                  icon: 'alert',
                   type: t('alert.label'),
                   name,
-                  meta1: email || webhook,
-                  meta2: this.formatDescription(reportId, thresholdOperator, threshold),
+                  meta: [
+                    email || webhook,
+                    this.formatDescription(reportId, thresholdOperator, threshold)
+                  ],
                   warning: inactive && t('alert.inactiveStatus'),
-                  action: !readOnly && (() => this.openEditAlertModal(alert)),
                   actions: !readOnly && [
                     {
                       icon: 'edit',

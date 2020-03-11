@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import update from 'immutability-helper';
 
 import EntityList from './EntityList';
 
@@ -17,27 +18,21 @@ const props = {
   data: [
     {
       name: 'aCollectionName',
-      meta1: 'Some info',
-      meta2: 'Some additional info',
-      meta3: 'Some other info',
-      icon: <p>An Image</p>,
+      meta: ['Some info', 'Some additional info', 'Some other info'],
+      icon: 'iconType',
       type: 'Collection',
       actions: [{icon: 'edit', text: 'Edit', action: jest.fn()}]
     },
     {
       name: 'aDashboard',
-      meta1: 'Some info',
-      meta2: 'Some additional info',
-      meta3: 'Some other info',
-      icon: <p>An Image</p>,
+      meta: ['Some info', 'Some additional info', 'Some other info'],
+      icon: 'iconType',
       type: 'Dashboard'
     },
     {
       name: 'aReport',
-      meta1: 'Some info',
-      meta2: 'Some additional info',
-      meta3: 'Some other info',
-      icon: <p>An Image</p>,
+      meta: ['Some info', 'Some additional info', 'Some other info'],
+      icon: 'iconType',
       type: 'Report',
       link: 'link/to/somewhere'
     }
@@ -75,4 +70,12 @@ it('should show no result found text when no matching entities were found', () =
   node.find('.searchInput').simulate('change', {target: {value: 'not found entity'}});
 
   expect(node.find('.empty')).toIncludeText('No results found');
+});
+
+it('should pass a hasWarning prop to all ListEntries if one of them has a warning', () => {
+  const warningData = update(props.data, {0: {$merge: {warning: 'some warning'}}});
+
+  const node = shallow(<EntityList {...props} data={warningData} />);
+
+  node.find('ListItem').forEach(node => expect(node.prop('hasWarning')).toBe(true));
 });

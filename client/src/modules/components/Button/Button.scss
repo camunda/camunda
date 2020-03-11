@@ -173,6 +173,11 @@
     .Icon {
       margin: 4px;
     }
+
+    &.focus-visible {
+      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      transition: box-shadow 0.05s ease-out 0s;
+    }
   }
 
   &.link {
@@ -188,6 +193,10 @@
     perspective-origin: 0 0;
     transform-origin: 0 0;
     box-shadow: none;
+    &.focus-visible {
+      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      transition: box-shadow 0.05s ease-out 0s;
+    }
 
     &:hover {
       background-color: transparent;

@@ -1,20 +1,7 @@
 .AlertList {
-  .EntityList {
-    .meta1 {
-      width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .meta2 {
-      width: 300px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .meta3 {
-      display: none;
-    }
-    .warning .Tooltip .Tooltip__text-bottom {
-      min-width: 100px;
-    }
+  height: 100%;
+
+  .meta ~ .meta {
+    flex: 0 0 300px;
   }
 }

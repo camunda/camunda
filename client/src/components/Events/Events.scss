@@ -1,3 +1,8 @@
-.Events input.hidden {
-  display: none;
+.Events {
+  height: calc(100% + 36px);
+  margin: -36px -20px 0 -20px;
+
+  input.hidden {
+    display: none;
+  }
 }

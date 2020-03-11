@@ -11,9 +11,15 @@ export const newReportOption = Selector('.CreateNewButton .Submenu');
 export const option = text => Selector('.DropdownOption').withText(text);
 export const submenuOption = text => Selector('.Submenu .DropdownOption').withText(text);
 export const homepageLink = Selector('.NavItem a').withText('Home');
-export const reportItem = Selector('.ListItem.report');
-export const dashboardItem = Selector('.ListItem.dashboard');
-export const collectionItem = Selector('.ListItem.collection');
+export const reportItem = Selector('.ListItem').filter(
+  node => node.querySelector('.name .type').textContent.indexOf('Report') !== -1
+);
+export const dashboardItem = Selector('.ListItem').filter(
+  node => node.querySelector('.name .type').textContent.indexOf('Dashboard') !== -1
+);
+export const collectionItem = Selector('.ListItem').filter(
+  node => node.querySelector('.name .type').textContent.indexOf('Collection') !== -1
+);
 export const edit = element => element.find('.DropdownOption').withText('Edit');
 export const copy = element => element.find('.DropdownOption').withText('Copy');
 export const del = element => element.find('.DropdownOption').withText('Delete');
@@ -21,8 +27,8 @@ export const setupNotice = Selector('.SetupNotice');
 export const reportControlPanel = Selector('.ReportControlPanel');
 export const editButton = Selector('.edit-button');
 export const addButton = Selector('.AddButton');
-export const reportLabel = Selector('.ListItem.report .ListItemSection.name .type');
-export const contextMenu = entity => entity.find('.contextMenu .Dropdown');
+export const reportLabel = reportItem.find('.name .type');
+export const contextMenu = entity => entity.find('.Dropdown');
 export const dashboardReportLink = Selector('.OptimizeReport__heading');
 export const breadcrumb = text => Selector('.HeaderNav a').withText(text);
 export const dashboardView = Selector('.DashboardView');

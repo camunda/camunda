@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, Icon} from 'components';
+import {Button, EntityList, Deleter} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
@@ -73,7 +73,13 @@ export default withErrorHandling(
         <div className="UserList">
           <EntityList
             name={t('home.userTitle')}
-            action={!readOnly && <Button onClick={this.openAddUserModal}>{t('common.add')}</Button>}
+            action={
+              !readOnly && (
+                <Button primary onClick={this.openAddUserModal}>
+                  {t('common.add')}
+                </Button>
+              )
+            }
             empty={t('common.notFound')}
             isLoading={!users}
             data={
@@ -86,16 +92,18 @@ export default withErrorHandling(
 
                 return {
                   className: identity.type,
-                  icon: getEntityIcon(identity.type),
+                  icon: identity.type === 'group' ? 'user-group' : 'user',
                   type: formatType(identity.type),
                   name: identity.name || identity.id,
-                  meta1: identity.type === 'group' && (
-                    <>
-                      {identity.memberCount}{' '}
-                      {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
-                    </>
-                  ),
-                  meta2: formatRole(role),
+                  meta: [
+                    identity.type === 'group' && (
+                      <>
+                        {identity.memberCount}{' '}
+                        {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
+                      </>
+                    ),
+                    formatRole(role)
+                  ],
                   warning:
                     hasFullScopeAuthorizations === false &&
                     t('home.roles.missingAuthorizationsWarning'),
@@ -151,10 +159,6 @@ export default withErrorHandling(
     }
   }
 );
-
-function getEntityIcon(type = 'user') {
-  return <Icon type={type} size="24" />;
-}
 
 function formatType(type) {
   switch (type) {

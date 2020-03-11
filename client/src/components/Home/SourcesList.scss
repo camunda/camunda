@@ -1,20 +1,7 @@
 .SourcesList {
-  .EntityList {
-    .header .Button {
-      width: 95px;
-    }
+  height: 100%;
 
-    .name {
-      width: 532px;
-    }
-
-    .meta1 {
-      width: 360px;
-    }
-
-    .meta2,
-    .meta3 {
-      display: none;
-    }
+  .meta {
+    flex: 0 0 360px;
   }
 }

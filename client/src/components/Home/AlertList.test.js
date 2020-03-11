@@ -92,7 +92,7 @@ it('should format durations with value and unit', async () => {
 
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find(EntityList).prop('data')[0].meta2).toContain('12s');
+  expect(node.find(EntityList).prop('data')[0].meta[1]).toContain('12s');
 });
 
 it('should set the loading', () => {

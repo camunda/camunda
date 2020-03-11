@@ -85,6 +85,7 @@ input[type='checkbox'] {
     background: url('./check-small.svg');
     background-color: white;
     background-position: 0.5px;
+    background-size: cover;
   }
 
   &:indeterminate {

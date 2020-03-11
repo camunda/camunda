@@ -113,27 +113,10 @@
 
   > .content {
     position: absolute;
-    padding-top: 34px;
     bottom: -36px;
     left: -20px;
     right: -20px;
     top: 135px;
     overflow: auto;
-  }
-
-  .EntityList {
-    .header {
-      margin-top: -34px;
-      padding-top: 54px;
-    }
-
-    .ListItem {
-      &.report .indicator {
-        background-color: #00acac;
-      }
-      &.dashboard .indicator {
-        background-color: #0565b2;
-      }
-    }
   }
 }

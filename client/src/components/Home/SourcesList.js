@@ -19,8 +19,6 @@ import {
   checkDeleteSourceConflicts
 } from './service';
 
-import {ReactComponent as ProcessIcon} from './icons/process.svg';
-import {ReactComponent as DecisionIcon} from './icons/decision.svg';
 import AddSourceModal from './modals/AddSourceModal';
 import EditSourceModal from './modals/EditSourceModal';
 import {areTenantsAvailable} from 'config';
@@ -112,7 +110,7 @@ export default withErrorHandling(
             name={t('home.sources.title')}
             action={
               !readOnly && (
-                <Button onClick={() => this.setState({addingSource: true})}>
+                <Button primary onClick={() => this.setState({addingSource: true})}>
                   {t('common.add')}
                 </Button>
               )
@@ -144,10 +142,10 @@ export default withErrorHandling(
 
                 return {
                   className: definitionType,
-                  icon: getSourceIcon(definitionType),
+                  icon: 'data-source',
                   type: formatType(definitionType),
                   name: definitionName || definitionKey,
-                  meta1: tenantsAvailable && formatTenants(tenants),
+                  meta: [tenantsAvailable && formatTenants(tenants)],
                   actions
                 };
               })
@@ -226,17 +224,6 @@ export default withErrorHandling(
 
 function hasUnauthorized(tenants) {
   return tenants.some(({id}) => id === '__unauthorizedTenantId__');
-}
-
-function getSourceIcon(type) {
-  switch (type) {
-    case 'process':
-      return <ProcessIcon />;
-    case 'decision':
-      return <DecisionIcon />;
-    default:
-      return <ProcessIcon />;
-  }
 }
 
 function formatType(type) {

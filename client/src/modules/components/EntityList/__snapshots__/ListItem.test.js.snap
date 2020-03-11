@@ -1,22 +1,82 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`ListItem should match snapshot 1`] = `
+exports[`should match snapshot 1`] = `
 <li
-  className="ListItem list-test"
+  className="ListItem"
 >
-  <div
-    className="indicator"
-  />
-  <ul>
-    Some child content
-  </ul>
-</li>
-`;
-
-exports[`ListItem.Section should match snapshot 1`] = `
-<li
-  className="ListItemSection list-test"
->
-  Some child content
+  <Link
+    to="/report/1"
+  >
+     
+    <ForwardRef(Input)
+      type="checkbox"
+    />
+    <Icon
+      type="process"
+    />
+    <div
+      className="name"
+    >
+      <span
+        className="type"
+      >
+        Item Type
+      </span>
+      <span
+        className="entity"
+        title="Test List Entry"
+      >
+        Test List Entry
+      </span>
+    </div>
+    <div
+      className="meta"
+      key="0"
+    >
+      Column 1
+    </div>
+    <div
+      className="meta"
+      key="1"
+    >
+      Column 2
+    </div>
+    <div
+      className="warning"
+    >
+      <Icon
+        size="18"
+        type="error"
+      />
+      <div
+        className="Tooltip dark"
+      >
+        <div
+          className="Tooltip__text-bottom"
+        >
+          Warning Text
+        </div>
+      </div>
+    </div>
+    <Dropdown
+      icon={true}
+      label={
+        <Icon
+          type="context-menu"
+        />
+      }
+    >
+      <ForwardRef(DropdownOption)
+        key="0"
+        onClick={[MockFunction]}
+      >
+        <Icon
+          type="delete"
+        />
+         
+        Delete Entry
+      </ForwardRef(DropdownOption)>
+    </Dropdown>
+  </Link>
 </li>
 `;

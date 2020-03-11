@@ -9,20 +9,39 @@ import {shallow} from 'enzyme';
 
 import ListItem from './ListItem';
 
-describe('ListItem', () => {
-  it('should match snapshot', () => {
-    const node = shallow(<ListItem className="list-test">Some child content</ListItem>);
+it('should match snapshot', () => {
+  const node = shallow(
+    <ListItem
+      data={{
+        type: 'Item Type',
+        name: 'Test List Entry',
+        icon: 'process',
+        link: '/report/1',
+        meta: ['Column 1', 'Column 2'],
+        actions: [{action: jest.fn(), icon: 'delete', text: 'Delete Entry'}],
+        warning: 'Warning Text'
+      }}
+      hasWarning
+    />
+  );
 
-    expect(node).toMatchSnapshot();
-  });
+  expect(node).toMatchSnapshot();
 });
 
-describe('ListItem.Section', () => {
-  it('should match snapshot', () => {
-    const node = shallow(
-      <ListItem.Section className="list-test">Some child content</ListItem.Section>
-    );
+it('should not render a Link component if no link is provided', () => {
+  const node = shallow(<ListItem data={{}} />);
 
-    expect(node).toMatchSnapshot();
-  });
+  expect(node.find('Link')).not.toExist();
+});
+
+it('should have a warning column even if no specific warning exists for this ListItem', () => {
+  const node = shallow(<ListItem data={{}} hasWarning />);
+
+  expect(node.find('.warning')).toExist();
+});
+
+it('should render a dropdown placeholder if no actions are provided', () => {
+  const node = shallow(<ListItem data={{}} />);
+
+  expect(node.find('.dropdownPlaceholder')).toExist();
 });

@@ -10,7 +10,7 @@ export const navItem = Selector('header a').withText('Event Based Processes');
 export const createDropdown = Selector('.Events .Dropdown');
 export const dropdownOption = text => Selector('a').withText(text);
 export const fileInput = Selector('input').withAttribute('type', 'file');
-export const entity = title => Selector('.entityName').withText(title);
+export const entity = title => Selector('.name .entity').withText(title);
 export const nameEditField = Selector('.EntityNameForm .name-input');
 export const firstEl = Selector('.djs-hit');
 export const activityTask = Selector('.bpmn-icon-task');

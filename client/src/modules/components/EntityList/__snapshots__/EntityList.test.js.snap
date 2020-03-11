@@ -3,6 +3,7 @@
 exports[`should match snapshot 1`] = `
 <div
   className="EntityList"
+  onScroll={[Function]}
 >
   <div
     className="header"
@@ -40,166 +41,61 @@ exports[`should match snapshot 1`] = `
   >
     <ul>
       <ListItem
+        data={
+          Object {
+            "actions": Array [
+              Object {
+                "action": [MockFunction],
+                "icon": "edit",
+                "text": "Edit",
+              },
+            ],
+            "icon": "iconType",
+            "meta": Array [
+              "Some info",
+              "Some additional info",
+              "Some other info",
+            ],
+            "name": "aCollectionName",
+            "type": "Collection",
+          }
+        }
+        hasWarning={false}
         key="0"
-      >
-        <ListItemSection
-          className="icon"
-        >
-          <p>
-            An Image
-          </p>
-        </ListItemSection>
-        <ListItemSection
-          className="name"
-        >
-          <div
-            className="type"
-          >
-            Collection
-          </div>
-          <div
-            className="entityName"
-            title="aCollectionName"
-          >
-            aCollectionName
-          </div>
-        </ListItemSection>
-        <ListItemSection
-          className="meta1"
-        >
-          Some info
-        </ListItemSection>
-        <ListItemSection
-          className="meta2"
-        >
-          Some additional info
-        </ListItemSection>
-        <ListItemSection
-          className="meta3"
-        >
-          Some other info
-        </ListItemSection>
-        <ListItemSection
-          className="warning"
-        />
-        <div
-          className="contextMenu"
-          onClick={[Function]}
-        >
-          <Dropdown
-            icon={true}
-            label={
-              <Icon
-                size="24px"
-                type="context-menu"
-              />
-            }
-          >
-            <ForwardRef(DropdownOption)
-              key="0"
-              onClick={[MockFunction]}
-            >
-              <Icon
-                type="edit"
-              />
-               
-              Edit
-            </ForwardRef(DropdownOption)>
-          </Dropdown>
-        </div>
-      </ListItem>
+      />
       <ListItem
+        data={
+          Object {
+            "icon": "iconType",
+            "meta": Array [
+              "Some info",
+              "Some additional info",
+              "Some other info",
+            ],
+            "name": "aDashboard",
+            "type": "Dashboard",
+          }
+        }
+        hasWarning={false}
         key="1"
-      >
-        <ListItemSection
-          className="icon"
-        >
-          <p>
-            An Image
-          </p>
-        </ListItemSection>
-        <ListItemSection
-          className="name"
-        >
-          <div
-            className="type"
-          >
-            Dashboard
-          </div>
-          <div
-            className="entityName"
-            title="aDashboard"
-          >
-            aDashboard
-          </div>
-        </ListItemSection>
-        <ListItemSection
-          className="meta1"
-        >
-          Some info
-        </ListItemSection>
-        <ListItemSection
-          className="meta2"
-        >
-          Some additional info
-        </ListItemSection>
-        <ListItemSection
-          className="meta3"
-        >
-          Some other info
-        </ListItemSection>
-        <ListItemSection
-          className="warning"
-        />
-      </ListItem>
+      />
       <ListItem
+        data={
+          Object {
+            "icon": "iconType",
+            "link": "link/to/somewhere",
+            "meta": Array [
+              "Some info",
+              "Some additional info",
+              "Some other info",
+            ],
+            "name": "aReport",
+            "type": "Report",
+          }
+        }
+        hasWarning={false}
         key="2"
-      >
-        <Link
-          to="link/to/somewhere"
-        >
-          <ListItemSection
-            className="icon"
-          >
-            <p>
-              An Image
-            </p>
-          </ListItemSection>
-          <ListItemSection
-            className="name"
-          >
-            <div
-              className="type"
-            >
-              Report
-            </div>
-            <div
-              className="entityName"
-              title="aReport"
-            >
-              aReport
-            </div>
-          </ListItemSection>
-          <ListItemSection
-            className="meta1"
-          >
-            Some info
-          </ListItemSection>
-          <ListItemSection
-            className="meta2"
-          >
-            Some additional info
-          </ListItemSection>
-          <ListItemSection
-            className="meta3"
-          >
-            Some other info
-          </ListItemSection>
-          <ListItemSection
-            className="warning"
-          />
-        </Link>
-      </ListItem>
+      />
     </ul>
     <div>
       Some additional Content

@@ -7,7 +7,6 @@
 import React from 'react';
 import update from 'immutability-helper';
 import {Dropdown, Button, Icon, Deleter} from 'components';
-import classnames from 'classnames';
 import EventsSourceModal from './EventsSourceModal';
 import {t} from 'translation';
 

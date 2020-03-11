@@ -1,34 +1,54 @@
+@import 'shared-styles/shared-styles.scss';
+
 .EntityList {
-  width: 1000px;
+  width: 100%;
   height: 100%;
-  margin: auto;
-  position: relative;
+  padding: 0 65px;
+  overflow: auto;
 
   .empty {
-    height: 56px;
-    border-radius: 4px;
-    border: solid 1px #d8dce3;
+    margin-top: 50px;
+    margin-bottom: 20px;
     text-align: center;
-    line-height: 56px;
     font-size: 14px;
-    color: #9b9b9b;
+    color: $grey-lighten-56;
+  }
+
+  &.scrolled .header {
+    border-bottom: 1px solid $silver-darken-80;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  &.embedded {
+    padding: 0;
+
+    .header {
+      margin: 0;
+      padding: 18px 0;
+      width: 100%;
+    }
   }
 
   .header {
-    margin-top: -37px;
-    padding-top: 58px;
-    padding-bottom: 21px;
-    position: fixed;
-    width: 1000px;
-    z-index: 1;
-    background-color: white;
+    margin: 0 -65px;
+    padding: 0 65px;
+    line-height: 32px;
     display: flex;
+    padding-top: 32px;
+    padding-bottom: 18px;
+    width: calc(100% + 130px);
+    position: sticky;
+    top: 0;
+    background-color: white;
+    box-shadow: none;
+    border-bottom: 1px solid transparent;
+    transition: box-shadow 0.2s, border 0.2s;
 
     h1 {
-      font-size: 18px;
-      line-height: 30px;
+      font-size: 24px;
+      line-height: 32px;
       font-weight: normal;
-      color: #000;
+      color: $grey-darken-23;
       margin: 0;
     }
 
@@ -48,6 +68,10 @@
         bottom: 0;
         margin: auto;
         color: #6a727e;
+
+        svg {
+          vertical-align: top;
+        }
       }
 
       .searchInput {
@@ -56,164 +80,8 @@
     }
   }
 
-  .content {
-    padding-top: 77px;
-  }
-
   ul {
     padding: 0;
     margin: 0 0 20px 0;
-  }
-
-  .ListItem {
-    position: relative;
-    white-space: nowrap;
-
-    > ul {
-      margin-left: -25px;
-
-      > a {
-        height: 100%;
-        display: inline-block;
-        padding-left: 25px;
-      }
-
-      > .icon {
-        margin-left: 25px;
-      }
-    }
-
-    .contextMenu {
-      position: absolute;
-      right: 0;
-      top: 0;
-      height: 100%;
-      width: 50px;
-      text-align: right;
-      background-color: white;
-      border-radius: 4px;
-
-      .Dropdown {
-        width: 40px;
-        height: 100%;
-
-        .activateButton {
-          margin-top: 11px;
-          margin-right: 8px;
-          width: 32px;
-        }
-
-        .menu {
-          top: 37px;
-          left: auto !important; // the calculateMenuStyle method of the Dropdown sets inline styles
-          right: 8px;
-        }
-
-        .DropdownOption {
-          padding-left: 10px;
-
-          .Icon {
-            width: 14px;
-            height: 14px;
-            margin-right: 8px;
-          }
-        }
-      }
-
-      .downIcon {
-        display: none;
-      }
-
-      .Icon {
-        width: 24px;
-        height: 24px;
-      }
-    }
-
-    &:not(:hover) .contextMenu .Button:not(:focus) {
-      opacity: 0;
-    }
-  }
-
-  .ListItemSection {
-    &.icon {
-      width: 24px;
-      margin-right: 18px;
-      position: relative;
-      overflow: visible;
-
-      svg {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 100%;
-      }
-    }
-
-    &.name {
-      width: 332px;
-      line-height: initial;
-      padding-top: 10.5px;
-
-      .type {
-        font-size: 11px;
-        color: #9b9b9b;
-      }
-
-      .entityName {
-        font-size: 15px;
-        font-weight: 600;
-        color: #000;
-
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    &.meta1,
-    &.meta2,
-    &.meta3 {
-      width: 200px;
-    }
-
-    &.warning {
-      width: max-content;
-      text-align: center;
-      color: #b4142b;
-      overflow: visible;
-      position: relative;
-      padding-right: 0;
-
-      &:hover .Tooltip {
-        display: block;
-      }
-
-      .Icon {
-        line-height: initial;
-        width: 18px;
-        margin-right: 0;
-      }
-
-      .Tooltip {
-        position: absolute;
-        display: none;
-        top: 40px;
-        font-size: 14px;
-        line-height: normal;
-        left: 9px;
-        transform: translateX(-50%);
-        z-index: 999;
-
-        .Tooltip__text-bottom {
-          padding: 10px;
-          font-weight: normal;
-          white-space: normal;
-          min-width: 200px;
-        }
-      }
-    }
   }
 }

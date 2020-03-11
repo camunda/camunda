@@ -18,36 +18,10 @@
 
   > .content {
     position: absolute;
-    padding-top: 34px;
     bottom: -36px;
     left: -20px;
     right: -20px;
     top: 110px;
     overflow: auto;
-  }
-
-  .EntityList {
-    .header {
-      margin-top: -34px;
-      padding-top: 40px;
-    }
-
-    .content {
-      padding-top: 62px;
-    }
-  }
-
-  .EntityList {
-    .ListItem {
-      &.report .indicator {
-        background-color: #00acac;
-      }
-      &.dashboard .indicator {
-        background-color: #0565b2;
-      }
-      &.collection .indicator {
-        background-color: #5b2e96;
-      }
-    }
   }
 }

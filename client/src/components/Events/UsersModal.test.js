@@ -55,7 +55,7 @@ it('should disable the save button if the user list is empty', () => {
   node
     .find('EntityList')
     .props('data')
-    .data[0].meta3.props.onClick();
+    .data[0].meta[1].props.onClick();
 
   expect(node.find('EntityList').props('data').data.length).toBe(0);
   expect(node.find('[primary]')).toBeDisabled();

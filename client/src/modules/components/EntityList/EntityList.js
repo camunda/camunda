@@ -5,17 +5,19 @@
  */
 
 import React, {useState} from 'react';
-import {Link} from 'react-router-dom';
+
+import classnames from 'classnames';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Input, Dropdown} from 'components';
+import {LoadingIndicator, Icon, Input} from 'components';
 
 import ListItem from './ListItem';
 
 import './EntityList.scss';
 
-export default function EntityList({name, children, action, isLoading, data, empty}) {
+export default function EntityList({name, children, action, isLoading, data, empty, embedded}) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
 
   const searchFilteredData = (data || []).filter(({name}) =>
     name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -23,9 +25,13 @@ export default function EntityList({name, children, action, isLoading, data, emp
 
   const isEmpty = !isLoading && (data || []).length === 0;
   const hasResults = searchFilteredData.length > 0;
+  const hasWarning = (data || []).some(({warning}) => warning);
 
   return (
-    <div className="EntityList">
+    <div
+      className={classnames('EntityList', {scrolled, embedded})}
+      onScroll={evt => setScrolled(evt.target.scrollTop > 0)}
+    >
       <div className="header">
         <h1>{name}</h1>
         <div className="searchContainer">
@@ -50,54 +56,9 @@ export default function EntityList({name, children, action, isLoading, data, emp
         )}
         {hasResults && (
           <ul>
-            {searchFilteredData.map(
-              (
-                {className, link, icon, type, name, meta1, meta2, meta3, warning, action, actions},
-                idx
-              ) => {
-                const content = (
-                  <>
-                    <ListItem.Section className="icon">{icon}</ListItem.Section>
-                    <ListItem.Section className="name">
-                      <div className="type">{type}</div>
-                      <div className="entityName" title={name}>
-                        {name}
-                      </div>
-                    </ListItem.Section>
-                    <ListItem.Section className="meta1">{meta1}</ListItem.Section>
-                    <ListItem.Section className="meta2">{meta2}</ListItem.Section>
-                    <ListItem.Section className="meta3">{meta3}</ListItem.Section>
-                    <ListItem.Section className="warning">
-                      {warning && (
-                        <>
-                          <Icon type="error" size="18px" />
-                          <div className="Tooltip dark">
-                            <div className="Tooltip__text-bottom">{warning}</div>
-                          </div>
-                        </>
-                      )}
-                    </ListItem.Section>
-                  </>
-                );
-
-                return (
-                  <ListItem key={idx} className={className} onClick={action}>
-                    {link ? <Link to={link}>{content}</Link> : content}
-                    {actions && actions.length > 0 && (
-                      <div className="contextMenu" onClick={evt => evt.stopPropagation()}>
-                        <Dropdown icon label={<Icon type="context-menu" size="24px" />}>
-                          {actions.map(({action, icon, text}, idx) => (
-                            <Dropdown.Option onClick={action} key={idx}>
-                              <Icon type={icon} /> {text}
-                            </Dropdown.Option>
-                          ))}
-                        </Dropdown>
-                      </div>
-                    )}
-                  </ListItem>
-                );
-              }
-            )}
+            {searchFilteredData.map((data, idx) => (
+              <ListItem key={idx} data={data} hasWarning={hasWarning} />
+            ))}
           </ul>
         )}
         {children}

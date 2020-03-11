@@ -10,7 +10,7 @@ export const collectionTitle = Selector('.Collection .header .text');
 export const createNewMenu = Selector('.CreateNewButton');
 export const option = text => Selector('.DropdownOption').withText(text);
 export const collectionBreadcrumb = Selector('.HeaderNav .breadcrumb');
-export const dashboardItem = Selector('.ListItem.dashboard');
+export const dashboardItem = Selector('.ListItem').withText('Dashboard');
 export const collectionContextMenu = Selector('.Collection > .header .Dropdown button');
 export const editCollectionNameButton = Selector(
   '.Collection .header .Dropdown .DropdownOption'
@@ -34,13 +34,16 @@ export const typeaheadInput = Selector('.Typeahead input');
 export const typeaheadOption = text => Selector('.Typeahead .DropdownOption').withText(text);
 export const checkbox = text => Selector('.Checklist .label').withText(text);
 export const confirmModalButton = Selector('.confirm.Button');
-export const managerName = Selector('.ListItem.user')
+export const managerName = Selector('.ListItem')
   .withText('Manager')
-  .find('.entityName');
-export const userItem = text => Selector('.ListItem.user').withText(text);
-export const groupItem = Selector('.ListItem.group');
-export const processItem = Selector('.ListItem.process');
-export const decisionItem = Selector('.ListItem.decision');
+  .find('.name .entity');
+export const userItem = text =>
+  Selector('.ListItem')
+    .withText('User')
+    .withText(text);
+export const groupItem = Selector('.ListItem').withText('User Group');
+export const processItem = Selector('.ListItem').withText('Process');
+export const decisionItem = Selector('.ListItem').withText('Decision');
 export const tenantSource = Selector('.ButtonGroup .Button').withText('Tenant');
 export const roleOption = text => Selector('.Modal .LabeledInput .label.after').withText(text);
 export const userList = Selector('.UserList');

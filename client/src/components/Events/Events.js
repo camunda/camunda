@@ -14,8 +14,6 @@ import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
 import {checkDeleteConflict} from 'services';
 
-import {ReactComponent as ProcessIcon} from './icons/process.svg';
-
 import PublishModal from './PublishModal';
 import UsersModal from './UsersModal';
 import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
@@ -119,7 +117,7 @@ export default withErrorHandling(
             empty={t('events.empty')}
             isLoading={!processes}
             action={
-              <Dropdown label={t('events.new')}>
+              <Dropdown primary label={t('events.new')}>
                 <Dropdown.Option link="new/edit">{t('events.modelProcess')}</Dropdown.Option>
                 <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
               </Dropdown>
@@ -168,12 +166,14 @@ export default withErrorHandling(
                 }
 
                 return {
-                  icon: <ProcessIcon />,
+                  icon: 'process',
                   type: t('events.label'),
                   name,
                   link,
-                  meta2: moment(lastModified).format('YYYY-MM-DD HH:mm'),
-                  meta3: t(`events.state.${state}`, {publishingProgress}),
+                  meta: [
+                    moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                    t(`events.state.${state}`, {publishingProgress})
+                  ],
                   actions
                 };
               })

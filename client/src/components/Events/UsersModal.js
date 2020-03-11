@@ -107,6 +107,7 @@ export default withErrorHandling(
               <Message error>{t('home.roles.existing-group-error')}</Message>
             )}
             <EntityList
+              embedded
               name={t('events.permissions.whoHasAccess')}
               empty={t('events.permissions.noUsers')}
               isLoading={!users}
@@ -117,20 +118,22 @@ export default withErrorHandling(
 
                   return {
                     className: identity.type,
-                    icon: getEntityIcon(identity.type),
+                    icon: identity.type === 'group' ? 'user-group' : 'user',
                     type: formatType(identity.type),
                     name: identity.name || identity.id,
-                    meta1: identity.type === 'group' && (
-                      <>
-                        {identity.memberCount}{' '}
-                        {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
-                      </>
-                    ),
-                    meta3: (
+                    meta: [
+                      identity.type === 'group' && (
+                        <>
+                          {identity.memberCount}{' '}
+                          {t(
+                            'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
+                          )}
+                        </>
+                      ),
                       <Button onClick={() => this.removeUser(id)}>
                         <Icon type="delete" />
                       </Button>
-                    )
+                    ]
                   };
                 })
               }
@@ -149,10 +152,6 @@ export default withErrorHandling(
     }
   }
 );
-
-function getEntityIcon(type = 'user') {
-  return <Icon type={type} size="24" />;
-}
 
 function formatType(type) {
   switch (type) {

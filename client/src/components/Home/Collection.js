@@ -24,13 +24,7 @@ import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
 
-import {
-  formatLink,
-  formatType,
-  formatSubEntities,
-  formatUserCount,
-  getEntityIcon
-} from './formatters';
+import {formatLink, formatType, formatSubEntities, formatUserCount} from './formatters';
 
 import './Collection.scss';
 
@@ -192,12 +186,14 @@ export default withErrorHandling(
                     return {
                       className: entityType,
                       link: formatLink(id, entityType),
-                      icon: getEntityIcon(entityType),
+                      icon: entityType,
                       type: formatType(entityType, reportType, combined),
                       name,
-                      meta1: formatSubEntities(data.subEntityCounts),
-                      meta2: moment(lastModified).format('YYYY-MM-DD HH:mm'),
-                      meta3: formatUserCount(data.roleCounts),
+                      meta: [
+                        formatSubEntities(data.subEntityCounts),
+                        moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                        formatUserCount(data.roleCounts)
+                      ],
                       actions
                     };
                   })

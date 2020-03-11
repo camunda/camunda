@@ -4,6 +4,7 @@ exports[`should match snapshot 1`] = `
 <Dropdown
   className="CreateNewButton"
   label="Create New"
+  primary={true}
 >
   <ForwardRef(DropdownOption)>
     New Collection
@@ -39,6 +40,7 @@ exports[`should not show the collection option if it is in a collection 1`] = `
 <Dropdown
   className="CreateNewButton"
   label="Create New"
+  primary={true}
 >
   <ForwardRef(DropdownOption)
     link="dashboard/new/edit"

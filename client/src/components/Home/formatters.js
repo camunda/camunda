@@ -4,29 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-
 import {t} from 'translation';
-
-import {ReactComponent as ReportIcon} from './icons/report.svg';
-import {ReactComponent as DashboardIcon} from './icons/dashboard.svg';
-import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 
 export function formatLink(id, type) {
   return `${type}/${id}/`;
-}
-
-export function getEntityIcon(type) {
-  switch (type) {
-    case 'collection':
-      return <CollectionIcon />;
-    case 'dashboard':
-      return <DashboardIcon />;
-    case 'report':
-      return <ReportIcon />;
-    default:
-      return <ReportIcon />;
-  }
 }
 
 export function formatType(entityType, reportType, combined) {

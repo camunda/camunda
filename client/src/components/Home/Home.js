@@ -11,7 +11,7 @@ import {Redirect} from 'react-router-dom';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {Icon, EntityList, Deleter} from 'components';
+import {EntityList, Deleter} from 'components';
 import {createEntity, updateEntity, checkDeleteConflict} from 'services';
 
 import Copier from './Copier';
@@ -19,13 +19,7 @@ import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
 import {loadEntities} from './service';
 
-import {
-  formatLink,
-  formatType,
-  formatSubEntities,
-  formatUserCount,
-  getEntityIcon
-} from './formatters';
+import {formatLink, formatType, formatSubEntities, formatUserCount} from './formatters';
 
 import './Home.scss';
 
@@ -113,14 +107,15 @@ export class Home extends React.Component {
                 } = entity;
 
                 return {
-                  className: entityType,
                   link: formatLink(id, entityType),
-                  icon: getEntityIcon(entityType),
+                  icon: entityType,
                   type: formatType(entityType, reportType, combined),
                   name,
-                  meta1: formatSubEntities(data.subEntityCounts),
-                  meta2: moment(lastModified).format('YYYY-MM-DD HH:mm'),
-                  meta3: formatUserCount(data.roleCounts),
+                  meta: [
+                    formatSubEntities(data.subEntityCounts),
+                    moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                    formatUserCount(data.roleCounts)
+                  ],
                   actions: (entityType !== 'collection' || currentUserRole === 'manager') && [
                     {
                       icon: 'edit',

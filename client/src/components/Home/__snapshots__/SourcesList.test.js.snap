@@ -11,16 +11,20 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         Object {
           "actions": Array [],
           "className": "process",
-          "icon": <ForwardRef(SvgProcess) />,
-          "meta1": "Not defined, Sales, (Unauthorized Tenant)",
+          "icon": "data-source",
+          "meta": Array [
+            "Not defined, Sales, (Unauthorized Tenant)",
+          ],
           "name": "definition name",
           "type": "Process",
         },
         Object {
           "actions": Array [],
           "className": "decision",
-          "icon": <ForwardRef(SvgDecision) />,
-          "meta1": "Not defined, Marketing",
+          "icon": "data-source",
+          "meta": Array [
+            "Not defined, Marketing",
+          ],
           "name": "decision report",
           "type": "Decision Table",
         },
@@ -88,8 +92,10 @@ Object {
     },
   ],
   "className": "decision",
-  "icon": <ForwardRef(SvgDecision) />,
-  "meta1": false,
+  "icon": "data-source",
+  "meta": Array [
+    false,
+  ],
   "name": "decision report",
   "type": "Decision Table",
 }
@@ -103,6 +109,7 @@ exports[`should match snapshot 1`] = `
     action={
       <ForwardRef(Button)
         onClick={[Function]}
+        primary={true}
       >
         Add
       </ForwardRef(Button)>
@@ -118,8 +125,10 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "process",
-          "icon": <ForwardRef(SvgProcess) />,
-          "meta1": "Not defined, Sales, (Unauthorized Tenant)",
+          "icon": "data-source",
+          "meta": Array [
+            "Not defined, Sales, (Unauthorized Tenant)",
+          ],
           "name": "definition name",
           "type": "Process",
         },
@@ -137,8 +146,10 @@ exports[`should match snapshot 1`] = `
             },
           ],
           "className": "decision",
-          "icon": <ForwardRef(SvgDecision) />,
-          "meta1": "Not defined, Marketing",
+          "icon": "data-source",
+          "meta": Array [
+            "Not defined, Marketing",
+          ],
           "name": "decision report",
           "type": "Decision Table",
         },
