@@ -105,6 +105,7 @@ pipeline {
   parameters {
     string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
     string(name: 'DEVELOPMENT_VERSION', defaultValue: '1.1.0-SNAPSHOT', description: 'Next development version.')
+    string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to build the release from.')
     booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations (Nexus).')
     booleanParam(name: 'GITHUB_UPLOAD_RELEASE', defaultValue: false, description: 'Should upload the release to github.')
   }
@@ -127,7 +128,7 @@ pipeline {
     stage('Prepare') {
       steps {
         git url: 'git@github.com:camunda/camunda-operate',
-            branch: 'master',
+            branch: "${params.BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
 
