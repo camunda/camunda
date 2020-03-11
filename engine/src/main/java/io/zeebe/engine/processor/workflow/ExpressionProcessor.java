@@ -50,6 +50,21 @@ public final class ExpressionProcessor {
         .map(this::wrapResult);
   }
 
+  /**
+   * Evaluates the given expression and returns the result as boolean. If the evaluation fails or
+   * the result is not a boolean then an incident is raised.
+   *
+   * @param expression the expression to evaluate
+   * @param context the element context to load the variables from
+   * @return the evaluation result as boolean, or {@link Optional#empty()} if an incident is raised
+   */
+  public Optional<Boolean> evaluateBooleanExpression(
+      final Expression expression, final BpmnStepContext<?> context) {
+
+    return evaluateExpression(
+        expression, context, ResultType.BOOLEAN, EvaluationResult::getBoolean);
+  }
+
   private <T> Optional<T> evaluateExpression(
       final Expression expression,
       final BpmnStepContext<?> context,

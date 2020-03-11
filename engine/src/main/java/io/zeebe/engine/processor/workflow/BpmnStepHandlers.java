@@ -140,7 +140,7 @@ public final class BpmnStepHandlers {
 
     stepHandlers.put(
         BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_ACTIVATING,
-        new ExclusiveGatewayElementActivatingHandler<>());
+        new ExclusiveGatewayElementActivatingHandler<>(expressionProcessor));
     stepHandlers.put(
         BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_COMPLETED,
         new EventBasedGatewayElementCompletedHandler<>());

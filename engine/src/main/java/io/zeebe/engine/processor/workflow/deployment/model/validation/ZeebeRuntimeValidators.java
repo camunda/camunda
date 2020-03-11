@@ -8,6 +8,7 @@
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
 import io.zeebe.el.ExpressionLanguage;
+import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -40,6 +41,8 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
             .hasValidExpression(ZeebeCalledElement::getProcessId)
             .build(expressionLanguage),
-        new SequenceFlowValidator());
+        ZeebeExpressionValidator.verifyThat(ConditionExpression.class)
+            .hasValidExpression(ConditionExpression::getTextContent)
+            .build(expressionLanguage));
   }
 }

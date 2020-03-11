@@ -70,16 +70,10 @@ public final class ZeebeRuntimeValidationTest {
             .startEvent()
             .exclusiveGateway()
             .sequenceFlowId("flow")
-            .condition("foo")
+            .condition(INVALID_EXPRESSION)
             .endEvent()
             .done(),
-        Arrays.asList(
-            expect(
-                ConditionExpression.class,
-                "Condition expression is invalid: [1.4] failure: expected comparison operator ('==', '!=', '<', '<=', '>', '>=')\n"
-                    + "\n"
-                    + "foo\n"
-                    + "   ^"))
+        Arrays.asList(expect(ConditionExpression.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // not a json path expression
