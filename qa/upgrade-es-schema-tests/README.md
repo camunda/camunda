@@ -4,7 +4,7 @@ This test suite verifies that the Optimize upgrade completes within a limited ti
 
 It starts a given previous version, waits until all data is imported, kills it and starts the upgrade to the target version.
 
-It has two profile for it's execution, static and base data.
+It has two profile for its execution, static and base data.
 
 # General Requirements
 
