@@ -680,7 +680,7 @@ public class ReportService implements CollectionReferencingService {
   private SingleProcessReportDefinitionDto getSingleProcessReportDefinition(String reportId,
                                                                             String userId) {
     SingleProcessReportDefinitionDto report = reportReader.getSingleProcessReportOmitXml(reportId);
-    if (!reportAuthorizationService.getAuthorizedRole(userId, report).isPresent()) {
+    if (!reportAuthorizationService.isAuthorizedToReport(userId, report)) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");
     }
@@ -690,7 +690,7 @@ public class ReportService implements CollectionReferencingService {
   private SingleDecisionReportDefinitionDto getSingleDecisionReportDefinition(String reportId,
                                                                               String userId) {
     SingleDecisionReportDefinitionDto report = reportReader.getSingleDecisionReportOmitXml(reportId);
-    if (!reportAuthorizationService.getAuthorizedRole(userId, report).isPresent()) {
+    if (!reportAuthorizationService.isAuthorizedToReport(userId, report)) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");
     }

@@ -11,13 +11,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
@@ -77,6 +74,8 @@ public class ReportServiceConflictTest {
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(updateDto);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
+
 
     // when
     underTest.updateSingleProcessReport("test1", updateDto, "user1", false);
@@ -94,6 +93,8 @@ public class ReportServiceConflictTest {
     updateDto.setId("test1");
     when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(updateDto);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
+
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),
@@ -114,6 +115,7 @@ public class ReportServiceConflictTest {
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(updateDto);
+    when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     // when
     underTest.updateSingleDecisionReport("test1", updateDto, "user1", false);
@@ -131,6 +133,8 @@ public class ReportServiceConflictTest {
     updateDto.setId("test1");
     when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(updateDto);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
+    when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
+
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
       new ConflictedItemDto("conflict1", ConflictedItemType.ALERT, "name"),

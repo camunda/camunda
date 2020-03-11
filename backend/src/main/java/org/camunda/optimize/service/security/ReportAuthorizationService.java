@@ -32,6 +32,10 @@ public class ReportAuthorizationService {
   private final AuthorizedCollectionService collectionAuthorizationService;
   private final ReportReader reportReader;
 
+  public boolean isAuthorizedToReport(final String userId, final ReportDefinitionDto report) {
+    return getAuthorizedRole(userId, report).isPresent();
+  }
+
   public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
     final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
     final Optional<RoleType> authorizedRole = isSuperUser
