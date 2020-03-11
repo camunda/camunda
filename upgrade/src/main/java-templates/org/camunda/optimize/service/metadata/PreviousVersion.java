@@ -7,16 +7,9 @@ package org.camunda.optimize.service.metadata;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 public final class PreviousVersion {
   public static final String RAW_PREVIOUS_VERSION = "${project.previousVersion}";
   public static final String PREVIOUS_VERSION = stripToPlainVersion(RAW_PREVIOUS_VERSION);
-
-  public static final String stripToPlainVersion(final String rawVersion) {
-    // extract plain <major>.<minor>.<patch> version, strip everything else
-    return Arrays.stream(rawVersion.split("[^0-9]"))
-      .limit(3)
-      .filter(part -> part.chars().allMatch(Character::isDigit))
-      .collect(Collectors.joining("."));
-  }
 }
