@@ -7,7 +7,10 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
-import com.google.gson.GsonBuilder;
+import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.zeebe.util.exception.UncheckedExecutionException;
 import java.util.Objects;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -113,6 +116,10 @@ public class GatewayCfg {
   }
 
   public String toJson() {
-    return new GsonBuilder().setPrettyPrinting().create().toJson(this);
+    try {
+      return getDefaultJsonObjectWriter().writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedExecutionException("Writing to JSON failed", e);
+    }
   }
 }
