@@ -74,7 +74,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
         <executions>
           <!--Check if the version is alpha or snapshot, use latest if true, else leave docs.version = project.version-->
           <execution>
