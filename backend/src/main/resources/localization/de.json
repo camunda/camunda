@@ -430,7 +430,9 @@
       "threshold": "Hat einen Wert",
       "frequency": "Bericht prüfen, jede",
       "email": "Schicke eine E-Mail an",
+      "webhook": "An externes System senden",
       "emailPlaceholder": "E-Mail-Addresse",
+      "webookPlaceholder": "Zielsystem",
       "sendNotification": "Benachrichtigung senden, wenn gelöst",
       "reminder": "Erinnerung senden",
       "reminderFrequency": "jede"
@@ -503,6 +505,7 @@
     "update": "Aktualisieren",
     "apply": "Anwenden",
     "cancel": "Abbrechen",
+    "reset": "Zurücksetzen",
     "close": "Schließen",
     "add": "Hinzufügen",
     "copy": "Kopieren",

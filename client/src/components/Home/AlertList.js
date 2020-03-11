@@ -11,6 +11,7 @@ import {Button, EntityList, Deleter} from 'components';
 import {showError} from 'notifications';
 import {formatters, loadReports, isDurationReport} from 'services';
 import {withErrorHandling} from 'HOC';
+import {getWebhooks} from 'config';
 
 import AlertModal from './modals/AlertModal';
 
@@ -28,11 +29,13 @@ export default withErrorHandling(
       deleting: null,
       editing: null,
       reports: null,
-      alerts: null
+      alerts: null,
+      webhooks: null
     };
 
     componentDidMount() {
       this.loadData();
+      this.loadWebhooks();
     }
 
     componentDidUpdate(prevProps) {
@@ -63,9 +66,17 @@ export default withErrorHandling(
     };
 
     loadAlerts = () => {
-      this.props.mightFail(loadAlerts(this.props.collection), alerts => {
-        this.setState({alerts});
-      });
+      this.props.mightFail(
+        loadAlerts(this.props.collection),
+        alerts => {
+          this.setState({alerts});
+        },
+        showError
+      );
+    };
+
+    loadWebhooks = () => {
+      this.props.mightFail(getWebhooks(), webhooks => this.setState({webhooks}), showError);
     };
 
     openAddAlertModal = () => this.setState({editing: {}});
@@ -87,7 +98,7 @@ export default withErrorHandling(
     closeEditAlertModal = () => this.setState({editing: null});
 
     render() {
-      const {deleting, editing, alerts, reports} = this.state;
+      const {deleting, editing, alerts, reports, webhooks} = this.state;
       const {readOnly} = this.props;
 
       const isLoading = alerts === null || reports === null;
@@ -104,13 +115,13 @@ export default withErrorHandling(
             data={
               !isLoading &&
               this.state.alerts.map(alert => {
-                const {name, email, reportId, threshold, thresholdOperator} = alert;
+                const {name, email, webhook, reportId, threshold, thresholdOperator} = alert;
 
                 return {
                   icon: <AlertIcon />,
                   type: t('alert.label'),
                   name,
-                  meta1: email,
+                  meta1: email || webhook,
                   meta2: this.formatDescription(reportId, thresholdOperator, threshold),
                   action: !readOnly && (() => this.openEditAlertModal(alert)),
                   actions: !readOnly && [
@@ -140,6 +151,7 @@ export default withErrorHandling(
             <AlertModal
               initialAlert={editing}
               reports={reports}
+              webhooks={webhooks}
               onClose={this.closeEditAlertModal}
               onConfirm={alert => {
                 if (editing.id) {

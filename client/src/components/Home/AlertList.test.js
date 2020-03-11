@@ -13,6 +13,7 @@ import {loadReports} from 'services';
 import AlertListWithErrorHandling from './AlertList';
 import AlertModal from './modals/AlertModal';
 import {loadAlerts} from './service';
+import {getWebhooks} from 'config';
 
 const AlertList = AlertListWithErrorHandling.WrappedComponent;
 
@@ -20,16 +21,15 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    loadReports: jest
-      .fn()
-      .mockReturnValue([
-        {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
-        {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'},
-        {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'}
-      ])
+    loadReports: jest.fn().mockReturnValue([
+      {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
+      {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'},
+      {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'}
+    ])
   };
 });
 
+jest.mock('config', () => ({getWebhooks: jest.fn().mockReturnValue(['webhook1', 'webhook2'])}));
 jest.mock('./service', () => ({
   loadAlerts: jest.fn().mockReturnValue([
     {
@@ -54,6 +54,12 @@ it('should load existing reports', () => {
   shallow(<AlertList {...props} />);
 
   expect(loadReports).toHaveBeenCalled();
+});
+
+it('should load existing webhooks', () => {
+  shallow(<AlertList {...props} />);
+
+  expect(getWebhooks).toHaveBeenCalled();
 });
 
 it('should only save single number reports', async () => {

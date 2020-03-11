@@ -13,3 +13,7 @@ When grouping user tasks by assignee, it is now possible to see user tasks that 
 ## Suspended/Non-suspended instances filter for process report
 
  A new filter is added to allow for filtering the process instances that are in the suspended/non-suspended state. 
+
+## Receive Alerts on custom notification systems using webhooks
+
+Alerts can now be sent to external systems using webhooks. If you have any webhook configured, it will appear as an option when creating or updating an Alert. 

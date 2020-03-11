@@ -21,10 +21,10 @@ import {
 } from 'components';
 import {formatters, isDurationReport} from 'services';
 import {isEmailEnabled, getOptimizeVersion} from 'config';
-
 import ThresholdInput from './ThresholdInput';
-
 import {t} from 'translation';
+
+import './AlertModal.scss';
 
 const newAlert = {
   email: '',
@@ -36,7 +36,8 @@ const newAlert = {
     unit: 'minutes'
   },
   reminder: null,
-  fixNotification: false
+  fixNotification: false,
+  webhook: null
 };
 
 export default class AlertModal extends React.Component {
@@ -131,7 +132,7 @@ export default class AlertModal extends React.Component {
   };
 
   componentDidUpdate({initialAlert}) {
-    const {name, email, reportId, checkInterval, reminder} = this.state;
+    const {name, email, webhook, reportId, checkInterval, reminder} = this.state;
 
     if (this.props.initialAlert !== initialAlert) {
       this.loadAlert();
@@ -140,8 +141,15 @@ export default class AlertModal extends React.Component {
       this.setInvalid(true);
       return;
     }
-    if (!email.match(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/)) {
+    if (
+      email &&
+      !email.match(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/)
+    ) {
       // taken from https://www.w3.org/TR/2012/WD-html-markup-20120320/input.email.html#input.email.attrs.value.single
+      this.setInvalid(true);
+      return;
+    }
+    if (!email && !webhook) {
       this.setInvalid(true);
       return;
     }
@@ -197,6 +205,10 @@ export default class AlertModal extends React.Component {
     });
   };
 
+  updateWebhook = webhook => {
+    this.setState({webhook});
+  };
+
   render() {
     const {
       name,
@@ -209,10 +221,11 @@ export default class AlertModal extends React.Component {
       fixNotification,
       emailNotificationIsEnabled,
       invalid,
-      optimizeVersion
+      optimizeVersion,
+      webhook
     } = this.state;
 
-    const {reports, onClose} = this.props;
+    const {reports, webhooks, onClose} = this.props;
 
     const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`;
     const selectedReport = reports.find(report => report.id === reportId) || {};
@@ -315,6 +328,32 @@ export default class AlertModal extends React.Component {
                 onChange={({target: {value}}) => this.setState({email: value})}
               />
             </Form.Group>
+            {webhooks?.length > 0 && (
+              <Form.Group>
+                <Labeled label={t('alert.form.webhook')}>
+                  <Form.InputGroup>
+                    <Typeahead
+                      value={webhook}
+                      placeholder={t('alert.form.webookPlaceholder')}
+                      onChange={this.updateWebhook}
+                    >
+                      {webhooks.map(webhook => (
+                        <Typeahead.Option key={webhook} value={webhook}>
+                          {webhook}
+                        </Typeahead.Option>
+                      ))}
+                    </Typeahead>
+                    <Button
+                      disabled={!webhook}
+                      onClick={() => this.setState({webhook: null})}
+                      className="reset"
+                    >
+                      {t('common.reset')}
+                    </Button>
+                  </Form.InputGroup>
+                </Labeled>
+              </Form.Group>
+            )}
             <Form.Group noSpacing className="notifications">
               <LabeledInput
                 label={t('alert.form.sendNotification')}

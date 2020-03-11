@@ -39,3 +39,4 @@ export const areTenantsAvailable = createAccessorFunction('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction('optimizeVersion');
 export const getWebappEndpoints = createAccessorFunction('webappsEndpoints');
 export const getHeader = createAccessorFunction('header');
+export const getWebhooks = createAccessorFunction('webhooks');

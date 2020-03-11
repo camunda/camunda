@@ -13,3 +13,7 @@ Wenn Sie Benutzeraufgaben nach Verantwortlichen gruppieren, können Sie jetzt Be
 ## Filter für suspendierte/nicht suspendierte Instanzen für Prozessbericht
 
 Ein neuer Filter wird hinzugefügt, um die Prozessinstanzen zu filtern, die sich im suspendierten/nicht suspendierten Zustand befinden.
+
+## Erhalten Sie Alarme auf benutzerdefinierten Benachrichtigungssystemen mit Webhooks
+
+Alarme können nun über Webhooks an externe Systeme gesendet werden. Wenn Sie einen Webhook konfiguriert haben, wird er als Option angezeigt, wenn Sie einen Alarm erstellen oder aktualisieren.

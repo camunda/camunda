@@ -430,7 +430,9 @@
       "threshold": "Has a Value",
       "frequency": "Check Report Every",
       "email": "Send Email to",
+      "webhook": "Send to target",
       "emailPlaceholder": "Email address",
+      "webookPlaceholder": "Target system",
       "sendNotification": "Send notification when resolved",
       "reminder": "Send reminder notification",
       "reminderFrequency": "every"
@@ -503,6 +505,7 @@
     "update": "Update",
     "apply": "Apply",
     "cancel": "Cancel",
+    "reset": "Reset",
     "close": "Close",
     "add": "Add",
     "copy": "Copy",

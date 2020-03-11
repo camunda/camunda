@@ -44,7 +44,8 @@ const initialAlert = {
     unit: 'hours'
   },
   reminder: null,
-  fixNotification: true
+  fixNotification: true,
+  webhook: null
 };
 
 const reports = [
@@ -75,7 +76,8 @@ it('should apply the alert property to the state when changing props', () => {
     },
     reminder: null,
     fixNotification: true,
-    invalid: false
+    invalid: false,
+    webhook: null
   });
 });
 
@@ -134,6 +136,19 @@ it('should disable the submit button if the check interval is negative', () => {
     }
   });
   expect(node.find({variant: 'primary'})).toBeDisabled();
+});
+
+it('should enable the submit button if webhook is selected', () => {
+  const node = shallow(<AlertModal reports={reports} webhooks={['testWebhook']} />);
+
+  node.setProps({initialAlert});
+  node.setState({email: ''});
+  node
+    .find('Typeahead')
+    .at(1)
+    .prop('onChange')('testWebhook');
+
+  expect(node.find({variant: 'primary'})).not.toBeDisabled();
 });
 
 it('should show warning that email is not configured', async () => {
