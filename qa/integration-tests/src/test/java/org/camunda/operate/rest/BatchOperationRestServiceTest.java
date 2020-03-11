@@ -44,12 +44,12 @@ public class BatchOperationRestServiceTest extends OperateIntegrationTest {
     //when
     MvcResult mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, new Object[]{123}, null));
     //then
-    assertErrorMessageContains(mvcResult, "searchAfter must be an array of two long values.");
+    assertErrorMessageContains(mvcResult, "searchAfter must be an array of two string values.");
 
     //when
     mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, new Object[]{"adg", 234}, null));
     //then
-    assertErrorMessageContains(mvcResult, "searchAfter must be an array of two long values.");
+    assertErrorMessageContains(mvcResult, "searchAfter must be an array of two string values.");
   }
 
   @Test
@@ -57,12 +57,12 @@ public class BatchOperationRestServiceTest extends OperateIntegrationTest {
     //when
     MvcResult mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, null, new Object[]{123}));
     //then
-    assertErrorMessageContains(mvcResult, "searchBefore must be an array of two long values.");
+    assertErrorMessageContains(mvcResult, "searchBefore must be an array of two string values.");
 
     //when
     mvcResult = postRequestThatShouldFail(new BatchOperationRequestDto(2, null, new Object[]{123, "asf"}));
     //then
-    assertErrorMessageContains(mvcResult, "searchBefore must be an array of two long values.");
+    assertErrorMessageContains(mvcResult, "searchBefore must be an array of two string values.");
   }
 
   protected MvcResult postRequestThatShouldFail(Object query) throws Exception {

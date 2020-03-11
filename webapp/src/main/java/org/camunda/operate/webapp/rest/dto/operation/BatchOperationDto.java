@@ -27,7 +27,7 @@ public class BatchOperationDto {
   /**
    * Sort values, define the position of batch operation in the list and may be used to search for previous of following page.
    */
-  private Object[] sortValues;
+  private String[] sortValues;
 
   public String getName() {
     return name;
@@ -101,11 +101,11 @@ public class BatchOperationDto {
     return this;
   }
 
-  public Object[] getSortValues() {
+  public String[] getSortValues() {
     return sortValues;
   }
 
-  public BatchOperationDto setSortValues(Object[] sortValues) {
+  public BatchOperationDto setSortValues(String[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -120,7 +120,10 @@ public class BatchOperationDto {
         .setInstancesCount(batchOperationEntity.getInstancesCount())
         .setOperationsTotalCount(batchOperationEntity.getOperationsTotalCount())
         .setOperationsFinishedCount(batchOperationEntity.getOperationsFinishedCount())
-        .setSortValues(batchOperationEntity.getSortValues());
+        //convert to String[]
+        .setSortValues(Arrays.stream(batchOperationEntity.getSortValues())
+            .map(String::valueOf)
+            .toArray(String[]::new));
   }
 
 

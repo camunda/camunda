@@ -6,6 +6,7 @@
 package org.camunda.operate.webapp.rest.dto.operation;
 
 import java.util.Arrays;
+import io.swagger.annotations.ApiModelProperty;
 
 /**
  * The request to get the list of batch operations, created by current user.
@@ -34,6 +35,8 @@ public class BatchOperationRequestDto {
     this.searchBefore = searchBefore;
   }
 
+  @ApiModelProperty(value= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+      example = "[\"9223372036854775807\", \"1583836503404\"]")
   public Object[] getSearchBefore() {
     return searchBefore;
   }
@@ -43,6 +46,8 @@ public class BatchOperationRequestDto {
     return this;
   }
 
+  @ApiModelProperty(value= "Array of two strings: copy/paste of sortValues field from one of the operations.",
+      example = "[\"1583836151645\", \"1583836128180\"]")
   public Object[] getSearchAfter() {
     return searchAfter;
   }

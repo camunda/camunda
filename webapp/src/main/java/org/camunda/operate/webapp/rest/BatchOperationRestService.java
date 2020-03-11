@@ -46,13 +46,13 @@ public class BatchOperationRestService {
       throw new InvalidRequestException("Only one of parameters must be present in request: either searchAfter or searchBefore.");
     }
     if (batchOperationRequestDto.getSearchBefore() != null && (batchOperationRequestDto.getSearchBefore().length != 2 || !CollectionUtil
-        .allElementsAreOfType(Long.class, batchOperationRequestDto.getSearchBefore()))) {
-      throw new InvalidRequestException("searchBefore must be an array of two long values.");
+        .allElementsAreOfType(String.class, batchOperationRequestDto.getSearchBefore()))) {
+      throw new InvalidRequestException("searchBefore must be an array of two string values.");
     }
 
     if (batchOperationRequestDto.getSearchAfter() != null && (batchOperationRequestDto.getSearchAfter().length != 2 || !CollectionUtil
-        .allElementsAreOfType(Long.class, batchOperationRequestDto.getSearchAfter()))) {
-      throw new InvalidRequestException("searchAfter must be an array of two long values.");
+        .allElementsAreOfType(String.class, batchOperationRequestDto.getSearchAfter()))) {
+      throw new InvalidRequestException("searchAfter must be an array of two string values.");
     }
 
     List<BatchOperationEntity> batchOperations = batchOperationReader.getBatchOperations(batchOperationRequestDto);
