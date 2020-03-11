@@ -18,6 +18,7 @@ import {
   Events,
   Process,
   Sharing,
+  License,
   WithLicense
 } from './components';
 
@@ -96,6 +97,7 @@ class App extends React.Component {
                       path="/(report|dashboard|collection|eventBasedProcess)/*"
                       render={this.renderEntity}
                     />
+                    <Route path="/license" component={License} />
                     <PrivateRoute path="*" component={ErrorPage} />
                   </Switch>
                 </UserProvider>

@@ -26,6 +26,12 @@ export class PrivateRoute extends React.Component {
   componentContainer = document.createElement('div');
 
   componentDidMount() {
+    const container = this.container.current;
+
+    if (container) {
+      container.appendChild(this.componentContainer);
+    }
+
     addHandler(this.handleResponse);
   }
 

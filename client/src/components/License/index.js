@@ -5,3 +5,4 @@
  */
 
 export {default as WithLicense} from './WithLicense';
+export {default as License} from './License';
