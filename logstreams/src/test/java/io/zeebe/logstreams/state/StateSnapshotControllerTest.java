@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+@SuppressWarnings("unchecked")
 public final class StateSnapshotControllerTest {
   @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
   @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
@@ -73,14 +74,14 @@ public final class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldOpenNewDatabaseIfNoSnapshotsToRecoverFrom() throws Exception {
+  public void shouldDoNothingIfNoSnapshotsToRecoverFrom() throws Exception {
     // given
 
     // when
-    final long lowerBoundSnapshotPosition = snapshotController.recover();
+    snapshotController.recover();
 
     // then
-    assertThat(lowerBoundSnapshotPosition).isEqualTo(-1);
+    assertThat(snapshotController.isDbOpened()).isFalse();
   }
 
   @Test
@@ -94,11 +95,11 @@ public final class StateSnapshotControllerTest {
     wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
     snapshotController.close();
-    final long lowerBound = snapshotController.recover();
+    snapshotController.recover();
+    assertThat(snapshotController.isDbOpened()).isFalse();
     wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(lowerBound).isEqualTo(-1);
     assertThat(wrapper.mayExist(key)).isFalse();
   }
 
@@ -120,11 +121,10 @@ public final class StateSnapshotControllerTest {
     snapshotController.close();
 
     // when
-    final long lowerBound = snapshotController.recover();
+    snapshotController.recover();
     wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(lowerBound).isEqualTo(3);
     assertThat(wrapper.getInt("x")).isEqualTo(3);
   }
 
@@ -144,11 +144,10 @@ public final class StateSnapshotControllerTest {
     corruptLatestSnapshot();
 
     // when
-    final long lowerBound = snapshotController.recover();
+    snapshotController.recover();
     wrapper.wrap(snapshotController.openDb());
 
     // then
-    assertThat(lowerBound).isEqualTo(1);
     assertThat(wrapper.getInt("x")).isEqualTo(1);
   }
 
@@ -191,28 +190,30 @@ public final class StateSnapshotControllerTest {
     // given
     snapshotController.openDb();
 
-    assertThat(snapshotController.getLastValidSnapshotPosition()).isEqualTo(-1L);
+    assertThat(snapshotController.getLastValidSnapshotDirectory()).isNull();
 
     snapshotController.takeSnapshot(1L);
     snapshotController.takeSnapshot(3L);
-    snapshotController.takeSnapshot(5L);
-    snapshotController.takeTempSnapshot(6L);
+    final var lastValidSnapshot = snapshotController.takeSnapshot(5L);
+    final var lastTempSnapshot = snapshotController.takeTempSnapshot(6L);
 
     // when/then
-    assertThat(snapshotController.getLastValidSnapshotPosition()).isEqualTo(5L);
+    assertThat(snapshotController.getLastValidSnapshotDirectory().toPath())
+        .isEqualTo(lastValidSnapshot.getPath())
+        .isNotEqualTo(lastTempSnapshot.getPath());
   }
 
   private void corruptLatestSnapshot() throws IOException {
     final var snapshot = storage.getLatestSnapshot();
-    assertThat(snapshot).isPresent();
+    final var path = snapshot.orElseThrow().getPath();
 
-    final var optionalFile =
-        Files.list(snapshot.get().getPath())
-            .filter(p -> p.toString().endsWith(".sst"))
-            .sorted(Comparator.reverseOrder())
-            .findFirst();
-    assertThat(optionalFile).isPresent();
-    Files.write(
-        optionalFile.get(), "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
+    try (final var files = Files.list(path)) {
+      final var file =
+          files
+              .filter(p -> p.toString().endsWith(".sst"))
+              .max(Comparator.naturalOrder())
+              .orElseThrow();
+      Files.write(file, "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
+    }
   }
 }

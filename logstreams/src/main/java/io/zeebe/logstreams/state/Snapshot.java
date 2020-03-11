@@ -11,12 +11,19 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 public interface Snapshot extends Comparable<Snapshot> {
-  long getPosition();
+
+  /**
+   * Returns an implementation specific compaction bound, e.g. a log stream position, a timestamp,
+   * etc., used during compaction
+   *
+   * @return the compaction upper bound
+   */
+  long getCompactionBound();
 
   Path getPath();
 
   @Override
   default int compareTo(final Snapshot other) {
-    return Comparator.comparingLong(Snapshot::getPosition).compare(this, other);
+    return Comparator.comparing(Snapshot::getCompactionBound).compare(this, other);
   }
 }

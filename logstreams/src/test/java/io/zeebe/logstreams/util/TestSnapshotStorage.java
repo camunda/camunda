@@ -67,10 +67,13 @@ public final class TestSnapshotStorage implements SnapshotStorage {
   }
 
   @Override
-  public boolean commitSnapshot(final Path snapshotPath) {
-    final var id = snapshotPath.getFileName().toString();
-    if (exists(id)) {
-      return true;
+  public Optional<Snapshot> commitSnapshot(final Path snapshotPath) {
+    final var existingSnapshot =
+        snapshots.stream()
+            .filter(s -> s.getPath().getFileName().equals(snapshotPath.getFileName()))
+            .findFirst();
+    if (existingSnapshot.isPresent()) {
+      return existingSnapshot;
     }
 
     final var destination = snapshotsDirectory.resolve(snapshotPath.getFileName());
@@ -82,8 +85,9 @@ public final class TestSnapshotStorage implements SnapshotStorage {
       throw new UncheckedIOException(e);
     }
 
-    snapshots.add(new SnapshotImpl(destination));
-    return true;
+    final var committedSnapshot = new SnapshotImpl(destination);
+    snapshots.add(committedSnapshot);
+    return Optional.of(committedSnapshot);
   }
 
   @Override
@@ -136,16 +140,16 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
   private static final class SnapshotImpl implements Snapshot {
     private final Path path;
-    private final long position;
+    private final long compactionBound;
 
     private SnapshotImpl(final Path path) {
       this.path = path;
-      this.position = Long.valueOf(path.getFileName().toString());
+      this.compactionBound = Long.valueOf(path.getFileName().toString());
     }
 
     @Override
-    public long getPosition() {
-      return position;
+    public long getCompactionBound() {
+      return compactionBound;
     }
 
     @Override
@@ -155,7 +159,7 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
     @Override
     public String toString() {
-      return "SnapshotImpl{" + "path=" + path + ", position=" + position + '}';
+      return "SnapshotImpl{" + "path=" + path + ", compactionBound=" + compactionBound + '}';
     }
   }
 }

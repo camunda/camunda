@@ -5,11 +5,11 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.storage.atomix;
+package io.zeebe.broker.logstreams;
 
 import java.util.concurrent.CompletableFuture;
 
 @FunctionalInterface
-public interface AtomixLogCompactor {
-  CompletableFuture<Void> compact(long index);
+public interface LogCompactor {
+  CompletableFuture<Void> compactLog(final long compactionBound);
 }

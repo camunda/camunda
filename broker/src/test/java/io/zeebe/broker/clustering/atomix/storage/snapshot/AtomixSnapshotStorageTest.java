@@ -39,15 +39,14 @@ import org.junit.rules.TemporaryFolder;
 public final class AtomixSnapshotStorageTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private Path snapshotsDirectory;
   private Path pendingDirectory;
   private SnapshotStore store;
-  private AtomixSnapshotStorage storage;
+  private AtomixSnapshotStorage snapshotStorage;
   private AtomixRecordEntrySupplier entrySupplier;
 
   @Before
   public void setUp() throws Exception {
-    snapshotsDirectory = temporaryFolder.newFolder("snapshots").toPath();
+    final var snapshotsDirectory = temporaryFolder.newFolder("snapshots").toPath();
     pendingDirectory = temporaryFolder.newFolder("pending").toPath();
     entrySupplier = mock(AtomixRecordEntrySupplier.class);
     store =
@@ -55,8 +54,8 @@ public final class AtomixSnapshotStorageTest {
   }
 
   @After
-  public void tearDown() throws Exception {
-    Optional.ofNullable(storage).ifPresent(SnapshotStorage::close);
+  public void tearDown() {
+    Optional.ofNullable(snapshotStorage).ifPresent(SnapshotStorage::close);
     Optional.ofNullable(store).ifPresent(SnapshotStore::close);
   }
 
@@ -95,7 +94,7 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldGetPendingDirectoryForId() {
     // given
-    final var id = "1-1-1-1";
+    final var id = "1-1-1";
     final var storage = newStorage(1);
 
     // when
@@ -149,8 +148,8 @@ public final class AtomixSnapshotStorageTest {
     // then
     assertThat(storage.getLatestSnapshot())
         .isPresent()
-        .map(Snapshot::getPosition)
-        .hasValue(snapshot.getPosition());
+        .map(Snapshot::getCompactionBound)
+        .hasValue(snapshot.getCompactionBound());
   }
 
   @Test
@@ -173,23 +172,23 @@ public final class AtomixSnapshotStorageTest {
 
   private Snapshot newPendingSnapshot(final long position) {
     when(entrySupplier.getIndexedEntry(position)).thenReturn(Optional.of(newEntry(position)));
-    return storage.getPendingSnapshotFor(position);
+    return snapshotStorage.getPendingSnapshotFor(position);
   }
 
   private Snapshot newCommittedSnapshot(final long position) throws IOException {
     final var snapshot = newPendingSnapshot(position);
     Files.createDirectories(snapshot.getPath());
-    storage.commitSnapshot(snapshot.getPath());
+    snapshotStorage.commitSnapshot(snapshot.getPath());
 
-    return storage.getLatestSnapshot().get();
+    return snapshotStorage.getLatestSnapshot().get();
   }
 
   private AtomixSnapshotStorage newStorage(final int maxSnapshotsCount) {
     final var runtimeDirectory = temporaryFolder.getRoot().toPath().resolve("runtime");
-    storage =
+    snapshotStorage =
         new AtomixSnapshotStorage(
             runtimeDirectory, store, entrySupplier, maxSnapshotsCount, new SnapshotMetrics(0));
-    return storage;
+    return snapshotStorage;
   }
 
   private Indexed<ZeebeEntry> newEntry(final long index) {

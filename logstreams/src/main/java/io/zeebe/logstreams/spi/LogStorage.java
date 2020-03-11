@@ -61,13 +61,6 @@ public interface LogStorage {
       long lowestPosition, long highestPosition, ByteBuffer blockBuffer, AppendListener listener);
 
   /**
-   * Deletes from the log storage, uses the given address as upper limit.
-   *
-   * @param address the address until we try to delete
-   */
-  void delete(long address);
-
-  /**
    * Open the storage. Called in the log conductor thread.
    *
    * @throws IOException on I/O errors during allocating the first segments

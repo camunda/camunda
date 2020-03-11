@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
+import io.atomix.utils.time.WallClockTimestamp;
 import java.util.Comparator;
 
 /** A {@link DbSnapshot}'s ID is simply a combination of its index and its position. */
@@ -14,11 +15,11 @@ public interface DbSnapshotId extends Comparable<DbSnapshotId> {
 
   long getIndex();
 
-  long getPosition();
+  WallClockTimestamp getTimestamp();
 
   /**
    * A snapshot is considered "lower" if its index is less than that of the other snapshot. If they
-   * are the same, then it is considered "lower" if its position is less than that of the other
+   * are the same, then it is considered "lower" if its timestamp is less than that of the other
    * snapshot. If they are the same then these snapshots are the same order-wise.
    *
    * @param other the snapshot to compare against
@@ -28,7 +29,7 @@ public interface DbSnapshotId extends Comparable<DbSnapshotId> {
   @Override
   default int compareTo(final DbSnapshotId other) {
     return Comparator.comparingLong(DbSnapshotId::getIndex)
-        .thenComparingLong(DbSnapshotId::getPosition)
+        .thenComparing(DbSnapshotId::getTimestamp)
         .compare(this, other);
   }
 }

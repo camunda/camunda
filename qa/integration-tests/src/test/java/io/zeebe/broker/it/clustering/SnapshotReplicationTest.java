@@ -20,6 +20,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Arrays;
@@ -28,7 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.CRC32;
+import java.util.zip.CRC32C;
 import java.util.zip.CheckedInputStream;
 import org.junit.Before;
 import org.junit.Rule;
@@ -127,12 +128,12 @@ public final class SnapshotReplicationTest {
 
   private long createCheckSumForFile(final File snapshotFile) {
     try (final CheckedInputStream checkedInputStream =
-        new CheckedInputStream(Files.newInputStream(snapshotFile.toPath()), new CRC32())) {
+        new CheckedInputStream(Files.newInputStream(snapshotFile.toPath()), new CRC32C())) {
       while (checkedInputStream.skip(512) > 0) {}
 
       return checkedInputStream.getChecksum().getValue();
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 

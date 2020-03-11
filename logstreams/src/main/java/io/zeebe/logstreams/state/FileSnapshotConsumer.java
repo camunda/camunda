@@ -17,12 +17,12 @@ import java.nio.file.StandardOpenOption;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
-public final class FileSnapshotConsumer implements SnapshotConsumer {
+final class FileSnapshotConsumer implements SnapshotConsumer {
 
   private final SnapshotStorage storage;
   private final Logger logger;
 
-  public FileSnapshotConsumer(final SnapshotStorage storage, final Logger logger) {
+  FileSnapshotConsumer(final SnapshotStorage storage, final Logger logger) {
     this.storage = storage;
     this.logger = logger;
   }
@@ -34,7 +34,7 @@ public final class FileSnapshotConsumer implements SnapshotConsumer {
 
   @Override
   public boolean completeSnapshot(final String snapshotId) {
-    return storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotId));
+    return storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotId)).isPresent();
   }
 
   @Override
