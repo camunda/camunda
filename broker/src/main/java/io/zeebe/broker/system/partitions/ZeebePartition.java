@@ -98,6 +98,8 @@ public final class ZeebePartition extends Actor
   private final HealthMonitor criticalComponentsHealthMonitor;
   private final ZeebeIndexMapping zeebeIndexMapping;
   private final HealthMetrics healthMetrics;
+  private AtomixLogStorage atomixLogStorage;
+  private long deferredCommitPosition;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -287,6 +289,35 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> basePartitionInstallation() {
+    final ActorFuture installFuture = new CompletableActorFuture();
+    openLogStream()
+        .onComplete(
+            (log, error) -> {
+              if (error == null) {
+                this.logStream = log;
+                if (deferredCommitPosition > 0) {
+                  logStream.setCommitPosition(deferredCommitPosition);
+                  deferredCommitPosition = -1;
+                }
+                installStorageServices()
+                    .onComplete(
+                        (deletionService, errorInstall) -> {
+                          if (errorInstall == null) {
+                            installFuture.complete(deletionService);
+                          } else {
+                            installFuture.completeExceptionally(errorInstall);
+                          }
+                        });
+              } else {
+                LOG.error("Failed to install log stream for partition {}", partitionId, error);
+                installFuture.completeExceptionally(error);
+                onFailure();
+              }
+            });
+    return installFuture;
+  }
+
+  private ActorFuture<Void> installStorageServices() {
     snapshotStorage = createSnapshotStorage();
     snapshotController = createSnapshotController();
 
@@ -322,7 +353,6 @@ public final class ZeebePartition extends Actor
   }
 
   private SnapshotStorage createSnapshotStorage() {
-
     final var reader =
         new AtomixLogStorageReader(
             zeebeIndexMapping, atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
@@ -432,8 +462,7 @@ public final class ZeebePartition extends Actor
     closeActorsFuture.onComplete(
         (v, t) -> {
           if (t == null) {
-            tearDownBaseInstallation();
-            closingPartitionFuture.complete(null);
+            tearDownBaseInstallation(closingPartitionFuture);
           } else {
             closingPartitionFuture.completeExceptionally(t);
           }
@@ -442,16 +471,32 @@ public final class ZeebePartition extends Actor
     return closingPartitionFuture;
   }
 
-  private void tearDownBaseInstallation() {
-    if (closeStateReplication()) {
-      return;
-    }
-
-    if (closeSnapshotController()) {
-      return;
-    }
-
+  private void tearDownBaseInstallation(final CompletableActorFuture<Void> closeFuture) {
+    closeStateReplication();
+    closeSnapshotController();
     closeSnapshotStorage();
+
+    closeLogStream()
+        .onComplete(
+            (closed, error) -> {
+              if (error == null) {
+                closeFuture.complete(null);
+              } else {
+                LOG.error(
+                    "Unexpected error on closing logstream for partition {}", partitionId, error);
+                closeFuture.completeExceptionally(error);
+              }
+            });
+  }
+
+  private ActorFuture<Void> closeLogStream() {
+    if (logStream == null) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    final LogStream logStreamToClose = logStream;
+    logStream = null;
+    return logStreamToClose.closeAsync();
   }
 
   private void closeSnapshotStorage() {
@@ -469,9 +514,9 @@ public final class ZeebePartition extends Actor
     }
   }
 
-  private boolean closeSnapshotController() {
+  private void closeSnapshotController() {
     if (snapshotController == null) {
-      return true;
+      return;
     }
 
     try {
@@ -486,12 +531,11 @@ public final class ZeebePartition extends Actor
       snapshotController = null;
       zeebeDb = null;
     }
-    return false;
   }
 
-  private boolean closeStateReplication() {
+  private void closeStateReplication() {
     if (stateReplication == null) {
-      return true;
+      return;
     }
 
     try {
@@ -501,7 +545,6 @@ public final class ZeebePartition extends Actor
     } finally {
       stateReplication = null;
     }
-    return false;
   }
 
   private void stepByStepClosing(
@@ -530,7 +573,15 @@ public final class ZeebePartition extends Actor
   @Override
   public <T extends RaftLogEntry> void onCommit(final Indexed<T> indexed) {
     if (indexed.type() == ZeebeEntry.class) {
-      this.logStream.setCommitPosition(indexed.<ZeebeEntry>cast().entry().highestPosition());
+      actor.run(
+          () -> {
+            final long commitPosition = indexed.<ZeebeEntry>cast().entry().highestPosition();
+            if (this.logStream == null) {
+              this.deferredCommitPosition = commitPosition;
+              return;
+            }
+            this.logStream.setCommitPosition(commitPosition);
+          });
     }
   }
 
@@ -541,34 +592,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   public void onActorStarting() {
-    final var atomixLogStorage =
-        AtomixLogStorage.ofPartition(zeebeIndexMapping, atomixRaftPartition);
-
-    LogStream.builder()
-        .withLogStorage(atomixLogStorage)
-        .withLogName(atomixRaftPartition.name())
-        .withNodeId(localBroker.getNodeId())
-        .withPartitionId(atomixRaftPartition.id().id())
-        .withMaxFragmentSize(maxFragmentSize)
-        .withActorScheduler(scheduler)
-        .buildAsync()
-        .onComplete(
-            (log, error) -> {
-              if (error == null) {
-                this.logStream = log;
-                atomixRaftPartition.getServer().addCommitListener(this);
-                atomixRaftPartition.addRoleChangeListener(this);
-                onRecovered();
-                onRoleChange(atomixRaftPartition.getRole(), atomixRaftPartition.term());
-              } else {
-                LOG.error(
-                    "Failed to install log stream service for partition {}",
-                    atomixRaftPartition.id().id(),
-                    error);
-                actor.close();
-                onFailure();
-              }
-            });
+    atomixLogStorage = AtomixLogStorage.ofPartition(zeebeIndexMapping, atomixRaftPartition);
+    atomixRaftPartition.getServer().addCommitListener(this);
+    atomixRaftPartition.addRoleChangeListener(this);
+    onRoleChange(atomixRaftPartition.getRole(), atomixRaftPartition.term());
+    onRecovered();
   }
 
   @Override
@@ -589,18 +617,26 @@ public final class ZeebePartition extends Actor
                       atomixRaftPartition.removeRoleChangeListener(this);
                       atomixRaftPartition.getServer().removeCommitListener(this);
 
-                      final ActorFuture<Void> logStreamCloseFuture = logStream.closeAsync();
                       if (t == null) {
-                        logStreamCloseFuture.onComplete(closeFuture);
+                        closeFuture.complete(null);
                       } else {
-                        // we want to close the log stream any way
-                        logStreamCloseFuture.onComplete(
-                            (v2, t2) -> closeFuture.completeExceptionally(t));
+                        closeFuture.completeExceptionally(t);
                       }
                     }));
     closeFuture.join();
 
     super.close();
+  }
+
+  private ActorFuture<LogStream> openLogStream() {
+    return LogStream.builder()
+        .withLogStorage(atomixLogStorage)
+        .withLogName(atomixRaftPartition.name())
+        .withNodeId(localBroker.getNodeId())
+        .withPartitionId(atomixRaftPartition.id().id())
+        .withMaxFragmentSize(maxFragmentSize)
+        .withActorScheduler(scheduler)
+        .buildAsync();
   }
 
   @Override

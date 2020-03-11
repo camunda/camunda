@@ -92,6 +92,25 @@ public final class LogStreamTest {
     assertThatThrownBy(() -> logStream.newLogStreamBatchWriter()).hasMessage("Actor is closed");
   }
 
+  @Test
+  public void shouldIncreasePositionOnRestart() {
+    // given
+    final LogStreamRecordWriter writer = logStream.newLogStreamRecordWriter();
+    writer.value(wrapString("value")).tryWrite();
+    writer.value(wrapString("value")).tryWrite();
+    writer.value(wrapString("value")).tryWrite();
+    final long positionBeforeClose = writer.value(wrapString("value")).tryWrite();
+
+    // when
+    logStream.close();
+    logStreamRule.createLogStream();
+    final LogStreamRecordWriter newWriter = logStreamRule.getLogStream().newLogStreamRecordWriter();
+    final long positionAfterReOpen = newWriter.value(wrapString("value")).tryWrite();
+
+    // then
+    assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);
+  }
+
   static long writeEvent(final SynchronousLogStream logStream) {
     return writeEvent(logStream, wrapString("event"));
   }

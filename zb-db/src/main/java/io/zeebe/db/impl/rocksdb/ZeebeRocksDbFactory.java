@@ -37,7 +37,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
       ZeebeDbFactory<ColumnFamilyType> newFactory(
           final Class<ColumnFamilyType> columnFamilyTypeClass) {
-    return new ZeebeRocksDbFactory(columnFamilyTypeClass);
+    return new ZeebeRocksDbFactory<>(columnFamilyTypeClass);
   }
 
   @Override
@@ -49,7 +49,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             .collect(Collectors.toList()));
   }
 
-  protected ZeebeTransactionDb<ColumnFamilyType> open(
+  private ZeebeTransactionDb<ColumnFamilyType> open(
       final File dbDirectory, final List<byte[]> columnFamilyNames) {
 
     final ZeebeTransactionDb<ColumnFamilyType> db;
@@ -88,7 +88,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
       final List<byte[]> columnFamilyNames, final ColumnFamilyOptions columnFamilyOptions) {
     final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
 
-    if (columnFamilyNames != null && columnFamilyNames.size() > 0) {
+    if (columnFamilyNames != null && !columnFamilyNames.isEmpty()) {
       for (final byte[] name : columnFamilyNames) {
         final ColumnFamilyDescriptor columnFamilyDescriptor =
             new ColumnFamilyDescriptor(name, columnFamilyOptions);

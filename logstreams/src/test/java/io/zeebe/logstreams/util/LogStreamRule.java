@@ -69,7 +69,7 @@ public final class LogStreamRule extends ExternalResource {
       final UnaryOperator<Builder> builder) {
     logStorageRule = new AtomixLogStorageRule(temporaryFolder);
     this.logStorageRule.open(builder);
-    startLogStream();
+    createLogStream();
     return logStream;
   }
 
@@ -79,7 +79,7 @@ public final class LogStreamRule extends ExternalResource {
     actorSchedulerRule.before();
 
     if (shouldStartByDefault) {
-      startLogStream();
+      createLogStream();
     }
   }
 
@@ -90,7 +90,7 @@ public final class LogStreamRule extends ExternalResource {
     actorSchedulerRule.after();
   }
 
-  private void startLogStream() {
+  public void createLogStream() {
     final ActorScheduler actorScheduler = actorSchedulerRule.get();
 
     if (logStorageRule == null) {

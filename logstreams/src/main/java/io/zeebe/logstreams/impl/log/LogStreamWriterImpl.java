@@ -39,13 +39,10 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private long sourceRecordPosition = -1L;
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
-  private final Runnable closeCallback;
 
-  LogStreamWriterImpl(
-      final int partitionId, final Dispatcher logWriteBuffer, final Runnable closeCallback) {
+  LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
     this.logWriteBuffer = logWriteBuffer;
     this.partitionId = partitionId;
-    this.closeCallback = closeCallback;
 
     reset();
   }
@@ -170,10 +167,5 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
     return claimedPosition - DataFrameDescriptor.alignedFramedLength(framedLength);
-  }
-
-  @Override
-  public void close() {
-    closeCallback.run();
   }
 }

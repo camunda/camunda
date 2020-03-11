@@ -85,9 +85,4 @@ final class NoopTypedStreamWriter implements TypedStreamWriter {
   public long flush() {
     return 0;
   }
-
-  @Override
-  public void close() {
-    // no op implementation
-  }
 }

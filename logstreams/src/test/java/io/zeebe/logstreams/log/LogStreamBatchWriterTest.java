@@ -414,4 +414,16 @@ public final class LogStreamBatchWriterTest {
     // then
     assertThat(pos).isEqualTo(0);
   }
+
+  @Test
+  public void shouldFailToWriteOnClosedLogStream() {
+    // given
+    logStreamRule.getLogStream().close();
+
+    // when
+    final long pos = writer.event().key(1).value(EVENT_VALUE_1).done().tryWrite();
+
+    // then
+    assertThat(pos).isEqualTo(-1);
+  }
 }
