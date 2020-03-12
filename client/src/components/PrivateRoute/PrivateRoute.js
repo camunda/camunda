@@ -26,14 +26,41 @@ export class PrivateRoute extends React.Component {
   componentContainer = document.createElement('div');
 
   componentDidMount() {
-    const container = this.container.current;
-
-    if (container) {
-      container.appendChild(this.componentContainer);
-    }
-
+    this.appendComponent();
     addHandler(this.handleResponse);
   }
+
+  componentDidUpdate() {
+    const {forceGotoHome} = this.state;
+
+    if (forceGotoHome) {
+      this.setState({forceGotoHome: false});
+    }
+
+    this.appendComponent();
+    this.removeComponentOnLogin();
+  }
+
+  appendComponent = () => {
+    const {showLogin} = this.state;
+    const container = this.container.current;
+    if (!showLogin && container && !container.contains(this.componentContainer)) {
+      container.appendChild(this.componentContainer);
+
+      // Some components might use refs in componentDidUpdate to query the size of their container.
+      // Since in the previous update cycle, they were not part of the DOM tree, their size was incorrect (usually 0 or null)
+      // Now that they have been appended to the DOM again, we trigger another update so they can get their correct size
+      this.forceUpdate();
+    }
+  };
+
+  removeComponentOnLogin = () => {
+    const {showLogin} = this.state;
+    const container = this.container.current;
+    if (showLogin && container?.contains(this.componentContainer)) {
+      container.removeChild(this.componentContainer);
+    }
+  };
 
   handleResponse = response => {
     if (response.status === 401) {
@@ -59,28 +86,6 @@ export class PrivateRoute extends React.Component {
     this.setState({showLogin: false});
     redoOutstandingRequests();
   };
-
-  componentDidUpdate() {
-    const {forceGotoHome, showLogin} = this.state;
-    const container = this.container.current;
-
-    if (forceGotoHome) {
-      this.setState({forceGotoHome: false});
-    }
-
-    if (!showLogin && container && !container.contains(this.componentContainer)) {
-      container.appendChild(this.componentContainer);
-
-      // Some components might use refs in componentDidUpdate to query the size of their container.
-      // Since in the previous update cycle, they were not part of the DOM tree, their size was incorrect (usually 0 or null)
-      // Now that they have been appended to the DOM again, we trigger another update so they can get their correct size
-      this.forceUpdate();
-    }
-
-    if (showLogin && container?.contains(this.componentContainer)) {
-      container.removeChild(this.componentContainer);
-    }
-  }
 
   render() {
     const {component: Component, ...rest} = this.props;
