@@ -18,6 +18,7 @@ package io.zeebe.client;
 import io.grpc.Metadata;
 import io.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import java.io.IOException;
 
 public interface CredentialsProvider {
 
@@ -27,7 +28,7 @@ public interface CredentialsProvider {
    *
    * @param headers gRPC headers to be modified
    */
-  void applyCredentials(Metadata headers);
+  void applyCredentials(Metadata headers) throws IOException;
 
   /**
    * Returns true if the request should be retried; otherwise returns false. For an example of this,

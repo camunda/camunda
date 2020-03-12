@@ -36,7 +36,7 @@ func TestUpdateJobRetriesCommand(t *testing.T) {
 	}
 	stub := &pb.UpdateJobRetriesResponse{}
 
-	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewUpdateJobRetriesCommand(client, func(context.Context, error) bool { return false })
 
@@ -63,7 +63,7 @@ func TestUpdateJobRetriesCommandWithRetries(t *testing.T) {
 	}
 	stub := &pb.UpdateJobRetriesResponse{}
 
-	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewUpdateJobRetriesCommand(client, func(context.Context, error) bool { return false })
 

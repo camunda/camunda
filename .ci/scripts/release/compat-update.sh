@@ -1,3 +1,5 @@
+#!/bin/bash
+
 mvn versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion=${RELEASE_VERSION}
 gocompat save --path=clients/go/.gocompat.json clients/go/...
 

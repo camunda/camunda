@@ -37,7 +37,7 @@ func TestThrowErrorCommand(t *testing.T) {
 	}
 	stub := &pb.ThrowErrorResponse{}
 
-	client.EXPECT().ThrowError(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().ThrowError(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewThrowErrorCommand(client, func(context.Context, error) bool { return false })
 

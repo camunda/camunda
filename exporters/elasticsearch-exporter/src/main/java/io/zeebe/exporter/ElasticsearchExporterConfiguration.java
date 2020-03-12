@@ -110,6 +110,9 @@ public class ElasticsearchExporterConfiguration {
     public boolean workflowInstanceCreation = false;
     public boolean workflowInstanceSubscription = false;
 
+    // size limits
+    public int ignoreVariablesAbove = 8191;
+
     @Override
     public String toString() {
       return "IndexConfiguration{"
@@ -146,6 +149,8 @@ public class ElasticsearchExporterConfiguration {
           + workflowInstanceCreation
           + ", workflowInstanceSubscription="
           + workflowInstanceSubscription
+          + ", ignoreVariablesAbove="
+          + ignoreVariablesAbove
           + '}';
     }
   }

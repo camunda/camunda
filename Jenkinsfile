@@ -72,6 +72,7 @@ pipeline {
         }
 
         stage('Test (Go)') {
+            when { branch 'develop' }
             steps {
                 container('golang') {
                     sh '.ci/scripts/distribution/test-go.sh'
@@ -145,7 +146,7 @@ pipeline {
         }
 
         stage('Upload') {
-            when { branch 'develop' }
+            when { branch '0.22' }
             steps {
                 container('maven') {
                     configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {

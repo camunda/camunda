@@ -131,7 +131,6 @@ public class StreamProcessor extends Actor {
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
-      processingContext.getLogStreamWriter().setDisabled(true);
       final ActorFuture<Void> recoverFuture =
           reProcessingStateMachine.startRecover(snapshotPosition);
 
@@ -142,7 +141,6 @@ public class StreamProcessor extends Actor {
               LOG.error("Unexpected error on recovery happens.", throwable);
               onFailure(throwable);
             } else {
-              processingContext.getLogStreamWriter().setDisabled(false);
               onRecovered();
             }
           });

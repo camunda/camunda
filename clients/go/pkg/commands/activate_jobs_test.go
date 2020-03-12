@@ -115,7 +115,7 @@ func TestActivateJobsCommand(t *testing.T) {
 		stream.EXPECT().Recv().Return(nil, io.EOF),
 	)
 
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -155,7 +155,7 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -189,7 +189,7 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -229,7 +229,7 @@ func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
 	defer cancel()
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
 		return false

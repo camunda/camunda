@@ -37,7 +37,7 @@ func TestPublishMessageCommand(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -68,7 +68,7 @@ func TestPublishMessageCommandWithMessageId(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -99,7 +99,7 @@ func TestPublishMessageCommandWithTimeToLive(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -132,7 +132,7 @@ func TestPublishMessageCommandWithVariablesFromString(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -170,7 +170,7 @@ func TestPublishMessageCommandWithVariablesFromStringer(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -208,7 +208,7 @@ func TestPublishMessageCommandWithVariablesFromObject(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -246,7 +246,7 @@ func TestPublishMessageCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -284,7 +284,7 @@ func TestPublishMessageCommandWithVariablesFromObjectIgnoreOmitEmpty(t *testing.
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 
@@ -324,7 +324,7 @@ func TestPublishMessageCommandWithVariablesFromMap(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
 

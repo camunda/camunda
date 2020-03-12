@@ -126,7 +126,11 @@ func (s *integrationTestSuite) TestCommonCommands() {
 				}
 			}
 
-			cmdOut, _ := s.runCommand(test.cmd, test.envVars...)
+			cmdOut, err := s.runCommand(test.cmd, test.envVars...)
+			if errors.Is(err, context.DeadlineExceeded) {
+				t.Fatal(fmt.Errorf("timed out while executing command '%s': %w", test.cmd, err))
+			}
+
 			goldenOut, err := ioutil.ReadFile(test.goldenFile)
 			if err != nil {
 				t.Fatal(err)
@@ -171,7 +175,7 @@ func cmpIgnoreNums(x, y string) bool {
 
 // runCommand runs the zbctl command and returns the combined output from stdout and stderr
 func (s *integrationTestSuite) runCommand(command string, envVars ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	args := append(strings.Fields(command), "--address", s.GatewayAddress)
@@ -188,10 +192,11 @@ func buildZbctl() ([]byte, error) {
 		return nil, fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "./build.sh", runtime.GOOS)
+	// we need to build all binaries, because this is run after the go build stage on CI and will overwrite the binaries
+	cmd := exec.CommandContext(ctx, "./build.sh")
 	cmd.Env = append(os.Environ(), "RELEASE_VERSION=release-test", "RELEASE_HASH=1234567890")
 	return cmd.CombinedOutput()
 }

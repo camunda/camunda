@@ -36,6 +36,7 @@ import io.grpc.Metadata.Key;
 import io.grpc.ServerCall;
 import io.grpc.ServerInterceptors;
 import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.testing.GrpcServerRule;
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -144,7 +145,9 @@ public final class OAuthCredentialsProviderTest {
               public void accept(final ServerCall call, final Metadata headers) {
                 mockCredentials(ACCESS_TOKEN);
                 recordingInterceptor.reset();
-                call.close(Status.UNAUTHENTICATED, headers);
+                call.close(
+                    Status.fromCode(Code.UNAUTHENTICATED).augmentDescription("Stale token"),
+                    headers);
               }
             });
 

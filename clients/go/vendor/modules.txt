@@ -51,14 +51,14 @@ github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
-# github.com/go-ozzo/ozzo-validation/v4 v4.0.0
+# github.com/go-ozzo/ozzo-validation/v4 v4.1.0
 github.com/go-ozzo/ozzo-validation/v4
 github.com/go-ozzo/ozzo-validation/v4/is
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
-# github.com/golang/mock v1.4.0
+# github.com/golang/mock v1.4.1
 github.com/golang/mock/gomock
-# github.com/golang/protobuf v1.3.3
+# github.com/golang/protobuf v1.3.4
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
@@ -93,18 +93,18 @@ github.com/pmezard/go-difflib/difflib
 github.com/satori/go.uuid
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
-# github.com/spf13/cobra v0.0.5
+# github.com/spf13/cobra v0.0.6
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/stretchr/testify v1.4.0
+# github.com/stretchr/testify v1.5.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/testcontainers/testcontainers-go v0.1.0
+# github.com/testcontainers/testcontainers-go v0.3.0
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
-# golang.org/x/net v0.0.0-20200202094626-16171245cfb2
+# golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -129,7 +129,7 @@ golang.org/x/xerrors
 golang.org/x/xerrors/internal
 # google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.27.0
+# google.golang.org/grpc v1.27.1
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff

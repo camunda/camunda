@@ -29,7 +29,6 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   protected final LogStreamBatchWriter batchWriter;
 
   protected long sourceRecordPosition = -1;
-  private boolean disabled = false;
 
   public TypedCommandWriterImpl(final LogStreamBatchWriter batchWriter) {
     metadata.protocolVersion(Protocol.PROTOCOL_VERSION);

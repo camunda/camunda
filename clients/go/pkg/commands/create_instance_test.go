@@ -48,7 +48,7 @@ func TestCreateWorkflowInstanceCommand(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -80,7 +80,7 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessId(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -112,7 +112,7 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -146,7 +146,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromString(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -185,7 +185,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromStringer(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -224,7 +224,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObject(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -263,7 +263,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectOmitempty(t *testin
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -302,7 +302,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromObjectIgnoreOmitempty(t *
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -343,7 +343,7 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -382,7 +382,7 @@ func TestCreateWorkflowInstanceWithResultCommand(t *testing.T) {
 		Variables:           "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -421,7 +421,7 @@ func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessId(t *testing.T) {
 		Variables:           "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -460,7 +460,7 @@ func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessIdAndVersion(t *tes
 		Variables:           "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -500,7 +500,7 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromString(t *testi
 		Variables:           variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -545,7 +545,7 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromStringer(t *tes
 		Variables:           variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -590,7 +590,7 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObject(t *testi
 		Variables:           variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -635,7 +635,7 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectOmitempty
 		Variables:           variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -680,7 +680,7 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectIgnoreOmi
 		Variables:           variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -728,7 +728,7 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromMap(t *testing.
 		Variables:           variables,
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -771,7 +771,7 @@ func TestCreateWorkflowInstanceWithResultAndFetchVariablesCommand(t *testing.T) 
 		Variables:           "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 
@@ -808,7 +808,7 @@ func TestCreateWorkflowInstanceWithResultAndFetchEmptyVariablesListCommand(t *te
 		Variables:           "{}",
 	}
 
-	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
 	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
 

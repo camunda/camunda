@@ -54,6 +54,13 @@ It is designed for regular maintenance jobs such as:
 	* activating, completing or failing jobs
 	* update variables and retries
 	* view cluster status`,
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		if client != nil {
+			return client.Close()
+		}
+
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
