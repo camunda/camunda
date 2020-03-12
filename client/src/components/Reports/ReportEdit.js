@@ -12,14 +12,7 @@ import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {
-  ReportRenderer,
-  LoadingIndicator,
-  MessageBox,
-  Modal,
-  Button,
-  EntityNameForm
-} from 'components';
+import {ReportRenderer, LoadingIndicator, MessageBox, EntityNameForm} from 'components';
 
 import {
   incompatibleFilters,
@@ -33,6 +26,7 @@ import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 import {t} from 'translation';
+import ConflictModal from './ConflictModal';
 
 export default withRouter(
   withErrorHandling(
@@ -40,17 +34,13 @@ export default withRouter(
       state = {
         loadingReportData: false,
         redirect: '',
-        confirmModalVisible: false,
         conflict: null,
         originalData: this.props.report,
-        report: this.props.report,
-        saveLoading: false
+        report: this.props.report
       };
 
       showSaveError = name => {
         this.setState({
-          saveLoading: false,
-          confirmModalVisible: false,
           conflict: null
         });
         addNotification({text: t('report.cannotSave', {name}), type: 'error'});
@@ -71,8 +61,6 @@ export default withRouter(
                 const {conflictedItems} = await error.json();
                 this.setState({
                   report: update(this.state.report, {name: {$set: name}}),
-                  confirmModalVisible: true,
-                  saveLoading: false,
                   conflict: conflictedItems.reduce(
                     (obj, conflict) => {
                       obj[conflict.type].push(conflict);
@@ -81,6 +69,7 @@ export default withRouter(
                     {alert: [], combined_report: []}
                   )
                 });
+                resolve(null);
               } else {
                 reject(this.showSaveError(name));
               }
@@ -91,7 +80,6 @@ export default withRouter(
 
       save = () => {
         return new Promise(async (resolve, reject) => {
-          this.setState({saveLoading: true});
           const {id, name, data, reportType, combined} = this.state.report;
           const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
 
@@ -109,11 +97,11 @@ export default withRouter(
 
       saveAndGoBack = async () => {
         const id = await this.save();
-
-        nowPristine();
-
-        this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
-        this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
+        if (id) {
+          nowPristine();
+          this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
+          this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
+        }
       };
 
       cancel = () => {
@@ -197,22 +185,10 @@ export default withRouter(
         return !report.result.isComplete;
       };
 
-      closeConfirmModal = () => {
-        this.setState({
-          confirmModalVisible: false,
-          conflict: null
-        });
-      };
+      closeConflictModal = () => this.setState({conflict: null});
 
       render() {
-        const {
-          report,
-          loadingReportData,
-          confirmModalVisible,
-          conflict,
-          redirect,
-          saveLoading
-        } = this.state;
+        const {report, loadingReportData, conflict, redirect} = this.state;
         const {name, lastModifier, lastModified, data, combined, reportType} = report;
 
         if (redirect) {
@@ -229,7 +205,6 @@ export default withRouter(
                 onChange={this.updateName}
                 onSave={this.saveAndGoBack}
                 onCancel={this.cancel}
-                disabledButtons={saveLoading}
               />
               <div className="subHead">
                 <div className="metadata">
@@ -269,50 +244,11 @@ export default withRouter(
               </div>
               {combined && <CombinedReportPanel report={report} updateReport={this.updateReport} />}
             </div>
-            <Modal
-              open={confirmModalVisible}
-              onClose={this.closeConfirmModal}
+            <ConflictModal
+              conflict={conflict}
+              onClose={this.closeConflictModal}
               onConfirm={this.saveAndGoBack}
-              className="saveModal"
-            >
-              <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
-              <Modal.Content>
-                {conflict &&
-                  ['combined_report', 'alert'].map(type => {
-                    if (conflict[type].length === 0) {
-                      return null;
-                    }
-
-                    return (
-                      <div key={type}>
-                        <p>{t(`report.saveConflict.${type}.header`)}</p>
-                        <ul>
-                          {conflict[type].map(({id, name}) => (
-                            <li key={id}>'{name || id}'</li>
-                          ))}
-                        </ul>
-                        <p>
-                          <b>{t(`report.saveConflict.${type}.message`)}</b>
-                        </p>
-                      </div>
-                    );
-                  })}
-              </Modal.Content>
-              <Modal.Actions>
-                <Button disabled={saveLoading} className="close" onClick={this.closeConfirmModal}>
-                  {t('saveGuard.no')}
-                </Button>
-                <Button
-                  disabled={saveLoading}
-                  variant="primary"
-                  color="blue"
-                  className="confirm"
-                  onClick={this.saveAndGoBack}
-                >
-                  {t('saveGuard.yes')}
-                </Button>
-              </Modal.Actions>
-            </Modal>
+            />
           </div>
         );
       }

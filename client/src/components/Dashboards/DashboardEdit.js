@@ -24,8 +24,7 @@ export default class DashboardEdit extends React.Component {
 
     this.state = {
       reports: props.initialReports,
-      name: props.name,
-      addButtonVisible: true
+      name: props.name
     };
   }
 

@@ -13,6 +13,10 @@ import './EntityNameForm.scss';
 import {t} from 'translation';
 
 export default class EntityNameForm extends React.Component {
+  state = {
+    loading: false
+  };
+
   nameInput = React.createRef();
 
   componentDidMount() {
@@ -24,7 +28,8 @@ export default class EntityNameForm extends React.Component {
   }
 
   render() {
-    const {entity, name, isNew, disabledButtons, onCancel, onSave, onChange, children} = this.props;
+    const {entity, name, isNew, onCancel, onSave, onChange, children} = this.props;
+    const {loading} = this.state;
 
     const homeLink = entity === 'Process' ? '../' : '../../';
 
@@ -46,14 +51,18 @@ export default class EntityNameForm extends React.Component {
           {children}
           <Button
             className="tool-button save-button"
-            disabled={!name || disabledButtons}
-            onClick={onSave}
+            disabled={!name || loading}
+            onClick={async () => {
+              this.setState({loading: true});
+              await onSave();
+              this.setState({loading: false});
+            }}
           >
             <Icon type="check" />
             {t('common.save')}
           </Button>
           <Link
-            disabled={disabledButtons}
+            disabled={loading}
             className="Button tool-button cancel-button"
             to={isNew ? homeLink : './'}
             onClick={onCancel}
