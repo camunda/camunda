@@ -110,7 +110,7 @@ spec:
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-            value: io.zeebe.exporter.ElasticsearchExporter
+          value: io.zeebe.exporter.ElasticsearchExporter
       resources:
         limits:
           cpu: 4
