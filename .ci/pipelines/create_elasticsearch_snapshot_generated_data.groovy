@@ -109,10 +109,8 @@ spec:
       image: camunda/zeebe:0.23.0-alpha2
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
-      volumeMounts:
-        - name: zeebe-configuration
-          mountPath: /usr/local/zeebe/config/application.yml
-          subPath: zeebe.cfg.yaml
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+            value: io.zeebe.exporter.ElasticsearchExporter
       resources:
         limits:
           cpu: 4
@@ -128,12 +126,6 @@ spec:
   - name: operate-ci-service-account
     secret:
       secretName: operate-ci-service-account
-  - name: zeebe-configuration
-    configMap:
-      name: zeebe-configuration
-      items:
-      - key: zeebe.cfg.yaml
-        path: zeebe.cfg.yaml
 """
 }
 
