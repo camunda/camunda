@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.modules;
 
+import org.camunda.operate.ArchiverModuleConfiguration;
 import org.camunda.operate.ImportModuleConfiguration;
 import org.camunda.operate.WebappModuleConfiguration;
 import org.junit.Test;
@@ -16,6 +17,7 @@ public class FullAppIT extends ModuleIntegrationTest {
   public void testImportModuleIsPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
+    assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
   }
 
 }

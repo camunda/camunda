@@ -14,23 +14,22 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@TestPropertySource(properties = {OperateProperties.PREFIX + ".webappEnabled = false",
-    OperateProperties.PREFIX + ".archiverEnabled = false"})
-public class OnlyImportIT extends ModuleIntegrationTest {
+@TestPropertySource(properties = {OperateProperties.PREFIX + ".importerEnabled = false",
+    OperateProperties.PREFIX + ".webappEnabled = false"})
+public class OnlyArchiverIT extends ModuleIntegrationTest {
 
   @Test
-  public void testImportModuleIsPresent() {
+  public void testArchiverModuleIsPresent() {
+    assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
+  }
+
+  @Test(expected = NoSuchBeanDefinitionException.class)
+  public void testImportModuleIsNotPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
   }
 
   @Test(expected = NoSuchBeanDefinitionException.class)
   public void testWebappModuleIsNotPresent() {
-    applicationContext.getBean(WebappModuleConfiguration.class);
+    assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
   }
-
-  @Test(expected = NoSuchBeanDefinitionException.class)
-  public void testArchiverModuleIsNotPresent() {
-    applicationContext.getBean(ArchiverModuleConfiguration.class);
-  }
-
 }
