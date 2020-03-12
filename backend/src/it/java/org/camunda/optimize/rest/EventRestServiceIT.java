@@ -116,6 +116,17 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEventCounts_noAuthentication() {
+    // when
+    Response response = createPostEventCountsRequestExternalEventsOnly(new EventCountSearchRequestDto())
+      .withoutAuthentication()
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
+  }
+
+  @Test
   public void getEventCounts_noSources_noResults() {
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsRequest(null, null)
@@ -390,34 +401,44 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getEventCounts_noAuthentication() {
-    // when
-    Response response = createPostEventCountsRequestExternalEventsOnly(new EventCountSearchRequestDto())
-      .withoutAuthentication()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
-  }
-
-  @Test
-  public void getEventCounts_usingSearchTerm() {
+  public void getEventCounts_camundaAndExternalEvents_usingSearchTerm() {
     // given
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder().searchTerm("etch").build();
+    final String definitionKey = "myProcessEtch";
+    deployAndStartUserTaskProcess(definitionKey);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountRequestDto)
+    final EventCountSearchRequestDto eventSearchRequestDto = EventCountSearchRequestDto.builder()
+      // search with all lowercase should still find camunda events containing `Etch`
+      .searchTerm("etch")
+      .build();
+    final EventCountRequestDto countRequestDto = EventCountRequestDto.builder()
+      .eventSources(
+        ImmutableList.of(
+          createExternalEventSourceEntryDto(),
+          createCamundaEventSourceEntryDto(definitionKey, EventScopeType.ALL, ImmutableList.of("1"))
+        )
+      )
+      .build();
+    final List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventSearchRequestDto, countRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
     assertThat(eventCountDtos)
       .isNotNull()
-      .hasSize(4)
       .containsExactly(
         createNullGroupCountDto(false),
         createBackendKetchupCountDto(false),
         createBackendMayoCountDto(false),
-        createKetchupMayoCountDto(false)
+        createKetchupMayoCountDto(false),
+        createProcessInstanceEndEventCount(definitionKey),
+        createProcessInstanceStartEventCountDto(definitionKey),
+        createEndEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK)
       );
   }
 
@@ -530,7 +551,6 @@ public class EventRestServiceIT extends AbstractIT {
         createKetchupMayoCountDto(false)
       );
   }
-
 
   @Test
   public void getEventCounts_withSuggestionsForValidTargetNodeAndRelevantMappingsExist() {
@@ -872,7 +892,7 @@ public class EventRestServiceIT extends AbstractIT {
         createFrontendMayoCountDto(false),
         createKetchupMayoCountDto(false),
         createManagementBbqCountDto(false)
-        );
+      );
   }
 
   @Test

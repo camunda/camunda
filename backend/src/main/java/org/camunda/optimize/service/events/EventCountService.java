@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
@@ -86,10 +87,10 @@ public class EventCountService {
       .getLabeledCamundaEventTypesForProcess(userId, definitionKey, versions, tenants, eventScope)
       .stream()
       .filter(eventDto -> searchTerm == null
-        || eventDto.getEventName().contains(searchTerm)
-        || eventDto.getEventLabel().contains(searchTerm)
-        || eventDto.getGroup().contains(searchTerm)
-        || eventDto.getSource().contains(searchTerm))
+        || StringUtils.containsIgnoreCase(eventDto.getEventName(), searchTerm)
+        || StringUtils.containsIgnoreCase(eventDto.getEventLabel(), searchTerm)
+        || StringUtils.containsIgnoreCase(eventDto.getGroup(), searchTerm)
+        || StringUtils.containsIgnoreCase(eventDto.getSource(), searchTerm))
       .map(labeledEventTypeDto ->
              EventCountDto.builder()
                .source(labeledEventTypeDto.getSource())
