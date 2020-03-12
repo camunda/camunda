@@ -16,4 +16,9 @@ When grouping user tasks by assignee, it is now possible to see user tasks that 
 
 ## Receive Alerts on custom notification systems using webhooks
 
-Alerts can now be sent to external systems using webhooks. If you have any webhook configured, it will appear as an option when creating or updating an Alert. 
+Alerts can now be sent to external systems using webhooks. If you have any webhook configured, it will appear as an option when creating or updating an Alert.
+
+## Event Based Processes
+
+You can now create event based processes in Optimize. External events as well as Camunda Activity events of all imported Camunda BPM processes can be used to create those.
+This allows you for the first time to create e.g. End-to-End processes that give you the power to create Optimize Reports that span multiple processes or even external systems.

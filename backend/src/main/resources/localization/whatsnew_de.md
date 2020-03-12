@@ -17,3 +17,8 @@ Ein neuer Filter wird hinzugefügt, um die Prozessinstanzen zu filtern, die sich
 ## Erhalten Sie Alarme auf benutzerdefinierten Benachrichtigungssystemen mit Webhooks
 
 Alarme können nun über Webhooks an externe Systeme gesendet werden. Wenn Sie einen Webhook konfiguriert haben, wird er als Option angezeigt, wenn Sie einen Alarm erstellen oder aktualisieren.
+
+## Eventbasierte Prozesse
+
+Es gibt nun die Möglichkeit eventbasierte BPMN-Prozesse in Optimize zu erstellen. Als Basis für diese Prozesse dienen externe Events oder aber auch Activiy-Events von allen importierten Camunda BPM Prozessen.
+Dies ermöglicht es erstmals allein in Optimize z.B. End-to-End Prozesse zu erstellen um prozessübergreifende Optimize Berichte zu erstellen und auch externe Systeme in teilautomatisierten Prozessen mit einzubeziehen.
