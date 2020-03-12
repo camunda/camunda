@@ -230,23 +230,6 @@ pipeline {
         }
       }
     }
-    stage('Upload camunda.org') {
-      when {
-        expression { params.PUSH_CHANGES == true }
-      }
-      steps {
-        container('jnlp') {
-          sshagent(['jenkins-camunda-web']) {
-            sh("""#!/bin/bash -xe
-              ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no jenkins_camunda_web@vm29.camunda.com "mkdir -p /var/www/camunda/camunda.org/enterprise-release/optimize/${params.RELEASE_VERSION}/"
-              for file in target/checkout/distro/target/*.{tar.gz,zip}; do
-                scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \${file} jenkins_camunda_web@vm29.camunda.com:/var/www/camunda/camunda.org/enterprise-release/optimize/${params.RELEASE_VERSION}/
-              done
-            """)
-          }
-        }
-      }
-    }
     stage('Upload to DownloadCenter storage bucket') {
       when {
         // Only perform upload when PUSH_CHANGES is set or we're on a stage jenkins (Stage has a separate bucket)
