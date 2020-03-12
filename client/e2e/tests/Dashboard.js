@@ -17,7 +17,7 @@ fixture('Dashboard')
 
 test('create a report and add it to the Dashboard', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -66,7 +66,7 @@ test('cancel changes', async t => {
 
 test('sharing', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
@@ -91,7 +91,7 @@ test('sharing', async t => {
 
 test('remove a report from a dashboard', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);

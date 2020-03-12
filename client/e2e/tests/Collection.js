@@ -178,12 +178,12 @@ test('add, edit and delete sources', async t => {
   await t.typeText(e.typeaheadInput, tenantName, {replace: true});
   await t.click(e.typeaheadOption(tenantName));
   await t.click(e.checkbox('Beverages'));
-  await t.click(e.checkbox('Book Request'));
+  await t.click(e.checkbox('Book Request with no business key'));
   await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByTenant.png');
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.visible).ok();
   await t.expect(e.decisionItem.visible).ok();
-  await t.expect(e.processItem.nth(0).textContent).contains('Book Request');
+  await t.expect(e.processItem.nth(0).textContent).contains('Book Request with no business key');
   await t.expect(e.decisionItem.textContent).contains('Beverages');
 
   // edit source

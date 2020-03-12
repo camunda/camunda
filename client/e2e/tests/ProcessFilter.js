@@ -80,7 +80,7 @@ test('variable filter modal dependent on variable type', async t => {
 test('should apply a filter to the report result', async t => {
   await u.createNewReport(t);
 
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
 
@@ -110,7 +110,7 @@ test('should apply a filter to the report result', async t => {
 
 test('instance state filters', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -164,7 +164,7 @@ test('pick a start date from the date picker', async t => {
 
 test('add relative current month start date filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -185,7 +185,7 @@ test('add relative current month start date filter', async t => {
 
 test('add rolling last 5 days end date filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -202,7 +202,7 @@ test('add rolling last 5 days end date filter', async t => {
 
 test('add duration filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
@@ -220,7 +220,7 @@ test('add duration filter', async t => {
 
 test('add Flow Node filter', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
 
@@ -242,7 +242,7 @@ test('add Flow Node filter', async t => {
 
 test('the filter is visible in the control panel and contains correct information', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node'));

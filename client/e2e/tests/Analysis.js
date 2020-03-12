@@ -22,7 +22,7 @@ test('show the statistics diagram', async t => {
 
   await t.resizeWindow(1600, 750);
 
-  await u.selectDefinition(t, 'Book Request');
+  await u.selectDefinition(t, 'Book Request with no business key');
 
   await t.click(Analysis.flowNode('ExclusiveGateway_0i9u2oe'));
   await t.click(Analysis.flowNode('EndEvent_0kcx8gn'));
@@ -40,7 +40,7 @@ test('show end event statistics on hover', async t => {
 
   await t.resizeWindow(1600, 700);
 
-  await u.selectDefinition(t, 'Book Request');
+  await u.selectDefinition(t, 'Book Request with no business key');
 
   await t.hover(Analysis.flowNode('EndEvent_0kcx8gn'));
 
