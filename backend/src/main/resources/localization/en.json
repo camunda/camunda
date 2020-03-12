@@ -439,7 +439,9 @@
     },
     "apply": "Apply Changes",
     "create": "Create Alert",
-    "notCreated": "There are no Alerts created yet"
+    "notCreated": "There are no Alerts created yet",
+    "inactiveStatus": "Alert inactive",
+    "activateInfo": "To active add email or target system"
   },
   "analysis": {
     "branchAnalysis": "Branch Analysis",

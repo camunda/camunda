@@ -47,6 +47,7 @@ export default class AlertModal extends React.Component {
     this.state = {
       ...newAlert,
       name: t('alert.newAlert'),
+      inactive: false,
       invalid: false
     };
   }
@@ -75,6 +76,7 @@ export default class AlertModal extends React.Component {
 
     this.setState({
       ...alert,
+      inactive: alert.webhook && !alert.email && !this.props.webhooks?.includes(alert.webhook),
       threshold:
         this.getReportType(alert.reportId) === 'duration'
           ? formatters.convertDurationToObject(alert.threshold)
@@ -220,6 +222,7 @@ export default class AlertModal extends React.Component {
       reminder,
       fixNotification,
       emailNotificationIsEnabled,
+      inactive,
       invalid,
       optimizeVersion,
       webhook
@@ -241,6 +244,13 @@ export default class AlertModal extends React.Component {
                 type="warning"
                 dangerouslySetInnerHTML={{__html: t('alert.emailWarning', {docsLink})}}
               />
+            )}
+            {inactive && (
+              <MessageBox type="warning">
+                {t('alert.inactiveStatus')}
+                <br />
+                {t('alert.activateInfo')}
+              </MessageBox>
             )}
             <Form.Group>
               <LabeledInput

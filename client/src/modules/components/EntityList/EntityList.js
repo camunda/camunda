@@ -51,7 +51,10 @@ export default function EntityList({name, children, action, isLoading, data, emp
         {hasResults && (
           <ul>
             {searchFilteredData.map(
-              ({className, link, icon, type, name, meta1, meta2, meta3, action, actions}, idx) => {
+              (
+                {className, link, icon, type, name, meta1, meta2, meta3, warning, action, actions},
+                idx
+              ) => {
                 const content = (
                   <>
                     <ListItem.Section className="icon">{icon}</ListItem.Section>
@@ -64,6 +67,16 @@ export default function EntityList({name, children, action, isLoading, data, emp
                     <ListItem.Section className="meta1">{meta1}</ListItem.Section>
                     <ListItem.Section className="meta2">{meta2}</ListItem.Section>
                     <ListItem.Section className="meta3">{meta3}</ListItem.Section>
+                    <ListItem.Section className="warning">
+                      {warning && (
+                        <>
+                          <Icon type="error" size="18px" />
+                          <div className="Tooltip dark">
+                            <div className="Tooltip__text-bottom">{warning}</div>
+                          </div>
+                        </>
+                      )}
+                    </ListItem.Section>
                   </>
                 );
 

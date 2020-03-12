@@ -17,23 +17,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           />,
           "meta1": false,
           "meta2": "Manager",
-          "meta3": <React.Fragment>
-            <Icon
-              size="18px"
-              type="error"
-            />
-            <div
-              className="Tooltip dark"
-            >
-              <div
-                className="Tooltip__text-bottom"
-              >
-                Some data may be hidden from users due to missing authorizations.
-              </div>
-            </div>
-          </React.Fragment>,
           "name": "kermit",
           "type": "User",
+          "warning": "Some data may be hidden from users due to missing authorizations.",
         },
         Object {
           "actions": false,
@@ -48,9 +34,9 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
             Users
           </React.Fragment>,
           "meta2": "Manager",
-          "meta3": false,
           "name": "sales",
           "type": "User Group",
+          "warning": false,
         },
       ]
     }
@@ -131,23 +117,9 @@ exports[`should match snapshot 1`] = `
           />,
           "meta1": false,
           "meta2": "Manager",
-          "meta3": <React.Fragment>
-            <Icon
-              size="18px"
-              type="error"
-            />
-            <div
-              className="Tooltip dark"
-            >
-              <div
-                className="Tooltip__text-bottom"
-              >
-                Some data may be hidden from users due to missing authorizations.
-              </div>
-            </div>
-          </React.Fragment>,
           "name": "kermit",
           "type": "User",
+          "warning": "Some data may be hidden from users due to missing authorizations.",
         },
         Object {
           "actions": Array [
@@ -173,9 +145,9 @@ exports[`should match snapshot 1`] = `
             Users
           </React.Fragment>,
           "meta2": "Manager",
-          "meta3": false,
           "name": "sales",
           "type": "User Group",
+          "warning": false,
         },
       ]
     }

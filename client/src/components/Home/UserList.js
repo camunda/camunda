@@ -96,16 +96,9 @@ export default withErrorHandling(
                     </>
                   ),
                   meta2: formatRole(role),
-                  meta3: hasFullScopeAuthorizations === false && (
-                    <>
-                      <Icon type="error" size="18px" />
-                      <div className="Tooltip dark">
-                        <div className="Tooltip__text-bottom">
-                          {t('home.roles.missingAuthorizationsWarning')}
-                        </div>
-                      </div>
-                    </>
-                  ),
+                  warning:
+                    hasFullScopeAuthorizations === false &&
+                    t('home.roles.missingAuthorizationsWarning'),
                   actions: !readOnly &&
                     !isLastManager && [
                       {

@@ -38,7 +38,8 @@ jest.mock('./service', () => ({
       name: 'Some Alert',
       lastModifier: 'Admin',
       lastModified: '2017-11-11T11:11:11.1111+0200',
-      reportId: '2'
+      reportId: '2',
+      webhook: null
     }
   ]),
   addAlert: jest.fn(),
@@ -134,7 +135,8 @@ it('should Alert to Deleter', async () => {
     name: 'Some Alert',
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
-    reportId: '2'
+    reportId: '2',
+    webhook: null
   });
 });
 
@@ -153,6 +155,25 @@ it('should open a modal when editing an alert', async () => {
     name: 'Some Alert',
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
-    reportId: '2'
+    reportId: '2',
+    webhook: null
   });
+});
+
+it('should show warning if alert is inactive due to missing webhoook', () => {
+  getWebhooks.mockReturnValueOnce(['webhook1']);
+  loadAlerts.mockReturnValueOnce([
+    {
+      id: 'alertID',
+      email: '',
+      name: 'Some Alert',
+      lastModifier: 'Admin',
+      lastModified: '2017-11-11T11:11:11.1111+0200',
+      reportId: '2',
+      webhook: 'nonExistingWebhook'
+    }
+  ]);
+  const node = shallow(<AlertList {...props} />);
+
+  expect(node.find('EntityList').prop('data')[0].warning).toBe('Alert inactive');
 });

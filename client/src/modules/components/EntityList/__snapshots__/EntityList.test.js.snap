@@ -79,6 +79,9 @@ exports[`should match snapshot 1`] = `
         >
           Some other info
         </ListItemSection>
+        <ListItemSection
+          className="warning"
+        />
         <div
           className="contextMenu"
           onClick={[Function]}
@@ -144,6 +147,9 @@ exports[`should match snapshot 1`] = `
         >
           Some other info
         </ListItemSection>
+        <ListItemSection
+          className="warning"
+        />
       </ListItem>
       <ListItem
         key="2"
@@ -188,6 +194,9 @@ exports[`should match snapshot 1`] = `
           >
             Some other info
           </ListItemSection>
+          <ListItemSection
+            className="warning"
+          />
         </Link>
       </ListItem>
     </ul>

@@ -116,6 +116,7 @@ export default withErrorHandling(
               !isLoading &&
               this.state.alerts.map(alert => {
                 const {name, email, webhook, reportId, threshold, thresholdOperator} = alert;
+                const inactive = webhook && !email && !webhooks?.includes(webhook);
 
                 return {
                   icon: <AlertIcon />,
@@ -123,6 +124,7 @@ export default withErrorHandling(
                   name,
                   meta1: email || webhook,
                   meta2: this.formatDescription(reportId, thresholdOperator, threshold),
+                  warning: inactive && t('alert.inactiveStatus'),
                   action: !readOnly && (() => this.openEditAlertModal(alert)),
                   actions: !readOnly && [
                     {

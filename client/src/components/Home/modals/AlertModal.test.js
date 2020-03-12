@@ -77,7 +77,8 @@ it('should apply the alert property to the state when changing props', () => {
     reminder: null,
     fixNotification: true,
     invalid: false,
-    webhook: null
+    webhook: null,
+    inactive: null
   });
 });
 
@@ -149,6 +150,13 @@ it('should enable the submit button if webhook is selected', () => {
     .prop('onChange')('testWebhook');
 
   expect(node.find({variant: 'primary'})).not.toBeDisabled();
+});
+
+it('should show warning if alert is inactive due to missing webhook', async () => {
+  const node = await shallow(<AlertModal reports={reports} webhooks={[]} />);
+  node.setProps({initialAlert: {...initialAlert, email: '', webhook: 'nonExistingWebhook'}});
+
+  expect(node.find('MessageBox').exists()).toBe(true);
 });
 
 it('should show warning that email is not configured', async () => {

@@ -6,12 +6,15 @@
       text-overflow: ellipsis;
     }
     .meta2 {
-      width: 400px;
+      width: 300px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .meta3 {
       display: none;
+    }
+    .warning .Tooltip .Tooltip__text-bottom {
+      min-width: 100px;
     }
   }
 }

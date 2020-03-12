@@ -178,5 +178,42 @@
     &.meta3 {
       width: 200px;
     }
+
+    &.warning {
+      width: max-content;
+      text-align: center;
+      color: #b4142b;
+      overflow: visible;
+      position: relative;
+      padding-right: 0;
+
+      &:hover .Tooltip {
+        display: block;
+      }
+
+      .Icon {
+        line-height: initial;
+        width: 18px;
+        margin-right: 0;
+      }
+
+      .Tooltip {
+        position: absolute;
+        display: none;
+        top: 40px;
+        font-size: 14px;
+        line-height: normal;
+        left: 9px;
+        transform: translateX(-50%);
+        z-index: 999;
+
+        .Tooltip__text-bottom {
+          padding: 10px;
+          font-weight: normal;
+          white-space: normal;
+          min-width: 200px;
+        }
+      }
+    }
   }
 }
