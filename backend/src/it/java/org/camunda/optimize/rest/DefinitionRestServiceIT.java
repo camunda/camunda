@@ -797,7 +797,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   }
 
   private DefinitionOptimizeDto createEventBasedDefinition(final String key, final String name) {
-    return elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key, name, null);
+    return elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key, name);
   }
 
   private DefinitionOptimizeDto createDefinition(final DefinitionType definitionType,

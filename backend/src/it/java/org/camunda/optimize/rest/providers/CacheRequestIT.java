@@ -9,11 +9,9 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
@@ -28,8 +26,6 @@ import java.time.OffsetDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 public class CacheRequestIT extends AbstractIT {
@@ -112,24 +108,8 @@ public class CacheRequestIT extends AbstractIT {
         );
       case PROCESS:
         if (isEventBased) {
-          final IndexableEventProcessMappingDto eventProcessMappingDto =
-            IndexableEventProcessMappingDto.builder()
-              .id(key)
-              .roles(ImmutableList.of(new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))))
-              .build();
-          elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-            EVENT_PROCESS_MAPPING_INDEX_NAME,
-            eventProcessMappingDto.getId(),
-            eventProcessMappingDto
-          );
-          EventProcessDefinitionDto eventProcessDefinitionDto = new EventProcessDefinitionDto();
-          eventProcessDefinitionDto.setBpmn20Xml("ProcessModelXml");
-          eventProcessDefinitionDto.setKey(key);
-          eventProcessDefinitionDto.setVersion(version);
-          eventProcessDefinitionDto.setIsEventBased(true);
-          eventProcessDefinitionDto.setId("id-" + key + "-version-" + version);
-          elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-            EVENT_PROCESS_DEFINITION_INDEX_NAME, eventProcessDefinitionDto.getId(), eventProcessDefinitionDto
+          elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+            key, key, version, ImmutableList.of(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
           );
         } else {
           ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = new ProcessDefinitionOptimizeDto();

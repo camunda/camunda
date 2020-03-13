@@ -42,6 +42,11 @@ public class AuthorizationClient {
     engineExtension.grantUserOptimizeAccess(userId);
   }
 
+  public void createGroupAndGrantOptimizeAccess(final String groupId, final String groupName) {
+    engineExtension.createGroup(groupId, groupName);
+    engineExtension.grantGroupOptimizeAccess(groupId);
+  }
+
   public void createKermitGroupAndAddKermitToThatGroup() {
     createGroupAndAddUser(GROUP_ID, KERMIT_USER);
   }

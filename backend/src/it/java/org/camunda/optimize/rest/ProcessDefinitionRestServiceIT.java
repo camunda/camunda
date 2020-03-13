@@ -8,17 +8,14 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,8 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
@@ -43,7 +38,6 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   private static final String EVENT_BASED = "event based";
   private static final String NOT_EVENT_BASED = "not event based";
   private static final String ALL_VERSIONS_STRING = "ALL";
-  private static final String EVENT_PROCESS_NAME = "someName";
 
   private static Stream<String> processDefinitionTypes() {
     return Stream.of(EVENT_BASED, NOT_EVENT_BASED);
@@ -79,11 +73,13 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     engineIntegrationExtension.addUser(kermitUser, kermitUser);
     engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
     grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey1);
-    final ProcessDefinitionOptimizeDto notAuthorizedToSee = addProcessDefinitionToElasticsearch(
-      notAuthorizedDefinitionKey);
+    final ProcessDefinitionOptimizeDto notAuthorizedToSee =
+      addProcessDefinitionToElasticsearch(notAuthorizedDefinitionKey);
     final String authorizedProcessId = addProcessDefinitionToElasticsearch(authorizedDefinitionKey1).getId();
-    final String authorizedEventProcessId1 = addSimpleEventProcessToElasticsearch(authorizedDefinitionKey2).getId();
-    final String authorizedEventProcessId2 = addSimpleEventProcessToElasticsearch(authorizedDefinitionKey3).getId();
+    final String authorizedEventProcessId1 = elasticSearchIntegrationTestExtension
+      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey2, new UserDto(kermitUser)).getId();
+    final String authorizedEventProcessId2 = elasticSearchIntegrationTestExtension
+      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey3, new UserDto(kermitUser)).getId();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
@@ -96,30 +92,6 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     assertThat(definitions)
       .extracting(DefinitionOptimizeDto::getId)
       .containsExactlyInAnyOrder(authorizedProcessId, authorizedEventProcessId1, authorizedEventProcessId2);
-  }
-
-  @Test
-  public void getProcessDefinitionsReturnsEventBasedWithoutAuthorization() {
-    //given
-    final String kermitUser = "kermit";
-    final String notAuthorizedDefinitionKey = "noAccess";
-    final String authorizedDefinitionKey = "access";
-    engineIntegrationExtension.addUser(kermitUser, kermitUser);
-    engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
-    grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey);
-    final IdDto notAuthorizedToSeeIdDto =
-      new IdDto(addSimpleEventProcessToElasticsearch(notAuthorizedDefinitionKey).getId());
-    final IdDto authorizedToSeeIdDto = new IdDto(addSimpleEventProcessToElasticsearch(authorizedDefinitionKey).getId());
-
-    // when
-    List<IdDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(kermitUser, kermitUser)
-      .buildGetProcessDefinitionsRequest()
-      .executeAndReturnList(IdDto.class, Response.Status.OK.getStatusCode());
-
-    // then
-    assertThat(definitions).containsExactlyInAnyOrder(notAuthorizedToSeeIdDto, authorizedToSeeIdDto);
   }
 
   @Test
@@ -321,19 +293,18 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     final String definitionKey = "anEventProcDefKey";
     engineIntegrationExtension.addUser(kermitUser, kermitUser);
     engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
-    final ProcessDefinitionOptimizeDto expectedDefinition = addSimpleEventProcessToElasticsearch(
-      definitionKey
-    );
+    final ProcessDefinitionOptimizeDto expectedDefinition = elasticSearchIntegrationTestExtension
+      .addEventProcessDefinitionDtoToElasticsearch(definitionKey);
 
     // when
-    String actualXml = embeddedOptimizeExtension.getRequestExecutor()
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetProcessDefinitionXmlRequest(
         expectedDefinition.getKey(), expectedDefinition.getVersion()
-      ).execute(String.class, Response.Status.OK.getStatusCode());
+      ).execute();
 
-    // then the event based definition's xml is returned despite missing authorisation
-    assertThat(actualXml).isEqualTo(expectedDefinition.getBpmn20Xml());
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest(name = "Get {0} process definition with nonexistent version returns 404 message.")
@@ -380,7 +351,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   @Test
   public void getEventProcessDefinitionVersionsWithTenants() {
     // given
-    createEventProcessDefinitionsForKey(KEY, 4);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(KEY);
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -403,7 +374,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   public void getEventAndNonEventProcessDefinitionVersionsWithTenants() {
     //given event based
     final String eventKey = "eventDefinitionKey";
-    createEventProcessDefinitionsForKey(eventKey, 4);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(eventKey);
 
     // given non event based
     createTenant(TENANT_1_DTO);
@@ -464,7 +435,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
   public void getProcessDefinitionVersionsWithTenants_excludeEventProcesses() {
     //given event based
     final String eventKey = "eventDefinitionKey";
-    createEventProcessDefinitionsForKey(eventKey, 4);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(eventKey);
 
     // given non event based
     createTenant(TENANT_1_DTO);
@@ -519,12 +490,12 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
 
   @Test
   public void getEventProcessDefinitionVersionsWithTenants_sorting() {
-    addSimpleEventProcessToElasticsearch("z", "1", "a");
-    addSimpleEventProcessToElasticsearch("x", "1", "b");
-    createEventProcessDefinitionsForKey("c", 1);
-    createEventProcessDefinitionsForKey("D", 1);
-    createEventProcessDefinitionsForKey("e", 1);
-    createEventProcessDefinitionsForKey("F", 1);
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("z", "a");
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("x", "b");
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("c");
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("D");
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("e");
+    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("F");
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -532,21 +503,20 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     final List<DefinitionVersionsWithTenantsDto> definitions = getDefinitionVersionsWithTenants();
     assertThat(definitions)
       .extracting(DefinitionVersionsWithTenantsDto::getKey)
-      .containsExactly("z", "x", "c", "D", "e" ,"F");
+      .containsExactly("z", "x", "c", "D", "e", "F");
   }
 
   @Test
   public void getEventProcessDefinitionVersionsWithTenants_performance() {
     // given
     final int definitionCount = 50;
-    final int versionCount = 5;
 
     IntStream.range(0, definitionCount)
       .mapToObj(String::valueOf)
       .parallel()
       .forEach(definitionNumber -> {
         final String definitionKey = "defKey" + definitionNumber;
-        createEventProcessDefinitionsForKey(definitionKey, versionCount);
+        elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(definitionKey);
       });
 
     // when
@@ -557,7 +527,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     // then
     assertThat(definitions).isNotNull().hasSize(definitionCount);
     definitions.forEach(DefinitionVersionsWithTenantsDto -> {
-      assertThat(DefinitionVersionsWithTenantsDto.getVersions()).hasSize(versionCount);
+      assertThat(DefinitionVersionsWithTenantsDto.getVersions()).hasSize(1);
       assertThat(DefinitionVersionsWithTenantsDto.getAllTenants()).hasSize(1); // only null tenant
     });
     assertThat(responseTimeMillis).isLessThan(6000L);
@@ -605,7 +575,9 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
                                                                     final String type) {
     switch (type) {
       case EVENT_BASED:
-        return addSimpleEventProcessToElasticsearch(key, version);
+        return elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+          key, key, version, Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
+        );
       case NOT_EVENT_BASED:
         return addProcessDefinitionToElasticsearch(key, version, null);
       default:
@@ -650,56 +622,10 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     return expectedDto;
   }
 
-  protected EventProcessDefinitionDto addSimpleEventProcessToElasticsearch(final String key) {
-    return addSimpleEventProcessToElasticsearch(key, "1", EVENT_PROCESS_NAME);
-  }
-
-  protected EventProcessDefinitionDto addSimpleEventProcessToElasticsearch(final String key,
-                                                                           final String version) {
-    return addSimpleEventProcessToElasticsearch(key, version, EVENT_PROCESS_NAME);
-  }
-
-  protected EventProcessDefinitionDto addSimpleEventProcessToElasticsearch(final String key,
-                                                                           final String version,
-                                                                           final String name) {
-    final IndexableEventProcessMappingDto eventProcessMappingDto = IndexableEventProcessMappingDto.builder()
-      .id(key)
-      .roles(ImmutableList.of(
-        new EventProcessRoleDto<>(new UserDto(AuthorizationClient.KERMIT_USER)),
-        new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))
-      ))
-      .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      EVENT_PROCESS_MAPPING_INDEX_NAME,
-      eventProcessMappingDto.getId(),
-      eventProcessMappingDto
-    );
-    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
-      .id(key + "-" + version)
-      .key(key)
-      .name(name)
-      .version(version)
-      .bpmn20Xml(key + version)
-      .flowNodeNames(Collections.emptyMap())
-      .userTaskNames(Collections.emptyMap())
-      .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      EVENT_PROCESS_DEFINITION_INDEX_NAME,
-      eventProcessDefinitionDto.getId(),
-      eventProcessDefinitionDto
-    );
-    return eventProcessDefinitionDto;
-  }
-
   private void createProcessDefinitionsForKey(String key, int count, String tenantId) {
     IntStream.range(0, count).forEach(
       i -> addProcessDefinitionToElasticsearch(key, String.valueOf(i), tenantId)
     );
   }
 
-  private void createEventProcessDefinitionsForKey(String key, int count) {
-    IntStream.range(0, count).forEach(
-      i -> addSimpleEventProcessToElasticsearch(key, String.valueOf(i), key)
-    );
-  }
 }

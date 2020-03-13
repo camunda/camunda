@@ -10,12 +10,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
@@ -74,6 +73,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
@@ -524,7 +526,17 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
-    return addEventProcessDefinitionDtoToElasticsearch(key, null);
+    return addEventProcessDefinitionDtoToElasticsearch(key, "eventProcess-" + key);
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                               final String name) {
+    return addEventProcessDefinitionDtoToElasticsearch(
+      key,
+      name,
+      null,
+      Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
+    );
   }
 
   public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
@@ -535,24 +547,32 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
                                                                                final String name,
                                                                                final IdentityDto identityDto) {
-    final IndexableEventProcessMappingDto.IndexableEventProcessMappingDtoBuilder eventProcessMappingDtoBuilder =
-      IndexableEventProcessMappingDto.builder()
-        .id(key);
-    if (identityDto != null) {
-      eventProcessMappingDtoBuilder.roles(ImmutableList.of(new EventProcessRoleDto<>(identityDto)));
-    } else {
-      eventProcessMappingDtoBuilder.roles(ImmutableList.of(new EventProcessRoleDto<>(new UserDto(DEFAULT_USERNAME))));
-    }
-    final IndexableEventProcessMappingDto eventProcessMappingDto = eventProcessMappingDtoBuilder.build();
+    return addEventProcessDefinitionDtoToElasticsearch(key, name, null, Collections.singletonList(identityDto));
+  }
+
+  public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key,
+                                                                               final String name,
+                                                                               final String version,
+                                                                               final List<IdentityDto> identityDtos) {
+    final IndexableEventProcessMappingDto eventProcessMappingDto = IndexableEventProcessMappingDto.builder()
+      .id(key)
+      .roles(
+        identityDtos.stream()
+          .filter(Objects::nonNull)
+          .map(identityDto -> new IdentityDto(identityDto.getId(), identityDto.getType()))
+          .map(EventProcessRoleDto::new)
+          .collect(Collectors.toList())
+      )
+      .build();
     addEntryToElasticsearch(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessMappingDto.getId(), eventProcessMappingDto);
 
-    final String version = "version";
+    final String versionValue = Optional.ofNullable(version).orElse("1");
     final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
       .id(key + "-" + version)
       .key(key)
       .name(name)
-      .version(version)
-      .bpmn20Xml(key + version)
+      .version(versionValue)
+      .bpmn20Xml(key + versionValue)
       .flowNodeNames(Collections.emptyMap())
       .userTaskNames(Collections.emptyMap())
       .build();

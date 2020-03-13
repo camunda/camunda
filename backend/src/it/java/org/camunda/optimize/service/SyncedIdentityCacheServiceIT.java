@@ -136,7 +136,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
 
     final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
     assertThat(userIdentityById.isPresent(), is(true));
-    assertThat(userIdentityById.get().getName(), is(nullValue()));
+    assertThat(userIdentityById.get().getName(), is(KERMIT_USER));
     assertThat(userIdentityById.get().getFirstName(), is(nullValue()));
     assertThat(userIdentityById.get().getLastName(), is(nullValue()));
     assertThat(userIdentityById.get().getEmail(), is(nullValue()));

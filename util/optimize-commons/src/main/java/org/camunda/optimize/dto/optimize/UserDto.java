@@ -11,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,6 +24,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants
+@ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class UserDto extends IdentityWithMetadataDto {
   private String firstName;
@@ -42,15 +44,15 @@ public class UserDto extends IdentityWithMetadataDto {
                  @JsonProperty(required = false, value = "firstName") final String firstName,
                  @JsonProperty(required = false, value = "lastName") final String lastName,
                  @JsonProperty(required = false, value = "email") final String email) {
-    super(id, IdentityType.USER, mergeToFullName(firstName, lastName));
+    super(id, IdentityType.USER, resolveName(id, firstName, lastName));
     this.firstName = firstName;
     this.lastName = lastName;
     this.email = email;
   }
 
-  private static String mergeToFullName(final String firstName, final String lastName) {
+  private static String resolveName(final String id, final String firstName, final String lastName) {
     return Stream.of(firstName, lastName)
       .filter(Objects::nonNull)
-      .collect(collectingAndThen(Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : null));
+      .collect(collectingAndThen(Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : id));
   }
 }

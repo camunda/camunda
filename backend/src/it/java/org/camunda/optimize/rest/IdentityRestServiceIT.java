@@ -102,7 +102,32 @@ public class IdentityRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void emptySearchStringReturnsAlphanumericSortingListEmptyNamesLast() {
+  public void searchForGroupAndUser_userMetaDataDisabled() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration().setIncludeUserMetaData(false);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    final String groupId = "group";
+    final String groupName = "The Baggins Group";
+    authorizationClient.createGroupAndGrantOptimizeAccess(groupId, groupName);
+    final String userId = "Baggins";
+    authorizationClient.addUserAndGrantOptimizeAccess(userId);
+
+    embeddedOptimizeExtension.getSyncedIdentityCacheService().synchronizeIdentities();
+
+    // when
+    final IdentitySearchResultDto searchResult = embeddedOptimizeExtension.getRequestExecutor()
+      .buildSearchForIdentities("baggins")
+      .execute(IdentitySearchResultDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(searchResult.getResult())
+      // user does not contain meta-data, group name is still there though (as not considered metadata)
+      .containsExactlyInAnyOrder(new UserDto(userId), new GroupDto(groupId, groupName));
+  }
+
+  @Test
+  public void emptySearchStringReturnsAlphanumericSortingList() {
     // given
     final GroupDto groupIdentity = new GroupDto("baggins", "The Baggins Group", 5L);
     embeddedOptimizeExtension.getIdentityService().addIdentity(groupIdentity);
@@ -119,9 +144,10 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     // then
     assertThat(searchResult)
-      // user is first as name and email contains baggins
+      // user is first as name and email contains baggins, empty user is second because name == id and is `testUser2`
+      // group is last because it starts with `Th`
       .isEqualTo(new IdentitySearchResultDto(
-        3L, Lists.newArrayList(userIdentity, groupIdentity, emptyMetaDataUserIdentity)
+        3L, Lists.newArrayList(userIdentity, emptyMetaDataUserIdentity, groupIdentity)
       ));
   }
 
@@ -194,6 +220,42 @@ public class IdentityRestServiceIT extends AbstractIT {
     assertThat(identity).isEqualTo(expectedIdentity);
   }
 
+  @ParameterizedTest
+  @MethodSource("identities")
+  public void getIdentityById_notPresentInCache_userMetaDataDisabled(final IdentityWithMetadataDto expectedIdentity) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration().setIncludeUserMetaData(false);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    switch (expectedIdentity.getType()) {
+      case USER:
+        engineIntegrationExtension.addUser(expectedIdentity.getId(), "password");
+        assertThat(
+          embeddedOptimizeExtension.getSyncedIdentityCacheService().getUserIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      case GROUP:
+        engineIntegrationExtension.createGroup(expectedIdentity.getId());
+        assertThat(
+          embeddedOptimizeExtension.getSyncedIdentityCacheService().getGroupIdentityById(expectedIdentity.getId())
+        ).isEmpty();
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported identity type: " + expectedIdentity.getType());
+    }
+
+    // when
+    final IdentityWithMetadataDto identity = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetIdentityById(expectedIdentity.getId())
+      .execute(IdentityWithMetadataDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(identity).hasNoNullFieldsOrPropertiesExcept(
+      UserDto.Fields.email, UserDto.Fields.firstName, UserDto.Fields.lastName
+    );
+    assertThat(identity.getName()).isEqualTo(expectedIdentity.getId());
+  }
+
   @Test
   public void getIdentityById_failOnInvalidId() {
     // when
@@ -223,6 +285,25 @@ public class IdentityRestServiceIT extends AbstractIT {
       DEFAULT_LASTNAME,
       DEFAULT_USERNAME + DEFAULT_EMAIL_DOMAIN
     ));
+  }
+
+  @Test
+  public void getCurrentUserIdentity_userMetaDataDeactivated() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration().setIncludeUserMetaData(false);
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    // when
+    final UserDto currentUserDto = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCurrentUserIdentity()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute(UserDto.class, Response.Status.OK.getStatusCode());
+
+    // then only user ID property is set and `getName` returns user ID
+    assertThat(currentUserDto).isEqualTo(new UserDto(KERMIT_USER));
+    assertThat(currentUserDto.getName()).isEqualTo(KERMIT_USER);
   }
 
   private static Stream<IdentityWithMetadataDto> identities() {
