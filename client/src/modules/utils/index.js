@@ -13,6 +13,22 @@ export function isValidJSON(text) {
   }
 }
 
+export function tryDecodeURI(text) {
+  try {
+    return decodeURI(text);
+  } catch {
+    return text;
+  }
+}
+
+export function tryDecodeURIComponent(text) {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return text;
+  }
+}
+
 /**
  * Similar to lodash's compact(array): Removes entries with falsy values from the object
  * i.e. false, null, 0, "", undefined, and NaN

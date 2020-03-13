@@ -9,13 +9,15 @@ import {isEmpty, isEqual} from 'lodash';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 
 import {getWorkflowByVersion} from 'modules/utils/filter';
+import {tryDecodeURI} from 'modules/utils';
 
 export function decodeFields(object) {
   let result = {};
 
   for (let key in object) {
     const value = object[key];
-    result[key] = typeof value === 'string' ? decodeURI(object[key]) : value;
+
+    result[key] = typeof value === 'string' ? tryDecodeURI(object[key]) : value;
   }
   return result;
 }

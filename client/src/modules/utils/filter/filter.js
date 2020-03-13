@@ -7,8 +7,7 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 
 import {compactObject} from '../index';
-import {isValidJSON} from 'modules/utils';
-import {trimValue} from 'modules/utils';
+import {isValidJSON, trimValue, tryDecodeURIComponent} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
 
 /**
@@ -40,12 +39,13 @@ export function parseQueryString(queryString = '') {
 
   queries.forEach((item, index) => {
     const [paramKey, paramValue] = queries[index].split('=');
-    const decodedValue = decodeURIComponent(paramValue);
+    const decodedValue = tryDecodeURIComponent(paramValue);
 
     if (isValidJSON(decodedValue)) {
       params[paramKey] = JSON.parse(decodedValue);
     }
   });
+
   return params;
 }
 
