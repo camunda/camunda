@@ -39,12 +39,18 @@
 html {
   -moz-osx-font-smoothing: antialiased;
   -webkit-font-smoothing: antialiased;
+  height: 100%;
 }
 
 body {
   font-family: IBMPlexSans;
   margin: 0;
   padding: 0;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
 }
 
 button {
