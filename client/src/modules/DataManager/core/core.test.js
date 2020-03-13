@@ -5,7 +5,7 @@
  */
 
 import {mockResolvedAsyncFn} from 'modules/testUtils';
-import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
+import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 import {DataManager} from './core';
 
 import * as instancesApi from 'modules/api/instances/instances';
@@ -31,6 +31,7 @@ instancesApi.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesByIds = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn({});
+instancesApi.fetchSequenceFlows = mockResolvedAsyncFn({});
 
 diagramApi.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 
@@ -38,7 +39,6 @@ console.warn = jest.fn();
 
 describe('DataManager', () => {
   let dataManager;
-  let publishSpy;
   let subscribeSpy;
   let unsubscribeSpy;
   let pubLoadingStatesSpy;
@@ -47,7 +47,6 @@ describe('DataManager', () => {
 
   beforeEach(() => {
     dataManager = new DataManager();
-    publishSpy = jest.spyOn(dataManager.publisher, 'publish');
     subscribeSpy = jest.spyOn(dataManager.publisher, 'subscribe');
     unsubscribeSpy = jest.spyOn(dataManager.publisher, 'unsubscribe');
     pubLoadingStatesSpy = jest
@@ -241,6 +240,22 @@ describe('DataManager', () => {
           instanceId: mockWorkflowInstance.id,
           scopeId: mockScopeId
         });
+      });
+    });
+
+    describe('fetch sequence flows', () => {
+      it('should fetch and publish', () => {
+        dataManager.getSequenceFlows(mockWorkflowInstance.id);
+
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
+          SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchSequenceFlows
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(
+          mockWorkflowInstance.id
+        );
       });
     });
   });

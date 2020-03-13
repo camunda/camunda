@@ -37,6 +37,7 @@ class TopPanel extends React.PureComponent {
     dataManager: PropTypes.object,
     onInstanceOperation: PropTypes.func,
     nodeMetaDataMap: PropTypes.object,
+    processedSequenceFlows: PropTypes.array,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     selection: PropTypes.object,
     diagramDefinitions: PropTypes.object,
@@ -117,6 +118,7 @@ class TopPanel extends React.PureComponent {
             expandState={props.expandState}
             onFlowNodeSelection={this.props.onFlowNodeSelection}
             selectableFlowNodes={[...activityIdToActivityInstanceMap.keys()]}
+            processedSequenceFlows={props.processedSequenceFlows}
             selectedFlowNodeId={selection.flowNodeId}
             selectedFlowNodeName={getSelectedFlowNodeName(
               selection,

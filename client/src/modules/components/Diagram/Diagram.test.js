@@ -116,7 +116,6 @@ describe('Diagram', () => {
       theme: 'dark',
       expandState: 'DEFAULT'
     });
-    const resetZoom = jest.spyOn(node.instance(), 'handleZoomReset');
     const oldViewer = node.instance().Viewer;
 
     // when
@@ -455,6 +454,73 @@ describe('Diagram', () => {
       const overlayNodeText = overlayNode.text();
       expect(overlayNodeText.includes(2)).toBe(true);
       expect(overlayNode.find('button')).toHaveLength(0);
+    });
+  });
+
+  describe('processed sequence flow colors', () => {
+    it('should initially set color for each processed sequence flows', () => {
+      // given
+      const node = shallowRenderNode({
+        processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2']
+      });
+
+      // when
+      const elementRegistry = node.instance().Viewer.get('elementRegistry');
+      const firstElement = elementRegistry.get('sequence-flow-1');
+      const secondElement = elementRegistry.get('sequence-flow-2');
+      // then
+
+      expect(firstElement.businessObject.di.set).toHaveBeenCalledWith(
+        'stroke',
+        Colors.selections
+      );
+
+      expect(secondElement.businessObject.di.set).toHaveBeenCalledWith(
+        'stroke',
+        Colors.selections
+      );
+
+      expect(firstElement.businessObject.di.set).not.toHaveBeenCalledWith(
+        'stroke',
+        undefined
+      );
+
+      expect(secondElement.businessObject.di.set).not.toHaveBeenCalledWith(
+        'stroke',
+        undefined
+      );
+    });
+
+    it('should remove previous colors for sequence flows and update color for each new processed sequence flows', () => {
+      // given
+      const node = shallowRenderNode({
+        processedSequenceFlows: ['sequence-flow-1']
+      });
+
+      // when
+      node.setProps({
+        processedSequenceFlows: ['sequence-flow-1', 'sequence-flow-2']
+      });
+
+      const elementRegistry = node.instance().Viewer.get('elementRegistry');
+      const firstElement = elementRegistry.get('sequence-flow-1');
+      const secondElement = elementRegistry.get('sequence-flow-2');
+      // then
+
+      expect(firstElement.businessObject.di.set).toHaveBeenCalledWith(
+        'stroke',
+        undefined
+      );
+
+      expect(firstElement.businessObject.di.set).toHaveBeenCalledWith(
+        'stroke',
+        Colors.selections
+      );
+
+      expect(secondElement.businessObject.di.set).toHaveBeenCalledWith(
+        'stroke',
+        Colors.selections
+      );
     });
   });
 });

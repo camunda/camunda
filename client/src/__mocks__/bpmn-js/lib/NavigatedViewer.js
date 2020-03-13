@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {diObject} from 'modules/testUtils';
+
 class Viewer {
   constructor({container, bpmnRenderer} = {}) {
     this.canvas = {
@@ -26,9 +28,10 @@ class Viewer {
         })),
         getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0}))
       })),
-      get: jest.fn(id => ({businessObject: {name: id}})),
+      get: jest.fn(id => ({businessObject: {name: id, di: diObject}})),
       forEach: jest.fn(() => {})
     };
+    this.graphicsFactory = {update: jest.fn(() => {})};
     this.eventBus = {on: jest.fn()};
     this.overlays = {add: jest.fn(), remove: jest.fn()};
   }

@@ -36,7 +36,8 @@ import {
   getActivityIdToActivityInstancesMap,
   getMultiInstanceBodies,
   getMultiInstanceChildren,
-  storeResponse
+  storeResponse,
+  getProcessedSequenceFlows
 } from './service';
 import * as Styled from './styled';
 
@@ -63,6 +64,7 @@ class Instance extends Component {
       diagramDefinitions: null,
       activityInstancesTree: {},
       activityIdToActivityInstanceMap: null,
+      processedSequenceFlows: [],
       events: [],
       incidents: {
         count: 0,
@@ -92,6 +94,7 @@ class Instance extends Component {
           dataManager.getWorkflowXML(response.workflowId, response);
           dataManager.getEvents(response.id);
           dataManager.getVariables(response.id, response.id);
+          dataManager.getSequenceFlows(response.id);
 
           if (response.state === 'INCIDENT') {
             dataManager.getIncidents(response);
@@ -149,6 +152,13 @@ class Instance extends Component {
           });
         }
       },
+      LOAD_SEQUENCE_FLOWS: ({response, state}) => {
+        if (state === LOADING_STATE.LOADED) {
+          this.setState({
+            processedSequenceFlows: getProcessedSequenceFlows(response)
+          });
+        }
+      },
       CONSTANT_REFRESH: ({response, state}) => {
         if (state === LOADING_STATE.LOADED) {
           const {
@@ -156,7 +166,8 @@ class Instance extends Component {
             LOAD_VARIABLES,
             LOAD_INCIDENTS,
             LOAD_EVENTS,
-            LOAD_INSTANCE_TREE
+            LOAD_INSTANCE_TREE,
+            LOAD_SEQUENCE_FLOWS
           } = response;
 
           this.setState({
@@ -172,6 +183,9 @@ class Instance extends Component {
             },
             activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
               LOAD_INSTANCE_TREE
+            ),
+            processedSequenceFlows: getProcessedSequenceFlows(
+              LOAD_SEQUENCE_FLOWS
             ),
             // conditional updates
             ...(LOAD_INCIDENTS && {incidents: LOAD_INCIDENTS}),
@@ -216,7 +230,8 @@ class Instance extends Component {
         {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE},
         {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
         {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
-        {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE}
+        {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE},
+        {name: SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS}
       ]
     };
     const {selection, instance} = this.state;
@@ -498,7 +513,8 @@ class Instance extends Component {
       nodeMetaDataMap,
       activityInstancesTree,
       variables,
-      editMode
+      editMode,
+      processedSequenceFlows
     } = this.state;
 
     return (
@@ -514,6 +530,7 @@ class Instance extends Component {
             nodeMetaDataMap={nodeMetaDataMap}
             diagramDefinitions={diagramDefinitions}
             activityIdToActivityInstanceMap={activityIdToActivityInstanceMap}
+            processedSequenceFlows={processedSequenceFlows}
             getCurrentMetadata={this.getCurrentMetadata}
             onFlowNodeSelection={this.handleFlowNodeSelection}
             onInstanceOperation={this.handleInstanceOperation}

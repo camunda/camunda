@@ -93,7 +93,8 @@ const {
   variables,
   instanceHistoryTree,
   diagramNodes,
-  events
+  events,
+  processedSequenceFlows
 } = testData.fetch.onPageLoad;
 
 const {mockDefinition} = testData.diagramData;
@@ -156,7 +157,7 @@ describe('Instance', () => {
         );
       });
 
-      it('should always request instance tree, diagram, variables, events ', () => {
+      it('should always request instance tree, diagram, variables, events, sequence flows ', () => {
         //given
         const {dataManager} = node.instance().props;
         // when
@@ -177,6 +178,9 @@ describe('Instance', () => {
         );
         expect(dataManager.getActivityInstancesTreeData).toHaveBeenCalledWith(
           workflowInstance
+        );
+        expect(dataManager.getSequenceFlows).toHaveBeenCalledWith(
+          workflowInstance.id
         );
       });
 
@@ -308,6 +312,24 @@ describe('Instance', () => {
         //
       });
     });
+    describe('load sequence flows', () => {
+      it('should set loaded sequence flows in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS],
+          response: processedSequenceFlows
+        });
+        // then
+        expect(node.instance().state.processedSequenceFlows).toEqual([
+          'SequenceFlow_0drux68',
+          'SequenceFlow_0j6tsnn',
+          'SequenceFlow_1dwqvrt',
+          'SequenceFlow_1fgekwd'
+        ]);
+      });
+    });
     describe('load data update', () => {
       it('should update some data by default', () => {
         //given
@@ -318,7 +340,8 @@ describe('Instance', () => {
           response: {
             LOAD_INSTANCE: workflowInstance,
             LOAD_EVENTS: events,
-            LOAD_INSTANCE_TREE: instanceHistoryTree
+            LOAD_INSTANCE_TREE: instanceHistoryTree,
+            LOAD_SEQUENCE_FLOWS: processedSequenceFlows
           }
         });
 
@@ -345,7 +368,8 @@ describe('Instance', () => {
             LOAD_VARIABLES: variables,
             LOAD_INCIDENTS: incidents,
             LOAD_EVENTS: events,
-            LOAD_INSTANCE_TREE: instanceHistoryTree
+            LOAD_INSTANCE_TREE: instanceHistoryTree,
+            LOAD_SEQUENCE_FLOWS: processedSequenceFlows
           }
         });
 
@@ -397,7 +421,8 @@ describe('Instance', () => {
           LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
-          LOAD_INSTANCE_TREE: instanceHistoryTree
+          LOAD_INSTANCE_TREE: instanceHistoryTree,
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
         }
       });
       node.update();
@@ -435,7 +460,8 @@ describe('Instance', () => {
           LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
-          LOAD_INSTANCE_TREE: instanceHistoryTree
+          LOAD_INSTANCE_TREE: instanceHistoryTree,
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
         }
       });
       node.update();
@@ -467,7 +493,8 @@ describe('Instance', () => {
           LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
-          LOAD_INSTANCE_TREE: instanceHistoryTree
+          LOAD_INSTANCE_TREE: instanceHistoryTree,
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
         }
       });
       node.update();
@@ -498,7 +525,8 @@ describe('Instance', () => {
           LOAD_VARIABLES: variables,
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
-          LOAD_INSTANCE_TREE: instanceHistoryTree
+          LOAD_INSTANCE_TREE: instanceHistoryTree,
+          LOAD_SEQUENCE_FLOWS: processedSequenceFlows
         }
       });
       node.update();
