@@ -89,8 +89,10 @@ class Filters extends React.Component {
 
   componentDidMount = async () => {
     const {filter, name} = parseQueryString(this.props.location.search);
-    this.setFilter(filter);
-    this.setState({previewName: name, previewVersion: filter.version});
+    if (filter) {
+      this.setFilter(filter);
+      this.setState({previewName: name, previewVersion: filter.version});
+    }
   };
 
   componentDidUpdate = prevProps => {
