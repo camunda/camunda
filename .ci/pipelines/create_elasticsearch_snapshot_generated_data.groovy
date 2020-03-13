@@ -110,14 +110,16 @@ spec:
       #imagePullPolicy: Always   #this must be uncommented when snapshot is used
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-          value: io.zeebe.exporter.ElasticsearchExporter
+          value: io.zeebe.exporter.ElasticsearchExporter        
+        - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
+          value: 4
       resources:
         limits:
-          cpu: 4
-          memory: 8Gi
+          cpu: 8
+          memory: 16Gi
         requests:
-          cpu: 4
-          memory: 8Gi
+          cpu: 8
+          memory: 16Gi
   volumes:
   - name: configdir
     emptyDir: {}
