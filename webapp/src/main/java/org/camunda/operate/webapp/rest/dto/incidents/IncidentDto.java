@@ -35,7 +35,7 @@ public class IncidentDto {
 
   private String flowNodeInstanceId;
 
-  private Long jobId;
+  private String jobId;
 
   private OffsetDateTime creationTime;
 
@@ -83,16 +83,12 @@ public class IncidentDto {
     this.flowNodeInstanceId = flowNodeInstanceId;
   }
 
-  public Long getJobId() {
+  public String getJobId() {
     return jobId;
   }
 
-  public void setJobId(Long jobId) {
-    this.jobId = jobId;
-  }
-  
   public void setJobId(String jobId) {
-    this.jobId = ConversionUtils.toLongOrNull(jobId);
+    this.jobId = jobId;
   }
 
   public OffsetDateTime getCreationTime() {
