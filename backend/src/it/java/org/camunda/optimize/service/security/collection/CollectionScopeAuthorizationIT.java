@@ -380,7 +380,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
       .collect(toList());
 
     // when update the result with masked tenants
-    collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry, oneTenantRemoved);
+    collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry.getId(), oneTenantRemoved);
     scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then
@@ -501,7 +501,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     oneTenantAdded.add(authorizedTenant);
 
     // when update the result with masked tenants
-    collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry, oneTenantAdded);
+    collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry.getId(), oneTenantAdded);
     scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then

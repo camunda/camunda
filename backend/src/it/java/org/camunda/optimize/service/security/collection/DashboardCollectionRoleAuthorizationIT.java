@@ -14,6 +14,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -137,13 +138,13 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final String resourceId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String resourceId = dashboardClient.createEmptyDashboard(collectionId);
     final Response response = copyDashboardAsKermit(resourceId);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
-    final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsDefaultUser(copyId);
+    final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
   }
 
@@ -158,7 +159,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final String resourceId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String resourceId = dashboardClient.createEmptyDashboard(collectionId);
     final Response response = copyDashboardAsKermit(resourceId);
 
     // then
@@ -176,13 +177,13 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final String resourceId = createPrivateDashboardAsKermit();
+    final String resourceId = dashboardClient.createDashboardAsUser(null, KERMIT_USER, KERMIT_USER);
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
-    final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsDefaultUser(copyId);
+    final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
   }
 
@@ -197,7 +198,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final String resourceId = createPrivateDashboardAsKermit();
+    final String resourceId = dashboardClient.createDashboardAsUser(null, KERMIT_USER, KERMIT_USER);
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
@@ -213,7 +214,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    final String resourceId = createPrivateDashboardAsKermit();
+    final String resourceId = dashboardClient.createDashboardAsUser(null, KERMIT_USER, KERMIT_USER);
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
@@ -230,13 +231,13 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    final String resourceId = createPrivateDashboardAsDefaultUser();
+    final String resourceId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
-    final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsDefaultUser(copyId);
+    final DashboardDefinitionDto dashboardCopy = dashboardClient.getDashboard(copyId);
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
   }
 
@@ -248,7 +249,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -269,7 +270,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final Response response = copyDashboardAsPrivateDashboardAsKermit(dashboardId);
@@ -285,7 +286,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final Response response = copyDashboardAsPrivateDashboardAsKermit(dashboardId);
@@ -300,7 +301,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final String dashboardId = createPrivateDashboardAsDefaultUser();
+    final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -319,16 +320,10 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
-    final String dashboardId = createPrivateDashboardAsDefaultUser();
+    final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetDashboardRequest(dashboardId)
-      .execute();
-
-    // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    dashboardClient.getDashboard(dashboardId);
   }
 
   @ParameterizedTest
@@ -339,7 +334,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -357,7 +352,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final AuthorizedDashboardDefinitionDto dashboard = getDashboardByIdAsKermit(dashboardId);
@@ -373,7 +368,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -391,7 +386,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final String dashboardId = createPrivateDashboardAsDefaultUser();
+    final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
     final Response response = updateDashboardAsKermit(dashboardId);
@@ -407,7 +402,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
-    final String dashboardId = createPrivateDashboardAsDefaultUser();
+    final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
     final Response response = updateDashboardAsKermit(dashboardId);
@@ -424,7 +419,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -442,7 +437,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -460,7 +455,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final Response response = updateDashboardAsKermit(dashboardId);
@@ -476,7 +471,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final Response response = updateDashboardAsKermit(dashboardId);
@@ -491,7 +486,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final String dashboardId = createPrivateDashboardAsDefaultUser();
+    final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
     final Response response = deleteDashboardAsKermit(dashboardId);
@@ -507,7 +502,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
-    final String dashboardId = createPrivateDashboardAsDefaultUser();
+    final String dashboardId = dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
     final Response response = deleteDashboardAsKermit(dashboardId);
@@ -524,7 +519,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -542,7 +537,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
@@ -560,7 +555,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final Response response = deleteDashboardAsKermit(dashboardId);
@@ -576,7 +571,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     // when
     final Response response = deleteDashboardAsKermit(dashboardId);
@@ -585,41 +580,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
-  private String createPrivateDashboardAsDefaultUser() {
-    return createPrivateDashboardAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private String createPrivateDashboardAsKermit() {
-    return createPrivateDashboardAsUser(KERMIT_USER, KERMIT_USER);
-  }
-
-  private String createPrivateDashboardAsUser(final String user, final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(user, password)
-      .buildCreateDashboardRequest(null)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
   private Response createDashboardInCollectionAsKermit(final String collectionId) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute();
+    return dashboardClient.createDashboardAsUserGetRawResponse(collectionId, new ArrayList<>(), KERMIT_USER, KERMIT_USER);
   }
 
   private Response copyDashboardAsPrivateDashboardAsKermit(final String dashboardId) {
@@ -632,38 +594,19 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   }
 
   private Response copyDashboardToCollectionAsKermit(final String dashboardId, final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCopyDashboardRequest(dashboardId, collectionId)
-      .execute();
-  }
-
-  private DashboardDefinitionDto getDashboardByIdAsDefaultUser(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    return dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(dashboardId, collectionId, KERMIT_USER, KERMIT_USER);
   }
 
   private AuthorizedDashboardDefinitionDto getDashboardByIdAsKermit(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetDashboardRequest(dashboardId)
-      .execute(AuthorizedDashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    return dashboardClient.getDashboardAsUser(dashboardId, KERMIT_USER, KERMIT_USER);
   }
 
   private Response updateDashboardAsKermit(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildUpdateDashboardRequest(dashboardId, new DashboardDefinitionDto())
-      .execute();
+    return dashboardClient.updateDashboardAsUser(dashboardId, new DashboardDefinitionDto(), KERMIT_USER, KERMIT_USER);
   }
 
   private Response deleteDashboardAsKermit(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildDeleteDashboardRequest(dashboardId)
-      .execute();
+    return dashboardClient.deleteDashboardAsUser(dashboardId, KERMIT_USER, KERMIT_USER, false);
   }
 
 }

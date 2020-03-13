@@ -63,7 +63,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = createSimpleAlert(reportId);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
     alert.setReportId(TEST);
 
@@ -82,7 +82,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   public void cantCreateAlertForPrivateReports(final DefinitionType definitionType) {
     //given
     String reportId = createNumberReportForCollection(null, definitionType);
-    AlertCreationDto alert = createSimpleAlert(reportId);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
     Response response = embeddedOptimizeExtension
@@ -100,7 +100,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = createSimpleAlert(reportId);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
 
     // when
     String id = embeddedOptimizeExtension
@@ -118,7 +118,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = createSimpleAlert(reportId);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
     alert.setThreshold(Integer.MAX_VALUE);
 
     // when
@@ -154,7 +154,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildUpdateAlertRequest("nonExistingId", createSimpleAlert(reportId))
+      .buildUpdateAlertRequest("nonExistingId", alertClient.createSimpleAlert(reportId))
       .execute();
 
     // then 
@@ -167,7 +167,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = createSimpleAlert(reportId);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
     alert.setEmail("new@camunda.com");
 
@@ -201,7 +201,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = createSimpleAlert(reportId);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
 
     // when
@@ -231,7 +231,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     //given
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
-    AlertCreationDto alert = createSimpleAlert(reportId);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
 
     // when

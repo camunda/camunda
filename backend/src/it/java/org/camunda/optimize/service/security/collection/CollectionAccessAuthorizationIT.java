@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.security.collection;
 
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -16,6 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -30,10 +30,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    AuthorizedCollectionDefinitionRestDto collection = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(collectionId);
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
@@ -55,20 +52,16 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    AuthorizedCollectionDefinitionRestDto collection = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(
+      collectionId,
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
+    final List<EntityDto> entities = collectionClient.getEntitiesForCollection(collectionId, KERMIT_USER, KERMIT_USER);
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
     assertThat(collection.getCurrentUserRole(), is(accessIdentityRolePairs.roleType));
-    final List<EntityDto> entities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetCollectionEntitiesRequest(collectionId)
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(entities.size(), is(2));
     assertThat(
@@ -90,15 +83,8 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetCollectionRequest(collectionId)
-      .execute();
-
-    // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    // when + then
+    collectionClient.getAuthorizedCollectionById(collectionId, KERMIT_USER, KERMIT_USER);
   }
 
   @Test
@@ -123,21 +109,13 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   private String createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    return reportClient.createCombinedReport(collectionId, new ArrayList<>());
   }
 
   private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    return dashboardClient.createDashboard(collectionId, new ArrayList<>());
   }
 
 }

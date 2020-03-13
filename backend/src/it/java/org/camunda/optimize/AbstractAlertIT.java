@@ -66,8 +66,6 @@ import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBH
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_INVALID_PORT;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractAlertIT extends AbstractIT {
 
@@ -75,19 +73,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension =
     new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
-
-  protected String createAlert(AlertCreationDto simpleAlert) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(simpleAlert)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  protected String createAlertForReport(String reportId) {
-    AlertCreationDto alertDto = createSimpleAlert(reportId);
-    return createAlert(alertDto);
-  }
 
   protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {
     this.triggerAndCompleteJob(checkJobKey(id));
@@ -178,7 +163,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
   protected AlertCreationDto setupBasicDecisionAlert() {
     String collectionId = collectionClient.createNewCollectionWithDefaultDecisionScope();
     String id = createNumberReportForCollection(collectionId, DECISION);
-    return createSimpleAlert(id);
+    return alertClient.createSimpleAlert(id);
   }
 
   protected AlertCreationDto setupBasicProcessAlert() {
@@ -190,7 +175,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
                                                           final String password) {
     String collectionId = collectionClient.createNewCollection(user, password);
     final CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(PROCESS, definitionKey, DEFAULT_TENANTS);
-    collectionClient.addScopeEntryToCollectionWithUser(collectionId, scopeEntry, user, password);
+    collectionClient.addScopeEntryToCollectionAsUser(collectionId, scopeEntry, user, password);
     String reportId = createNumberReportForCollection(
       definitionKey,
       collectionId,
@@ -198,27 +183,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
       user,
       password
     );
-    return createSimpleAlert(reportId);
-  }
-
-  protected AlertCreationDto createSimpleAlert(String reportId) {
-    return createSimpleAlert(reportId, 1, "Seconds");
-  }
-
-  protected AlertCreationDto createSimpleAlert(String reportId, int intervalValue, String unit) {
-    AlertCreationDto alertCreationDto = new AlertCreationDto();
-
-    AlertInterval interval = new AlertInterval();
-    interval.setUnit(unit);
-    interval.setValue(intervalValue);
-    alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0);
-    alertCreationDto.setThresholdOperator(">");
-    alertCreationDto.setEmail("test@camunda.com");
-    alertCreationDto.setName("test alert");
-    alertCreationDto.setReportId(reportId);
-
-    return alertCreationDto;
+    return alertClient.createSimpleAlert(reportId);
   }
 
   protected String createNewProcessReportAsUser(final String collectionId,
@@ -367,16 +332,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
     report.setName("something");
     report.setCollectionId(collectionId);
     return report;
-  }
-
-  protected void updateSingleProcessReport(String id,
-                                           SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildUpdateSingleProcessReportRequest(id, updatedReport, true)
-      .execute();
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
   }
 
   protected ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess() {

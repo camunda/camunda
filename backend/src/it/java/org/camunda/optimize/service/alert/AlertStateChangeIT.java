@@ -58,7 +58,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -99,10 +99,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
-    String alertId = createAlert(simpleAlert);
+    String alertId = alertClient.createAlert(simpleAlert);
 
     // when/then
     triggerAndCompleteCheckJob(alertId);
@@ -125,10 +125,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
-    String alertId = createAlert(simpleAlert);
+    String alertId = alertClient.createAlert(simpleAlert);
 
     // when/then
     clearWebhookRequestsFromClient(client);
@@ -146,10 +146,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_INVALID_PORT_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
-    String alertId = createAlert(simpleAlert);
+    String alertId = alertClient.createAlert(simpleAlert);
 
     // when/then
     clearWebhookRequestsFromClient(client);
@@ -169,10 +169,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
 
     // when
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -206,11 +206,11 @@ public class AlertStateChangeIT extends AbstractAlertIT {
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
     );
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     simpleAlert.setFixNotification(true);
     addReminderToAlert(simpleAlert);
-    String alertId = createAlert(simpleAlert);
+    String alertId = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(alertId);
 
@@ -253,10 +253,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
-    String alertId = createAlert(simpleAlert);
+    String alertId = alertClient.createAlert(simpleAlert);
 
     // when
     triggerAndCompleteCheckJob(alertId);
@@ -279,10 +279,10 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
     addReminderToAlert(simpleAlert);
-    String alertId = createAlert(simpleAlert);
+    String alertId = alertClient.createAlert(simpleAlert);
 
     // when
     clearWebhookRequestsFromClient(client);
@@ -306,7 +306,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     simpleAlert.setFixNotification(true);
     simpleAlert.setThreshold(258165800L); // = 2d 23h 42min 45s 800ms
 
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -339,7 +339,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
   }
 
   private AlertCreationDto createAlertWithReminder(String reportId) {
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
     return addReminderToAlert(simpleAlert);
   }
 

@@ -20,25 +20,19 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDt
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,7 +44,6 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -248,7 +241,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // when
     final String reportId = createPrivateReportAsKermit(identityAndReport.reportScenario);
-    final Response response = copyReportToCollectionAsKermit(reportId, collectionId);
+    final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -270,7 +263,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // when
     final String reportId = createPrivateReportAsKermit(identityAndReport.reportScenario);
-    final Response response = copyReportToCollectionAsKermit(reportId, collectionId);
+    final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -289,7 +282,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // when
     final String reportId = createPrivateReportAsKermit(reportScenario);
-    final Response response = copyReportToCollectionAsKermit(reportId, collectionId);
+    final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -309,7 +302,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // when
     final String reportId = createPrivateReportAsKermit(reportScenario);
-    final Response response = copyReportToCollectionAsKermit(reportId, collectionId);
+    final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -329,7 +322,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = copyReportAsPrivateReportAsKermit(reportId);
+    final Response response = reportClient.copyReportToCollection(reportId, "null", KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -349,7 +342,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = copyReportAsPrivateReportAsKermit(reportId);
+    final Response response = reportClient.copyReportToCollection(reportId, "null", KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -365,7 +358,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final Response response = readReportByIdAsKermit(reportId);
+    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -384,7 +377,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final Response response = copyReportToCollectionAsKermit(reportId, collectionId);
+    final Response response = reportClient.copyReportToCollection(reportId, collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -407,7 +400,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = readReportByIdAsKermit(reportId);
+    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -424,7 +417,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = readReportByIdAsKermit(reportId);
+    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -443,7 +436,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = readReportByIdAsKermit(reportId);
+    final Response response = reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -459,7 +452,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final Response response = evaluateReportByIdAsKermit(reportId);
+    final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -480,13 +473,16 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
     if (!reportScenario.combined) {
       // for non combined reports a definition needs to be set for them to be evaluable
-      updateReportAsDefaultUser(
-        reportId, constructReportWithDefinition(getEngineResourceTypeForReportType(reportScenario))
+      updateReportAsUser(
+        reportId,
+        constructReportWithDefinition(getEngineResourceTypeForReportType(reportScenario)),
+        DEFAULT_USERNAME,
+        DEFAULT_PASSWORD
       );
     }
 
     // when
-    final Response response = evaluateReportByIdAsKermit(reportId);
+    final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -507,12 +503,15 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(identityAndReport.reportScenario, collectionId);
     if (!identityAndReport.reportScenario.combined) {
       // for non combined reports a definition needs to be set for them to be evaluable
-      updateReportAsDefaultUser(reportId, constructReportWithDefinition(engineDefinitionResourceType));
+      updateReportAsUser(
+        reportId,
+        constructReportWithDefinition(engineDefinitionResourceType), DEFAULT_USERNAME, DEFAULT_PASSWORD
+      );
     }
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = evaluateReportByIdAsKermit(reportId);
+    final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -528,11 +527,11 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = collectionClient.createNewCollection();
-    final String reportId = createEmptyProcessReportInCollection(collectionId);
+    final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = evaluateReportByIdAsKermit(reportId);
+    final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
@@ -554,7 +553,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = evaluateReportByIdAsKermit(reportId);
+    final Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -570,7 +569,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
+    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(authorizedReports.size(), is(0));
@@ -587,7 +589,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
+    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(authorizedReports.size(), is(0));
@@ -606,7 +611,10 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String otherReportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
+    final List<AuthorizedReportDefinitionDto> authorizedReports = reportClient.getAllReportsAsUser(
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then only private reports are included in the results
     assertThat(authorizedReports.size(), is(2));
@@ -738,7 +746,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final Response response = deleteReportAsKermit(reportId);
+    final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -756,7 +764,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
-    final Response response = deleteReportAsKermit(reportId);
+    final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
@@ -776,7 +784,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = deleteReportAsKermit(reportId);
+    final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
@@ -796,7 +804,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final Response response = deleteReportAsKermit(reportId);
+    final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -815,7 +823,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = deleteReportAsKermit(reportId);
+    final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
@@ -832,7 +840,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
-    final Response response = deleteReportAsKermit(reportId);
+    final Response response = reportClient.deleteReport(reportId, false, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -844,7 +852,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String collectionId = createCollectionAndAddRolesWithKermitRoleType(RoleType.EDITOR);
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
     Optional<CollectionRoleRestDto> testGroup = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
       .findFirst();
@@ -873,7 +881,11 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final String collectionId = createCollectionAndAddRolesWithKermitRoleType(kermitRoleType);
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(USER_KERMIT, USER_KERMIT, collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRolesAsUser(
+      collectionId,
+      USER_KERMIT,
+      USER_KERMIT
+    );
     Optional<CollectionRoleRestDto> testGroup = roles.stream()
       .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
       .findFirst();
@@ -893,18 +905,6 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(testGroup.get().getHasFullScopeAuthorizations(), is(nullValue()));
     assertThat(missPiggy.get().getHasFullScopeAuthorizations(), is(nullValue()));
     assertThat(kermit.get().getHasFullScopeAuthorizations(), is(nullValue()));
-  }
-
-  private List<CollectionRoleRestDto> getRoles(final String collectionId) {
-    return getRoles(DEFAULT_USERNAME, DEFAULT_PASSWORD, collectionId);
-  }
-
-  private List<CollectionRoleRestDto> getRoles(final String userId, final String password, final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(userId, password)
-      .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(CollectionRoleRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   private String createCollectionAndAddRolesWithKermitRoleType(RoleType kermitRoleType) {
@@ -999,112 +999,25 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     switch (reportScenario.reportType) {
       case PROCESS:
         if (reportScenario.combined) {
-          CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-          combinedReportDefinitionDto.setCollectionId(collectionId);
-          return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .withUserAuthentication(user, password)
-            .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-            .execute();
+          return reportClient.createNewCombinedReportAsUserRawResponse(
+            collectionId,
+            Collections.emptyList(),
+            user,
+            password
+          );
         } else {
-          SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-          singleProcessReportDefinitionDto.setCollectionId(collectionId);
-          ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
-            .createReportData()
-            .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
-            .setProcessDefinitionVersion("1")
-            .setTenantIds(DEFAULT_TENANTS)
-            .setReportDataType(ProcessReportDataType.RAW_DATA)
-            .build();
-          singleProcessReportDefinitionDto.setData(processReportDataDto);
-          return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .withUserAuthentication(user, password)
-            .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-            .execute();
+          return reportClient.createSingleProcessReportAsUser(collectionId, DEFAULT_DEFINITION_KEY, user, password);
         }
       case DECISION:
-        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-        singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY)
-          .setDecisionDefinitionVersion("1")
-          .setTenantIds(DEFAULT_TENANTS)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-        singleDecisionReportDefinitionDto.setData(decisionReportDataDto);
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .withUserAuthentication(user, password)
-          .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-          .execute();
+        return reportClient.createSingleDecisionReportAsUser(collectionId, DEFAULT_DEFINITION_KEY, user, password);
       default:
         throw new OptimizeIntegrationTestException("Unsupported reportType: " + reportScenario.reportType);
     }
   }
 
-  private Response copyReportAsPrivateReportAsKermit(final String reportId) {
-    return copyReportToCollectionAsKermit(reportId, "null");
-  }
-
-  private Response copyReportToCollectionAsKermit(final String reportId, final String collectionId) {
-    return copyReportToCollectionAsUser(reportId, collectionId, KERMIT_USER, KERMIT_USER);
-  }
-
-  private Response copyReportToCollectionAsUser(final String reportId,
-                                                final String collectionId,
-                                                final String user,
-                                                final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(user, password)
-      .buildCopyReportRequest(reportId, collectionId)
-      .execute();
-  }
-
   private AuthorizedReportDefinitionDto getReportByIdAsKermit(final String reportId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetReportRequest(reportId)
-      .execute(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private Response readReportByIdAsKermit(final String reportId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetReportRequest(reportId)
-      .execute();
-  }
-
-  private Response evaluateReportByIdAsKermit(final String reportId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute();
-  }
-
-  private List<AuthorizedReportDefinitionDto> listReportsAsKermit() {
-    return listReportsAsUser(KERMIT_USER, KERMIT_USER);
-  }
-
-  private List<AuthorizedReportDefinitionDto> listReportsAsUser(final String user, final String password) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(user, password)
-      .buildGetAllPrivateReportsRequest()
-      .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private String createEmptyProcessReportInCollection(final String collectionId) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(Response.Status.OK.getStatusCode())
-      .readEntity(IdDto.class)
-      .getId();
+    return reportClient.getSingleProcessReportRawResponse(reportId, KERMIT_USER, KERMIT_USER)
+      .readEntity(AuthorizedReportDefinitionDto.class);
   }
 
   private Response updateReportAsKermit(final String reportId, final ReportScenario reportScenario) {
@@ -1114,14 +1027,6 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
       .data(getReportDataForScenario(reportScenario))
       .build();
 
-    return updateReportAsKermit(reportId, reportUpdate);
-  }
-
-  private Response updateReportAsDefaultUser(final String reportId, final ReportDefinitionDto reportUpdate) {
-    return updateReportAsUser(reportId, reportUpdate, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private Response updateReportAsKermit(final String reportId, final ReportDefinitionDto reportUpdate) {
     return updateReportAsUser(reportId, reportUpdate, KERMIT_USER, KERMIT_USER);
   }
 
@@ -1132,58 +1037,28 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     switch (reportUpdate.getReportType()) {
       case PROCESS:
         if (reportUpdate.getCombined()) {
-          return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .withUserAuthentication(user, password)
-            .buildUpdateCombinedProcessReportRequest(reportId, reportUpdate)
-            .execute();
+          return reportClient.updateCombinedReport(reportId, reportUpdate, user, password);
         } else {
-          return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .withUserAuthentication(user, password)
-            .buildUpdateSingleProcessReportRequest(reportId, reportUpdate)
-            .execute();
+          return reportClient.updateSingleProcessReport(reportId, reportUpdate, false, user, password);
         }
       case DECISION:
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .withUserAuthentication(user, password)
-          .buildUpdateSingleDecisionReportRequest(reportId, reportUpdate)
-          .execute();
+        return reportClient.updateDecisionReport(reportId, reportUpdate, false, user, password);
       default:
         throw new OptimizeIntegrationTestException("Unsupported reportType: " + reportUpdate.getReportType());
     }
-  }
-
-  private Response deleteReportAsKermit(final String reportId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildDeleteReportRequest(reportId)
-      .execute();
   }
 
   private ReportDefinitionDto constructReportWithDefinition(int resourceType) {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        SingleProcessReportDefinitionDto processReportDefinitionDto = new SingleProcessReportDefinitionDto();
-        ProcessReportDataDto processReportDataDto = TemplatedProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(getDefinitionKey(resourceType))
-          .setProcessDefinitionVersion("1")
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
-        processReportDefinitionDto.setData(processReportDataDto);
-        return processReportDefinitionDto;
+        return reportClient.createSingleProcessReportDefinitionDto(
+          null,
+          getDefinitionKey(resourceType),
+          Collections.singletonList(null)
+        );
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        SingleDecisionReportDefinitionDto decisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder.create()
-          .setDecisionDefinitionKey(getDefinitionKey(resourceType))
-          .setDecisionDefinitionVersion("1")
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-        decisionReportDefinitionDto.setData(decisionReportDataDto);
-        return decisionReportDefinitionDto;
+        return reportClient.createSingleDecisionReportDefinitionDto(getDefinitionKey(resourceType));
     }
   }
 

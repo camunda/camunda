@@ -10,24 +10,15 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,11 +45,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(1));
@@ -79,17 +66,13 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-    final String combinedReportId = createCombinedReportAsDefaultUser();
-    final String processReportId = createSingleProcessReportAsDefaultUser();
-    final String decisionReportId = createSingleDecisionReportAsDefaultUser();
-    final String dashboardId = createDashboardAsDefaultUser();
+    final String combinedReportId = reportClient.createEmptyCombinedReport(null);
+    final String processReportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto());
+    final String decisionReportId = reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionDto());
+    final String dashboardId = dashboardClient.createDashboard(null);
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(5));
@@ -112,15 +95,11 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     ProcessDefinitionEngineDto unauthorizedProcess = deploySimpleServiceTaskProcess("unauthorizedProcess");
     DecisionDefinitionEngineDto unauthorizedDecision = deploySimpleDecisionDefinition("unauthorizedDecision");
 
-    createSingleProcessReportForDefinitionAsDefaultUser(unauthorizedProcess);
-    createSingleDecisionReportForDefinitionAsDefaultUser(unauthorizedDecision);
+    reportClient.createAndStoreProcessReport(unauthorizedProcess.getKey());
+    reportClient.createSingleDecisionReportDefinitionDto(unauthorizedDecision.getKey()).getId();
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(0));
@@ -132,88 +111,16 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     collectionClient.createNewCollectionForAllDefinitionTypes();
-    createCombinedReportAsDefaultUser();
-    createSingleProcessReportAsDefaultUser();
-    createSingleDecisionReportAsDefaultUser();
-    createDashboardAsDefaultUser();
+    reportClient.createEmptyCombinedReport(null);
+    reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto());
+    reportClient.createSingleDecisionReport(new SingleDecisionReportDefinitionDto());
+    dashboardClient.createDashboard(null);
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> authorizedEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(authorizedEntities.size(), is(0));
-  }
-
-  private String createDashboardAsDefaultUser() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createSingleDecisionReportForDefinitionAsDefaultUser(final DecisionDefinitionEngineDto decisionDefinition) {
-    final DecisionReportDataDto reportDataDto = DecisionReportDataBuilder
-      .create()
-      .setDecisionDefinitionKey(decisionDefinition.getKey())
-      .setDecisionDefinitionVersion(decisionDefinition.getVersionAsString())
-      .setReportDataType(DecisionReportDataType.RAW_DATA)
-      .build();
-
-    final SingleDecisionReportDefinitionDto definitionDto = new SingleDecisionReportDefinitionDto();
-    definitionDto.setData(reportDataDto);
-
-    return createSingleDecisionReportAsDefaultUser(definitionDto);
-  }
-
-  private String createSingleDecisionReportAsDefaultUser() {
-    return createSingleDecisionReportAsDefaultUser(new SingleDecisionReportDefinitionDto());
-  }
-
-  private String createSingleDecisionReportAsDefaultUser(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createSingleProcessReportForDefinitionAsDefaultUser(final ProcessDefinitionEngineDto processDefinition) {
-    final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinition.getKey())
-      .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
-      .build();
-
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setData(reportDataDto);
-    return createSingleProcessReportAsDefaultUser(singleProcessReportDefinitionDto);
-  }
-
-  private String createSingleProcessReportAsDefaultUser() {
-    return createSingleProcessReportAsDefaultUser(new SingleProcessReportDefinitionDto());
-  }
-
-  private String createSingleProcessReportAsDefaultUser(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createCombinedReportAsDefaultUser() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(final String definitionKey) {

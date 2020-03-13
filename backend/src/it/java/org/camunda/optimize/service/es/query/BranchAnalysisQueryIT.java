@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -103,10 +102,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     BranchAnalysisDto result = performBranchAnalysis(
       processDefinition.getKey(),
-      Lists.newArrayList(processDefinition.getVersionAsString()),
-      Collections.singletonList(null),
-      END_EVENT_ID,
-      SPLITTING_GATEWAY_ID
+      processDefinition.getVersionAsString()
     );
 
     //then
@@ -135,12 +131,12 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(
+    BranchAnalysisDto result = analysisClient.performBranchAnalysis(
       processDefinition.getKey(),
       Lists.newArrayList(processDefinition.getVersionAsString()),
       Collections.singletonList(null),
-      SUBPROCESS_END_EVENT_ID,
-      GATEWAY_C
+      GATEWAY_C,
+      SUBPROCESS_END_EVENT_ID
     );
 
     // then analysis shows it is not possible to reach the chosen end from the chosen gateway
@@ -209,7 +205,10 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       processDefinition1.getVersionAsString(),
       processDefinition3.getVersionAsString()
     );
-    BranchAnalysisDto result = performBranchAnalysis(processDefinition1.getKey(), versions);
+    BranchAnalysisDto result = performBranchAnalysis(
+      processDefinition1.getKey(),
+      versions
+    );
 
     //then
     assertThat(result, is(notNullValue()));
@@ -288,7 +287,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     BranchAnalysisDto result = performBranchAnalysis(
       processDefinition.getKey(),
-      ImmutableList.of(processDefinition.getVersionAsString())
+      processDefinition.getVersionAsString()
     );
 
     //then
@@ -324,12 +323,12 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(
+    BranchAnalysisDto result = analysisClient.performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
       Lists.newArrayList(tenantId2, tenantId1),
-      END_EVENT_ID,
-      SPLITTING_GATEWAY_ID
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
     );
 
     //then
@@ -365,12 +364,12 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisDto result = performBranchAnalysis(
+    BranchAnalysisDto result = analysisClient.performBranchAnalysis(
       processDefinition1.getKey(),
       ImmutableList.of(processDefinition1.getVersionAsString()),
       Lists.newArrayList(tenantId2),
-      END_EVENT_ID,
-      SPLITTING_GATEWAY_ID
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
     );
 
     //then
@@ -491,11 +490,13 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinition.getKey());
-    dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
+    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+      processDefinition.getKey(),
+      Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
 
     addStartDateFilter(null, now, dto);
     log.debug(
@@ -506,7 +507,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       now
     );
 
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
     //then
     assertThat(result, is(notNullValue()));
     assertThat(result.getEndEvent(), is(END_EVENT_ID));
@@ -534,15 +535,17 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinition.getKey());
-    dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
+    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+      processDefinition.getKey(),
+      Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
     addStartDateFilter(now.plusSeconds(1L), null, dto);
 
     //when
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -569,15 +572,17 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinition.getKey());
-    dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
+    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+      processDefinition.getKey(),
+      Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
     addStartDateFilter(nowPlusTimeInSec(-20), null, dto);
 
     //when
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -627,14 +632,16 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinition.getKey());
-    dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    dto.setGateway(GATEWAY_C);
-    dto.setEnd(END_EVENT_ID);
+    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+      processDefinition.getKey(),
+      Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
+      Collections.singletonList(null),
+      GATEWAY_C,
+      END_EVENT_ID
+    );
 
     //when
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -661,11 +668,14 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinition.getKey());
-    dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
+    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+      processDefinition.getKey(),
+      Lists.newArrayList(processDefinition.getVersionAsString()),
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
+
     dto.setFilter(ProcessFilterBuilder.filter()
                     .variable()
                     .booleanTrue()
@@ -674,7 +684,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
                     .buildList());
 
     //when
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -701,11 +711,14 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinition.getKey());
-    dto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
+    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+      processDefinition.getKey(),
+      Lists.newArrayList(processDefinition.getVersionAsString()),
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
+
     List<ProcessFilterDto> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
@@ -715,7 +728,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     dto.getFilter().addAll(flowNodeFilter);
 
     //when
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -763,12 +776,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(instanceEngineDto.getProcessDefinitionKey());
-    dto.setProcessDefinitionVersion(String.valueOf(instanceEngineDto.getProcessDefinitionVersion()));
-    dto.setGateway("splittingGateway");
-    dto.setEnd("endEvent");
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -818,12 +826,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(instanceEngineDto.getProcessDefinitionKey());
-    dto.setProcessDefinitionVersion(String.valueOf(instanceEngineDto.getProcessDefinitionVersion()));
-    dto.setGateway("splittingGateway");
-    dto.setEnd("endEvent");
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -840,6 +843,17 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     assertThat(task2.getActivityId(), is("mergingServiceTask"));
     assertThat(task2.getActivitiesReached(), is(1L));
     assertThat(task2.getActivityCount(), is(1L));
+  }
+
+  private BranchAnalysisDto getBasicBranchAnalysisDto(ProcessInstanceEngineDto instanceEngineDto) {
+    BranchAnalysisQueryDto dto = analysisClient.createAnalysisDto(
+      instanceEngineDto.getProcessDefinitionKey(),
+      Lists.newArrayList(String.valueOf(instanceEngineDto.getProcessDefinitionVersion())),
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
+    return analysisClient.getProcessDefinitionCorrelation(dto);
   }
 
   @Test
@@ -875,12 +889,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(instanceEngineDto.getProcessDefinitionKey());
-    dto.setProcessDefinitionVersion(String.valueOf(instanceEngineDto.getProcessDefinitionVersion()));
-    dto.setGateway("splittingGateway");
-    dto.setEnd("endEvent");
-    BranchAnalysisDto result = getBranchAnalysisDto(dto);
+    BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
     assertThat(result, is(notNullValue()));
@@ -901,52 +910,63 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   @Test
   public void testValidationExceptionOnNullDto() {
-
     //when
-    Response response = getResponse(null);
+    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(null);
     assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinition() {
-
     //when
-    Response response = getResponse(new BranchAnalysisQueryDto());
+    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(new BranchAnalysisQueryDto());
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinitionVersion() {
     //given
-    BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
-    request.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    BranchAnalysisQueryDto request = analysisClient.createAnalysisDto(
+      PROCESS_DEFINITION_KEY,
+      null,
+      null,
+      null,
+      null
+    );
 
     //when
-    Response response = getResponse(new BranchAnalysisQueryDto());
+    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
   public void testValidationExceptionOnNullGateway() {
     //given
-    BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
-    request.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
-    request.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION);
+    BranchAnalysisQueryDto request = analysisClient.createAnalysisDto(
+      PROCESS_DEFINITION_KEY,
+      Lists.newArrayList(PROCESS_DEFINITION_VERSION),
+      null,
+      null,
+      null
+    );
+
     //when
-    Response response = getResponse(request);
+    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
 
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
 
   @Test
   public void testValidationExceptionOnNullEndActivity() {
+    BranchAnalysisQueryDto request = analysisClient.createAnalysisDto(
+      PROCESS_DEFINITION_KEY,
+      Lists.newArrayList(PROCESS_DEFINITION_VERSION),
+      Collections.singletonList(null),
+      GATEWAY_ACTIVITY,
+      null
+    );
 
-    BranchAnalysisQueryDto request = new BranchAnalysisQueryDto();
-    request.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
-    request.setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION);
-    request.setEnd(GATEWAY_ACTIVITY);
     //when
-    Response response = getResponse(request);
+    Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
 
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
   }
@@ -973,37 +993,35 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
                                                   final Integer processDefinitionVersion) {
-    return performBranchAnalysis(processDefinitionKey, ImmutableList.of(processDefinitionVersion.toString()));
-  }
-
-  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                  final String processDefinitionVersion) {
-    return performBranchAnalysis(processDefinitionKey, ImmutableList.of(processDefinitionVersion));
-  }
-
-  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                  final List<String> processDefinitionVersions) {
-    return performBranchAnalysis(
+    return analysisClient.performBranchAnalysis(
       processDefinitionKey,
-      processDefinitionVersions,
+      ImmutableList.of(processDefinitionVersion.toString()),
       Collections.singletonList(null),
-      END_EVENT_ID,
-      SPLITTING_GATEWAY_ID
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
     );
   }
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
-                                                  final List<String> processDefinitionVersions,
-                                                  final List<String> tenantIds,
-                                                  final String endEventId,
-                                                  final String gatewayID) {
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinitionKey);
-    dto.setProcessDefinitionVersions(processDefinitionVersions);
-    dto.setTenantIds(tenantIds);
-    dto.setGateway(gatewayID);
-    dto.setEnd(endEventId);
-    return getBranchAnalysisDto(dto);
+                                                  final String processDefinitionVersion) {
+    return analysisClient.performBranchAnalysis(
+      processDefinitionKey,
+      ImmutableList.of(processDefinitionVersion),
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
+  }
+
+  private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
+                                                  final List<String> processDefinitionVersions) {
+    return analysisClient.performBranchAnalysis(
+      processDefinitionKey,
+      processDefinitionVersions,
+      Collections.singletonList(null),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
@@ -1142,24 +1160,6 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       .buildList();
 
     dto.getFilter().addAll(dateFilter);
-  }
-
-  private BranchAnalysisDto getBranchAnalysisDto(BranchAnalysisQueryDto dto) {
-    Response response = getRawResponse(dto);
-
-    // then the status code is okay
-    return response.readEntity(BranchAnalysisDto.class);
-  }
-
-  private Response getRawResponse(BranchAnalysisQueryDto dto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildProcessDefinitionCorrelation(dto)
-      .execute();
-  }
-
-  private Response getResponse(BranchAnalysisQueryDto request) {
-    return getRawResponse(request);
   }
 
   private OffsetDateTime nowPlusTimeInSec(int timeInMs) {

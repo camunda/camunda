@@ -11,6 +11,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -29,12 +30,35 @@ public class DashboardClient {
       .execute(DashboardDefinitionDto.class, HttpStatus.SC_OK);
   }
 
+  public AuthorizedDashboardDefinitionDto getDashboardAsUser(final String dashboardId, String u, String p) {
+    return getRequestExecutor()
+      .buildGetDashboardRequest(dashboardId)
+      .withUserAuthentication(u, p)
+      .execute(AuthorizedDashboardDefinitionDto.class, HttpStatus.SC_OK);
+  }
+
+
   public String createEmptyDashboard(final String collectionId) {
     return createDashboard(collectionId, Collections.emptyList());
   }
 
   public String createDashboard(final String collectionId, final List<String> reportIds) {
     return createDashboard(createSimpleDashboardDefinition(collectionId, reportIds));
+  }
+
+  public Response createDashboardAsUserGetRawResponse(final String collectionId, final List<String> reportIds, String u, String p) {
+    return getRequestExecutor()
+      .buildCreateDashboardRequest(createSimpleDashboardDefinition(collectionId, reportIds))
+      .withUserAuthentication(u,p)
+      .execute();
+  }
+
+  public String createDashboardAsUser(final DashboardDefinitionDto dashboardDefinitionDto, String u, String p) {
+    return getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .withUserAuthentication(u,p)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .getId();
   }
 
   public String createDashboard(final DashboardDefinitionDto dashboardDefinitionDto) {
@@ -44,8 +68,8 @@ public class DashboardClient {
       .getId();
   }
 
-  public void updateDashboardWithReports(final String dashboardId,
-                                         final List<String> reportIds) {
+  public Response updateDashboardWithReports(final String dashboardId,
+                                             final List<String> reportIds) {
     final List<ReportLocationDto> reports = reportIds.stream()
       .map(reportId -> {
         ReportLocationDto reportLocationDto = new ReportLocationDto();
@@ -55,13 +79,20 @@ public class DashboardClient {
       .collect(Collectors.toList());
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
     dashboard.setReports(reports);
-    updateDashboard(dashboardId, dashboard);
+    return updateDashboard(dashboardId, dashboard);
   }
 
   public Response updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
     return getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
-      .execute(HttpStatus.SC_NO_CONTENT);
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  public Response updateDashboardAsUser(String id, DashboardDefinitionDto updatedDashboard, String u, String p) {
+    return getRequestExecutor()
+      .buildUpdateDashboardRequest(id, updatedDashboard)
+      .withUserAuthentication(u, p)
+      .execute();
   }
 
   public IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
@@ -70,11 +101,33 @@ public class DashboardClient {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public IdDto copyDashboardToCollectionAsUser(final String dashboardId, final String collectionId, String u, String p) {
+    return getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId, collectionId)
+      .withUserAuthentication(u, p)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public Response copyDashboardToCollectionAsUserAndGetRawResponse(final String dashboardId, final String collectionId, String u, String p) {
+    return getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId, collectionId)
+      .withUserAuthentication(u, p)
+      .execute();
+  }
+
   public void deleteDashboard(final String dashboardId, final boolean force) {
     getRequestExecutor()
       .buildDeleteDashboardRequest(dashboardId, force)
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
+
+  public Response deleteDashboardAsUser(final String dashboardId, String u, String p, final boolean force) {
+    return getRequestExecutor()
+      .buildDeleteDashboardRequest(dashboardId, force)
+      .withUserAuthentication(u, p)
+      .execute();
+  }
+
 
   private DashboardDefinitionDto createSimpleDashboardDefinition(String collectionId, List<String> reportIds) {
     DashboardDefinitionDto definitionDto = new DashboardDefinitionDto();
@@ -86,6 +139,12 @@ public class DashboardClient {
         .collect(Collectors.toList())
     );
     return definitionDto;
+  }
+
+  public void assertDashboardIsDeleted(final String dashboardIdToDelete) {
+    getRequestExecutor()
+      .buildGetDashboardRequest(dashboardIdToDelete)
+      .execute(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   private OptimizeRequestExecutor getRequestExecutor() {

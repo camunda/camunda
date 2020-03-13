@@ -67,11 +67,8 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //when
-    Response response = executeBranchAnalysisAsKermit(processDefinition, Collections.singletonList(null));
-
-    //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    //when + then
+    executeBranchAnalysisAsKermit(processDefinition, Collections.singletonList(null));
   }
 
   @Test
@@ -83,13 +80,14 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildProcessDefinitionCorrelation(
-        createAnalysisDto("", "", Collections.emptyList())
-      )
-      .execute();
+    BranchAnalysisQueryDto analysisDto = analysisClient.createAnalysisDto(
+      "",
+      Lists.newArrayList(""),
+      Collections.emptyList(),
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
+    );
+    Response response = analysisClient.getProcessDefinitionCorrelationRawResponseWithoutAuth(analysisDto);
 
     assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
@@ -190,25 +188,16 @@ public class AnalysisAuthorizationIT extends AbstractIT {
 
   private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition,
                                                  List<String> tenantIds) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildProcessDefinitionCorrelation(createAnalysisDto(
-        processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), tenantIds
-      ))
-      .execute();
-  }
-
-  private BranchAnalysisQueryDto createAnalysisDto(final String processDefinitionKey,
-                                                   final String processDefinitionVersion,
-                                                   final List<String> tenantIds) {
-    BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
-    dto.setProcessDefinitionKey(processDefinitionKey);
-    dto.setProcessDefinitionVersion(processDefinitionVersion);
-    dto.setTenantIds(tenantIds);
-    dto.setGateway(SPLITTING_GATEWAY_ID);
-    dto.setEnd(END_EVENT_ID);
-    return dto;
+    return analysisClient.getProcessDefinitionCorrelationRawResponseAsUser(
+      analysisClient.createAnalysisDto(
+        processDefinition.getKey(),
+        Lists.newArrayList(String.valueOf(processDefinition.getVersion())),
+        tenantIds,
+        SPLITTING_GATEWAY_ID,
+        END_EVENT_ID
+      ),
+      KERMIT_USER, KERMIT_USER
+    );
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {

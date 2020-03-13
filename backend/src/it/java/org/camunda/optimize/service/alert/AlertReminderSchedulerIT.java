@@ -7,9 +7,7 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -18,9 +16,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -38,14 +34,11 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   public void reminderJobsAreRemovedOnAlertDeletion() throws Exception {
     // given
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
     triggerAndCompleteCheckJob(id);
 
     //when
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteAlertRequest(id)
-      .execute();
+    alertClient.deleteAlert(id);
 
     //then
     assertThat(
@@ -58,14 +51,12 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   public void reminderJobsAreRemovedOnReportDeletion() throws Exception {
     // given
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
     triggerAndCompleteCheckJob(id);
 
     //when
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportRequest(simpleAlert.getReportId(), true)
-      .execute();
+    reportClient.deleteReport(simpleAlert.getReportId(), true);
+
     //then
     assertThat(
       embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -77,21 +68,14 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   public void reminderIsNotCreatedOnStartupIfNotDefinedInAlert() throws Exception {
     //given
     AlertCreationDto alert = setupBasicProcessAlert();
-    createAlert(alert);
+    alertClient.createAlert(alert);
 
     //when
     embeddedOptimizeExtension.stopOptimize();
     embeddedOptimizeExtension.startOptimize();
 
     //then
-    assertThat(getAllAlerts().get(0).getReminder(), is(nullValue()));
-  }
-
-  private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllAlertsRequest()
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+    assertThat(alertClient.getAllAlerts().get(0).getReminder(), is(nullValue()));
   }
 
   @Test
@@ -102,14 +86,14 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId);
 
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
     reminderInterval.setUnit("Seconds");
     simpleAlert.setReminder(reminderInterval);
 
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -122,7 +106,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
-    updateSingleProcessReport(simpleAlert.getReportId(), report);
+    reportClient.updateSingleProcessReport(simpleAlert.getReportId(), report, true);
 
     //then
     assertThat(
@@ -141,7 +125,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     // when
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId, 10, "Seconds");
+    AlertCreationDto simpleAlert = alertClient.createSimpleAlert(reportId, 10, "Seconds");
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
     reminderInterval.setUnit("Minutes");
@@ -149,7 +133,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     simpleAlert.setThreshold(1500);
 
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -177,7 +161,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     //given
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -189,10 +173,8 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     //when
     simpleAlert.getCheckInterval().setValue(30);
 
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateAlertRequest(id, simpleAlert)
-      .execute();
+    alertClient.updateAlert(id, simpleAlert);
+
 
     //then
     assertThat(
@@ -216,11 +198,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
     // when
-    String id = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(simpleAlert)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -241,11 +219,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     simpleAlert.setCheckInterval(checkInterval);
 
     // when
-    String id = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateAlertRequest(simpleAlert)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 
@@ -260,7 +234,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     //given
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
-    String id = createAlert(simpleAlert);
+    String id = alertClient.createAlert(simpleAlert);
 
     triggerAndCompleteCheckJob(id);
 

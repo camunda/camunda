@@ -67,16 +67,10 @@ public class AnalysisRestServiceIT extends AbstractIT {
     branchAnalysisQueryDto.setGateway(GATEWAY_ACTIVITY);
     branchAnalysisQueryDto.setEnd(END_ACTIVITY);
 
-    Response response =
-      embeddedOptimizeExtension
-        .getRequestExecutor()
-        .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
-        .execute();
+    BranchAnalysisDto response = analysisClient.getProcessDefinitionCorrelation(branchAnalysisQueryDto);
 
-    // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    // then
     assertThat(response)
-      .extracting(resp -> resp.readEntity(BranchAnalysisDto.class))
       .isNotNull()
       .extracting(BranchAnalysisDto::getTotal)
       .isEqualTo(2L);

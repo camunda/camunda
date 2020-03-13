@@ -36,7 +36,7 @@ public class AlertClient {
   }
 
   public Response editAlertAsUser(final String alertId, final AlertCreationDto updatedAlertDto,
-                                     final String username, final String password) {
+                                  final String username, final String password) {
     return getRequestExecutor()
       .withUserAuthentication(username, password)
       .buildUpdateAlertRequest(alertId, updatedAlertDto)
@@ -44,10 +44,26 @@ public class AlertClient {
   }
 
   public Response createAlertAsUser(final AlertCreationDto alertCreationDto,
-                                       final String username, final String password) {
+                                    final String username, final String password) {
     return getRequestExecutor()
       .withUserAuthentication(username, password)
       .buildCreateAlertRequest(alertCreationDto)
+      .execute();
+  }
+
+  public Response deleteAlert(String alertId) {
+    return deleteAlertAsUser(alertId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  public List<AlertDefinitionDto> getAllAlerts() {
+    return getRequestExecutor()
+      .buildGetAllAlertsRequest()
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public Response updateAlert(String id, AlertCreationDto simpleAlert) {
+    return getRequestExecutor()
+      .buildUpdateAlertRequest(id, simpleAlert)
       .execute();
   }
 
@@ -65,12 +81,16 @@ public class AlertClient {
       .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
-  private AlertCreationDto createSimpleAlert(String reportId) {
+  public AlertCreationDto createSimpleAlert(String reportId) {
+    return createSimpleAlert(reportId, 1, "Seconds");
+  }
+
+  public AlertCreationDto createSimpleAlert(String reportId, int intervalValue, String unit) {
     AlertCreationDto alertCreationDto = new AlertCreationDto();
 
     AlertInterval interval = new AlertInterval();
-    interval.setUnit("Seconds");
-    interval.setValue(1);
+    interval.setUnit(unit);
+    interval.setValue(intervalValue);
     alertCreationDto.setCheckInterval(interval);
     alertCreationDto.setThreshold(0);
     alertCreationDto.setThresholdOperator(">");
@@ -80,6 +100,19 @@ public class AlertClient {
 
     return alertCreationDto;
   }
+
+  public AlertCreationDto createAlertWithReminder(String reportId, int reminderIntervalValue, String unit, int threshold,
+                                       int intervalValue) {
+    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertInterval reminderInterval = new AlertInterval();
+    reminderInterval.setValue(reminderIntervalValue);
+    reminderInterval.setUnit(unit);
+    simpleAlert.setReminder(reminderInterval);
+    simpleAlert.setThreshold(threshold);
+    simpleAlert.getCheckInterval().setValue(intervalValue);
+    return simpleAlert;
+  }
+
 
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();

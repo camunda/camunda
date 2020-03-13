@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -67,20 +66,20 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     final String collectionId1 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId1 = createNumberReportForCollection(collectionId1, definitionType);
     final String reportId2 = createNumberReportForCollection(collectionId1, definitionType);
-    final String alertId1 = createAlertForReport(reportId1);
-    final String alertId2 = createAlertForReport(reportId1);
-    final String alertId3 = createAlertForReport(reportId2);
+    final String alertId1 = alertClient.createAlertForReport(reportId1);
+    final String alertId2 = alertClient.createAlertForReport(reportId1);
+    final String alertId3 = alertClient.createAlertForReport(reportId2);
 
     final String collectionId2 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId3 = createNumberReportForCollection(collectionId2, definitionType);
-    createAlertForReport(reportId3);
+    alertClient.createAlertForReport(reportId3);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
-    ), collectionId1);
+    ));
 
     // when
     List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
@@ -104,17 +103,14 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     collectionClient.createScopeWithTenants(collectionId1, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS, typePair.get(1));
     final String reportId1 = createNumberReportForCollection(collectionId1, typePair.get(0));
     final String reportId2 = createNumberReportForCollection(collectionId1, typePair.get(1));
-    final String alertId1 = createAlertForReport(reportId1);
-    final String alertId2 = createAlertForReport(reportId1);
-    createAlertForReport(reportId2);
+    final String alertId1 = alertClient.createAlertForReport(reportId1);
+    final String alertId2 = alertClient.createAlertForReport(reportId1);
+    alertClient.createAlertForReport(reportId2);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(typePair.get(0)));
-    addRoleToCollectionAsDefaultUser(
-      new CollectionRoleDto(
-        new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER),
-      collectionId1
-    );
+    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
+        new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER));
 
     // when
     List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
@@ -155,15 +151,15 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     // given
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId = createNumberReportForCollection(collectionId, definitionType);
-    final String alertId = createAlertForReport(reportId);
-    final AlertCreationDto alertCreationDto = createSimpleAlert(reportId);
+    final String alertId = alertClient.createAlertForReport(reportId);
+    final AlertCreationDto alertCreationDto = alertClient.createSimpleAlert(reportId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
-    ), collectionId);
+    ));
 
     // when
     Response createResponse = alertClient.createAlertAsUser(alertCreationDto, KERMIT_USER, KERMIT_USER);
@@ -184,24 +180,21 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     // given
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId = createNumberReportForCollection(collectionId, definitionType);
-    final String alertId1 = createAlertForReport(reportId);
-    final String alertId2 = createAlertForReport(reportId);
-    final AlertCreationDto alertCreationDto = createSimpleAlert(reportId);
+    final String alertId1 = alertClient.createAlertForReport(reportId);
+    final String alertId2 = alertClient.createAlertForReport(reportId);
+    final AlertCreationDto alertCreationDto = alertClient.createSimpleAlert(reportId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addUserAndGrantOptimizeAccess(MISS_PIGGY_USER);
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
-    ), collectionId);
-    addRoleToCollectionAsDefaultUser(
-      new CollectionRoleDto(
+    ));
+    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(
         new IdentityDto(MISS_PIGGY_USER, IdentityType.USER),
         RoleType.EDITOR
-      ),
-      collectionId
-    );
+      ));
 
     // when
     Response managerCreateResponse = alertClient.createAlertAsUser(alertCreationDto, KERMIT_USER, KERMIT_USER);
@@ -228,13 +221,4 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     softly.assertThat(editorEditResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     softly.assertThat(editorDeleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
-
-  private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
-                                                final String collectionId) {
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
-  }
-
 }

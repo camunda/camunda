@@ -12,17 +12,15 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -58,16 +56,9 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     createSingleProcessReportForDefinitionAsDefaultUser(unauthorizedProcessDefinition, collectionId);
 
     // when
-    AuthorizedCollectionDefinitionRestDto collection = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    AuthorizedCollectionDefinitionRestDto collection = collectionClient.getAuthorizedCollectionById(collectionId, KERMIT_USER, KERMIT_USER);
 
-    final List<EntityDto> entities = embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildGetCollectionEntitiesRequest(collectionId)
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+    final List<EntityDto> entities = collectionClient.getEntitiesForCollection(collectionId, KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
@@ -87,11 +78,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(reportDataDto);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(final String definitionKey) {

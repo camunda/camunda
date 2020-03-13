@@ -12,11 +12,9 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 
-import javax.ws.rs.core.Response;
 import java.util.Arrays;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
@@ -125,7 +123,7 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
   }
 
   protected void addKermitGroupRoleToCollectionAsDefaultUser(final RoleType roleType, final String collectionId) {
-    addRoleToCollectionAsDefaultUser(
+    collectionClient.addRoleToCollection(
       collectionId,
       new CollectionRoleDto(new IdentityDto(GROUP_ID, IdentityType.GROUP), roleType)
     );
@@ -134,15 +132,7 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
   protected void addRoleToCollectionAsDefaultUser(final RoleType roleType,
                                                   final IdentityDto identityDto,
                                                   final String collectionId) {
-    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(identityDto, roleType));
-  }
-
-  protected String addRoleToCollectionAsDefaultUser(final String collectionId, final CollectionRoleDto roleDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(identityDto, roleType));
   }
 
   @Data

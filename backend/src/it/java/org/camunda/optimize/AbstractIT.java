@@ -10,8 +10,10 @@ import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtens
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.optimize.AlertClient;
+import org.camunda.optimize.test.optimize.AnalysisClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
+import org.camunda.optimize.test.optimize.EntitiesClient;
 import org.camunda.optimize.test.optimize.EventClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.test.optimize.ReportClient;
@@ -48,5 +50,7 @@ public abstract class AbstractIT {
   protected EventProcessClient eventProcessClient = new EventProcessClient(optimizeRequestExecutorSupplier);
   protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
   protected EventClient eventClient = new EventClient(embeddedOptimizeExtension);
+  protected AnalysisClient analysisClient = new AnalysisClient(optimizeRequestExecutorSupplier);
   protected UiConfigurationClient uiConfigurationClient = new UiConfigurationClient(optimizeRequestExecutorSupplier);
+  protected EntitiesClient entitiesClient = new EntitiesClient(optimizeRequestExecutorSupplier);
 }

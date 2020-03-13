@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.query;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.analysis.function.Gaussian;
@@ -81,14 +80,11 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeOutliersRequest(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null)
-      )
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
-      });
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null)
+    );
 
     // then
     final long expectedFlowNodeInstances = 936L;
@@ -146,14 +142,11 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeOutliersRequest(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null)
-      )
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
-      });
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null)
+    );
 
     // then
     assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getOutlierCount(), is(0L));
@@ -177,14 +170,11 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeOutliersRequest(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null)
-      )
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
-      });
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null)
+    );
 
     // then
     assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getOutlierCount(), is(1L));
@@ -213,14 +203,11 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeOutliersRequest(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null)
-      )
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
-      });
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null)
+    );
 
     // then
     final FindingsDto testActivity = outlierTest.get(FLOW_NODE_ID_TEST);
@@ -249,14 +236,11 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeOutliersRequest(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null)
-      )
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
-      });
+    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null)
+    );
 
     // then
     assertThat(outlierTest.size(), is(12));
@@ -279,14 +263,12 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeDurationChartRequest(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null),
-        FLOW_NODE_ID_TEST
-      )
-      .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
+    List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      FLOW_NODE_ID_TEST
+    );
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
@@ -316,16 +298,14 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeDurationChartRequest(
+    List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
-        FLOW_NODE_ID_TEST,
         Collections.singletonList(null),
+        FLOW_NODE_ID_TEST,
         lowerOutlierBound,
         higherOutlierBound
-      )
-      .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
+      );
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
@@ -351,14 +331,12 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtension.getRequestExecutor()
-      .buildFlowNodeDurationChartRequest(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null),
-        FLOW_NODE_ID_TEST
-      )
-      .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
+    List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      FLOW_NODE_ID_TEST
+    );
 
     // then
     assertThat(durationChart.get(0).getValue(), is(1L));
@@ -378,16 +356,14 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSignificantOutlierVariableTermsRequest(
-        processDefinition.getKey(),
-        Collections.singletonList("1"),
-        Collections.singletonList(null),
-        FLOW_NODE_ID_TEST,
-        null,
-        SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND
-      )
-      .executeAndReturnList(VariableTermDto.class, Response.Status.OK.getStatusCode());
+    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtosActivity(
+      SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
+      processDefinition.getKey(),
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      FLOW_NODE_ID_TEST,
+      null
+    );
 
     // then
     assertThat(variableTermDtosActivity.size(), is(1));
@@ -410,16 +386,14 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeExtension.getRequestExecutor()
-      .buildSignificantOutlierVariableTermsRequest(
-        processDefinition.getKey(),
-        Collections.singletonList("1"),
-        Collections.singletonList(null),
-        FLOW_NODE_ID_TEST,
-        null,
-        activityHigherOutlierBound
-      )
-      .executeAndReturnList(VariableTermDto.class, Response.Status.OK.getStatusCode());
+    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtosActivity(
+      activityHigherOutlierBound,
+      processDefinition.getKey(),
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      FLOW_NODE_ID_TEST,
+      null
+    );
 
     // then
     assertThat(variableTermDtosActivity.size(), is(0));
@@ -445,17 +419,17 @@ public class OutlierAnalysisIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildSignificantOutlierVariableTermsRequest(
-        processDefinition.getKey(),
-        Collections.singletonList("1"),
-        Collections.singletonList(null),
-        FLOW_NODE_ID_TEST,
-        null,
-        activityHigherOutlierBound
-      )
-      // then
-      .executeAndReturnList(VariableTermDto.class, Response.Status.NOT_FOUND.getStatusCode());
+    Response response = analysisClient.getVariableTermDtosActivityRawResponse(
+      activityHigherOutlierBound,
+      processDefinition.getKey(),
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      FLOW_NODE_ID_TEST,
+      null
+    );
+
+    //then
+    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
   }
 
   @Test

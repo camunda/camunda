@@ -16,8 +16,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,13 +34,13 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     final String collectionId1 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId1 = createNumberReportForCollection(collectionId1, definitionType);
     final String reportId2 = createNumberReportForCollection(collectionId1, definitionType);
-    final String alertId1 = createAlertForReport(reportId1);
-    final String alertId2 = createAlertForReport(reportId1);
-    final String alertId3 = createAlertForReport(reportId2);
+    final String alertId1 = alertClient.createAlertForReport(reportId1);
+    final String alertId2 = alertClient.createAlertForReport(reportId1);
+    final String alertId3 = alertClient.createAlertForReport(reportId2);
 
     final String collectionId2 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId3 = createNumberReportForCollection(collectionId2, definitionType);
-    createAlertForReport(reportId3);
+    alertClient.createAlertForReport(reportId3);
 
     // when
     List<String> allAlertIds = alertClient.getAlertsForCollectionAsDefaultUser(collectionId1).stream()
@@ -61,7 +59,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     final String collectionId2 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     final String reportId1 = createNumberReportForCollection(collectionId1, definitionType);
     createNumberReportForCollection(collectionId2, definitionType);
-    createAlertForReport(reportId1);
+    alertClient.createAlertForReport(reportId1);
 
     // when
     List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId2);
@@ -80,9 +78,9 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     final String reportId1 = createNumberReportForCollection(collectionId, definitionType);
     final String reportId2 = createNumberReportForCollection(collectionId, definitionType);
 
-    expectedAlertIds.add(createAlertForReport(reportId1));
-    expectedAlertIds.add(createAlertForReport(reportId1));
-    expectedAlertIds.add(createAlertForReport(reportId2));
+    expectedAlertIds.add(alertClient.createAlertForReport(reportId1));
+    expectedAlertIds.add(alertClient.createAlertForReport(reportId1));
+    expectedAlertIds.add(alertClient.createAlertForReport(reportId2));
 
     // when
     collectionClient.deleteCollection(collectionId);

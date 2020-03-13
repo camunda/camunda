@@ -6,20 +6,12 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,6 +23,7 @@ import java.util.List;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityType.DASHBOARD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
 
@@ -54,16 +47,26 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     engineIntegrationExtension.createTenant(authorizedTenant);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
-    final String collectionId = createNewCollection();
-    createScopeWithTenants(collectionId, "KEY_1", tenants, reportScenario.getReportType().toDefinitionType());
-    final String dashboardId = createPrivateDashboard();
-    final String reportId = createReportInCollection(reportScenario, null, "KEY_1", tenants).getId();
-    addSingleReportToDashboard(dashboardId, reportId);
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.addScopeEntryToCollection(
+      collectionId,
+      "KEY_1",
+      reportScenario.getReportType().toDefinitionType(),
+      tenants
+    );
+    final String dashboardId = dashboardClient.createDashboard(null);
+    final String reportId = createReportInCollection(reportScenario, null, "KEY_1", tenants);
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
 
     // when
-    final Response response = copyDashboardToCollection(dashboardId, collectionId);
+    final Response response = dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
+      dashboardId,
+      collectionId,
+      DEFAULT_USERNAME,
+      DEFAULT_USERNAME
+    );
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    final List<EntityDto> entities = getEntities();
+    final List<EntityDto> entities = entitiesClient.getAllEntities();
 
     // then
     assertThat(entities)
@@ -82,16 +85,26 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     engineIntegrationExtension.createTenant(authorizedTenant);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
-    final String collectionId = createNewCollection();
-    createScopeWithTenants(collectionId, "KEY_1", tenants, reportScenario.getReportType().toDefinitionType());
-    final String dashboardId = createPrivateDashboard();
-    final String reportInScope = createReportInCollection(reportScenario, null, "KEY_1", tenants).getId();
-    final String reportNotInScope = createReportInCollection(reportScenario, null, "FOO", tenants).getId();
-    addSingleReportToDashboard(dashboardId, reportInScope);
-    addSingleReportToDashboard(dashboardId, reportNotInScope);
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.addScopeEntryToCollection(
+      collectionId,
+      "KEY_1",
+      reportScenario.getReportType().toDefinitionType(),
+      tenants
+    );
+    final String dashboardId = dashboardClient.createDashboard(null);
+    final String reportInScope = createReportInCollection(reportScenario, null, "KEY_1", tenants);
+    final String reportNotInScope = createReportInCollection(reportScenario, null, "FOO", tenants);
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportInScope));
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportNotInScope));
 
     // when
-    final Response response = copyDashboardToCollection(dashboardId, collectionId);
+    final Response response = dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
+      dashboardId,
+      collectionId,
+      DEFAULT_USERNAME,
+      DEFAULT_USERNAME
+    );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
@@ -106,127 +119,62 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     engineIntegrationExtension.createTenant(authorizedTenant);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
-    final String collectionId = createNewCollection();
-    createScopeWithTenants(collectionId, "KEY_1", tenants, reportScenario.getReportType().toDefinitionType());
-    final String dashboardId = createPrivateDashboard();
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.addScopeEntryToCollection(
+      collectionId,
+      "KEY_1",
+      reportScenario.getReportType().toDefinitionType(),
+      tenants
+    );
+    final String dashboardId = dashboardClient.createDashboard(null);
     final String reportWithWrongTenant =
-      createReportInCollection(reportScenario, null, "KEY_1", singletonList(null)).getId();
-    addSingleReportToDashboard(dashboardId, reportWithWrongTenant);
+      createReportInCollection(reportScenario, null, "KEY_1", singletonList(null));
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportWithWrongTenant));
 
     // when
-    final Response response = copyDashboardToCollection(dashboardId, collectionId);
+    final Response response = dashboardClient.copyDashboardToCollectionAsUserAndGetRawResponse(
+      dashboardId,
+      collectionId,
+      DEFAULT_USERNAME,
+      DEFAULT_USERNAME
+    );
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
   }
 
-  private List<EntityDto> getEntities() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllEntitiesRequest()
-      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private void createScopeWithTenants(final String collectionId, final String definitionKey,
-                                      final List<String> tenants, final DefinitionType definitionType) {
-    final CollectionScopeEntryDto processScope = new CollectionScopeEntryDto(definitionType, definitionKey, tenants);
-    addScopeEntryToCollection(collectionId, processScope);
-  }
-
-  private void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntriesToCollectionRequest(collectionId, singletonList(entry))
-      .execute(IdDto.class, Response.Status.NO_CONTENT.getStatusCode());
-  }
-
-  private Response addSingleReportToDashboard(final String dashboardId, final String privateReportId) {
-    final ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId(privateReportId);
-
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(
-        dashboardId,
-        new DashboardDefinitionDto(Collections.singletonList(reportLocationDto))
-      )
-      .execute();
-  }
-
-  private IdDto createReportInCollection(final ReportScenario reportScenario,
+  private String createReportInCollection(final ReportScenario reportScenario,
                                          final String collectionId,
                                          final String definitionKey,
                                          final List<String> tenants) {
     switch (reportScenario.reportType) {
       case PROCESS:
         if (reportScenario.combined) {
-          final IdDto singleReportId = createReportInCollection(
-            new ReportScenario(ReportType.PROCESS, false),
+          String singleReportId =
+            reportClient.createSingleProcessReport(reportClient.createSingleProcessReportDefinitionDto(
             collectionId,
             definitionKey,
             tenants
-          );
-          CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-          combinedReportDefinitionDto.setCollectionId(collectionId);
-          final IdDto combinedReportId = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-            .execute(IdDto.class, Response.Status.OK.getStatusCode());
-          addSingleReportToCombinedReport(combinedReportId.getId(), singleReportId.getId());
-          return combinedReportId;
+          ));
+          return reportClient.createCombinedReport(collectionId, Lists.newArrayList(singleReportId));
         } else {
-          SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-          singleProcessReportDefinitionDto.setCollectionId(collectionId);
-          singleProcessReportDefinitionDto.getData().setProcessDefinitionKey(definitionKey);
-          singleProcessReportDefinitionDto.getData().setTenantIds(tenants);
-          return embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-            .execute(IdDto.class, Response.Status.OK.getStatusCode());
+          return
+            reportClient.createSingleProcessReport(reportClient.createSingleProcessReportDefinitionDto(
+              collectionId,
+              definitionKey,
+              tenants
+            ));
         }
       case DECISION:
-        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-        singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-        singleDecisionReportDefinitionDto.getData().setDecisionDefinitionKey(definitionKey);
-        singleDecisionReportDefinitionDto.getData().setTenantIds(tenants);
-        return embeddedOptimizeExtension
-          .getRequestExecutor()
-          .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-          .execute(IdDto.class, Response.Status.OK.getStatusCode());
+        return reportClient.createSingleDecisionReport(
+          reportClient.createSingleDecisionReportDefinitionDto(
+            collectionId,
+            definitionKey,
+            tenants
+          ));
       default:
         throw new OptimizeIntegrationTestException("Unsupported reportType: " + reportScenario.reportType);
     }
-  }
-
-  private Response addSingleReportToCombinedReport(final String combinedReportId, final String reportId) {
-    final CombinedReportDefinitionDto combinedReportData = new CombinedReportDefinitionDto();
-    combinedReportData.getData().getReports().add(new CombinedReportItemDto(reportId, "red"));
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
-      .execute();
-  }
-
-  private String createPrivateDashboard() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest(null)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private Response copyDashboardToCollection(final String dashboardId, final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCopyDashboardRequest(dashboardId, collectionId)
-      .execute();
-  }
-
-  private String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   @Data

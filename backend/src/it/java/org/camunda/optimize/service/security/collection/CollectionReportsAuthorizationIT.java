@@ -6,23 +6,15 @@
 package org.camunda.optimize.service.security.collection;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -36,8 +28,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.hamcrest.CoreMatchers.is;
@@ -72,17 +62,17 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
-    ), collectionId1);
+    ));
 
     // when
-    List<AuthorizedReportDefinitionDto> reports =
-      getReportsForCollectionRequestAsKermit(collectionId1).executeAndReturnList(
-        AuthorizedReportDefinitionDto.class,
-        Response.Status.OK.getStatusCode()
-      );
+    List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollectionAsUser(
+      collectionId1,
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(reports.size(), is(expectedReportIds.size()));
@@ -102,17 +92,17 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(typePair.get(0));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
-    ), collectionId1);
+    ));
 
     // when
-    List<AuthorizedReportDefinitionDto> allAlerts =
-      getReportsForCollectionRequestAsKermit(collectionId1).executeAndReturnList(
-        AuthorizedReportDefinitionDto.class,
-        Response.Status.OK.getStatusCode()
-      );
+    List<AuthorizedReportDefinitionDto> allAlerts = collectionClient.getReportsForCollectionAsUser(
+      collectionId1,
+      KERMIT_USER,
+      KERMIT_USER
+    );
 
     // then
     assertThat(allAlerts.size(), is(expectedReportIds.size()));
@@ -133,7 +123,10 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     // when
-    Response response = getReportsForCollectionRequestAsKermit(collectionId1).execute();
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetReportsForCollectionRequest(collectionId1)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
@@ -142,78 +135,23 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
   private String createReportForCollection(final String collectionId, final int resourceType) {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        SingleProcessReportDefinitionDto procReport = getProcessReportDefinitionDto(collectionId);
-        return createNewProcessReportAsUser(procReport);
+        SingleProcessReportDefinitionDto procReport = reportClient.createSingleProcessReportDefinitionDto(
+          collectionId,
+          DEFAULT_DEFINITION_KEY,
+          DEFAULT_TENANTS
+        );
+        return reportClient.createSingleProcessReport(procReport);
 
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        SingleDecisionReportDefinitionDto decReport = getDecisionReportDefinitionDto(collectionId);
-        return createNewDecisionReportAsUser(decReport);
+        SingleDecisionReportDefinitionDto decReport = reportClient.createSingleDecisionReportDefinitionDto(
+          collectionId,
+          DEFAULT_DEFINITION_KEY,
+          DEFAULT_TENANTS
+        );
+        return reportClient.createSingleDecisionReport(decReport);
 
       default:
         throw new OptimizeRuntimeException("Unknown resource type provided.");
     }
-  }
-
-  private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
-      .setProcessDefinitionVersion("someVersion")
-      .setTenantIds(DEFAULT_TENANTS)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setName("aProcessReport");
-    report.setCollectionId(collectionId);
-    return report;
-  }
-
-  private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDto(final String collectionId) {
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY)
-      .setDecisionDefinitionVersion("someVersion")
-      .setTenantIds(DEFAULT_TENANTS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
-    report.setData(reportData);
-    report.setName("aDecisionReport");
-    report.setCollectionId(collectionId);
-    return report;
-  }
-
-  private String createNewDecisionReportAsUser(final SingleDecisionReportDefinitionDto decReport) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildCreateSingleDecisionReportRequest(decReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createNewProcessReportAsUser(final SingleProcessReportDefinitionDto procReport) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildCreateSingleProcessReportRequest(procReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
-                                                final String collectionId) {
-    embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private OptimizeRequestExecutor getReportsForCollectionRequestAsKermit(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportsForCollectionRequest(collectionId)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER);
   }
 }
