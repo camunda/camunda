@@ -8,6 +8,7 @@ package org.camunda.operate.it;
 import org.assertj.core.api.Assertions;
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.EmbeddedZeebeConfigurer;
 import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
@@ -23,7 +24,6 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import io.zeebe.test.EmbeddedBrokerRule;
 
 @SpringBootTest(
     classes = { TestApplication.class},
@@ -40,6 +40,9 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   @Autowired
   private PartitionHolder partitionHolder;
+
+  @Autowired
+  private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -88,12 +91,13 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   }
 
   private void startZeebe() {
-    operateZeebeRule = new OperateZeebeRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
+    operateZeebeRule = new OperateZeebeRule();
     try {
       FieldSetter.setField(operateZeebeRule, OperateZeebeRule.class.getDeclaredField("operateProperties"), operateProperties);
       FieldSetter.setField(operateZeebeRule, OperateZeebeRule.class.getDeclaredField("zeebeEsClient"), zeebeEsClient);
+      FieldSetter.setField(operateZeebeRule, OperateZeebeRule.class.getDeclaredField("embeddedZeebeConfigurer"), embeddedZeebeConfigurer);
     } catch (NoSuchFieldException e) {
-      Assertions.fail("Failed to inject ZeebeClient into some of the beans");
+      Assertions.fail("Failed to inject fields in operateZeebeRule");
     }
     clientRule = new ZeebeClientRule(operateZeebeRule.getBrokerRule());
     operateZeebeRule.starting(null);

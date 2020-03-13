@@ -78,8 +78,8 @@ pipeline {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                 // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
-                  sh '''
-                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+1))" \
+                sh '''
+                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
                   mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -B -T$LIMITS_CPU --fail-at-end
                   '''
               }
@@ -89,6 +89,24 @@ pipeline {
             always {
               junit testResults: 'qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
               junit testResults: 'importer/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+            }
+          }
+        }
+        stage('Backend - Tests (old Zeebe)') {
+          steps {
+            container('maven') {
+              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+                // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
+                sh '''
+                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
+                  mvn verify -f qa/import-old-zeebe-tests -s $MAVEN_SETTINGS_XML -P -docker,-skipTests -B -T$OLD_ZEEBE_TESTS_THREADS --fail-at-end
+                  '''
+              }
+            }
+          }
+          post {
+            always {
+              junit testResults: 'qa/import-old-zeebe-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }
@@ -113,7 +131,10 @@ pipeline {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
               	sh ('mvn -B -s $MAVEN_SETTINGS_XML -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true')
               	sh ('sleep 30')
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML -f client/pom.xml -P client.e2etests-chromeheadless test')
+                sh '''
+                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
+                  mvn -B -s $MAVEN_SETTINGS_XML -f client/pom.xml -P client.e2etests-chromeheadless test
+                  '''
                 sh ('mvn -B -s $MAVEN_SETTINGS_XML spring-boot:stop -f webapp/pom.xml -Dspring-boot.stop.fork=true')
               }
             }               

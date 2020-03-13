@@ -43,7 +43,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
-@ActiveProfiles("test")
 public abstract class OperateIntegrationTest {
 
   public static final String DEFAULT_USER = "testuser";

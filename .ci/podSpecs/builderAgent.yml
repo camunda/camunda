@@ -22,15 +22,17 @@ spec:
       env:
         - name: LIMITS_CPU
           value: 4
+        - name: OLD_ZEEBE_TESTS_THREADS
+          value: 2
         - name: DOCKER_HOST
           value: tcp://localhost:2375
       resources:
         limits:
-          cpu: 6
-          memory: 12Gi
+          cpu: 8
+          memory: 27Gi
         requests:
-          cpu: 6
-          memory: 12Gi
+          cpu: 8
+          memory: 27Gi
     - name: node
       image: node:10.14.2-alpine
       command: ["cat"]

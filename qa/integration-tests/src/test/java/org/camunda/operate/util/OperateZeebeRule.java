@@ -9,10 +9,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.Properties;
 
-import org.assertj.core.api.Assertions;
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -32,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
@@ -53,33 +50,26 @@ public class OperateZeebeRule extends TestWatcher {
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
 
-  private final EmbeddedBrokerRule brokerRule;
+  @Autowired
+  private EmbeddedZeebeConfigurer embeddedZeebeConfigurer;
+
+  protected final EmbeddedBrokerRule brokerRule;
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
   private ClientRule clientRule;
 
   private String prefix;
   private boolean failed = false;
 
-  public OperateZeebeRule(final String configFileClasspathLocation) {
-    brokerRule = new EmbeddedBrokerRule(configFileClasspathLocation);
+  public OperateZeebeRule() {
+    brokerRule = new EmbeddedBrokerRule();
   }
 
   @Override
   public void starting(Description description) {
     this.prefix = TestUtil.createRandomString(10);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
-    injectPrefixToZeebeConfig(prefix);
+    embeddedZeebeConfigurer.injectPrefixToZeebeConfig(brokerRule, ELASTICSEARCH_EXPORTER_ID, prefix);
     start();
-  }
-
-  private void injectPrefixToZeebeConfig(String prefix) {
-    final ExporterCfg exporterCfg = brokerRule.getBrokerCfg().getExporters().get(ELASTICSEARCH_EXPORTER_ID);
-    final Map<String, String> indexArgs = (Map<String, String>) exporterCfg.getArgs().get("index");
-    if (indexArgs != null) {
-      indexArgs.put("prefix", prefix);
-    } else {
-      Assertions.fail("Unable to configure Elasticsearch exporter");
-    }
   }
 
   public void updateRefreshInterval(String value) {
