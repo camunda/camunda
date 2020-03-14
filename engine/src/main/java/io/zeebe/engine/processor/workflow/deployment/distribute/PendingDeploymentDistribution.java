@@ -31,10 +31,8 @@ public class PendingDeploymentDistribution extends UnpackedObject implements DbV
     distributionCountProp.setValue(distributionCount);
   }
 
-  public int decrementCount() {
-    final int distributionCount = distributionCountProp.getValue() - 1;
-    distributionCountProp.setValue(distributionCount);
-    return distributionCount;
+  public int decrementDistributionCount() {
+    return distributionCountProp.decrement();
   }
 
   public DirectBuffer getDeployment() {

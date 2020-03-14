@@ -56,7 +56,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     recordProp.getValue().setValue(value);
     if (parent != null) {
       parentKeyProp.setValue(parent.getKey());
-      parent.childCountProp.setValue(parent.childCountProp.getValue() + 1);
+      parent.childCountProp.increment();
     }
   }
 
@@ -94,8 +94,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void decrementChildCount() {
-    final int childCount = childCountProp.getValue() - 1;
-    childCountProp.setValue(childCount);
+    final int childCount = childCountProp.decrement();
 
     if (childCount < 0) {
       throw new IllegalStateException(
@@ -120,12 +119,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void spawnToken() {
-    activeTokensProp.setValue(activeTokensProp.getValue() + 1);
+    activeTokensProp.increment();
   }
 
   public void consumeToken() {
-    final int activeTokens = activeTokensProp.getValue() - 1;
-    activeTokensProp.setValue(activeTokens);
+    final int activeTokens = activeTokensProp.decrement();
 
     if (activeTokens < 0) {
       throw new IllegalStateException(
@@ -154,7 +152,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void incrementMultiInstanceLoopCounter() {
-    multiInstanceLoopCounterProp.setValue(multiInstanceLoopCounterProp.getValue() + 1);
+    multiInstanceLoopCounterProp.increment();
   }
 
   public long getCalledChildInstanceKey() {
