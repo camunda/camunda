@@ -7,29 +7,40 @@
  */
 package io.zeebe.engine.state.message;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
 import io.zeebe.db.DbValue;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.BooleanProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class MessageSubscription implements DbValue {
+public final class MessageSubscription extends UnpackedObject implements DbValue {
 
-  private final DirectBuffer bpmnProcessId = new UnsafeBuffer();
-  private final DirectBuffer messageName = new UnsafeBuffer();
-  private final DirectBuffer correlationKey = new UnsafeBuffer();
-  private final DirectBuffer messageVariables = new UnsafeBuffer();
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
+  private final StringProperty messageNameProp = new StringProperty("messageName");
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
+  private final StringProperty messageVariablesProp = new StringProperty("messageVariables", "");
 
-  private long workflowInstanceKey;
-  private long elementInstanceKey;
-  private long messageKey;
-  private long commandSentTime;
-  private boolean closeOnCorrelate;
+  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", 0);
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", 0);
+  private final LongProperty messageKeyProp = new LongProperty("messageKey", 0);
+  private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
+  private final BooleanProperty closeOnCorrelateProp =
+      new BooleanProperty("closeOnCorrelate", false);
 
-  public MessageSubscription() {}
+  public MessageSubscription() {
+    declareProperty(bpmnProcessIdProp)
+        .declareProperty(messageNameProp)
+        .declareProperty(correlationKeyProp)
+        .declareProperty(messageVariablesProp)
+        .declareProperty(workflowInstanceKeyProp)
+        .declareProperty(elementInstanceKeyProp)
+        .declareProperty(messageKeyProp)
+        .declareProperty(commandSentTimeProp)
+        .declareProperty(closeOnCorrelateProp);
+  }
 
   public MessageSubscription(
       final long workflowInstanceKey,
@@ -38,131 +49,81 @@ public final class MessageSubscription implements DbValue {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final boolean closeOnCorrelate) {
-    this.workflowInstanceKey = workflowInstanceKey;
-    this.elementInstanceKey = elementInstanceKey;
+    this();
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    elementInstanceKeyProp.setValue(elementInstanceKey);
 
-    this.bpmnProcessId.wrap(bpmnProcessId);
-    this.messageName.wrap(messageName);
-    this.correlationKey.wrap(correlationKey);
-    this.closeOnCorrelate = closeOnCorrelate;
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    messageNameProp.setValue(messageName);
+    correlationKeyProp.setValue(correlationKey);
+    closeOnCorrelateProp.setValue(closeOnCorrelate);
   }
 
   public DirectBuffer getBpmnProcessId() {
-    return bpmnProcessId;
+    return bpmnProcessIdProp.getValue();
   }
 
   public DirectBuffer getMessageName() {
-    return messageName;
+    return messageNameProp.getValue();
   }
 
   public DirectBuffer getCorrelationKey() {
-    return correlationKey;
+    return correlationKeyProp.getValue();
   }
 
   public DirectBuffer getMessageVariables() {
-    return messageVariables;
+    return messageVariablesProp.getValue();
   }
 
   public void setMessageVariables(final DirectBuffer variables) {
-    messageVariables.wrap(variables);
+    messageVariablesProp.setValue(variables);
   }
 
   public long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+    return workflowInstanceKeyProp.getValue();
   }
 
   public long getElementInstanceKey() {
-    return elementInstanceKey;
+    return elementInstanceKeyProp.getValue();
   }
 
   public void setElementInstanceKey(final long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
+    elementInstanceKeyProp.setValue(elementInstanceKey);
   }
 
   public long getMessageKey() {
-    return messageKey;
+    return messageKeyProp.getValue();
   }
 
   public void setMessageKey(final long messageKey) {
-    this.messageKey = messageKey;
+    messageKeyProp.setValue(messageKey);
   }
 
   public long getCommandSentTime() {
-    return commandSentTime;
+    return commandSentTimeProp.getValue();
   }
 
   public void setCommandSentTime(final long commandSentTime) {
-    this.commandSentTime = commandSentTime;
+    commandSentTimeProp.setValue(commandSentTime);
   }
 
   public boolean isCorrelating() {
-    return commandSentTime > 0;
+    return commandSentTimeProp.getValue() > 0;
   }
 
   public boolean shouldCloseOnCorrelate() {
-    return closeOnCorrelate;
+    return closeOnCorrelateProp.getValue();
   }
 
   public void setCloseOnCorrelate(final boolean closeOnCorrelate) {
-    this.closeOnCorrelate = closeOnCorrelate;
+    closeOnCorrelateProp.setValue(closeOnCorrelate);
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    workflowInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    messageKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    commandSentTime = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    closeOnCorrelate = buffer.getByte(offset) == 1;
-    offset += 1;
-
-    offset = readIntoBuffer(buffer, offset, messageName);
-    offset = readIntoBuffer(buffer, offset, correlationKey);
-    offset = readIntoBuffer(buffer, offset, messageVariables);
-    readIntoBuffer(buffer, offset, bpmnProcessId);
-  }
-
-  @Override
-  public int getLength() {
-    return 1
-        + Long.BYTES * 4
-        + Integer.BYTES * 4
-        + messageName.capacity()
-        + correlationKey.capacity()
-        + messageVariables.capacity()
-        + bpmnProcessId.capacity();
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    buffer.putLong(offset, workflowInstanceKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putLong(offset, elementInstanceKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putLong(offset, messageKey, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putLong(offset, commandSentTime, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putByte(offset, (byte) (closeOnCorrelate ? 1 : 0));
-    offset += 1;
-
-    offset = writeIntoBuffer(buffer, offset, messageName);
-    offset = writeIntoBuffer(buffer, offset, correlationKey);
-    offset = writeIntoBuffer(buffer, offset, messageVariables);
-    offset = writeIntoBuffer(buffer, offset, bpmnProcessId);
-
-    assert offset == getLength() : "End offset differs with getLength()";
+    final byte[] bytes = new byte[length];
+    final MutableDirectBuffer newBuffer = new UnsafeBuffer(bytes);
+    buffer.getBytes(0, bytes, 0, length);
+    super.wrap(newBuffer, 0, length);
   }
 }
