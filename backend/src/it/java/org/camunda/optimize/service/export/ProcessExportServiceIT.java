@@ -9,7 +9,6 @@ import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -58,10 +57,7 @@ public class ProcessExportServiceIT extends AbstractIT {
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(reportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -89,15 +85,7 @@ public class ProcessExportServiceIT extends AbstractIT {
     singleProcessReportDefinitionDto.setCreated(someDate);
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner("something");
-    return createNewReport(singleProcessReportDefinitionDto);
-  }
-
-  private String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   @SneakyThrows

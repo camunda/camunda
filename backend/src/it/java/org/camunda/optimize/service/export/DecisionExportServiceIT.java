@@ -5,10 +5,8 @@
  */
 package org.camunda.optimize.service.export;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -56,10 +54,7 @@ public class DecisionExportServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(reportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -89,15 +84,7 @@ public class DecisionExportServiceIT extends AbstractIT {
     singleDecisionReportDefinitionDto.setCreated(someDate);
     singleDecisionReportDefinitionDto.setLastModified(someDate);
     singleDecisionReportDefinitionDto.setOwner("something");
-    return createNewReport(singleDecisionReportDefinitionDto);
-  }
-
-  private String createNewReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+    return reportClient.createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
   private static Stream<Arguments> getArguments() {

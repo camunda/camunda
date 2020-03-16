@@ -8,14 +8,12 @@ package org.camunda.optimize.service.export;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -27,7 +25,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
@@ -48,15 +45,12 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
-    String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(combinedReportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -78,15 +72,12 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     engineDatabaseExtension.changeActivityDuration(processInstance2.getId(), 0);
     String singleReportId1 = createNewSingleDurationMapReport(processInstance1);
     String singleReportId2 = createNewSingleDurationMapReport(processInstance2);
-    String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(combinedReportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -107,15 +98,12 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
-    String combinedReportId = createNewCombinedReport(singleReportId2, singleReportId1);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId2, singleReportId1);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(combinedReportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -136,15 +124,12 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
     String singleReportId1 = createNewSingleNumberReport(processInstance1);
     String singleReportId2 = createNewSingleNumberReport(processInstance2);
-    String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(combinedReportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -171,15 +156,12 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance2.getId(), endDate);
     String singleReportId1 = createNewSingleDurationNumberReport(processInstance1);
     String singleReportId2 = createNewSingleDurationNumberReport(processInstance2);
-    String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(combinedReportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -196,16 +178,13 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   @Test
   public void combinedReportWithUnevaluatableReportProducesEmptyResult() throws Exception {
     //given
-    String singleReportId1 = createNewSingleReport(new SingleProcessReportDefinitionDto());
-    String combinedReportId = createNewCombinedReport(singleReportId1);
+    String singleReportId1 = reportClient.createEmptySingleProcessReportInCollection(null);
+    String combinedReportId = reportClient.createNewCombinedReport(singleReportId1);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(combinedReportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
@@ -222,37 +201,17 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   @Test
   public void combinedReportWithoutReportsProducesEmptyResult() throws IOException {
     //given
-    String combinedReportId = createNewCombinedReport();
+    String combinedReportId = reportClient.createEmptyCombinedReport(null);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCsvExportRequest(combinedReportId, "my_file.csv")
-      .execute();
+    Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     String actualContent = getResponseContentAsString(response);
     assertThat(actualContent.trim(), isEmptyString());
-  }
-
-  private void updateCombinedProcessReport(String id, CombinedReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-  }
-
-  private String createNewCombinedReport() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
@@ -279,7 +238,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setName("FooName");
     singleProcessReportDefinitionDto.setData(data);
-    return createNewSingleReport(singleProcessReportDefinitionDto);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
@@ -291,7 +250,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .build();
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
-    return createNewSingleReport(singleProcessReportDefinitionDto);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewSingleDurationNumberReport(ProcessInstanceEngineDto engineDto) {
@@ -303,27 +262,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .build();
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(processInstanceDurationGroupByNone);
-    return createNewSingleReport(singleProcessReportDefinitionDto);
-  }
-
-  private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createNewCombinedReport(CombinedReportDefinitionDto report) {
-    String reportId = createNewCombinedReport();
-    updateCombinedProcessReport(reportId, report);
-    return reportId;
-  }
-
-  private String createNewCombinedReport(String... singleReportIds) {
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReportData(singleReportIds));
-    return createNewCombinedReport(report);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWith5FlowNodes() {
