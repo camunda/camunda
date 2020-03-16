@@ -25,7 +25,7 @@ public class SyncLogStream implements SynchronousLogStream {
     return new SyncLogStreamBuilder();
   }
 
-  public static SyncLogStreamBuilder builder(LogStreamBuilder builder) {
+  public static SyncLogStreamBuilder builder(final LogStreamBuilder builder) {
     return new SyncLogStreamBuilder(builder);
   }
 

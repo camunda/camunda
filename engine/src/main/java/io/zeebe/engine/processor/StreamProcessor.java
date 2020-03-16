@@ -145,6 +145,7 @@ public class StreamProcessor extends Actor {
     }
   }
 
+  @Override
   public ActorFuture<Void> closeAsync() {
     if (isOpened.compareAndSet(true, false)) {
       closeFuture = new CompletableActorFuture<>();
