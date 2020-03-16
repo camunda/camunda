@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,16 @@ public class VariableUpdateInstanceIndex extends StrictIndexMappingCreator {
   @Override
   public String getIndexName() {
     return VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+  }
+
+  @Override
+  public String getIndexNameInitialSuffix() {
+    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+  }
+
+  @Override
+  public Boolean getCreateFromTemplate() {
+    return true;
   }
 
   @Override

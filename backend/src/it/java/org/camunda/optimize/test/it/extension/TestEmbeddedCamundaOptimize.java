@@ -18,7 +18,7 @@ import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
+import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.glassfish.jersey.client.ClientProperties;
@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -171,8 +170,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getApplicationContext().getBean(SyncedIdentityCacheService.class);
   }
 
-  public EventIndexRolloverService getEventIndexRolloverService() {
-    return getApplicationContext().getBean(EventIndexRolloverService.class);
+  public IndexRolloverService getEventIndexRolloverService() {
+    return getApplicationContext().getBean(IndexRolloverService.class);
   }
 
   public LocalizationService getLocalizationService() {
