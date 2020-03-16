@@ -14,7 +14,7 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 
 public class Incident extends UnpackedObject implements DbValue {
   private final ObjectProperty<IncidentRecord> recordProp =
-      new ObjectProperty<>("record", new IncidentRecord());
+      new ObjectProperty<>("incidentRecord", new IncidentRecord());
 
   public Incident() {
     declareProperty(recordProp);

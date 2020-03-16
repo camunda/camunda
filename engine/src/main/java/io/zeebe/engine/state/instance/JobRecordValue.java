@@ -15,7 +15,7 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 public class JobRecordValue extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<JobRecord> recordProp =
-      new ObjectProperty<>("record", new JobRecord());
+      new ObjectProperty<>("jobRecord", new JobRecord());
 
   public JobRecordValue() {
     declareProperty(recordProp);

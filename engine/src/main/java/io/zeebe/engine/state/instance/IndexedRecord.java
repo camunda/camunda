@@ -23,7 +23,7 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
   private final EnumProperty<WorkflowInstanceIntent> stateProp =
       new EnumProperty<>("state", WorkflowInstanceIntent.class);
   private final ObjectProperty<WorkflowInstanceRecord> valueProp =
-      new ObjectProperty<>("record", new WorkflowInstanceRecord());
+      new ObjectProperty<>("workflowInstanceRecord", new WorkflowInstanceRecord());
 
   IndexedRecord() {
     declareProperty(keyProp).declareProperty(stateProp).declareProperty(valueProp);

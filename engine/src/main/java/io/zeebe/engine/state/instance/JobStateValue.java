@@ -14,7 +14,7 @@ import io.zeebe.msgpack.property.EnumProperty;
 public class JobStateValue extends UnpackedObject implements DbValue {
 
   private final EnumProperty<JobState.State> stateProp =
-      new EnumProperty<>("state", JobState.State.class);
+      new EnumProperty<>("jobState", JobState.State.class);
 
   public JobStateValue() {
     declareProperty(stateProp);
