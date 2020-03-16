@@ -80,8 +80,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     startWorkflowInstances(3);
 
+    createOperations();
+
     progressWorkflowInstances();
-    
+
     return true;
 
   }
@@ -364,6 +366,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       }
       iterator.remove();
     }
+  }
+
+  protected void createOperations() {
+
   }
 
   protected JobWorker progressOrderProcessCheckPayment() {

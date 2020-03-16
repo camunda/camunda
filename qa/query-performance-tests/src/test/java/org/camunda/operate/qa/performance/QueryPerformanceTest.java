@@ -14,22 +14,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.camunda.operate.qa.performance.util.StatefulRestTemplate;
-import org.camunda.operate.qa.performance.util.URLUtil;
-import org.camunda.operate.webapp.security.WebSecurityConfig;
-import org.camunda.operate.util.CollectionUtil;
-import org.camunda.operate.util.ConversionUtils;
+import org.camunda.operate.util.rest.StatefulRestTemplate;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
@@ -59,6 +52,7 @@ public class QueryPerformanceTest {
   private TestContextManager testContextManager;
 
   @Autowired
+  private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
 
   @Value("${camunda.operate.qa.queries.operate.username}")
@@ -70,16 +64,17 @@ public class QueryPerformanceTest {
   @Value("${camunda.operate.qa.queries.timeout:3000L}")
   private long timeout;
 
-  @Autowired
-  private URLUtil urlUtil;
+  @Value("${camunda.operate.qa.queries.operate.host:localhost}")
+  private String operateHost;
+
+  @Value("${camunda.operate.qa.queries.operate.port:8080}")
+  private Integer operatePort;
 
   @Autowired
   private ParametersResolver parametersResolver;
 
   @Parameterized.Parameter
   public TestQuery testQuery;
-  
-  private static String csrfToken;
 
   @Before
   public void init() {
@@ -89,19 +84,8 @@ public class QueryPerformanceTest {
     } catch (Exception e) {
       throw new RuntimeException("Failed to initialize context manager", e);
     }
-    //log in only once
-    final CookieStore cookieStore = (CookieStore)restTemplate.getHttpContext().getAttribute(HttpClientContext.COOKIE_STORE);
-    if (cookieStore.getCookies().isEmpty()) {
-      login();
-    }
-  }
-
-  private void login() {
-    HttpEntity<Map<String,Object>> requestEntity = new HttpEntity<>(CollectionUtil.asMap("username",username,
-                                                                                         "password",password));
-    ResponseEntity<Object> response = restTemplate.postForEntity(urlUtil.getURL(String.format("/api/login?username=%s&password=%s",username,password)), requestEntity, Object.class);
-    saveCSRFTokenWhenAvailable(response);
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    restTemplate = statefulRestTemplateFactory.apply(operateHost, operatePort);
+    restTemplate.loginWhenNeeded(username, password);
   }
 
   @Parameterized.Parameters(name = "{0}")
@@ -133,13 +117,12 @@ public class QueryPerformanceTest {
     Instant start = Instant.now();
     try {
       RequestEntity<String> requestEntity =
-          RequestEntity.method(testQuery.getMethod(), urlUtil.getURL(testQuery.getUrl(), testQuery.getPathParams()))
-              .header(WebSecurityConfig.X_CSRF_TOKEN, ConversionUtils.toStringOrDefault(csrfToken,""))
+          RequestEntity.method(testQuery.getMethod(), restTemplate.getURL(testQuery.getUrl(), testQuery.getPathParams()))
+              .headers(restTemplate.getCsrfHeader())
               .contentType(MediaType.APPLICATION_JSON)
               .body(testQuery.getBody());
       start = Instant.now();
       ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
-      saveCSRFTokenWhenAvailable(response);
       assertThat(response.getStatusCode()).as(testQuery.getTitle() + " (status)").isEqualTo(HttpStatus.OK);
     } catch (HttpClientErrorException ex) {
       fail(String.format("Query %s failed with the error: %s", testQuery.getTitle(), ex.getResponseBodyAsString()));
@@ -151,12 +134,4 @@ public class QueryPerformanceTest {
     assertThat(timeElapsed).as(testQuery.getTitle() + " (duration)").isLessThan(timeout);
   }
   
-  private ResponseEntity saveCSRFTokenWhenAvailable(ResponseEntity response) {
-    List<String> csrfHeaders = response.getHeaders().get(WebSecurityConfig.X_CSRF_TOKEN);
-    if(!csrfHeaders.isEmpty()) {
-      csrfToken = csrfHeaders.get(0);
-    }
-    return response;
-  }
-
 }

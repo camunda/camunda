@@ -9,7 +9,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.property.ElasticsearchProperties;
-import org.camunda.operate.qa.performance.util.StatefulRestTemplate;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +25,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
-@ComponentScan
+@ComponentScan(basePackages = {"org.camunda.operate.util.rest", "org.camunda.operate.qa.performance"})
 @EnableConfigurationProperties
 public class TestConfig {
 
@@ -42,11 +41,6 @@ public class TestConfig {
     yaml.setResources(new ClassPathResource("application.yml"));
     propertySourcesPlaceholderConfigurer.setProperties(yaml.getObject());
     return propertySourcesPlaceholderConfigurer;
-  }
-
-  @Bean
-  public StatefulRestTemplate getRestTemplate() {
-    return new StatefulRestTemplate();
   }
 
   @Bean

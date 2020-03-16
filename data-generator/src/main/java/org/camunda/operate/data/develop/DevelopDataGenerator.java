@@ -5,27 +5,54 @@
  */
 package org.camunda.operate.data.develop;
 
-import io.zeebe.client.api.worker.JobWorker;
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import org.camunda.operate.data.usertest.UserTestDataGenerator;
+import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.util.rest.StatefulRestTemplate;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.worker.JobWorker;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component("dataGenerator")
 @Profile("dev-data")
 public class DevelopDataGenerator extends UserTestDataGenerator {
 
-  List<Long> workflowInstanceKeys = new ArrayList<>();
+  //TODO OPE-938 make this configurable
+  private static final String OPERATE_HOST = "localhost";
+  private static final int OPERATE_PORT = 8080;
+  private static final String OPERATE_USER = "demo";
+  private static final String OPERATE_PASSWORD = "demo";
+
+  private List<Long> workflowInstanceKeys = new ArrayList<>();
+
+  @Autowired
+  private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
+  private StatefulRestTemplate restTemplate;
+
+  @PostConstruct
+  private void initRestTemplate() {
+    restTemplate = statefulRestTemplateFactory.apply(OPERATE_HOST, OPERATE_PORT);
+  }
 
   @Override
   public void createSpecialDataV1() {
@@ -117,6 +144,40 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
 
+  }
+
+  @Override
+  protected void createOperations() {
+    restTemplate.loginWhenNeeded(OPERATE_USER, OPERATE_PASSWORD);
+    final int operationsCount = random.nextInt(20) + 90;
+    for (int i=0; i<operationsCount; i++) {
+      final int no = random.nextInt(operationsCount);
+      final Long workflowInstanceKey = workflowInstanceKeys.get(no);
+      final OperationType type = getType(i);
+      Map<String, Object> request = getCreateBatchOperationRequestBody(workflowInstanceKey, type);
+      RequestEntity<Map<String, Object>> requestEntity = RequestEntity.method(HttpMethod.POST, restTemplate.getURL("/api/workflow-instances/batch-operation"))
+          .headers(restTemplate.getCsrfHeader())
+          .contentType(MediaType.APPLICATION_JSON).body(request);
+      final ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
+      if (!response.getStatusCode().equals(HttpStatus.OK)) {
+        throw new OperateRuntimeException(String.format("Unable to create operations. REST response: %s", response));
+      }
+    }
+  }
+
+  private Map<String, Object> getCreateBatchOperationRequestBody(Long workflowInstanceKey, OperationType type) {
+    Map<String, Object> request = new HashMap<>();
+    Map<String, Object> listViewRequest = new HashMap<>();
+    listViewRequest.put("running", true);
+    listViewRequest.put("active", true);
+    listViewRequest.put("ids", new Long[]{workflowInstanceKey});
+    request.put("query", listViewRequest);
+    request.put("operationType" , type.toString());
+    return request;
+  }
+
+  private OperationType getType(int i) {
+    return i % 2 == 0 ? OperationType.CANCEL_WORKFLOW_INSTANCE : OperationType.RESOLVE_INCIDENT;
   }
 
   private void sendMessages(String messageName, String payload, int count, String correlationKey) {
