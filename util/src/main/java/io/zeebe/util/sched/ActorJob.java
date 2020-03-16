@@ -43,7 +43,7 @@ public final class ActorJob {
         resultFuture = null;
       }
 
-    } catch (final Throwable e) {
+    } catch (final Exception e) {
       task.onFailure(e);
     } finally {
       this.actorThread = null;
