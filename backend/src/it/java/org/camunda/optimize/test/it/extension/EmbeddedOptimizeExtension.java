@@ -27,7 +27,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
-import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
+import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
@@ -408,7 +408,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     return getOptimize().getSyncedIdentityCacheService();
   }
 
-  public EventIndexRolloverService getEventIndexRolloverService() {
+  public IndexRolloverService getEventIndexRolloverService() {
     return getOptimize().getEventIndexRolloverService();
   }
 

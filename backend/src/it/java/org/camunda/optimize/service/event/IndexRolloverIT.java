@@ -16,7 +16,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
-import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
+import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.util.configuration.EventIndexRolloverConfiguration;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -37,7 +37,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACT
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
-public class EventIndexRolloverIT extends AbstractIT {
+public class IndexRolloverIT extends AbstractIT {
 
   private static final int NUMBER_OF_EVENTS_IN_BATCH = 10;
   private static final String EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER = "-000002";
@@ -278,7 +278,7 @@ public class EventIndexRolloverIT extends AbstractIT {
       .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
   }
 
-  private EventIndexRolloverService getEventIndexRolloverService() {
+  private IndexRolloverService getEventIndexRolloverService() {
     return embeddedOptimizeExtension.getEventIndexRolloverService();
   }
 

@@ -33,7 +33,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UP
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class EventIndexRolloverService extends AbstractScheduledService {
+public class IndexRolloverService extends AbstractScheduledService {
 
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
@@ -54,12 +54,12 @@ public class EventIndexRolloverService extends AbstractScheduledService {
   }
 
   public List<String> triggerRollover() {
-    List<String> rolledOverIndexNames = new ArrayList<>();
+    List<String> rolledOverIndexAliases = new ArrayList<>();
     if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      final Set<String> indicesToConsiderRolling = getCamundaActivityEventsIndexAliases();
-      indicesToConsiderRolling.add(EXTERNAL_EVENTS_INDEX_NAME);
-      indicesToConsiderRolling.add(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
-      indicesToConsiderRolling
+      final Set<String> aliasesToConsiderRolling = getCamundaActivityEventsIndexAliases();
+      aliasesToConsiderRolling.add(EXTERNAL_EVENTS_INDEX_NAME);
+      aliasesToConsiderRolling.add(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+      aliasesToConsiderRolling
         .forEach(indexAlias -> {
           boolean isRolledOver = ElasticsearchHelper.triggerRollover(
             esClient,
@@ -67,11 +67,11 @@ public class EventIndexRolloverService extends AbstractScheduledService {
             configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB()
           );
           if (isRolledOver) {
-            rolledOverIndexNames.add(indexAlias);
+            rolledOverIndexAliases.add(indexAlias);
           }
         });
     }
-    return rolledOverIndexNames;
+    return rolledOverIndexAliases;
   }
 
   @SneakyThrows
