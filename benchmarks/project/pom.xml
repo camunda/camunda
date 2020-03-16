@@ -3,8 +3,6 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
-  <groupId>io.zeebe</groupId>
   <artifactId>zeebe-benchmark</artifactId>
 
   <parent>
@@ -25,15 +23,12 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
 
-    <!-- compiler configuration -->
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <!-- java version -->
+    <version.java>11</version.java>
 
     <!-- dependency versions -->
     <version.zeebe>0.22.1</version.zeebe>
     <version.config>1.4.0</version.config>
-    <version.slf4j>1.7.25</version.slf4j>
-    <version.log4j>2.11.1</version.log4j>
 
     <!-- maven plugin versions -->
     <plugin.version.exec>1.6.0</plugin.version.exec>
@@ -46,12 +41,11 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>28.2-jre</version>
     </dependency>
+
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
-      <version>1.27.2</version>
     </dependency>
 
     <dependency>
@@ -63,7 +57,6 @@
     <dependency>
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_httpserver</artifactId>
-      <version>0.8.1</version>
     </dependency>
 
     <dependency>
@@ -75,25 +68,21 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${version.slf4j}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
-      <version>${version.log4j}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j-impl</artifactId>
-      <version>${version.log4j}</version>
     </dependency>
 
     <dependency>
       <groupId>me.dinowernli</groupId>
       <artifactId>java-grpc-prometheus</artifactId>
-      <version>0.3.0</version>
       <exclusions>
         <exclusion>
           <groupId>io.grpc</groupId>
@@ -108,48 +97,16 @@
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>${plugin.version.license}</version>
-        <configuration>
-          <header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
-          <properties>
-            <owner>camunda services GmbH</owner>
-            <email>info@camunda.com</email>
-          </properties>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-          <mapping>
-            <java>SLASHSTAR_STYLE</java>
-          </mapping>
-        </configuration>
-        <executions>
-          <execution>
-            <id>add-license</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
         <groupId>com.coveo</groupId>
         <artifactId>fmt-maven-plugin</artifactId>
-        <version>${plugin.version.fmt}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>${plugin.version.exec}</version>
         <executions>
           <execution>
             <goals>
@@ -158,14 +115,13 @@
           </execution>
         </executions>
         <configuration>
-          <mainClass>io.zeebe.SleepWorker</mainClass>
+          <mainClass>io.zeebe.AllInOne</mainClass>
         </configuration>
       </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>${plugin.version.shade}</version>
         <executions>
           <execution>
             <id>all-in-one</id>
