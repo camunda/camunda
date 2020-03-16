@@ -23,33 +23,30 @@ export default class Publisher {
     );
   }
 
-  subscribe(obj) {
-    return Object.entries(obj).forEach(([topic, callback]) => {
-      this.subscriptions = this.subscriptions[topic]
-        ? {
-            ...this.subscriptions,
-            [topic]: [...this.subscriptions[topic], callback]
-          }
-        : {...this.subscriptions, [topic]: [callback]};
+  subscribe(subscriptions) {
+    return Object.entries(subscriptions).forEach(([topic, callback]) => {
+      if (Array.isArray(this.subscriptions[topic])) {
+        this.subscriptions[topic] = [...this.subscriptions[topic], callback];
+      } else {
+        this.subscriptions[topic] = [callback];
+      }
     });
   }
 
   unsubscribe(subscriptions) {
     Object.entries(subscriptions).forEach(([topic, callback]) => {
-      // if (!callback || !this.subscriptions[topic]) {
-      //   return;
-      // }
-      const callbackIndex = this.subscriptions[topic].indexOf(callback);
-      this.subscriptions[topic].splice(callbackIndex, callbackIndex + 1);
-
-      if (!this.subscriptions[topic].length) {
-        delete this.subscriptions[topic];
+      if (Array.isArray(this.subscriptions[topic])) {
+        this.subscriptions[topic] = this.subscriptions[topic].filter(
+          subcscription => {
+            return subcscription !== callback;
+          }
+        );
       }
     });
   }
 
   publish(topic, value, staticContent) {
-    this.subscriptions[topic] &&
+    if (Array.isArray(this.subscriptions[topic])) {
       this.subscriptions[topic].forEach(handle => {
         if (staticContent) {
           handle(value, staticContent);
@@ -57,6 +54,7 @@ export default class Publisher {
           handle(value);
         }
       });
+    }
   }
 
   async pubLoadingStates(topic, callback, staticContent) {
