@@ -31,9 +31,9 @@ public final class ZeebeRuntimeValidators {
             .hasValidPathExpression(ZeebeOutput::getSource)
             .hasValidPathExpression(ZeebeOutput::getTarget)
             .build(),
-        ZeebeJsonPathValidator.verifyThat(ZeebeSubscription.class)
-            .hasValidPathExpression(ZeebeSubscription::getCorrelationKey)
-            .build(),
+        ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
+            .hasValidExpression(ZeebeSubscription::getCorrelationKey)
+            .build(expressionLanguage),
         ZeebeJsonPathValidator.verifyThat(ZeebeLoopCharacteristics.class)
             .hasValidPathExpression(ZeebeLoopCharacteristics::getInputCollection)
             .hasValidPathExpression(ZeebeLoopCharacteristics::getOutputElement)

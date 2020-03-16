@@ -32,9 +32,9 @@ public class MessageBuilder extends AbstractBaseElementBuilder<MessageBuilder, M
   }
 
   public MessageBuilder zeebeCorrelationKey(final String zeebeCorrelationKey) {
-
     final ZeebeSubscription subscription = getCreateSingleExtensionElement(ZeebeSubscription.class);
-    subscription.setCorrelationKey(zeebeCorrelationKey);
+
+    subscription.setCorrelationKey(asZeebeExpression(zeebeCorrelationKey));
     return this;
   }
 }

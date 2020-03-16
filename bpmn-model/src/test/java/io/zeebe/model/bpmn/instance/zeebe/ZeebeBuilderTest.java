@@ -124,7 +124,7 @@ public class ZeebeBuilderTest {
     assertThat(message.getName()).isEqualTo("messageName");
 
     final ZeebeSubscription subscription = getExtensionElement(message, ZeebeSubscription.class);
-    assertThat(subscription.getCorrelationKey()).isEqualTo("correlationKey");
+    assertThat(subscription.getCorrelationKey()).isEqualTo("=correlationKey");
   }
 
   @Test
@@ -148,7 +148,7 @@ public class ZeebeBuilderTest {
     assertThat(message.getName()).isEqualTo("messageName");
 
     final ZeebeSubscription subscription = getExtensionElement(message, ZeebeSubscription.class);
-    assertThat(subscription.getCorrelationKey()).isEqualTo("correlationKey");
+    assertThat(subscription.getCorrelationKey()).isEqualTo("=correlationKey");
   }
 
   @SuppressWarnings("unchecked")

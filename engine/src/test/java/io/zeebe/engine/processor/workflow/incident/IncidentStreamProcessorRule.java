@@ -16,8 +16,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.WorkflowEventProcessors;
 import io.zeebe.engine.processor.workflow.job.JobEventProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
@@ -77,12 +79,20 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
         (typedRecordProcessors, processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
+
+          final ExpressionProcessor expressionProcessor =
+              new ExpressionProcessor(
+                  ExpressionLanguageFactory.createExpressionLanguage(),
+                  zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+
           final BpmnStepProcessor stepProcessor =
               WorkflowEventProcessors.addWorkflowProcessors(
                   zeebeState,
+                  expressionProcessor,
                   typedRecordProcessors,
                   mockSubscriptionCommandSender,
-                  new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1),
+                  new CatchEventBehavior(
+                      zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
                   mockTimerEventScheduler);
 
           final var jobErrorThrownProcessor =

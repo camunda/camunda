@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.CopiedRecords;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.workflow.job.JobEventProcessors;
@@ -101,11 +102,19 @@ public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
           final var zeebeState = processingContext.getZeebeState();
           actor = processingContext.getActor();
           workflowState = zeebeState.getWorkflowState();
+
+          final ExpressionProcessor expressionProcessor =
+              new ExpressionProcessor(
+                  ExpressionLanguageFactory.createExpressionLanguage(),
+                  zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+
           WorkflowEventProcessors.addWorkflowProcessors(
               zeebeState,
+              expressionProcessor,
               typedRecordProcessors,
               mockSubscriptionCommandSender,
-              new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1),
+              new CatchEventBehavior(
+                  zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1),
               new DueDateTimerChecker(workflowState));
 
           JobEventProcessors.addJobProcessors(

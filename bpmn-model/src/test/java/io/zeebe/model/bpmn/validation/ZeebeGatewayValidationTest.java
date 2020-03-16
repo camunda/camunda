@@ -44,7 +44,7 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
             .startEvent()
             .exclusiveGateway("gateway")
             .sequenceFlowId("flow")
-            .condition("name", "$.foo")
+            .condition("name", "foo")
             .defaultFlow()
             .endEvent()
             .done(),

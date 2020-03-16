@@ -7,14 +7,13 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
+import io.zeebe.el.Expression;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.ExtensionElements;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.util.buffer.BufferUtil;
 
 public final class MessageTransformer implements ModelElementTransformer<Message> {
@@ -35,11 +34,10 @@ public final class MessageTransformer implements ModelElementTransformer<Message
     if (extensionElements != null) {
       final ZeebeSubscription subscription =
           extensionElements.getElementsQuery().filterByType(ZeebeSubscription.class).singleResult();
+      final Expression correlationKeyExpression =
+          context.getExpressionLanguage().parseExpression(subscription.getCorrelationKey());
 
-      final JsonPathQueryCompiler queryCompiler = context.getJsonPathQueryCompiler();
-      final JsonPathQuery query = queryCompiler.compile(subscription.getCorrelationKey());
-
-      executableElement.setCorrelationKey(query);
+      executableElement.setCorrelationKeyExpression(correlationKeyExpression);
     }
 
     if (element.getName() != null) {
