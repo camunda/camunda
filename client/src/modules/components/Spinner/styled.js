@@ -32,5 +32,5 @@ export const Spinner = themed(styled.div`
     })};
   border-right-color: transparent;
 
-  animation: ${SpinnerKeyframe} 0.65s infinite linear;
+  animation: ${SpinnerKeyframe} 0.7s infinite linear;
 `);

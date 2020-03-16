@@ -10,8 +10,8 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Skeleton = themed(styled.div`
   background-color: ${themeStyle({
-    dark: 'rgba(0, 0, 0, 0.5)',
-    light: 'rgba(255, 255, 255, 0.7)'
+    dark: 'rgba(0, 0, 0, 0.65)',
+    light: 'rgba(255, 255, 255, 0.75)'
   })};
 
   z-index: 2;
@@ -25,10 +25,9 @@ export const Skeleton = themed(styled.div`
 
 export const SkeletonSpinner = themed(styled(Spinner)`
   position: absolute;
-  top: 30%;
-  height: 25px;
-  width: 25px;
-  margin: 0 5px;
-  border: 3px solid ${themeStyle({dark: '#ffffff', light: Colors.badge02})};
+  top: 40.7%;
+  height: 30px;
+  width: 30px;
+  border: 4px solid ${themeStyle({dark: '#ffffff', light: Colors.uiLight06})};
   border-right-color: transparent;
 `);

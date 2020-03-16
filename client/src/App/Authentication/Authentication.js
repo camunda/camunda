@@ -13,7 +13,10 @@ import {get, setResponseInterceptor} from 'modules/request';
 class Authentication extends React.Component {
   static propTypes = {
     location: PropTypes.shape({
-      pathname: PropTypes.string.isRequired
+      pathname: PropTypes.string.isRequired,
+      state: PropTypes.shape({
+        isLoggedIn: PropTypes.bool
+      })
     }).isRequired,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
@@ -80,7 +83,10 @@ class Authentication extends React.Component {
   };
 
   render() {
-    if (this.state.forceRedirect === null) {
+    const {state} = this.props.location;
+    if (state && state.isLoggedIn) {
+      return this.props.children;
+    } else if (this.state.forceRedirect === null) {
       // show empty page until we know if we need to redirect to login screen
       return null;
     } else if (this.state.forceRedirect) {

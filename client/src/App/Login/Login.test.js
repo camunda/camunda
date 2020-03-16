@@ -128,10 +128,26 @@ describe('Login', () => {
       expect(api.login).toBeCalledWith({username, password});
       const RedirectNode = node.find(Redirect);
       expect(RedirectNode).toHaveLength(1);
-      expect(RedirectNode.prop('to')).toBe('/');
+      expect(RedirectNode.prop('to')).toEqual({
+        state: {isLoggedIn: true},
+        pathname: '/'
+      });
       expect(node).toMatchSnapshot();
     });
+    it('should render spinner correctly ', async () => {
+      // when
+      node.instance().handleLogin({preventDefault: () => {}});
 
+      // then
+      expect(node.find('[data-test="spinner"]').exists()).toBe(true);
+
+      // when
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(node.find('[data-test="spinner"]').exists()).toBe(false);
+    });
     it('should redirect to referrer page on successful login', async () => {
       // given
       const referrer = '/some/page';
@@ -146,7 +162,11 @@ describe('Login', () => {
       expect(api.login).toBeCalledWith({username, password});
       const RedirectNode = node.find(Redirect);
       expect(RedirectNode).toHaveLength(1);
-      expect(RedirectNode.prop('to')).toBe(referrer);
+      expect(RedirectNode.prop('to')).toEqual({
+        state: {isLoggedIn: true},
+        pathname: '/some/page'
+      });
+
       expect(node).toMatchSnapshot();
     });
   });

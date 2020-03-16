@@ -16,6 +16,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import Disclaimer from './Disclaimer';
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 import * as Styled from './styled';
+import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 
 class Login extends React.Component {
   static propTypes = {
@@ -27,7 +28,8 @@ class Login extends React.Component {
     username: '',
     password: '',
     forceRedirect: false,
-    error: null
+    error: null,
+    isLoading: false
   };
 
   componentDidMount() {
@@ -38,6 +40,7 @@ class Login extends React.Component {
     e.preventDefault();
     const {username, password} = this.state;
 
+    this.setState({isLoading: true});
     if (username.length === 0 || password.length === 0) {
       return this.setState({error: REQUIRED_FIELD_ERROR});
     }
@@ -56,51 +59,61 @@ class Login extends React.Component {
   };
 
   render() {
-    const {username, password, forceRedirect, error} = this.state;
+    const {username, password, forceRedirect, error, isLoading} = this.state;
 
     // case of successful login
     if (forceRedirect) {
       const locationState = this.props.location.state || {referrer: '/'};
-      return <Redirect to={locationState.referrer} />;
+      return (
+        <Redirect
+          to={{
+            pathname: locationState.referrer,
+            state: {isLoggedIn: true}
+          }}
+        />
+      );
     }
 
     // default render
     return (
-      <Styled.Login onSubmit={this.handleLogin}>
-        <Styled.LoginHeader>
-          <Styled.Logo />
-          <Styled.LoginTitle>Operate</Styled.LoginTitle>
-        </Styled.LoginHeader>
-        <Styled.LoginForm>
-          <Styled.FormError>{error}</Styled.FormError>
-          <Styled.UsernameInput
-            value={username}
-            name="username"
-            type="text"
-            onChange={this.handleInputChange}
-            placeholder="Username"
-            aria-label="User Name"
-          />
-          <Styled.PasswordInput
-            value={password}
-            name="password"
-            type="password"
-            onChange={this.handleInputChange}
-            placeholder="Password"
-            aria-label="Password"
-          />
-          <Button
-            data-test="login-button"
-            type="submit"
-            size="large"
-            title="Log in"
-          >
-            Log in
-          </Button>
-        </Styled.LoginForm>
-        <Disclaimer {...window.clientConfig} />
-        <Styled.Copyright />
-      </Styled.Login>
+      <React.Fragment>
+        {isLoading && <SpinnerSkeleton data-test="spinner" />}
+        <Styled.Login onSubmit={this.handleLogin}>
+          <Styled.LoginHeader>
+            <Styled.Logo />
+            <Styled.LoginTitle>Operate</Styled.LoginTitle>
+          </Styled.LoginHeader>
+          <Styled.LoginForm>
+            <Styled.FormError>{error}</Styled.FormError>
+            <Styled.UsernameInput
+              value={username}
+              name="username"
+              type="text"
+              onChange={this.handleInputChange}
+              placeholder="Username"
+              aria-label="User Name"
+            />
+            <Styled.PasswordInput
+              value={password}
+              name="password"
+              type="password"
+              onChange={this.handleInputChange}
+              placeholder="Password"
+              aria-label="Password"
+            />
+            <Button
+              data-test="login-button"
+              type="submit"
+              size="large"
+              title="Log in"
+            >
+              Log in
+            </Button>
+          </Styled.LoginForm>
+          <Disclaimer {...window.clientConfig} />
+          <Styled.Copyright />
+        </Styled.Login>
+      </React.Fragment>
     );
   }
 }
