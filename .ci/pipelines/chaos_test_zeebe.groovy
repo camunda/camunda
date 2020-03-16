@@ -21,8 +21,8 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                dir('zeebe-benchmark') {
-                    git url: 'git@github.com:zeebe-io/zeebe-benchmark',
+                dir('zeebe-chaos') {
+                    git url: 'git@github.com:zeebe-io/zeebe-chaos',
                             branch: "master",
                             credentialsId: 'camunda-jenkins-github-ssh',
                             poll: false
@@ -50,12 +50,15 @@ pipeline {
                     // copy dummy kubeconfig so we can change default namespace later, without the config
                     // file `kubectl` cannot change the context since it's not defined
                     sh 'mkdir -p ~/.kube && cp zeebe/.ci/scripts/chaos-tests/kubeconfig ~/.kube/config'
-                    sh "cp -a zeebe-benchmark/k8s/. zeebe/.ci/scripts/chaos-tests/kustomize/"
-
-                    dir('zeebe/.ci/scripts/chaos-tests/') {
-                        sh "./setup.sh --action=create --namespace=${CHAOS_TEST_NAMESPACE}"
-                        sh "kubectl config set-context --current --namespace=${CHAOS_TEST_NAMESPACE}"
-                        sh 'kubectl apply --kustomize kustomize'
+                    dir('zeebe/benchmarks/setup') {
+                      sh "./newBenchmark.sh ${CHAOS_TEST_NAMESPACE}"
+                      dir("${CHAOS_TEST_NAMESPACE}") {
+                        sh "cp -rv ../../../.ci/scripts/chaos-tests/kustomize ."
+                        sh "helm template --release-name ${CHAOS_TEST_NAMESPACE} zeebe/zeebe-cluster -f zeebe-values.yaml --output-dir ."
+                        sh "cp -v ${CHAOS_TEST_NAMESPACE}/zeebe-cluster/templates/* kustomize/"
+                        sh "cp -v worker.yaml kustomize/"
+                        sh "kubectl apply -k kustomize"
+                      }
                     }
                 }
             }
@@ -64,10 +67,11 @@ pipeline {
         stage('Run chaos tests') {
             steps {
                 container('python') {
-                    dir('zeebe-benchmark/chaos') {
+                    dir('zeebe-chaos/chaos-experiments/kubernetes') {
                         script {
                             findFiles(glob: '**/*.json').each {
                                 sh 'PATH="$PATH:$(pwd)/scripts/" chaos run ' + it
+
                             }
                         }
                     }
@@ -79,8 +83,12 @@ pipeline {
     post {
         always {
             container('python') {
-                sh "zeebe/.ci/scripts/chaos-tests/setup.sh --action=delete --namespace=${CHAOS_TEST_NAMESPACE}"
+              dir("zeebe/benchmarks/setup/") {
+               sh "./deleteBenchmark.sh ${CHAOS_TEST_NAMESPACE}"
             }
+            archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/chaostoolkit.log'
+            archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/journal.json'
+          }
         }
 
         failure {
@@ -90,6 +98,7 @@ pipeline {
 }
 
 void buildNotification(String buildStatus, String to) {
+
     buildStatus = buildStatus ?: 'SUCCESS'
 
     String subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
@@ -101,6 +110,7 @@ void buildNotification(String buildStatus, String to) {
 static String pythonAgent() {
     def nodePool = 'slaves'
     def project = 'zeebe'
+
     """
 metadata:
   labels:

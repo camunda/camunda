@@ -3,7 +3,7 @@ all: zeebe starter worker
 
 .PHONY: zeebe
 zeebe:
-	-helm install --name default zeebe/zeebe-cluster -f zeebe-values.yaml
+	-helm install default zeebe/zeebe-cluster -f zeebe-values.yaml --skip-crds
 	-kubectl apply -f curator-cronjob.yaml
 	-kubectl apply -f curator-configmap.yaml
 
@@ -21,7 +21,7 @@ clean: clean-starter clean-worker clean-zeebe
 
 .PHONY: clean-zeebe
 clean-zeebe:
-	-helm delete --purge default
+	-helm uninstall default
 	-kubectl delete -f curator-cronjob.yaml
 	-kubectl delete -f curator-configmap.yaml
 	-kubectl delete pvc -l app=default-zeebe

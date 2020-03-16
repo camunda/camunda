@@ -17,6 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.exporter.api.ExporterException;
 import io.zeebe.exporter.api.context.Context;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
@@ -313,6 +314,21 @@ public class ElasticsearchExporterTest {
     verify(esClient, times(1)).flush();
   }
 
+  @Test
+  public void shouldFailOnWrongPrefix() {
+    // given
+    config.index.prefix = "prefix_withunderscore";
+
+    createExporterAndTestHarness();
+
+    // then
+    assertThatThrownBy(() -> testHarness.configure("els", config))
+        .isInstanceOf(ExporterException.class)
+        .withFailMessage(
+            "Elasticsearch prefix must not contain underscore. Current value: "
+                + config.index.prefix);
+  }
+
   private ElasticsearchExporter createExporter() {
     return createExporter(esClient);
   }
@@ -339,6 +355,12 @@ public class ElasticsearchExporterTest {
   private ElasticsearchExporter createAndOpenExporter() {
     final ElasticsearchExporter exporter = createExporter();
     openExporter(exporter);
+    return exporter;
+  }
+
+  private ElasticsearchExporter createExporterAndTestHarness() {
+    final ElasticsearchExporter exporter = createExporter();
+    testHarness = new ExporterTestHarness(exporter);
     return exporter;
   }
 
