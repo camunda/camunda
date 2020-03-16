@@ -79,7 +79,10 @@ describe('Publisher', () => {
       publisher.unsubscribe(subscriptions);
 
       // then
-      expect(publisher.subscriptions).toEqual({});
+      expect(publisher.subscriptions).toEqual({
+        [topicFoo]: [],
+        [topicBar]: []
+      });
     });
 
     it('should allow to UN-subscribe to a topic others still listen to', () => {
