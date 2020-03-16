@@ -10,7 +10,6 @@ package io.zeebe.engine.state;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 
 public final class LastProcessedPositionState {
@@ -19,25 +18,24 @@ public final class LastProcessedPositionState {
   private static final long NO_EVENTS_PROCESSED = -1L;
 
   private final DbString positionKey;
-  private final DbLong position;
-  private final ColumnFamily<DbString, DbLong> positionColumnFamily;
+  private final LastProcessedPosition position = new LastProcessedPosition();
+  private final ColumnFamily<DbString, LastProcessedPosition> positionColumnFamily;
 
   public LastProcessedPositionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     positionKey = new DbString();
     positionKey.wrapString(LAST_PROCESSED_EVENT_KEY);
-    position = new DbLong();
     positionColumnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.DEFAULT, dbContext, positionKey, position);
   }
 
   public long getPosition() {
-    final DbLong position = positionColumnFamily.get(positionKey);
-    return position != null ? position.getValue() : NO_EVENTS_PROCESSED;
+    final LastProcessedPosition position = positionColumnFamily.get(positionKey);
+    return position != null ? position.get() : NO_EVENTS_PROCESSED;
   }
 
   public void setPosition(final long position) {
-    this.position.wrapLong(position);
+    this.position.set(position);
     positionColumnFamily.put(positionKey, this.position);
   }
 }

@@ -10,7 +10,6 @@ package io.zeebe.broker.exporter.stream;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import java.util.function.BiConsumer;
@@ -21,12 +20,11 @@ public final class ExportersState {
   public static final long VALUE_NOT_FOUND = -1;
 
   private final DbString exporterId;
-  private final DbLong position;
-  private final ColumnFamily<DbString, DbLong> exporterPositionColumnFamily;
+  private final ExporterPosition position = new ExporterPosition();
+  private final ColumnFamily<DbString, ExporterPosition> exporterPositionColumnFamily;
 
   public ExportersState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     exporterId = new DbString();
-    position = new DbLong();
     exporterPositionColumnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.EXPORTER, dbContext, exporterId, position);
   }
@@ -64,18 +62,18 @@ public final class ExportersState {
   }
 
   private long getPosition() {
-    final DbLong zbLong = exporterPositionColumnFamily.get(exporterId);
-    return zbLong == null ? VALUE_NOT_FOUND : zbLong.getValue();
+    final ExporterPosition pos = exporterPositionColumnFamily.get(exporterId);
+    return pos == null ? VALUE_NOT_FOUND : pos.get();
   }
 
   private void setPosition(final long position) {
-    this.position.wrapLong(position);
+    this.position.set(position);
     exporterPositionColumnFamily.put(this.exporterId, this.position);
   }
 
   public void visitPositions(final BiConsumer<String, Long> consumer) {
     exporterPositionColumnFamily.forEach(
-        (exporterId, position) -> consumer.accept(exporterId.toString(), position.getValue()));
+        (exporterId, position) -> consumer.accept(exporterId.toString(), position.get()));
   }
 
   public long getLowestPosition() {
