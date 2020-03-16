@@ -29,9 +29,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.LongHashSet;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
 public final class WorkflowPersistenceCache {
@@ -58,7 +59,6 @@ public final class WorkflowPersistenceCache {
 
   private final ColumnFamily<DbString, Digest> digestByIdColumnFamily;
   private final Digest digest = new Digest();
-  private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
   public WorkflowPersistenceCache(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
@@ -135,7 +135,10 @@ public final class WorkflowPersistenceCache {
   private DeployedWorkflow updateInMemoryState(final PersistedWorkflow persistedWorkflow) {
 
     // we have to copy to store this in cache
+    final byte[] bytes = new byte[persistedWorkflow.getLength()];
+    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
     persistedWorkflow.write(buffer, 0);
+
     final PersistedWorkflow copiedWorkflow = new PersistedWorkflow();
     copiedWorkflow.wrap(buffer, 0, persistedWorkflow.getLength());
 

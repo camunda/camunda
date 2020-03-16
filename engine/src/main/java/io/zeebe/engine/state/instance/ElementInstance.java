@@ -15,8 +15,6 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.ObjectProperty;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
 
@@ -173,14 +171,6 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public boolean isInterrupted() {
     return getInterruptingEventKey() > 0;
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    final byte[] bytes = new byte[length];
-    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
-    buffer.getBytes(offset, bytes, 0, length);
-    super.wrap(mutableBuffer, 0, length);
   }
 
   public long getParentKey() {

@@ -12,8 +12,6 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class Message extends UnpackedObject implements DbValue {
 
@@ -82,13 +80,5 @@ public final class Message extends UnpackedObject implements DbValue {
 
   public long getKey() {
     return keyProp.getValue();
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    final byte[] bytes = new byte[length];
-    final MutableDirectBuffer newBuffer = new UnsafeBuffer(bytes);
-    buffer.getBytes(0, bytes, 0, length);
-    super.wrap(newBuffer, 0, length);
   }
 }

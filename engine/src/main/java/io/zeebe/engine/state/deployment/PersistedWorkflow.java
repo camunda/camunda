@@ -16,8 +16,6 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class PersistedWorkflow extends UnpackedObject implements DbValue {
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
@@ -62,13 +60,5 @@ public final class PersistedWorkflow extends UnpackedObject implements DbValue {
 
   public DirectBuffer getResource() {
     return resourceProp.getValue();
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    final byte[] bytes = new byte[length];
-    final MutableDirectBuffer newBuffer = new UnsafeBuffer(bytes);
-    buffer.getBytes(0, bytes, 0, length);
-    super.wrap(newBuffer, 0, length);
   }
 }

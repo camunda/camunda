@@ -15,8 +15,6 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class WorkflowInstanceSubscription extends UnpackedObject implements DbValue {
 
@@ -50,24 +48,17 @@ public final class WorkflowInstanceSubscription extends UnpackedObject implement
   public WorkflowInstanceSubscription(
       final long workflowInstanceKey,
       final long elementInstanceKey,
-      final DirectBuffer bpmnProcessId) {
-    this();
-    workflowInstanceKeyProp.setValue(workflowInstanceKey);
-    elementInstanceKeyProp.setValue(elementInstanceKey);
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-  }
-
-  public WorkflowInstanceSubscription(
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
       final DirectBuffer targetElementId,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final long commandSentTime,
       final boolean closeOnCorrelate) {
-    this(workflowInstanceKey, elementInstanceKey, bpmnProcessId);
+    this();
 
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    elementInstanceKeyProp.setValue(elementInstanceKey);
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     targetElementIdProp.setValue(targetElementId);
     commandSentTimeProp.setValue(commandSentTime);
     messageNameProp.setValue(messageName);
@@ -161,14 +152,6 @@ public final class WorkflowInstanceSubscription extends UnpackedObject implement
 
   public void setClosing() {
     stateProp.setValue(State.STATE_CLOSING);
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    final byte[] bytes = new byte[length];
-    final MutableDirectBuffer newBuffer = new UnsafeBuffer(bytes);
-    buffer.getBytes(0, bytes, 0, length);
-    super.wrap(newBuffer, 0, length);
   }
 
   private enum State {

@@ -21,7 +21,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ElementInstanceState {
 
@@ -47,8 +47,6 @@ public final class ElementInstanceState {
   private final AwaitWorkflowInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitWorkflowInstanceResultMetadata>
       awaitWorkflowInstanceResultMetadataColumnFamily;
-
-  private final ExpandableArrayBuffer copyBuffer = new ExpandableArrayBuffer();
 
   private final VariablesState variablesState;
 
@@ -270,9 +268,12 @@ public final class ElementInstanceState {
           // for now we simply copy them into buffer and wrap the buffer
           // which does another copy
           // this could be improve if UnpackedObject has a clone method
-          indexedRecord.write(copyBuffer, 0);
+          final byte[] bytes = new byte[indexedRecord.getLength()];
+          final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
+
+          indexedRecord.write(buffer, 0);
           final IndexedRecord copiedRecord = new IndexedRecord();
-          copiedRecord.wrap(copyBuffer, 0, indexedRecord.getLength());
+          copiedRecord.wrap(buffer, 0, indexedRecord.getLength());
 
           records.add(copiedRecord);
         });
@@ -310,10 +311,12 @@ public final class ElementInstanceState {
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
     if (elementInstance != null) {
-      elementInstance.write(copyBuffer, 0);
+      final byte[] bytes = new byte[elementInstance.getLength()];
+      final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
 
+      elementInstance.write(buffer, 0);
       final ElementInstance copiedElementInstance = new ElementInstance();
-      copiedElementInstance.wrap(copyBuffer, 0, elementInstance.getLength());
+      copiedElementInstance.wrap(buffer, 0, elementInstance.getLength());
       return copiedElementInstance;
     }
     return null;
