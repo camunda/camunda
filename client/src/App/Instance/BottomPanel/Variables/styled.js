@@ -230,8 +230,7 @@ export const DisplayText = styled.div`
   line-height: 18px;
   word-break: break-word;
 
-  padding: 4px 1px 0 0;
-  margin: 3px -14px 5px 0;
+  margin: 11px 94px 11px 0;
   max-height: 76px;
 
   overflow-y: auto;
