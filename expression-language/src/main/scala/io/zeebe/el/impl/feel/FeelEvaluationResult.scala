@@ -11,7 +11,7 @@ import java.lang
 
 import io.zeebe.el.{EvaluationResult, Expression, ResultType}
 import org.agrona.DirectBuffer
-import org.camunda.feel.interpreter.{Val, ValBoolean, ValContext, ValList, ValNull, ValNumber, ValString}
+import org.camunda.feel.syntaxtree.{Val, ValBoolean, ValContext, ValList, ValNull, ValNumber, ValString}
 
 class FeelEvaluationResult(
                             expression: Expression,

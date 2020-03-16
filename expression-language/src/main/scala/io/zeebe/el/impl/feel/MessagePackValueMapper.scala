@@ -11,8 +11,8 @@ import io.zeebe.el.impl.Loggers.LOGGER
 import io.zeebe.msgpack.spec.{MsgPackReader, MsgPackToken, MsgPackType}
 import io.zeebe.util.buffer.BufferUtil.bufferAsString
 import org.agrona.DirectBuffer
-import org.camunda.feel.interpreter.{Val, _}
-import org.camunda.feel.spi.CustomValueMapper
+import org.camunda.feel.syntaxtree.{Val, _}
+import org.camunda.feel.valuemapper.CustomValueMapper
 
 class MessagePackValueMapper extends CustomValueMapper {
 

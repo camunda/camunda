@@ -11,8 +11,7 @@ import io.zeebe.msgpack.spec.MsgPackReader
 import io.zeebe.util.buffer.BufferUtil.{bufferAsString, cloneBuffer}
 import org.agrona.DirectBuffer
 import org.agrona.concurrent.UnsafeBuffer
-import org.camunda.feel.interpreter.VariableProvider
-import org.camunda.feel.spi.CustomContext
+import org.camunda.feel.context.{CustomContext, VariableProvider}
 
 class MessagePackContext(
                           reader: MsgPackReader,

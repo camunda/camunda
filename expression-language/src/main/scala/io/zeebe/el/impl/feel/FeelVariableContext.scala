@@ -8,8 +8,7 @@
 package io.zeebe.el.impl.feel
 
 import io.zeebe.el.EvaluationContext
-import org.camunda.feel.interpreter.VariableProvider
-import org.camunda.feel.spi.CustomContext
+import org.camunda.feel.context.{CustomContext, VariableProvider}
 
 class FeelVariableContext(context: EvaluationContext) extends CustomContext {
 
