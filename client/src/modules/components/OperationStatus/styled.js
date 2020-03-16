@@ -12,10 +12,12 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const OperationSpinner = themed(styled(Spinner)`
   margin: 0 5px;
- border: 3px solid ${({selected}) =>
+  width: 14px;
+  height:14px;
+ border: 2px solid ${({selected}) =>
    themeStyle({
      dark: '#ffffff',
-     light: selected ? Colors.selections : Colors.badge02
+     light: selected ? Colors.selections : Colors.uiLight06
    })};
     border-right-color: transparent;
   }
