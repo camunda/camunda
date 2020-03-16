@@ -15,12 +15,13 @@ import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuild
 import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.Slf4jRequestLog;
+import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -30,9 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.context.ApplicationContext;
 
-import javax.servlet.ServletException;
-import javax.websocket.DeploymentException;
-import javax.websocket.server.ServerContainer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -88,7 +86,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     jettyServer.setHandler(context);
     initWebSockets(context);
 
-    jettyServer.setRequestLog(new Slf4jRequestLog());
+    jettyServer.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(),  CustomRequestLog.EXTENDED_NCSA_FORMAT));
 
     return jettyServer;
   }
@@ -97,12 +95,9 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
    * Add javax.websocket support
    */
   private void initWebSockets(ServletContextHandler context) {
-    try {
-      ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
-      container.addEndpoint(StatusWebSocket.class);
-    } catch (ServletException | DeploymentException e) {
-      logger.error("can't set up web sockets");
-    }
+    WebSocketServerContainerInitializer.configure(context, (servletContext, serverContainer) -> {
+      serverContainer.addEndpoint(StatusWebSocket.class);
+    });
   }
 
   protected ConfigurationService constructConfigurationService() {
@@ -133,7 +128,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
     https.addCustomizer(new SecureRequestCustomizer());
-    SslContextFactory sslContextFactory = new SslContextFactory();
+    SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
     sslContextFactory.setKeyStorePath(keystoreLocation);
     sslContextFactory.setKeyStorePassword(keystorePass);
     sslContextFactory.setKeyManagerPassword(keystorePass);
