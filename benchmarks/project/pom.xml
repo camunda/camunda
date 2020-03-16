@@ -30,7 +30,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
 
     <!-- dependency versions -->
-    <version.zeebe>0.22.1</version.zeebe>
+    <version.zeebe>0.22.2</version.zeebe>
     <version.config>1.4.0</version.config>
     <version.slf4j>1.7.25</version.slf4j>
     <version.log4j>2.11.1</version.log4j>
