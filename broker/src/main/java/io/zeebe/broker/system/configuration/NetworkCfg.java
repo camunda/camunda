@@ -45,12 +45,12 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.host = host;
   }
 
-  public void setAdvertisedHost(final String advertisedHost) {
-    this.advertisedHost = advertisedHost;
-  }
-
   public String getAdvertisedHost() {
     return Optional.ofNullable(advertisedHost).orElse(getHost());
+  }
+
+  public void setAdvertisedHost(final String advertisedHost) {
+    this.advertisedHost = advertisedHost;
   }
 
   public int getPortOffset() {

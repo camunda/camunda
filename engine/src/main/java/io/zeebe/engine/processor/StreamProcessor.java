@@ -84,34 +84,6 @@ public class StreamProcessor extends Actor {
         logStream.newLogStreamBatchWriter(), this::onRetrievingWriter);
   }
 
-  private void onRetrievingWriter(
-      final LogStreamBatchWriter batchWriter, final Throwable errorOnReceivingWriter) {
-
-    if (errorOnReceivingWriter == null) {
-      processingContext
-          .maxFragmentSize(batchWriter.getMaxFragmentLength())
-          .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
-
-      actor.runOnCompletionBlockingCurrentPhase(
-          logStream.newLogStreamReader(), this::onRetrievingReader);
-    } else {
-      LOG.error(
-          "Unexpected error on retrieving batch writer from log stream.", errorOnReceivingWriter);
-      actor.close();
-    }
-  }
-
-  private void onRetrievingReader(
-      final LogStreamReader reader, final Throwable errorOnReceivingReader) {
-    if (errorOnReceivingReader == null) {
-      this.logStreamReader = reader;
-      processingContext.logStreamReader(reader);
-    } else {
-      LOG.error("Unexpected error on retrieving reader from log stream.", errorOnReceivingReader);
-      actor.close();
-    }
-  }
-
   @Override
   protected void onActorStarted() {
     try {
@@ -173,6 +145,43 @@ public class StreamProcessor extends Actor {
     }
   }
 
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    if (isOpened.compareAndSet(true, false)) {
+      closeFuture = new CompletableActorFuture<>();
+      actor.close();
+    }
+    return closeFuture;
+  }
+
+  private void onRetrievingWriter(
+      final LogStreamBatchWriter batchWriter, final Throwable errorOnReceivingWriter) {
+
+    if (errorOnReceivingWriter == null) {
+      processingContext
+          .maxFragmentSize(batchWriter.getMaxFragmentLength())
+          .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
+
+      actor.runOnCompletionBlockingCurrentPhase(
+          logStream.newLogStreamReader(), this::onRetrievingReader);
+    } else {
+      LOG.error(
+          "Unexpected error on retrieving batch writer from log stream.", errorOnReceivingWriter);
+      actor.close();
+    }
+  }
+
+  private void onRetrievingReader(
+      final LogStreamReader reader, final Throwable errorOnReceivingReader) {
+    if (errorOnReceivingReader == null) {
+      this.logStreamReader = reader;
+      processingContext.logStreamReader(reader);
+    } else {
+      LOG.error("Unexpected error on retrieving reader from log stream.", errorOnReceivingReader);
+      actor.close();
+    }
+  }
+
   public ActorFuture<Void> openAsync() {
     if (isOpened.compareAndSet(false, true)) {
       openFuture = new CompletableActorFuture<>();
@@ -229,14 +238,6 @@ public class StreamProcessor extends Actor {
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
     actor.submit(processingStateMachine::readNextEvent);
-  }
-
-  public ActorFuture<Void> closeAsync() {
-    if (isOpened.compareAndSet(true, false)) {
-      closeFuture = new CompletableActorFuture<>();
-      actor.close();
-    }
-    return closeFuture;
   }
 
   private void onFailure(final Throwable throwable) {

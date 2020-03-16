@@ -31,13 +31,13 @@ public final class LastProcessedPositionState {
         zeebeDb.createColumnFamily(ZbColumnFamilies.DEFAULT, dbContext, positionKey, position);
   }
 
-  public void setPosition(final long position) {
-    this.position.wrapLong(position);
-    positionColumnFamily.put(positionKey, this.position);
-  }
-
   public long getPosition() {
     final DbLong position = positionColumnFamily.get(positionKey);
     return position != null ? position.getValue() : NO_EVENTS_PROCESSED;
+  }
+
+  public void setPosition(final long position) {
+    this.position.wrapLong(position);
+    positionColumnFamily.put(positionKey, this.position);
   }
 }

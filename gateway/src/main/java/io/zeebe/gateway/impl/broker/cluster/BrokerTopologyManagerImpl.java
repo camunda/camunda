@@ -39,6 +39,10 @@ public final class BrokerTopologyManagerImpl extends Actor
     return topology.get();
   }
 
+  public void setTopology(final BrokerClusterStateImpl topology) {
+    this.topology.set(topology);
+  }
+
   private void checkForMissingEvents() {
     final Set<Member> members = membersSupplier.get();
     if (members == null || members.isEmpty()) {
@@ -57,18 +61,14 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  protected void onActorStarted() {
-    // to make gateway topology more robust we need to check for missing events periodically
-    actor.runAtFixedRate(Duration.ofSeconds(5), this::checkForMissingEvents);
-  }
-
-  public void setTopology(final BrokerClusterStateImpl topology) {
-    this.topology.set(topology);
+  public String getName() {
+    return "GatewayTopologyManager";
   }
 
   @Override
-  public String getName() {
-    return "GatewayTopologyManager";
+  protected void onActorStarted() {
+    // to make gateway topology more robust we need to check for missing events periodically
+    actor.runAtFixedRate(Duration.ofSeconds(5), this::checkForMissingEvents);
   }
 
   @Override

@@ -25,28 +25,18 @@ public class SyncLogStream implements SynchronousLogStream {
     return new SyncLogStreamBuilder();
   }
 
-  public static SyncLogStreamBuilder builder(LogStreamBuilder builder) {
+  public static SyncLogStreamBuilder builder(final LogStreamBuilder builder) {
     return new SyncLogStreamBuilder(builder);
-  }
-
-  @Override
-  public LogStreamRecordWriter newLogStreamRecordWriter() {
-    return logStream.newLogStreamRecordWriter().join();
-  }
-
-  @Override
-  public LogStreamBatchWriter newLogStreamBatchWriter() {
-    return logStream.newLogStreamBatchWriter().join();
-  }
-
-  @Override
-  public int getPartitionId() {
-    return logStream.getPartitionId();
   }
 
   @Override
   public LogStream getAsyncLogStream() {
     return logStream;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return logStream.getPartitionId();
   }
 
   @Override
@@ -72,5 +62,15 @@ public class SyncLogStream implements SynchronousLogStream {
   @Override
   public LogStreamReader newLogStreamReader() {
     return logStream.newLogStreamReader().join();
+  }
+
+  @Override
+  public LogStreamRecordWriter newLogStreamRecordWriter() {
+    return logStream.newLogStreamRecordWriter().join();
+  }
+
+  @Override
+  public LogStreamBatchWriter newLogStreamBatchWriter() {
+    return logStream.newLogStreamBatchWriter().join();
   }
 }

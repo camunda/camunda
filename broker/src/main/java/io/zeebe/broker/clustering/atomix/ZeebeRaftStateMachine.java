@@ -107,22 +107,6 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
     reader.close();
   }
 
-  @Override
-  public void setCompactableIndex(final long index) {
-    this.compactableIndex = index;
-  }
-
-  @Override
-  public long getCompactableIndex() {
-    return compactableIndex;
-  }
-
-  @Override
-  public long getCompactableTerm() {
-    throw new UnsupportedOperationException(
-        "getCompactableTerm is not required by this implementation");
-  }
-
   private void safeCompact(final long index, final CompletableFuture<Void> future) {
     compactionContext.checkThread();
     logger.debug("Compacting up to index {}", index);
@@ -146,6 +130,11 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
       final long nextIndex = ++lastEnqueued;
       threadContext.execute(() -> safeApplyIndex(nextIndex, future));
     }
+  }
+
+  @Override
+  public void setCompactableIndex(final long index) {
+    this.compactableIndex = index;
   }
 
   private void safeApplyIndex(final long index, final CompletableFuture<?> future) {
@@ -198,5 +187,16 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
 
     // mark as applied regardless of result
     raft.setLastApplied(indexed.index(), indexed.entry().term());
+  }
+
+  @Override
+  public long getCompactableIndex() {
+    return compactableIndex;
+  }
+
+  @Override
+  public long getCompactableTerm() {
+    throw new UnsupportedOperationException(
+        "getCompactableTerm is not required by this implementation");
   }
 }

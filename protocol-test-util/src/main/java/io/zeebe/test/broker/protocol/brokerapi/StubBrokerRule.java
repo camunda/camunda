@@ -87,14 +87,6 @@ public final class StubBrokerRule extends ExternalResource {
     currentTopology.set(topology);
   }
 
-  public int getCurrentStubPort() {
-    return currentStubPort;
-  }
-
-  public String getCurrentStubHost() {
-    return currentStubHost;
-  }
-
   @Override
   protected void after() {
     try {
@@ -106,6 +98,14 @@ public final class StubBrokerRule extends ExternalResource {
       scheduler.stop();
     }
     cluster.stop().join();
+  }
+
+  public int getCurrentStubPort() {
+    return currentStubPort;
+  }
+
+  public String getCurrentStubHost() {
+    return currentStubHost;
   }
 
   private ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
