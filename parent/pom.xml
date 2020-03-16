@@ -103,7 +103,7 @@
     <plugin.version.versions>2.7</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M3</plugin.version.enforcer>
     <plugin.version.dependency>3.1.2</plugin.version.dependency>
-    <plugin.version.spotbugs>3.1.12.2</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.0.0</plugin.version.spotbugs>
     <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
     <plugin.version.clirr>2.8</plugin.version.clirr>
 
