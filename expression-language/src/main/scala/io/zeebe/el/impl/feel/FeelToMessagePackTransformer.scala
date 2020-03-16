@@ -11,7 +11,7 @@ import io.zeebe.el.impl.Loggers.LOGGER
 import io.zeebe.msgpack.spec.MsgPackWriter
 import org.agrona.concurrent.UnsafeBuffer
 import org.agrona.{DirectBuffer, ExpandableArrayBuffer}
-import org.camunda.feel.interpreter.{Val, _}
+import org.camunda.feel.syntaxtree.{Val, _}
 
 class FeelToMessagePackTransformer {
 

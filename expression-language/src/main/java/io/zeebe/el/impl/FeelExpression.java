@@ -8,7 +8,7 @@
 package io.zeebe.el.impl;
 
 import io.zeebe.el.Expression;
-import org.camunda.feel.ParsedExpression;
+import org.camunda.feel.syntaxtree.ParsedExpression;
 
 public final class FeelExpression implements Expression {
 

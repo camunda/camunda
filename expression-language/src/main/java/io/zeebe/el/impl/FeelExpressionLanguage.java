@@ -20,8 +20,8 @@ import io.zeebe.el.impl.feel.MessagePackValueMapper;
 import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
-import org.camunda.feel.ParsedExpression;
-import org.camunda.feel.interpreter.Val;
+import org.camunda.feel.syntaxtree.ParsedExpression;
+import org.camunda.feel.syntaxtree.Val;
 import scala.util.Either;
 
 /**

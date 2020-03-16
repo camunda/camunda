@@ -35,7 +35,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.extension.feel.scala</groupId>
+      <groupId>org.camunda.feel</groupId>
       <artifactId>feel-engine</artifactId>
     </dependency>
 
