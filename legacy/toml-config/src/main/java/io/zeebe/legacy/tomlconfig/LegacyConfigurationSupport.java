@@ -229,11 +229,6 @@ public final class LegacyConfigurationSupport {
         oldEnvironmentVariable, new Replacement(newEnvironmentVariableInBrokerContext));
   }
 
-  public enum Scope {
-    GATEWAY,
-    BROKER
-  }
-
   static final class Replacement {
     private final String canonicalRepresentation;
 
@@ -248,5 +243,10 @@ public final class LegacyConfigurationSupport {
     String toEnvironmentVariable() {
       return canonicalRepresentation.replace("-", "").replace(".", "_").toUpperCase();
     }
+  }
+
+  public enum Scope {
+    GATEWAY,
+    BROKER
   }
 }

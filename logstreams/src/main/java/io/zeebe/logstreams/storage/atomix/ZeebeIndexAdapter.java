@@ -50,18 +50,6 @@ public final class ZeebeIndexAdapter implements JournalIndex, ZeebeIndexMapping 
   }
 
   @Override
-  public long lookupPosition(final long position) {
-    long index = -1L;
-
-    final var lowerEntry = positionIndexMapping.floorEntry(position);
-    if (lowerEntry != null) {
-      index = lowerEntry.getValue();
-    }
-
-    return index;
-  }
-
-  @Override
   public Position lookup(final long index) {
     return sparseJournalIndex.lookup(index);
   }
@@ -96,5 +84,17 @@ public final class ZeebeIndexAdapter implements JournalIndex, ZeebeIndexMapping 
     }
 
     sparseJournalIndex.compact(index);
+  }
+
+  @Override
+  public long lookupPosition(final long position) {
+    long index = -1L;
+
+    final var lowerEntry = positionIndexMapping.floorEntry(position);
+    if (lowerEntry != null) {
+      index = lowerEntry.getValue();
+    }
+
+    return index;
   }
 }

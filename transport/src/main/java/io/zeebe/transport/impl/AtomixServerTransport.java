@@ -52,6 +52,19 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   @Override
+  public void close() {
+    actor
+        .call(
+            () -> {
+              for (int partitionId : partitionsRequestMap.keySet()) {
+                removePartition(partitionId);
+              }
+              actor.close();
+            })
+        .join();
+  }
+
+  @Override
   public ActorFuture<Void> subscribe(final int partitionId, final RequestHandler requestHandler) {
     return actor.call(
         () -> {
@@ -135,19 +148,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
             completableFuture.complete(bytes);
           }
         });
-  }
-
-  @Override
-  public void close() {
-    actor
-        .call(
-            () -> {
-              for (int partitionId : partitionsRequestMap.keySet()) {
-                removePartition(partitionId);
-              }
-              actor.close();
-            })
-        .join();
   }
 
   static String topicName(final int partitionId) {

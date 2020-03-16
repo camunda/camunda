@@ -16,11 +16,10 @@ import org.junit.rules.RuleChain;
 
 public class GatewayTest {
 
-  protected final ControlledActorClock actorClock = new ControlledActorClock();
-  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   public final StubbedGatewayRule gatewayRule = new StubbedGatewayRule(actorSchedulerRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(gatewayRule);
-
+  protected final ControlledActorClock actorClock = new ControlledActorClock();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;
   protected StubbedBrokerClient brokerClient;

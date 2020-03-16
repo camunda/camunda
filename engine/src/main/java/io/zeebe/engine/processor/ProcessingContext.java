@@ -99,11 +99,6 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
-  @Override
-  public int getMaxFragmentSize() {
-    return maxFragmentSize;
-  }
-
   public ActorControl getActor() {
     return actor;
   }
@@ -118,6 +113,11 @@ public final class ProcessingContext implements ReadonlyProcessingContext {
 
   public LogStreamReader getLogStreamReader() {
     return logStreamReader;
+  }
+
+  @Override
+  public int getMaxFragmentSize() {
+    return maxFragmentSize;
   }
 
   public TypedStreamWriter getLogStreamWriter() {
