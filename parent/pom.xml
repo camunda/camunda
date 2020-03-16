@@ -673,6 +673,9 @@
               <include>**/*.java</include>
               <include>**/*.scala</include>
             </includes>
+            <excludes>
+              <exclude>benchmarks/project/**/*</exclude>
+            </excludes>
             <mapping>
               <java>SLASHSTAR_STYLE</java>
             </mapping>
