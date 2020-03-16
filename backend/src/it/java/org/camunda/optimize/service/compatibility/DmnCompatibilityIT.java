@@ -7,8 +7,9 @@ package org.camunda.optimize.service.compatibility;
 
 import com.google.common.collect.ImmutableMap;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.test.util.annotations.RunOnlyForDmn13Engines;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueReq
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
+import org.camunda.optimize.test.util.annotations.RunOnlyForDmn13Engines;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -199,6 +201,29 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactly(Tuple.tuple("ok", 2L));
+  }
+
+  @ParameterizedTest
+  @MethodSource("compatibleDmnVersionDiagrams")
+  public void getDefinitions(final String pathToDiagram) {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto =
+      engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitions()
+      .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(definitions)
+      .hasSize(1)
+      .extracting(SimpleDefinitionDto::getKey)
+      .containsExactly(decisionDefinitionDto.getKey());
   }
 
   private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
