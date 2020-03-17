@@ -6,6 +6,7 @@ All information describing Elasticsearch schema and required for migration is pr
 * [Schema](#schema)
 * [Migration](#migration)
 * [How to migrate](#how-to-migrate)
+* [Example for migrate in Kubernetes](#example-for-migrate-in-kubernetes)
 
 ## Schema
 
@@ -40,7 +41,7 @@ PUT _template/template_operate
 ## Migration
 
 Version of Operate is reflected in Elasticsearch object names, e.g. `operate-user-1.3.0_` index contains user data for Operate v. 1.3.0. When upgrading from one 
-version of Operate to another, migration of data must be performed. Operate distribution provides scripts to perform data migration strictly from previous minor 
+version of Operate to another, migration of data must be performed. Operate distribution provides scripts to perform data migration strictly from previous minor. 
 Operate version to the next minor version, meaning that if you make bigger upgrade step, e.g. 1.2.0 -> 1.4.0, migration must be performed step by step for each minor version:
 1.2.0 -> 1.3.0 and 1.3.0 -> 1.4.0.
 
@@ -69,14 +70,40 @@ Follow the next steps to migrate:
 ```
 cd schema
 unzip camunda-operate-els-schema-1.2.0.zip
-sh ./migrate.sh
+bash ./migrate.sh
 ```
 
 All requests and responses are written to the console. Here you can see if the migration was successful.
 
 > **Note:** You might need to adjust `migrate.sh` script to suit your needs.
 
+> **Note:** The old indices will be deleted after succeeded migration. That might need more disk space.
+
 > **Important!** You should take care of data backup before performing migration.
+
+### Example for migrate in Kubernetes
+
+To ensure that the migration will be executed *before* operate will be started you can use
+the [init container](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) feature of kubernetes. It makes sure that the 'main' container will only be started
+if the initContainer was successfully executed. 
+The following snippet of a pod description for kubernetes shows the usage of migration.sh as initContainer.
+
+```
+...
+  labels:
+    app: operate
+spec:
+   initContainers:
+     - name: migration
+       image: camunda/operate:0.23.0
+       command: ['/bin/bash','/usr/local/operate/migration/migrate.sh','http://elasticsearch-host:9200']
+   containers:
+     - name: operate
+       image: camunda/operate:0.23.0
+       env:
+...
+```
+
 
 ### File organization in schema folder
 
