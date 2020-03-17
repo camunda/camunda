@@ -183,15 +183,20 @@ class InstancesContainer extends Component {
       groupedWorkflows,
       diagramModel
     );
-
     return this.setState({filter: filterFromURL});
   }
 
   handleFilterUpdate(prevState) {
-    const {filter} = this.state;
+    const {filter, groupedWorkflows, diagramModel} = this.state;
 
-    // handle first update when mounting, comes with empty previous filter
-    if (isEmpty(prevState.filter)) {
+    const filterFromURL = this.sanitizeFilter(
+      parseQueryString(this.props.location.search).filter,
+      groupedWorkflows,
+      diagramModel
+    );
+
+    // handle first update when mounting, comes with empty previous filter. Also check if filter was not set empty on purpose
+    if (isEmpty(prevState.filter) && !isEmpty(filterFromURL)) {
       return;
     }
 
