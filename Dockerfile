@@ -8,6 +8,12 @@ COPY distro/target/camunda-operate-*.tar.gz operate.tar.gz
 RUN tar xzvf operate.tar.gz --strip 1
 RUN rm operate.tar.gz
 
+# prepare migration
+WORKDIR /tmp/operate/migration
+COPY els-schema/target/migration.zip migration.zip
+RUN unzip migration.zip 
+RUN rm migration.zip
+
 # Operate Image
 FROM openjdk:11-jre
 

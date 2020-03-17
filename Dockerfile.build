@@ -27,6 +27,8 @@ RUN mvn clean install -P -docker,skipFrontendBuild -DskipTests=true
 #####################################
 FROM openjdk:11-jre
 COPY --from=be-build /usr/src/app/webapp/target/*-exec.jar /usr/app/camunda-operate.jar
+WORKDIR /usr/app/migration
+COPY --from=be-build /usr/src/app/els-schema/target/classes/ /usr/app/migration/
 EXPOSE 8080
 ENV JAVA_OPTS=""
 ENTRYPOINT exec java ${JAVA_OPTS} -jar /usr/app/camunda-operate.jar
