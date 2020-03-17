@@ -8,7 +8,7 @@ spec:
   selector:
     matchLabels:
       app: worker
-  replicas: 6
+  replicas: 12
   template:
     metadata:
       labels:
@@ -30,3 +30,26 @@ spec:
           requests:
             cpu: 1
             memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: zeebe
+    app.kubernetes.io/instance: long-running
+    app.kubernetes.io/name: zeebe-cluster
+  name: worker
+spec:
+  clusterIP: None
+  ports:
+  - name: http
+    port: 9600
+    protocol: TCP
+    targetPort: 9600
+  publishNotReadyAddresses: true
+  selector:
+    app: worker
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
