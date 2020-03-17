@@ -26,4 +26,16 @@ public final class IntegerProperty extends BaseProperty<IntegerValue> {
     this.value.setValue(value);
     this.isSet = true;
   }
+
+  public int decrement() {
+    final int decrValue = getValue() - 1;
+    setValue(decrValue);
+    return decrValue;
+  }
+
+  public int increment() {
+    final int incrValue = getValue() + 1;
+    setValue(incrValue);
+    return incrValue;
+  }
 }

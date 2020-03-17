@@ -7,26 +7,32 @@
  */
 package io.zeebe.engine.state.message;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
 import io.zeebe.db.DbValue;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
-public final class Message implements DbValue {
+public final class Message extends UnpackedObject implements DbValue {
 
-  private final DirectBuffer name = new UnsafeBuffer();
-  private final DirectBuffer correlationKey = new UnsafeBuffer();
-  private final DirectBuffer variables = new UnsafeBuffer();
-  private final DirectBuffer id = new UnsafeBuffer();
-  private long key;
-  private long timeToLive;
-  private long deadline;
+  private final LongProperty keyProp = new LongProperty("key", 0L);
+  private final LongProperty timeToLiveProp = new LongProperty("timeToLive", 0L);
+  private final LongProperty deadlineProp = new LongProperty("deadline", 0L);
 
-  public Message() {}
+  private final StringProperty nameProp = new StringProperty("name", "");
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
+  private final StringProperty variablesProp = new StringProperty("variables", "");
+  private final StringProperty idProp = new StringProperty("id", "");
+
+  public Message() {
+    declareProperty(keyProp)
+        .declareProperty(timeToLiveProp)
+        .declareProperty(deadlineProp)
+        .declareProperty(nameProp)
+        .declareProperty(correlationKeyProp)
+        .declareProperty(variablesProp)
+        .declareProperty(idProp);
+  }
 
   public Message(
       final long key,
@@ -36,82 +42,43 @@ public final class Message implements DbValue {
       final DirectBuffer id,
       final long timeToLive,
       final long deadline) {
-    this.name.wrap(name);
-    this.correlationKey.wrap(correlationKey);
-    this.variables.wrap(variables);
-    this.id.wrap(id);
+    this();
 
-    this.key = key;
-    this.timeToLive = timeToLive;
-    this.deadline = deadline;
+    nameProp.setValue(name);
+    correlationKeyProp.setValue(correlationKey);
+    variablesProp.setValue(variables);
+    idProp.setValue(id);
+
+    keyProp.setValue(key);
+    timeToLiveProp.setValue(timeToLive);
+    deadlineProp.setValue(deadline);
   }
 
   public DirectBuffer getName() {
-    return name;
+    return nameProp.getValue();
   }
 
   public DirectBuffer getCorrelationKey() {
-    return correlationKey;
+    return correlationKeyProp.getValue();
   }
 
   public DirectBuffer getVariables() {
-    return variables;
+    return variablesProp.getValue();
   }
 
   public DirectBuffer getId() {
-    return id;
+    return idProp.getValue();
   }
 
   public long getTimeToLive() {
-    return timeToLive;
+    return timeToLiveProp.getValue();
   }
 
   public long getDeadline() {
-    return deadline;
+    return deadlineProp.getValue();
   }
 
   public long getKey() {
-    return key;
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    offset = readIntoBuffer(buffer, offset, name);
-    offset = readIntoBuffer(buffer, offset, correlationKey);
-    offset = readIntoBuffer(buffer, offset, variables);
-    offset = readIntoBuffer(buffer, offset, id);
-
-    timeToLive = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-    deadline = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-    key = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-  }
-
-  @Override
-  public int getLength() {
-    return name.capacity()
-        + correlationKey.capacity()
-        + variables.capacity()
-        + id.capacity()
-        + Integer.BYTES * 4
-        + Long.BYTES * 3;
-  }
-
-  @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    int valueOffset = offset;
-    valueOffset = writeIntoBuffer(buffer, valueOffset, name);
-    valueOffset = writeIntoBuffer(buffer, valueOffset, correlationKey);
-    valueOffset = writeIntoBuffer(buffer, valueOffset, variables);
-    valueOffset = writeIntoBuffer(buffer, valueOffset, id);
-
-    buffer.putLong(valueOffset, timeToLive, ZB_DB_BYTE_ORDER);
-    valueOffset += Long.BYTES;
-    buffer.putLong(valueOffset, deadline, ZB_DB_BYTE_ORDER);
-    valueOffset += Long.BYTES;
-    buffer.putLong(valueOffset, key, ZB_DB_BYTE_ORDER);
-    valueOffset += Long.BYTES;
-    assert (valueOffset - offset) == getLength() : "End offset differs with getLength()";
+    return keyProp.getValue();
   }
 }

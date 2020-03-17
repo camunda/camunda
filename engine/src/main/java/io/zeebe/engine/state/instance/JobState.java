@@ -10,7 +10,6 @@ package io.zeebe.engine.state.instance;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
@@ -33,15 +32,15 @@ public final class JobState {
   // key => job record value
   // we need two separate wrapper to not interfere with get and put
   // see https://github.com/zeebe-io/zeebe/issues/1914
-  private final UnpackedObjectValue jobRecordToRead;
-  private final UnpackedObjectValue jobRecordToWrite;
+  private final JobRecordValue jobRecordToRead = new JobRecordValue();
+  private final JobRecordValue jobRecordToWrite = new JobRecordValue();
 
   private final DbLong jobKey;
-  private final ColumnFamily<DbLong, UnpackedObjectValue> jobsColumnFamily;
+  private final ColumnFamily<DbLong, JobRecordValue> jobsColumnFamily;
 
   // key => job state
-  private final DbByte jobState;
-  private final ColumnFamily<DbLong, DbByte> statesJobColumnFamily;
+  private final JobStateValue jobState = new JobStateValue();
+  private final ColumnFamily<DbLong, JobStateValue> statesJobColumnFamily;
 
   // type => [key]
   private final DbString jobTypeKey;
@@ -59,16 +58,10 @@ public final class JobState {
 
   public JobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext, final int partitionId) {
-
-    jobRecordToRead = new UnpackedObjectValue();
-    jobRecordToRead.wrapObject(new JobRecord());
-
-    jobRecordToWrite = new UnpackedObjectValue();
     jobKey = new DbLong();
     jobsColumnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, dbContext, jobKey, jobRecordToRead);
 
-    jobState = new DbByte();
     statesJobColumnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_STATES, dbContext, jobKey, jobState);
 
@@ -225,13 +218,13 @@ public final class JobState {
   public State getState(final long key) {
     jobKey.wrapLong(key);
 
-    final DbByte storedState = statesJobColumnFamily.get(jobKey);
+    final JobStateValue storedState = statesJobColumnFamily.get(jobKey);
 
     if (storedState == null) {
       return State.NOT_FOUND;
     }
 
-    return State.forValue(storedState.getValue());
+    return storedState.getState();
   }
 
   public boolean isInState(final long key, final State state) {
@@ -274,8 +267,8 @@ public final class JobState {
 
   public JobRecord getJob(final long key) {
     jobKey.wrapLong(key);
-    final UnpackedObjectValue unpackedObjectValue = jobsColumnFamily.get(jobKey);
-    return unpackedObjectValue == null ? null : (JobRecord) unpackedObjectValue.getObject();
+    final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
+    return jobState == null ? null : jobState.getRecord();
   }
 
   public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {
@@ -292,12 +285,12 @@ public final class JobState {
     jobKey.wrapLong(key);
     // do not persist variables in job state
     updatedValue.resetVariables();
-    jobRecordToWrite.wrapObject(updatedValue);
+    jobRecordToWrite.setRecord(updatedValue);
     jobsColumnFamily.put(jobKey, jobRecordToWrite);
   }
 
   private void updateJobState(final State newState) {
-    jobState.wrapByte(newState.value);
+    jobState.setState(newState);
     statesJobColumnFamily.put(jobKey, jobState);
   }
 
@@ -336,23 +329,6 @@ public final class JobState {
 
     State(final byte value) {
       this.value = value;
-    }
-
-    static State forValue(final byte value) {
-      switch (value) {
-        case 0:
-          return ACTIVATABLE;
-        case 1:
-          return ACTIVATED;
-        case 2:
-          return FAILED;
-        case 3:
-          return NOT_FOUND;
-        case 4:
-          return ERROR_THROWN;
-        default:
-          return NOT_FOUND;
-      }
     }
   }
 }

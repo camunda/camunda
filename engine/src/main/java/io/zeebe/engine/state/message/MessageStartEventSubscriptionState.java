@@ -15,7 +15,6 @@ import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
-import io.zeebe.engine.state.instance.UnpackedObjectValue;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import org.agrona.DirectBuffer;
 
@@ -26,24 +25,20 @@ public final class MessageStartEventSubscriptionState {
 
   // (messageName, workflowKey => MessageSubscription)
   private final DbCompositeKey<DbString, DbLong> messageNameAndWorkflowKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, UnpackedObjectValue>
+  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, SubscriptionValue>
       subscriptionsColumnFamily;
-  private final UnpackedObjectValue subscriptionValue;
-  private final MessageStartEventSubscriptionRecord subscriptionRecord;
+  private final SubscriptionValue subscriptionValue = new SubscriptionValue();
 
   // (workflowKey, messageName) => \0  : to find existing subscriptions of a workflow
   private final DbCompositeKey<DbLong, DbString> workflowKeyAndMessageName;
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
-      subscriptionsOfWorkflowKeyColumnfamily;
+      subscriptionsOfWorkflowKeyColumnFamily;
 
   public MessageStartEventSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     messageName = new DbString();
     workflowKey = new DbLong();
     messageNameAndWorkflowKey = new DbCompositeKey<>(messageName, workflowKey);
-    subscriptionValue = new UnpackedObjectValue();
-    subscriptionRecord = new MessageStartEventSubscriptionRecord();
-    subscriptionValue.wrapObject(subscriptionRecord);
     subscriptionsColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
@@ -52,7 +47,7 @@ public final class MessageStartEventSubscriptionState {
             subscriptionValue);
 
     workflowKeyAndMessageName = new DbCompositeKey<>(workflowKey, messageName);
-    subscriptionsOfWorkflowKeyColumnfamily =
+    subscriptionsOfWorkflowKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_KEY_AND_NAME,
             dbContext,
@@ -61,25 +56,22 @@ public final class MessageStartEventSubscriptionState {
   }
 
   public void put(final MessageStartEventSubscriptionRecord subscription) {
-    subscriptionRecord.setStartEventId(subscription.getStartEventIdBuffer());
-    subscriptionRecord.setMessageName(subscription.getMessageNameBuffer());
-    subscriptionRecord.setWorkflowKey(subscription.getWorkflowKey());
-    subscriptionRecord.setBpmnProcessId(subscription.getBpmnProcessIdBuffer());
+    subscriptionValue.set(subscription);
 
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     workflowKey.wrapLong(subscription.getWorkflowKey());
     subscriptionsColumnFamily.put(messageNameAndWorkflowKey, subscriptionValue);
-    subscriptionsOfWorkflowKeyColumnfamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
+    subscriptionsOfWorkflowKeyColumnFamily.put(workflowKeyAndMessageName, DbNil.INSTANCE);
   }
 
   public void removeSubscriptionsOfWorkflow(final long workflowKey) {
     this.workflowKey.wrapLong(workflowKey);
 
-    subscriptionsOfWorkflowKeyColumnfamily.whileEqualPrefix(
+    subscriptionsOfWorkflowKeyColumnFamily.whileEqualPrefix(
         this.workflowKey,
         (key, value) -> {
           subscriptionsColumnFamily.delete(messageNameAndWorkflowKey);
-          subscriptionsOfWorkflowKeyColumnfamily.delete(key);
+          subscriptionsOfWorkflowKeyColumnFamily.delete(key);
         });
   }
 
@@ -97,7 +89,7 @@ public final class MessageStartEventSubscriptionState {
     subscriptionsColumnFamily.whileEqualPrefix(
         this.messageName,
         (key, value) -> {
-          visitor.visit((MessageStartEventSubscriptionRecord) value.getObject());
+          visitor.visit(value.get());
         });
   }
 
