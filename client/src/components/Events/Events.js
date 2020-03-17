@@ -20,6 +20,8 @@ import PublishModal from './PublishModal';
 import UsersModal from './UsersModal';
 import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
 
+import './Events.scss';
+
 export default withErrorHandling(
   class Events extends React.Component {
     state = {
@@ -29,6 +31,8 @@ export default withErrorHandling(
       redirect: null,
       editingAccess: null
     };
+
+    fileInput = React.createRef();
 
     componentDidMount() {
       this.loadList();
@@ -77,34 +81,28 @@ export default withErrorHandling(
       });
     };
 
-    upload = () => {
-      const el = document.createElement('input');
-      el.type = 'file';
-      el.accept = '.bpmn';
+    triggerUpload = () => this.fileInput.current.click();
 
-      el.addEventListener('change', () => {
-        const reader = new FileReader();
+    createUploadedProcess = () => {
+      const reader = new FileReader();
 
-        reader.addEventListener('load', () => {
-          const xml = reader.result;
+      reader.addEventListener('load', () => {
+        const xml = reader.result;
 
-          try {
-            // get the process name
-            const parser = new DOMParser();
-            const process = parser
-              .parseFromString(xml, 'text/xml')
-              .getElementsByTagName('bpmn:process')[0];
-            const name = process.getAttribute('name') || process.getAttribute('id');
+        try {
+          // get the process name
+          const parser = new DOMParser();
+          const process = parser
+            .parseFromString(xml, 'text/xml')
+            .getElementsByTagName('bpmn:process')[0];
+          const name = process.getAttribute('name') || process.getAttribute('id');
 
-            this.props.mightFail(createProcess(name, xml, {}), this.loadList, showError);
-          } catch (e) {
-            showError(t('events.parseError'));
-          }
-        });
-        reader.readAsText(el.files[0]);
+          this.props.mightFail(createProcess(name, xml, {}), this.loadList, showError);
+        } catch (e) {
+          showError(t('events.parseError'));
+        }
       });
-
-      el.click();
+      reader.readAsText(this.fileInput.current.files[0]);
     };
 
     render() {
@@ -123,7 +121,7 @@ export default withErrorHandling(
             action={
               <Dropdown label={t('events.new')}>
                 <Dropdown.Option link="new/edit">{t('events.modelProcess')}</Dropdown.Option>
-                <Dropdown.Option onClick={this.upload}>{t('events.upload')}</Dropdown.Option>
+                <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
               </Dropdown>
             }
             data={
@@ -206,6 +204,13 @@ export default withErrorHandling(
               onClose={() => this.setState({editingAccess: null})}
             />
           )}
+          <input
+            className="hidden"
+            onChange={this.createUploadedProcess}
+            type="file"
+            accept=".bpmn"
+            ref={this.fileInput}
+          />
         </div>
       );
     }

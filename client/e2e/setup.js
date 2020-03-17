@@ -26,7 +26,6 @@ export async function cleanEntities({ctx}) {
 
       const response = await fetch(`${config.endpoint}/api/entities`, {headers});
       const entities = await response.json();
-
       for (let i = 0; i < entities.length; i++) {
         await fetch(
           `${config.endpoint}/api/${entities[i].entityType}/${entities[i].id}?force=true`,
@@ -36,6 +35,24 @@ export async function cleanEntities({ctx}) {
           }
         );
       }
+    }
+  }
+}
+
+export async function cleanEventProcesses(ctx) {
+  if (ctx.users) {
+    const headers = {
+      Cookie: `X-Optimize-Authorization="Bearer ${await getSession(ctx.users[0])}"`
+    };
+
+    const response = await fetch(`${config.endpoint}/api/eventBasedProcess`, {headers});
+    const processes = await response.json();
+
+    for (let i = 0; i < processes.length; i++) {
+      await fetch(`${config.endpoint}/api/eventBasedProcess/${processes[i].id}`, {
+        method: 'DELETE',
+        headers
+      });
     }
   }
 }
