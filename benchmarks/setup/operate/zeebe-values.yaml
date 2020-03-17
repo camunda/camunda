@@ -1,86 +1,83 @@
-zeebe:
-  image:
-    repository: camunda/zeebe
-    tag: SNAPSHOT
-    pullPolicy: IfNotPresent
+image:
+  repository: camunda/zeebe
+  tag: SNAPSHOT
+  pullPolicy: Always
 
-  # ZEEBE CFG
+# ZEEBE CFG
+clusterSize: 3
+partitionCount: 3
+replicationFactor: 3
+cpuThreadCount: 4
+ioThreadCount: 4
+gatewayMetrics: true
 
-  clusterSize: 3
-  partitionCount: 3
-  replicationFactor: 3
-  cpuThreadCount: 4
-  ioThreadCount: 4
-  gatewayMetrics: true
+zeebeCfg: |
+  # custom TOML configuration
 
-  # JavaOpts:
-  # DEFAULTS
+# JavaOpts:
+# DEFAULTS
+JavaOpts: |
+  -XX:+UseParallelGC 
+  -XX:MinHeapFreeRatio=5
+  -XX:MaxHeapFreeRatio=10
+  -XX:MaxRAMPercentage=25.0 
+  -XX:GCTimeRatio=4 
+  -XX:AdaptiveSizePolicyWeight=90
+  -XX:+PrintFlagsFinal
+  -Xmx4g
+  -Xms4g
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/usr/local/zeebe/data
+  -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
 
-  JavaOpts: |
-    -XX:+UseParallelGC 
-    -XX:MinHeapFreeRatio=5
-    -XX:MaxHeapFreeRatio=10
-    -XX:MaxRAMPercentage=25.0 
-    -XX:GCTimeRatio=4 
-    -XX:AdaptiveSizePolicyWeight=90
-    -XX:+PrintFlagsFinal
-    -Xmx4g
-    -Xms4g
-    -XX:+HeapDumpOnOutOfMemoryError
-    -XX:HeapDumpPath=/usr/local/zeebe/data
-    -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
-  # RESOURCES
-  # RESOURCES
+# RESOURCES
+resources:
+  limits:
+    cpu: 5
+    memory: 12Gi
+  requests:
+    cpu: 5
+    memory: 12Gi
 
-  resources:
-    limits:
-      cpu: 5
-      memory: 12Gi
-    requests:
-      cpu: 5
-      memory: 12Gi
-
-  # PVC
-
-  pvcAccessMode: ["ReadWriteOnce"]
-  pvcSize: 128Gi
-  pvcStorageClassName: ssd
+# PVC
+pvcAccessMode: ["ReadWriteOnce"]
+pvcSize: 128Gi
+pvcStorageClassName: ssd
 
 
-  # ELASTIC
+# ELASTIC
+elasticsearch:
+  enabled: true
+  imageTag: 6.8.5
 
-  elasticsearch:
-    enabled: true
-    imageTag: 6.8.5
+  replicas: 3
+  minimumMasterNodes: 2
 
-    replicas: 3
-    minimumMasterNodes: 2
-
-    volumeClaimTemplate:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: "ssd"
-      resources:
-        requests:
-          storage: 300Gi
-
-    esJavaOpts: "-Xmx4g -Xms4g"
-
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    storageClassName: "ssd"
     resources:
       requests:
-        cpu: 3
-        memory: 8Gi
-      limits:
-        cpu: 3
-        memory: 8Gi
+        storage: 300Gi
 
-  # KIBANA
-  kibana:
-    enabled: false
+  esJavaOpts: "-Xmx4g -Xms4g"
 
-  # PROMETHEUS
-  prometheus:
-    enabled: false
+  resources:
+    requests:
+      cpu: 3
+      memory: 8Gi
+    limits:
+      cpu: 3
+      memory: 8Gi
 
-    servicemonitor:
-      enabled: true
+# KIBANA
+kibana:
+  enabled: false
+
+# PROMETHEUS
+prometheus:
+  enabled: false
+
+  servicemonitor:
+    enabled: true
 

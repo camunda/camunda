@@ -3,7 +3,7 @@ all: zeebe starter worker
 
 .PHONY: zeebe
 zeebe:
-	-helm install --name operate zeebe/zeebe-full -f zeebe-values.yaml
+	-helm install operate zeebe/zeebe-full -f zeebe-values.yaml --skip-crds
 	-kubectl apply -f curator-cronjob.yaml
 	-kubectl apply -f curator-configmap.yaml
 
@@ -15,12 +15,13 @@ starter:
 worker:
 	kubectl apply -f worker.yaml
 
+
 .PHONY: clean
 clean: clean-starter clean-worker clean-zeebe
 
 .PHONY: clean-zeebe
 clean-zeebe:
-	-helm delete --purge operate
+	-helm uninstall operate
 	-kubectl delete -f curator-cronjob.yaml
 	-kubectl delete -f curator-configmap.yaml
 	-kubectl delete pvc -l app=operate-zeebe
