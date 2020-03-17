@@ -22,37 +22,36 @@ export const Login = styled.div`
 
 export const LoginHeader = themed(styled.div`
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `);
 
 export const Logo = themed(styled(BaseLogo)`
-  position: relative;
-  top: 3px;
-
-  margin-right: 8px;
-  width: 32px;
-  height: 32px;
+  margin-bottom: 12px;
+  width: 96px;
+  height: 33px;
 
   color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
+    dark: '#ffffff',
+    light: Colors.uiLight06
   })};
 `);
 
 export const LoginTitle = themed(styled.span`
   font-family: IBMPlexSans;
-  font-size: 36px;
-  font-weight: 500;
+  font-size: 28px;
+  font-weight: normal;
   color: ${themeStyle({
     dark: '#ffffff',
     light: Colors.uiLight06
   })};
-  opacity: 0.9;
 `);
 
 export const LoginForm = styled.form`
   display: flex;
   flex-direction: column;
-  margin-top: 104px;
+  margin-top: 53px;
 `;
 
 export const FormError = styled.div`
