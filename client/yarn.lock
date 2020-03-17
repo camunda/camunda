@@ -3952,20 +3952,20 @@ bpmn-js-disable-collapsed-subprocess@^0.1.1:
   dependencies:
     min-dash "^3.5.2"
 
-bpmn-js@6.3.2:
-  version "6.3.2"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-6.3.2.tgz#c86b25c5ac13bbeeefc517d02a294f5d9b85ba4b"
-  integrity sha512-/exUhrQkmGNMaaa6wAtJm5MnKej5qfEi2NOhOs0RuaRxKk1MBSCkZ8MuczuF/UBOyvxA4eKQYFiDmXiv1NETbA==
+bpmn-js@6.3.4:
+  version "6.3.4"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-6.3.4.tgz#9c4073d80be0a86cc465b907a8c177499ea125ae"
+  integrity sha512-sevA4iw7w9hC7PK04JtTDrhoP6Zkq+mNSstIGKR7zTmx07BjrDQMhuAs/+lcQxI0fB0VOj/C7ALmV2BQZ7M2nA==
   dependencies:
     bpmn-font "^0.9.3"
     bpmn-moddle "^6.0.2"
     css.escape "^1.5.1"
-    diagram-js "^6.4.0"
+    diagram-js "^6.4.1"
     diagram-js-direct-editing "^1.6.1"
     ids "^1.0.0"
     inherits "^2.0.1"
     min-dash "^3.5.1"
-    min-dom "^3.0.0"
+    min-dom "^3.1.2"
     object-refs "^0.3.0"
     tiny-svg "^2.2.1"
 
@@ -4663,7 +4663,7 @@ clone-deep@^4.0.1:
     kind-of "^6.0.2"
     shallow-clone "^3.0.0"
 
-closest@*, closest@0.0.1:
+closest@*:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/closest/-/closest-0.0.1.tgz#26da6f80b3e0e17e71f80f12782819e9f653495c"
   integrity sha1-JtpvgLPg4X5x+A8SeCgZ6fZTSVw=
@@ -5666,17 +5666,17 @@ diagram-js-direct-editing@^1.5.0, diagram-js-direct-editing@^1.6.1:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
 
-diagram-js@^6.3.0, diagram-js@^6.4.0:
-  version "6.4.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-6.4.0.tgz#fecdad9eab8f450cfc112bb43bf255cdc82b573f"
-  integrity sha512-E3U63Xh+79DAe7vl6UGe6JdgYWxQLBi03RpvsKGJpgJvv9cWnGDLVj6PBdVLCBZ1d3tXqQyGZIr0thswZhhBCA==
+diagram-js@^6.3.0, diagram-js@^6.4.1:
+  version "6.4.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-6.4.1.tgz#ba435ecd829c0403696fd32ec5c0b3f61fd86ba3"
+  integrity sha512-VqzydNl6RmnWuHT1B82VId7mH+TG+yZYkgEDp5BizaVDJyhl2F9Z1/q+X9FUQaBq08ZMW1NQP/Bljn56nGHjKw==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
     hammerjs "^2.0.1"
     inherits "^2.0.1"
     min-dash "^3.5.0"
-    min-dom "^3.0.0"
+    min-dom "^3.1.2"
     object-refs "^0.3.0"
     path-intersection "^2.2.0"
     tiny-svg "^2.2.1"
@@ -10107,12 +10107,11 @@ min-document@^2.19.0:
   dependencies:
     dom-walk "^0.1.0"
 
-min-dom@^3.0.0, min-dom@^3.1.1:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/min-dom/-/min-dom-3.1.1.tgz#53440d23d32a0a8bb6b2e657ca4cfd39d998a29a"
-  integrity sha512-qvURYMN2jHw9kPg1oFKdOd/VNJOsUNGV5H5j+zpJLkFVyP49tqmTQN8xWMYCDpIKetyQAC6jV5JjskNZr+JHpg==
+min-dom@^3.0.0, min-dom@^3.1.1, min-dom@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/min-dom/-/min-dom-3.1.2.tgz#a34698058a31931ff5830a159370bd8846aee752"
+  integrity sha512-JmI31A4l0G/PeOd1TQcM6U3GNofxJKF9hw2ERta8pCuIFvAIMZNGI4PJT/kbnq6Yh8rvqVTTZLVKyVtuZqqhiQ==
   dependencies:
-    closest "0.0.1"
     component-event "^0.1.4"
     delegate-events "^1.1.1"
     domify "^1.3.1"
