@@ -13,21 +13,43 @@ import {
 } from 'modules/constants';
 import useSubscription from 'modules/hooks/useSubscription';
 import useDataManager from 'modules/hooks/useDataManager';
-
 import {hasRunningBatchOperations} from './service';
+import {sortOperations} from './sortOperations';
 
+const pageSize = 20;
 const ACTIONS = Object.freeze({
   LOAD: 'LOAD',
-  PREPEND: 'PREPEND'
+  PREPEND: 'PREPEND',
+  INCREASE_PAGE: 'INCREASE_PAGE'
 });
-const INITIAL_STATE = [];
+const INITIAL_STATE = {batchOperations: [], page: 1};
 function reducer(state, action) {
   switch (action.type) {
     case ACTIONS.LOAD: {
-      return action.payload;
+      const batchOperations = [
+        ...state.batchOperations,
+        ...action.payload
+      ].reduce((accumulator, operation) => {
+        accumulator[operation.id] = operation;
+        return accumulator;
+      }, {});
+
+      return {
+        ...state,
+        batchOperations: sortOperations(Object.values(batchOperations))
+      };
     }
     case ACTIONS.PREPEND: {
-      return [action.payload, ...state];
+      return {
+        ...state,
+        batchOperations: [action.payload, ...state.batchOperations]
+      };
+    }
+    case ACTIONS.INCREASE_PAGE: {
+      return {
+        ...state,
+        page: state.page + 1
+      };
     }
     default:
       throw new Error('Unexpected action type');
@@ -39,13 +61,24 @@ function reducer(state, action) {
  * When active batch operations are fetched, is starts polling until all fetched operations are finished.
  */
 export default function useBatchOperations() {
-  const [batchOperations, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const {subscribe, unsubscribe} = useSubscription();
   const dataManager = useDataManager();
 
   const requestBatchOperations = useCallback(() => {
-    dataManager.getBatchOperations({pageSize: 20});
-  }, [dataManager]);
+    dataManager.getBatchOperations({pageSize: pageSize * state.page});
+  }, [dataManager, state.page]);
+
+  const requestNextBatchOperations = useCallback(
+    searchAfter => {
+      dispatch({type: ACTIONS.INCREASE_PAGE});
+      dataManager.getBatchOperations({
+        pageSize,
+        searchAfter
+      });
+    },
+    [dataManager]
+  );
 
   // Subscribe to updates on batch operations
   const subscribeToOperations = useCallback(() => {
@@ -86,15 +119,16 @@ export default function useBatchOperations() {
 
   // Register to polling, when there are running operations
   useEffect(() => {
-    if (hasRunningBatchOperations(batchOperations)) {
+    if (hasRunningBatchOperations(state.batchOperations)) {
       dataManager.poll.register(POLL_TOPICS.OPERATIONS, requestBatchOperations);
     } else {
       dataManager.poll.unregister(POLL_TOPICS.OPERATIONS);
     }
-  }, [dataManager, batchOperations, requestBatchOperations]);
+  }, [dataManager, requestBatchOperations, state.batchOperations]);
 
   return {
-    batchOperations,
-    requestBatchOperations
+    batchOperations: state.batchOperations,
+    requestBatchOperations,
+    requestNextBatchOperations
   };
 }
