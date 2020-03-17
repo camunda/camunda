@@ -15,6 +15,7 @@ import static org.junit.Assert.assertNotNull;
 
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.SynchronousLogStream;
+import io.zeebe.test.util.TestUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -100,6 +101,7 @@ public final class LogStreamTest {
     writer.value(wrapString("value")).tryWrite();
     writer.value(wrapString("value")).tryWrite();
     final long positionBeforeClose = writer.value(wrapString("value")).tryWrite();
+    TestUtil.waitUntil(() -> logStream.getCommitPosition() >= positionBeforeClose);
 
     // when
     logStream.close();

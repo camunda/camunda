@@ -61,18 +61,6 @@ public final class LogStreamRule extends ExternalResource {
     return new LogStreamRule(temporaryFolder, true, b -> {});
   }
 
-  public static LogStreamRule createRuleWithoutStarting(final TemporaryFolder temporaryFolder) {
-    return new LogStreamRule(temporaryFolder, false, b -> {});
-  }
-
-  public SynchronousLogStream startLogStreamWithStorageConfiguration(
-      final UnaryOperator<Builder> builder) {
-    logStorageRule = new AtomixLogStorageRule(temporaryFolder);
-    this.logStorageRule.open(builder);
-    createLogStream();
-    return logStream;
-  }
-
   @Override
   protected void before() {
     actorSchedulerRule = new ActorSchedulerRule(clock);
