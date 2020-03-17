@@ -29,20 +29,15 @@ describe('withSharedState', () => {
   });
 
   it('should store state in localstorage', () => {
-    localStorage.setItem.mockClear();
     const data = {a: 1, b: 2};
 
     node.instance().storeStateLocally(data);
 
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      'sharedState',
-      JSON.stringify(data)
-    );
+    expect(node.instance().getStateLocally()).toEqual(data);
   });
 
   it('should retrieve localstorage state', () => {
-    localStorage.getItem.mockImplementationOnce(() => '{"a": 1, "b": 2}');
-
+    node.instance().storeStateLocally({a: 1, b: 2});
     expect(node.instance().getStateLocally()).toEqual({a: 1, b: 2});
   });
 

@@ -522,7 +522,10 @@ class Instance extends Component {
         <VisuallyHiddenH1>
           {instance && `Camunda Operate Instance ${instance.id}`}
         </VisuallyHiddenH1>
-        <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
+        <SplitPane
+          titles={{top: 'Workflow', bottom: 'Instance Details'}}
+          expandedPaneId="instanceExpandedPaneId"
+        >
           <TopPanel
             instance={instance}
             selection={selection}
