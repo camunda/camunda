@@ -31,24 +31,27 @@ public class CreateBatchOperationRequestDto {
     return query;
   }
 
-  public void setQuery(ListViewQueryDto query) {
+  public CreateBatchOperationRequestDto setQuery(ListViewQueryDto query) {
     this.query = query;
+    return this;
   }
 
   public OperationType getOperationType() {
     return operationType;
   }
 
-  public void setOperationType(OperationType operationType) {
+  public CreateBatchOperationRequestDto setOperationType(OperationType operationType) {
     this.operationType = operationType;
+    return this;
   }
 
   public String getName() {
     return name;
   }
 
-  public void setName(String name) {
+  public CreateBatchOperationRequestDto setName(String name) {
     this.name = name;
+    return this;
   }
 
   @Override
