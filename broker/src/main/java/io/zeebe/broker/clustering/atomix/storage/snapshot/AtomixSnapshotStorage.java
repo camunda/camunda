@@ -19,7 +19,6 @@ import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -27,12 +26,12 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener {
+
   private static final Logger LOGGER = new ZbLogger(AtomixSnapshotStorage.class);
 
   private final Path runtimeDirectory;
   private final AtomixRecordEntrySupplier entrySupplier;
   private final SnapshotStore store;
-  private final int maxSnapshotCount;
   private final Set<SnapshotDeletionListener> deletionListeners;
   private final SnapshotMetrics metrics;
 
@@ -40,12 +39,10 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
       final Path runtimeDirectory,
       final SnapshotStore store,
       final AtomixRecordEntrySupplier entrySupplier,
-      final int maxSnapshotCount,
       final SnapshotMetrics metrics) {
     this.runtimeDirectory = runtimeDirectory;
     this.entrySupplier = entrySupplier;
     this.store = store;
-    this.maxSnapshotCount = maxSnapshotCount;
     this.metrics = metrics;
 
     this.deletionListeners = new CopyOnWriteArraySet<>();
@@ -142,31 +139,17 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   public void onNewSnapshot(
       final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
       final SnapshotStore store) {
-    final var snapshots = store.getSnapshots();
     metrics.incrementSnapshotCount();
     observeSnapshotSize(snapshot);
 
-    if (snapshots.size() >= maxSnapshotCount) {
-      // by the condition it's guaranteed there be a snapshot after skipping maxSnapshotCount - 1
-      @SuppressWarnings("squid:S3655")
-      final var oldest =
-          snapshots.stream()
-              .sorted(Comparator.reverseOrder())
-              .skip(maxSnapshotCount - 1L)
-              .findFirst()
-              .get();
+    LOGGER.debug("Purging snapshots older than {}", snapshot);
+    store.purgeSnapshots(snapshot);
 
-      LOGGER.info(
-          "Max snapshot count reached ({}), purging snapshots older than {}",
-          snapshots.size(),
-          oldest);
-      store.purgeSnapshots(oldest);
-
-      final var optionalConverted = toSnapshot(oldest.getPath());
-      if (optionalConverted.isPresent()) {
-        final var converted = optionalConverted.get();
-        deletionListeners.forEach(listener -> listener.onSnapshotsDeleted(converted));
-      }
+    final var optionalConverted = toSnapshot(snapshot.getPath());
+    if (optionalConverted.isPresent()) {
+      final var converted = optionalConverted.get();
+      // TODO #4067(@korthout): rename onSnapshotsDeleted, because it doesn't always delete
+      deletionListeners.forEach(listener -> listener.onSnapshotsDeleted(converted));
     }
   }
 

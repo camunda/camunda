@@ -26,6 +26,7 @@ import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.clustering.atomix.AtomixFactory;
+import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotMetadata;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -51,7 +52,9 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +68,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -606,16 +610,42 @@ public final class ClusteringRule extends ExternalResource {
     return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
   }
 
-  public void waitForValidSnapshotAtBroker(final Broker broker) {
-    waitForValidSnapshotAtBroker(broker, 1);
+  public DbSnapshotMetadata waitForSnapshotAtBroker(final Broker broker) {
+    return waitForNewSnapshotAtBroker(broker, null);
   }
 
-  void waitForValidSnapshotAtBroker(final Broker broker, final int snapshotCount) {
+  DbSnapshotMetadata waitForNewSnapshotAtBroker(
+      final Broker broker, final DbSnapshotMetadata previousSnapshot) {
+    final var referenceToResult = new AtomicReference<>(Optional.<DbSnapshotMetadata>empty());
     final File snapshotsDir = getSnapshotsDirectory(broker);
     waitUntil(
-        () ->
-            Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0)
-                >= snapshotCount);
+        () -> {
+          final File[] files = snapshotsDir.listFiles();
+          if (files == null || files.length == 0) {
+            return false;
+          }
+          final Optional<DbSnapshotMetadata> latestSnapshot =
+              Arrays.stream(files)
+                  .map(File::toPath)
+                  .map(DbSnapshotMetadata::ofPath)
+                  .flatMap(Optional::stream)
+                  .max(Comparator.naturalOrder());
+          if (latestSnapshot.isEmpty()) {
+            return false;
+          }
+          if (previousSnapshot != null && previousSnapshot.compareTo(latestSnapshot.get()) > -1) {
+            return false;
+          }
+          // latestSnapshot is newer than previousSnapshot
+          referenceToResult.set(latestSnapshot);
+          return true;
+        });
+    return referenceToResult
+        .get()
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Snapshot expected, but reference to snapshot is corrupted"));
   }
 
   LogStream getLogStream(final int partitionId) {

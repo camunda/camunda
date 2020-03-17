@@ -55,8 +55,8 @@ public class HealthMonitoringTest {
     // do some work to create a snapshot
     clientRule.createSingleJob(JOB_TYPE);
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForValidSnapshotAtBroker(leader);
-    followers.forEach(clusteringRule::waitForValidSnapshotAtBroker);
+    clusteringRule.waitForSnapshotAtBroker(leader);
+    followers.forEach(clusteringRule::waitForSnapshotAtBroker);
 
     // when
     // corrupt snapshot on all followers because we cannot control which one will become leader

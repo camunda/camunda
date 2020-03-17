@@ -38,7 +38,6 @@ import org.springframework.util.unit.DataSize;
 @RunWith(Parameterized.class)
 public final class ClusteredDataDeletionTest {
   private static final Duration SNAPSHOT_PERIOD = Duration.ofSeconds(30);
-  private static final int MAX_SNAPSHOTS = 1;
   @Rule public final ClusteringRule clusteringRule;
 
   public ClusteredDataDeletionTest(final Consumer<BrokerCfg> configurator, final String name) {
@@ -60,7 +59,6 @@ public final class ClusteredDataDeletionTest {
 
   private static void configureNoExporters(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
-    data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
     data.setLogSegmentSize(DataSize.ofKilobytes(8));
     data.setLogIndexDensity(50);
@@ -71,7 +69,6 @@ public final class ClusteredDataDeletionTest {
 
   private static void configureCustomExporter(final BrokerCfg brokerCfg) {
     final DataCfg data = brokerCfg.getData();
-    data.setMaxSnapshots(MAX_SNAPSHOTS);
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
     data.setLogSegmentSize(DataSize.ofKilobytes(8));
     data.setLogIndexDensity(50);
@@ -151,7 +148,7 @@ public final class ClusteredDataDeletionTest {
         });
 
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    brokers.forEach(clusteringRule::waitForValidSnapshotAtBroker);
+    brokers.forEach(clusteringRule::waitForSnapshotAtBroker);
     return segmentCounts;
   }
 

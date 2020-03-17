@@ -37,7 +37,6 @@ public final class RestoreTest {
           3,
           3,
           cfg -> {
-            cfg.getData().setMaxSnapshots(1);
             cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
             cfg.getData().setLogSegmentSize(ATOMIX_SEGMENT_SIZE);
             cfg.getNetwork().setMaxMessageSize(ATOMIX_SEGMENT_SIZE);
@@ -70,23 +69,23 @@ public final class RestoreTest {
     // when
     final long firstWorkflowKey = clientRule.deployWorkflow(firstWorkflow);
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
-    clusteringRule.waitForValidSnapshotAtBroker(getLeader());
+    clusteringRule.waitForSnapshotAtBroker(getLeader());
 
     final long secondWorkflowKey = clientRule.deployWorkflow(secondWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    clusteringRule.waitForValidSnapshotAtBroker(
+    clusteringRule.waitForSnapshotAtBroker(
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(2);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(2));
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(2));
 
     clusteringRule.stopBroker(1);
 
     final long thirdWorkflowKey = clientRule.deployWorkflow(thirdWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    clusteringRule.waitForValidSnapshotAtBroker(
+    clusteringRule.waitForSnapshotAtBroker(
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(1);

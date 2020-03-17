@@ -24,7 +24,6 @@ public final class DataCfg implements ConfigurationEntry {
 
   private Duration snapshotPeriod = Duration.ofMinutes(15);
 
-  private int maxSnapshots = 3;
   private int logIndexDensity = 100;
 
   @Override
@@ -61,14 +60,6 @@ public final class DataCfg implements ConfigurationEntry {
     this.snapshotPeriod = snapshotPeriod;
   }
 
-  public int getMaxSnapshots() {
-    return maxSnapshots;
-  }
-
-  public void setMaxSnapshots(final int maxSnapshots) {
-    this.maxSnapshots = maxSnapshots;
-  }
-
   public int getLogIndexDensity() {
     return logIndexDensity;
   }
@@ -88,8 +79,6 @@ public final class DataCfg implements ConfigurationEntry {
         + ", snapshotPeriod='"
         + snapshotPeriod
         + '\''
-        + ", maxSnapshots="
-        + maxSnapshots
         + ", logIndexDensity="
         + logIndexDensity
         + '}';
