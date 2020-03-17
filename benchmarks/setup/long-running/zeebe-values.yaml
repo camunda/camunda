@@ -1,10 +1,9 @@
 image:
   repository: camunda/zeebe
   tag: SNAPSHOT
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 # ZEEBE CFG
-
 clusterSize: 3
 partitionCount: 3
 replicationFactor: 3
@@ -12,9 +11,11 @@ cpuThreadCount: 4
 ioThreadCount: 4
 gatewayMetrics: true
 
+zeebeCfg: |
+  # custom TOML configuration
+
 # JavaOpts:
 # DEFAULTS
-
 JavaOpts: |
   -XX:+UseParallelGC 
   -XX:MinHeapFreeRatio=5
@@ -39,14 +40,12 @@ resources:
     memory: 12Gi
 
 # PVC
-
 pvcAccessMode: ["ReadWriteOnce"]
 pvcSize: 128Gi
 pvcStorageClassName: ssd
 
 
 # ELASTIC
-
 elasticsearch:
   enabled: true
   imageTag: 6.8.5
@@ -59,7 +58,7 @@ elasticsearch:
     storageClassName: "ssd"
     resources:
       requests:
-        storage: 500Gi
+        storage: 300Gi
 
   esJavaOpts: "-Xmx4g -Xms4g"
 
@@ -72,14 +71,13 @@ elasticsearch:
       memory: 8Gi
 
 # KIBANA
-
 kibana:
   enabled: false
 
 # PROMETHEUS
-
 prometheus:
   enabled: false
 
   servicemonitor:
     enabled: true
+
