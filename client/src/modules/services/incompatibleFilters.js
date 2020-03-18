@@ -6,10 +6,16 @@
 
 export function incompatibleFilters(filterData) {
   const filters = filterData.map(filter => filter.type);
+  const bothExist = arr => arr.every(val => filters.includes(val));
 
   return (
-    ['completedInstancesOnly', 'runningInstancesOnly'].every(val => filters.includes(val)) ||
-    ['canceledInstancesOnly', 'runningInstancesOnly'].every(val => filters.includes(val)) ||
-    ['endDate', 'runningInstancesOnly'].every(val => filters.includes(val))
+    bothExist(['completedInstancesOnly', 'runningInstancesOnly']) ||
+    bothExist(['completedInstancesOnly', 'suspendedInstancesOnly']) ||
+    bothExist(['canceledInstancesOnly', 'runningInstancesOnly']) ||
+    bothExist(['canceledInstancesOnly', 'nonCanceledInstancesOnly']) ||
+    bothExist(['canceledInstancesOnly', 'suspendedInstancesOnly']) ||
+    bothExist(['nonSuspendedInstancesOnly', 'suspendedInstancesOnly']) ||
+    bothExist(['endDate', 'runningInstancesOnly']) ||
+    bothExist(['endDate', 'suspendedInstancesOnly'])
   );
 }
