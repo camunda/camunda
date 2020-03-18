@@ -64,7 +64,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1582289494122,
+  "iteration": 1584614330956,
   "links": [],
   "panels": [
     {
@@ -88,7 +88,7 @@
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
-            "w": 7,
+            "w": 5,
             "x": 0,
             "y": 1
           },
@@ -208,7 +208,7 @@
           "gridPos": {
             "h": 9,
             "w": 9,
-            "x": 7,
+            "x": 5,
             "y": 1
           },
           "id": 116,
@@ -309,13 +309,114 @@
               "value": "current"
             }
           ],
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 9,
+            "w": 5,
+            "x": 14,
+            "y": 1
+          },
+          "id": 129,
+          "options": {},
+          "pageSize": null,
+          "scroll": true,
+          "showHeader": true,
+          "sort": {
+            "col": null,
+            "desc": false
+          },
+          "styles": [
+            {
+              "alias": "Time",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "alias": "",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "Broker Partition",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "pattern": "Metric",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "Status",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short",
+              "valueMaps": [
+                {
+                  "text": "Healthy",
+                  "value": "1"
+                },
+                {
+                  "text": "Unhealthy",
+                  "value": "0"
+                }
+              ]
+            }
+          ],
+          "targets": [
+            {
+              "expr": "zeebe_health{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}",
+              "instant": true,
+              "legendFormat": "{{pod}} {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Partition health ",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
+          "columns": [
+            {
+              "text": "Current",
+              "value": "current"
+            }
+          ],
           "datasource": "$DS_PROMETHEUS",
           "description": "Displays the current running pods in the namespace.",
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
-            "w": 8,
-            "x": 16,
+            "w": 5,
+            "x": 19,
             "y": 1
           },
           "id": 54,
@@ -3603,7 +3704,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 6
+            "y": 63
           },
           "id": 26,
           "legend": {
@@ -3692,7 +3793,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 6
+            "y": 63
           },
           "id": 27,
           "legend": {
@@ -3794,7 +3895,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 13
+            "y": 70
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3858,7 +3959,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 13
+            "y": 70
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3922,7 +4023,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 13
+            "y": 70
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5063,5 +5164,5 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 2
+  "version": 1
 }
