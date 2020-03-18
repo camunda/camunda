@@ -28,7 +28,7 @@ test('create a process from scratch', async t => {
 
 test('add sources, map and publish a process', async t => {
   // Creation
-
+  await t.resizeWindow(1100, 800);
   await t.click(e.navItem);
   await t.click(e.createDropdown);
   await t.setFilesToUpload(e.fileInput, './resources/eventsProcess.bpmn');
@@ -37,32 +37,27 @@ test('add sources, map and publish a process', async t => {
 
   await t.typeText(e.nameEditField, 'Invoice Process', {replace: true});
 
-  await t
-    .takeElementScreenshot(e.eventsContainer, 'event-based-processes/editModal.png')
-    .maximizeWindow();
+  await t.takeScreenshot('event-based-processes/editMode.png');
 
   // adding sources
 
   await t.click(e.addSource);
-
-  await t
-    .takeElementScreenshot(e.modalContainer, 'event-based-processes/sourceModal.png')
-    .maximizeWindow();
 
   await t.click(e.optionsButton(e.processTypeahead));
   await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
   await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
   await t.click(e.optionsButton(e.variableTypeahead));
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
+
+  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/sourceModal.png');
+
   await t.click(e.primaryModalButton);
 
   await t.click(e.addSource);
   await t.click(e.externalEvents);
   await t.click(e.primaryModalButton);
 
-  await t
-    .takeElementScreenshot(e.eventsTable, 'event-based-processes/eventsTable.png')
-    .maximizeWindow();
+  await t.takeElementScreenshot(e.eventsTable, 'event-based-processes/eventsTable.png');
 
   // Mapping
 
@@ -81,17 +76,13 @@ test('add sources, map and publish a process', async t => {
   await t.click(e.zoomButton);
   await t.click(e.zoomButton);
 
-  await t
-    .takeElementScreenshot(e.processView, 'event-based-processes/processView.png')
-    .maximizeWindow();
+  await t.takeScreenshot('event-based-processes/processView.png');
 
   // publishing
 
   await t.click(e.publishButton);
 
-  await t
-    .takeElementScreenshot(e.modalContainer, 'event-based-processes/publishModal.png')
-    .maximizeWindow();
+  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/publishModal.png');
 
   await t.click(e.permissionButton);
 
@@ -100,9 +91,7 @@ test('add sources, map and publish a process', async t => {
   await t.click(e.typeaheadOption(e.usersTypeahead, 'John'));
   await t.click(e.addButton);
 
-  await t
-    .takeElementScreenshot(e.modalContainer.nth(1), 'event-based-processes/usersModal.png')
-    .maximizeWindow();
+  await t.takeElementScreenshot(e.modalContainer.nth(1), 'event-based-processes/usersModal.png');
 
   await t.click(e.primaryModalButton.nth(1));
   await t.click(e.primaryModalButton);
