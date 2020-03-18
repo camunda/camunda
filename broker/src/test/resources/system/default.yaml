@@ -184,11 +184,6 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
       # snapshotPeriod: 15m
 
-      # The maximum number of snapshots kept (must be a positive integer). When this
-      # limit is passed the oldest snapshot is deleted.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_MAXSNAPSHOTS.
-      # maxSnapshots: 3
-
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
 
