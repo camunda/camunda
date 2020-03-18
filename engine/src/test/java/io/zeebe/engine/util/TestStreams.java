@@ -234,7 +234,7 @@ public final class TestStreams {
             currentSnapshotController,
             stream.getAsyncLogStream(),
             snapshotInterval);
-    actorScheduler.submitActor(asyncSnapshotDirector);
+    actorScheduler.submitActor(asyncSnapshotDirector).join();
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =

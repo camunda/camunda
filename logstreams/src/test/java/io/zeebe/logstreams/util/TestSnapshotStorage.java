@@ -16,6 +16,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -58,7 +60,8 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
   @Override
   public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
-    return new SnapshotImpl(getPendingDirectoryFor(String.valueOf(snapshotPosition)));
+    return new SnapshotImpl(
+        getPendingDirectoryFor(snapshotPosition + "_" + System.currentTimeMillis()));
   }
 
   @Override
@@ -144,7 +147,9 @@ public final class TestSnapshotStorage implements SnapshotStorage {
 
     private SnapshotImpl(final Path path) {
       this.path = path;
-      this.compactionBound = Long.valueOf(path.getFileName().toString());
+      final var snapshotDir = path.getFileName().toString();
+      final var parts = snapshotDir.split("_");
+      this.compactionBound = Long.valueOf(parts[0]);
     }
 
     @Override
@@ -155,6 +160,30 @@ public final class TestSnapshotStorage implements SnapshotStorage {
     @Override
     public Path getPath() {
       return path;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final SnapshotImpl snapshot = (SnapshotImpl) o;
+      return path.equals(snapshot.path);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(path);
+    }
+
+    @Override
+    public int compareTo(Snapshot other) {
+      return Comparator.comparing(Snapshot::getCompactionBound)
+          .thenComparing(Snapshot::getPath)
+          .compare(this, other);
     }
 
     @Override
