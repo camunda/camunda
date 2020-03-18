@@ -667,9 +667,10 @@
           "fixed": "Festes Datum",
           "this": "Diese...",
           "last": "Letzte...",
-          "custom": "Laufendes"
+          "custom": "Gleitend"
         },
-        "rollingInfo": "Hinweis: Der gleitende Zeitraum wird bis zum aktuellen Zeitpunkt berechnet"
+        "rollingInfo": "Hinweis: Der gleitende Zeitraum wird bis zum aktuellen Zeitpunkt berechnet",
+        "last": "Letzte"
       },
       "variableModal": {
         "inputLabel": "Variablenname",

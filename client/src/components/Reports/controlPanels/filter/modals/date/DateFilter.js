@@ -136,7 +136,7 @@ export default class DateFilter extends React.Component {
                   )}
                   {dateType === 'custom' && (
                     <>
-                      last
+                      {t('common.filter.dateModal.last')}
                       <Input
                         className="number"
                         value={customNum}

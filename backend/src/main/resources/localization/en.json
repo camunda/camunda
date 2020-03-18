@@ -669,7 +669,8 @@
           "last": "Last...",
           "custom": "Rolling"
         },
-        "rollingInfo": "Note: rolling range is calculated up to the current time"
+        "rollingInfo": "Note: rolling range is calculated up to the current time",
+        "last": "last"
       },
       "variableModal": {
         "inputLabel": "Variable Name",
