@@ -8,7 +8,6 @@
 package io.zeebe.logstreams.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.groups.Tuple.tuple;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -82,9 +81,12 @@ public final class ReplicateSnapshotControllerTest {
     final int chunkTotalCount = firstChunk.getTotalCount();
     assertThat(totalCount).isEqualTo(chunkTotalCount);
 
+    assertThat(replicatedChunks).extracting(SnapshotChunk::getTotalCount).containsOnly(totalCount);
+
     assertThat(replicatedChunks)
-        .extracting(SnapshotChunk::getSnapshotId, SnapshotChunk::getTotalCount)
-        .containsOnly(tuple("1", totalCount));
+        .extracting(SnapshotChunk::getSnapshotId)
+        .flatExtracting(chunk -> List.of(chunk.split("_")))
+        .contains("1");
   }
 
   @Test

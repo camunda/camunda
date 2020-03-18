@@ -22,6 +22,10 @@ public abstract class Actor implements CloseableSilently {
     return getClass().getName();
   }
 
+  public boolean isActorClosed() {
+    return actor.isClosed();
+  }
+
   protected void onActorStarting() {
     // setup
   }

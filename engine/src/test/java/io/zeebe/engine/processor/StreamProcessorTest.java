@@ -9,6 +9,7 @@ package io.zeebe.engine.processor;
 
 import static io.zeebe.engine.processor.TypedRecordProcessors.processors;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -543,7 +544,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldNotCreateSnapshotWhenNoEventProcessed() throws Exception {
+  public void shouldCreateSnapshotEvenWhenNoEventProcessed() throws Exception {
     // given
     final CountDownLatch recoveredLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
@@ -568,11 +569,11 @@ public final class StreamProcessorTest {
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-    inOrder.verify(stateSnapshotController, never()).takeSnapshot(anyLong());
+    inOrder.verify(stateSnapshotController, TIMEOUT).takeSnapshot(anyLong());
   }
 
   @Test
-  public void shouldNotCreateSnapshotsIfNoProcessorProcessEvent() {
+  public void shouldCreateSnapshotsEvenIfNoProcessorProcessEvent() {
     // given
     streamProcessorRule.startTypedStreamProcessor((processors, context) -> processors);
 
@@ -584,16 +585,13 @@ public final class StreamProcessorTest {
     // then
     final StateSnapshotController stateSnapshotController =
         streamProcessorRule.getStateSnapshotController();
-    final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-
-    inOrder.verify(stateSnapshotController, never()).takeTempSnapshot(anyLong());
-    inOrder.verify(stateSnapshotController, never()).commitSnapshot(any(Snapshot.class));
+    waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 1);
+    assertThat(stateSnapshotController.getValidSnapshotsCount()).isEqualTo(1);
   }
 
   @Test
-  public void shouldNotCreateSnapshotsIfNewEventExist() {
+  public void shouldCreateSnapshotsAfterInterval() {
     // given
     final TypedRecordProcessor typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
@@ -609,12 +607,9 @@ public final class StreamProcessorTest {
     // then
     final StateSnapshotController stateSnapshotController =
         streamProcessorRule.getStateSnapshotController();
-    final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-
-    inOrder.verify(stateSnapshotController, never()).takeTempSnapshot(anyLong());
-    inOrder.verify(stateSnapshotController, never()).commitSnapshot(any());
+    waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 1);
+    assertThat(stateSnapshotController.getValidSnapshotsCount()).isEqualTo(1);
   }
 
   @Test

@@ -129,7 +129,8 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       try {
         checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
       } catch (final RocksDBException rocksException) {
-        throw new ZeebeDbException(rocksException);
+        throw new ZeebeDbException(
+            String.format("Failed to take snapshot in path %s.", snapshotDir), rocksException);
       }
     }
   }
