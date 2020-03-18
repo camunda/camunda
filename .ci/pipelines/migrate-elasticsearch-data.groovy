@@ -213,7 +213,7 @@ pipeline {
 		steps {
 		   container('maven') {
 		   	 // Migrate 
-			 sh("cd ./els-schema/target/classes && sh ./migrate.sh")
+			  sh("bash ./els-schema/target/classes/migrate.sh")
 		 }
 	  }
 	}
