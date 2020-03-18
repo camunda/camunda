@@ -71,26 +71,10 @@ public final class AtomixFactory {
     final String rootDirectory = dataConfiguration.getDirectories().get(0);
     IoUtil.ensureDirectoryExists(new File(rootDirectory), "Zeebe data directory");
 
-    final String systemPartitionName = "system";
-    final File systemDirectory = new File(rootDirectory, systemPartitionName);
-    IoUtil.ensureDirectoryExists(systemDirectory, "Raft system directory");
-
-    final RaftPartitionGroup systemGroup =
-        RaftPartitionGroup.builder(systemPartitionName)
-            .withNumPartitions(1)
-            .withPartitionSize(clusterCfg.getClusterSize())
-            .withMembers(getRaftGroupMembers(clusterCfg))
-            .withDataDirectory(systemDirectory)
-            .withFlushOnCommit()
-            .build();
-
     final RaftPartitionGroup partitionGroup =
         createRaftPartitionGroup(configuration, rootDirectory);
 
-    return atomixBuilder
-        .withManagementGroup(systemGroup)
-        .withPartitionGroups(partitionGroup)
-        .build();
+    return atomixBuilder.withPartitionGroups(partitionGroup).build();
   }
 
   private static RaftPartitionGroup createRaftPartitionGroup(
