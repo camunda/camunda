@@ -17,6 +17,7 @@ import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
@@ -36,18 +37,23 @@ public final class AsyncSnapshotDirector extends Actor {
   private static final String ERROR_MSG_ENFORCED_SNAPSHOT =
       "Unexpected exception occurred on creating snapshot, was enforced to do so.";
 
+  private static final Duration ONE_MINUTE = Duration.ofMinutes(1);
+
   private final SnapshotController snapshotController;
   private final LogStream logStream;
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
+  private final ThreadLocalRandom threadLocalRandom;
+  private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
+  private final Runnable scheduleSnapshotOnRate = this::scheduleSnapshotOnRate;
+  private final String actorName;
+
   private ActorCondition commitCondition;
   private Long lastWrittenEventPosition;
   private Snapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
-  private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
-  private final String actorName;
 
   public AsyncSnapshotDirector(
       final int nodeId,
@@ -61,6 +67,7 @@ public final class AsyncSnapshotDirector extends Actor {
     this.processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     this.actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
+    this.threadLocalRandom = ThreadLocalRandom.current();
   }
 
   @Override
@@ -71,11 +78,18 @@ public final class AsyncSnapshotDirector extends Actor {
   @Override
   protected void onActorStarting() {
     actor.setSchedulingHints(SchedulingHints.ioBound());
-    actor.runAtFixedRate(snapshotRate, prepareTakingSnapshot);
+    final var firstSnapshotTime =
+        RandomDuration.getRandomDuration(RandomDuration.ONE_MINUTE, snapshotRate);
+    actor.runDelayed(firstSnapshotTime, scheduleSnapshotOnRate);
 
     lastWrittenEventPosition = null;
     commitCondition = actor.onCondition(getConditionNameForPosition(), this::onCommitCheck);
     logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
+  }
+
+  private void scheduleSnapshotOnRate() {
+    actor.runAtFixedRate(snapshotRate, prepareTakingSnapshot);
+    prepareTakingSnapshot();
   }
 
   @Override
