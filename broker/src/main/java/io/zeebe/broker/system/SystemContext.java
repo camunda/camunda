@@ -25,6 +25,9 @@ public final class SystemContext {
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
+  private static final String SNAPSHOT_PERIOD_ERROR_MSG =
+      "Snapshot period %s needs to be larger then or equals to one minute.";
+  private static final Duration ONE_MINUTE = Duration.ofMinutes(1);
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
@@ -70,6 +73,13 @@ public final class SystemContext {
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
       throw new IllegalArgumentException(
           String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
+    }
+
+    final var dataCfg = brokerCfg.getData();
+
+    final var snapshotPeriod = dataCfg.getSnapshotPeriod();
+    if (snapshotPeriod.isNegative() || snapshotPeriod.minus(ONE_MINUTE).isNegative()) {
+      throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
     }
   }
 
