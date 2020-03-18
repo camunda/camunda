@@ -25,6 +25,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/testcontainers/testcontainers-go v0.3.1
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/text v0.3.2 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03 // indirect

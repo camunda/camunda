@@ -15,11 +15,11 @@
 package zbc
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -28,6 +28,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -84,7 +85,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	if errorStatus, ok := status.FromError(err); ok {
 		s.Equal(codes.Unimplemented, errorStatus.Code())
 	}
-	s.Equal(tokenType+" "+accessToken, interceptor.authHeader)
+	s.Equal("Bearer "+accessToken, interceptor.authHeader)
 }
 
 func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
@@ -182,7 +183,7 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 	// then
 	s.Error(err)
 	if errorStatus, ok := status.FromError(err); ok {
-		s.Equal(codes.Unauthenticated, errorStatus.Code())
+		s.Equal(codes.Unauthenticated, errorStatus.Code(), fmt.Sprintf("unexpected '%s'", err.Error()))
 	}
 	s.EqualValues(1, interceptor.interceptCounter)
 }
@@ -377,11 +378,10 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	truncateDefaultOAuthYamlCacheFile()
 	cache, err := NewOAuthYamlCredentialsCache(DefaultOauthYamlCachePath)
 	s.NoError(err)
-	err = cache.Update(audience, &OAuthCredentials{
+	err = cache.Update(audience, &oauth2.Token{
 		AccessToken: accessToken,
-		ExpiresIn:   3600,
+		Expiry:      time.Now().Add(time.Second * 3600),
 		TokenType:   "Bearer",
-		Scope:       "grpc",
 	})
 	s.NoError(err)
 
@@ -465,7 +465,6 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 
 	finishCmd := make(chan struct{})
 	go func() {
-
 		_, err = client.NewTopologyCommand().Send(ctx)
 		finishCmd <- struct{}{}
 	}()
@@ -552,24 +551,20 @@ func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audi
 			panic(err)
 		}
 
-		requestPayload := &oauthRequestPayload{}
-		err = json.Unmarshal(bytes, requestPayload)
+		query, err := url.ParseQuery(string(bytes))
 		if err != nil {
 			panic(err)
 		}
 
-		require.EqualValues(t, &oauthRequestPayload{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			Audience:     audience,
-			GrantType:    "client_credentials",
-		}, requestPayload)
+		require.Equal(t, "client_credentials", query.Get("grant_type"))
+		require.Equal(t, audience, query.Get("audience"))
+		require.Equal(t, clientID, query.Get("client_id"))
+		require.Equal(t, clientSecret, query.Get("client_secret"))
 
-		writer.WriteHeader(200)
+		writer.Header().Set("Content-Type", "application/json")
 		responsePayload := []byte("{\"access_token\": \"" + token.value + "\"," +
 			"\"expires_in\": 3600," +
-			"\"token_type\": \"" + tokenType + "\"," +
-			"\"scope\": \"grpc\"}")
+			"\"token_type\": \"bearer\"}")
 
 		_, err = writer.Write(responsePayload)
 		if err != nil {
