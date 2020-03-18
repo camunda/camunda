@@ -8,11 +8,8 @@
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,7 +59,7 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldGetPendingSnapshotForPositions() {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
     when(entrySupplier.getIndexedEntry(1)).thenReturn(Optional.of(newEntry(1)));
     when(entrySupplier.getIndexedEntry(2)).thenReturn(Optional.of(newEntry(2)));
 
@@ -81,7 +78,7 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldReturnNullIfNoEntryForPosition() {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
     when(entrySupplier.getIndexedEntry(1)).thenReturn(Optional.empty());
 
     // when
@@ -95,7 +92,7 @@ public final class AtomixSnapshotStorageTest {
   public void shouldGetPendingDirectoryForId() {
     // given
     final var id = "1-1-1";
-    final var storage = newStorage(1);
+    final var storage = newStorage();
 
     // when
     final var directory = storage.getPendingDirectoryFor(id);
@@ -110,7 +107,7 @@ public final class AtomixSnapshotStorageTest {
   public void shouldReturnNullIfIdIsNotMetadata() {
     // given
     final var id = "foo";
-    final var storage = newStorage(1);
+    final var storage = newStorage();
 
     // when
     final var directory = storage.getPendingDirectoryFor(id);
@@ -122,7 +119,7 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldCommitPendingSnapshot() throws IOException {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
 
     // when
     final var snapshot = newPendingSnapshot(1);
@@ -140,7 +137,7 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldGetLatestSnapshot() throws IOException {
     // given
-    final var storage = newStorage(1);
+    final var storage = newStorage();
 
     // when
     final var snapshot = newCommittedSnapshot(1);
@@ -155,19 +152,18 @@ public final class AtomixSnapshotStorageTest {
   @Test
   public void shouldNotifyDeletionListenersOnMaxSnapshotCount() throws IOException {
     // given
-    final var maxCount = 2;
     final var listener = mock(SnapshotDeletionListener.class);
-    final var storage = newStorage(maxCount);
+    final var storage = newStorage();
     storage.addDeletionListener(listener);
 
-    // when - then
+    // when the first snapshot then try to delete snapshots older than first
     final var first = newCommittedSnapshot(1);
-    verify(listener, never()).onSnapshotsDeleted(any());
+    verify(listener).onSnapshotsDeleted(eq(first));
 
-    // when - then
+    // when the second snapshot then all snapshots up to that snapshot are deleted
     final var second = newCommittedSnapshot(2);
-    verify(listener, times(1)).onSnapshotsDeleted(eq(first));
-    assertThat(storage.getSnapshots()).hasSize(maxCount).containsExactly(first, second);
+    verify(listener).onSnapshotsDeleted(eq(second));
+    assertThat(storage.getSnapshots()).hasSize(1).containsExactly(second);
   }
 
   private Snapshot newPendingSnapshot(final long position) {
@@ -183,11 +179,10 @@ public final class AtomixSnapshotStorageTest {
     return snapshotStorage.getLatestSnapshot().get();
   }
 
-  private AtomixSnapshotStorage newStorage(final int maxSnapshotsCount) {
+  private AtomixSnapshotStorage newStorage() {
     final var runtimeDirectory = temporaryFolder.getRoot().toPath().resolve("runtime");
     snapshotStorage =
-        new AtomixSnapshotStorage(
-            runtimeDirectory, store, entrySupplier, maxSnapshotsCount, new SnapshotMetrics(0));
+        new AtomixSnapshotStorage(runtimeDirectory, store, entrySupplier, new SnapshotMetrics(0));
     return snapshotStorage;
   }
 

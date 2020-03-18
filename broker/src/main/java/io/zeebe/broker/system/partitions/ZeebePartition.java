@@ -364,7 +364,6 @@ public final class ZeebePartition extends Actor
         runtimeDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
         new AtomixRecordEntrySupplierImpl(reader),
-        brokerCfg.getData().getMaxSnapshots(),
         new SnapshotMetrics(partitionId));
   }
 

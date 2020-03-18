@@ -71,7 +71,6 @@ public final class AtomixLogDeletionServiceTest {
             null,
             logStorageRule.getSnapshotStore(),
             new AtomixRecordEntrySupplierImpl(storageReader),
-            1,
             new SnapshotMetrics(PARTITION_ID));
     compactor = new Compactor();
 

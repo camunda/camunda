@@ -37,7 +37,6 @@ public final class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
-  private static final int MAX_SNAPSHOTS = 3;
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
   private static final String WORKFLOW_RESOURCE_NAME = "workflow.bpmn";
@@ -61,10 +60,10 @@ public final class SnapshotReplicationTest {
 
     // when
     triggerSnapshotCreation();
-    clusteringRule.waitForValidSnapshotAtBroker(leader);
+    clusteringRule.waitForSnapshotAtBroker(leader);
     final List<Broker> otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
     for (final Broker broker : otherBrokers) {
-      clusteringRule.waitForValidSnapshotAtBroker(broker);
+      clusteringRule.waitForSnapshotAtBroker(broker);
     }
 
     // then
@@ -86,8 +85,8 @@ public final class SnapshotReplicationTest {
     clusteringRule.stopBroker(firstFollowerId);
     triggerSnapshotCreation();
     clusteringRule.restartBroker(firstFollowerId);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 1);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 1);
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));
+    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId));
 
     // then - replicated
     final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
@@ -107,12 +106,15 @@ public final class SnapshotReplicationTest {
     // when - snapshot
     clusteringRule.stopBroker(firstFollowerId);
     triggerSnapshotCreation();
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 1);
+    final var snapshotAtSecondFollower =
+        clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));
     clusteringRule.restartBroker(firstFollowerId);
 
     triggerSnapshotCreation();
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 2);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 2);
+    clusteringRule.waitForNewSnapshotAtBroker(
+        clusteringRule.getBroker(firstFollowerId), snapshotAtSecondFollower);
+    clusteringRule.waitForNewSnapshotAtBroker(
+        clusteringRule.getBroker(secondFollowerId), snapshotAtSecondFollower);
 
     // then - replicated
     final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
@@ -136,14 +138,21 @@ public final class SnapshotReplicationTest {
 
     // when
     triggerSnapshotCreation();
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 1);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 1);
+    final var snapshotAtLeader =
+        clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(oldLeaderId));
+    final var snapshotAtFirstFollower =
+        clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId));
+    final var snapshotAtSecondFollower =
+        clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));
 
     triggerLeaderChange(oldLeaderId);
     triggerSnapshotCreation();
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId), 2);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId), 2);
-    clusteringRule.waitForValidSnapshotAtBroker(clusteringRule.getBroker(oldLeaderId), 3);
+    clusteringRule.waitForNewSnapshotAtBroker(
+        clusteringRule.getBroker(firstFollowerId), snapshotAtFirstFollower);
+    clusteringRule.waitForNewSnapshotAtBroker(
+        clusteringRule.getBroker(secondFollowerId), snapshotAtSecondFollower);
+    clusteringRule.waitForNewSnapshotAtBroker(
+        clusteringRule.getBroker(oldLeaderId), snapshotAtLeader);
 
     // then
     // the old leader will have an extra snapshot it created on shut down, so we swap the condition
@@ -233,7 +242,6 @@ public final class SnapshotReplicationTest {
   }
 
   private static void configureBroker(final BrokerCfg brokerCfg) {
-    brokerCfg.getData().setMaxSnapshots(MAX_SNAPSHOTS);
     brokerCfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
   }
 }
