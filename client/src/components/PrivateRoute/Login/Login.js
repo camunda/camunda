@@ -5,13 +5,12 @@
  */
 
 import React from 'react';
-
+import {t} from 'translation';
 import {login} from './service';
-
-import {Logo, MessageBox, Button, Input, Labeled} from 'components';
+import {MessageBox, Button, Input, Labeled} from 'components';
+import {ReactComponent as Logo} from './logo.svg';
 
 import './Login.scss';
-import {t} from 'translation';
 
 export default class Login extends React.Component {
   constructor(props) {
@@ -58,10 +57,8 @@ export default class Login extends React.Component {
 
     return (
       <form className="Login">
-        <h1>
-          <Logo />
-          {t('appName')}
-        </h1>
+        <Logo />
+        <h1>{t('login.appName')}</h1>
         {error ? <MessageBox type="error">{error}</MessageBox> : ''}
         <div className="controls">
           <div className="row">

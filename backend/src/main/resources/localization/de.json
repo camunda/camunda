@@ -9,6 +9,7 @@
     "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten"
   },
   "login": {
+    "appName": "Optimize",
     "username": "Nutzername",
     "password": "Passwort",
     "btn": "Einloggen",
