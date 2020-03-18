@@ -669,7 +669,7 @@
           "last": "Letzte...",
           "custom": "Laufendes"
         },
-        "rollingInfo": "Hinweis: Der laufende Zeitraum wird bis zum aktuellen Zeitpunkt berechnet"
+        "rollingInfo": "Hinweis: Der gleitende Zeitraum wird bis zum aktuellen Zeitpunkt berechnet"
       },
       "variableModal": {
         "inputLabel": "Variablenname",

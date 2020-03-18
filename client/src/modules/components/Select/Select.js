@@ -8,13 +8,12 @@ import React from 'react';
 import {Dropdown} from 'components';
 import classnames from 'classnames';
 import {ignoreFragments} from './service';
-
-const emptyLabel = 'Select...';
+import {t} from 'translation';
 
 export default class Select extends React.Component {
   state = {
     selected: this.props.value,
-    selectedLabel: emptyLabel
+    selectedLabel: t('common.select')
   };
 
   componentDidMount() {
@@ -23,7 +22,7 @@ export default class Select extends React.Component {
 
   componentDidUpdate({value}) {
     if (value !== this.props.value) {
-      this.label = emptyLabel;
+      this.label = t('common.select');
       this.setState({selected: this.props.value}, this.updateLabel);
     }
   }
