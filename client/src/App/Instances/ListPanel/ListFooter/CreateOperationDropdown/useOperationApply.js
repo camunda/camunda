@@ -16,7 +16,7 @@ export default function useOperationApply() {
   const {addAllVisibleIds, addIds} = useInstancesPollContext();
 
   return {
-    applyOperation: operationType => {
+    applyBatchOperation: operationType => {
       reset();
 
       const filterIds = query.ids || [];

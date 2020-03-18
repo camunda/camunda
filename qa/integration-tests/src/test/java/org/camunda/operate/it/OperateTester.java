@@ -33,9 +33,9 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
@@ -221,21 +221,16 @@ public class OperateTester {
   }
 
   public OperateTester updateVariableOperation(String varName, String varValue) throws Exception {
-    //TODO OPE-786
-    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
-    op.setName(varName);
-    op.setValue(varValue);
-    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
-//    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
-//    op.setVariableName(varName);
-//    op.setVariableValue(varValue);
-//    op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
+    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setVariableName(varName);
+    op.setVariableValue(varValue);
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
     postOperation(op);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;
   }
 
-  private MvcResult postOperation(OperationRequestDto operationRequest) throws Exception {
+  private MvcResult postOperation(CreateOperationRequestDto operationRequest) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
         post(String.format( "/api/workflow-instances/%s/operation", workflowInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
@@ -249,8 +244,8 @@ public class OperateTester {
   }
 
   public OperateTester cancelWorkflowInstanceOperation() throws Exception {
-    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    final ListViewRequestDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
+        .setIds(Collections.singletonList(workflowInstanceKey.toString()));
 
     CreateBatchOperationRequestDto batchOperationDto
         = new CreateBatchOperationRequestDto(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);

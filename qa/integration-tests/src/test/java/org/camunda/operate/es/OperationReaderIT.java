@@ -18,7 +18,6 @@ import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -70,7 +69,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
   public void testWorfklowInstanceQuery() throws Exception {
     when(userService.getCurrentUsername()).thenReturn(USER_1);
 
-    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(ListViewQueryDto::setAllRunning);
+    ListViewRequestDto workflowInstanceQueryDto = TestUtil.createGetAllRunningQuery();
     MvcResult mvcResult = postRequest(queryWorkflowInstances(0, 100),workflowInstanceQueryDto);
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 

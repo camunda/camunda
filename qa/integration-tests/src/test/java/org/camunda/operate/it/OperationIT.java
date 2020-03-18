@@ -17,6 +17,7 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
@@ -29,7 +30,6 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.OperationDto;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -124,7 +124,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     final String batchOperationName = "operationName";
-    final ListViewQueryDto allRunningQuery = ListViewQueryDto.createAllRunning();
+    final ListViewRequestDto allRunningQuery = TestUtil.createGetAllRunningQuery();
     final MvcResult mvcResult = postBatchOperationWithOKResponse(allRunningQuery, OperationType.CANCEL_WORKFLOW_INSTANCE, batchOperationName);
 
     //then
@@ -261,7 +261,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //no workflow instances
 
     //when
-    final MvcResult mvcResult = postBatchOperationWithOKResponse(ListViewQueryDto.createAllRunning(), OperationType.CANCEL_WORKFLOW_INSTANCE);
+    final MvcResult mvcResult = postBatchOperationWithOKResponse(TestUtil.createGetAllRunningQuery(), OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //then
     final CreateOperationResponseDto operationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
@@ -321,7 +321,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-786")
   public void testUpdateVariableOnWorkflowInstance() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -378,7 +377,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-786")
   public void testAddVariableOnWorkflowInstance() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -418,7 +416,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-786")
   public void testAddVariableOnTask() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -470,7 +467,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-786")
   public void testUpdateVariableOnTask() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -527,8 +523,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
-    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    final ListViewRequestDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
+        .setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
@@ -576,8 +572,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntities.get(0).getBatchOperationIds()).containsExactly(batchOperationEntity.getId());
   }
 
-  private List<WorkflowInstanceForListViewEntity> getWorkflowInstanceEntities(ListViewQueryDto workflowInstanceQuery) {
-    return listViewReader.queryListView(new ListViewRequestDto(workflowInstanceQuery), 0, 10, new ListViewResponseDto());
+  private List<WorkflowInstanceForListViewEntity> getWorkflowInstanceEntities(ListViewRequestDto workflowInstanceQuery) {
+    return listViewReader.queryListView(workflowInstanceQuery, 0, 10, new ListViewResponseDto());
   }
 
   @Test
@@ -629,8 +625,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when we call CANCEL_WORKFLOW_INSTANCE and then RESOLVE_INCIDENT operation on one instance
-    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    final ListViewRequestDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
+        .setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postOperationWithOKResponse(workflowInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_WORKFLOW_INSTANCE));  //#1
     executeOneBatch();
 
@@ -699,8 +695,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
-    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    final ListViewRequestDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
+        .setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
@@ -734,8 +730,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance
-    final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
+    final ListViewRequestDto workflowInstanceQuery = TestUtil.createGetAllWorkflowInstancesQuery()
+        .setIds(Collections.singletonList(workflowInstanceKey.toString()));
     postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
@@ -764,7 +760,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     }
 
     //when
-    final MvcResult mvcResult = postBatchOperation(ListViewQueryDto.createAllRunning(), OperationType.RESOLVE_INCIDENT, null, HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postBatchOperation(TestUtil.createGetAllRunningQuery(), OperationType.RESOLVE_INCIDENT, null, HttpStatus.SC_BAD_REQUEST);
 
     final String expectedErrorMsg = String
       .format("Too many workflow instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
@@ -778,11 +774,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     return workflowInstanceKey;
   }
 
-  private ListViewResponseDto getWorkflowInstances(ListViewQueryDto query) throws Exception {
-    ListViewRequestDto request = new ListViewRequestDto();
-    request.addQuery(query);
+  private ListViewResponseDto getWorkflowInstances(ListViewRequestDto query) throws Exception {
     MockHttpServletRequestBuilder getWorkflowInstancesRequest =
-      post(query(0, 100)).content(mockMvcTestRule.json(request))
+      post(query(0, 100)).content(mockMvcTestRule.json(query))
         .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult =
@@ -791,7 +785,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
         .andExpect(content().contentType(mockMvcTestRule.getContentType()))
         .andReturn();
 
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
+    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });
   }
   

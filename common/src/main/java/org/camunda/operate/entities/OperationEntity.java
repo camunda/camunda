@@ -16,10 +16,6 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   private String variableName;
   private String variableValue;
   private OperationType type;
-  @Deprecated //OPE-786
-  private OffsetDateTime startDate;
-  @Deprecated //OPE-786
-  private OffsetDateTime endDate;
   private OffsetDateTime lockExpirationTime;
   private String lockOwner;
   private OperationState state;
@@ -82,24 +78,6 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
 
   public void setZeebeCommandKey(Long zeebeCommandKey) {
     this.zeebeCommandKey = zeebeCommandKey;
-  }
-
-  @Deprecated //OPE-786
-  public OffsetDateTime getStartDate() {
-    return startDate;
-  }
-
-  public void setStartDate(OffsetDateTime startDate) {
-    this.startDate = startDate;
-  }
-
-  @Deprecated //OPE-786
-  public OffsetDateTime getEndDate() {
-    return endDate;
-  }
-
-  public void setEndDate(OffsetDateTime endDate) {
-    this.endDate = endDate;
   }
 
   public OperationState getState() {
@@ -177,10 +155,6 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
       return false;
     if (type != that.type)
       return false;
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
-      return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
-      return false;
     if (lockExpirationTime != null ? !lockExpirationTime.equals(that.lockExpirationTime) : that.lockExpirationTime != null)
       return false;
     if (lockOwner != null ? !lockOwner.equals(that.lockOwner) : that.lockOwner != null)
@@ -206,8 +180,6 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
     result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
-    result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
-    result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (lockExpirationTime != null ? lockExpirationTime.hashCode() : 0);
     result = 31 * result + (lockOwner != null ? lockOwner.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
@@ -221,8 +193,8 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   @Override
   public String toString() {
     return "OperationEntity{" + "workflowInstanceKey=" + workflowInstanceKey + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey + ", variableName='"
-        + variableName + '\'' + ", variableValue='" + variableValue + '\'' + ", type=" + type + ", startDate=" + startDate
-        + ", endDate=" + endDate + ", lockExpirationTime=" + lockExpirationTime + ", lockOwner='" + lockOwner + '\'' + ", state=" + state + ", errorMessage='"
-        + errorMessage + '\'' + ", batchOperationId='" + batchOperationId + '\'' + ", zeebeCommandKey=" + zeebeCommandKey + '}';
+        + variableName + '\'' + ", variableValue='" + variableValue + '\'' + ", type=" + type + ", lockExpirationTime=" + lockExpirationTime + ", lockOwner='"
+        + lockOwner + '\'' + ", state=" + state + ", errorMessage='" + errorMessage + '\'' + ", batchOperationId='" + batchOperationId + '\''
+        + ", zeebeCommandKey=" + zeebeCommandKey + '}';
   }
 }

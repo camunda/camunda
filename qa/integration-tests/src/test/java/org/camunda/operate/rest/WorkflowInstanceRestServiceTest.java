@@ -18,9 +18,8 @@ import org.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
-import org.camunda.operate.webapp.es.writer.OldBatchOperationWriter;
 import org.camunda.operate.webapp.rest.WorkflowInstanceRestService;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.junit.Test;
@@ -53,9 +52,6 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
 
   @MockBean
   private SequenceFlowReader sequenceFlowReader;
-
-  @MockBean
-  private OldBatchOperationWriter oldBatchOperationWriter;
 
   @MockBean
   private BatchOperationWriter batchOperationWriter;
@@ -125,14 +121,14 @@ public class WorkflowInstanceRestServiceTest extends OperateIntegrationTest {
 
   @Test
   public void testBatchOperationForUpdateVariableFailsWrongEndpoint() throws Exception {
-    CreateBatchOperationRequestDto operationRequestDto = new CreateBatchOperationRequestDto(new ListViewQueryDto(), OperationType.UPDATE_VARIABLE);
+    CreateBatchOperationRequestDto operationRequestDto = new CreateBatchOperationRequestDto(new ListViewRequestDto(), OperationType.UPDATE_VARIABLE);
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
     assertErrorMessageContains(mvcResult, "For variable update use \"Create operation for one workflow instance\" endpoint.");
   }
 
   @Test
   public void testBatchOperationFailsNoOperationType() throws Exception {
-    CreateBatchOperationRequestDto operationRequestDto = new CreateBatchOperationRequestDto(new ListViewQueryDto(), null);
+    CreateBatchOperationRequestDto operationRequestDto = new CreateBatchOperationRequestDto(new ListViewRequestDto(), null);
     MvcResult mvcResult = postRequestThatShouldFail(getBatchOperationUrl(), operationRequestDto);
     assertErrorMessageContains(mvcResult, "Operation type must be defined.");
   }

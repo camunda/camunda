@@ -52,15 +52,11 @@ export async function fetchWorkflowCoreStatistics() {
 }
 
 export async function fetchWorkflowInstancesByIds(ids) {
-  const payload = {
-    queries: [
-      parseFilterForRequest({
-        ...FILTER_SELECTION.running,
-        ...FILTER_SELECTION.finished,
-        ids: ids.join(',')
-      })
-    ]
-  };
+  const payload = parseFilterForRequest({
+    ...FILTER_SELECTION.running,
+    ...FILTER_SELECTION.finished,
+    ids: ids.join(',')
+  });
 
   const options = {
     firstResult: 0,
@@ -92,13 +88,12 @@ export async function fetchWorkflowInstancesBySelection(payload) {
 
 export async function fetchWorkflowInstancesStatistics(payload) {
   const url = `${URL}/statistics`;
-  const response = await post(url, {queries: [...payload.queries]});
+  const response = await post(url, payload);
   return {statistics: await response.json()};
 }
 
 /**
- * @param {*} operationType constants specifying the operation to be applied.
- * @param {*} queries object with query params.
+ * @param {*} payload object with query params.
  */
 export async function applyBatchOperation(operationType, query) {
   const url = `${URL}/batch-operation`;

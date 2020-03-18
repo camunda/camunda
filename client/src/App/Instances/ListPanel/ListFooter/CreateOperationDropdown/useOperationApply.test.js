@@ -37,7 +37,7 @@ function renderUseOperationApply({instanceSelectionContext, filterContext}) {
     )
   });
 
-  result.current.applyOperation(OPERATION_TYPE);
+  result.current.applyBatchOperation(OPERATION_TYPE);
 }
 
 describe('useOperationApply', () => {

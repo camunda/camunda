@@ -19,7 +19,6 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.SortingDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
@@ -151,10 +150,8 @@ public class ListViewReader {
   }
 
   private SearchRequest createSearchRequest(ListViewRequestDto workflowInstanceRequest) {
-    for (ListViewQueryDto queryFragment: workflowInstanceRequest.getQueries()) {
-      if (queryFragment.isFinished()) {
-        return ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL);
-      }
+    if (workflowInstanceRequest.isFinished()) {
+      return ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL);
     }
     return ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME);
   }
@@ -188,25 +185,25 @@ public class ListViewReader {
   }
 
   private QueryBuilder createRequestQuery(ListViewRequestDto request) {
-    List<QueryBuilder> queries = CollectionUtil.map(request.getQueries(), (queryDto) -> createQueryFragment(queryDto));
+    final QueryBuilder query = createQueryFragment(request);
 
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
-    final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, joinWithOr(queries));
+    final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, query);
 
     return constantScoreQuery(queryBuilder);
   }
 
-  public ConstantScoreQueryBuilder createWorkflowInstancesQuery(ListViewQueryDto query) {
+  public ConstantScoreQueryBuilder createWorkflowInstancesQuery(ListViewRequestDto query) {
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
     final QueryBuilder queryBuilder = joinWithAnd(isWorkflowInstanceQuery, createQueryFragment(query));
     return constantScoreQuery(queryBuilder);
   }
 
-  public QueryBuilder createQueryFragment(ListViewQueryDto query) {
+  public QueryBuilder createQueryFragment(ListViewRequestDto query) {
     return createQueryFragment(query, ALL);
   }
 
-  public QueryBuilder createQueryFragment(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  public QueryBuilder createQueryFragment(ListViewRequestDto query, ElasticsearchUtil.QueryType queryType) {
     //archived instances can't have active incidents, error message filter will always return empty list
     if (queryType == ONLY_ARCHIVE && query.getErrorMessage() != null) {
       return ElasticsearchUtil.createMatchNoneQuery();
@@ -226,21 +223,21 @@ public class ListViewReader {
     );
   }
 
-  private QueryBuilder createBatchOperatioIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createBatchOperatioIdQuery(ListViewRequestDto query) {
     if (query.getBatchOperationId() != null) {
       return termQuery(ListViewTemplate.BATCH_OPERATION_IDS, query.getBatchOperationId());
     }
     return null;
   }
 
-  private QueryBuilder createWorkflowKeysQuery(ListViewQueryDto query) {
+  private QueryBuilder createWorkflowKeysQuery(ListViewRequestDto query) {
     if (CollectionUtil.isNotEmpty(query.getWorkflowIds())) {
       return termsQuery(ListViewTemplate.WORKFLOW_KEY, query.getWorkflowIds());
     }
     return null;
   }
 
-  private QueryBuilder createBpmnProcessIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createBpmnProcessIdQuery(ListViewRequestDto query) {
     if (!StringUtils.isEmpty(query.getBpmnProcessId())) {
       final TermQueryBuilder bpmnProcessIdQ = termQuery(ListViewTemplate.BPMN_PROCESS_ID, query.getBpmnProcessId());
       TermQueryBuilder versionQ = null;
@@ -252,7 +249,7 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createVariablesQuery(ListViewQueryDto query) {
+  private QueryBuilder createVariablesQuery(ListViewRequestDto query) {
     VariablesQueryDto variablesQuery = query.getVariable();
     if (variablesQuery != null && !StringUtils.isEmpty(variablesQuery.getName())) {
       if (variablesQuery.getName() == null) {
@@ -263,14 +260,14 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createExcludeIdsQuery(ListViewQueryDto query) {
+  private QueryBuilder createExcludeIdsQuery(ListViewRequestDto query) {
     if (CollectionUtil.isNotEmpty(query.getExcludeIds())) {
       return boolQuery().mustNot(termsQuery(ListViewTemplate.ID, query.getExcludeIds()));
     }
     return null;
   }
 
-  private QueryBuilder createEndDateQuery(ListViewQueryDto query) {
+  private QueryBuilder createEndDateQuery(ListViewRequestDto query) {
     if (query.getEndDateAfter() != null || query.getEndDateBefore() != null) {
       final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.END_DATE);
       if (query.getEndDateAfter() != null) {
@@ -285,7 +282,7 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createStartDateQuery(ListViewQueryDto query) {
+  private QueryBuilder createStartDateQuery(ListViewRequestDto query) {
     if (query.getStartDateAfter() != null || query.getStartDateBefore() != null) {
       final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.START_DATE);
       if (query.getStartDateAfter() != null) {
@@ -309,7 +306,7 @@ public class ListViewReader {
     return hasChildQuery(ACTIVITIES_JOIN_RELATION,QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
   }
 
-  private QueryBuilder createErrorMessageQuery(ListViewQueryDto query) {
+  private QueryBuilder createErrorMessageQuery(ListViewRequestDto query) {
     String errorMessage = query.getErrorMessage();
     if (!StringUtils.isEmpty(errorMessage)) {
       if(errorMessage.contains(WILD_CARD)) {
@@ -321,7 +318,7 @@ public class ListViewReader {
     return null;
   }
 
-  private QueryBuilder createIdsQuery(ListViewQueryDto query) {
+  private QueryBuilder createIdsQuery(ListViewRequestDto query) {
     if (CollectionUtil.isNotEmpty(query.getIds())) {
       return termsQuery(ListViewTemplate.ID, query.getIds());
     }
@@ -346,7 +343,7 @@ public class ListViewReader {
     }
   }
 
-  private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  private QueryBuilder createRunningFinishedQuery(ListViewRequestDto query, ElasticsearchUtil.QueryType queryType) {
 
     boolean active = query.isActive();
     boolean incidents = query.isIncidents();
@@ -411,7 +408,7 @@ public class ListViewReader {
 
   }
 
-  private QueryBuilder createActivityIdQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+  private QueryBuilder createActivityIdQuery(ListViewRequestDto query, ElasticsearchUtil.QueryType queryType) {
     if (StringUtils.isEmpty(query.getActivityId())) {
       return null;
     }
@@ -434,28 +431,28 @@ public class ListViewReader {
     return joinWithOr(activeActivityIdQuery, incidentActivityIdQuery, completedActivityIdQuery, canceledActivityIdQuery);
   }
 
-  private QueryBuilder createCanceledQuery(ListViewQueryDto query) {
+  private QueryBuilder createCanceledQuery(ListViewRequestDto query) {
     if (query.isCanceled()) {
       return termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
     }
     return null;
   }
 
-  private QueryBuilder createCompletedQuery(ListViewQueryDto query) {
+  private QueryBuilder createCompletedQuery(ListViewRequestDto query) {
     if (query.isCompleted()) {
       return termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
     }
     return null;
   }
 
-  private QueryBuilder createIncidentsQuery(ListViewQueryDto query) {
+  private QueryBuilder createIncidentsQuery(ListViewRequestDto query) {
     if (query.isIncidents()) {
       return hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(INCIDENT_KEY), None);
     }
     return null;
   }
 
-  private QueryBuilder createActiveQuery(ListViewQueryDto query) {
+  private QueryBuilder createActiveQuery(ListViewRequestDto query) {
     if (query.isActive()) {
       return boolQuery().mustNot(hasChildQuery(ACTIVITIES_JOIN_RELATION, existsQuery(INCIDENT_KEY), None));
     }

@@ -18,17 +18,14 @@ import org.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
-import org.camunda.operate.webapp.es.writer.OldBatchOperationWriter;
 import org.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.WorkflowInstanceCoreStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.webapp.rest.dto.oldoperation.OldBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
@@ -60,9 +57,6 @@ public class WorkflowInstanceRestService {
   public static final String WORKFLOW_INSTANCE_URL = "/api/workflow-instances";
 
   @Autowired
-  private OldBatchOperationWriter oldBatchOperationWriter;
-
-  @Autowired
   private BatchOperationWriter batchOperationWriter;
 
   @Autowired
@@ -90,10 +84,8 @@ public class WorkflowInstanceRestService {
       @RequestBody ListViewRequestDto workflowInstanceRequest,
       @RequestParam("firstResult") Integer firstResult,   //required
       @RequestParam("maxResults") Integer maxResults) {   //required
-    for (ListViewQueryDto query : workflowInstanceRequest.getQueries()) {
-      if (query.getWorkflowVersion() != null && query.getBpmnProcessId() == null) {
-        throw new InvalidRequestException("BpmnProcessId must be provided in request, when workflow version is not null.");
-      }
+    if (workflowInstanceRequest.getWorkflowVersion() != null && workflowInstanceRequest.getBpmnProcessId() == null) {
+      throw new InvalidRequestException("BpmnProcessId must be provided in request, when workflow version is not null.");
     }
     return listViewReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
   }
@@ -101,16 +93,9 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
   public CreateOperationResponseDto operation(@PathVariable String id,
-      @RequestBody org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto operationRequest) {
-    //TODO OPE-786 remove operation conversion
-    CreateOperationRequestDto newRequest = new CreateOperationRequestDto();
-    newRequest.setVariableScopeId(operationRequest.getScopeId());
-    newRequest.setVariableName(operationRequest.getName());
-    newRequest.setVariableValue(operationRequest.getValue());
-    newRequest.setOperationType(operationRequest.getOperationType());
-    newRequest.setIncidentId(operationRequest.getIncidentId());
-    validateOperationRequest(newRequest);
-    return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), newRequest);
+      @RequestBody CreateOperationRequestDto operationRequest) {
+    validateOperationRequest(operationRequest);
+    return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
   }
 
   private void validateBatchOperationRequest(CreateBatchOperationRequestDto batchOperationRequest) {
@@ -134,14 +119,6 @@ public class WorkflowInstanceRestService {
         || operationRequest.getVariableValue() == null)) {
         throw new InvalidRequestException("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
     }
-  }
-
-  @Deprecated //OPE-786
-  @ApiOperation("DEPRECATED Perform batch operation on selection (async)")
-  @PostMapping("/operation")
-  public CreateOperationResponseDto batchOperation(
-      @RequestBody OldBatchOperationRequestDto batchOperationRequest) {
-    return oldBatchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   @ApiOperation("Create batch operation based on filter")
@@ -178,11 +155,7 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Get activity instance statistics")
   @PostMapping(path = "/statistics")
-  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody ListViewRequestDto workflowInstanceRequest) {
-    if (!workflowInstanceRequest.hasExactOneQuery()) {
-      throw new InvalidRequestException("Exactly one query must be specified in the request.");
-    }
-    ListViewQueryDto query = workflowInstanceRequest.queryAt(0);
+  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody ListViewRequestDto query) {
     final List<Long> workflowKeys = CollectionUtil.toSafeListOfLongs(query.getWorkflowIds());
     final String bpmnProcessId = query.getBpmnProcessId();
     final Integer workflowVersion = query.getWorkflowVersion();

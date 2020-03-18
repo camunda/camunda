@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.webapp.rest.dto;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.OperationEntity;
@@ -17,10 +16,6 @@ public class OperationDto {
   private String id;
 
   private OperationType type;
-  @Deprecated //OPE-786
-  private OffsetDateTime startDate;
-  @Deprecated //OPE-786
-  private OffsetDateTime endDate;
 
   private OperationState state;
 
@@ -40,24 +35,6 @@ public class OperationDto {
 
   public void setType(OperationType type) {
     this.type = type;
-  }
-
-  @Deprecated
-  public OffsetDateTime getStartDate() {
-    return startDate;
-  }
-
-  public void setStartDate(OffsetDateTime startDate) {
-    this.startDate = startDate;
-  }
-
-  @Deprecated
-  public OffsetDateTime getEndDate() {
-    return endDate;
-  }
-
-  public void setEndDate(OffsetDateTime endDate) {
-    this.endDate = endDate;
   }
 
   public OperationState getState() {
@@ -83,8 +60,6 @@ public class OperationDto {
     OperationDto operation = new OperationDto();
     operation.setId(operationEntity.getId());
     operation.setType(operationEntity.getType());
-    operation.setStartDate(operationEntity.getStartDate());
-    operation.setEndDate(operationEntity.getEndDate());
     operation.setState(operationEntity.getState());
     operation.setErrorMessage(operationEntity.getErrorMessage());
     return operation;
@@ -115,10 +90,6 @@ public class OperationDto {
       return false;
     if (type != that.type)
       return false;
-    if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
-      return false;
-    if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
-      return false;
     if (state != that.state)
       return false;
     return errorMessage != null ? errorMessage.equals(that.errorMessage) : that.errorMessage == null;
@@ -128,8 +99,6 @@ public class OperationDto {
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (type != null ? type.hashCode() : 0);
-    result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
-    result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     return result;
