@@ -7,9 +7,12 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import com.google.gson.GsonBuilder;
+import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.util.Environment;
+import io.zeebe.util.exception.UncheckedExecutionException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -147,6 +150,10 @@ public final class BrokerCfg {
   }
 
   public String toJson() {
-    return new GsonBuilder().setPrettyPrinting().create().toJson(this);
+    try {
+      return getDefaultJsonObjectWriter().writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedExecutionException("Writing to JSON failed", e);
+    }
   }
 }
