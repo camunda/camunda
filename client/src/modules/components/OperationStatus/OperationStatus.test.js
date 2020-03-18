@@ -9,78 +9,78 @@ import {shallow} from 'enzyme';
 
 import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 
-import ActionStatus from './ActionStatus';
+import OperationStatus from './OperationStatus';
 import StatusItems from './StatusItems';
 
 import * as Styled from './styled';
 
-describe('ActionStatus', () => {
-  describe('ActionSpinner', () => {
+describe('OperationStatus', () => {
+  describe('OperationSpinner', () => {
     let node;
 
     it('should render a spinner', () => {
       // when
       node = shallow(
-        <ActionStatus
+        <OperationStatus
           operationState={OPERATION_STATE.SCHEDULED}
           instance={{id: 'foo'}}
         />
       );
       //then
-      expect(node.find(Styled.ActionSpinner)).toExist();
+      expect(node.find(Styled.OperationSpinner)).toExist();
 
       // when
       node = shallow(
-        <ActionStatus
+        <OperationStatus
           operationState={OPERATION_STATE.LOCKED}
           instance={{id: 'foo'}}
         />
       );
       //then
-      expect(node.find(Styled.ActionSpinner)).toExist();
+      expect(node.find(Styled.OperationSpinner)).toExist();
 
       // when
       node = shallow(
-        <ActionStatus
+        <OperationStatus
           operationState={OPERATION_STATE.SENT}
           instance={{id: 'foo'}}
         />
       );
       //then
-      expect(node.find(Styled.ActionSpinner)).toExist();
+      expect(node.find(Styled.OperationSpinner)).toExist();
     });
     it('should render a spinner if forceSpinner prop is true', () => {
       // when
       node = shallow(
-        <ActionStatus
+        <OperationStatus
           operationState={OPERATION_STATE.CANCELED}
           instance={{id: 'foo'}}
           forceSpinner
         />
       );
       //then
-      expect(node.find(Styled.ActionSpinner)).toExist();
+      expect(node.find(Styled.OperationSpinner)).toExist();
     });
     it('should not render a spinner', () => {
       // when
       node = shallow(
-        <ActionStatus
+        <OperationStatus
           operationState={OPERATION_STATE.CANCELED}
           instance={{id: 'foo'}}
         />
       );
       //then
-      expect(node.find(Styled.ActionSpinner)).not.toExist();
+      expect(node.find(Styled.OperationSpinner)).not.toExist();
     });
   });
 
-  describe('FailedActionItems', () => {
+  describe('FailedOperationItems', () => {
     let node;
 
-    it('should render a failed retry action icon', () => {
+    it('should render a failed retry operation icon', () => {
       // when
       node = shallow(
-        <ActionStatus
+        <OperationStatus
           operationState={OPERATION_STATE.FAILED}
           operationType={OPERATION_TYPE.RESOLVE_INCIDENT}
           instance={{id: 'foo'}}
@@ -94,10 +94,10 @@ describe('ActionStatus', () => {
       );
     });
 
-    it('should render a failed cancel action icon', () => {
+    it('should render a failed cancel operation icon', () => {
       // when
       node = shallow(
-        <ActionStatus
+        <OperationStatus
           operationState={OPERATION_STATE.FAILED}
           operationType={OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE}
           instance={{id: 'foo'}}

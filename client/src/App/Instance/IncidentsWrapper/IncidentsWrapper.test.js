@@ -30,8 +30,8 @@ jest.mock('react-transition-group', () => {
     props.in ? <FakeTransition>{props.children}</FakeTransition> : null
   );
 
-  jest.mock('modules/components/Actions/IncidentAction', () => {
-    return function IncidentAction() {
+  jest.mock('modules/components/Operations/IncidentOperation', () => {
+    return function IncidentOperation() {
       return <div />;
     };
   });

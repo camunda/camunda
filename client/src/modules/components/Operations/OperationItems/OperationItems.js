@@ -15,17 +15,17 @@ const iconsMap = {
   [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: <Styled.CancelIcon />
 };
 
-export default function ActionItems(props) {
+export default function OperationItems(props) {
   return (
     <Styled.Ul {...props}>{React.Children.toArray(props.children)}</Styled.Ul>
   );
 }
 
-ActionItems.propTypes = {
+OperationItems.propTypes = {
   children: PropTypes.node.isRequired
 };
 
-ActionItems.Item = function Item({title, onClick, type, ...rest}) {
+OperationItems.Item = function Item({title, onClick, type, ...rest}) {
   return (
     iconsMap.hasOwnProperty(type) && (
       <Styled.Li onClick={onClick}>
@@ -37,7 +37,7 @@ ActionItems.Item = function Item({title, onClick, type, ...rest}) {
   );
 };
 
-ActionItems.Item.propTypes = {
+OperationItems.Item.propTypes = {
   type: PropTypes.oneOf(Object.keys(OPERATION_TYPE)).isRequired,
   onClick: PropTypes.func,
   title: PropTypes.string

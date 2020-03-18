@@ -1,8 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Actions should match snapshots 1`] = `
+exports[`Operations should match snapshots 1`] = `
 <styled.div>
-  <ActionStatus
+  <OperationStatus
     forceSpinner={false}
     instance={
       Object {
@@ -38,19 +38,19 @@ exports[`Actions should match snapshots 1`] = `
     operationState="SCHEDULED"
     operationType="RESOLVE_INCIDENT"
   />
-  <ActionItems>
+  <OperationItems>
     <Item
       onClick={[Function]}
       title="Cancel Instance id_1"
       type="CANCEL_WORKFLOW_INSTANCE"
     />
-  </ActionItems>
+  </OperationItems>
 </styled.div>
 `;
 
-exports[`Actions should match snapshots 2`] = `
+exports[`Operations should match snapshots 2`] = `
 <styled.div>
-  <ActionStatus
+  <OperationStatus
     forceSpinner={false}
     instance={
       Object {
@@ -86,12 +86,12 @@ exports[`Actions should match snapshots 2`] = `
     operationState="FAILED"
     operationType="RESOLVE_INCIDENT"
   />
-  <ActionItems>
+  <OperationItems>
     <Item
       onClick={[Function]}
       title="Cancel Instance id_3"
       type="CANCEL_WORKFLOW_INSTANCE"
     />
-  </ActionItems>
+  </OperationItems>
 </styled.div>
 `;

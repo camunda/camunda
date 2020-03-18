@@ -30,9 +30,9 @@ export default React.memo(function Skeleton(props) {
           <Header.Td>
             <Styled.TimeStampBlock />
           </Header.Td>
-          <Styled.ActionSkeletonTD>
+          <Styled.OperationSkeletonTD>
             <Styled.RoundedBlock />
-          </Styled.ActionSkeletonTD>
+          </Styled.OperationSkeletonTD>
         </Header.Tr>
       </tbody>
     </Header.Table>

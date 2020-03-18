@@ -13,7 +13,7 @@ import IncidentsTable from './IncidentsTable';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 
-import {IncidentAction} from 'modules/components/Actions';
+import {IncidentOperation} from 'modules/components/Operations';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
@@ -184,7 +184,7 @@ describe('IncidentsTable', () => {
     expect(firstRowCells.at(4).text()).toContain(
       mockProps.incidents[0].errorMessage
     );
-    expect(firstRowCells.at(5).find(IncidentAction)).toExist();
+    expect(firstRowCells.at(5).find(IncidentOperation)).toExist();
   });
 
   it('should show a more button for long error messages', () => {

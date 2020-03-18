@@ -21,7 +21,7 @@ import {
   getInstancesWithActiveOperations
 } from 'modules/utils/instance';
 
-import Actions from 'modules/components/Actions';
+import Operations from 'modules/components/Operations';
 import Spinner from 'modules/components/Spinner';
 
 import InstanceHeader from './InstanceHeader';
@@ -108,11 +108,11 @@ describe('InstanceHeader', () => {
     expect(StateIconNode).toHaveLength(1);
     expect(StateIconNode.prop('state')).toBe(instanceState);
 
-    const ActionsNode = PaneHeaderNode.find(Actions);
-    expect(ActionsNode).toExist();
-    expect(ActionsNode.props().instance).toEqual(mockInstance);
+    const OperationsNode = PaneHeaderNode.find(Operations);
+    expect(OperationsNode).toExist();
+    expect(OperationsNode.props().instance).toEqual(mockInstance);
 
-    expect(ActionsNode.props().forceSpinner).toEqual(
+    expect(OperationsNode.props().forceSpinner).toEqual(
       !!getInstancesWithActiveOperations([mockInstance]).length
     );
   });

@@ -11,7 +11,7 @@ import {withData} from 'modules/DataManager';
 
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
-import Actions from 'modules/components/Actions';
+import Operations from 'modules/components/Operations';
 import Skeleton from './Skeleton';
 
 import * as Styled from './styled';
@@ -103,12 +103,12 @@ class InstanceHeader extends React.PureComponent {
                 <Styled.Td>{formatDate(instance.startDate)}</Styled.Td>
                 <Styled.Td>{formatDate(instance.endDate)}</Styled.Td>
                 <Styled.Td>
-                  <Styled.ActionsWrapper>
-                    <Actions
+                  <Styled.OperationsWrapper>
+                    <Operations
                       instance={instance}
                       forceSpinner={this.state.hasActiveOperation}
                     />
-                  </Styled.ActionsWrapper>
+                  </Styled.OperationsWrapper>
                 </Styled.Td>
               </Styled.Tr>
             </tbody>

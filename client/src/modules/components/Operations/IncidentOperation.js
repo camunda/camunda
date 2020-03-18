@@ -10,13 +10,13 @@ import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
 
 import {OPERATION_TYPE, LOADING_STATE} from 'modules/constants';
-import ActionStatus from 'modules/components/ActionStatus';
+import OperationStatus from 'modules/components/OperationStatus';
 
-import ActionItems from './ActionItems';
+import OperationItems from './OperationItems';
 
 import * as Styled from './styled';
 
-class IncidentAction extends React.Component {
+class IncidentOperation extends React.Component {
   static propTypes = {
     incident: PropTypes.object.isRequired,
     instanceId: PropTypes.string.isRequired,
@@ -53,7 +53,7 @@ class IncidentAction extends React.Component {
 
     const {dataManager, instanceId, incident} = this.props;
 
-    // incidents actions should listen to main btn who publishes the incident ids which are affected
+    // incidents operations should listen to main btn who publishes the incident ids which are affected
     dataManager.applyOperation(instanceId, {
       operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
       incidentId: incident.id
@@ -65,22 +65,22 @@ class IncidentAction extends React.Component {
       this.state.isSpinnerVisible || this.props.showSpinner;
 
     return (
-      <Styled.Actions>
-        {isSpinnerVisible && <ActionStatus.Spinner />}
+      <Styled.Operations>
+        {isSpinnerVisible && <OperationStatus.Spinner />}
 
-        <ActionItems>
-          <ActionItems.Item
+        <OperationItems>
+          <OperationItems.Item
             type={OPERATION_TYPE.RESOLVE_INCIDENT}
             onClick={this.handleOnClick}
             title="Retry Incident"
           />
-        </ActionItems>
-      </Styled.Actions>
+        </OperationItems>
+      </Styled.Operations>
     );
   }
 }
 
-const WrappedAction = withData(IncidentAction);
-WrappedAction.WrappedComponent = IncidentAction;
+const WrappedOperation = withData(IncidentOperation);
+WrappedOperation.WrappedComponent = IncidentOperation;
 
-export default WrappedAction;
+export default WrappedOperation;
