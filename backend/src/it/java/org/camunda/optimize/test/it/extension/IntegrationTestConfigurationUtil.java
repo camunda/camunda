@@ -66,4 +66,11 @@ public class IntegrationTestConfigurationUtil {
   public static int getHttpTimeoutMillis() {
     return Integer.parseInt(System.getProperty("httpTestTimeout", "10000"));
   }
+
+  public static int getElasticsearchMockServerPort() {
+    return Integer.parseInt(
+      System.getProperty("elasticSearchMockServerPort", "1080")
+    );
+  }
+
 }

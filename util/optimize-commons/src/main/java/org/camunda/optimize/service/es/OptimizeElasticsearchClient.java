@@ -9,6 +9,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -45,6 +48,7 @@ import org.elasticsearch.client.indices.rollover.RolloverResponse;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -60,17 +64,28 @@ import java.util.Arrays;
  * as well as the {@link OptimizeIndexNameService}.
  */
 @Slf4j
-public class OptimizeElasticsearchClient {
+public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   @Getter
-  private final RestHighLevelClient highLevelClient;
+  private RestHighLevelClient highLevelClient;
   @Getter
-  private final OptimizeIndexNameService indexNameService;
+  private OptimizeIndexNameService indexNameService;
 
   public OptimizeElasticsearchClient(final RestHighLevelClient highLevelClient,
                                      final OptimizeIndexNameService indexNameService) {
     this.highLevelClient = highLevelClient;
     this.indexNameService = indexNameService;
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    try {
+      highLevelClient.close();
+      this.highLevelClient = ElasticsearchHighLevelRestClientBuilder.build(context.getBean(ConfigurationService.class));
+      this.indexNameService = context.getBean(OptimizeIndexNameService.class);
+    } catch (IOException e) {
+      log.error("There was an error closing Elasticsearch Client {}", highLevelClient);
+    }
   }
 
   public final void close() throws IOException {

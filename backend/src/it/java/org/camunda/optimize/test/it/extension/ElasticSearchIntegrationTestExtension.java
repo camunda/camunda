@@ -31,6 +31,7 @@ import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventI
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -60,8 +61,10 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import javax.ws.rs.NotFoundException;
@@ -105,13 +108,16 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 /**
- * ElasticSearch Extension
+ * ElasticSearch Extension including retrievable MockServer
  */
 @Slf4j
-public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback {
+public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback, AfterEachCallback {
+
   private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS = new ToXContent.MapParams(
     Collections.singletonMap("flat_settings", "true")
   );
+
+  private static final String MOCKSERVER_CLIENT_KEY = "Mockserver";
 
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
   private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
@@ -123,6 +129,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private final String customIndexPrefix;
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
+
+  private static final ClientAndServer mockServerClient = initMockServer();
 
   public ElasticSearchIntegrationTestExtension() {
     this(null);
@@ -138,6 +146,21 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     before();
   }
 
+  @Override
+  public void afterEach(final ExtensionContext context) throws Exception {
+    // If the MockServer has been used, we reset all expectations and logs and revert to the default client
+    if (prefixAwareRestHighLevelClient == CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY)) {
+      log.info("Resetting all MockServer expectations and logs");
+      mockServerClient.reset();
+      log.info("No longer using ES MockServer");
+      initEsClient();
+    }
+  }
+
+  private static ElasticsearchConnectionNodeConfiguration getEsConfigForConfigurationService(final ConfigurationService configurationService) {
+    return configurationService.getElasticsearchConnectionNodes().get(0);
+  }
+
   private void before() {
     if (haveToClean) {
       log.info("Cleaning elasticsearch...");
@@ -150,15 +173,45 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
       prefixAwareRestHighLevelClient = CLIENT_CACHE.get(customIndexPrefix);
     } else {
-      final ConfigurationService configurationService = createConfigurationService();
-      final OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
-      prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
-        ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-        indexNameService
-      );
-      adjustClusterSettings();
-      CLIENT_CACHE.put(customIndexPrefix, prefixAwareRestHighLevelClient);
+      createClientAndAddToCache(customIndexPrefix, createConfigurationService());
     }
+  }
+
+  private static ClientAndServer initMockServer() {
+    log.debug("Setting up ES MockServer on port {}", IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
+    final ElasticsearchConnectionNodeConfiguration esConfig = getEsConfigForConfigurationService(
+      IntegrationTestConfigurationUtil.createItConfigurationService());
+    return MockServerFactory.createProxyMockServer(
+      esConfig.getHost(),
+      esConfig.getHttpPort(),
+      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
+    );
+  }
+
+  public ClientAndServer useESMockServer() {
+    log.debug("Using ElasticSearch MockServer");
+    if (CLIENT_CACHE.containsKey(MOCKSERVER_CLIENT_KEY)) {
+      prefixAwareRestHighLevelClient = CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY);
+    } else {
+      final ConfigurationService configurationService = createConfigurationService();
+      final ElasticsearchConnectionNodeConfiguration esConfig =
+        getEsConfigForConfigurationService(configurationService);
+      esConfig.setHttpPort(mockServerClient.getLocalPort());
+      createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService);
+    }
+    return mockServerClient;
+  }
+
+  private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
+    final ElasticsearchConnectionNodeConfiguration esConfig = getEsConfigForConfigurationService(
+      configurationService);
+    log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
+    prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
+      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+      new OptimizeIndexNameService(configurationService)
+    );
+    adjustClusterSettings();
+    CLIENT_CACHE.put(clientKey, prefixAwareRestHighLevelClient);
   }
 
   public ObjectMapper getObjectMapper() {
@@ -465,9 +518,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     Settings settings = Settings.builder()
       // disable automatic index creations to fail early in integration tests
       .put("action.auto_create_index", false)
-      // all of our tests are running against a one node cluster. Since we're creating a lot of indexes
-      // and each index creates 5 shards per default, we are easily hitting the default value of 1000.
-      // Thus, we need to increase this value for the test setup.
+      // all of our tests are running against a one node cluster. Since we're creating a lot of indexes,
+      // we are easily hitting the default value of 1000. Thus, we need to increase this value for the test setup.
       .put("cluster.max_shards_per_node", 10_000)
       .build();
     ClusterUpdateSettingsRequest clusterUpdateSettingsRequest = new ClusterUpdateSettingsRequest();

@@ -18,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -35,14 +35,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ForceReimportIT extends AbstractIT {
 
@@ -71,11 +69,11 @@ public class ForceReimportIT extends AbstractIT {
     List<AlertDefinitionDto> alerts = getAllAlerts();
 
     // then
-    assertThat(licenseExists(), is(true));
-    assertThat(reports.size(), is(1));
-    assertThat(dashboard, is(notNullValue()));
-    assertThat(alerts.size(), is(1));
-    assertThat(hasEngineData(), is(true));
+    assertThat(licenseExists()).isTrue();
+    assertThat(reports).hasSize(1);
+    assertThat(dashboard).isNotNull();
+    assertThat(alerts).hasSize(1);
+    assertThat(hasEngineData()).isTrue();
 
     // when
     forceReimportOfEngineData();
@@ -85,11 +83,11 @@ public class ForceReimportIT extends AbstractIT {
     alerts = getAllAlerts();
 
     // then
-    assertThat(licenseExists(), is(true));
-    assertThat(reports.size(), is(1));
-    assertThat(dashboard, is(notNullValue()));
-    assertThat(alerts.size(), is(1));
-    assertThat(hasEngineData(), is(false));
+    assertThat(licenseExists()).isTrue();
+    assertThat(reports).hasSize(1);
+    assertThat(dashboard).isNotNull();
+    assertThat(alerts).hasSize(1);
+    assertThat(hasEngineData()).isFalse();
   }
 
   private boolean hasEngineData() {

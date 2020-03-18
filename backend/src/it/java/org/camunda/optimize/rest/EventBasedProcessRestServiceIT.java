@@ -39,6 +39,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
+import org.mockserver.model.HttpError;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
@@ -63,6 +66,8 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINI
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.verify.VerificationTimes.exactly;
 
 public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
@@ -172,6 +177,9 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   @Test
   public void createEventProcessMapping() {
+    // given
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+
     // when
     Response response = eventProcessClient
       .createCreateEventProcessMappingRequest(
@@ -181,6 +189,32 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    esMockServer.verify(
+      request()
+        .withPath("/.*-event-process-mapping/_doc/.*")
+        .withMethod("PUT"),
+      exactly(1)
+    );
+  }
+
+  @Test
+  public void createEventProcessMappingElasticsearchConnectionError() {
+    // given
+    final ClientAndServer esMockServer = useElasticsearchMockServer();
+    esMockServer.when(
+      request().withPath("/.*-event-process-mapping/_doc/.*").withMethod("PUT"), Times.once()
+    ).error(
+      HttpError.error().withDropConnection(true)
+    );
+
+    // when
+    Response createResponse = eventProcessClient
+      .createCreateEventProcessMappingRequest(
+        eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml)
+      ).execute();
+
+    // then
+    assertThat(createResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test

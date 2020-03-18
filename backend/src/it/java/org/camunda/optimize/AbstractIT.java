@@ -22,6 +22,7 @@ import org.camunda.optimize.test.optimize.SharingClient;
 import org.camunda.optimize.test.optimize.UiConfigurationClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockserver.integration.ClientAndServer;
 
 import java.util.function.Supplier;
 
@@ -37,8 +38,15 @@ public abstract class AbstractIT {
   @RegisterExtension
   @Order(3)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
     () -> embeddedOptimizeExtension.getRequestExecutor();
+
+  protected ClientAndServer useElasticsearchMockServer() {
+    final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useESMockServer();
+    embeddedOptimizeExtension.configureEsPort(esMockServer.getLocalPort());
+    return esMockServer;
+  }
 
   // engine test helpers
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);

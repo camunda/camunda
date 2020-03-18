@@ -31,7 +31,6 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
@@ -45,7 +44,6 @@ public class EventProcessMappingWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
-  private final DateTimeFormatter formatter;
 
   public IdDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     String id = IdGenerator.getNextId();

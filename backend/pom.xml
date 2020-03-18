@@ -17,7 +17,7 @@
     <it.test.excludedGroups/>
     <test.forkCount/>
 
-    <test.argLine>-Xms256m -Xmx512m</test.argLine>
+    <test.argLine>-Xms256m -Xmx512m -Dnashorn.args="--no-deprecation-warning"</test.argLine>
   </properties>
 
   <dependencies>
@@ -322,7 +322,7 @@
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-junit-jupiter</artifactId>
-      <version>5.9.0</version>
+      <version>${mockserver.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -513,11 +513,12 @@
                 <enginePrefix>${surefire.forkNumber}-</enginePrefix>
                 <prefixedDefaultEngineName>${surefire.forkNumber}-integrationTest</prefixedDefaultEngineName>
                 <indexPrefix>${surefire.forkNumber}-</indexPrefix>
-                <!-- the 400/4001 prefix allows up to 99 forks till we exceed the valid port range of 65535 -->
+                <!-- the 400/401 prefix allows up to 99 forks till we exceed the valid port range of 65535 -->
                 <!-- and we stay in the user port range of 1024-49151 -->
                 <optimizeHttpPort>400${surefire.forkNumber}</optimizeHttpPort>
                 <optimizeHttpsPort>401${surefire.forkNumber}</optimizeHttpsPort>
                 <smtpTestPort>500${surefire.forkNumber}</smtpTestPort>
+                <elasticSearchMockServerPort>108${surefire.forkNumber}</elasticSearchMockServerPort>
                 <camunda.engine.version>${camunda.engine.version}</camunda.engine.version>
               </systemPropertyVariables>
             </configuration>

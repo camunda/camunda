@@ -25,11 +25,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CustomIndexPrefixIT extends AbstractIT {
   private static final String CUSTOM_PREFIX = UUID.randomUUID().toString().substring(0, 5);
@@ -62,11 +61,9 @@ public class CustomIndexPrefixIT extends AbstractIT {
     initializeSchema();
 
     // then
-    assertThat(prefixAwareRestHighLevelClient.getIndexNameService().getIndexPrefix(), is(CUSTOM_PREFIX));
-    assertThat(
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient),
-      is(true)
-    );
+    assertThat(prefixAwareRestHighLevelClient.getIndexNameService().getIndexPrefix()).isEqualTo(CUSTOM_PREFIX);
+    assertThat(embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient))
+      .isTrue();
   }
 
   @Test
@@ -80,7 +77,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size(), is(25));
+    assertThat(mappings).hasSize(25);
     for (IndexMappingCreator mapping : mappings) {
       final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(
         mapping.getIndexName(),
@@ -95,16 +92,12 @@ public class CustomIndexPrefixIT extends AbstractIT {
           .getHighLevelClient();
 
       assertThat(
-        "Custom prefix alias exists for type " + mapping.getIndexName(),
-        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedAliasName), RequestOptions.DEFAULT),
-        is(true)
-      );
+        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedAliasName), RequestOptions.DEFAULT)
+      ).isTrue();
 
       assertThat(
-        "Custom prefix index exists for type " + mapping.getIndexName(),
-        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedIndexName), RequestOptions.DEFAULT),
-        is(true)
-      );
+        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedIndexName), RequestOptions.DEFAULT)
+      ).isTrue();
     }
   }
 
@@ -130,11 +123,10 @@ public class CustomIndexPrefixIT extends AbstractIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     customPrefixElasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(1));
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)).isEqualTo(1);
     assertThat(
-      customPrefixElasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
-      is(2)
-    );
+      customPrefixElasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)
+    ).isEqualTo(2);
   }
 
   private void deploySimpleProcess() {

@@ -43,6 +43,7 @@ import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -133,6 +134,11 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     } catch (Exception e) {
       log.error("Failed to clean up after test", e);
     }
+  }
+
+  public void configureEsPort(final int esPort) {
+    getConfigurationService().getElasticsearchConnectionNodes().get(0).setHttpPort(esPort);
+    reloadConfiguration();
   }
 
   public void startContinuousImportScheduling() {
