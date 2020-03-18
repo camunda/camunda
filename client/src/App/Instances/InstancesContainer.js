@@ -258,7 +258,6 @@ class InstancesContainer extends Component {
 
   fetchStatistics = () => {
     const {filter, groupedWorkflows} = this.state;
-    const {getWorkflowInstancesStatistics} = this.props.dataManager;
     const workflowByVersion = getWorkflowByVersion(
       groupedWorkflows[filter.workflow],
       filter.version
@@ -273,7 +272,7 @@ class InstancesContainer extends Component {
       groupedWorkflows
     );
 
-    return getWorkflowInstancesStatistics(
+    return this.props.dataManager.getWorkflowInstancesStatistics(
       parseFilterForRequest(decodeFields(filterWithWorkflowIds))
     );
   };
