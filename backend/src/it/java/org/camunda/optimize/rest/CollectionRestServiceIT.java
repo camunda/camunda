@@ -42,16 +42,13 @@ public class CollectionRestServiceIT extends AbstractIT {
   @Test
   public void createNewCollection() {
     // when
-    IdDto idDto = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+    String collectionId = collectionClient.createNewCollection();
 
     // then the status code is okay
-    assertThat(idDto, is(notNullValue()));
+    assertThat(collectionId, is(notNullValue()));
 
     // and saved Collection has expected properties
-    CollectionDefinitionRestDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
+    CollectionDefinitionRestDto savedCollectionDto = collectionClient.getCollectionById(collectionId);
     assertThat(savedCollectionDto.getName(), is(CollectionWriter.DEFAULT_COLLECTION_NAME));
     assertThat(savedCollectionDto.getData().getConfiguration(), equalTo(Collections.EMPTY_MAP));
   }

@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
@@ -274,9 +275,9 @@ public class CollectionClient {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public void deleteScopeEntry(String collectionId, CollectionScopeEntryDto scopeEntry) {
+  public void deleteScopeEntry(String collectionId, CollectionScopeEntryDto scopeEntry, Boolean force) {
     Response response = getRequestExecutor()
-      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), true)
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), force)
       .execute();
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
@@ -348,6 +349,18 @@ public class CollectionClient {
 
     return executor
       .execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public ConflictResponseDto getDeleteCollectionConflicts(String id) {
+    return getRequestExecutor()
+      .buildGetCollectionDeleteConflictsRequest(id)
+      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public ConflictResponseDto getScopeDeletionConflicts(final String collectionId, final String scopeEntryId) {
+    return getRequestExecutor()
+      .buildGetScopeDeletionConflictsRequest(collectionId, scopeEntryId)
+      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public void assertCollectionIsDeleted(final String idToDelete) {

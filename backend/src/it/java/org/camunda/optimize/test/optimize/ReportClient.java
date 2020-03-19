@@ -140,7 +140,7 @@ public class ReportClient {
     }
   }
 
-  private String createAndStoreProcessReport(String collectionId, String definitionKey, List<String> tenants) {
+  public String createAndStoreProcessReport(String collectionId, String definitionKey, List<String> tenants) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
       collectionId,
       definitionKey,

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -30,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -72,10 +70,10 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   public void getRoles() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final List<CollectionRoleRestDto> expectedRoles = getRoles(collectionId);
+    final List<CollectionRoleRestDto> expectedRoles = collectionClient.getCollectionRoles(collectionId);
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     assertThat(roles.size(), is(1));
@@ -125,7 +123,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     );
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     // expected order(groups first, user second, then by name ascending):
@@ -149,7 +147,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     embeddedOptimizeExtension.getIdentityService().addIdentity(expectedUserDtoWithData);
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     assertThat(roles.size(), is(1));
@@ -171,7 +169,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     assertThat(roles.size(), is(1));
@@ -205,7 +203,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     collectionClient.addRoleToCollection(collectionId, roleDto);
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     final List<IdentityWithMetadataDto> groupIdentities = roles.stream()
@@ -232,7 +230,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     collectionClient.addRoleToCollection(collectionId, roleDto);
 
     // when
-    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
 
     // then
     final List<IdentityWithMetadataDto> groupIdentities = roles.stream()
@@ -328,7 +326,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_BAD_REQUEST);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -581,17 +579,5 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       .buildDeleteRoleToCollectionRequest(collectionId, roleEntryId)
       .execute();
     assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-  }
-
-  private List<CollectionRoleRestDto> getRoles(final String collectionId) {
-    return getRoles(DEFAULT_USERNAME, DEFAULT_PASSWORD, collectionId);
-  }
-
-  private List<CollectionRoleRestDto> getRoles(final String userId, final String password, final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(userId, password)
-      .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(CollectionRoleRestDto.class, Response.Status.OK.getStatusCode());
   }
 }

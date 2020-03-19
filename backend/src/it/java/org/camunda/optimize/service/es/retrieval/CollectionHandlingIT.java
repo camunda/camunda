@@ -689,7 +689,7 @@ public class CollectionHandlingIT extends AbstractIT {
     final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(reportId));
 
     // when
-    collectionClient.deleteScopeEntry(collectionId, scopeEntry);
+    collectionClient.deleteScopeEntry(collectionId, scopeEntry, true);
 
     // then
     assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
@@ -710,7 +710,7 @@ public class CollectionHandlingIT extends AbstractIT {
     final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
 
     // when
-    collectionClient.deleteScopeEntry(collectionId, scopeEntry);
+    collectionClient.deleteScopeEntry(collectionId, scopeEntry, true);
 
     // then
     assertThat(collectionClient.getReportsForCollection(collectionId))
