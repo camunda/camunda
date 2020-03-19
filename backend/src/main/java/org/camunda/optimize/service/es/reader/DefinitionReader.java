@@ -36,6 +36,10 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeValuesSourceBuilder;
+import org.elasticsearch.search.aggregations.bucket.composite.ParsedComposite;
+import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -45,15 +49,17 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
@@ -73,6 +79,7 @@ import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.co
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_COMPOSITE_BUCKET_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -90,6 +97,8 @@ public class DefinitionReader {
   private static final String TENANT_AGGREGATION = "tenants";
   private static final String DEFINITION_TYPE_AGGREGATION = "definitionType";
   private static final String DEFINITION_KEY_AGGREGATION = "definitionKey";
+  private static final String DEFINITION_KEY_AND_TYPE_AGGREGATION = "definitionKeyAndType";
+  private static final String DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION = "definitionKeyAndTypeAndTenant";
   private static final String NAME_AGGREGATION = "definitionName";
   private static final String[] ALL_DEFINITION_INDEXES =
     {PROCESS_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
@@ -216,156 +225,155 @@ public class DefinitionReader {
   }
 
   public Map<String, TenantIdWithDefinitionsDto> getDefinitionsGroupedByTenant() {
-    // four levels of aggregations
-    // 4. group by name (should only be one)
+    // two levels of aggregations
+    // 2. group by name (should only be one)
     final TermsAggregationBuilder nameAggregation =
       terms(NAME_AGGREGATION)
         .field(DEFINITION_NAME)
         .size(MAX_RESPONSE_SIZE_LIMIT)
         .size(1);
-    // 3. group by key
-    final TermsAggregationBuilder keyAggregation = terms(DEFINITION_KEY_AGGREGATION)
-      .field(DEFINITION_KEY)
-      .size(MAX_RESPONSE_SIZE_LIMIT)
-      .subAggregation(nameAggregation);
-    // 2. group by _index (type)
-    final TermsAggregationBuilder typeAggregation = terms(DEFINITION_TYPE_AGGREGATION)
-      .field("_index")
-      .subAggregation(keyAggregation);
-    // 1. group by tenant
-    final TermsAggregationBuilder tenantsAggregation =
-      terms(TENANT_AGGREGATION)
-        .field(DEFINITION_TENANT_ID)
-        .size(MAX_RESPONSE_SIZE_LIMIT)
-        // put `null` values (default tenant) into a dedicated bucket
-        .missing(TENANT_NOT_DEFINED_VALUE)
-        .order(BucketOrder.key(true))
-        .subAggregation(typeAggregation);
+    // 1. group by key, type and tenant (composite aggregation)
+    List<CompositeValuesSourceBuilder<?>> keyAndTypeAndTenantSources = new ArrayList<>();
+    keyAndTypeAndTenantSources.add(new TermsValuesSourceBuilder(TENANT_AGGREGATION).field(DEFINITION_TENANT_ID)
+                                     .missingBucket(true)
+                                     .order(SortOrder.ASC));
+    keyAndTypeAndTenantSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
+    keyAndTypeAndTenantSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field("_index"));
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-    searchSourceBuilder.aggregation(tenantsAggregation);
-    searchSourceBuilder.size(0);
+    CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
+      new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
+        .size(MAX_COMPOSITE_BUCKET_SIZE_LIMIT)
+        .subAggregation(nameAggregation);
 
-    final SearchRequest searchRequest = new SearchRequest(ALL_DEFINITION_INDEXES).source(searchSourceBuilder);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .aggregation(keyAndTypeAndTenantAggregation)
+      .size(0);
+
+    SearchRequest searchRequest = new SearchRequest(ALL_DEFINITION_INDEXES)
+      .source(searchSourceBuilder);
+
+    Map<String, List<ParsedComposite.ParsedBucket>> keyAndTypeAggBucketsByTenantId = new HashMap<>();
+
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Terms tenantResult = searchResponse.getAggregations().get(TENANT_AGGREGATION);
-      return tenantResult.getBuckets().stream()
-        .map(tenantBucket -> {
-          // convert not defined bucket back to a `null` id
-          final String tenantId = TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantBucket.getKeyAsString())
-            ? null
-            : tenantBucket.getKeyAsString();
-          final Terms typeAggregationResult = tenantBucket.getAggregations().get(DEFINITION_TYPE_AGGREGATION);
-          final List<SimpleDefinitionDto> definitionDtos = typeAggregationResult.getBuckets()
-            .stream()
-            .flatMap(typeBucket -> {
-              final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(typeBucket.getKeyAsString());
-              final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(typeBucket.getKeyAsString());
-              final Terms keyAggregationResult = typeBucket.getAggregations().get(DEFINITION_KEY_AGGREGATION);
-              return keyAggregationResult.getBuckets().stream()
-                .map(keyBucket -> {
-                  final Terms nameResult = keyBucket.getAggregations().get(NAME_AGGREGATION);
-                  final String definitionName = nameResult.getBuckets().stream()
-                    .findFirst()
-                    .map(Terms.Bucket::getKeyAsString)
-                    .orElse(null);
-                  return new SimpleDefinitionDto(
-                    keyBucket.getKeyAsString(),
-                    definitionName,
-                    definitionType,
-                    isEventProcess
-                  );
-                });
-            })
-            .collect(toList());
-          return new TenantIdWithDefinitionsDto(tenantId, definitionDtos);
-        })
-        .collect(toMap(TenantIdWithDefinitionsDto::getId, entry -> entry));
+      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      ParsedComposite keyAndTypeAndTenantResult = searchResponse.getAggregations()
+        .get(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION);
+      while (keyAndTypeAndTenantResult.getBuckets().size() > 0) {
+        keyAndTypeAndTenantResult.getBuckets().forEach(bucket -> {
+          final String tenantId = (String) (bucket.getKey()).get(TENANT_AGGREGATION);
+          if (!keyAndTypeAggBucketsByTenantId.containsKey(tenantId)) {
+            keyAndTypeAggBucketsByTenantId.put(tenantId, new ArrayList<>());
+          }
+          keyAndTypeAggBucketsByTenantId.get(tenantId).add(bucket);
+        });
+
+        keyAndTypeAndTenantAggregation =
+          keyAndTypeAndTenantAggregation.aggregateAfter(keyAndTypeAndTenantResult.afterKey());
+        searchSourceBuilder = new SearchSourceBuilder()
+          .query(QueryBuilders.matchAllQuery())
+          .aggregation(keyAndTypeAndTenantAggregation)
+          .size(0);
+        searchRequest = new SearchRequest(ALL_DEFINITION_INDEXES)
+          .source(searchSourceBuilder);
+        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+        keyAndTypeAndTenantResult = searchResponse.getAggregations()
+          .get(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION);
+      }
     } catch (IOException e) {
       final String reason = "Was not able to fetch definitions.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
+
+    Map<String, TenantIdWithDefinitionsDto> resultMap = new HashMap<>();
+
+    keyAndTypeAggBucketsByTenantId.entrySet().forEach(entry -> {
+      // convert not defined bucket back to a `null` id
+      final String tenantId = TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(entry.getKey())
+        ? null
+        : entry.getKey();
+      List<SimpleDefinitionDto> simpleDefinitionDtos = entry.getValue().stream().map(parsedBucket -> {
+        final String indexAliasName = (String) (parsedBucket.getKey().get(DEFINITION_TYPE_AGGREGATION));
+        final String definitionKey = (String) (parsedBucket.getKey().get(DEFINITION_KEY_AGGREGATION));
+        final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(indexAliasName);
+        final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(indexAliasName);
+        final String definitionName = ((Terms) parsedBucket.getAggregations().get(NAME_AGGREGATION))
+          .getBuckets()
+          .stream()
+          .findFirst()
+          .map(Terms.Bucket::getKeyAsString)
+          .orElse(null);
+        return new SimpleDefinitionDto(
+          definitionKey,
+          definitionName,
+          definitionType,
+          isEventProcess
+        );
+      })
+        .collect(toList());
+      resultMap.put(tenantId, new TenantIdWithDefinitionsDto(tenantId, simpleDefinitionDtos));
+    });
+
+    return resultMap;
   }
 
-  public List<DefinitionVersionsWithTenantsDto> getDefinitionsWithVersionsAndTenantsForType(final DefinitionType type,
-                                                                                            final boolean excludeEventProcesses) {
-    // 6 aggregations over 3 layers:
-    // 1. type
-    // | 2. key
-    // || - 3.1 name
-    // || - 3.2 version
-    // ||| - 4.1 versionTag
-    // ||| - 4.2 tenant
-    // 4.2. group by tenant
+  public List<DefinitionVersionsWithTenantsDto> getDefinitionsWithVersionsAndTenantsForType(
+    final DefinitionType type,
+    final boolean excludeEventProcesses) {
+    // 5 aggregations over 3 layers:
+    // 1. type and key (composite)
+    // | - 2.1 name
+    // | - 2.2 version
+    // || - 3.1 versionTag
+    // || - 3.2 tenant
+    // 3.2. group by tenant
     final TermsAggregationBuilder tenantsAggregation = terms(TENANT_AGGREGATION)
       .field(DEFINITION_TENANT_ID)
       .size(MAX_RESPONSE_SIZE_LIMIT)
       // put `null` values (default tenant) into a dedicated bucket
       .missing(TENANT_NOT_DEFINED_VALUE)
       .order(BucketOrder.key(true));
-    // 4.1. group by versionTag
+    // 3.1. group by versionTag
     final TermsAggregationBuilder versionTagAggregation = terms(VERSION_TAG_AGGREGATION)
       .field(DEFINITION_VERSION_TAG)
       .size(MAX_RESPONSE_SIZE_LIMIT);
-    // 3.2. group by version
+    // 2.2. group by version
     final TermsAggregationBuilder versionAggregation = terms(VERSION_AGGREGATION)
       .field(DEFINITION_VERSION)
       .size(MAX_RESPONSE_SIZE_LIMIT)
       .subAggregation(versionTagAggregation)
       .subAggregation(tenantsAggregation);
-    // 3.1. group by name
+    // 2.1. group by name
     final TermsAggregationBuilder nameAggregation = terms(NAME_AGGREGATION)
       .field(DEFINITION_NAME)
       .size(MAX_RESPONSE_SIZE_LIMIT);
-    // 2. group by key
-    final TermsAggregationBuilder keyAggregation = terms(DEFINITION_KEY_AGGREGATION)
-      .field(DEFINITION_KEY)
-      .size(MAX_RESPONSE_SIZE_LIMIT)
-      .subAggregation(nameAggregation)
-      .subAggregation(versionAggregation);
-    // 1. group by _index (type)
-    final TermsAggregationBuilder typeAggregation = terms(DEFINITION_TYPE_AGGREGATION)
-      .field("_index")
-      .subAggregation(keyAggregation);
+    // 1. group by key and type (_index)
+    List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
+    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
+    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field("_index"));
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-    searchSourceBuilder.aggregation(typeAggregation);
-    searchSourceBuilder.size(0);
+    CompositeAggregationBuilder keyAndTypeAggregation =
+      new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
+        .size(MAX_COMPOSITE_BUCKET_SIZE_LIMIT)
+        .subAggregation(nameAggregation)
+        .subAggregation(versionAggregation);
 
-    final SearchRequest searchRequest = new SearchRequest(
-      resolveIndexNameForType(type, excludeEventProcesses)
-    ).source(searchSourceBuilder);
+    final List<ParsedComposite.ParsedBucket> keyAndTypeAggBuckets = performSearchAndCollectAllKeyAndTypeBuckets(
+      QueryBuilders.matchAllQuery(),
+      resolveIndexNameForType(type, excludeEventProcesses),
+      keyAndTypeAggregation
+    );
 
-    try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Terms typeResult = searchResponse.getAggregations().get(DEFINITION_TYPE_AGGREGATION);
-      return typeResult.getBuckets().stream()
-        .flatMap(typeBucket -> {
-          final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(typeBucket.getKeyAsString());
-          final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(typeBucket.getKeyAsString());
-          final Terms keyAggregationResult = typeBucket.getAggregations().get(DEFINITION_KEY_AGGREGATION);
-          return keyAggregationResult.getBuckets().stream()
-            .map(keyBucket -> createDefinitionVersionsWithTenantsDtosForKeyBucket(
-              keyBucket,
-              definitionType,
-              isEventProcess
-            ));
-        })
-        .collect(toList());
-    } catch (IOException e) {
-      final String reason = String.format("Was not able to fetch definitions for type [%s].", type);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    return keyAndTypeAggBuckets.stream()
+      .map(keyAndTypeAgg -> createDefinitionVersionsWithTenantsDtosForKeyAndTypeAggregation(keyAndTypeAgg))
+      .collect(Collectors.toList());
   }
 
-  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionByKeyAndEngineOmitXml(final DefinitionType type,
-                                                                                          final String definitionKey,
-                                                                                          final String engineAlias) {
+  public <T extends DefinitionOptimizeDto> Optional<T> getDefinitionByKeyAndEngineOmitXml(
+    final DefinitionType type,
+    final String definitionKey,
+    final String engineAlias) {
 
     if (definitionKey == null) {
       return Optional.empty();
@@ -476,14 +484,18 @@ public class DefinitionReader {
     );
   }
 
-  private DefinitionVersionsWithTenantsDto createDefinitionVersionsWithTenantsDtosForKeyBucket(final Terms.Bucket keyBucket,
-                                                                                               final DefinitionType type,
-                                                                                               final boolean isEventProcess) {
-    final Terms nameResult = keyBucket.getAggregations().get(NAME_AGGREGATION);
+  private DefinitionVersionsWithTenantsDto createDefinitionVersionsWithTenantsDtosForKeyAndTypeAggregation(
+    final ParsedComposite.ParsedBucket keyAndTypeAggregation) {
+    final String indexAliasName = (String) (keyAndTypeAggregation.getKey()).get(DEFINITION_TYPE_AGGREGATION);
+    final String definitionKey = (String) (keyAndTypeAggregation.getKey()).get(DEFINITION_KEY_AGGREGATION);
+    final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(indexAliasName);
+    final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(indexAliasName);
+
+    final Terms nameResult = keyAndTypeAggregation.getAggregations().get(NAME_AGGREGATION);
     final Optional<? extends Terms.Bucket> nameBucket = nameResult.getBuckets().stream().findFirst();
     final String definitionName = nameBucket.map(MultiBucketsAggregation.Bucket::getKeyAsString).orElse(null);
 
-    final Terms versionsResult = keyBucket.getAggregations().get(VERSION_AGGREGATION);
+    final Terms versionsResult = keyAndTypeAggregation.getAggregations().get(VERSION_AGGREGATION);
     final List<DefinitionVersionWithTenantsDto> versions = versionsResult.getBuckets().stream()
       .map(versionBucket -> {
         final String versionTag = versionBucket.getAggregations()
@@ -498,9 +510,9 @@ public class DefinitionReader {
         );
 
         return new DefinitionVersionWithTenantsDto(
-          keyBucket.getKeyAsString(),
+          definitionKey,
           definitionName,
-          type,
+          definitionType,
           isEventProcess,
           versionBucket.getKeyAsString(),
           versionTag,
@@ -514,7 +526,7 @@ public class DefinitionReader {
       .distinct()
       .collect(toList());
     final DefinitionVersionsWithTenantsDto groupedDefinition = new DefinitionVersionsWithTenantsDto(
-      keyBucket.getKeyAsString(), definitionName, type, isEventProcess, versions, allTenants
+      definitionKey, definitionName, definitionType, isEventProcess, versions, allTenants
     );
     groupedDefinition.sort();
     return groupedDefinition;
@@ -532,8 +544,8 @@ public class DefinitionReader {
 
   private List<DefinitionWithTenantIdsDto> getDefinitionWithTenantIdsDtos(final QueryBuilder filterQuery,
                                                                           final String[] definitionIndexNames) {
-    // three levels of aggregations
-    // 3.1 group by tenant
+    // Two levels of aggregations
+    // 2.1 group by tenant
     final TermsAggregationBuilder tenantsAggregation =
       terms(TENANT_AGGREGATION)
         .field(DEFINITION_TENANT_ID)
@@ -541,59 +553,91 @@ public class DefinitionReader {
         // put `null` values (default tenant) into a dedicated bucket
         .missing(TENANT_NOT_DEFINED_VALUE)
         .order(BucketOrder.key(true));
-    // 3.2 group by name (should only be one)
+    // 2.2 group by name (should only be one)
     final TermsAggregationBuilder nameAggregation =
       terms(NAME_AGGREGATION)
         .field(DEFINITION_NAME)
         .size(MAX_RESPONSE_SIZE_LIMIT)
         .size(1);
-    // 2. group by key
-    final TermsAggregationBuilder keyAggregation = terms(DEFINITION_KEY_AGGREGATION)
-      .field(DEFINITION_KEY)
-      .size(MAX_RESPONSE_SIZE_LIMIT)
-      .subAggregation(tenantsAggregation)
-      .subAggregation(nameAggregation);
-    // 1. group by _index (type)
-    final TermsAggregationBuilder typeAggregation = terms(DEFINITION_TYPE_AGGREGATION)
-      .field("_index")
-      .subAggregation(keyAggregation);
+    // 1. group by key and type
+    List<CompositeValuesSourceBuilder<?>> keyAndTypeSources = new ArrayList<>();
+    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_KEY_AGGREGATION).field(DEFINITION_KEY));
+    keyAndTypeSources.add(new TermsValuesSourceBuilder(DEFINITION_TYPE_AGGREGATION).field("_index"));
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(filterQuery);
-    searchSourceBuilder.aggregation(typeAggregation);
-    searchSourceBuilder.size(0);
+    CompositeAggregationBuilder keyAndTypeAggregation =
+      new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
+        .size(MAX_COMPOSITE_BUCKET_SIZE_LIMIT)
+        .subAggregation(tenantsAggregation)
+        .subAggregation(nameAggregation);
 
-    final SearchRequest searchRequest = new SearchRequest(definitionIndexNames).source(searchSourceBuilder);
+    final List<ParsedComposite.ParsedBucket> keyAndTypeAggBuckets =
+      performSearchAndCollectAllKeyAndTypeBuckets(filterQuery, definitionIndexNames, keyAndTypeAggregation);
+
+    return keyAndTypeAggBuckets.stream()
+      .map(keyAndTypeAgg -> {
+        final String indexAliasName = (String) (keyAndTypeAgg.getKey()).get(DEFINITION_TYPE_AGGREGATION);
+        final String definitionKey = (String) (keyAndTypeAgg.getKey()).get(DEFINITION_KEY_AGGREGATION);
+        final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(indexAliasName);
+        final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(indexAliasName);
+        final Terms tenantResult = keyAndTypeAgg.getAggregations().get(TENANT_AGGREGATION);
+        final Terms nameResult = keyAndTypeAgg.getAggregations().get(NAME_AGGREGATION);
+        return new DefinitionWithTenantIdsDto(
+          definitionKey,
+          nameResult.getBuckets()
+            .stream()
+            .findFirst()
+            .map(Terms.Bucket::getKeyAsString)
+            .orElse(null),
+          definitionType,
+          isEventProcess,
+          tenantResult.getBuckets().stream()
+            .map(Terms.Bucket::getKeyAsString)
+            // convert null bucket back to a `null` id
+            .map(tenantId -> TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId) ? null : tenantId)
+            .collect(toList())
+        );
+      })
+      .collect(toList());
+  }
+
+  private List<ParsedComposite.ParsedBucket> performSearchAndCollectAllKeyAndTypeBuckets
+    (final QueryBuilder filterQuery,
+     final String[] definitionIndexNames,
+     CompositeAggregationBuilder keyAggregation) {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(filterQuery)
+      .size(0)
+      .aggregation(keyAggregation);
+
+    SearchRequest searchRequest = new SearchRequest(definitionIndexNames)
+      .source(searchSourceBuilder);
+
+    List<ParsedComposite.ParsedBucket> keyAndTypeAggBuckets = new ArrayList<>();
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final Terms typeAggregationResult = searchResponse.getAggregations().get(DEFINITION_TYPE_AGGREGATION);
-      return typeAggregationResult.getBuckets().stream()
-        .flatMap(typeBucket -> {
-          final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(typeBucket.getKeyAsString());
-          final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(typeBucket.getKeyAsString());
-          final Terms keyAggregationResult = typeBucket.getAggregations().get(DEFINITION_KEY_AGGREGATION);
-          return keyAggregationResult.getBuckets().stream().map(keyBucket -> {
-            final Terms tenantResult = keyBucket.getAggregations().get(TENANT_AGGREGATION);
-            final Terms nameResult = keyBucket.getAggregations().get(NAME_AGGREGATION);
-            return new DefinitionWithTenantIdsDto(
-              keyBucket.getKeyAsString(),
-              nameResult.getBuckets().stream().findFirst().map(Terms.Bucket::getKeyAsString).orElse(null),
-              definitionType,
-              isEventProcess,
-              tenantResult.getBuckets().stream()
-                .map(Terms.Bucket::getKeyAsString)
-                // convert null bucket back to a `null` id
-                .map(tenantId -> TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId) ? null : tenantId)
-                .collect(toList())
-            );
-          });
-        })
-        .collect(toList());
+      SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      ParsedComposite keyAndTypeAggregationResult = searchResponse.getAggregations()
+        .get(DEFINITION_KEY_AND_TYPE_AGGREGATION);
+      while (keyAndTypeAggregationResult.getBuckets().size() > 0) {
+        keyAndTypeAggBuckets.addAll(keyAndTypeAggregationResult.getBuckets());
+
+        keyAggregation = keyAggregation.aggregateAfter(keyAndTypeAggregationResult.afterKey());
+        searchSourceBuilder = new SearchSourceBuilder()
+          .query(filterQuery)
+          .size(0)
+          .aggregation(keyAggregation);
+        searchRequest = new SearchRequest(definitionIndexNames)
+          .source(searchSourceBuilder);
+        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+        keyAndTypeAggregationResult = searchResponse.getAggregations()
+          .get(DEFINITION_KEY_AND_TYPE_AGGREGATION);
+      }
     } catch (IOException e) {
       final String reason = "Was not able to fetch definitions.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
+
+    return keyAndTypeAggBuckets;
   }
 
   private <T extends DefinitionOptimizeDto> Function<SearchHit, T> createMappingFunctionForDefinitionType(

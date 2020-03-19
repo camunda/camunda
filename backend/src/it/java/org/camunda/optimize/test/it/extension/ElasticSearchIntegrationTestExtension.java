@@ -40,6 +40,7 @@ import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequ
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -74,7 +75,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -127,8 +127,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private boolean haveToClean = true;
 
   private final String customIndexPrefix;
-  // maps types to a list of document entry ids added to that type
-  private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   private static final ClientAndServer mockServerClient = initMockServer();
 
@@ -255,7 +253,22 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
     }
-    addEntryToTracker(indexName, id);
+  }
+
+  public void addEntriesToElasticsearch(String indexName, Map<String, Object> idToEntryMap) {
+    try {
+      final BulkRequest bulkRequest = new BulkRequest();
+      for (Map.Entry<String, Object> idAndObject : idToEntryMap.entrySet()) {
+        String json = OBJECT_MAPPER.writeValueAsString(idAndObject.getValue());
+        IndexRequest request = new IndexRequest(indexName)
+          .id(idAndObject.getKey())
+          .source(json, XContentType.JSON);
+        bulkRequest.add(request);
+      }
+      getOptimizeElasticClient().bulk(bulkRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to add an entries to elasticsearch", e);
+    }
   }
 
   public OffsetDateTime getLastProcessedEventTimestampForEventIndexSuffix(final String eventIndexSuffix) throws
@@ -533,18 +546,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(request);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not update cluster settings!", e);
-    }
-  }
-
-  private void addEntryToTracker(String indexName, String id) {
-    if (!documentEntriesTracker.containsKey(indexName)) {
-      List<String> idList = new LinkedList<>();
-      idList.add(id);
-      documentEntriesTracker.put(indexName, idList);
-    } else {
-      List<String> ids = documentEntriesTracker.get(indexName);
-      ids.add(id);
-      documentEntriesTracker.put(indexName, ids);
     }
   }
 

@@ -41,7 +41,6 @@ import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 
 @AllArgsConstructor
@@ -276,11 +275,6 @@ public class DefinitionService {
         );
     }
     return fullyImportedDefinition;
-  }
-
-  public Boolean isEventProcessDefinition(final String key) {
-    Optional<DefinitionWithTenantIdsDto> definitionOpt = definitionReader.getDefinition(PROCESS, key);
-    return definitionOpt.map(SimpleDefinitionDto::getIsEventProcess).orElse(false);
   }
 
   private DefinitionVersionsWithTenantsDto filterDefinitionAvailableVersionsWithTenantsByTenantAuthorization(
