@@ -16,6 +16,6 @@ pipelineJob('elasticsearch_compatibility') {
   }
 
   triggers {
-    cron('H 20 * * *')
+    cron('H 0 * * *')
   }
 }
