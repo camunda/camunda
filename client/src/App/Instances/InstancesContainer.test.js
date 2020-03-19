@@ -184,9 +184,7 @@ describe('InstancesContainer', () => {
     it('should call getWorkflowInstances one time with correct parameters', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(1);
       expect(dataManager.getWorkflowInstances).toHaveBeenCalledWith(
-        expect.objectContaining({
-          queries: expect.arrayContaining([{}])
-        })
+        expect.objectContaining({})
       );
     });
 
@@ -201,13 +199,7 @@ describe('InstancesContainer', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
-          queries: expect.arrayContaining([
-            {
-              ...expectedQuery,
-              finished: true,
-              running: true
-            }
-          ])
+          ...expectedQuery
         })
       );
     });
@@ -246,8 +238,10 @@ describe('InstancesContainer', () => {
 
     it('should fetch instances one time with correct parameters', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(1);
-      const call = dataManager.getWorkflowInstances.mock.calls[0][0];
-      expect(call.queries[0]).toMatchObject(expectedQuery);
+
+      expect(dataManager.getWorkflowInstances).toHaveBeenCalledWith(
+        expect.objectContaining(expectedQuery)
+      );
     });
 
     it('should call getWorkflowInstances again with correct parameters when filter is first set empty, and then set again', () => {
@@ -270,9 +264,7 @@ describe('InstancesContainer', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(2);
       expect(dataManager.getWorkflowInstances).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({
-          queries: expect.arrayContaining([emptyFilters])
-        })
+        expect.objectContaining(emptyFilters)
       );
 
       // set some filters
@@ -298,13 +290,9 @@ describe('InstancesContainer', () => {
       expect(dataManager.getWorkflowInstances).toHaveBeenNthCalledWith(
         3,
         expect.objectContaining({
-          queries: expect.arrayContaining([
-            {
-              active: true,
-              incidents: true,
-              running: true
-            }
-          ])
+          active: true,
+          incidents: true,
+          running: true
         })
       );
     });
