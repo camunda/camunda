@@ -18,6 +18,7 @@ package io.zeebe.config;
 public class AppCfg {
 
   private String brokerUrl;
+  private boolean tls;
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
@@ -28,6 +29,14 @@ public class AppCfg {
 
   public void setBrokerUrl(String brokerUrl) {
     this.brokerUrl = brokerUrl;
+  }
+
+  public boolean isTls() {
+    return tls;
+  }
+
+  public void setTls(final boolean tls) {
+    this.tls = tls;
   }
 
   public StarterCfg getStarter() {
