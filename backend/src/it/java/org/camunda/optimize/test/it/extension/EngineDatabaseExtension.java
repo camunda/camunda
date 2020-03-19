@@ -300,9 +300,23 @@ public class EngineDatabaseExtension implements TestWatcher {
     connection.commit();
   }
 
+  @SneakyThrows
+  public void changeUserTaskStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate) {
+    String sql = "UPDATE ACT_HI_TASKINST " +
+      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToStartDate.entrySet()) {
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
+    connection.commit();
+  }
+
+  @SneakyThrows
   public void changeUserTaskStartDate(final String processInstanceId,
                                       final String taskId,
-                                      final OffsetDateTime startDate) throws SQLException {
+                                      final OffsetDateTime startDate) {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET START_TIME_ = ? WHERE " +
       "PROC_INST_ID_ = ?" +

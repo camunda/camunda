@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public class FilterLimitedAggregationUtil {
 
-  private static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
+  public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 
   private FilterLimitedAggregationUtil() {
   }

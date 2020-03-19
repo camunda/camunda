@@ -1065,15 +1065,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
                                        final OffsetDateTime now,
                                        final String userTaskId,
                                        final long offsetDuration) {
-    try {
-      engineDatabaseExtension.changeUserTaskStartDate(
-        processInstanceDto.getId(),
-        userTaskId,
-        now.minus(offsetDuration, ChronoUnit.MILLIS)
-      );
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+    engineDatabaseExtension.changeUserTaskStartDate(
+      processInstanceDto.getId(),
+      userTaskId,
+      now.minus(offsetDuration, ChronoUnit.MILLIS)
+    );
   }
 
   private void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,

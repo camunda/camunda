@@ -10,7 +10,7 @@ import org.camunda.optimize.service.es.report.command.ProcessGroupByDateCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByEndDate;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByProcessInstanceEndDate;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDurationOnProcessPart;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +27,7 @@ public class ProcessInstanceDurationOnProcessPartGroupByEndDateCmd extends Proce
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewInstanceDurationOnProcessPart.class)
-      .groupBy(ProcessGroupByEndDate.class)
+      .groupBy(ProcessGroupByProcessInstanceEndDate.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()
       .build();

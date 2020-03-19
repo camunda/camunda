@@ -40,8 +40,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public class ProcessInstanceDurationByStartDateReportEvaluationIT
-  extends AbstractProcessInstanceDurationByDateReportEvaluationIT {
+public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
+  extends AbstractProcessInstanceDurationByProcessInstanceDateReportEvaluationIT {
 
   @Override
   protected ProcessReportDataType getTestReportDataType() {

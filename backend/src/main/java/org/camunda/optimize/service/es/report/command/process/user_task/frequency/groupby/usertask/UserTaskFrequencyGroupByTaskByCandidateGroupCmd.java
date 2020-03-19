@@ -13,7 +13,6 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByCandidateGroup;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByFlowNode;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByUserTask;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;

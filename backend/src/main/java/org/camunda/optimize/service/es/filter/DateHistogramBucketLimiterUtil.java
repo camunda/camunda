@@ -325,11 +325,11 @@ public class DateHistogramBucketLimiterUtil {
     }
   }
 
-  private static OffsetDateTime getNewLimitedStartDate(final ChronoUnit groupByUnit,
-                                                       final int bucketLimit,
-                                                       final OffsetDateTime endDateTime) {
+  public static OffsetDateTime getNewLimitedStartDate(final ChronoUnit groupByUnit,
+                                                      final int bucketLimit,
+                                                      final OffsetDateTime lastDateTime) {
     // the start date is truncated to the actual groupBy unit to ensure every bucket is complete
-    OffsetDateTime result = endDateTime;
+    OffsetDateTime result = lastDateTime;
     switch (groupByUnit) {
       case YEARS:
         result = result.with(firstDayOfYear()).truncatedTo(ChronoUnit.DAYS);
@@ -346,7 +346,7 @@ public class DateHistogramBucketLimiterUtil {
     return result.minus(bucketLimit - 1, groupByUnit);
   }
 
-  private static ChronoUnit mapToChronoUnit(final GroupByDateUnit unit) {
+  public static ChronoUnit mapToChronoUnit(final GroupByDateUnit unit) {
     final ChronoUnit groupByChronoUnit;
     switch (unit) {
       case YEAR:

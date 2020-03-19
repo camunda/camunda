@@ -63,7 +63,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT extends AbstractProcessDefinitionIT {
+public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String PROCESS_DEFINITION_KEY = "123";
 

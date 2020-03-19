@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.flownode.frequency;
+package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.date;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -13,24 +13,24 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByFlowNode;
-import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountFlowNodeFrequency;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByUserTaskStartDate;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FlowNodeFrequencyGroupByFlowNodeCmd
+public class UserTaskFrequencyGroupByUserTaskStartDateCmd
   implements Command<SingleProcessReportDefinitionDto> {
 
   private final ProcessReportCmdExecutionPlan<ReportMapResultDto> executionPlan;
 
   @Autowired
-  public FlowNodeFrequencyGroupByFlowNodeCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public UserTaskFrequencyGroupByUserTaskStartDateCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessViewCountFlowNodeFrequency.class)
-      .groupBy(ProcessGroupByFlowNode.class)
+      .view(ProcessViewCountUserTaskFrequency.class)
+      .groupBy(ProcessGroupByUserTaskStartDate.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()
       .build();

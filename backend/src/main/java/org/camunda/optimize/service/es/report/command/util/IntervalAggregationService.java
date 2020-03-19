@@ -98,21 +98,21 @@ public class IntervalAggregationService {
 
   public Optional<AggregationBuilder> createIntervalAggregation(org.apache.commons.lang3.Range<OffsetDateTime> rangeToUse,
                                                                 QueryBuilder query,
-                                                                String esType,
+                                                                String indexName,
                                                                 String field) {
     if (rangeToUse != null) {
       OffsetDateTime min = rangeToUse.getMinimum();
       OffsetDateTime max = rangeToUse.getMaximum();
       return createIntervalAggregationFromGivenRange(field, min, max);
     } else {
-      return createIntervalAggregation(query, esType, field);
+      return createIntervalAggregation(query, indexName, field);
     }
   }
 
   private Optional<AggregationBuilder> createIntervalAggregation(QueryBuilder query,
-                                                                 String esType,
+                                                                 String indexName,
                                                                  String field) {
-    Stats stats = getMinMaxStats(query, esType, field);
+    Stats stats = getMinMaxStats(query, indexName, field);
     if (stats.getCount() > 1) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);

@@ -51,7 +51,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
-public abstract class ProcessGroupByDate extends GroupByPart<ProcessReportDataDto> {
+public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<ProcessReportDataDto> {
 
   protected final ConfigurationService configurationService;
   private final IntervalAggregationService intervalAggregationService;
@@ -59,9 +59,9 @@ public abstract class ProcessGroupByDate extends GroupByPart<ProcessReportDataDt
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
-  protected ProcessGroupByDate(final ConfigurationService configurationService,
-                               final IntervalAggregationService intervalAggregationService,
-                               final DateTimeFormatter dateTimeFormatter) {
+  protected ProcessGroupByProcessInstanceDate(final ConfigurationService configurationService,
+                                              final IntervalAggregationService intervalAggregationService,
+                                              final DateTimeFormatter dateTimeFormatter) {
     this.configurationService = configurationService;
     this.intervalAggregationService = intervalAggregationService;
     this.dateTimeFormatter = dateTimeFormatter;

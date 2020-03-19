@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process.user_task.duration.groupb
 
 import com.google.common.collect.ImmutableMap;
 import lombok.Data;
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -879,15 +878,11 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
                                        final OffsetDateTime now,
                                        final String userTaskId,
                                        final long offsetDuration) {
-    try {
-      engineDatabaseExtension.changeUserTaskStartDate(
-        processInstanceDto.getId(),
-        userTaskId,
-        now.minus(offsetDuration, ChronoUnit.MILLIS)
-      );
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+    engineDatabaseExtension.changeUserTaskStartDate(
+      processInstanceDto.getId(),
+      userTaskId,
+      now.minus(offsetDuration, ChronoUnit.MILLIS)
+    );
   }
 
   private void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,

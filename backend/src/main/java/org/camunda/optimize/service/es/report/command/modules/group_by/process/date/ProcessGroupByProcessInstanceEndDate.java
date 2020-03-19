@@ -31,16 +31,16 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByEndDate extends ProcessGroupByDate {
+public class ProcessGroupByProcessInstanceEndDate extends ProcessGroupByProcessInstanceDate {
 
   private final ProcessQueryFilterEnhancer queryFilterEnhancer;
   private final OptimizeElasticsearchClient esClient;
 
-  protected ProcessGroupByEndDate(final ConfigurationService configurationService,
-                                  final IntervalAggregationService intervalAggregationService,
-                                  final DateTimeFormatter dateTimeFormatter,
-                                  final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
-                                  final OptimizeElasticsearchClient esClient) {
+  protected ProcessGroupByProcessInstanceEndDate(final ConfigurationService configurationService,
+                                                 final IntervalAggregationService intervalAggregationService,
+                                                 final DateTimeFormatter dateTimeFormatter,
+                                                 final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
+                                                 final OptimizeElasticsearchClient esClient) {
     super(configurationService, intervalAggregationService, dateTimeFormatter);
     this.esClient = esClient;
     this.queryFilterEnhancer = processQueryFilterEnhancer;
