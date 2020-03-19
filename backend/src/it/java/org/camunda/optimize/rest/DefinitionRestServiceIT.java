@@ -832,7 +832,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     long responseTimeMs = System.currentTimeMillis() - startTimeMs;
 
     // then
-    assertThat(responseTimeMs).isLessThan(3000L);
+    assertThat(responseTimeMs).isLessThan(10_000L);
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
   }
 
@@ -867,7 +867,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     long responseTimeMs = System.currentTimeMillis() - startTimeMs;
 
     // then
-    assertThat(responseTimeMs).isLessThan(3500L);
+    assertThat(responseTimeMs).isLessThan(10_000L);
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
   }
 
@@ -902,7 +902,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     long responseTimeMs = System.currentTimeMillis() - startTimeMs;
 
     // then
-    assertThat(responseTimeMs).isLessThan(3000L);
+    assertThat(responseTimeMs).isLessThan(10_000L);
     assertThat(definitions).isNotEmpty().hasSize(1);
     assertThat(definitions.get(0).getDefinitions()).isNotEmpty().hasSize(definitionCount);
   }
