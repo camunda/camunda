@@ -67,23 +67,6 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     actor.run(() -> this.failureListener = failureListener);
   }
 
-  private void onComponentFailure(final String componentName) {
-    actor.run(
-        () -> {
-          log.error("{} failed, marking it as unhealthy", componentName);
-          componentHealth.put(componentName, HealthStatus.UNHEALTHY);
-          calculateHealth();
-        });
-  }
-
-  private void onComponentRecovered(final String componentName) {
-    actor.run(
-        () -> {
-          log.debug("{} recovered, marking it as healthy", componentName);
-          componentHealth.put(componentName, HealthStatus.HEALTHY);
-        });
-  }
-
   private void updateHealth() {
     componentHealth
         .keySet()
@@ -131,12 +114,24 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
     @Override
     public void onFailure() {
-      onComponentFailure(componentName);
+      actor.run(this::onComponentFailure);
     }
 
     @Override
     public void onRecovered() {
-      onComponentRecovered(componentName);
+      actor.run(this::onComponentRecovered);
+    }
+
+    private void onComponentFailure() {
+      log.error("{} failed, marking it as unhealthy", componentName);
+      componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.UNHEALTHY);
+      calculateHealth();
+    }
+
+    private void onComponentRecovered() {
+      log.debug("{} recovered, marking it as healthy", componentName);
+      componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.HEALTHY);
+      calculateHealth();
     }
   }
 }
