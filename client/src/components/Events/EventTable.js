@@ -23,6 +23,7 @@ const asMapping = ({group, source, eventName}) => ({group, source, eventName});
 export default withErrorHandling(
   class EventTable extends React.Component {
     container = React.createRef();
+    table = React.createRef();
 
     state = {
       events: null,
@@ -100,7 +101,11 @@ export default withErrorHandling(
     componentDidUpdate(prevProps, prevState) {
       this.updateTableAfterSelectionChange(prevProps);
       if (prevState.events === null && this.state.events !== null) {
-        this.scrollToSelectedElement();
+        // After Table props change, there is a delay before react-table updates the dom
+        // forcing the update will ensure the table is updated before scrolling to element
+        if (this.table.current) {
+          this.table.current.forceUpdate(this.scrollToSelectedElement);
+        }
       }
 
       if (prevProps.eventSources !== this.props.eventSources) {
@@ -198,6 +203,7 @@ export default withErrorHandling(
             </Button>
           </div>
           <Table
+            ref={this.table}
             className={classnames({collapsed})}
             head={[
               'checked',
