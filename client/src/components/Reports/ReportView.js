@@ -57,12 +57,13 @@ export default class ReportView extends React.Component {
               {currentUserRole === 'editor' && (
                 <>
                   <Link className="tool-button edit-button" to="edit">
-                    <Button>
+                    <Button main>
                       <Icon type="edit" />
                       {t('common.edit')}
                     </Button>
                   </Link>
                   <Button
+                    main
                     className="tool-button delete-button"
                     onClick={() => this.setState({deleting: {...report, entityType: 'report'}})}
                   >
@@ -72,6 +73,7 @@ export default class ReportView extends React.Component {
                 </>
               )}
               <Popover
+                main
                 className="tool-button share-button"
                 icon="share"
                 title={t('common.sharing.buttonTitle')}
@@ -91,7 +93,7 @@ export default class ReportView extends React.Component {
                   className="Report__tool-button Report__csv-download-button"
                   href={this.constructCSVDownloadLink()}
                 >
-                  <Button>
+                  <Button main>
                     <Icon type="save" />
                     {t('report.downloadCSV')}
                   </Button>

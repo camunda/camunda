@@ -95,8 +95,10 @@ export default class NodeSelectionModal extends React.Component {
           </div>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.onClose}>{t('common.cancel')}</Button>
-          <Button primary disabled={!this.isNodeSelected()} onClick={this.applyConfiguration}>
+          <Button main onClick={this.props.onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button main primary disabled={!this.isNodeSelected()} onClick={this.applyConfiguration}>
             {t('common.apply')}
           </Button>
         </Modal.Actions>

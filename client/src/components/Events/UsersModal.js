@@ -144,10 +144,10 @@ export default withErrorHandling(
             />
           </Modal.Content>
           <Modal.Actions>
-            <Button disabled={loading} onClick={this.close}>
+            <Button main disabled={loading} onClick={this.close}>
               {t('common.cancel')}
             </Button>
-            <Button disabled={loading || !isValid} primary onClick={this.onConfirm}>
+            <Button main disabled={loading || !isValid} primary onClick={this.onConfirm}>
               {t('common.save')}
             </Button>
           </Modal.Actions>

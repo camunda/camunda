@@ -50,6 +50,7 @@ export default class EntityNameForm extends React.Component {
         <div className="tools">
           {children}
           <Button
+            main
             className="tool-button save-button"
             disabled={!name || loading}
             onClick={async () => {
@@ -63,7 +64,7 @@ export default class EntityNameForm extends React.Component {
           </Button>
           <Link
             disabled={loading}
-            className="Button tool-button cancel-button"
+            className="Button main tool-button cancel-button"
             to={isNew ? homeLink : './'}
             onClick={onCancel}
           >

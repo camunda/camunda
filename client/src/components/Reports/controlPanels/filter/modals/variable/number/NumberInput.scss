@@ -28,8 +28,8 @@
 }
 
 .NumberInput__removeItemButton {
-  min-width: 0;
-  border-left: 0;
+  border: 1px solid transparent;
+  border-radius: 1;
 }
 
 .NumberInput__valueListButton {

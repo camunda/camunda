@@ -238,11 +238,12 @@ export default withErrorHandling(
             {type === 'external' && <ExternalSource empty={!externalExist} />}
           </Modal.Content>
           <Modal.Actions>
-            <Button className="close" onClick={onClose}>
+            <Button main className="close" onClick={onClose}>
               {t('common.cancel')}
             </Button>
             <Button
               disabled={!this.isValid()}
+              main
               primary
               className="confirm"
               onClick={this.updateSources}

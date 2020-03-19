@@ -41,6 +41,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
     <ForwardRef(Button)
       className="close"
       disabled={false}
+      main={true}
       onClick={[Function]}
     >
       Cancel
@@ -48,6 +49,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
     <ForwardRef(Button)
       className="confirm"
       disabled={false}
+      main={true}
       onClick={[Function]}
       warning={true}
     >

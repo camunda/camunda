@@ -8,9 +8,9 @@ exports[`should match snapshot 1`] = `
     className="sourcesList"
   >
     <Dropdown
+      className="isActive"
       key="src1"
       label="src1"
-      primary={true}
     >
       <ForwardRef(DropdownOption)
         onClick={[Function]}
@@ -29,9 +29,9 @@ exports[`should match snapshot 1`] = `
       </ForwardRef(DropdownOption)>
     </Dropdown>
     <Dropdown
+      className="isActive"
       key="externalEvents"
       label="External Events"
-      primary={true}
     >
       <ForwardRef(DropdownOption)
         onClick={[Function]}

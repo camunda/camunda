@@ -103,8 +103,10 @@ export default class NodeFilter extends React.Component {
           )}
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.close}>{t('common.cancel')}</Button>
-          <Button primary disabled={!this.isNodeSelected()} onClick={this.createFilter}>
+          <Button main onClick={this.props.close}>
+            {t('common.cancel')}
+          </Button>
+          <Button main primary disabled={!this.isNodeSelected()} onClick={this.createFilter}>
             {this.props.filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>

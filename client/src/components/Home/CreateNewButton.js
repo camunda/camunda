@@ -11,7 +11,7 @@ import {t} from 'translation';
 
 export default function CreateNewButton({createCollection, collection}) {
   return (
-    <Dropdown primary label={t('home.createBtn.default')} className="CreateNewButton">
+    <Dropdown main primary label={t('home.createBtn.default')} className="CreateNewButton">
       {!collection && (
         <Dropdown.Option onClick={createCollection}>
           {t('home.createBtn.collection')}

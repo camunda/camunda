@@ -79,10 +79,11 @@ export default class CopyModal extends React.Component {
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button className="cancel" onClick={onClose}>
+          <Button main className="cancel" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button
+            main
             disabled={!name || (moving && !collection)}
             primary
             className="confirm"

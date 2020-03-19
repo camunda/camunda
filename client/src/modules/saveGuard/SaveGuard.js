@@ -94,8 +94,10 @@ export default class SaveGuard extends React.Component {
           <Modal.Header>{t('saveGuard.header')}</Modal.Header>
           <Modal.Content>{t('saveGuard.text', {label})}</Modal.Content>
           <Modal.Actions>
-            <Button onClick={this.proceed}>{t('saveGuard.no')}</Button>
-            <Button primary onClick={this.saveAndProceed}>
+            <Button main onClick={this.proceed}>
+              {t('saveGuard.no')}
+            </Button>
+            <Button main primary onClick={this.saveAndProceed}>
               {t('saveGuard.yes')}
             </Button>
           </Modal.Actions>

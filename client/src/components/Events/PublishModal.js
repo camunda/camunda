@@ -80,10 +80,10 @@ export class PublishModal extends React.Component {
           {editingAccess && <UsersModal id={editingAccess} onClose={this.closeUsersModal} />}
         </Modal.Content>
         <Modal.Actions>
-          <Button disabled={loading} className="close" onClick={onClose}>
+          <Button main disabled={loading} className="close" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button disabled={loading} primary className="confirm" onClick={this.publish}>
+          <Button main disabled={loading} primary className="confirm" onClick={this.publish}>
             {t(`events.publish`)}
           </Button>
         </Modal.Actions>

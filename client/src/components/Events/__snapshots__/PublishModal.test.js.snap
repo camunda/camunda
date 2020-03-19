@@ -49,6 +49,7 @@ exports[`should show different text depending on the republish prop 1`] = `
     <ForwardRef(Button)
       className="close"
       disabled={false}
+      main={true}
       onClick={[MockFunction]}
     >
       Cancel
@@ -56,6 +57,7 @@ exports[`should show different text depending on the republish prop 1`] = `
     <ForwardRef(Button)
       className="confirm"
       disabled={false}
+      main={true}
       onClick={[Function]}
       primary={true}
     >
@@ -99,6 +101,7 @@ exports[`should show different text depending on the republish prop 2`] = `
     <ForwardRef(Button)
       className="close"
       disabled={false}
+      main={true}
       onClick={[MockFunction]}
     >
       Cancel
@@ -106,6 +109,7 @@ exports[`should show different text depending on the republish prop 2`] = `
     <ForwardRef(Button)
       className="confirm"
       disabled={false}
+      main={true}
       onClick={[Function]}
       primary={true}
     >

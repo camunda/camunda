@@ -46,7 +46,7 @@ export default class AddButton extends React.Component {
 
   render() {
     return (
-      <Button className="AddButton tool-button" onClick={this.openModal}>
+      <Button main className="AddButton tool-button" onClick={this.openModal}>
         <Icon type="plus" /> {t('dashboard.addButton.addReport')}
         {this.state.open && <ReportModal close={this.closeModal} confirm={this.addReport} />}
       </Button>

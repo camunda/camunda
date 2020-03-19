@@ -65,12 +65,14 @@ exports[`should match snapshot 1`] = `
   <Component>
     <ForwardRef(Button)
       className="cancel"
+      main={true}
       onClick={[MockFunction]}
     >
       Cancel
     </ForwardRef(Button)>
     <ForwardRef(Button)
       className="confirm"
+      main={true}
       onClick={[Function]}
       primary={true}
     >

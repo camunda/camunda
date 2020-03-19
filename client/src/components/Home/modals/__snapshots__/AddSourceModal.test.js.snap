@@ -36,6 +36,7 @@ exports[`should match snapshot 1`] = `
   <Component>
     <ForwardRef(Button)
       className="cancel"
+      main={true}
       onClick={[Function]}
     >
       Cancel
@@ -43,6 +44,7 @@ exports[`should match snapshot 1`] = `
     <ForwardRef(Button)
       className="confirm"
       disabled={true}
+      main={true}
       onClick={[Function]}
       primary={true}
     >
@@ -74,6 +76,7 @@ exports[`should only show MultiDefinitionSource if tenants are not available 1`]
   <Component>
     <ForwardRef(Button)
       className="cancel"
+      main={true}
       onClick={[Function]}
     >
       Cancel
@@ -81,6 +84,7 @@ exports[`should only show MultiDefinitionSource if tenants are not available 1`]
     <ForwardRef(Button)
       className="confirm"
       disabled={true}
+      main={true}
       onClick={[Function]}
       primary={true}
     >

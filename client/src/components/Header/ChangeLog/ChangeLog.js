@@ -64,7 +64,7 @@ export default withErrorHandling(
               {text ? <ReactMarkdown source={text} /> : <LoadingIndicator />}
             </Modal.Content>
             <Modal.Actions>
-              <Button className="close" onClick={this.closeModal}>
+              <Button main className="close" onClick={this.closeModal}>
                 {t('common.close')}
               </Button>
             </Modal.Actions>

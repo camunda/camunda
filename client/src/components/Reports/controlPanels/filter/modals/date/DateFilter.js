@@ -193,8 +193,10 @@ export default class DateFilter extends React.Component {
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={close}>{t('common.cancel')}</Button>
-          <Button primary disabled={!this.isValid()} onClick={this.confirm}>
+          <Button main onClick={close}>
+            {t('common.cancel')}
+          </Button>
+          <Button main primary disabled={!this.isValid()} onClick={this.confirm}>
             {filterData ? t('common.filter.editFilter') : t('common.filter.addFilter')}
           </Button>
         </Modal.Actions>

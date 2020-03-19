@@ -77,10 +77,11 @@ export default withErrorHandling(
             </Form>
           </Modal.Content>
           <Modal.Actions>
-            <Button className="cancel" onClick={onClose}>
+            <Button main className="cancel" onClick={onClose}>
               {t('common.cancel')}
             </Button>
             <Button
+              main
               primary
               className="confirm"
               disabled={!selectedTenants.length}

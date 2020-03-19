@@ -6,6 +6,8 @@
 
 import React from 'react';
 import update from 'immutability-helper';
+import classnames from 'classnames';
+
 import {Dropdown, Button, Icon, Deleter} from 'components';
 import EventsSourceModal from './EventsSourceModal';
 import {t} from 'translation';
@@ -43,7 +45,10 @@ export default class EventSources extends React.Component {
         <div className="sourcesList">
           {sources.map(source => {
             return (
-              <Dropdown primary={!source.hidden} {...getDropdownProps(source)}>
+              <Dropdown
+                className={classnames({isActive: !source.hidden})}
+                {...getDropdownProps(source)}
+              >
                 <Dropdown.Option onClick={() => this.toggleSource(source)}>
                   {source.hidden ? t('events.sources.show') : t('events.sources.hide')}
                 </Dropdown.Option>

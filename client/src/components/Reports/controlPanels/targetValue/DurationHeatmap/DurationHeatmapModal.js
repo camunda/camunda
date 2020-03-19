@@ -285,8 +285,10 @@ export default class DurationHeatmapModal extends React.Component {
           {!this.validChanges() && !this.state.loading && <Message error>{errorMessage}</Message>}
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button primary onClick={this.confirmModal} disabled={!this.validChanges()}>
+          <Button main onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button main primary onClick={this.confirmModal} disabled={!this.validChanges()}>
             {t('common.apply')}
           </Button>
         </Modal.Actions>

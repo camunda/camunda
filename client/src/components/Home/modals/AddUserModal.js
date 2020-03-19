@@ -116,10 +116,10 @@ export default class AddUserModal extends React.Component {
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button className="cancel" onClick={this.onClose}>
+          <Button main className="cancel" onClick={this.onClose}>
             {t('common.cancel')}
           </Button>
-          <Button primary className="confirm" disabled={!validInput} onClick={this.onConfirm}>
+          <Button main primary className="confirm" disabled={!validInput} onClick={this.onConfirm}>
             {t('common.add')}
           </Button>
         </Modal.Actions>

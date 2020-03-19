@@ -107,7 +107,7 @@ export default withErrorHandling(
             name={t('alert.label-plural')}
             action={
               !readOnly && (
-                <Button primary onClick={this.openAddAlertModal}>
+                <Button main primary onClick={this.openAddAlertModal}>
                   {t('alert.createNew')}
                 </Button>
               )

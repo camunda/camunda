@@ -36,6 +36,7 @@ exports[`show match snapshot 1`] = `
     <Component>
       <ForwardRef(Button)
         className="close"
+        main={true}
         onClick={[Function]}
       >
         Close

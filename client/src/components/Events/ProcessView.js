@@ -106,12 +106,13 @@ export default withErrorHandling(
                   </>
                 )}
                 <Link className="tool-button edit-button" to="edit">
-                  <Button disabled={isPublishing}>
+                  <Button main disabled={isPublishing}>
                     <Icon type="edit" />
                     {t('common.edit')}
                   </Button>
                 </Link>
                 <Button
+                  main
                   disabled={isPublishing || !canPublish}
                   onClick={() => this.setState({publishing: id})}
                   className="tool-button publish-button"
@@ -120,6 +121,7 @@ export default withErrorHandling(
                   {t('events.publish')}
                 </Button>
                 <Button
+                  main
                   disabled={isPublishing}
                   onClick={() => this.setState({deleting: {id, name}})}
                   className="tool-button delete-button"

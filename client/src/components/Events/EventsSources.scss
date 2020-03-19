@@ -24,14 +24,26 @@
 
       .Button {
         padding: 2px 30px 2px 10px;
+        background: $silver-darken-87;
+        color: $grey-darken-36;
         border-radius: 20px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        font-size: 14px;
-        font-weight: 400;
-        height: 24px;
-        min-width: inherit;
+      }
+
+      &.isActive .Button {
+        background: $blue-base-65;
+        border-color: $blue-darken-55;
+        color: $silver-lighten-99;
+        border-radius: 20px;
+        font-size: 0.875em;
+        white-space: nowrap;
+
+        &.isActive,
+        &:hover {
+          background: $blue-darken-55;
+        }
       }
     }
   }
@@ -41,7 +53,7 @@
     margin-top: 5px;
     margin-right: 10px;
     height: 32px;
-    min-width: 178px;
+    min-width: 165px;
     white-space: nowrap;
   }
 }

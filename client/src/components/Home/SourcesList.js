@@ -110,7 +110,7 @@ export default withErrorHandling(
             name={t('home.sources.title')}
             action={
               !readOnly && (
-                <Button primary onClick={() => this.setState({addingSource: true})}>
+                <Button main primary onClick={() => this.setState({addingSource: true})}>
                   {t('common.add')}
                 </Button>
               )
@@ -190,10 +190,16 @@ export default withErrorHandling(
               )}
             </Modal.Content>
             <Modal.Actions>
-              <Button disabled={editLoading} className="close" onClick={this.closeEditSourceModal}>
+              <Button
+                main
+                disabled={editLoading}
+                className="close"
+                onClick={this.closeEditSourceModal}
+              >
                 {t('saveGuard.no')}
               </Button>
               <Button
+                main
                 disabled={editLoading}
                 primary
                 className="confirm"

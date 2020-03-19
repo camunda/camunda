@@ -184,7 +184,8 @@ export default class Dropdown extends React.Component {
       children,
       fixedOptions,
       className,
-      primary
+      primary,
+      main
     } = this.props;
 
     return (
@@ -200,6 +201,7 @@ export default class Dropdown extends React.Component {
         <Button
           icon={icon}
           primary={primary}
+          main={main}
           className="activateButton"
           aria-haspopup="true"
           aria-expanded={open ? 'true' : 'false'}

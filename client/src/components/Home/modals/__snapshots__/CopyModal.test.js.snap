@@ -29,6 +29,7 @@ exports[`should hide option to move the copy for collection entities 1`] = `
   <Component>
     <ForwardRef(Button)
       className="cancel"
+      main={true}
       onClick={[MockFunction]}
     >
       Cancel
@@ -36,6 +37,7 @@ exports[`should hide option to move the copy for collection entities 1`] = `
     <ForwardRef(Button)
       className="confirm"
       disabled={false}
+      main={true}
       onClick={[Function]}
       primary={true}
     >
@@ -89,6 +91,7 @@ exports[`should match snapshot 1`] = `
   <Component>
     <ForwardRef(Button)
       className="cancel"
+      main={true}
       onClick={[MockFunction]}
     >
       Cancel
@@ -96,6 +99,7 @@ exports[`should match snapshot 1`] = `
     <ForwardRef(Button)
       className="confirm"
       disabled={false}
+      main={true}
       onClick={[Function]}
       primary={true}
     >

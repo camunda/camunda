@@ -28,6 +28,7 @@ exports[`should match snapshot 1`] = `
         >
           <ForwardRef(Button)
             disabled={false}
+            main={true}
           >
             <Icon
               type="edit"
@@ -38,6 +39,7 @@ exports[`should match snapshot 1`] = `
         <ForwardRef(Button)
           className="tool-button publish-button"
           disabled={false}
+          main={true}
           onClick={[Function]}
         >
           <Icon
@@ -48,6 +50,7 @@ exports[`should match snapshot 1`] = `
         <ForwardRef(Button)
           className="tool-button delete-button"
           disabled={false}
+          main={true}
           onClick={[Function]}
         >
           <Icon

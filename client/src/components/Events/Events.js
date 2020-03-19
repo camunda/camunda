@@ -117,7 +117,7 @@ export default withErrorHandling(
             empty={t('events.empty')}
             isLoading={!processes}
             action={
-              <Dropdown primary label={t('events.new')}>
+              <Dropdown main primary label={t('events.new')}>
                 <Dropdown.Option link="new/edit">{t('events.modelProcess')}</Dropdown.Option>
                 <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
               </Dropdown>

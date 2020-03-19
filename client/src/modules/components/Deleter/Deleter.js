@@ -133,6 +133,7 @@ export default withErrorHandling(
           </Modal.Content>
           <Modal.Actions>
             <Button
+              main
               disabled={loading}
               className="close"
               onClick={this.close}
@@ -140,7 +141,7 @@ export default withErrorHandling(
             >
               {t('common.cancel')}
             </Button>
-            <Button disabled={loading} warning className="confirm" onClick={this.delete}>
+            <Button main disabled={loading} warning className="confirm" onClick={this.delete}>
               {deleteText} {translatedType}
             </Button>
           </Modal.Actions>

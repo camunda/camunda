@@ -86,7 +86,7 @@ export default class Login extends React.Component {
             </Labeled>
           </div>
         </div>
-        <Button primary type="submit" onClick={this.submit} disabled={waitingForServer}>
+        <Button main primary type="submit" onClick={this.submit} disabled={waitingForServer}>
           {t('login.btn')}
         </Button>
       </form>

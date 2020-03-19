@@ -112,12 +112,13 @@ export default themed(
                             to="edit"
                             onClick={() => this.setAutorefresh(null)}
                           >
-                            <Button>
+                            <Button main>
                               <Icon type="edit" />
                               {t('common.edit')}
                             </Button>
                           </Link>
                           <Button
+                            main
                             onClick={() =>
                               this.setState({deleting: {...this.props, entityType: 'dashboard'}})
                             }
@@ -129,6 +130,7 @@ export default themed(
                         </>
                       )}
                       <Popover
+                        main
                         className="tool-button share-button"
                         icon="share"
                         title={t('common.sharing.buttonTitle')}
@@ -146,11 +148,12 @@ export default themed(
                     </React.Fragment>
                   )}
                   {fullScreenActive && (
-                    <Button onClick={toggleTheme} className="tool-button theme-toggle">
+                    <Button main onClick={toggleTheme} className="tool-button theme-toggle">
                       {t('dashboard.toggleTheme')}
                     </Button>
                   )}
                   <Button
+                    main
                     onClick={() => this.changeFullScreen(!fullScreenActive)}
                     className="tool-button fullscreen-button"
                   >
@@ -160,6 +163,7 @@ export default themed(
                       : t('dashboard.enterFullscreen')}
                   </Button>
                   <Dropdown
+                    main
                     label={
                       <React.Fragment>
                         <AutoRefreshIcon interval={autoRefreshInterval} />{' '}

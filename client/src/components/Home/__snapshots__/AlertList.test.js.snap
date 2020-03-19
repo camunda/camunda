@@ -2,6 +2,7 @@
 
 exports[`should show create Alert button 1`] = `
 <ForwardRef(Button)
+  main={true}
   onClick={[Function]}
   primary={true}
 >

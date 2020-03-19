@@ -73,10 +73,10 @@ export default class EditUserModal extends React.Component {
           </Form>
         </Modal.Content>
         <Modal.Actions>
-          <Button className="cancel" onClick={onClose}>
+          <Button main className="cancel" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button primary className="confirm" onClick={this.onConfirm}>
+          <Button main primary className="confirm" onClick={this.onConfirm}>
             {t('common.apply')}
           </Button>
         </Modal.Actions>

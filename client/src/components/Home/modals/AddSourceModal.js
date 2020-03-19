@@ -123,10 +123,10 @@ export default withErrorHandling(
             </Form>
           </Modal.Content>
           <Modal.Actions>
-            <Button className="cancel" onClick={this.onClose}>
+            <Button main className="cancel" onClick={this.onClose}>
               {t('common.cancel')}
             </Button>
-            <Button disabled={!valid} primary className="confirm" onClick={this.onConfirm}>
+            <Button main disabled={!valid} primary className="confirm" onClick={this.onConfirm}>
               {t('common.add')}
             </Button>
           </Modal.Actions>

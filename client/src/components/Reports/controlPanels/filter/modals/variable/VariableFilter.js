@@ -128,8 +128,11 @@ export default class VariableFilter extends React.Component {
           )}
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.close}>{t('common.cancel')}</Button>
+          <Button main onClick={this.props.close}>
+            {t('common.cancel')}
+          </Button>
           <Button
+            main
             primary
             disabled={!this.state.valid && !filterForUndefined}
             onClick={this.createFilter}

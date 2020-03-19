@@ -75,7 +75,7 @@ export default withErrorHandling(
             name={t('home.userTitle')}
             action={
               !readOnly && (
-                <Button primary onClick={this.openAddUserModal}>
+                <Button main primary onClick={this.openAddUserModal}>
                   {t('common.add')}
                 </Button>
               )

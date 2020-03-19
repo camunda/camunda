@@ -59,6 +59,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
       <ForwardRef(Button)
         className="close"
         disabled={false}
+        main={true}
         onClick={[Function]}
       >
         Don't Save
@@ -66,6 +67,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
       <ForwardRef(Button)
         className="confirm"
         disabled={false}
+        main={true}
         onClick={[Function]}
         primary={true}
       >
@@ -108,6 +110,7 @@ exports[`should match snapshot 1`] = `
   <EntityList
     action={
       <ForwardRef(Button)
+        main={true}
         onClick={[Function]}
         primary={true}
       >
@@ -184,6 +187,7 @@ exports[`should match snapshot 1`] = `
       <ForwardRef(Button)
         className="close"
         disabled={false}
+        main={true}
         onClick={[Function]}
       >
         Don't Save
@@ -191,6 +195,7 @@ exports[`should match snapshot 1`] = `
       <ForwardRef(Button)
         className="confirm"
         disabled={false}
+        main={true}
         onClick={[Function]}
         primary={true}
       >

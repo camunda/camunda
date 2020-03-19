@@ -88,6 +88,7 @@ exports[`should match snapshot 1`] = `
   <EntityList
     action={
       <ForwardRef(Button)
+        main={true}
         onClick={[Function]}
         primary={true}
       >

@@ -48,6 +48,7 @@ exports[`should match snapshot 1`] = `
     <ForwardRef(Button)
       className="close"
       disabled={false}
+      main={true}
       onClick={[MockFunction]}
     >
       Don't Save
@@ -55,6 +56,7 @@ exports[`should match snapshot 1`] = `
     <ForwardRef(Button)
       className="confirm"
       disabled={false}
+      main={true}
       onClick={[Function]}
       primary={true}
     >

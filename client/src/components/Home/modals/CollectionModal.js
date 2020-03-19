@@ -72,10 +72,11 @@ export default withErrorHandling(
             </Form>
           </Modal.Content>
           <Modal.Actions>
-            <Button className="cancel" onClick={onClose} disabled={this.state.loading}>
+            <Button main className="cancel" onClick={onClose} disabled={this.state.loading}>
               {t('common.cancel')}
             </Button>
             <Button
+              main
               primary
               className="confirm"
               disabled={!this.state.name || this.state.loading}
