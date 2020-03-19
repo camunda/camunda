@@ -194,6 +194,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       final ConfigurationService configurationService = createConfigurationService();
       final ElasticsearchConnectionNodeConfiguration esConfig =
         getEsConfigForConfigurationService(configurationService);
+      esConfig.setHost(MockServerFactory.MOCKSERVER_HOST);
       esConfig.setHttpPort(mockServerClient.getLocalPort());
       createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService);
     }

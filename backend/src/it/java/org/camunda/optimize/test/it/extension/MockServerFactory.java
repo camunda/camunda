@@ -10,6 +10,8 @@ import org.mockserver.integration.ClientAndServer;
 
 public class MockServerFactory {
 
+  public static final String MOCKSERVER_HOST = "localhost";
+
   public static ClientAndServer createProxyMockServer(String targetHost, int targetPort, int mockServerPort) {
     ConfigurationProperties.logLevel("INFO");
     ConfigurationProperties.maxExpectations(10);

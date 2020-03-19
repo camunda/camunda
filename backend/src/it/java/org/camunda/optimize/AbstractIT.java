@@ -9,6 +9,7 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
+import org.camunda.optimize.test.it.extension.MockServerFactory;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.AnalysisClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
@@ -44,7 +45,7 @@ public abstract class AbstractIT {
 
   protected ClientAndServer useElasticsearchMockServer() {
     final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useESMockServer();
-    embeddedOptimizeExtension.configureEsPort(esMockServer.getLocalPort());
+    embeddedOptimizeExtension.configureEsHostAndPort(MockServerFactory.MOCKSERVER_HOST, esMockServer.getLocalPort());
     return esMockServer;
   }
 

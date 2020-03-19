@@ -43,7 +43,6 @@ import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -136,7 +135,8 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     }
   }
 
-  public void configureEsPort(final int esPort) {
+  public void configureEsHostAndPort(final String host, final int esPort) {
+    getConfigurationService().getElasticsearchConnectionNodes().get(0).setHost(host);
     getConfigurationService().getElasticsearchConnectionNodes().get(0).setHttpPort(esPort);
     reloadConfiguration();
   }
