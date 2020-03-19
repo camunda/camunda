@@ -17,11 +17,12 @@ import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor {
+
+  public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
   private static final String LOG_MSG_WAIT_UNTIL_COMMITTED =
@@ -37,16 +38,11 @@ public final class AsyncSnapshotDirector extends Actor {
   private static final String ERROR_MSG_ENFORCED_SNAPSHOT =
       "Unexpected exception occurred on creating snapshot, was enforced to do so.";
 
-  private static final Duration ONE_MINUTE = Duration.ofMinutes(1);
-
   private final SnapshotController snapshotController;
   private final LogStream logStream;
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
-  private final ThreadLocalRandom threadLocalRandom;
-  private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
-  private final Runnable scheduleSnapshotOnRate = this::scheduleSnapshotOnRate;
   private final String actorName;
 
   private ActorCondition commitCondition;
@@ -67,7 +63,6 @@ public final class AsyncSnapshotDirector extends Actor {
     this.processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     this.actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
-    this.threadLocalRandom = ThreadLocalRandom.current();
   }
 
   @Override
@@ -79,8 +74,8 @@ public final class AsyncSnapshotDirector extends Actor {
   protected void onActorStarting() {
     actor.setSchedulingHints(SchedulingHints.ioBound());
     final var firstSnapshotTime =
-        RandomDuration.getRandomDuration(RandomDuration.ONE_MINUTE, snapshotRate);
-    actor.runDelayed(firstSnapshotTime, scheduleSnapshotOnRate);
+        RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
+    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
 
     lastWrittenEventPosition = null;
     commitCondition = actor.onCondition(getConditionNameForPosition(), this::onCommitCheck);
@@ -88,7 +83,7 @@ public final class AsyncSnapshotDirector extends Actor {
   }
 
   private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, prepareTakingSnapshot);
+    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
     prepareTakingSnapshot();
   }
 

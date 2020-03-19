@@ -21,7 +21,8 @@ public class RandomDurationTest {
     final Duration maxDuration = Duration.ofMinutes(10);
 
     // when
-    final var randomDuration = RandomDuration.getRandomDuration(minDuration, maxDuration);
+    final var randomDuration =
+        RandomDuration.getRandomDurationMinuteBased(minDuration, maxDuration);
 
     // then
     assertThat(randomDuration).isBetween(minDuration, maxDuration);
@@ -34,7 +35,8 @@ public class RandomDurationTest {
     final Duration maxDuration = Duration.ofMinutes(10);
 
     // when
-    final var randomDuration = RandomDuration.getRandomDuration(minDuration, maxDuration);
+    final var randomDuration =
+        RandomDuration.getRandomDurationMinuteBased(minDuration, maxDuration);
 
     // then
     assertThat(randomDuration).isBetween(minDuration, maxDuration);
@@ -47,7 +49,8 @@ public class RandomDurationTest {
     final Duration maxDuration = Duration.ofMinutes(-1);
 
     // when
-    final var randomDuration = RandomDuration.getRandomDuration(minDuration, maxDuration);
+    final var randomDuration =
+        RandomDuration.getRandomDurationMinuteBased(minDuration, maxDuration);
 
     // then
     assertThat(randomDuration).isBetween(minDuration, maxDuration);
@@ -56,11 +59,26 @@ public class RandomDurationTest {
   @Test
   public void shouldGetMinDurationWhenMaxDurationIsSmaller() {
     // given
-    final Duration minDuration = Duration.ofMinutes(1);
-    final Duration maxDuration = Duration.ofSeconds(10);
+    final Duration minDuration = Duration.ofMinutes(10);
+    final Duration maxDuration = Duration.ofMinutes(1);
 
     // when
-    final var randomDuration = RandomDuration.getRandomDuration(minDuration, maxDuration);
+    final var randomDuration =
+        RandomDuration.getRandomDurationMinuteBased(minDuration, maxDuration);
+
+    // then
+    assertThat(randomDuration).isEqualTo(minDuration);
+  }
+
+  @Test
+  public void shouldGetMinDurationWhenDiffIsOnlySeconds() {
+    // given
+    final Duration minDuration = Duration.ofMinutes(1);
+    final Duration maxDuration = Duration.ofSeconds(90);
+
+    // when
+    final var randomDuration =
+        RandomDuration.getRandomDurationMinuteBased(minDuration, maxDuration);
 
     // then
     assertThat(randomDuration).isEqualTo(minDuration);
@@ -72,7 +90,8 @@ public class RandomDurationTest {
     final Duration minDuration = Duration.ofMinutes(1);
 
     // when
-    final var randomDuration = RandomDuration.getRandomDuration(minDuration, minDuration);
+    final var randomDuration =
+        RandomDuration.getRandomDurationMinuteBased(minDuration, minDuration);
 
     // then
     assertThat(randomDuration).isEqualTo(minDuration);

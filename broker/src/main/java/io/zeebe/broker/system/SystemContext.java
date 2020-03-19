@@ -7,6 +7,8 @@
  */
 package io.zeebe.broker.system;
 
+import static io.zeebe.engine.processor.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
@@ -27,7 +29,6 @@ public final class SystemContext {
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
-  private static final Duration ONE_MINUTE = Duration.ofMinutes(1);
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
@@ -78,7 +79,7 @@ public final class SystemContext {
     final var dataCfg = brokerCfg.getData();
 
     final var snapshotPeriod = dataCfg.getSnapshotPeriod();
-    if (snapshotPeriod.isNegative() || snapshotPeriod.minus(ONE_MINUTE).isNegative()) {
+    if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
     }
   }
