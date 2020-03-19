@@ -10,10 +10,18 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 export const TimeStamp = themed(styled.span`
   margin-left: 14px;
   padding: 2px 4px;
-  color: ${({isSelected}) => isSelected && '#fff'};
+  color: ${({isSelected}) =>
+    isSelected &&
+    themeStyle({
+      dark: '#fff',
+      light: Colors.uiLight06
+    })};
   background: ${({isSelected}) =>
     isSelected
-      ? 'rgba(247, 248, 250, 0.2)'
+      ? themeStyle({
+          dark: 'rgba(247, 248, 250, 0.15)',
+          light: 'rgba(253, 253, 254, 0.55)'
+        })
       : themeStyle({
           dark: Colors.darkScopeLabel,
           light: Colors.lightScopeLabel
