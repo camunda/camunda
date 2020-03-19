@@ -5,7 +5,8 @@
 def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
 
 String getBranchSlug() {
-  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-')
+  // '-operate-camunda-cloud' will be added later. So length 'o-'+branchname+'-operate-camunda-cloud' <= 63
+  return 'o-'+env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').take(39)
 }
 
 String getGitCommitMsg() {
