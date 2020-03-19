@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -118,7 +119,8 @@ public class ElasticsearchManager {
 
   public void completeOperation(String operationId, BulkRequest bulkRequest) {
     UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationId)
-        .script(getUpdateOperationScript());
+        .script(getUpdateOperationScript())
+        .retryOnConflict(UPDATE_RETRY_COUNT);
     bulkRequest.add(updateRequest);
   }
 

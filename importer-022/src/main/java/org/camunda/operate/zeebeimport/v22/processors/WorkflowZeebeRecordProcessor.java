@@ -39,6 +39,7 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class WorkflowZeebeRecordProcessor {
@@ -106,7 +107,8 @@ public class WorkflowZeebeRecordProcessor {
       updateFields.put(ListViewTemplate.WORKFLOW_NAME, workflowEntity.getName());
       updateFields.put(ListViewTemplate.WORKFLOW_VERSION, workflowEntity.getVersion());
       UpdateRequest updateRequest = new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceKey.toString())
-          .doc(updateFields);
+          .doc(updateFields)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
       bulkRequest.add(updateRequest);
     }
   }

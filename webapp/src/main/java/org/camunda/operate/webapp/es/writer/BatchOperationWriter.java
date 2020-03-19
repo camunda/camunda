@@ -54,6 +54,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class BatchOperationWriter {
@@ -343,7 +344,8 @@ public class BatchOperationWriter {
       updateFields.put(ListViewTemplate.BATCH_OPERATION_IDS, batchOperationId);
 
       return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, String.valueOf(workflowInstanceKey))
-          .script(getUpdateBatchOperationIdScript(batchOperationId));
+          .script(getUpdateBatchOperationIdScript(batchOperationId))
+          .retryOnConflict(UPDATE_RETRY_COUNT);
   }
 
   private OperationEntity createOperationEntity(Long workflowInstanceKey, OperationType operationType, String batchOperationId) {

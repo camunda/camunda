@@ -74,15 +74,6 @@ public class UserStorage extends AbstractReader {
     }    
   }
 
-  public void deleteById(String id) {
-    try {
-      DeleteRequest request = new DeleteRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE,id);
-      esClient.delete(request,RequestOptions.DEFAULT);
-    } catch (Throwable t) {
-      logger.error("Could not delete user by id {}", id, t);
-    }    
-  }
- 
   protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
     return objectMapper.writeValueAsString(aUser);
   }

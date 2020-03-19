@@ -47,6 +47,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class ListViewZeebeRecordProcessor {
@@ -236,7 +237,8 @@ public class ListViewZeebeRecordProcessor {
       return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
-        .routing(workflowInstanceKey.toString());
+        .routing(workflowInstanceKey.toString())
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -254,7 +256,8 @@ public class ListViewZeebeRecordProcessor {
       return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
-        .routing(workflowInstanceKey.toString());
+        .routing(workflowInstanceKey.toString())
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert variable for list view", e);
@@ -273,7 +276,8 @@ public class ListViewZeebeRecordProcessor {
       return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .doc(updateFields)
-        .routing(workflowInstanceKey.toString());
+        .routing(workflowInstanceKey.toString())
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -301,7 +305,8 @@ public class ListViewZeebeRecordProcessor {
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       return new UpdateRequest(listViewTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, wiEntity.getId())
         .upsert(objectMapper.writeValueAsString(wiEntity), XContentType.JSON)
-        .doc(jsonMap);
+        .doc(jsonMap)
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert workflow instance for list view", e);
