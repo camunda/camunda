@@ -161,6 +161,58 @@ describe('InstancesContainer', () => {
     });
   });
 
+  describe('fetching workflow instances with initially empty query', () => {
+    const expectedQuery = {
+      active: true,
+      completed: true,
+      canceled: true,
+      incidents: true
+    };
+    const initialFilterUrl = {};
+    let node;
+    beforeEach(() => {
+      dataManager.getWorkflowInstances.mockClear();
+      node = mount(
+        <InstancesContainerWrapped
+          {...{dataManager}}
+          {...mockLocalStorageProps}
+          {...getRouterProps(initialFilterUrl)}
+        />
+      );
+    });
+
+    it('should call getWorkflowInstances one time with correct parameters', () => {
+      expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(1);
+      expect(dataManager.getWorkflowInstances).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queries: expect.arrayContaining([{}])
+        })
+      );
+    });
+
+    it('should call getWorkflowInstances for second time with correct parameters when filter is changed', () => {
+      // given
+
+      // when
+      node.find('Instances').prop('onFilterChange')(expectedQuery);
+
+      // then
+      expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(2);
+      expect(dataManager.getWorkflowInstances).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          queries: expect.arrayContaining([
+            {
+              ...expectedQuery,
+              finished: true,
+              running: true
+            }
+          ])
+        })
+      );
+    });
+  });
+
   describe('fetching workflow instances', () => {
     const expectedQuery = {
       active: true,
@@ -190,6 +242,71 @@ describe('InstancesContainer', () => {
           response: expectedQuery
         });
       });
+    });
+
+    it('should fetch instances one time with correct parameters', () => {
+      expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(1);
+      const call = dataManager.getWorkflowInstances.mock.calls[0][0];
+      expect(call.queries[0]).toMatchObject(expectedQuery);
+    });
+
+    it('should call getWorkflowInstances again with correct parameters when filter is first set empty, and then set again', () => {
+      // given
+      const emptyFilters = {};
+
+      // when
+      node.find('Instances').prop('onFilterChange')(emptyFilters);
+
+      node = mount(
+        <InstancesContainerWrapped
+          {...{dataManager}}
+          {...mockLocalStorageProps}
+          {...getRouterProps(emptyFilters)}
+        />
+      );
+
+      // then
+      // getWorkflowInstances called for a second time with empty filters
+      expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(2);
+      expect(dataManager.getWorkflowInstances).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          queries: expect.arrayContaining([emptyFilters])
+        })
+      );
+
+      // set some filters
+      node.find('Instances').prop('onFilterChange')({
+        active: true,
+        incidents: true
+      });
+
+      // mount again to change router props (for filter url change)
+      node = mount(
+        <InstancesContainerWrapped
+          {...{dataManager}}
+          {...mockLocalStorageProps}
+          {...getRouterProps({
+            active: true,
+            incidents: true
+          })}
+        />
+      );
+
+      // getWorkflowInstances called for a third time with correct filters
+      expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(3);
+      expect(dataManager.getWorkflowInstances).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          queries: expect.arrayContaining([
+            {
+              active: true,
+              incidents: true,
+              running: true
+            }
+          ])
+        })
+      );
     });
 
     it('should fetch instances when filter changes', async () => {
