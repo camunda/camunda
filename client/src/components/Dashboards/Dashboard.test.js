@@ -7,14 +7,12 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import DashboardWithErrorHandling from './Dashboard';
+import {Dashboard} from './Dashboard';
 import DashboardView from './DashboardView';
 import {loadEntity, createEntity} from 'services';
 import {showError} from 'notifications';
 
 jest.mock('notifications', () => ({showError: jest.fn()}));
-
-const {WrappedComponent: Dashboard} = DashboardWithErrorHandling;
 
 jest.mock('./service', () => {
   return {
@@ -35,7 +33,8 @@ jest.mock('services', () => {
 const props = {
   match: {params: {id: '1'}},
   location: {},
-  mightFail: (promise, cb) => cb(promise)
+  mightFail: (promise, cb) => cb(promise),
+  getUser: () => ({id: 'demo'})
 };
 
 beforeEach(() => {

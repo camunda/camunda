@@ -9,6 +9,7 @@ import React, {createContext, useContext, useState, useEffect} from 'react';
 import {get} from 'request';
 
 const UserContext = createContext();
+const resolveWithUser = [];
 
 export function UserProvider({children}) {
   const [user, setUser] = useState();
@@ -17,15 +18,22 @@ export function UserProvider({children}) {
     const response = await get('api/identity/current/user');
     const user = await response.json();
 
+    resolveWithUser.forEach(resolve => resolve(user));
+    resolveWithUser.length = 0;
+
     setUser(user);
     return user;
   };
+
+  const getUser = () => (user ? user : new Promise(resolve => resolveWithUser.push(resolve)));
 
   useEffect(() => {
     refreshUser();
   }, []);
 
-  return <UserContext.Provider value={{user, refreshUser}}>{children}</UserContext.Provider>;
+  return (
+    <UserContext.Provider value={{user, refreshUser, getUser}}>{children}</UserContext.Provider>
+  );
 }
 
 export default Component => props => <Component {...useContext(UserContext)} {...props} />;

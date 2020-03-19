@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Report from './Report';
+import {Report} from './Report';
 import ReportEdit from './ReportEdit';
 import ReportView from './ReportView';
 
@@ -24,7 +24,9 @@ jest.mock('services', () => {
 
 const props = {
   match: {params: {id: '1'}},
-  location: {}
+  location: {},
+  mightFail: (promise, cb) => cb(promise),
+  getUser: () => ({id: 'demo'})
 };
 
 const report = {
@@ -46,13 +48,13 @@ loadEntity.mockReturnValue(report);
 evaluateReport.mockReturnValue(report);
 
 it('should display a loading indicator', () => {
-  const node = shallow(<Report {...props} />).dive();
+  const node = shallow(<Report {...props} mightFail={() => {}} />);
 
   expect(node.find('LoadingIndicator')).toExist();
 });
 
 it("should show an error page if report doesn't exist", () => {
-  const node = shallow(<Report {...props} />).dive();
+  const node = shallow(<Report {...props} />);
   node.setState({
     serverError: 404
   });
@@ -73,19 +75,19 @@ it('should not evaluate the report if it is new', () => {
   expect(evaluateReport).not.toHaveBeenCalled();
 });
 
-it('should render ReportEdit component if viewMode is edit', async () => {
+it('should render ReportEdit component if viewMode is edit', () => {
   props.match.params.viewMode = 'edit';
 
-  const node = await shallow(<Report {...props} />).dive();
+  const node = shallow(<Report {...props} />);
   node.setState({loaded: true, report});
 
   expect(node.find(ReportEdit)).toExist();
 });
 
-it('should render ReportView component if viewMode is view', async () => {
+it('should render ReportView component if viewMode is view', () => {
   props.match.params.viewMode = 'view';
 
-  const node = await shallow(<Report {...props} />).dive();
+  const node = shallow(<Report {...props} />);
   node.setState({loaded: true, report});
 
   expect(node.find(ReportView)).toExist();

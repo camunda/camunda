@@ -37,6 +37,6 @@ it('should render the last component in the url', async () => {
     })
   );
 
-  expect(renderedEntity.name()).toBe('Report');
+  expect(renderedEntity.dive().name()).toBe('Report');
   expect(renderedEntity.props().match.params.id).toBe('rid');
 });

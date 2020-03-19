@@ -7,7 +7,7 @@ exports[`should match snapshot 1`] = `
   <div
     className="header"
   >
-    <EntityNameForm
+    <EntityNameFormErrorHandler
       entity="Process"
       isNew={false}
       name="Process Name"

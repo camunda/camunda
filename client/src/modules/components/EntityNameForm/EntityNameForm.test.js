@@ -7,17 +7,23 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import EntityNameForm from './EntityNameForm';
+import {EntityNameForm} from './EntityNameForm';
 import {Input} from 'components';
+
+const props = {
+  entity: 'Report',
+  mightFail: (promise, cb) => cb(promise)
+};
+
 it('should provide name edit input', async () => {
-  const node = await shallow(<EntityNameForm entity="Report" />);
+  const node = await shallow(<EntityNameForm {...props} />);
   node.setState({name: 'test name'});
 
   expect(node.find(Input)).toExist();
 });
 
 it('should provide a link to view mode', async () => {
-  const node = await shallow(<EntityNameForm entity="Report" />);
+  const node = await shallow(<EntityNameForm {...props} />);
 
   expect(node.find('.save-button')).toExist();
   expect(node.find('.cancel-button')).toExist();
@@ -25,7 +31,7 @@ it('should provide a link to view mode', async () => {
 
 it('should invoke save on save button click', async () => {
   const spy = jest.fn();
-  const node = await shallow(<EntityNameForm entity="Report" name="" onSave={spy} />);
+  const node = await shallow(<EntityNameForm {...props} name="" onSave={spy} />);
 
   node.find('.save-button').simulate('click');
 
@@ -33,14 +39,14 @@ it('should invoke save on save button click', async () => {
 });
 
 it('should disable save button if report name is empty', async () => {
-  const node = await shallow(<EntityNameForm entity="Report" name="" />);
+  const node = await shallow(<EntityNameForm {...props} name="" />);
 
   expect(node.find('.save-button')).toBeDisabled();
 });
 
 it('should call change function on input change', async () => {
   const spy = jest.fn();
-  const node = await shallow(<EntityNameForm entity="Report" name="test name" onChange={spy} />);
+  const node = await shallow(<EntityNameForm {...props} name="test name" onChange={spy} />);
 
   const evt = {target: {value: 'asdf'}};
 
@@ -51,14 +57,14 @@ it('should call change function on input change', async () => {
 
 it('should invoke cancel', async () => {
   const spy = jest.fn();
-  const node = await shallow(<EntityNameForm entity="Report" onCancel={spy} />);
+  const node = await shallow(<EntityNameForm {...props} onCancel={spy} />);
 
   await node.find('.cancel-button').simulate('click');
   expect(spy).toHaveBeenCalled();
 });
 
 it('should select the name input field if Report is just created', async () => {
-  const node = await shallow(<EntityNameForm entity="Report" isNew />);
+  const node = await shallow(<EntityNameForm {...props} isNew />);
 
   const input = {focus: jest.fn(), select: jest.fn()};
   node.instance().nameInput.current = input;

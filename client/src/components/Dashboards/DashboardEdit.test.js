@@ -8,6 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {nowDirty} from 'saveGuard';
+import {EntityNameForm} from 'components';
 
 import DashboardEdit from './DashboardEdit';
 
@@ -28,7 +29,7 @@ it('should editing report addons', () => {
 it('should pass the isNew prop to the EntityNameForm', () => {
   const node = shallow(<DashboardEdit isNew />);
 
-  expect(node.find('EntityNameForm').prop('isNew')).toBe(true);
+  expect(node.find(EntityNameForm).prop('isNew')).toBe(true);
 });
 
 it('should notify the saveGuard of changes', () => {

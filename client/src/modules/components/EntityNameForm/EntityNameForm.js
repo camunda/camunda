@@ -5,14 +5,15 @@
  */
 
 import React from 'react';
+import {Link} from 'react-router-dom';
 
 import {Input, Icon, Button} from 'components';
-import {Link} from 'react-router-dom';
+import {withErrorHandling} from 'HOC';
 
 import './EntityNameForm.scss';
 import {t} from 'translation';
 
-export default class EntityNameForm extends React.Component {
+export class EntityNameForm extends React.Component {
   state = {
     loading: false
   };
@@ -55,8 +56,7 @@ export default class EntityNameForm extends React.Component {
             disabled={!name || loading}
             onClick={async () => {
               this.setState({loading: true});
-              await onSave();
-              this.setState({loading: false});
+              this.props.mightFail(onSave(), () => this.setState({loading: false}));
             }}
           >
             <Icon type="check" />
@@ -76,3 +76,5 @@ export default class EntityNameForm extends React.Component {
     );
   }
 }
+
+export default withErrorHandling(EntityNameForm);
