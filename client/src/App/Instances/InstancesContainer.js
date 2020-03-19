@@ -267,6 +267,7 @@ class InstancesContainer extends Component {
       groupedWorkflows[filter.workflow],
       filter.version
     );
+    const {getWorkflowInstancesStatistics} = this.props.dataManager;
 
     if (isEmpty(workflowByVersion)) {
       return;
@@ -277,7 +278,7 @@ class InstancesContainer extends Component {
       groupedWorkflows
     );
 
-    return this.props.dataManager.getWorkflowInstancesStatistics(
+    getWorkflowInstancesStatistics(
       parseFilterForRequest(decodeFields(filterWithWorkflowIds))
     );
   };
