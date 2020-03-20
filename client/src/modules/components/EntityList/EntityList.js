@@ -19,13 +19,16 @@ export default function EntityList({name, children, action, isLoading, data, emp
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
 
-  const searchFilteredData = (data || []).filter(({name}) =>
+  const entries = data || [];
+
+  const searchFilteredData = entries.filter(({name}) =>
     name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const isEmpty = !isLoading && (data || []).length === 0;
+  const isEmpty = !isLoading && entries.length === 0;
   const hasResults = searchFilteredData.length > 0;
-  const hasWarning = (data || []).some(({warning}) => warning);
+  const hasWarning = entries.some(({warning}) => warning);
+  const hasSingleAction = entries.every(({actions}) => !actions || actions.length <= 1);
 
   return (
     <div
@@ -57,7 +60,12 @@ export default function EntityList({name, children, action, isLoading, data, emp
         {hasResults && (
           <ul>
             {searchFilteredData.map((data, idx) => (
-              <ListItem key={idx} data={data} hasWarning={hasWarning} />
+              <ListItem
+                key={idx}
+                data={data}
+                hasWarning={hasWarning}
+                singleAction={hasSingleAction}
+              />
             ))}
           </ul>
         )}

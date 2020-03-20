@@ -107,43 +107,10 @@
     }
   }
 
-  .Dropdown,
-  .dropdownPlaceholder {
-    margin: 0 14px;
-    height: 32px;
-    width: 32px;
-
-    .activateButton {
-      width: 32px;
-      height: 32px;
-
-      .Icon {
-        width: 24px;
-        height: 24px;
-        font-size: 24px;
-      }
+  &:not(:hover) .ListItemAction {
+    .Button:not(:focus),
+    &.Button {
+      opacity: 0;
     }
-
-    .menu {
-      top: 26px;
-      left: auto !important; // the calculateMenuStyle method of the Dropdown sets inline styles
-      right: 0;
-    }
-
-    .downIcon {
-      display: none;
-    }
-
-    .DropdownOption {
-      padding-left: 10px;
-
-      .Icon {
-        margin-right: 8px;
-      }
-    }
-  }
-
-  &:not(:hover) .Dropdown .Button:not(:focus) {
-    opacity: 0;
   }
 }

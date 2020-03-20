@@ -3,22 +3,29 @@
 exports[`should add user/group to the list 1`] = `
 Array [
   Object {
+    "actions": Array [
+      Object {
+        "action": [Function],
+        "icon": "delete",
+        "text": "Remove",
+      },
+    ],
     "className": "user",
     "icon": "user",
     "meta": Array [
       false,
-      <ForwardRef(Button)
-        onClick={[Function]}
-      >
-        <Icon
-          type="delete"
-        />
-      </ForwardRef(Button)>,
     ],
     "name": "kermit",
     "type": "User",
   },
   Object {
+    "actions": Array [
+      Object {
+        "action": [Function],
+        "icon": "delete",
+        "text": "Remove",
+      },
+    ],
     "className": "group",
     "icon": "user-group",
     "meta": Array [
@@ -27,13 +34,6 @@ Array [
          
         Users
       </React.Fragment>,
-      <ForwardRef(Button)
-        onClick={[Function]}
-      >
-        <Icon
-          type="delete"
-        />
-      </ForwardRef(Button)>,
     ],
     "name": "Sales",
     "type": "User Group",

@@ -62,6 +62,7 @@ exports[`should match snapshot 1`] = `
         }
         hasWarning={false}
         key="0"
+        singleAction={true}
       />
       <ListItem
         data={
@@ -78,6 +79,7 @@ exports[`should match snapshot 1`] = `
         }
         hasWarning={false}
         key="1"
+        singleAction={true}
       />
       <ListItem
         data={
@@ -95,6 +97,7 @@ exports[`should match snapshot 1`] = `
         }
         hasWarning={false}
         key="2"
+        singleAction={true}
       />
     </ul>
     <div>

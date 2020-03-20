@@ -58,25 +58,17 @@ exports[`should match snapshot 1`] = `
         </div>
       </div>
     </div>
-    <Dropdown
-      icon={true}
-      label={
-        <Icon
-          type="context-menu"
-        />
+    <ListItemAction
+      actions={
+        Array [
+          Object {
+            "action": [MockFunction],
+            "icon": "delete",
+            "text": "Delete Entry",
+          },
+        ]
       }
-    >
-      <ForwardRef(DropdownOption)
-        key="0"
-        onClick={[MockFunction]}
-      >
-        <Icon
-          type="delete"
-        />
-         
-        Delete Entry
-      </ForwardRef(DropdownOption)>
-    </Dropdown>
+    />
   </Link>
 </li>
 `;

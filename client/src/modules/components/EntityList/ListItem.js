@@ -7,13 +7,16 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {Input, Icon, Dropdown} from 'components';
+import {Input, Icon} from 'components';
+
+import ListItemAction from './ListItemAction';
 
 import './ListItem.scss';
 
 export default function ListItem({
-  data: {type, name, link, icon, meta = [], actions = [], warning},
-  hasWarning
+  data: {type, name, link, icon, meta = [], actions, warning},
+  hasWarning,
+  singleAction
 }) {
   const content = (
     <>
@@ -43,17 +46,7 @@ export default function ListItem({
           )}
         </div>
       )}
-      {actions.length > 0 ? (
-        <Dropdown icon label={<Icon type="context-menu" />}>
-          {actions.map(({action, icon, text}, idx) => (
-            <Dropdown.Option onClick={action} key={idx}>
-              <Icon type={icon} /> {text}
-            </Dropdown.Option>
-          ))}
-        </Dropdown>
-      ) : (
-        <div className="dropdownPlaceholder" />
-      )}
+      <ListItemAction actions={actions} singleAction={singleAction} />
     </>
   );
 

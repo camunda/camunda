@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Modal, Button, UserTypeahead, EntityList, Icon, Message, Labeled} from 'components';
+import {Modal, Button, UserTypeahead, EntityList, Message, Labeled} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {getUsers, getUser, updateUsers} from './service';
@@ -129,10 +129,14 @@ export default withErrorHandling(
                             'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
                           )}
                         </>
-                      ),
-                      <Button onClick={() => this.removeUser(id)}>
-                        <Icon type="delete" />
-                      </Button>
+                      )
+                    ],
+                    actions: [
+                      {
+                        icon: 'delete',
+                        text: t('common.remove'),
+                        action: () => this.removeUser(id)
+                      }
                     ]
                   };
                 })

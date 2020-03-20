@@ -17,25 +17,5 @@
 
   .EntityList {
     margin-top: 32px;
-
-    .meta ~ .meta {
-      flex: 0 0 32px;
-      padding: 0 5px;
-
-      .Button {
-        background: none;
-        border: none;
-        padding: 0;
-        min-width: 0;
-        box-shadow: none;
-        .Icon {
-          margin-right: 0;
-        }
-      }
-    }
-
-    .dropdownPlaceholder {
-      display: none;
-    }
   }
 }

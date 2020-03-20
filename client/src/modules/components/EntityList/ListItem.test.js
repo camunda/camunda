@@ -39,9 +39,3 @@ it('should have a warning column even if no specific warning exists for this Lis
 
   expect(node.find('.warning')).toExist();
 });
-
-it('should render a dropdown placeholder if no actions are provided', () => {
-  const node = shallow(<ListItem data={{}} />);
-
-  expect(node.find('.dropdownPlaceholder')).toExist();
-});
