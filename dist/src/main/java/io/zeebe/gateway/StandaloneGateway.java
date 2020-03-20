@@ -31,11 +31,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.core.env.Environment;
 
-@SpringBootApplication
-public class StandaloneGateway implements CommandLineRunner {
-
-  @Autowired GatewayCfg configuration;
-  @Autowired Environment springEnvironment;
+public class StandaloneGateway {
 
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
@@ -114,13 +110,20 @@ public class StandaloneGateway implements CommandLineRunner {
         new LegacyConfigurationSupport(Scope.GATEWAY);
     legacyConfigurationSupport.checkForLegacyTomlConfigurationArgument(args, "broker.cfg.yaml");
 
-    SpringApplication.run(StandaloneGateway.class, args);
+    SpringApplication.run(Launcher.class, args);
   }
 
-  @Override
-  public void run(final String... args) throws Exception {
-    final GatewayCfg gatewayCfg = configuration;
-    gatewayCfg.init();
-    new StandaloneGateway(gatewayCfg).run();
+  @SpringBootApplication
+  public static class Launcher implements CommandLineRunner {
+
+    @Autowired GatewayCfg configuration;
+    @Autowired Environment springEnvironment;
+
+    @Override
+    public void run(final String... args) throws Exception {
+      final GatewayCfg gatewayCfg = configuration;
+      gatewayCfg.init();
+      new StandaloneGateway(gatewayCfg).run();
+    }
   }
 }

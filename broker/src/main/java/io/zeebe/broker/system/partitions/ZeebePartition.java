@@ -379,6 +379,8 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (value, processorFail) -> {
               if (processorFail == null) {
+                criticalComponentsHealthMonitor.registerComponent(
+                    streamProcessor.getName(), streamProcessor);
                 final DataCfg dataCfg = brokerCfg.getData();
                 installSnapshotDirector(streamProcessor, dataCfg)
                     .onComplete(
@@ -559,6 +561,7 @@ public final class ZeebePartition extends Actor
 
     final Actor actor = actorsToClose.remove(0);
     LOG.debug("Closing {}", actor.getName());
+    criticalComponentsHealthMonitor.removeComponent(actor.getName());
     actor
         .closeAsync()
         .onComplete(

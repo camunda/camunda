@@ -131,6 +131,8 @@ public final class ProcessingStateMachine {
   private long lastWrittenEventPosition = -1L;
   private boolean onErrorHandling;
   private long errorRecordPosition = -1;
+  private volatile boolean onErrorHandlingLoop;
+  private int onErrorRetries;
 
   public ProcessingStateMachine(
       final ProcessingContext context, final BooleanSupplier shouldProcessNext) {
@@ -166,6 +168,10 @@ public final class ProcessingStateMachine {
   }
 
   void readNextEvent() {
+    if (onErrorRetries > 0) {
+      onErrorHandlingLoop = false;
+      onErrorRetries = 0;
+    }
     if (onErrorHandling) {
       logStream
           .getCommitPositionAsync()
@@ -279,6 +285,10 @@ public final class ProcessingStateMachine {
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
+    onErrorRetries++;
+    if (onErrorRetries > 1) {
+      onErrorHandlingLoop = true;
+    }
     final ActorFuture<Boolean> retryFuture =
         updateStateRetryStrategy.runWithRetry(
             () -> {
@@ -425,5 +435,9 @@ public final class ProcessingStateMachine {
 
   public long getLastWrittenEventPosition() {
     return lastWrittenEventPosition;
+  }
+
+  public boolean isMakingProgress() {
+    return !onErrorHandlingLoop;
   }
 }
