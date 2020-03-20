@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
@@ -23,16 +24,20 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -283,6 +288,23 @@ public class EventIngestionRestIT extends AbstractIT {
     assertEventDtosArePersisted(Collections.emptyList());
   }
 
+  @ParameterizedTest
+  @MethodSource("invalidRFC3339EventTimes")
+  public void ingestEventBatch_nonCompliantDateFormat(Object time) throws JsonProcessingException {
+    // given
+    final CloudEventDto eventDto = eventClient.createCloudEventDto();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildIngestEventWithBody(convertToJsonBodyWithTime(eventDto, time), getAccessToken())
+      .execute(Response.Status.BAD_REQUEST.getStatusCode());
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+
+    assertEventDtosArePersisted(Collections.emptyList());
+  }
+
   @Test
   public void ingestEventBatch_rejectInvalidPropertyValues() {
     // given
@@ -349,6 +371,28 @@ public class EventIngestionRestIT extends AbstractIT {
         .collect(toList())).doesNotContainNull();
 
     assertEventDtosArePersisted(Collections.emptyList());
+  }
+
+  private static Stream<Object> invalidRFC3339EventTimes() {
+    return Stream.of(
+      "5",
+      12345,
+      "8/17/2018 7:00:00 AM",
+      "2017-05-01 16:23:12Z", // RFC3339 specifies using a 'T' rather than a space between date and time
+      Instant.now().toEpochMilli(),
+      String.valueOf(Instant.now().toEpochMilli())
+    );
+  }
+
+  private String convertToJsonBodyWithTime(CloudEventDto cloudEventDto, Object time) throws JsonProcessingException {
+    return "[ {\n" +
+      "  \"id\" : \"" + cloudEventDto.getId() + "\",\n" +
+      "  \"source\" : \"" + cloudEventDto.getSource() + "\",\n" +
+      "  \"specversion\" : \"" + cloudEventDto.getSpecversion() + "\",\n" +
+      "  \"type\" : \"" + cloudEventDto.getType() + "\",\n" +
+      "  \"time\" : " + embeddedOptimizeExtension.getObjectMapper().writeValueAsString(time) + ",\n" +
+      "  \"traceid\" : \"" + cloudEventDto.getTraceid() + "\",\n" +
+      "} ]";
   }
 
   private void assertEventDtosArePersisted(final List<CloudEventDto> cloudEventDtos) {

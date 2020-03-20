@@ -6,14 +6,12 @@
 package org.camunda.optimize.service.util.mapper;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-
 
 public class CustomSerializer extends JsonSerializer<OffsetDateTime> {
 
@@ -24,7 +22,7 @@ public class CustomSerializer extends JsonSerializer<OffsetDateTime> {
   }
 
   @Override
-  public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException, JsonProcessingException {
+  public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
     gen.writeString(value.format(this.formatter));
   }
 }

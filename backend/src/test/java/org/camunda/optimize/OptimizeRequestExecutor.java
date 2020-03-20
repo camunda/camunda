@@ -1151,6 +1151,16 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildIngestEventWithBody(final String bodyJson,
+                                                          final String secret) {
+    this.path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
+    this.method = POST;
+    addSingleHeader(HttpHeaders.AUTHORIZATION, secret);
+    this.mediaType = CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
+    this.body = Entity.json(bodyJson);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetOnboardingStateForKey(final String key) {
     this.path = "onboarding/" + key;
     this.method = GET;

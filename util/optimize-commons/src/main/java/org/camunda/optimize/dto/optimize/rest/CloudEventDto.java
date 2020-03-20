@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.service.util.mapper.CustomCloudEventTimeDeserializer;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -52,6 +54,7 @@ public class CloudEventDto {
 
   // optional properties
   @ToString.Include
+  @JsonDeserialize(using = CustomCloudEventTimeDeserializer.class)
   private Instant time;
 
   private Object data;
