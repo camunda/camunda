@@ -5,15 +5,11 @@
  */
 package org.camunda.operate.webapp.zeebe.operation;
 
-import io.zeebe.client.api.command.ClientException;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
-import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
@@ -25,8 +21,6 @@ import static org.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 @Component
 public class ResolveIncidentHandler extends AbstractOperationHandler implements OperationHandler {
 
-  private static final Logger logger = LoggerFactory.getLogger(ResolveIncidentHandler.class);
-
   @Autowired
   private IncidentReader incidentReader;
 
@@ -34,14 +28,14 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   private ZeebeClient zeebeClient;
 
   @Override
-  public void handleWithException(OperationEntity operation) throws PersistenceException {
+  public void handleWithException(OperationEntity operation) throws Exception {
 
     if (operation.getIncidentKey() == null) {
       failOperation(operation, "Incident key must be defined.");
       return;
     }
 
-    IncidentEntity incident = null;
+    IncidentEntity incident;
     try {
       incident = incidentReader.getIncidentById(operation.getIncidentKey());
     } catch (NotFoundException ex) {
@@ -49,18 +43,12 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
       return;
     }
 
-    try {
-      if (incident.getErrorType().equals(JOB_NO_RETRIES)) {
-        zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1).send().join();
-      }
-      zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
-      // mark operation as sent
-      markAsSucceeded(operation);
-    } catch (ClientException ex) {
-      logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
-      // fail operation
-      failOperation(operation, ex.getMessage());
+    if (incident.getErrorType().equals(JOB_NO_RETRIES)) {
+      zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1).send().join();
     }
+    zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
+    // mark operation as sent
+    markAsSent(operation);
 
   }
 
