@@ -233,27 +233,36 @@ public class TemplatedProcessReportDataBuilder {
           .dateInterval(dateInterval)
           .build();
         break;
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedBy(DistributedBy.USER_TASK)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+        break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedBy(DistributedBy.ASSIGNEE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-
-        reportData.getConfiguration().setDistributedBy(DistributedBy.ASSIGNEE);
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedBy(DistributedBy.CANDIDATE_GROUP)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-
-        reportData.getConfiguration().setDistributedBy(DistributedBy.CANDIDATE_GROUP);
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -269,12 +278,11 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.ASSIGNEE)
+          .distributedBy(DistributedBy.USER_TASK)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-
-        reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
         break;
       case USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE:
         reportData = new ProcessReportDataBuilderHelper()
@@ -291,11 +299,11 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.CANDIDATE_GROUP)
+          .distributedBy(DistributedBy.USER_TASK)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
-        reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
@@ -314,13 +322,13 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.DURATION)
           .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedBy(DistributedBy.ASSIGNEE)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
 
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        reportData.getConfiguration().setDistributedBy(DistributedBy.ASSIGNEE);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP:
@@ -328,13 +336,13 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.DURATION)
           .groupByType(ProcessGroupByType.USER_TASKS)
+          .distributedBy(DistributedBy.CANDIDATE_GROUP)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
 
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        reportData.getConfiguration().setDistributedBy(DistributedBy.CANDIDATE_GROUP);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_ASSIGNEE:
@@ -354,13 +362,13 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.DURATION)
           .groupByType(ProcessGroupByType.ASSIGNEE)
+          .distributedBy(DistributedBy.USER_TASK)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
 
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
       case USER_TASK_DURATION_GROUP_BY_CANDIDATE:
@@ -381,13 +389,13 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.DURATION)
           .groupByType(ProcessGroupByType.CANDIDATE_GROUP)
+          .distributedBy(DistributedBy.USER_TASK)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionVersions(processDefinitionVersions)
           .processDefinitionKey(processDefinitionKey)
           .build();
 
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
-        reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
       default:
