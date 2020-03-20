@@ -17,6 +17,7 @@ package io.zeebe;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.config.AppCfg;
 import io.zeebe.config.StarterCfg;
 import java.io.BufferedReader;
@@ -127,13 +128,18 @@ public class Starter extends App {
   }
 
   private ZeebeClient createZeebeClient() {
-    return ZeebeClient.newClientBuilder()
-        .brokerContactPoint(appCfg.getBrokerUrl())
-        .numJobWorkerExecutionThreads(0)
-        .withProperties(System.getProperties())
-        .usePlaintext()
-        .withInterceptors(monitoringInterceptor)
-        .build();
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder()
+            .brokerContactPoint(appCfg.getBrokerUrl())
+            .numJobWorkerExecutionThreads(0)
+            .withProperties(System.getProperties())
+            .withInterceptors(monitoringInterceptor);
+
+    if (!appCfg.isTls()) {
+      builder.usePlaintext();
+    }
+
+    return builder.build();
   }
 
   private void deployWorkflow(ZeebeClient client, String bpmnXmlPath) {

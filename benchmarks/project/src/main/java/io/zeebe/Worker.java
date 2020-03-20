@@ -16,6 +16,7 @@
 package io.zeebe;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.config.AppCfg;
 import io.zeebe.config.WorkerCfg;
@@ -75,17 +76,22 @@ public class Worker extends App {
 
   private ZeebeClient createZeebeClient() {
     final WorkerCfg workerCfg = appCfg.getWorker();
-    return ZeebeClient.newClientBuilder()
-        .brokerContactPoint(appCfg.getBrokerUrl())
-        .numJobWorkerExecutionThreads(workerCfg.getThreads())
-        .defaultJobWorkerName(workerCfg.getWorkerName())
-        .defaultJobTimeout(workerCfg.getCompletionDelay().multipliedBy(6))
-        .defaultJobWorkerMaxJobsActive(workerCfg.getCapacity())
-        .defaultJobPollInterval(workerCfg.getPollingDelay())
-        .usePlaintext()
-        .withProperties(System.getProperties())
-        .withInterceptors(monitoringInterceptor)
-        .build();
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder()
+            .brokerContactPoint(appCfg.getBrokerUrl())
+            .numJobWorkerExecutionThreads(workerCfg.getThreads())
+            .defaultJobWorkerName(workerCfg.getWorkerName())
+            .defaultJobTimeout(workerCfg.getCompletionDelay().multipliedBy(6))
+            .defaultJobWorkerMaxJobsActive(workerCfg.getCapacity())
+            .defaultJobPollInterval(workerCfg.getPollingDelay())
+            .withProperties(System.getProperties())
+            .withInterceptors(monitoringInterceptor);
+
+    if (!appCfg.isTls()) {
+      builder.usePlaintext();
+    }
+
+    return builder.build();
   }
 
   public static void main(String[] args) {
