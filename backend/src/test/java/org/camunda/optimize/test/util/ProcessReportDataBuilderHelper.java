@@ -7,6 +7,7 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -38,6 +39,7 @@ public class ProcessReportDataBuilderHelper {
   private ProcessViewEntity viewEntity = null;
   private ProcessViewProperty viewProperty = ProcessViewProperty.RAW_DATA;
   private ProcessGroupByType groupByType = ProcessGroupByType.NONE;
+  private DistributedBy distributedBy = DistributedBy.NONE;
   private ProcessVisualization visualization = ProcessVisualization.TABLE;
   private GroupByDateUnit dateInterval;
   private String variableName;
@@ -61,6 +63,7 @@ public class ProcessReportDataBuilderHelper {
     reportData.setView(view);
     reportData.setGroupBy(groupBy);
     reportData.getConfiguration().setProcessPart(processPart);
+    reportData.getConfiguration().setDistributedBy(distributedBy);
     return reportData;
   }
 
@@ -108,6 +111,11 @@ public class ProcessReportDataBuilderHelper {
 
   public ProcessReportDataBuilderHelper groupByType(ProcessGroupByType groupByType) {
     this.groupByType = groupByType;
+    return this;
+  }
+
+  public ProcessReportDataBuilderHelper distributedBy(DistributedBy distributedBy) {
+    this.distributedBy = distributedBy;
     return this;
   }
 

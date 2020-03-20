@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.date;
+package org.camunda.optimize.service.es.report.process.user_task.frequency.groupby.date.distributed_by.usertask;
 
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
@@ -11,6 +11,7 @@ import lombok.Data;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -21,14 +22,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -39,7 +41,6 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,19 +51,21 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class UserTaskFrequencyByStartDateByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";
+  private static final String USER_TASK_1_NAME = "userTask1Name";
+  private static final String USER_TASK_2_NAME = "userTask2Name";
 
   private static Stream<GroupByDateUnit> staticGroupByDateUnits() {
     return Arrays.stream(GroupByDateUnit.values()).filter(g -> !g.equals(GroupByDateUnit.AUTOMATIC));
@@ -72,9 +75,7 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -82,8 +83,8 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      evaluateMapReport(reportData);
+    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      evaluateHyperMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -98,27 +99,25 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
       .isEqualTo(GroupByDateUnit.DAY);
+    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.USER_TASK);
 
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().size()).isEqualTo(1);
-    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
+    final ReportHyperMapResultDto result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
-      .get()
-      .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(2L);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(localDateTimeToString(startOfToday))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
   public void simpleReportEvaluationById() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    finishAllUserTasks(processInstanceDto);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -128,22 +127,20 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReportById(
-      reportId
-    );
+    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      evaluateHyperMapReportById(reportId);
 
     // then
-    final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData().size()).isEqualTo(1);
-    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
+    final ReportHyperMapResultDto result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
-      .get()
-      .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(2L);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(localDateTimeToString(startOfToday))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -169,15 +166,26 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getData())
-      .hasSize(4)
-      .extracting(MapResultEntryDto::getKey)
-      .isSortedAccordingTo(Comparator.comparing(String::toString).reversed());
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -204,15 +212,26 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getData())
-      .hasSize(4)
-      .extracting(MapResultEntryDto::getKey)
-      .isSortedAccordingTo(Comparator.comparing(String::toString));
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -246,14 +265,23 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(3L);
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getData())
-      .hasSize(3)
-      .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed());
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(3L)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+      .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+      .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+      .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+      .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -281,11 +309,21 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getIsComplete()).isFalse();
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .isComplete(false)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -311,17 +349,20 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size()).isEqualTo(2);
-    ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-
-    final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 2L));
-    final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 2L));
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(USER_TASK_2, 2L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -329,41 +370,43 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstance =
+    ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), USER_TASK_1, referenceDate.minusDays(1));
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_1, referenceDate.minusDays(1));
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), USER_TASK_2, referenceDate.minusDays(3));
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance1.getId(), USER_TASK_2, referenceDate.minusDays(3));
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size()).isEqualTo(3);
-    ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-
-    final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 1L));
-    final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 0L));
-    final String threeDaysAgo = localDateTimeToString(startOfToday.minusDays(3));
-    assertThat(resultData).contains(new MapResultEntryDto(threeDaysAgo, 1L));
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @ParameterizedTest
   @MethodSource("staticGroupByDateUnits")
-  public void countGroupedByDateUnit(final GroupByDateUnit groupByDateUnit) {
+  public void countGroupByDateUnit(final GroupByDateUnit groupByDateUnit) {
     // given
     final ChronoUnit groupByUnitAsChrono = mapToChronoUnit(groupByDateUnit);
     final int groupingCount = 5;
-    OffsetDateTime now = OffsetDateTime.now();
+    OffsetDateTime referenceDate = OffsetDateTime.now();
 
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     List<ProcessInstanceEngineDto> processInstanceDtos = IntStream.range(0, groupingCount)
@@ -375,25 +418,27 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
         return processInstanceEngineDto;
       })
       .collect(Collectors.toList());
-    updateUserTaskTime(processInstanceDtos, now, groupByUnitAsChrono);
+    updateUserTaskTime(processInstanceDtos, referenceDate, groupByUnitAsChrono);
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, groupByDateUnit);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(groupingCount);
-    final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, groupByUnitAsChrono);
-    IntStream.range(0, groupingCount)
-      .forEach(i -> {
-        final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), groupByUnitAsChrono));
-        assertThat(resultData.get(i).getKey()).isEqualTo(expectedDateString);
-        assertThat(resultData.get(i).getValue()).isEqualTo((long) 1);
-      });
+    HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
+      .processInstanceCount(5L)
+      .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
+      .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME);
+
+    for (int i = 1; i < groupingCount; i++) {
+      groupByAdder = groupByAdder
+        .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
+        .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME);
+    }
+    groupByAdder.doAssert(result);
   }
 
   @Test
@@ -417,17 +462,16 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(1);
-    ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-
-    final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 1L));
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+      .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
@@ -446,7 +490,7 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     // when
     final ProcessReportDataDto reportData = createReportData(processKey, "1", GroupByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -455,8 +499,9 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
   @Test
   public void filterWorks() {
     // given
+    final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
@@ -468,28 +513,31 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     final List<ProcessFilterDto> processFilterDtoList = ProcessFilterBuilder.filter()
       .completedInstancesOnly().add().buildList();
     reportData.setFilter(processFilterDtoList);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getData()).hasSize(1);
-    assertThat(result.getData())
-      .extracting(MapResultEntryDto::getValue)
-      .containsExactly(1L);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .groupByContains(groupedByDayDateAsString(referenceDate))
+      .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Data
   @AllArgsConstructor
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
-    Long resultValue;
+    Long expectedUserTask1Count;
+    Long expectedUserTask2Count;
   }
 
   protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
     return Stream.of(
-      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, 1L),
-      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, 2L),
-      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, 3L)
+      new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, 1L, null),
+      new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, 1L, 1L),
+      new ExecutionStateTestValues(FlowNodeExecutionState.ALL, 2L, 1L)
     );
   }
 
@@ -498,7 +546,8 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
   public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
 
@@ -510,25 +559,25 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.DAY);
     reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isTrue();
-    assertThat(result.getData()).isNotNull();
-    assertThat(result.getData()).hasSize(1);
-    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
-    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
-      .get()
-      .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(executionStateTestValues.resultValue);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+      .distributedByContains(USER_TASK_2, executionStateTestValues.expectedUserTask2Count, USER_TASK_2_NAME)
+      .distributedByContains(USER_TASK_1, executionStateTestValues.expectedUserTask1Count, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
   @Test
   public void automaticIntervalSelection_simpleSetup() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto3 =
@@ -545,20 +594,21 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2L);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
+    assertFirstValueEquals(resultData, 2L);
+    assertLastValueEquals(resultData, 1L);
   }
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
     //given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto3 =
@@ -575,14 +625,21 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum()).isEqualTo(3);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
+    assertFirstValueEquals(resultData, 1L);
+    assertLastValueEquals(resultData, 1L);
+    final int sumOfAllValues = resultData.stream()
+      .map(HyperMapResultEntryDto::getValue)
+      .flatMap(List::stream)
+      .filter(Objects::nonNull)
+      .map(MapResultEntryDto::getValue)
+      .filter(Objects::nonNull)
+      .mapToInt(Long::intValue).sum();
+    assertThat(sumOfAllValues).isEqualTo(3);
   }
 
   @Test
@@ -594,10 +651,10 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto> resultData = result.getData();
+    final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
 
@@ -611,124 +668,152 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
     // when
     final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then the single data point should be grouped by month
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).hasSize(1);
+    final List<HyperMapResultEntryDto> resultData = result.getData();
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(nowStrippedToMonthAsString);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(1L);
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData).first().extracting(HyperMapResultEntryDto::getKey).isEqualTo(nowStrippedToMonthAsString);
   }
 
   @Test
-  public void automaticIntervalSelection_combinedReportsWithDistinctRanges() {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     // given
-    ZonedDateTime now = ZonedDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(1), now.plusDays(3));
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(4), now.plusDays(6));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    singleProcessReportDefinitionDto.setData(reportData);
-    final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-    final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-
-    // when
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
-
-    // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
-    assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
-  }
-
-  @Test
-  public void automaticIntervalSelection_combinedReportsWithOneIncludingRange() {
-    // given
-    ZonedDateTime now = ZonedDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(1), now.plusDays(6));
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(3), now.plusDays(5));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    singleProcessReportDefinitionDto.setData(reportData);
-    final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-    final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-
-    // when
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
-
-    // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
-    assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
-  }
-
-  @Test
-  public void automaticIntervalSelection_combinedReportsWithIntersectingRange() {
-    // given
-    ZonedDateTime now = ZonedDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(1), now.plusDays(4));
-    startProcessInstancesInDayRange(processDefinition, now.plusDays(3), now.plusDays(6));
+    ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    singleProcessReportDefinitionDto.setData(reportData);
-    final String singleReportId1 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-    final String singleReportId2 = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-
     // when
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      reportClient.evaluateUnsavedCombined(createCombinedReportData(singleReportId1, singleReportId2));
+    final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
+    reportData.setProcessDefinitionVersion(ALL_VERSIONS);
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
-    assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
-  private void assertResultIsInCorrectRanges(ZonedDateTime startRange,
-                                             ZonedDateTime endRange,
-                                             Map<String,
-                                               AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap,
-                                             int resultSize) {
-    assertThat(resultMap).hasSize(resultSize);
-    for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto> resultData = result.getResult().getData();
-      assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-      assertThat(resultData).last().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
-      assertIsInRangeOfLastInterval(resultData.get(0).getKey(), startRange, endRange);
-    }
+  @Test
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
+    // given
+    ProcessDefinitionEngineDto firstDefinition = deployOneUserTaskDefinition();
+    engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
+    reportData.setProcessDefinitionVersions(Arrays.asList(
+      firstDefinition.getVersionAsString(),
+      latestDefinition.getVersionAsString()
+    ));
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+        .distributedByContains(USER_TASK_2, 1L, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
-  private void assertIsInRangeOfLastInterval(String lastIntervalAsString,
-                                             ZonedDateTime startTotal,
-                                             ZonedDateTime endTotal) {
-    long totalDuration = endTotal.toInstant().toEpochMilli() - startTotal.toInstant().toEpochMilli();
-    long interval = totalDuration / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-    assertThat(lastIntervalAsString)
-      .isGreaterThanOrEqualTo(localDateTimeToString(endTotal.minus(interval, ChronoUnit.MILLIS)))
-      .isLessThan(localDateTimeToString(endTotal));
+  @Test
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
+    // given
+    ProcessDefinitionEngineDto processDefinition1 = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    ProcessDefinitionEngineDto latestDefinition = deployOneUserTaskDefinition();
+    engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
+    reportData.setProcessDefinitionVersion(ALL_VERSIONS);
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+        .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
   }
 
-  private void startProcessInstancesInDayRange(ProcessDefinitionEngineDto processDefinition,
-                                               ZonedDateTime min,
-                                               ZonedDateTime max) {
-    ProcessInstanceEngineDto procInstMin = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto procInstMax = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeUserTaskStartDate(procInstMin.getId(), USER_TASK_1, min.toOffsetDateTime());
-    engineDatabaseExtension.changeUserTaskStartDate(procInstMax.getId(), USER_TASK_1, max.toOffsetDateTime());
+  @Test
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
+    // given
+    ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    ProcessDefinitionEngineDto latestDefinition = deployOneUserTaskDefinition();
+    engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(latestDefinition);
+    reportData.setProcessDefinitionVersions(Arrays.asList(
+      firstDefinition.getVersionAsString(),
+      latestDefinition.getVersionAsString()
+    ));
+    final ReportHyperMapResultDto result = evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+      .distributedByContains(USER_TASK_1, 2L, USER_TASK_1_NAME)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  private void assertLastValueEquals(final List<HyperMapResultEntryDto> resultData, final long expected) {
+    assertThat(resultData).last().extracting(HyperMapResultEntryDto::getValue)
+      .extracting(e -> e.get(0))
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(expected);
+  }
+
+  private void assertFirstValueEquals(final List<HyperMapResultEntryDto> resultData, final long expected) {
+    assertThat(resultData).first().extracting(HyperMapResultEntryDto::getValue)
+      .extracting(e -> e.get(0))
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(expected);
   }
 
   private void updateUserTaskTime(List<ProcessInstanceEngineDto> procInsts,
@@ -755,7 +840,7 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
-      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE)
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK)
       .setDateInterval(groupByDateUnit)
       .build();
   }
@@ -766,14 +851,11 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
 
   private ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
                                                 final GroupByDateUnit groupByDateUnit) {
-    return createReportData(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), groupByDateUnit);
-  }
-
-  private void finishAllUserTasks(final ProcessInstanceEngineDto processInstanceDto1) {
-    // finish first task
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
-    // finish second task
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto1.getId());
+    return createReportData(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion()),
+      groupByDateUnit
+    );
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
@@ -795,34 +877,40 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT extends Abst
   }
 
   private ProcessDefinitionEngineDto deployOneUserTaskDefinition(String key, String tenantId) {
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1)
+        .name(USER_TASK_1_NAME)
       .endEvent(END_EVENT)
       .done();
+    // @formatter:on
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .userTask(USER_TASK_1)
+        .name(USER_TASK_1_NAME)
       .userTask(USER_TASK_2)
+        .name(USER_TASK_2_NAME)
       .endEvent(END_EVENT)
       .done();
+    // @formatter:on
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
-  private long getExecutedFlowNodeCount(ReportMapResultDto resultList) {
-    return resultList.getData()
-      .stream()
-      .map(MapResultEntryDto::getValue)
-      .filter(Objects::nonNull)
-      .count();
   }
 
   private String localDateTimeToString(ZonedDateTime time) {
     return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
+  private String groupedByDayDateAsString(final OffsetDateTime referenceDate) {
+    return groupedByDateAsString(referenceDate, ChronoUnit.DAYS);
+  }
+
+  private String groupedByDateAsString(final OffsetDateTime referenceDate, final ChronoUnit chronoUnit) {
+    return localDateTimeToString(truncateToStartOfUnit(referenceDate, chronoUnit));
+  }
 }

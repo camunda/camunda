@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
-import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -148,6 +147,15 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
 
     return processKey;
+  }
+
+  protected AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluateHyperMapReportById(String id) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(id)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto>>() {});
+    // @formatter:on
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateMapReportById(String id) {

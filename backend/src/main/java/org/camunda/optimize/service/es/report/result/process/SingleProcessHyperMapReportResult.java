@@ -56,10 +56,8 @@ public class SingleProcessHyperMapReportResult
   private void addHeaderLine(List<String[]> mergedCsvReports) {
     ProcessReportDataDto data = reportDefinition.getData();
     final String[] reportNameHeader =
-      new String[]{data.getConfiguration().createCommandKey(
-        data.getView(),
-        data.getGroupBy()
-      ), data.getGroupBy().createCommandKey(), data.getGroupBy().createCommandKey()};
+      new String[]{data.getConfiguration().createCommandKey(data.getView()), data.getGroupBy().createCommandKey(),
+        data.getGroupBy().createCommandKey()};
     mergedCsvReports.add(0, reportNameHeader);
   }
 
