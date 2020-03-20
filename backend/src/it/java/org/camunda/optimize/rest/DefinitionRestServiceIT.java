@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWith
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -836,6 +837,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
   }
 
+  @Disabled
   @Test
   public void getDefinitionVersionsWithTenants_canHandleOver10kDefinitions() {
     // given
