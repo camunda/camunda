@@ -34,7 +34,6 @@ import scala.util.Either;
 public final class FeelExpressionLanguage implements ExpressionLanguage {
 
   private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\=(.+)", Pattern.DOTALL);
-  private static final Pattern STATIC_VALUE_PATTERN = Pattern.compile("[a-zA-Z][a-zA-Z0-9_\\-]*");
 
   private final FeelEngine feelEngine =
       new FeelEngine.Builder().customValueMapper(new MessagePackValueMapper()).build();
@@ -47,22 +46,12 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
     ensureNotNull("expression", expression);
 
     final var expressionMatcher = EXPRESSION_PATTERN.matcher(expression);
-    final var valueMather = STATIC_VALUE_PATTERN.matcher(expression);
 
     if (expressionMatcher.matches()) {
       final var unpackedExpression = expressionMatcher.group(1);
       return parseFeelExpression(unpackedExpression);
-
-    } else if (valueMather.matches()) {
-      final var value = valueMather.group();
-      return new StaticExpression(value);
-
     } else {
-      final var failureMessage =
-          String.format(
-              "Expected FEEL expression (e.g. '=variableName') or static value (e.g. 'jobType') but found '%s'",
-              expression);
-      return new InvalidExpression(expression, failureMessage);
+      return new StaticExpression(expression);
     }
   }
 

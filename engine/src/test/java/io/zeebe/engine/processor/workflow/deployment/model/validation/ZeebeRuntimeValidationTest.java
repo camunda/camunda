@@ -20,6 +20,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.zeebe.model.bpmn.traversal.ModelWalker;
 import io.zeebe.model.bpmn.validation.ValidationVisitor;
 import java.io.InputStream;
@@ -144,6 +145,14 @@ public final class ZeebeRuntimeValidationTest {
                 "task", t -> t.multiInstance(m -> m.zeebeInputCollection(INVALID_PATH_QUERY)))
             .done(),
         Arrays.asList(expect(ZeebeLoopCharacteristics.class, INVALID_PATH_QUERY_MESSAGE))
+      },
+      {
+        // invalid job type expression
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobTypeExpression(INVALID_EXPRESSION))
+            .done(),
+        Arrays.asList(expect(ZeebeTaskDefinition.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // output element expression is not supported

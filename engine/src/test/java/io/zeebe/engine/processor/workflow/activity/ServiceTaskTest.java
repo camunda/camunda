@@ -48,6 +48,26 @@ public final class ServiceTaskTest {
   }
 
   @Test
+  public void shouldCreateJobFromServiceTaskWithJobTypeExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(workflow(t -> t.zeebeJobTypeExpression("\"test\"").zeebeTaskRetries(5)))
+        .deploy();
+
+    // when
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATE)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(job.getValue()).hasType("test");
+  }
+
+  @Test
   public void shouldActivateServiceTask() {
     // given
     ENGINE.deployment().withXmlResource(workflow(t -> t.zeebeTaskType("test"))).deploy();
