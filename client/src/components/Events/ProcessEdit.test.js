@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {EntityNameForm} from 'components';
 
-import {updateProcess, loadProcess, getCleanedMappings} from './service';
+import {updateProcess, loadProcess, getCleanedMappings, isNonTimerEvent} from './service';
 import ProcessEditWithErrorHandling from './ProcessEdit';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
@@ -28,14 +28,15 @@ jest.mock('saveGuard', () => ({
 
 jest.mock('./service', () => ({
   updateProcess: jest.fn(),
-  getCleanedMappings: jest.fn(),
+  getCleanedMappings: jest.fn().mockReturnValue({}),
   createProcess: jest.fn(),
   loadProcess: jest.fn().mockReturnValue({
     name: 'Process Name',
     xml: 'Process XML',
     mappings: {},
     eventSources: []
-  })
+  }),
+  isNonTimerEvent: jest.fn().mockReturnValue(false)
 }));
 
 it('should match snapshot', () => {
@@ -73,7 +74,7 @@ it('should set a new mapping', () => {
 
   node.find(EventTable).prop('onMappingChange')({eventName: '1'}, true);
 
-  expect(node.find(EventTable).prop('mappings')).toEqual({a: {end: {eventName: '1'}, start: null}});
+  expect(node.find(EventTable).prop('mappings')).toEqual({a: {end: null, start: {eventName: '1'}}});
 });
 
 it('should edit a mapping', () => {
@@ -114,7 +115,6 @@ it('should set new sources', async () => {
   const newSources = [{processDefinitionKey: 'newSource'}];
 
   node.find(EventTable).prop('onSourcesChange')(newSources, true);
-
   expect(getCleanedMappings).toHaveBeenCalled();
   await node.update();
   expect(node.find(EventTable).prop('eventSources')).toEqual(newSources);
@@ -128,4 +128,15 @@ it('should update mappings when a node is removed', () => {
   node.find(ProcessRenderer).prop('onChange')('new Xml', true);
 
   expect(getCleanedMappings).toHaveBeenCalled();
+});
+
+it('should switch end mapping to start when converting timer event to normal event', () => {
+  const node = shallow(<ProcessEdit {...props} />);
+  node.setState({selectedNode: {id: 'a'}});
+  isNonTimerEvent.mockReturnValue(true);
+  getCleanedMappings.mockReturnValue({a: {end: {eventName: '1'}, start: null}});
+  node.find(ProcessRenderer).prop('onChange')('new Xml', true);
+  const mapping = node.state().mappings['a'];
+  expect(mapping.end).toEqual(null);
+  expect(mapping.start).toEqual({eventName: '1'});
 });

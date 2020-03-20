@@ -13,12 +13,19 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {t} from 'translation';
-
-import {createProcess, updateProcess, loadProcess, getCleanedMappings} from './service';
+import {
+  createProcess,
+  updateProcess,
+  loadProcess,
+  getCleanedMappings,
+  isNonTimerEvent
+} from './service';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
 
 import './ProcessEdit.scss';
+
+const asMapping = ({group, source, eventName}) => ({group, source, eventName});
 
 export default withErrorHandling(
   class ProcessEdit extends React.Component {
@@ -42,6 +49,17 @@ export default withErrorHandling(
         this.initializeNewProcess();
       } else {
         this.loadProcess();
+      }
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+      const {selectedNode, mappings} = this.state;
+      if (prevState.mappings !== mappings) {
+        // we need to update the mappings when converting timer node to a normal event node
+        const {end} = mappings[selectedNode?.id] || {};
+        if (isNonTimerEvent(selectedNode) && end) {
+          this.setMapping(asMapping(end), true, 'start');
+        }
       }
     }
 
@@ -124,7 +142,7 @@ export default withErrorHandling(
         let change;
         if (!mappings[selectedNode.id]) {
           // first time this node is mapped, we set the end
-          change = {$set: {start: null, end: event}};
+          change = {$set: {start: event, end: null}};
         } else {
           if (mapped) {
             if (mapAs) {

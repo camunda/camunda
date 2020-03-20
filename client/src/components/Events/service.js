@@ -67,3 +67,15 @@ export async function getCleanedMappings(body) {
   const response = await post('api/eventBasedProcess/_mappingCleanup', body);
   return await response.json();
 }
+
+export function isNonTimerEvent(node) {
+  if (!node?.$instanceOf('bpmn:Event')) {
+    return false;
+  }
+
+  if (node.eventDefinitions) {
+    return !node.eventDefinitions[0].$instanceOf('bpmn:TimerEventDefinition');
+  }
+
+  return true;
+}

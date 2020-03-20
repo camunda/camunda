@@ -13,7 +13,7 @@ import {Table, LoadingIndicator, Input, Select, Switch, Icon, Button} from 'comp
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {loadEvents} from './service';
+import {loadEvents, isNonTimerEvent} from './service';
 import EventsSources from './EventsSources';
 
 import './EventTable.scss';
@@ -222,6 +222,7 @@ export default withErrorHandling(
                     const mappedToSelection =
                       deepEqual(start, asMapping(event)) || deepEqual(end, asMapping(event));
                     const disabled = !selection || (!mappedToSelection && (allMapped || mappedAs));
+                    const mustMapAsStart = isNonTimerEvent(selection);
 
                     return {
                       content: [
@@ -236,7 +237,7 @@ export default withErrorHandling(
                         mappedAs ? (
                           <Select
                             value={mappedAs}
-                            disabled={disabled}
+                            disabled={mustMapAsStart || disabled}
                             onOpen={isOpen => {
                               if (isOpen) {
                                 // due to how we integrate Dropdowns in React Table, we need to manually

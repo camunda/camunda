@@ -28,7 +28,8 @@ jest.mock('./service', () => ({
       eventName: 'OrderAccepted',
       count: 10
     }
-  ])
+  ]),
+  isNonTimerEvent: jest.fn().mockReturnValue(false)
 }));
 
 jest.mock('debounce', () => fn => fn);
