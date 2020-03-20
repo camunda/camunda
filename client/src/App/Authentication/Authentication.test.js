@@ -13,6 +13,7 @@ import * as wrappers from 'modules/request/wrappers';
 
 import AuthenticationWithRouter from './Authentication';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {setProps} from 'modules/testUtils';
 
 const {WrappedComponent: Authentication} = AuthenticationWithRouter;
 
@@ -38,6 +39,16 @@ describe('Authentication', () => {
 
   it('should attach a responseInterceptor', () => {
     expect(request.setResponseInterceptor).toBeCalled();
+  });
+
+  it('should render children if logged in', async () => {
+    node.setProps({
+      location: {...mockLocation, state: {isLoggedIn: true}}
+    });
+
+    node.update();
+    expect(node.find(Child)).toHaveLength(1);
+    expect(node).toMatchSnapshot();
   });
 
   it('should render children by default', async () => {
