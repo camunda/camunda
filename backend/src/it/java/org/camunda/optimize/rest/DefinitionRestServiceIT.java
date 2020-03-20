@@ -803,6 +803,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
+  @Disabled
   @Test
   public void getDefinitions_canHandleOver10kDefinitions() {
     // given
@@ -873,6 +874,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
   }
 
+  @Disabled
   @Test
   public void getDefinitionsGroupedByTenant_canHandleOver10kDefinitions() {
     //given
