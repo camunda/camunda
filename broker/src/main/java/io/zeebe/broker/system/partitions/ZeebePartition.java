@@ -159,6 +159,8 @@ public final class ZeebePartition extends Actor
         }
         break;
       case INACTIVE:
+        inactiveTransition();
+        break;
       case PASSIVE:
       case PROMOTABLE:
       case CANDIDATE:
@@ -203,6 +205,17 @@ public final class ZeebePartition extends Actor
                 onFailure();
               }
             });
+  }
+
+  private void inactiveTransition() {
+    closePartition()
+        .onComplete(
+            (v, t) -> {
+              if (t != null) {
+                LOG.error("Failed to close partition when transition to inactive role");
+              }
+            });
+    updateHealthStatus(HealthStatus.UNHEALTHY);
   }
 
   private ActorFuture<Void> onTransitionTo(
