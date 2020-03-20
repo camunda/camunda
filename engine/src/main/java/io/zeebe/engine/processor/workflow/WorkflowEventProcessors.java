@@ -46,6 +46,7 @@ public final class WorkflowEventProcessors {
 
   public static BpmnStepProcessor addWorkflowProcessors(
       final ZeebeState zeebeState,
+      final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
@@ -60,7 +61,8 @@ public final class WorkflowEventProcessors {
     addWorkflowInstanceCommandProcessor(typedRecordProcessors, workflowEngineState, zeebeState);
 
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventBehavior);
+        new BpmnStepProcessor(
+            workflowEngineState, zeebeState, expressionProcessor, catchEventBehavior);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStepProcessor);
 
     addMessageStreamProcessors(

@@ -263,9 +263,11 @@ public final class EventSubscriptionIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Failed to extract the correlation-key by '"
+            "failed to evaluate expression '"
                 + CORRELATION_VARIABLE_2
-                + "': no value found")
+                + "': no variable found for name '"
+                + CORRELATION_VARIABLE_2
+                + "'")
         .hasBpmnProcessId(processId)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
@@ -298,9 +300,9 @@ public final class EventSubscriptionIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Failed to extract the correlation-key by '"
+            "Failed to extract the correlation key for '"
                 + CORRELATION_VARIABLE_2
-                + "': the value must be either a string or a number")
+                + "': The value must be either a string or a number, but was ARRAY.")
         .hasBpmnProcessId(processId)
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())

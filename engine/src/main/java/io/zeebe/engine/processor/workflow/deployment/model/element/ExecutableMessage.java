@@ -7,24 +7,24 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+import io.zeebe.el.Expression;
 import org.agrona.DirectBuffer;
 
 public class ExecutableMessage extends AbstractFlowElement {
 
-  private JsonPathQuery correlationKey;
+  private Expression correlationKeyExpression;
   private DirectBuffer messageName;
 
   public ExecutableMessage(final String id) {
     super(id);
   }
 
-  public JsonPathQuery getCorrelationKey() {
-    return correlationKey;
+  public Expression getCorrelationKeyExpression() {
+    return correlationKeyExpression;
   }
 
-  public void setCorrelationKey(final JsonPathQuery correlationKey) {
-    this.correlationKey = correlationKey;
+  public void setCorrelationKeyExpression(final Expression correlationKey) {
+    this.correlationKeyExpression = correlationKey;
   }
 
   public DirectBuffer getMessageName() {

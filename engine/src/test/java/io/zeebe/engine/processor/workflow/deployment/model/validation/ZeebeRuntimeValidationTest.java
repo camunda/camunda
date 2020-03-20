@@ -121,20 +121,20 @@ public final class ZeebeRuntimeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent("catch")
-            .message(b -> b.name("message").zeebeCorrelationKey(INVALID_PATH_QUERY))
+            .message(b -> b.name("message").zeebeCorrelationKey(INVALID_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeSubscription.class, INVALID_PATH_QUERY_MESSAGE))
+        Arrays.asList(expect(ZeebeSubscription.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // correlation key expression is not supported
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("catch")
-            .message(b -> b.name("message").zeebeCorrelationKey(INVALID_PATH_QUERY))
+            .message(b -> b.name("message").zeebeCorrelationKey(INVALID_EXPRESSION))
             .endEvent()
             .done(),
-        Arrays.asList(expect(ZeebeSubscription.class, INVALID_PATH_QUERY_MESSAGE))
+        Arrays.asList(expect(ZeebeSubscription.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         // input collection expression is not supported

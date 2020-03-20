@@ -16,7 +16,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
@@ -64,10 +66,17 @@ public final class TransformingDeploymentCreateProcessorTest {
         (typedRecordProcessors, processingContext) -> {
           final var zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
+
+          final ExpressionProcessor expressionProcessor =
+              new ExpressionProcessor(
+                  ExpressionLanguageFactory.createExpressionLanguage(),
+                  zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+
           DeploymentEventProcessors.addTransformingDeploymentProcessor(
               typedRecordProcessors,
               zeebeState,
-              new CatchEventBehavior(zeebeState, mockSubscriptionCommandSender, 1));
+              new CatchEventBehavior(
+                  zeebeState, expressionProcessor, mockSubscriptionCommandSender, 1));
           return typedRecordProcessors;
         });
   }

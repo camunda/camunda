@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow;
 
+import io.zeebe.el.ExpressionLanguageFactory;
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.deployment.DeploymentCreatedProcessor;
@@ -49,8 +50,14 @@ public final class EngineProcessors {
     addDistributeDeploymentProcessors(
         actor, zeebeState, typedRecordProcessors, deploymentDistributor);
 
+    final var expressionProcessor =
+        new ExpressionProcessor(
+            ExpressionLanguageFactory.createExpressionLanguage(),
+            zeebeState.getWorkflowState().getElementInstanceState().getVariablesState());
+
     final CatchEventBehavior catchEventBehavior =
-        new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
+        new CatchEventBehavior(
+            zeebeState, expressionProcessor, subscriptionCommandSender, partitionsCount);
 
     addDeploymentRelatedProcessorAndServices(
         catchEventBehavior, partitionId, zeebeState, typedRecordProcessors, deploymentResponder);
@@ -58,7 +65,11 @@ public final class EngineProcessors {
 
     final BpmnStepProcessor stepProcessor =
         addWorkflowProcessors(
-            zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
+            zeebeState,
+            expressionProcessor,
+            typedRecordProcessors,
+            subscriptionCommandSender,
+            catchEventBehavior);
 
     final JobErrorThrownProcessor jobErrorThrownProcessor =
         addJobProcessors(
@@ -86,12 +97,14 @@ public final class EngineProcessors {
 
   private static BpmnStepProcessor addWorkflowProcessors(
       final ZeebeState zeebeState,
+      final ExpressionProcessor expressionProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior) {
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         zeebeState,
+        expressionProcessor,
         typedRecordProcessors,
         subscriptionCommandSender,
         catchEventBehavior,
