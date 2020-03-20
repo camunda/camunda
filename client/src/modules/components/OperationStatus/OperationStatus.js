@@ -25,7 +25,7 @@ const getTitleByOperationType = (instanceId, type) => {
   }
 };
 
-const ActionStatus = ({
+const OperationStatus = ({
   operationState,
   operationType,
   selected,
@@ -35,7 +35,7 @@ const ActionStatus = ({
 }) => {
   if (forceSpinner || ACTIVE_OPERATION_STATES.includes(operationState)) {
     return (
-      <Styled.ActionSpinner
+      <Styled.OperationSpinner
         selected={selected}
         title={`Instance ${instance.id} has scheduled Operations`}
         {...props}
@@ -57,10 +57,10 @@ const ActionStatus = ({
   return null;
 };
 
-ActionStatus.Spinner = Styled.ActionSpinner;
-export default ActionStatus;
+OperationStatus.Spinner = Styled.OperationSpinner;
+export default OperationStatus;
 
-ActionStatus.propTypes = {
+OperationStatus.propTypes = {
   operationState: PropTypes.string,
   operationType: PropTypes.string,
   selected: PropTypes.bool,

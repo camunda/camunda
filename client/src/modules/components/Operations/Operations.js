@@ -17,12 +17,12 @@ import {
   isRunning
 } from 'modules/utils/instance';
 
-import ActionStatus from 'modules/components/ActionStatus';
-import ActionItems from './ActionItems';
+import OperationStatus from 'modules/components/OperationStatus';
+import OperationItems from './OperationItems';
 
 import * as Styled from './styled';
 
-class Actions extends React.Component {
+class Operations extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
     selected: PropTypes.bool,
@@ -82,7 +82,7 @@ class Actions extends React.Component {
     };
 
     return (
-      <ActionItems.Item
+      <OperationItems.Item
         type={operationType}
         onClick={() => this.handleOnClick(operationType)}
         title={`${ariaLabelMap[operationType]} Instance ${this.props.instance.id}`}
@@ -90,32 +90,32 @@ class Actions extends React.Component {
     );
   };
 
-  renderActionButtons = () => (
-    <ActionItems>
+  renderOperationButtons = () => (
+    <OperationItems>
       {isWithIncident(this.props.instance) &&
         this.renderItem(OPERATION_TYPE.RESOLVE_INCIDENT)}
       {isRunning(this.props.instance) &&
         this.renderItem(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
-    </ActionItems>
+    </OperationItems>
   );
 
   render() {
     return (
-      <Styled.Actions>
-        <ActionStatus
+      <Styled.Operations>
+        <OperationStatus
           forceSpinner={this.props.forceSpinner}
           operationState={this.state.operationState}
           operationType={this.state.operationType}
           selected={this.props.selected}
           instance={this.props.instance}
         />
-        {this.renderActionButtons()}
-      </Styled.Actions>
+        {this.renderOperationButtons()}
+      </Styled.Operations>
     );
   }
 }
 
-const WrappedAction = withData(Actions);
-WrappedAction.WrappedComponent = Actions;
+const WrappedOperation = withData(Operations);
+WrappedOperation.WrappedComponent = Operations;
 
-export default WrappedAction;
+export default WrappedOperation;

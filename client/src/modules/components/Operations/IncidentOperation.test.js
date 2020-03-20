@@ -14,9 +14,9 @@ import {createIncident, flushPromises} from 'modules/testUtils';
 
 import {OPERATION_TYPE, LOADING_STATE} from 'modules/constants';
 
-import IncidentAction from './IncidentAction';
-import ActionStatus from 'modules/components/ActionStatus';
-import ActionItems from './ActionItems';
+import IncidentOperation from './IncidentOperation';
+import OperationStatus from 'modules/components/OperationStatus';
+import OperationItems from './OperationItems';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 jest.mock('modules/DataManager/core');
@@ -31,41 +31,41 @@ const mockProps = {
   showSpinner: false
 };
 
-const mountIncidentAction = props => {
+const mountIncidentOperation = props => {
   createMockDataManager();
   return mount(
     <ThemeProvider>
       <DataManagerProvider>
-        <IncidentAction {...props} />
+        <IncidentOperation {...props} />
       </DataManagerProvider>
     </ThemeProvider>
   );
 };
 
-describe('IncidentAction', () => {
+describe('IncidentOperation', () => {
   it('should render a spinner if showSpinner prop is true', () => {
-    const node = mountIncidentAction({...mockProps, showSpinner: true});
-    expect(node.find(ActionStatus.Spinner)).toExist();
+    const node = mountIncidentOperation({...mockProps, showSpinner: true});
+    expect(node.find(OperationStatus.Spinner)).toExist();
   });
 
   it('should not render a spinner if showSpinner prop is false', () => {
-    const node = mountIncidentAction(mockProps);
+    const node = mountIncidentOperation(mockProps);
 
-    expect(node.find(ActionStatus.Spinner)).not.toExist();
+    expect(node.find(OperationStatus.Spinner)).not.toExist();
   });
 
   it('should render spinner when instance operation is published', () => {
-    const node = mountIncidentAction(mockProps);
+    const node = mountIncidentOperation(mockProps);
 
     // given
     const {dataManager} = node
-      .find(IncidentAction.WrappedComponent)
+      .find(IncidentOperation.WrappedComponent)
       .instance().props;
     const {subscriptions} = node
-      .find(IncidentAction.WrappedComponent)
+      .find(IncidentOperation.WrappedComponent)
       .instance();
 
-    expect(node.find(ActionStatus.Spinner)).not.toExist();
+    expect(node.find(OperationStatus.Spinner)).not.toExist();
 
     dataManager.publish({
       subscription: subscriptions['OPERATION_APPLIED_INSTANCE_instance_1'],
@@ -74,40 +74,40 @@ describe('IncidentAction', () => {
 
     node.update();
 
-    expect(node.find(ActionStatus.Spinner)).toExist();
+    expect(node.find(OperationStatus.Spinner)).toExist();
   });
 
-  describe('Action Buttons', () => {
+  describe('Operation Buttons', () => {
     it('should render a retry button', () => {
-      const node = mountIncidentAction(mockProps);
+      const node = mountIncidentOperation(mockProps);
 
-      const ItemNode = node.find(ActionItems.Item);
+      const ItemNode = node.find(OperationItems.Item);
       expect(ItemNode).toExist();
       expect(ItemNode.props().type).toEqual(OPERATION_TYPE.RESOLVE_INCIDENT);
       expect(ItemNode.props().title).toEqual('Retry Incident');
     });
 
     it('should render show a spinner after retry button is clicked', async () => {
-      const node = mountIncidentAction(mockProps);
+      const node = mountIncidentOperation(mockProps);
 
-      const ItemNode = node.find(ActionItems.Item);
+      const ItemNode = node.find(OperationItems.Item);
 
       ItemNode.find('button').simulate('click');
       // await for operation response
       await flushPromises();
       node.update();
 
-      expect(node.find(ActionStatus.Spinner)).toExist();
+      expect(node.find(OperationStatus.Spinner)).toExist();
     });
 
     it('should render start an operation when retry button is clicked', async () => {
-      const node = mountIncidentAction(mockProps);
+      const node = mountIncidentOperation(mockProps);
 
       const {dataManager} = node
-        .find(IncidentAction.WrappedComponent)
+        .find(IncidentOperation.WrappedComponent)
         .instance().props;
 
-      const ItemNode = node.find(ActionItems.Item);
+      const ItemNode = node.find(OperationItems.Item);
 
       ItemNode.find('button').simulate('click');
 

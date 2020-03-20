@@ -15,7 +15,7 @@ export const SkeletonTD = styled(Header.Td)`
   align-items: center;
 `;
 
-export const ActionSkeletonTD = styled(Header.Td)`
+export const OperationSkeletonTD = styled(Header.Td)`
   width: 250px;
 `;
 

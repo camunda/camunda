@@ -140,7 +140,7 @@ class ListPanel extends React.Component {
     }
   };
 
-  handleActionButtonClick = instance => {
+  handleOperationButtonClick = instance => {
     this.props.polling.addIds([instance.id]);
   };
 
@@ -203,7 +203,7 @@ class ListPanel extends React.Component {
               }
               rowsToDisplay={this.state.entriesPerPage}
               isDataLoaded={this.state.instancesLoaded}
-              onActionButtonClick={this.handleActionButtonClick}
+              onOperationButtonClick={this.handleOperationButtonClick}
               Overlay={this.renderSpinner()}
             >
               <List.Header />

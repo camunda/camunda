@@ -7,35 +7,35 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ActionItems from './ActionItems';
+import OperationItems from './OperationItems';
 import {OPERATION_TYPE} from 'modules/constants';
 
 import * as Styled from './styled';
 
-describe('ActionItems', () => {
+describe('OperationItems', () => {
   let node;
   let mockOnClick = jest.fn();
 
   beforeEach(() => {
     node = shallow(
-      <ActionItems>
-        <ActionItems.Item
+      <OperationItems>
+        <OperationItems.Item
           type={OPERATION_TYPE.RESOLVE_INCIDENT}
           onClick={() => mockOnClick()}
         />
-      </ActionItems>
+      </OperationItems>
     );
   });
 
   it('should render with its children', () => {
     expect(node.find(Styled.Ul)).toExist();
-    expect(node.find(ActionItems.Item)).toExist();
+    expect(node.find(OperationItems.Item)).toExist();
   });
 
   describe('Retry Item', () => {
     beforeEach(() => {
       node = shallow(
-        <ActionItems.Item
+        <OperationItems.Item
           type={OPERATION_TYPE.RESOLVE_INCIDENT}
           onClick={() => mockOnClick()}
           title={'Retry Instance 1'}
@@ -63,7 +63,7 @@ describe('ActionItems', () => {
   describe('Cancel Item', () => {
     beforeEach(() => {
       node = shallow(
-        <ActionItems.Item
+        <OperationItems.Item
           type={OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE}
           onClick={() => mockOnClick()}
           title={'Cancel Instance 1'}

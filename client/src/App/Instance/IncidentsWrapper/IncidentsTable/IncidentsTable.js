@@ -12,7 +12,7 @@ import Button from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 import {TransitionGroup} from 'modules/components/Transition';
-import {IncidentAction} from 'modules/components/Actions';
+import {IncidentOperation} from 'modules/components/Operations';
 
 import {formatDate} from 'modules/utils/date';
 
@@ -200,7 +200,7 @@ export default class IncidentsTable extends React.Component {
                         </Styled.Flex>
                       </TD>
                       <TD>
-                        <IncidentAction
+                        <IncidentOperation
                           instanceId={this.props.instanceId}
                           incident={incident}
                           showSpinner={incident.hasActiveOperation}

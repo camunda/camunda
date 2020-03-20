@@ -59,7 +59,7 @@ export const TimeBlock = styled(Block)`
   width: 8vw;
 `;
 
-export const ActionsBlock = styled(Block)`
+export const OperationsBlock = styled(Block)`
   width: 50px;
   height: 20px;
   border-radius: 12px;

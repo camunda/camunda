@@ -31,7 +31,7 @@ export function InstanceRow() {
         <Styled.TimeBlock />
       </Styled.td>
       <Styled.td>
-        <Styled.ActionsBlock />
+        <Styled.OperationsBlock />
       </Styled.td>
     </tr>
   );

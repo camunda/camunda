@@ -170,7 +170,7 @@ describe('InstancesPollContext', () => {
   });
 
   it('should poll when there are active instances', async () => {
-    const COMPLETED_ACTION_INSTANCE = createInstance({
+    const COMPLETED_OPERATION_INSTANCE = createInstance({
       id: '2',
       hasActiveOperation: false,
       operations: [createOperation({state: 'COMPLETED'})]
@@ -178,11 +178,11 @@ describe('InstancesPollContext', () => {
     api.fetchWorkflowInstancesByIds = jest
       .fn()
       .mockResolvedValue({
-        workflowInstances: [INSTANCE, COMPLETED_ACTION_INSTANCE]
+        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE]
       }) // default
       .mockResolvedValueOnce({workflowInstances: [INSTANCE, ACTIVE_INSTANCE]}) // 1st call
       .mockResolvedValueOnce({
-        workflowInstances: [INSTANCE, COMPLETED_ACTION_INSTANCE]
+        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE]
       }); // 2nd call
 
     // given
@@ -219,7 +219,7 @@ describe('InstancesPollContext', () => {
   });
 
   it('should update when instances have completed operations', () => {
-    const COMPLETED_ACTION_INSTANCE = createInstance({
+    const COMPLETED_OPERATION_INSTANCE = createInstance({
       id: '2',
       hasActiveOperation: false,
       operations: [createOperation({state: 'COMPLETED'})]
@@ -250,7 +250,7 @@ describe('InstancesPollContext', () => {
       subscription: subscriptions['LOAD_SELECTION_INSTANCES'],
       state: 'LOADED',
       response: {
-        workflowInstances: [INSTANCE, COMPLETED_ACTION_INSTANCE]
+        workflowInstances: [INSTANCE, COMPLETED_OPERATION_INSTANCE]
       }
     });
 

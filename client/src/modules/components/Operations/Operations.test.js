@@ -13,33 +13,33 @@ import {createInstance, createOperation} from 'modules/testUtils';
 
 import {STATE, OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 
-import Actions from './Actions';
-import ActionStatus from 'modules/components/ActionStatus';
-import ActionItems from './ActionItems';
+import Operations from './Operations';
+import OperationStatus from 'modules/components/OperationStatus';
+import OperationItems from './OperationItems';
 
 jest.mock('modules/utils/bpmn');
 
-describe('Actions', () => {
+describe('Operations', () => {
   let mockOperation, mockInstance, onButtonClick;
 
   it('should match snapshots', () => {
     // when
     mockOperation = createOperation({state: OPERATION_STATE.SCHEDULED});
     mockInstance = createInstance({operations: [mockOperation]});
-    let node = shallow(<Actions.WrappedComponent instance={mockInstance} />);
+    let node = shallow(<Operations.WrappedComponent instance={mockInstance} />);
     //then
     expect(node).toMatchSnapshot();
 
     // when
     mockOperation = createOperation({state: OPERATION_STATE.FAILED});
     mockInstance = createInstance({operations: [mockOperation]});
-    node = shallow(<Actions.WrappedComponent instance={mockInstance} />);
+    node = shallow(<Operations.WrappedComponent instance={mockInstance} />);
 
     // then
     expect(node).toMatchSnapshot();
   });
 
-  it('should pass props ActionStatus', () => {
+  it('should pass props OperationStatus', () => {
     // when
     mockOperation = createOperation({
       state: OPERATION_STATE.SCHEDULED,
@@ -52,58 +52,58 @@ describe('Actions', () => {
     };
 
     const node = shallow(
-      <Actions.WrappedComponent instance={mockInstance} {...mockProps} />
+      <Operations.WrappedComponent instance={mockInstance} {...mockProps} />
     );
 
     //then
-    expect(node.find(ActionStatus).props().operationState).toBe(
+    expect(node.find(OperationStatus).props().operationState).toBe(
       OPERATION_STATE.SCHEDULED
     );
 
-    expect(node.find(ActionStatus).props().operationType).toBe(
+    expect(node.find(OperationStatus).props().operationType).toBe(
       OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     );
-    expect(node.find(ActionStatus).props().forceSpinner).toEqual(
+    expect(node.find(OperationStatus).props().forceSpinner).toEqual(
       mockProps.forceSpinner
     );
   });
 
-  describe('Action Buttons', () => {
-    it('should render action buttons for active instance', () => {
+  describe('Operation Buttons', () => {
+    it('should render operation buttons for active instance', () => {
       // when
       mockInstance = createInstance({state: STATE.ACTIVE, operations: []});
       const node = shallow(
-        <Actions.WrappedComponent instance={mockInstance} />
+        <Operations.WrappedComponent instance={mockInstance} />
       );
-      const ActionItemsNode = node.find(ActionItems);
-      const Button = ActionItemsNode.find(ActionItems.Item);
+      const OperationItemsNode = node.find(OperationItems);
+      const Button = OperationItemsNode.find(OperationItems.Item);
 
       // then
-      expect(ActionItemsNode).toExist();
+      expect(OperationItemsNode).toExist();
       expect(Button.length).toEqual(1);
       expect(Button.props().type).toEqual(
         OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
       );
     });
 
-    it('should render action buttons for instance with incidents', () => {
+    it('should render operation buttons for instance with incidents', () => {
       // when
       mockInstance = createInstance({state: STATE.INCIDENT, operations: []});
       const node = shallow(
-        <Actions.WrappedComponent instance={mockInstance} />
+        <Operations.WrappedComponent instance={mockInstance} />
       );
-      const ActionItemsNode = node.find(ActionItems);
+      const OperationItemsNode = node.find(OperationItems);
 
       // then
-      expect(ActionItemsNode).toExist();
-      expect(ActionItemsNode.find(ActionItems.Item).length).toEqual(2);
+      expect(OperationItemsNode).toExist();
+      expect(OperationItemsNode.find(OperationItems.Item).length).toEqual(2);
       expect(
-        ActionItemsNode.find(ActionItems.Item)
+        OperationItemsNode.find(OperationItems.Item)
           .at(0)
           .props().type
       ).toEqual(OPERATION_TYPE.RESOLVE_INCIDENT);
       expect(
-        ActionItemsNode.find(ActionItems.Item)
+        OperationItemsNode.find(OperationItems.Item)
           .at(1)
           .props().type
       ).toEqual(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE);
@@ -121,17 +121,17 @@ describe('Actions', () => {
       it('should handle retry of instance incident ', async () => {
         //given
         const node = shallow(
-          <Actions.WrappedComponent
+          <Operations.WrappedComponent
             instance={mockInstance}
             dataManager={createMockDataManager()}
             onButtonClick={onButtonClick}
           />
         );
 
-        const actionItem = node.find(ActionItems.Item).at(0);
+        const operationItem = node.find(OperationItems.Item).at(0);
 
         // when
-        actionItem.simulate('click');
+        operationItem.simulate('click');
 
         const {dataManager} = node.instance().props;
 
@@ -139,7 +139,7 @@ describe('Actions', () => {
           operationType: OPERATION_TYPE.RESOLVE_INCIDENT
         });
         // expect Spinner to appear
-        expect(node.find(ActionStatus).props().operationState).toEqual(
+        expect(node.find(OperationStatus).props().operationState).toEqual(
           OPERATION_STATE.SCHEDULED
         );
 
@@ -160,16 +160,16 @@ describe('Actions', () => {
       it('should handle the cancelation of an instance ', async () => {
         //given
         const node = shallow(
-          <Actions.WrappedComponent
+          <Operations.WrappedComponent
             instance={mockInstance}
             dataManager={createMockDataManager()}
             onButtonClick={onButtonClick}
           />
         );
-        const actionItem = node.find(ActionItems.Item);
+        const operationItem = node.find(OperationItems.Item);
 
         // when
-        actionItem.simulate('click');
+        operationItem.simulate('click');
 
         const {dataManager} = node.instance().props;
 
@@ -179,7 +179,7 @@ describe('Actions', () => {
         });
 
         // expect Spinner to appear
-        expect(node.find(ActionStatus).props().operationState).toEqual(
+        expect(node.find(OperationStatus).props().operationState).toEqual(
           OPERATION_STATE.SCHEDULED
         );
 

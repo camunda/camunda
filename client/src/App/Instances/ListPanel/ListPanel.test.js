@@ -269,9 +269,10 @@ describe('ListPanel', () => {
       await flushPromises();
       node.update();
 
-      const onActionButtonClick = node.find(List).props().onActionButtonClick;
+      const onOperationButtonClick = node.find(List).props()
+        .onOperationButtonClick;
 
-      onActionButtonClick(node.find(List).props().data[0]);
+      onOperationButtonClick(node.find(List).props().data[0]);
       node.update();
 
       // then

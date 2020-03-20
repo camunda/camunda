@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import {EXPAND_STATE, SORT_ORDER} from 'modules/constants';
 
 import Table from 'modules/components/Table';
-import Actions from 'modules/components/Actions';
+import Operations from 'modules/components/Operations';
 
 import StateIcon from 'modules/components/StateIcon';
 import Checkbox from 'modules/components/Checkbox';
@@ -53,7 +53,7 @@ const mockProps = {
   },
   expandState: EXPAND_STATE.DEFAULT,
   sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC},
-  onActionButtonClick: jest.fn()
+  onOperationButtonClick: jest.fn()
 };
 
 ListContext.useListContext.mockImplementation(() => {
@@ -67,7 +67,7 @@ ListContext.useListContext.mockImplementation(() => {
     isSelected: () => true,
     handleSelectAll: () => {},
     handleSelectInstance: () => jest.fn(),
-    handleActionButtonClick: mockProps.onActionButtonClick
+    handleOperationButtonClick: mockProps.onOperationButtonClick
   };
 });
 
@@ -370,24 +370,24 @@ describe.skip('List', () => {
           TDNodes.at(4).contains(formatDate(currentInstance.endDate))
         ).toBe(true);
 
-        // Actions TD
-        expect(TDNodes.at(5).find(Actions));
+        // Operations TD
+        expect(TDNodes.at(5).find(Operations));
       });
     });
 
     // context needs to be mocked fist.
-    describe('Action button handler', () => {
-      it('should pass the onActionButtonClick prop to Actions', () => {
+    describe('Operation button handler', () => {
+      it('should pass the onOperationButtonClick prop to Operations', () => {
         const node = shallow(<List.Body {...mockProps} />);
-        const ActionsNode = node.find(Actions).at(0); // first row
-        const onButtonClick = ActionsNode.prop('onButtonClick');
+        const OperationsNode = node.find(Operations).at(0); // first row
+        const onButtonClick = OperationsNode.prop('onButtonClick');
 
-        // when an action button is clicked on first instance in list
+        // when an operation button is clicked on first instance in list
         onButtonClick();
 
         // then expect handler to be called with the first instance
-        expect(mockProps.onActionButtonClick).toHaveBeenCalledTimes(1);
-        expect(mockProps.onActionButtonClick.mock.calls[0][0]).toEqual(
+        expect(mockProps.onOperationButtonClick).toHaveBeenCalledTimes(1);
+        expect(mockProps.onOperationButtonClick.mock.calls[0][0]).toEqual(
           mockProps.data[0]
         );
       });
@@ -407,10 +407,12 @@ describe.skip('List', () => {
     const THNodes = THeadNode.find(TH);
     expect(THNodes.length).toBe(5);
 
-    // Actions TH
-    const ActionsTHNode = THeadNode.find(Styled.ActionsTH);
-    expect(ActionsTHNode.length).toBe(1);
-    expect(ActionsTHNode.find(ColumnHeader).props().label).toBe('Actions');
+    // Operations TH
+    const OperationsTHNode = THeadNode.find(Styled.OperationsTH);
+    expect(OperationsTHNode.length).toBe(1);
+    expect(OperationsTHNode.find(ColumnHeader).props().label).toBe(
+      'Operations'
+    );
 
     // Workflow Definition TH
     expect(

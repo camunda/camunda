@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
-import Actions from 'modules/components/Actions';
+import Operations from 'modules/components/Operations';
 import StateIcon from 'modules/components/StateIcon';
 import EmptyMessage from './../../EmptyMessage';
 
@@ -38,7 +38,7 @@ class List extends React.Component {
     sorting: PropTypes.object,
     onSort: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-    onActionButtonClick: PropTypes.func,
+    onOperationButtonClick: PropTypes.func,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
@@ -74,8 +74,8 @@ class List extends React.Component {
     }
   }
 
-  handleActionButtonClick = instance => {
-    this.props.onActionButtonClick(instance);
+  handleOperationButtonClick = instance => {
+    this.props.onOperationButtonClick(instance);
   };
 
   render() {
@@ -92,7 +92,7 @@ class List extends React.Component {
               onSort: this.props.onSort,
               rowsToDisplay: this.props.rowsToDisplay,
               isDataLoaded: this.props.isDataLoaded,
-              handleActionButtonClick: this.handleActionButtonClick
+              handleOperationButtonClick: this.handleOperationButtonClick
             }}
           >
             <Table>{this.props.children}</Table>
@@ -130,7 +130,7 @@ Message.propTypes = {
 };
 
 const Body = function(props) {
-  const {data, rowsToDisplay, handleActionButtonClick} = useListContext();
+  const {data, rowsToDisplay, handleOperationButtonClick} = useListContext();
   const {isInstanceChecked, handleCheckInstance} = useContext(
     InstanceSelectionContext
   );
@@ -169,10 +169,10 @@ const Body = function(props) {
             <TD>{formatDate(instance.startDate)}</TD>
             <TD>{formatDate(instance.endDate)}</TD>
             <TD>
-              <Actions
+              <Operations
                 instance={instance}
                 selected={isSelected}
-                onButtonClick={() => handleActionButtonClick(instance)}
+                onButtonClick={() => handleOperationButtonClick(instance)}
               />
             </TD>
           </TR>
@@ -246,9 +246,9 @@ const Header = function(props) {
             sorting={sorting}
           />
         </TH>
-        <Styled.ActionsTH>
+        <Styled.OperationsTH>
           <ColumnHeader disabled={isListEmpty} label="Operations" />
-        </Styled.ActionsTH>
+        </Styled.OperationsTH>
       </Styled.TR>
     </THead>
   );

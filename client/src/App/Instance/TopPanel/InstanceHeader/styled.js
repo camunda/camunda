@@ -61,7 +61,7 @@ export const Td = styled.td`
   display: inline-block;
 `;
 
-export const ActionsWrapper = styled.div`
+export const OperationsWrapper = styled.div`
   width: 250px;
 `;
 

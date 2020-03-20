@@ -4,9 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-
-export const Actions = styled.div`
-  display: flex;
-  align-items: center;
-`;
+export {default} from './OperationStatus';

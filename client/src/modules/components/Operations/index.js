@@ -4,4 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {default} from './ActionStatus';
+import IncidentOperation from './IncidentOperation';
+
+export {default} from './Operations';
+export {IncidentOperation};
