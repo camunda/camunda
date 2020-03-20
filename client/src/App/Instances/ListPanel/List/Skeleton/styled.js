@@ -31,6 +31,7 @@ export const SkeletonCheckboxBlock = styled(BaseBlock)`
   width: 14px;
   border-radius: 3px;
   flex-shrink: 0;
+  margin-bottom: -2px;
 `;
 
 export const CircleBlock = styled(BaseCircle)`

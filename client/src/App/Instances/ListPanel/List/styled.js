@@ -39,7 +39,7 @@ export const SelectionStatusIndicator = themed(styled.div`
   ${({selected}) => selected && `background-color: ${Colors.selections};`};
   vertical-align: bottom;
   margin-left: -5px;
-  margin-right: 11px;
+  margin-right: 12px;
 
   border-right: 1px solid
     ${themeStyle({dark: Colors.uiDark04, light: Colors.uiLight05})};
@@ -47,7 +47,7 @@ export const SelectionStatusIndicator = themed(styled.div`
 
 export const CheckAll = styled.div`
   display: inline-block;
-  margin-left: 16px;
+  margin-left: ${({shouldShowOffset}) => (shouldShowOffset ? '15' : '16')}px;
   margin-right: 28px;
 `;
 
