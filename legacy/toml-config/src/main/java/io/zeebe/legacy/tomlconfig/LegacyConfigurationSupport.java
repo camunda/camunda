@@ -49,7 +49,7 @@ public final class LegacyConfigurationSupport {
 
     // zeebe.gateway.monitoring
     MAPPING_GATEWAY.put(
-        "ZEEBE_GATEWAY_MONITORING_ENABLED", new Replacement("zeebe.gateway.monitoring.enadbled"));
+        "ZEEBE_GATEWAY_MONITORING_ENABLED", new Replacement("zeebe.gateway.monitoring.enabled"));
     MAPPING_GATEWAY.put(
         "ZEEBE_GATEWAY_MONITORING_HOST", new Replacement("zeebe.gateway.monitoring.host"));
     MAPPING_GATEWAY.put(
