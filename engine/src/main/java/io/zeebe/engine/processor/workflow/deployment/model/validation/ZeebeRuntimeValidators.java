@@ -35,10 +35,10 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeSubscription.class)
             .hasValidExpression(ZeebeSubscription::getCorrelationKey)
             .build(expressionLanguage),
-        ZeebeJsonPathValidator.verifyThat(ZeebeLoopCharacteristics.class)
-            .hasValidPathExpression(ZeebeLoopCharacteristics::getInputCollection)
-            .hasValidPathExpression(ZeebeLoopCharacteristics::getOutputElement)
-            .build(),
+        ZeebeExpressionValidator.verifyThat(ZeebeLoopCharacteristics.class)
+            .hasValidExpression(ZeebeLoopCharacteristics::getInputCollection)
+            .hasValidExpressionIfPresent(ZeebeLoopCharacteristics::getOutputElement)
+            .build(expressionLanguage),
         ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)
             .hasValidExpression(ZeebeCalledElement::getProcessId)
             .build(expressionLanguage),

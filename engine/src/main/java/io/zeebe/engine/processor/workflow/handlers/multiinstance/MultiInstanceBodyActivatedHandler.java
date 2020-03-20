@@ -9,10 +9,13 @@ package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -23,8 +26,9 @@ public final class MultiInstanceBodyActivatedHandler extends AbstractMultiInstan
   private final MsgPackWriter variableWriter = new MsgPackWriter();
 
   public MultiInstanceBodyActivatedHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
-    super(WorkflowInstanceIntent.ELEMENT_COMPLETING, innerHandlerLookup);
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final ExpressionProcessor expressionProcessor) {
+    super(WorkflowInstanceIntent.ELEMENT_COMPLETING, innerHandlerLookup, expressionProcessor);
   }
 
   @Override
@@ -32,8 +36,12 @@ public final class MultiInstanceBodyActivatedHandler extends AbstractMultiInstan
       final BpmnStepContext<ExecutableMultiInstanceBody> context) {
 
     final var loopCharacteristics = context.getElement().getLoopCharacteristics();
-    final var array = readInputCollectionVariable(context).getSingleResult().getArray();
+    final Optional<List<DirectBuffer>> inputCollection = readInputCollectionVariable(context);
+    if (inputCollection.isEmpty()) {
+      return false;
+    }
 
+    final var array = inputCollection.get();
     loopCharacteristics
         .getOutputCollection()
         .ifPresent(variableName -> initializeOutputCollection(context, variableName, array.size()));
@@ -44,7 +52,7 @@ public final class MultiInstanceBodyActivatedHandler extends AbstractMultiInstan
     }
 
     if (loopCharacteristics.isSequential()) {
-      final var firstItem = array.getElement(0);
+      final var firstItem = array.get(0);
       createInnerInstance(context, context.getKey(), firstItem);
 
     } else {

@@ -11,6 +11,7 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
@@ -28,6 +29,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(wrapString("x"));
+    assertThat(evaluationResult.getList()).isNull();
   }
 
   @Test
@@ -39,6 +41,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"x\""));
+    assertThat(evaluationResult.getList()).isNull();
   }
 
   @Test
@@ -50,6 +53,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("1"));
+    assertThat(evaluationResult.getList()).isNull();
   }
 
   @Test
@@ -61,6 +65,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("true"));
+    assertThat(evaluationResult.getList()).isNull();
   }
 
   @Test
@@ -72,6 +77,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("null"));
+    assertThat(evaluationResult.getList()).isNull();
   }
 
   @Test
@@ -83,6 +89,8 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("[1,2,3]"));
+    assertThat(evaluationResult.getList())
+        .isEqualTo(List.of(asMsgPack("1"), asMsgPack("2"), asMsgPack("3")));
   }
 
   @Test
@@ -94,6 +102,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack(Map.of("x", 1)));
+    assertThat(evaluationResult.getList()).isNull();
   }
 
   private EvaluationResult evaluateExpression(final String expression) {

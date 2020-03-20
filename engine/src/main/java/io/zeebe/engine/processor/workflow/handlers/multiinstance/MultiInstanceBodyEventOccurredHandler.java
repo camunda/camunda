@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import java.util.function.Function;
@@ -18,8 +19,9 @@ public final class MultiInstanceBodyEventOccurredHandler extends AbstractMultiIn
   private final BpmnStepHandler eventHandler;
 
   public MultiInstanceBodyEventOccurredHandler(
-      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup) {
-    super(null, innerHandlerLookup);
+      final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
+      final ExpressionProcessor expressionProcessor) {
+    super(null, innerHandlerLookup, expressionProcessor);
 
     eventHandler = innerHandlerLookup.apply(BpmnStep.ACTIVITY_EVENT_OCCURRED);
   }

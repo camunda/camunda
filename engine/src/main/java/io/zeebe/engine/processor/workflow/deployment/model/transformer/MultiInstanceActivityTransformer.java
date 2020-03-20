@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
+import io.zeebe.el.Expression;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
@@ -19,7 +20,6 @@ import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.LoopCharacteristics;
 import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.buffer.BufferUtil;
@@ -103,8 +103,10 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
     final ZeebeLoopCharacteristics zeebeLoopCharacteristics =
         elementLoopCharacteristics.getSingleExtensionElement(ZeebeLoopCharacteristics.class);
 
-    final JsonPathQuery inputCollection =
-        context.getJsonPathQueryCompiler().compile(zeebeLoopCharacteristics.getInputCollection());
+    final Expression inputCollection =
+        context
+            .getExpressionLanguage()
+            .parseExpression(zeebeLoopCharacteristics.getInputCollection());
 
     final Optional<DirectBuffer> inputElement =
         Optional.ofNullable(zeebeLoopCharacteristics.getInputElement())
@@ -116,10 +118,10 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
             .filter(e -> !e.isEmpty())
             .map(BufferUtil::wrapString);
 
-    final Optional<JsonPathQuery> outputElement =
+    final Optional<Expression> outputElement =
         Optional.ofNullable(zeebeLoopCharacteristics.getOutputElement())
             .filter(e -> !e.isEmpty())
-            .map(e -> context.getJsonPathQueryCompiler().compile(e));
+            .map(e -> context.getExpressionLanguage().parseExpression(e));
 
     return new ExecutableLoopCharacteristics(
         isSequential, inputCollection, inputElement, outputCollection, outputElement);

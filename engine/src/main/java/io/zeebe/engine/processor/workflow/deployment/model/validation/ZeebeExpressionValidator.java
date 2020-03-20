@@ -72,6 +72,15 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     }
   }
 
+  private static void verifyExpressionIfPresent(
+      final String expression,
+      final ExpressionLanguage expressionLanguage,
+      final ValidationResultCollector resultCollector) {
+    if (expression != null) {
+      verifyExpression(expression, expressionLanguage, resultCollector);
+    }
+  }
+
   private static void verifyNonStaticExpression(
       final String expression,
       final ExpressionLanguage expressionLanguage,
@@ -133,6 +142,13 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
       return this;
     }
 
+    public Builder<T> hasValidExpressionIfPresent(final Function<T, String> expressionSupplier) {
+      verifications.add(
+          new Verification<>(
+              expressionSupplier, ZeebeExpressionValidator::verifyExpressionIfPresent));
+      return this;
+    }
+
     public Builder<T> hasValidNonStaticExpression(final Function<T, String> expressionSupplier) {
       verifications.add(
           new Verification<>(
@@ -153,6 +169,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   }
 
   private static final class Verification<T> {
+
     private final Function<T, String> expressionSupplier;
     private final Assertion assertion;
 
@@ -164,6 +181,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
   @FunctionalInterface
   private interface Assertion {
+
     void verify(
         String expression,
         ExpressionLanguage expressionLanguage,

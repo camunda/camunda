@@ -11,6 +11,7 @@ import io.zeebe.el.EvaluationResult;
 import io.zeebe.el.Expression;
 import io.zeebe.el.ResultType;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class StaticExpression implements Expression, EvaluationResult {
@@ -70,6 +71,11 @@ public final class StaticExpression implements Expression, EvaluationResult {
 
   @Override
   public Number getNumber() {
+    return null;
+  }
+
+  @Override
+  public List<DirectBuffer> getList() {
     return null;
   }
 }

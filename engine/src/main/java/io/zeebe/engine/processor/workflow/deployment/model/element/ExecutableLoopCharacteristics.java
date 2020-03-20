@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
+import io.zeebe.el.Expression;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -15,18 +15,18 @@ public class ExecutableLoopCharacteristics {
 
   private final boolean isSequential;
 
-  private final JsonPathQuery inputCollection;
+  private final Expression inputCollection;
   private final Optional<DirectBuffer> inputElement;
 
   private final Optional<DirectBuffer> outputCollection;
-  private final Optional<JsonPathQuery> outputElement;
+  private final Optional<Expression> outputElement;
 
   public ExecutableLoopCharacteristics(
       final boolean isSequential,
-      final JsonPathQuery inputCollection,
+      final Expression inputCollection,
       final Optional<DirectBuffer> inputElement,
       final Optional<DirectBuffer> outputCollection,
-      final Optional<JsonPathQuery> outputElement) {
+      final Optional<Expression> outputElement) {
     this.isSequential = isSequential;
     this.inputCollection = inputCollection;
     this.inputElement = inputElement;
@@ -38,7 +38,7 @@ public class ExecutableLoopCharacteristics {
     return isSequential;
   }
 
-  public JsonPathQuery getInputCollection() {
+  public Expression getInputCollection() {
     return inputCollection;
   }
 
@@ -50,7 +50,7 @@ public class ExecutableLoopCharacteristics {
     return outputCollection;
   }
 
-  public Optional<JsonPathQuery> getOutputElement() {
+  public Optional<Expression> getOutputElement() {
     return outputElement;
   }
 

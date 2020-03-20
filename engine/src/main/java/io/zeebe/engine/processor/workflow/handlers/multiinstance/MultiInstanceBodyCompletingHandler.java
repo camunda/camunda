@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.handlers.multiinstance;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.BpmnStepHandler;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMultiInstanceBody;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
@@ -23,8 +24,9 @@ public final class MultiInstanceBodyCompletingHandler extends AbstractMultiInsta
 
   public MultiInstanceBodyCompletingHandler(
       final Function<BpmnStep, BpmnStepHandler> innerHandlerLookup,
-      final CatchEventSubscriber catchEventSubscriber) {
-    super(WorkflowInstanceIntent.ELEMENT_COMPLETED, innerHandlerLookup);
+      final CatchEventSubscriber catchEventSubscriber,
+      final ExpressionProcessor expressionProcessor) {
+    super(WorkflowInstanceIntent.ELEMENT_COMPLETED, innerHandlerLookup, expressionProcessor);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 

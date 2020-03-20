@@ -186,22 +186,25 @@ public final class BpmnStepHandlers {
 
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_ACTIVATING,
-        new MultiInstanceBodyActivatingHandler(stepHandlers::get, catchEventSubscriber));
+        new MultiInstanceBodyActivatingHandler(
+            stepHandlers::get, catchEventSubscriber, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_ACTIVATED,
-        new MultiInstanceBodyActivatedHandler(stepHandlers::get));
+        new MultiInstanceBodyActivatedHandler(stepHandlers::get, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_COMPLETING,
-        new MultiInstanceBodyCompletingHandler(stepHandlers::get, catchEventSubscriber));
+        new MultiInstanceBodyCompletingHandler(
+            stepHandlers::get, catchEventSubscriber, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_COMPLETED,
-        new MultiInstanceBodyCompletedHandler(stepHandlers::get));
+        new MultiInstanceBodyCompletedHandler(stepHandlers::get, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_TERMINATING,
-        new MultiInstanceBodyTerminatingHandler(stepHandlers::get, catchEventSubscriber));
+        new MultiInstanceBodyTerminatingHandler(
+            stepHandlers::get, catchEventSubscriber, expressionProcessor));
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED,
-        new MultiInstanceBodyEventOccurredHandler(stepHandlers::get));
+        new MultiInstanceBodyEventOccurredHandler(stepHandlers::get, expressionProcessor));
 
     stepHandlers.put(
         BpmnStep.CALL_ACTIVITY_ACTIVATING,
