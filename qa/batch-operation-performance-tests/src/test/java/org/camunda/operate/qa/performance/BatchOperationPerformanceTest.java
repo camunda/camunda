@@ -8,14 +8,14 @@ package org.camunda.operate.qa.performance;
 import java.time.Duration;
 import java.time.Instant;
 import org.camunda.operate.Application;
+import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
+import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateOperationResponseDto;
 import org.camunda.operate.webapp.security.UserService;
 import org.camunda.operate.webapp.zeebe.operation.ExecutionFinishedListener;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -91,8 +91,8 @@ public class BatchOperationPerformanceTest {
     queryForResolveIncident.setIncidents(true);
     queryForResolveIncident.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 5));
     resolveIncidentRequest.setQuery(queryForResolveIncident);
-    final CreateOperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(resolveIncidentRequest);
-    logger.info("RESOLVE_INCIDENT operations scheduled: {}", operationResponseDto.getCount());
+    final BatchOperationEntity batchOperationEntity = batchOperationWriter.scheduleBatchOperation(resolveIncidentRequest);
+    logger.info("RESOLVE_INCIDENT operations scheduled: {}", batchOperationEntity.getOperationsTotalCount());
   }
 
   private void createCancelOperations() {
@@ -103,8 +103,8 @@ public class BatchOperationPerformanceTest {
     queryForCancel.setActive(true);
     queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 1));
     cancelRequest.setQuery(queryForCancel);
-    final CreateOperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(cancelRequest);
-    logger.info("CANCEL_WORKFLOW_INSTANCE operations scheduled: {}", operationResponseDto.getCount());
+    final BatchOperationEntity batchOperationEntity = batchOperationWriter.scheduleBatchOperation(cancelRequest);
+    logger.info("CANCEL_WORKFLOW_INSTANCE operations scheduled: {}", batchOperationEntity.getOperationsTotalCount());
   }
 
   @Test

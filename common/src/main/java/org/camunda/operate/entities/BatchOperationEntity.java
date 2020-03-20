@@ -135,10 +135,7 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
       return false;
     if (operationsTotalCount != null ? !operationsTotalCount.equals(that.operationsTotalCount) : that.operationsTotalCount != null)
       return false;
-    if (operationsFinishedCount != null ? !operationsFinishedCount.equals(that.operationsFinishedCount) : that.operationsFinishedCount != null)
-      return false;
-    // Probably incorrect - comparing Object[] arrays with Arrays.equals
-    return Arrays.equals(sortValues, that.sortValues);
+    return operationsFinishedCount != null ? operationsFinishedCount.equals(that.operationsFinishedCount) : that.operationsFinishedCount == null;
 
   }
 
@@ -153,7 +150,6 @@ public class BatchOperationEntity extends OperateEntity<BatchOperationEntity> {
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
     result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
     result = 31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
-    result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
 }
