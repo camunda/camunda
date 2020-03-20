@@ -54,20 +54,20 @@ export class DataManager {
   }
 
   // Public api to interact with the publisher.
-  subscribe(subscriptions) {
+  subscribe = subscriptions => {
     this.publisher.subscribe(subscriptions);
-  }
+  };
 
-  unsubscribe(subscriptions) {
+  unsubscribe = subscriptions => {
     this.publisher.unsubscribe(subscriptions);
-  }
+  };
 
-  subscriptions() {
+  subscriptions = () => {
     return this.publisher.subscriptions;
-  }
+  };
 
   /** Wrapped API calls */
-  applyOperation(id, payload) {
+  applyOperation = (id, payload) => {
     const typeStrings = payload.operationType.split('_');
     const operationType = typeStrings[typeStrings.length - 1];
 
@@ -75,7 +75,7 @@ export class DataManager {
       `OPERATION_APPLIED_${operationType}_${id}`,
       () => applyOperation(id, payload)
     );
-  }
+  };
 
   applyBatchOperation = async (operationType, query) => {
     this.publisher.pubLoadingStates(CREATE_BATCH_OPERATION, () =>
@@ -83,86 +83,86 @@ export class DataManager {
     );
   };
 
-  fetchAndPublish(topic, apiCall, params, staticContent) {
+  fetchAndPublish = (topic, apiCall, params, staticContent) => {
     const cachedParams = this.cache.update(topic, apiCall, params);
     this.publisher.pubLoadingStates(
       topic,
       () => apiCall(cachedParams),
       staticContent
     );
-  }
+  };
 
-  getVariables(instanceId, scopeId) {
+  getVariables = (instanceId, scopeId) => {
     this.fetchAndPublish(SUBSCRIPTION_TOPIC.LOAD_VARIABLES, fetchVariables, {
       instanceId,
       scopeId
     });
-  }
+  };
 
-  getActivityInstancesTreeData(instance) {
+  getActivityInstancesTreeData = instance => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE,
       fetchActivityInstancesTree,
       instance.id,
       instance
     );
-  }
+  };
 
-  getEvents(instanceId) {
+  getEvents = instanceId => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_EVENTS,
       fetchEvents,
       instanceId
     );
-  }
+  };
 
-  getIncidents(instance) {
+  getIncidents = instance => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INCIDENTS,
       fetchWorkflowInstanceIncidents,
       instance
     );
-  }
+  };
 
-  getWorkflowInstance(instanceId) {
+  getWorkflowInstance = instanceId => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INSTANCE,
       fetchWorkflowInstance,
       instanceId
     );
-  }
+  };
 
-  getInstancesByWorkflow() {
+  getInstancesByWorkflow = () => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
       fetchInstancesByWorkflow
     );
-  }
+  };
 
-  getIncidentsByError() {
+  getIncidentsByError = () => {
     this.fetchAndPublish(
       SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
       fetchIncidentsByError
     );
-  }
+  };
 
-  getWorkflowCoreStatistics() {
+  getWorkflowCoreStatistics = () => {
     this.fetchAndPublish(LOAD_CORE_STATS, fetchWorkflowCoreStatistics, {});
-  }
+  };
 
-  getWorkflowInstances(params) {
+  getWorkflowInstances = params => {
     this.fetchAndPublish(LOAD_LIST_INSTANCES, fetchWorkflowInstances, params);
-  }
+  };
 
-  getWorkflowInstancesStatistics(params) {
+  getWorkflowInstancesStatistics = params => {
     this.fetchAndPublish(
       LOAD_STATE_STATISTICS,
       fetchWorkflowInstancesStatistics,
       params
     );
-  }
+  };
 
-  getWorkflowXML(params, staticContent) {
+  getWorkflowXML = (params, staticContent) => {
     const fetchDiagramModel = async params => {
       const xml = await fetchWorkflowXML(params);
       return await parseDiagramXML(xml);
@@ -179,28 +179,28 @@ export class DataManager {
       () => fetchDiagramModel(cachedParams),
       staticContent
     );
-  }
+  };
 
-  getWorkflowInstancesByIds(params, topic) {
+  getWorkflowInstancesByIds = (params, topic) => {
     this.fetchAndPublish(topic, fetchWorkflowInstancesByIds, params);
-  }
+  };
 
-  getBatchOperations(params) {
+  getBatchOperations = params => {
     this.fetchAndPublish(LOAD_BATCH_OPERATIONS, fetchBatchOperations, params);
-  }
+  };
 
-  getSequenceFlows(workflowInstanceId) {
+  getSequenceFlows = workflowInstanceId => {
     this.fetchAndPublish(
       LOAD_SEQUENCE_FLOWS,
       fetchSequenceFlows,
       workflowInstanceId
     );
-  }
+  };
 
   /** Update Data */
 
   // fetches the data again for all passed endpoints and publishes loading states and result to passed topic
-  update({endpoints, topic, staticData}) {
+  update = ({endpoints, topic, staticData}) => {
     this.publisher.publish(topic, {
       state: LOADING_STATE.LOADING
     });
@@ -235,5 +235,5 @@ export class DataManager {
           error
         });
       });
-  }
+  };
 }
