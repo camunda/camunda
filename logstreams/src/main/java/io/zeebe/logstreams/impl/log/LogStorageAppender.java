@@ -230,7 +230,7 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
         // Not a failure. It is probably during transition to follower.
         return;
       }
-      onFailure(error);
+      actor.run(() -> onFailure(error));
     }
 
     @Override
@@ -242,7 +242,7 @@ public final class LogStorageAppender extends Actor implements HealthMonitorable
     public void onCommitError(final long address, final Throwable error) {
       LOG.error("Failed to commit block with last event position {}.", positions.highest, error);
       releaseBackPressure();
-      onFailure(error);
+      actor.run(() -> onFailure(error));
     }
 
     private void releaseBackPressure() {
