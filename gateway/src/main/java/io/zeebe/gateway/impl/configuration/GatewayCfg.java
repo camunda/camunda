@@ -26,11 +26,12 @@ public class GatewayCfg {
   private SecurityCfg security = new SecurityCfg();
 
   public void init() {
-    network.init(ConfigurationDefaults.DEFAULT_HOST);
+    init(ConfigurationDefaults.DEFAULT_HOST);
   }
 
   public void init(final String defaultHost) {
     network.init(defaultHost);
+    monitoring.init(defaultHost);
   }
 
   public NetworkCfg getNetwork() {
