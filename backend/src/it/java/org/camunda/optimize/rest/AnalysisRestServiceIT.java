@@ -8,9 +8,9 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -107,10 +107,10 @@ public class AnalysisRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_ID_2, procInst);
   }
 
-  private List<SimpleEventDto> createEventList(String[] activityIds) {
-    List<SimpleEventDto> events = new ArrayList<>(activityIds.length);
+  private List<FlowNodeInstanceDto> createEventList(String[] activityIds) {
+    List<FlowNodeInstanceDto> events = new ArrayList<>(activityIds.length);
     for (String activityId : activityIds) {
-      SimpleEventDto event = new SimpleEventDto();
+      FlowNodeInstanceDto event = new FlowNodeInstanceDto();
       event.setActivityId(activityId);
       events.add(event);
     }

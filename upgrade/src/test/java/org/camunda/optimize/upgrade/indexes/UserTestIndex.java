@@ -6,13 +6,13 @@
 package org.camunda.optimize.upgrade.indexes;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 @AllArgsConstructor
-public class UserTestIndex extends StrictIndexMappingCreator {
+public class UserTestIndex extends DefaultIndexMappingCreator {
 
   private int version = 1;
 

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_I
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
-public class DashboardIndex extends StrictIndexMappingCreator {
+public class DashboardIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 2;
 

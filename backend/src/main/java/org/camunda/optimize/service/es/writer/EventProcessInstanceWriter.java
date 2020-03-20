@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
-import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -40,7 +40,8 @@ public class EventProcessInstanceWriter {
 
   public void setGatewayLookup(final List<EventProcessGatewayDto> gatewayLookup) {
     this.gatewayLookup = gatewayLookup.stream()
-      .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {})).collect(Collectors.toList());
+      .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {
+      })).collect(Collectors.toList());
   }
 
   public void importProcessInstances(final List<EventProcessInstanceDto> eventProcessInstanceDtos) {
@@ -123,7 +124,6 @@ public class EventProcessInstanceWriter {
       "processInstance.variables.addAll(processInstanceUpdate.variables);\n" +
 
       "removeExistingGateways(processInstance, params.gatewayLookup);\n" +
-
       "Map existingEventsByIdMap = processInstance.events.stream()\n" +
         ".collect(Collectors.toMap(event -> event.id, Function.identity()));\n" +
       "def eventUpserts = processInstanceUpdate.events;\n" +
@@ -144,35 +144,48 @@ public class EventProcessInstanceWriter {
       "existingFlowNodeInstancesByActivityId\n" +
         ".values()\n" +
         ".forEach(byActivityIdList -> byActivityIdList.sort(eventDateComparator));\n" +
+      "def correlatedEventsById = processInstance.correlatedEventsById;\n" +
+      "processInstanceUpdate.correlatedEventsById.forEach((eventId, correlationStateUpdate) -> {\n" +
+        "correlatedEventsById.putIfAbsent(eventId, correlationStateUpdate);\n" +
+      "});\n" +
       "List pendingFlowNodeInstanceUpdates = new ArrayList(processInstance.pendingFlowNodeInstanceUpdates);\n" +
       "for (def newPendingUpdate : processInstanceUpdate.pendingFlowNodeInstanceUpdates) {\n" +
         "pendingFlowNodeInstanceUpdates.removeIf(existingUpdate -> existingUpdate.id.equals(newPendingUpdate.id));\n" +
         "pendingFlowNodeInstanceUpdates.add(newPendingUpdate);\n" +
       "}\n" +
-      "Collections.sort(pendingFlowNodeInstanceUpdates, eventDateComparator);\n" +
+      "Collections.sort(pendingFlowNodeInstanceUpdates, Comparator.comparing(flowNodeInstanceUpdate -> flowNodeInstanceUpdate.date, Comparator.naturalOrder()));\n" +
       "Set appliedUpdates = new HashSet();\n" +
-      "for (def eventUpdate : pendingFlowNodeInstanceUpdates) {\n" +
-        "def updateableEvent = Optional.ofNullable(existingFlowNodeInstancesByActivityId.get(eventUpdate.flowNodeId))" +
-          ".flatMap(events -> \n" +
-            "events.stream()\n" +
-              ".filter(event -> event.startDate == null || event.endDate == null)\n" +
-              ".findFirst()\n" +
+      "for (def flowNodeInstanceUpdate : pendingFlowNodeInstanceUpdates) {\n" +
+        "def correlatedEventState = correlatedEventsById.get(flowNodeInstanceUpdate.sourceEventId);\n" +
+        "def correlatedAsInstanceIds = correlatedEventState.correlatedAsToFlowNodeInstanceIds\n" +
+          ".computeIfAbsent(flowNodeInstanceUpdate.mappedAs, key -> new ArrayList());\n" +
+        "def updateableFlowNodeInstance = Optional.ofNullable(existingFlowNodeInstancesByActivityId.get(flowNodeInstanceUpdate.flowNodeId))\n" +
+          ".flatMap(flowNodeInstances -> flowNodeInstances.stream()\n" +
+            ".filter(flowNodeInstance -> {\n" +
+            "  return correlatedAsInstanceIds.contains(flowNodeInstance.id) || flowNodeInstance.startDate == null || flowNodeInstance.endDate == null\n" +
+            "})\n" +
+            ".findFirst()\n" +
           ");\n" +
-        "if(updateableEvent.isPresent()) {\n" +
-        "  def event = updateableEvent.get();\n" +
-        // These 'if' statements are required to prevent events being updated by themselves in looping models
-        // and to stop updates of the 'wrong' event in a looping sequence, which would result in the start date
-        // being after the end date
-        "  if (eventUpdate.startDate != null && event.endDate != null && " +
-        "      (dateFormatter.parse(eventUpdate.startDate).before(dateFormatter.parse(event.endDate)))) {\n" +
-        "    event.startDate = eventUpdate.startDate;\n" +
-        "    appliedUpdates.add(eventUpdate);\n" +
-        "    calculateAndAssignEventDuration(event, dateFormatter);\n" +
-        "  } else if (eventUpdate.endDate != null && event.startDate != null &&" +
-        "      (dateFormatter.parse(eventUpdate.endDate).after(dateFormatter.parse(event.startDate)))) {\n" +
-        "    event.endDate = eventUpdate.endDate;\n" +
-        "    appliedUpdates.add(eventUpdate);\n" +
-        "    calculateAndAssignEventDuration(event, dateFormatter);\n" +
+        "if(updateableFlowNodeInstance.isPresent()) {\n" +
+        "  def flowNodeInstanceToUpdate = updateableFlowNodeInstance.get();\n" +
+        "  def wasAlreadyCorrelated = correlatedAsInstanceIds.contains(flowNodeInstanceToUpdate.id);\n" +
+        // These 'if' statements are required to stop updates of the 'wrong' event in a looping sequence,
+        // which would result in the start date being after the end date or vice versa
+        "  def eventDate = dateFormatter.parse(flowNodeInstanceUpdate.date);\n" +
+        "  if (flowNodeInstanceUpdate.mappedAs.equals(\"START\")\n" +
+        "    && (wasAlreadyCorrelated || eventDate.before(dateFormatter.parse(flowNodeInstanceToUpdate.endDate)))) {\n" +
+        "    flowNodeInstanceToUpdate.startDate = flowNodeInstanceUpdate.date;\n" +
+        "    appliedUpdates.add(flowNodeInstanceUpdate);\n" +
+        "  } else if (flowNodeInstanceUpdate.mappedAs.equals(\"END\")\n" +
+        "    && (wasAlreadyCorrelated ||  eventDate.after(dateFormatter.parse(flowNodeInstanceToUpdate.startDate)))) {\n" +
+        "    flowNodeInstanceToUpdate.endDate = flowNodeInstanceUpdate.date;\n" +
+        "    appliedUpdates.add(flowNodeInstanceUpdate);\n" +
+        "  }\n" +
+        "  if (appliedUpdates.contains(flowNodeInstanceUpdate)) {\n" +
+        "    if (!correlatedAsInstanceIds.contains(flowNodeInstanceToUpdate.id)) {\n" +
+        "      correlatedAsInstanceIds.add(flowNodeInstanceToUpdate.id);\n" +
+        "    }\n" +
+        "    calculateAndAssignEventDuration(flowNodeInstanceToUpdate, dateFormatter);\n" +
         "  }\n" +
         "}\n" +
       "}\n" +
@@ -181,7 +194,7 @@ public class EventProcessInstanceWriter {
         "existingFlowNodeInstancesByActivityId.values().stream().flatMap(List::stream).collect(Collectors.toList())\n" +
       ");\n" +
       "processInstance.pendingFlowNodeInstanceUpdates = pendingFlowNodeInstanceUpdates.stream()\n" +
-        ".filter(eventUpdate -> !appliedUpdates.contains(eventUpdate))\n" +
+        ".filter(flowNodeInstanceUpdate -> !appliedUpdates.contains(flowNodeInstanceUpdate))\n" +
         ".collect(Collectors.toList());\n" +
 
       "addGatewaysForProcessInstance(processInstance, params.gatewayLookup, eventDateComparator, dateFormatter);\n" +

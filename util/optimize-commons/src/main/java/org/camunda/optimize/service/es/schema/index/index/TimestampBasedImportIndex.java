@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index.index;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
 @Component
-public class TimestampBasedImportIndex extends StrictIndexMappingCreator {
+public class TimestampBasedImportIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
 

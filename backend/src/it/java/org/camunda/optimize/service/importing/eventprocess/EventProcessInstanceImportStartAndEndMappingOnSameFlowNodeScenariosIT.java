@@ -8,7 +8,8 @@ package org.camunda.optimize.service.importing.eventprocess;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -138,7 +139,7 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
                                                  final String firstEventId,
                                                  final String secondEventId,
                                                  final String fourthEventId) {
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -155,10 +156,10 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
             .satisfies(events -> assertThat(events)
               .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
               .extracting(
-                SimpleEventDto::getId,
-                SimpleEventDto::getActivityId,
-                SimpleEventDto::getStartDate,
-                SimpleEventDto::getEndDate
+                FlowNodeInstanceDto::getId,
+                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getStartDate,
+                FlowNodeInstanceDto::getEndDate
               )
               .containsExactlyInAnyOrder(
                 Tuple.tuple(

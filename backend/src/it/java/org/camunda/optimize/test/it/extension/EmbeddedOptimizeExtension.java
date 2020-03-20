@@ -39,6 +39,7 @@ import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
+import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceImportMediatorManager;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -459,6 +460,10 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public EventTraceStateProcessingScheduler getEventProcessingScheduler() {
     return getApplicationContext().getBean(EventTraceStateProcessingScheduler.class);
+  }
+
+  public EventProcessInstanceImportMediatorManager getEventProcessInstanceImportMediatorManager() {
+    return getApplicationContext().getBean(EventProcessInstanceImportMediatorManager.class);
   }
 
   public EventBasedProcessesInstanceImportScheduler getEventBasedProcessesInstanceImportScheduler() {

@@ -14,20 +14,23 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.importing.BackoffImportMediator;
+import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
@@ -140,13 +143,20 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
+  protected void createAndPublishEventProcessMapping(final Map<String, EventMappingDto> eventMappings, String bpmnXml) {
+    final EventProcessMappingDto eventProcessMappingDto = eventProcessClient
+      .buildEventProcessMappingDtoWithMappingsAndExternalEventSource(eventMappings, EVENT_PROCESS_NAME, bpmnXml);
+    final String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+  }
+
   protected String createEventProcessMappingFromEventMappings(final EventMappingDto startEventMapping,
                                                               final EventMappingDto intermediateEventMapping,
                                                               final EventMappingDto endEventMapping) {
     final EventProcessMappingDto eventProcessMappingDto = buildSimpleEventProcessMappingDto(
       startEventMapping, intermediateEventMapping, endEventMapping
     );
-    eventProcessMappingDto.setXml(createThreeActivitiesProcessDefinitionXml());
+    eventProcessMappingDto.setXml(createThreeEventActivitiesProcessDefinitionXml());
     return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
   }
 
@@ -282,13 +292,13 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected List<ProcessInstanceDto> getEventProcessInstancesFromElasticsearch() {
+  protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearch() {
     return getEventProcessInstancesFromElasticsearchForProcessMappingId("*");
   }
 
   @SneakyThrows
-  protected List<ProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessMappingId(final String eventProcessMappingId) {
-    final List<ProcessInstanceDto> results = new ArrayList<>();
+  protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessMappingId(final String eventProcessMappingId) {
+    final List<EventProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(
         new SearchRequest(new EventProcessInstanceIndex(eventProcessMappingId).getIndexName()),
@@ -297,7 +307,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       results.add(
         elasticSearchIntegrationTestExtension.getObjectMapper()
-          .readValue(hit.getSourceAsString(), ProcessInstanceDto.class)
+          .readValue(hit.getSourceAsString(), EventProcessInstanceDto.class)
       );
     }
     return results;
@@ -386,13 +396,14 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .build();
   }
 
-  protected void assertProcessInstance(final ProcessInstanceDto processInstanceDto, final String expectedInstanceId,
+  protected void assertProcessInstance(final ProcessInstanceDto processInstanceDto,
+                                       final String expectedInstanceId,
                                        final List<String> expectedEventIds) {
     assertThat(processInstanceDto.getProcessInstanceId()).isEqualTo(expectedInstanceId);
     assertThat(processInstanceDto.getEvents())
       .satisfies(events -> assertThat(events)
         .extracting(
-          SimpleEventDto::getActivityId
+          FlowNodeInstanceDto::getActivityId
         )
         .containsExactlyInAnyOrderElementsOf(expectedEventIds)
       );
@@ -412,9 +423,10 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(processInstanceEngineDto, eventMappings, null);
   }
 
-  protected void publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(final ProcessInstanceEngineDto processInstanceEngineDto,
-                                                                                      final Map<String, EventMappingDto> eventMappings,
-                                                                                      final String traceVariable) {
+  protected void publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
+    final ProcessInstanceEngineDto processInstanceEngineDto,
+    final Map<String, EventMappingDto> eventMappings,
+    final String traceVariable) {
     final List<EventSourceEntryDto> eventSourceEntryDtos = createCamundaEventSourceEntryForDeployedProcess(
       processInstanceEngineDto, traceVariable, null);
     createAndPublishEventMapping(eventMappings, eventSourceEntryDtos);
@@ -426,7 +438,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
         eventMappings,
         UUID.randomUUID().toString(),
-        createThreeActivitiesProcessDefinitionXml(),
+        createThreeEventActivitiesProcessDefinitionXml(),
         eventSourceEntryDtos
       );
     String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
@@ -487,13 +499,34 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return eventMappings;
   }
 
+  protected void resetEventProcessInstanceImportProgress() {
+    embeddedOptimizeExtension.getEventProcessInstanceImportMediatorManager()
+      .getActiveMediators()
+      .stream()
+      .map(BackoffImportMediator::getImportIndexHandler)
+      .map(o -> (TimestampBasedImportIndexHandler<?>) o)
+      .forEach(TimestampBasedImportIndexHandler::resetImportIndex);
+  }
+
   @SneakyThrows
-  protected String createThreeActivitiesProcessDefinitionXml() {
+  protected String createThreeEventActivitiesProcessDefinitionXml() {
     final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
       .camundaVersionTag("aVersionTag")
       .name("aProcessName")
       .startEvent(BPMN_START_EVENT_ID)
       .intermediateCatchEvent(BPMN_INTERMEDIATE_EVENT_ID)
+      .endEvent(BPMN_END_EVENT_ID)
+      .done();
+    return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  @SneakyThrows
+  protected String createTwoEventAndOneTaskActivitiesProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
+      .camundaVersionTag("aVersionTag")
+      .name("aProcessName")
+      .startEvent(BPMN_START_EVENT_ID)
+      .userTask(USER_TASK_ID_ONE)
       .endEvent(BPMN_END_EVENT_ID)
       .done();
     return convertBpmnModelToXmlString(bpmnModel);
@@ -690,6 +723,13 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .done();
     // @formatter:on
     return convertBpmnModelToXmlString(bpmnModel);
+  }
+
+  protected static Stream<Arguments> exclusiveAndEventBasedGatewayXmlVariations() {
+    return Stream.of(
+      Arguments.of(EXCLUSIVE_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createExclusiveGatewayProcessDefinitionXml()),
+      Arguments.of(EVENT_BASED_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createEventBasedGatewayProcessDefinitionXml())
+    );
   }
 
   protected static String convertBpmnModelToXmlString(final BpmnModelInstance bpmnModel) {

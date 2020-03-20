@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -21,7 +21,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTIN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
 @Component
-public class VariableUpdateInstanceIndex extends StrictIndexMappingCreator {
+public class VariableUpdateInstanceIndex extends DefaultIndexMappingCreator {
 
   public static final String INSTANCE_ID = VariableUpdateInstanceDto.Fields.instanceId;
   public static final String NAME = VariableUpdateInstanceDto.Fields.name;

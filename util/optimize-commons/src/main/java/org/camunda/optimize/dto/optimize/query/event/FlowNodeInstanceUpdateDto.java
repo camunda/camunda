@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,21 +13,21 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Data
 @Builder
+@Data
 @FieldNameConstants
-public class SimpleEventDto implements Serializable, OptimizeDto {
+public class FlowNodeInstanceUpdateDto implements OptimizeDto {
+  protected String sourceEventId;
+  protected String flowNodeId;
+  protected String flowNodeType;
+  protected MappedEventType mappedAs;
+  protected OffsetDateTime date;
 
-  protected String id;
-  protected String activityId;
-  protected String activityType;
-  protected Long durationInMs;
-  protected OffsetDateTime startDate;
-  protected OffsetDateTime endDate;
-
+  public String getId() {
+    return sourceEventId + ":" + flowNodeId;
+  }
 }

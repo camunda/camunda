@@ -12,10 +12,9 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -29,7 +28,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 @NoArgsConstructor
 @AllArgsConstructor
 @Component
-public class ProcessInstanceIndex extends StrictIndexMappingCreator implements DefinitionBasedType, InstanceType {
+public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
   public static final int VERSION = 4;
 
@@ -44,12 +43,12 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
   public static final String STATE = ProcessInstanceDto.Fields.state;
 
   public static final String EVENTS = ProcessInstanceDto.Fields.events;
-  public static final String EVENT_ID = SimpleEventDto.Fields.id;
-  public static final String ACTIVITY_ID = SimpleEventDto.Fields.activityId;
-  public static final String ACTIVITY_TYPE = SimpleEventDto.Fields.activityType;
-  public static final String ACTIVITY_DURATION = SimpleEventDto.Fields.durationInMs;
-  public static final String ACTIVITY_START_DATE = SimpleEventDto.Fields.startDate;
-  public static final String ACTIVITY_END_DATE = SimpleEventDto.Fields.endDate;
+  public static final String EVENT_ID = FlowNodeInstanceDto.Fields.id;
+  public static final String ACTIVITY_ID = FlowNodeInstanceDto.Fields.activityId;
+  public static final String ACTIVITY_TYPE = FlowNodeInstanceDto.Fields.activityType;
+  public static final String ACTIVITY_DURATION = FlowNodeInstanceDto.Fields.durationInMs;
+  public static final String ACTIVITY_START_DATE = FlowNodeInstanceDto.Fields.startDate;
+  public static final String ACTIVITY_END_DATE = FlowNodeInstanceDto.Fields.endDate;
 
   public static final String VARIABLES = ProcessInstanceDto.Fields.variables;
   public static final String VARIABLE_ID = SimpleProcessVariableDto.Fields.id;

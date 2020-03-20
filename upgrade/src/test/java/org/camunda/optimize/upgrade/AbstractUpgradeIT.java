@@ -13,12 +13,12 @@ import org.apache.http.nio.entity.NStringEntity;
 import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -113,7 +113,7 @@ public abstract class AbstractUpgradeIT {
     metadataService.writeMetadata(prefixAwareClient, new MetadataDto(version));
   }
 
-  protected void createOptimizeIndexWithTypeAndVersion(StrictIndexMappingCreator indexMapping,
+  protected void createOptimizeIndexWithTypeAndVersion(DefaultIndexMappingCreator indexMapping,
                                                        int version) throws IOException {
     final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
     final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
@@ -122,7 +122,7 @@ public abstract class AbstractUpgradeIT {
     CreateIndexRequest request = new CreateIndexRequest(indexName);
     request.alias(new Alias(aliasName));
     request.settings(indexSettings);
-    indexMapping.setDynamicMappingsValue("false");
+    indexMapping.setDynamic("false");
     prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
   }
 

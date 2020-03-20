@@ -8,11 +8,11 @@ package org.camunda.optimize.upgrade.plan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -107,7 +107,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   public List<IndexMappingCreator> getMappings() {
     final ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-    provider.addIncludeFilter(new AssignableTypeFilter(StrictIndexMappingCreator.class));
+    provider.addIncludeFilter(new AssignableTypeFilter(DefaultIndexMappingCreator.class));
     final Set<BeanDefinition> indexMapping =
       provider.findCandidateComponents(MetadataIndex.class.getPackage().getName());
 

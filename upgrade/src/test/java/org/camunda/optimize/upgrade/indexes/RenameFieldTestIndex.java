@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.upgrade.indexes;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class RenameFieldTestIndex extends StrictIndexMappingCreator {
+public class RenameFieldTestIndex extends DefaultIndexMappingCreator {
   private static final int VERSION = 1;
 
   @Override

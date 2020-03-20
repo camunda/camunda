@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.time.OffsetDateTime;
@@ -35,7 +35,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   private OffsetDateTime endDate;
   private Long duration; // duration in ms
   private String state;
-  private List<SimpleEventDto> events = new ArrayList<>();
+  private List<FlowNodeInstanceDto> events = new ArrayList<>();
   private List<UserTaskInstanceDto> userTasks = new ArrayList<>();
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
   private String engine;

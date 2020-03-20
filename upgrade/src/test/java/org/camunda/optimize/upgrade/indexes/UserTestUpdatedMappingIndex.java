@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.upgrade.indexes;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class UserTestUpdatedMappingIndex extends StrictIndexMappingCreator {
+public class UserTestUpdatedMappingIndex extends DefaultIndexMappingCreator {
 
   private static final int VERSION = 2;
 

@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.service.es.schema.index.report;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-public abstract class AbstractReportIndex extends StrictIndexMappingCreator {
+public abstract class AbstractReportIndex extends DefaultIndexMappingCreator {
 
   public static final String ID = "id";
   public static final String NAME = "name";

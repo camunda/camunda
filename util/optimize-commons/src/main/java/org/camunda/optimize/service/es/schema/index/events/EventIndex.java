@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -19,7 +19,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 
 @Component
-public class EventIndex extends StrictIndexMappingCreator {
+public class EventIndex extends DefaultIndexMappingCreator {
 
   public static final String ID = EventDto.Fields.id;
   public static final String EVENT_NAME = EventDto.Fields.eventName;

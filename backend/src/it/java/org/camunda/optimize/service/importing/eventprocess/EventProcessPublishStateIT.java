@@ -668,7 +668,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
         eventMappings,
         "someName",
-        createThreeActivitiesProcessDefinitionXml(),
+        createThreeEventActivitiesProcessDefinitionXml(),
         eventSourceEntries
       );
     return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);

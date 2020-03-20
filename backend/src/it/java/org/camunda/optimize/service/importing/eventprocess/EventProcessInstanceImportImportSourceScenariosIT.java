@@ -8,10 +8,10 @@ package org.camunda.optimize.service.importing.eventprocess;
 import lombok.SneakyThrows;
 import org.assertj.core.util.Maps;
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -66,7 +66,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -106,7 +106,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(2)
       .allSatisfy(processInstanceDto -> {
@@ -137,7 +137,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -153,7 +153,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> secondImportProcessInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> secondImportProcessInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(secondImportProcessInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -184,7 +184,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -221,7 +221,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -259,7 +259,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances).isEmpty();
   }
 
@@ -285,7 +285,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances).isEmpty();
   }
 
@@ -312,7 +312,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances).isEmpty();
   }
 
@@ -339,7 +339,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then only the instance with a business key present is saved
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -389,7 +389,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -437,7 +437,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(
@@ -473,7 +473,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances).isEmpty();
   }
 
@@ -507,7 +507,7 @@ public class EventProcessInstanceImportImportSourceScenariosIT extends AbstractE
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
         assertProcessInstance(

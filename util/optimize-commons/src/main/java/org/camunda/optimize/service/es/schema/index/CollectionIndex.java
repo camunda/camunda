@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefiniti
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -20,7 +20,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
-public class CollectionIndex extends StrictIndexMappingCreator {
+public class CollectionIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
 

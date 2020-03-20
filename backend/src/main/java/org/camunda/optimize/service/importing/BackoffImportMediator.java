@@ -77,6 +77,10 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>> 
     return elasticsearchImportJobExecutor;
   }
 
+  public T getImportIndexHandler() {
+    return importIndexHandler;
+  }
+
   @Override
   public void shutdown() {
     elasticsearchImportJobExecutor.stopExecutingImportJobs();

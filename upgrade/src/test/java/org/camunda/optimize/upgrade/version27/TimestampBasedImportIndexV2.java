@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.upgrade.version27;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
-public class TimestampBasedImportIndexV2 extends StrictIndexMappingCreator {
+public class TimestampBasedImportIndexV2 extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 2;
 

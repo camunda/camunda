@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index.index;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class ImportIndexIndex extends StrictIndexMappingCreator {
+public class ImportIndexIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 2;
 

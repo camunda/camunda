@@ -7,12 +7,12 @@ package org.camunda.optimize.upgrade.version27;
 
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class EventTraceStateIndexV1 extends StrictIndexMappingCreator {
+public class EventTraceStateIndexV1 extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 1;
 

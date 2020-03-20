@@ -8,7 +8,7 @@ package org.camunda.optimize.upgrade.version27;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -16,7 +16,7 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-public class EventProcessMappingIndexV1 extends StrictIndexMappingCreator {
+public class EventProcessMappingIndexV1 extends DefaultIndexMappingCreator {
   public static final int VERSION = 1;
   public static final String ID = IndexableEventProcessMappingDto.Fields.id;
   public static final String NAME = IndexableEventProcessMappingDto.Fields.name;

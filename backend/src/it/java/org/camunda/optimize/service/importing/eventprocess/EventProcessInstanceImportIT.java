@@ -7,8 +7,8 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -157,7 +157,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -165,14 +165,16 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
               createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
-              ProcessInstanceDto.Fields.events
+              ProcessInstanceDto.Fields.events,
+              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+              EventProcessInstanceDto.Fields.correlatedEventsById
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
               simpleEventDtos ->
                 assertThat(simpleEventDtos)
                   .containsOnly(
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedStartEventId)
                       .startDate(startDateTime)
                       .endDate(startDateTime)
@@ -180,7 +182,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
                       .build(),
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
                       .startDate(startDateTime)
                       .endDate(endDateTime)
@@ -214,9 +216,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final String eventProcessPublishStateId1 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId1);
     final String eventProcessPublishStateId2 = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId2);
 
-    final List<ProcessInstanceDto> eventProcess1ProcessInstances =
+    final List<EventProcessInstanceDto> eventProcess1ProcessInstances =
       getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishStateId1);
-    final List<ProcessInstanceDto> eventProcess2ProcessInstances =
+    final List<EventProcessInstanceDto> eventProcess2ProcessInstances =
       getEventProcessInstancesFromElasticsearchForProcessMappingId(eventProcessPublishStateId2);
 
     assertThat(eventProcess1ProcessInstances).hasSize(1);
@@ -247,7 +249,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -255,14 +257,16 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
               createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
-              ProcessInstanceDto.Fields.events
+              ProcessInstanceDto.Fields.events,
+              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+              EventProcessInstanceDto.Fields.correlatedEventsById
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
               simpleEventDtos ->
                 assertThat(simpleEventDtos)
                   .containsOnly(
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedStartEventId)
                       .startDate(startDateTime)
                       .endDate(startDateTime)
@@ -270,7 +274,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
                       .build(),
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
                       .startDate(startDateTime)
                       .endDate(endDateTime)
@@ -310,7 +314,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -318,14 +322,16 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
               createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
-              ProcessInstanceDto.Fields.events
+              ProcessInstanceDto.Fields.events,
+              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+              EventProcessInstanceDto.Fields.correlatedEventsById
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
               simpleEventDtos ->
                 assertThat(simpleEventDtos)
                   .containsOnly(
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedStartEventId)
                       .startDate(startDateTime)
                       .endDate(startDateTime)
@@ -333,7 +339,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
                       .build(),
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
                       .startDate(startDateTime)
                       .endDate(endDateTime)
@@ -374,7 +380,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -386,14 +392,14 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                 startDateTime,
                 updatedEndDateTime
               ),
-              ProcessInstanceDto.Fields.events
+              ProcessInstanceDto.Fields.events, EventProcessInstanceDto.Fields.correlatedEventsById
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
               simpleEventDtos ->
                 assertThat(simpleEventDtos)
                   .containsOnly(
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedStartEventId)
                       .startDate(startDateTime)
                       .endDate(startDateTime)
@@ -401,7 +407,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
                       .build(),
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
                       .startDate(startDateTime)
                       .endDate(updatedEndDateTime)
@@ -434,14 +440,14 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
-              ProcessInstanceDto.builder()
+              EventProcessInstanceDto.eventProcessInstanceBuilder()
                 .processDefinitionId(eventProcessMappingId)
                 .processDefinitionKey(eventProcessMappingId)
                 .processDefinitionVersion("1")
@@ -459,14 +465,17 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                     .build()
                 ))
                 .build(),
-              ProcessInstanceDto.Fields.events, ProcessInstanceDto.Fields.userTasks
+              ProcessInstanceDto.Fields.events,
+              ProcessInstanceDto.Fields.userTasks,
+              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+              EventProcessInstanceDto.Fields.correlatedEventsById
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
               simpleEventDtos ->
                 assertThat(simpleEventDtos)
                   .containsOnly(
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedStartEventId)
                       .startDate(startDateTime)
                       .endDate(startDateTime)
@@ -505,7 +514,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -513,14 +522,16 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
               createExpectedCompletedEventProcessInstanceForTraceId(eventProcessMappingId, startDateTime, endDateTime),
-              ProcessInstanceDto.Fields.events
+              ProcessInstanceDto.Fields.events,
+              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+              EventProcessInstanceDto.Fields.correlatedEventsById
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
               simpleEventDtos ->
                 assertThat(simpleEventDtos)
                   .containsOnly(
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedStartEventId)
                       .startDate(startDateTime)
                       .endDate(startDateTime)
@@ -528,7 +539,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
                       .build(),
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
                       .startDate(startDateTime)
                       .endDate(endDateTime)
@@ -560,7 +571,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -568,14 +579,16 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
               createExpectedCompletedEventProcessInstanceForTraceId(eventProcessId, null, endDateTime),
-              ProcessInstanceDto.Fields.events
+              ProcessInstanceDto.Fields.events,
+              EventProcessInstanceDto.Fields.pendingFlowNodeInstanceUpdates,
+              EventProcessInstanceDto.Fields.correlatedEventsById
             )
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(
               simpleEventDtos ->
                 assertThat(simpleEventDtos)
                   .containsOnly(
-                    SimpleEventDto.builder()
+                    FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
                       .startDate(null)
                       .endDate(endDateTime)

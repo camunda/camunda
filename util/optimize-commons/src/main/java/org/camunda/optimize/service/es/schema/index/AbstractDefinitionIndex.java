@@ -6,12 +6,12 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public abstract class AbstractDefinitionIndex extends StrictIndexMappingCreator {
+public abstract class AbstractDefinitionIndex extends DefaultIndexMappingCreator {
   public static final String DEFINITION_ID = DefinitionOptimizeDto.Fields.id;
   public static final String DEFINITION_KEY = DefinitionOptimizeDto.Fields.key;
   public static final String DEFINITION_VERSION = DefinitionOptimizeDto.Fields.version;

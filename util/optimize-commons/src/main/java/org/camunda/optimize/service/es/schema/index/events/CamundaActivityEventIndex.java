@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -19,7 +19,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 
-public class CamundaActivityEventIndex extends StrictIndexMappingCreator {
+public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
 
   public static final String ACTIVITY_ID = CamundaActivityEventDto.Fields.activityId;
   public static final String ACTIVITY_NAME = CamundaActivityEventDto.Fields.activityName;

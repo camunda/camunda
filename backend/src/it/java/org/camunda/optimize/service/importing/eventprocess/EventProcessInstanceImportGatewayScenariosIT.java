@@ -8,8 +8,8 @@ package org.camunda.optimize.service.importing.eventprocess;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -50,7 +50,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -88,7 +88,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -126,7 +126,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -165,7 +165,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -204,7 +204,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -247,7 +247,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -320,7 +320,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -341,7 +341,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
         );
         final Set<String> gatewayEventIds = processInstanceDto.getEvents().stream()
           .filter(event -> event.getActivityType().equals(EXCLUSIVE_GATEWAY_TYPE))
-          .map(SimpleEventDto::getId)
+          .map(FlowNodeInstanceDto::getId)
           .collect(Collectors.toSet());
         assertThat(gatewayEventIds)
           .hasSize(4)
@@ -378,7 +378,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -419,7 +419,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -460,7 +460,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -500,7 +500,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -535,7 +535,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -574,7 +574,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -627,7 +627,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -669,7 +669,7 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(processInstanceDto -> {
@@ -687,25 +687,10 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
       });
   }
 
-  private void createAndPublishEventProcessMapping(final Map<String, EventMappingDto> eventMappings, String bpmnXml) {
-    EventProcessMappingDto eventProcessMappingDto =
-      eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
-      eventMappings, EVENT_PROCESS_NAME, bpmnXml);
-    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
-  }
-
   private static Stream<Arguments> allSupportedGatewayXmlVariations() {
     return Stream.concat(
       exclusiveAndEventBasedGatewayXmlVariations(),
       Stream.of(Arguments.of(PARALLEL_GATEWAY_TYPE, PARALLEL_GATEWAY_TYPE, createParallelGatewayProcessDefinitionXml()))
-    );
-  }
-
-  private static Stream<Arguments> exclusiveAndEventBasedGatewayXmlVariations() {
-    return Stream.of(
-      Arguments.of(EXCLUSIVE_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createExclusiveGatewayProcessDefinitionXml()),
-      Arguments.of(EVENT_BASED_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createEventBasedGatewayProcessDefinitionXml())
     );
   }
 
@@ -750,10 +735,10 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
           }
         })
         .extracting(
-          SimpleEventDto::getActivityType,
-          SimpleEventDto::getActivityId,
-          SimpleEventDto::getStartDate,
-          SimpleEventDto::getEndDate
+          FlowNodeInstanceDto::getActivityType,
+          FlowNodeInstanceDto::getActivityId,
+          FlowNodeInstanceDto::getStartDate,
+          FlowNodeInstanceDto::getEndDate
         )
         .containsExactlyInAnyOrderElementsOf(flowNodeEvents)
       );

@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -70,7 +70,7 @@ public abstract class AbstractActivityInstanceWriter {
       (List<FlowNodeEventDto>) (List<?>) activityInstanceEntry.getValue();
     final String activityInstanceId = activityInstanceEntry.getKey();
 
-    final List<SimpleEventDto> simpleEvents = getSimpleEventDtos(activityInstances);
+    final List<FlowNodeInstanceDto> simpleEvents = getSimpleEventDtos(activityInstances);
     final Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
 
@@ -109,10 +109,10 @@ public abstract class AbstractActivityInstanceWriter {
     return processEvents.get(0);
   }
 
-  private List<SimpleEventDto> getSimpleEventDtos(List<FlowNodeEventDto> activityInstances) {
-    List<SimpleEventDto> simpleEvents = new ArrayList<>();
+  private List<FlowNodeInstanceDto> getSimpleEventDtos(List<FlowNodeEventDto> activityInstances) {
+    List<FlowNodeInstanceDto> simpleEvents = new ArrayList<>();
     for (FlowNodeEventDto e : activityInstances) {
-      SimpleEventDto simpleEventDto = new SimpleEventDto();
+      FlowNodeInstanceDto simpleEventDto = new FlowNodeInstanceDto();
       simpleEventDto.setDurationInMs(e.getDurationInMs());
       simpleEventDto.setActivityId(e.getActivityId());
       simpleEventDto.setId(e.getId());

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -17,7 +17,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_S
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
-public class DecisionInstanceIndex extends StrictIndexMappingCreator implements DefinitionBasedType, InstanceType {
+public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
   public static final int VERSION = 3;
 

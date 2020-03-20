@@ -8,7 +8,8 @@ package org.camunda.optimize.service.importing.eventprocess;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -124,7 +125,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -141,10 +142,10 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             .satisfies(events -> assertThat(events)
               .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
               .extracting(
-                SimpleEventDto::getId,
-                SimpleEventDto::getActivityId,
-                SimpleEventDto::getStartDate,
-                SimpleEventDto::getEndDate
+                FlowNodeInstanceDto::getId,
+                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getStartDate,
+                FlowNodeInstanceDto::getEndDate
               )
               .containsExactlyInAnyOrder(
                 Tuple.tuple(firstEventId, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME, FIRST_EVENT_DATETIME),
@@ -170,7 +171,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     executeImportCycle();
 
     // then
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -179,9 +180,9 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(events -> assertThat(events)
               .extracting(
-                SimpleEventDto::getId,
-                SimpleEventDto::getActivityId,
-                SimpleEventDto::getStartDate
+                FlowNodeInstanceDto::getId,
+                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getStartDate
               )
               .containsExactlyInAnyOrder(
                 Tuple.tuple(firstEventId1, BPMN_START_EVENT_ID, FIRST_EVENT_DATETIME),
@@ -207,7 +208,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
                                                  final String startEventId,
                                                  final String intermediateEventId,
                                                  final String endEventId) {
-    final List<ProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
       .hasOnlyOneElementSatisfying(
@@ -224,23 +225,23 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             .satisfies(events -> assertThat(events)
               .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
               .extracting(
-                SimpleEventDto::getId,
-                SimpleEventDto::getActivityId,
-                SimpleEventDto::getStartDate,
-                SimpleEventDto::getEndDate
+                FlowNodeInstanceDto::getId,
+                FlowNodeInstanceDto::getActivityId,
+                FlowNodeInstanceDto::getStartDate,
+                FlowNodeInstanceDto::getEndDate
               )
               .containsExactlyInAnyOrder(
                 Tuple.tuple(
                   startEventId,
                   BPMN_START_EVENT_ID,
                   FIRST_EVENT_DATETIME,
-                  startEventMapping.getEnd() != null ? FIRST_EVENT_DATETIME : SECOND_EVENT_DATETIME
+                  startEventMapping.getEnd() == null && intermediateEventMapping.getStart() != null ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
                 ),
                 Tuple.tuple(
                   intermediateEventId,
                   BPMN_INTERMEDIATE_EVENT_ID,
-                  intermediateEventMapping.getStart() != null ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME,
-                  intermediateEventMapping.getEnd() != null ? SECOND_EVENT_DATETIME : THIRD_EVENT_DATETIME
+                  intermediateEventMapping.getStart() == null ? FIRST_EVENT_DATETIME : SECOND_EVENT_DATETIME,
+                  intermediateEventMapping.getEnd() == null && endEventMapping.getStart() != null ? THIRD_EVENT_DATETIME : SECOND_EVENT_DATETIME
                 ),
                 Tuple.tuple(
                   endEventId,

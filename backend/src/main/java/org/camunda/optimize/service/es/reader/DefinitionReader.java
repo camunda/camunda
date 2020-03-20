@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWith
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
@@ -679,7 +679,7 @@ public class DefinitionReader {
     return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndex()));
   }
 
-  private String getOptimizeIndexNameForIndex(final StrictIndexMappingCreator index) {
+  private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {
     return esClient.getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(index);
   }
 

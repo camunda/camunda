@@ -3,26 +3,30 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.persistence;
+package org.camunda.optimize.dto.optimize.query.event;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
+@Builder
 @FieldNameConstants
-public class FlowNodeInstanceUpdateDto implements OptimizeDto {
-  protected String sourceEventId;
-  protected String flowNodeId;
-  protected String flowNodeType;
-  protected OffsetDateTime startDate;
-  protected OffsetDateTime endDate;
+public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
-  public String getId() {
-    return sourceEventId + ":" + flowNodeId;
-  }
+  private String id;
+  private String activityId;
+  private String activityType;
+  private Long durationInMs;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
+
 }

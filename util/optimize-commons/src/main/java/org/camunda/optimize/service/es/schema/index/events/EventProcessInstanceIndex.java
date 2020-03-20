@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.persistence.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.persistence.FlowNodeInstanceUpdateDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceUpdateDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
@@ -22,8 +22,10 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
   public static final String ACTIVITY_UPDATE_SOURCE_EVENT_ID = FlowNodeInstanceUpdateDto.Fields.sourceEventId;
   public static final String ACTIVITY_UPDATE_ACTIVITY_ID = FlowNodeInstanceUpdateDto.Fields.flowNodeId;
   public static final String ACTIVITY_UPDATE_ACTIVITY_TYPE = FlowNodeInstanceUpdateDto.Fields.flowNodeType;
-  public static final String ACTIVITY_UPDATE_START_DATE = FlowNodeInstanceUpdateDto.Fields.startDate;
-  public static final String ACTIVITY_UPDATE_END_DATE = FlowNodeInstanceUpdateDto.Fields.endDate;
+  public static final String ACTIVITY_UPDATE_MAPPED_AS = FlowNodeInstanceUpdateDto.Fields.mappedAs;
+  public static final String ACTIVITY_UPDATE_DATE = FlowNodeInstanceUpdateDto.Fields.date;
+
+  public static final String CORRELATED_EVENTS_BY_EVENT_ID = EventProcessInstanceDto.Fields.correlatedEventsById;
 
   public EventProcessInstanceIndex(final String eventProcessId) {
     super(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessId.toLowerCase());
@@ -38,6 +40,10 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
         .startObject("properties");
           addPendingEventUpdateObjectFields(newBuilder)
         .endObject()
+      .endObject()
+      .startObject(CORRELATED_EVENTS_BY_EVENT_ID)
+        .field("type", "object")
+        .field("enabled", "false")
       .endObject();
     return newBuilder;
     // @formatter:on
@@ -62,12 +68,11 @@ public class EventProcessInstanceIndex extends ProcessInstanceIndex {
         .field("type", "keyword")
         .field("index", "false")
       .endObject()
-      .startObject(ACTIVITY_UPDATE_START_DATE)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .startObject(ACTIVITY_UPDATE_MAPPED_AS)
+        .field("type", "keyword")
         .field("index", "false")
       .endObject()
-      .startObject(ACTIVITY_UPDATE_END_DATE)
+      .startObject(ACTIVITY_UPDATE_DATE)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
         .field("index", "false")
