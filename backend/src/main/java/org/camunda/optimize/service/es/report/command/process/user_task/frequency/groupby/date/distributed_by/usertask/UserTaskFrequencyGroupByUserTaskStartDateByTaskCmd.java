@@ -20,13 +20,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserTaskFrequencyGroupByUserTaskStartDateGroupByTaskCmd
+public class UserTaskFrequencyGroupByUserTaskStartDateByTaskCmd
   implements Command<SingleProcessReportDefinitionDto> {
 
   private final ProcessReportCmdExecutionPlan<ReportHyperMapResultDto> executionPlan;
 
   @Autowired
-  public UserTaskFrequencyGroupByUserTaskStartDateGroupByTaskCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public UserTaskFrequencyGroupByUserTaskStartDateByTaskCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewCountUserTaskFrequency.class)

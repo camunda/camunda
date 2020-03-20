@@ -58,7 +58,7 @@ import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterU
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public class UserTaskFrequencyByStartDateByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
@@ -429,7 +429,7 @@ public class UserTaskFrequencyByStartDateByUserTaskReportEvaluationIT extends Ab
 
     // then
     HyperMapAsserter.GroupByAdder groupByAdder = HyperMapAsserter.asserter()
-      .processInstanceCount(5L)
+      .processInstanceCount(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
       .distributedByContains(USER_TASK_1, 1L, USER_TASK_1_NAME);
 
@@ -742,7 +742,7 @@ public class UserTaskFrequencyByStartDateByUserTaskReportEvaluationIT extends Ab
   }
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
     // given
     ProcessDefinitionEngineDto processDefinition1 = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
@@ -771,7 +771,7 @@ public class UserTaskFrequencyByStartDateByUserTaskReportEvaluationIT extends Ab
   }
 
   @Test
-  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
+  public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
     // given
     ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
