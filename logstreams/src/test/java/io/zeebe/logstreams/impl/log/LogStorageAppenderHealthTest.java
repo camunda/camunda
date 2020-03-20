@@ -17,6 +17,7 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.health.HealthStatus;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -112,9 +113,13 @@ public final class LogStorageAppenderHealthTest {
     assertThat(appender.getHealthStatus()).isEqualTo(HealthStatus.HEALTHY);
   }
 
-  private static class ControllableLogStorage implements LogStorage {
+  private class ControllableLogStorage extends Actor implements LogStorage {
 
     private BiConsumer<Long, AppendListener> onAppend = (pos, listener) -> listener.onWrite(pos);
+
+    public ControllableLogStorage() {
+      schedulerRule.submitActor(this).join();
+    }
 
     void onNextAppend(final BiConsumer<Long, AppendListener> onAppend) {
       this.onAppend = onAppend;
@@ -131,14 +136,11 @@ public final class LogStorageAppenderHealthTest {
         final long highestPosition,
         final ByteBuffer blockBuffer,
         final AppendListener listener) {
-      onAppend.accept(highestPosition, listener);
+      actor.run(() -> onAppend.accept(highestPosition, listener));
     }
 
     @Override
     public void open() throws IOException {}
-
-    @Override
-    public void close() {}
 
     @Override
     public boolean isOpen() {
@@ -152,5 +154,10 @@ public final class LogStorageAppenderHealthTest {
 
     @Override
     public void flush() throws Exception {}
+
+    @Override
+    public void close() {
+      actor.close();
+    }
   }
 }
