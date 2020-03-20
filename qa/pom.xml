@@ -23,22 +23,4 @@
         <module>clustering-tests</module>
     </modules>
 
-    <dependencies>
-        <!-- required for using backend test-jar -->
-        <!-- workaround as test dependencies are not inherited -->
-        <!-- https://issues.apache.org/jira/browse/MNG-1378 -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpmime</artifactId>
-            <version>${httpclient.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
 </project>

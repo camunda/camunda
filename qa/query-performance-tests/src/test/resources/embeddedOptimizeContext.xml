@@ -24,6 +24,7 @@
     <constructor-arg>
       <list>
         <value>service-config.yaml</value>
+        <value>test-config.yaml</value>
       </list>
     </constructor-arg>
   </bean>

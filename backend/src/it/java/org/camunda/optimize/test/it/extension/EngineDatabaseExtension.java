@@ -8,7 +8,7 @@ package org.camunda.optimize.test.it.extension;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.jupiter.api.extension.Extension;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,7 +32,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
  * Engine Database Extension
  */
 @Slf4j
-public class EngineDatabaseExtension implements TestWatcher {
+public class EngineDatabaseExtension implements Extension {
   private static final String DATABASE_H2 = "h2";
   private static final String DATABASE_POSTGRESQL = "postgresql";
 
