@@ -38,6 +38,7 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 @Component
 public class ActivityInstanceZeebeRecordProcessor {
@@ -158,7 +159,8 @@ public class ActivityInstanceZeebeRecordProcessor {
 
       return new UpdateRequest(activityInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(jsonMap);
+        .doc(jsonMap)
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
@@ -174,7 +176,8 @@ public class ActivityInstanceZeebeRecordProcessor {
 
       return new UpdateRequest(activityInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(jsonMap);
+        .doc(jsonMap)
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);

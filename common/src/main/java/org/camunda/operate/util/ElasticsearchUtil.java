@@ -56,6 +56,8 @@ public abstract class ElasticsearchUtil {
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
+  public static final int UPDATE_RETRY_COUNT = 3;
+
 
   public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit,String> searchHitIdToString = SearchHit::getId;

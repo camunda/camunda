@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.camunda.operate.zeebeimport.v23.record.Intent.CREATED;
 import static org.camunda.operate.zeebeimport.v23.record.Intent.UPDATED;
 
@@ -74,7 +75,8 @@ public class VariableZeebeRecordProcessor {
 
       return new UpdateRequest(variableTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .doc(updateFields);
+        .doc(updateFields)
+        .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert variable instance for list view", e);

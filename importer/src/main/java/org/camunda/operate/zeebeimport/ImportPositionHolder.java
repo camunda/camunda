@@ -97,7 +97,7 @@ public class ImportPositionHolder {
           .upsert(objectMapper.writeValueAsString(lastProcessedPosition), XContentType.JSON)
           .doc(updateFields)
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-      esClient.update(request, RequestOptions.DEFAULT);
+      ElasticsearchUtil.executeUpdate(esClient, request);
     } catch (Exception e) {
       logger.error(String.format("Error occurred while persisting latest loaded position for %s", lastProcessedPosition.getAliasName()), e);
       throw new OperateRuntimeException(e);

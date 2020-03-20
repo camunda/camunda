@@ -32,6 +32,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 import static org.camunda.operate.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
 
@@ -127,10 +128,11 @@ public class Archiver {
     DeleteByQueryRequest request =
         new DeleteByQueryRequest(sourceIndexName)
             .setBatchSize(workflowInstanceKeys.size())
-            .setQuery(termsQuery(idFieldName, workflowInstanceKeys));
+            .setQuery(termsQuery(idFieldName, workflowInstanceKeys))
+            .setMaxRetries(UPDATE_RETRY_COUNT);
     request = applyDefaultSettings(request);
     try {
-      DeleteByQueryRequest finalRequest = request;
+      final DeleteByQueryRequest finalRequest = request;
       final BulkByScrollResponse response = deleteWithTimer(() -> esClient.deleteByQuery(finalRequest, RequestOptions.DEFAULT));
       return checkResponse(response, sourceIndexName, "delete");
     } catch (ArchiverException ex) {

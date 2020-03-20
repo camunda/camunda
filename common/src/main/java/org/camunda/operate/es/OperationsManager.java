@@ -21,8 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 /**
  * Common methods to deal with operations, that can be used by different modules.
@@ -48,7 +48,7 @@ public class OperationsManager {
   public void updateFinishedInBatchOperation(String batchOperationId, BulkRequest bulkRequest) throws PersistenceException {
     UpdateRequest updateRequest = new UpdateRequest(batchOperationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, batchOperationId)
         .script(getIncrementFinishedScript())
-        .retryOnConflict(3);      //TODO not sure how several updates withing one refresh cycle will behave
+        .retryOnConflict(UPDATE_RETRY_COUNT);
     if (bulkRequest == null) {
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } else {
