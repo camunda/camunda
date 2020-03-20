@@ -112,18 +112,6 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
-  public void getIsEventBasedProcessesEnabledWithFeatureDeactivatedReturnsFalse() {
-    // given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
-
-    // when
-    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
-
-    // then
-    assertThat(isEnabled).isEqualTo(false);
-  }
-
-  @Test
   public void getIsEventBasedProcessesEnabledWithUserNotGrantedEventBasedProcessAccessReturnsFalse() {
     // given
     embeddedOptimizeExtension.getConfigurationService()
@@ -136,23 +124,6 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(isEnabled).isEqualTo(false);
-  }
-
-  @ParameterizedTest()
-  @MethodSource("getAllEndpointsThatNeedEventAuthorization")
-  public void callingEventBasedProcessApiWithFeatureDeactivatedReturnsForbidden(final String method,
-                                                                                final String path,
-                                                                                final Object payload) {
-    // given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
-
-    // when
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGenericRequest(method, path, payload)
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest

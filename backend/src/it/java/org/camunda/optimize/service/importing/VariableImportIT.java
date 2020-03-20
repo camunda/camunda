@@ -44,7 +44,7 @@ public class VariableImportIT extends AbstractImportIT {
 
   @BeforeEach
   public void setup() {
-   embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
   @Test
@@ -85,7 +85,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableImportExcludesVariableInstanceWritingIfFeatureDisabled() throws JsonProcessingException {
     //given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
     BpmnModelInstance processModel = createSimpleProcessDefinition();
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();

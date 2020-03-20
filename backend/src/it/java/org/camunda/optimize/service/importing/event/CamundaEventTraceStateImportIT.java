@@ -40,14 +40,14 @@ public class CamundaEventTraceStateImportIT extends AbstractIT {
 
   @BeforeEach
   public void init() {
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
   @SneakyThrows
   @Test
   public void noCamundaEventStateTraceIndicesCreatedIfEventBasedProcessesDisabled() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
     final String definitionKey = "myCamundaProcess";
     deployAndStartUserTaskProcessWithName(definitionKey);
     engineIntegrationExtension.finishAllRunningUserTasks();

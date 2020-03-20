@@ -18,7 +18,6 @@ import java.util.List;
 @Data
 public class EventBasedProcessConfiguration {
 
-  private boolean enabled;
   private List<String> authorizedUserIds;
   private EventImportConfiguration eventImport;
   private IngestionConfiguration eventIngestion;

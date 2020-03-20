@@ -108,7 +108,6 @@ public class EventRestServiceIT extends AbstractIT {
 
   @BeforeEach
   public void init() {
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
     eventClient.ingestEventBatch(allEventDtos);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.processEvents();

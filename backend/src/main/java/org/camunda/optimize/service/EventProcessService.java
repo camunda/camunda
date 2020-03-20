@@ -97,10 +97,6 @@ public class EventProcessService {
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
   private final EventProcessPublishStateWriter eventProcessPublishStateWriter;
 
-  public boolean isEventProcessImportEnabled() {
-    return configurationService.getEventBasedProcessConfiguration().isEnabled();
-  }
-
   public IdDto createEventProcessMapping(final String userId, final EventProcessMappingRequestDto createRequestDto) {
     final EventProcessRoleDto defaultRoleEntry = new EventProcessRoleDto(new IdentityDto(userId, IdentityType.USER));
     final EventProcessMappingDto eventProcessMappingDto = EventProcessMappingDto.builder()

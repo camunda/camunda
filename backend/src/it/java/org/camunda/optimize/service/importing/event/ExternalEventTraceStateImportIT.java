@@ -33,7 +33,7 @@ public class ExternalEventTraceStateImportIT extends AbstractIT {
 
   @BeforeEach
   public void init() {
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
   @Test

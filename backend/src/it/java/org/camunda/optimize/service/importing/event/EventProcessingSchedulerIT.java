@@ -15,7 +15,7 @@ public class EventProcessingSchedulerIT extends AbstractIT {
 
   @Test
   public void verifyEventProcessingSchedulerIsDisabledByDefault() {
-    assertThat(embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().isEnabled(), is(false));
+    assertThat(embeddedOptimizeExtension.getDefaultEngineConfiguration().isEventImportEnabled(), is(false));
     assertThat(embeddedOptimizeExtension.getEventProcessingScheduler().isScheduledToRun(), is(false));
   }
 

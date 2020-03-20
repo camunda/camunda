@@ -125,7 +125,11 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
 
   @BeforeEach
   public void enableEventBasedProcessFeature() {
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessConfiguration()
+      .getEventImport()
+      .setEnabled(true);
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().getAuthorizedUserIds()
       .add(DEFAULT_USERNAME);
   }

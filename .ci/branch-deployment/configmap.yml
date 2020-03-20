@@ -56,6 +56,7 @@ data:
         name: default
         # A base URL that will be used for connections to the Camunda Engine REST API.
         rest: 'http://localhost:8080/engine-rest'
+        eventImportEnabled: true
         authentication:
           #Toggles basic authentication on or off. When enabling basic
           #authentication, please be aware that you also need to adjust the values
@@ -95,8 +96,9 @@ data:
       engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
 
     eventBasedProcess:
-      enabled: true
       authorizedUserIds: ['demo']
+      eventImport:
+        enabled: true
       eventIngestion:
         accessToken: secret
 

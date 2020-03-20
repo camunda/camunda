@@ -48,7 +48,8 @@ public class CamundaEventImportService {
   private final ConfigurationService configurationService;
 
   public void importRunningActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> runningActivityInstances) {
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+    final String engineAlias = runningActivityInstances.get(0).getEngineAlias();
+    if (shouldImport(engineAlias)) {
       importEngineEntityToCamundaActivityEvents(
         runningActivityInstances, this::convertRunningActivityToCamundaActivityEvents
       );
@@ -56,7 +57,8 @@ public class CamundaEventImportService {
   }
 
   public void importCompletedActivityInstancesToCamundaActivityEvents(List<FlowNodeEventDto> completedActivityInstances) {
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+    final String engineAlias = completedActivityInstances.get(0).getEngineAlias();
+    if (shouldImport(engineAlias)) {
       importEngineEntityToCamundaActivityEvents(
         completedActivityInstances, this::convertCompletedActivityToCamundaActivityEvents
       );
@@ -64,7 +66,8 @@ public class CamundaEventImportService {
   }
 
   public void importRunningProcessInstances(List<ProcessInstanceDto> runningProcessInstances) {
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+    final String engineAlias = runningProcessInstances.get(0).getEngine();
+    if (shouldImport(engineAlias)) {
       importEngineEntityToCamundaActivityEvents(
         runningProcessInstances, this::convertRunningProcessInstanceToCamundaActivityEvents
       );
@@ -73,7 +76,8 @@ public class CamundaEventImportService {
   }
 
   public void importCompletedProcessInstances(List<ProcessInstanceDto> completedProcessInstances) {
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+    final String engineAlias = completedProcessInstances.get(0).getEngine();
+    if (shouldImport(engineAlias)) {
       importEngineEntityToCamundaActivityEvents(
         completedProcessInstances, this::convertCompletedProcessInstanceToCamundaActivityEvents
       );
@@ -82,9 +86,14 @@ public class CamundaEventImportService {
   }
 
   public void importVariableUpdateInstances(final List<ProcessVariableDto> variableUpdates) {
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
+    final String engineAlias = variableUpdates.get(0).getEngineAlias();
+    if (shouldImport(engineAlias)) {
       variableUpdateInstanceWriter.importVariableUpdatesToVariableUpdateInstances(variableUpdates);
     }
+  }
+
+  private boolean shouldImport(final String engineAlias) {
+    return configurationService.getConfiguredEngines().get(engineAlias).isEventImportEnabled();
   }
 
   private <T> void importEngineEntityToCamundaActivityEvents(List<T> activitiesToImport,

@@ -61,6 +61,9 @@ engines:
     rest: '${OPTIMIZE_CAMUNDABPM_REST_URL:http://localhost:8080/engine-rest}'
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
     importEnabled: true
+    # Determines whether this instance of Optimize should convert historical data to event data
+    # usable for event based processes.
+    eventImportEnabled: ${OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED:false}
     authentication:
       # Toggles basic authentication on or off. When enabling basic
       # authentication, please be aware that you also need to adjust the values
@@ -394,9 +397,10 @@ ui:
     backgroundColor: '#FFFFFF'
 
 eventBasedProcess:
-  enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_ENABLED:false}
   authorizedUserIds: ${OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS:[]}
   eventImport:
+    # Determines whether this Optimize instance performs event based process instance import.
+    enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
     importIntervalInSec: 5
     maxPageSize: 10000
   eventIngestion:

@@ -36,7 +36,7 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
 
   @PostConstruct
   public void init() {
-    if (getEventBasedProcessConfiguration().isEnabled()) {
+    if (getEventBasedProcessConfiguration().getEventImport().isEnabled()) {
       startImportScheduling();
     }
   }

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,7 +23,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
 
   @BeforeEach
   public void init() {
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
   @Test
@@ -61,7 +60,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   @Test
   public void businessKeyNotImportedWhenFeatureDisabled() throws JsonProcessingException {
     //given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
     deployAndStartUserTaskProcess();
     ProcessInstanceEngineDto completedProcess = deployAndStartUserTaskProcess();

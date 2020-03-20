@@ -72,8 +72,7 @@ public class EventBasedProcessRestService {
   @Path("/isEnabled")
   @Produces(MediaType.APPLICATION_JSON)
   public boolean getIsEnabled(@Context ContainerRequestContext requestContext) {
-    return eventProcessService.isEventProcessImportEnabled()
-      && isUserIsGrantedEventProcessManagementAccess(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+    return isUserIsGrantedEventProcessManagementAccess(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
   }
 
   @GET
@@ -236,9 +235,6 @@ public class EventBasedProcessRestService {
   }
 
   private void validateAccessToEventProcessManagement(final String userId) {
-    if (!eventProcessService.isEventProcessImportEnabled()) {
-      throw new ForbiddenException("The event process feature is not activated.");
-    }
     if (!isUserIsGrantedEventProcessManagementAccess(userId)) {
       throw new ForbiddenException("The user " + userId + " is not authorized to use the event process api.");
     }

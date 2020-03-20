@@ -19,6 +19,7 @@ public class EngineConfiguration {
   private String rest;
   private EngineWebappsConfiguration webapps;
   private boolean importEnabled = true;
+  private boolean eventImportEnabled = false;
 
   private EngineAuthenticationConfiguration authentication;
 

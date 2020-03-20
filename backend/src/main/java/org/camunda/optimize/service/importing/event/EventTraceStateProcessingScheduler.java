@@ -39,7 +39,7 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
 
   @PostConstruct
   public void init() {
-    if (getEventBasedProcessConfiguration().isEnabled()) {
+    if (getEventBasedProcessConfiguration().getEventImport().isEnabled()) {
       startScheduling();
     }
   }

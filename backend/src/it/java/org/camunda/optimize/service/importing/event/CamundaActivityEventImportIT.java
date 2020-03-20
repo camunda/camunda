@@ -43,7 +43,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
   @BeforeEach
   public void init() {
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
   @Test
@@ -155,7 +155,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       );
 
     // when the feature is disabled
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
     // when engine events happen and import triggered
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -236,7 +236,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   @Test
   public void noIndexCreatedOnImportWithFeatureDisabled() throws IOException {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("shouldNotBeCreated");
 
     // when

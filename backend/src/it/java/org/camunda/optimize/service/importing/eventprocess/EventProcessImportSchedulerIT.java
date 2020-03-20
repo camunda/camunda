@@ -15,7 +15,7 @@ public class EventProcessImportSchedulerIT extends AbstractIT {
 
   @Test
   public void verifyEventImportDisabledByDefault() {
-    assertThat(embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().isEnabled(), is(false));
+    assertThat(embeddedOptimizeExtension.getDefaultEngineConfiguration().isEventImportEnabled(), is(false));
     assertThat(embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler().isScheduledToRun(), is(false));
   }
 

@@ -361,7 +361,6 @@ public class EntitiesRestServiceIT extends AbstractIT {
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
     String eventProcessId = addEventProcessMappingToOptimize("anEventProcessName");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 

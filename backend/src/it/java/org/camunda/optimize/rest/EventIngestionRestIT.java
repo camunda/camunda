@@ -56,7 +56,6 @@ public class EventIngestionRestIT extends AbstractIT {
   @BeforeEach
   public void before() {
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
   }
 
   @Test
@@ -152,24 +151,6 @@ public class EventIngestionRestIT extends AbstractIT {
     assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     assertEventDtosArePersisted(Collections.singletonList(eventDto));
-  }
-
-  @Test
-  public void ingestEventBatch_featureDisabled() {
-    // given
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
-
-    final List<CloudEventDto> eventDtos = IntStream.range(0, 10)
-      .mapToObj(operand -> eventClient.createCloudEventDto())
-      .collect(toList());
-
-    // when
-    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(eventDtos, getAccessToken())
-      .execute();
-
-    // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @Test

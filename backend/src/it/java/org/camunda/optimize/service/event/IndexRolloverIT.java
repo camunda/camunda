@@ -45,7 +45,11 @@ public class IndexRolloverIT extends AbstractIT {
 
   @BeforeEach
   public void before() {
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessConfiguration()
+      .getEventImport()
+      .setEnabled(true);
   }
 
   @AfterEach
@@ -72,7 +76,10 @@ public class IndexRolloverIT extends AbstractIT {
     final List<String> rolledOverIndices = getEventIndexRolloverService().triggerRollover();
 
     // then
-    assertThat(rolledOverIndices).containsExactlyInAnyOrder(EXTERNAL_EVENTS_INDEX_NAME, VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+    assertThat(rolledOverIndices).containsExactlyInAnyOrder(
+      EXTERNAL_EVENTS_INDEX_NAME,
+      VARIABLE_UPDATE_INSTANCE_INDEX_NAME
+    );
   }
 
   @Test
@@ -238,19 +245,6 @@ public class IndexRolloverIT extends AbstractIT {
     // Over the two imports, we expect 3 activities to be imported in the first and 6 in the second
     assertThat(getAllStoredCamundaActivityEventsForDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
       .hasSize(9);
-  }
-
-  @Test
-  public void rolloversDisabledWhenEventBasedProcessFeatureDisabled() {
-    // given
-    getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);
-    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
-
-    // when
-    final List<String> rolledOverIndices = getEventIndexRolloverService().triggerRollover();
-
-    // then
-    assertThat(rolledOverIndices).isEmpty();
   }
 
   @Test

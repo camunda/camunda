@@ -55,12 +55,12 @@ public class IndexRolloverService extends AbstractScheduledService {
 
   public List<String> triggerRollover() {
     List<String> rolledOverIndexAliases = new ArrayList<>();
-    if (configurationService.getEventBasedProcessConfiguration().isEnabled()) {
-      final Set<String> aliasesToConsiderRolling = getCamundaActivityEventsIndexAliases();
-      aliasesToConsiderRolling.add(EXTERNAL_EVENTS_INDEX_NAME);
-      aliasesToConsiderRolling.add(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
-      aliasesToConsiderRolling
-        .forEach(indexAlias -> {
+    final Set<String> aliasesToConsiderRolling = getCamundaActivityEventsIndexAliases();
+    aliasesToConsiderRolling.add(EXTERNAL_EVENTS_INDEX_NAME);
+    aliasesToConsiderRolling.add(VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
+    aliasesToConsiderRolling
+      .forEach(indexAlias -> {
+        try {
           boolean isRolledOver = ElasticsearchHelper.triggerRollover(
             esClient,
             indexAlias,
@@ -69,8 +69,10 @@ public class IndexRolloverService extends AbstractScheduledService {
           if (isRolledOver) {
             rolledOverIndexAliases.add(indexAlias);
           }
-        });
-    }
+        } catch (Exception e) {
+          log.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
+        }
+      });
     return rolledOverIndexAliases;
   }
 
