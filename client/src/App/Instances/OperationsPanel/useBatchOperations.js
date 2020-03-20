@@ -65,6 +65,17 @@ export default function useBatchOperations() {
       }
     );
 
+    subscribe(
+      SUBSCRIPTION_TOPIC.OPERATION_APPLIED,
+      LOADING_STATE.LOADED,
+      payload => {
+        dispatch({
+          type: ACTIONS.PREPEND,
+          payload
+        });
+      }
+    );
+
     return () => {
       unsubscribe();
       dataManager.poll.unregister(POLL_TOPICS.OPERATIONS);
