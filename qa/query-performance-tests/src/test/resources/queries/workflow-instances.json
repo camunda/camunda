@@ -5,16 +5,12 @@
     "method": "POST",
     "pathParams": "firstResult=0&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true
-        }
-      ]
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true
     }
   },
   {
@@ -23,16 +19,12 @@
     "method": "POST",
     "pathParams": "firstResult=9000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true
-        }
-      ]
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true
     }
   },
   {
@@ -41,16 +33,12 @@
     "method": "POST",
     "pathParams": "firstResult=9000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
       "sorting": {
         "sortBy": "startDate",
         "sortOrder": "asc"
@@ -63,16 +51,12 @@
     "method": "POST",
     "pathParams": "firstResult=9000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
       "sorting": {
         "sortBy": "startDate",
         "sortOrder": "desc"
@@ -85,13 +69,9 @@
     "method": "POST",
     "pathParams": "firstResult=0&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "finished": true,
-          "completed": true,
-          "canceled": true
-        }
-      ]
+      "finished": true,
+      "completed": true,
+      "canceled": true
     }
   },
   {
@@ -100,13 +80,9 @@
     "method": "POST",
     "pathParams": "firstResult=0&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true
-        }
-      ]
+      "running": true,
+      "active": true,
+      "incidents": true
     }
   },
   {
@@ -115,14 +91,10 @@
     "method": "POST",
     "pathParams": "firstResult=1000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "activityId": "task2"
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "activityId": "task2",
       "sorting": {
         "sortBy": "workflowName",
         "sortOrder": "asc"
@@ -135,15 +107,11 @@
     "method": "POST",
     "pathParams": "firstResult=1000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "workflowIds": ["${workflowIds}"],
-          "errorMessage": "Error 1"
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "workflowIds": ["${workflowIds}"],
+      "errorMessage": "Error 1",
       "sorting": {
         "sortBy": "workflowVersion",
         "sortOrder": "asc"
@@ -156,15 +124,11 @@
     "method": "POST",
     "pathParams": "firstResult=1000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "bpmnProcessId": "process1",
-          "workflowVersion": 1
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "bpmnProcessId": "process1",
+      "workflowVersion": 1,
       "sorting": {
         "sortBy": "workflowName",
         "sortOrder": "desc"
@@ -177,17 +141,13 @@
     "method": "POST",
     "pathParams": "firstResult=1000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "variable": {
-            "name": "var1",
-            "value": "\"value1\""
-          }
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "variable": {
+        "name": "var1",
+        "value": "\"value1\""
+      },
       "sorting": {
         "sortBy": "workflowVersion",
         "sortOrder": "asc"
@@ -200,14 +160,10 @@
     "method": "POST",
     "pathParams": "firstResult=0&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "ids": ["${workflowInstanceIds}"]
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "ids": ["${workflowInstanceIds}"],
       "sorting": {
         "sortBy": "id",
         "sortOrder": "desc"
@@ -220,14 +176,10 @@
     "method": "POST",
     "pathParams": "firstResult=1000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "excludeIds": ["${workflowInstanceIds}"]
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "excludeIds": ["${workflowInstanceIds}"],
       "sorting": {
         "sortBy": "id",
         "sortOrder": "asc"
@@ -240,17 +192,13 @@
     "method": "POST",
     "pathParams": "firstResult=1000&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true,
-          "workflowIds": ["${workflowIds}"]
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "workflowIds": ["${workflowIds}"],
       "sorting": {
         "sortBy": "endDate",
         "sortOrder": "asc"
@@ -263,18 +211,14 @@
     "method": "POST",
     "pathParams": "firstResult=0&maxResults=100",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true,
-          "startDateBefore": "${startDateBefore}",
-          "startDateAfter": "${startDateAfter}"
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "startDateBefore": "${startDateBefore}",
+      "startDateAfter": "${startDateAfter}",
       "sorting": {
         "sortBy": "workflowName",
         "sortOrder": "asc"

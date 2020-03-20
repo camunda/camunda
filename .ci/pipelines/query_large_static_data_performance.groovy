@@ -122,8 +122,6 @@ spec:
           value: false
         - name: CAMUNDA_OPERATE_ELASTICSEARCH_CREATESCHEMA
           value: false
-        - name: CAMUNDA_OPERATE_BATCHOPERATIONMAXSIZE
-          value: 1000000
       resources:
         limits:
           cpu: 2

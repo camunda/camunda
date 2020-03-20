@@ -4,18 +4,14 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true,
-          "bpmnProcessId": "process1",
-          "workflowVersion": 1
-        }
-      ]
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "bpmnProcessId": "process1",
+      "workflowVersion": 1
     }
   },
   {
@@ -23,15 +19,11 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "finished": true,
-          "completed": true,
-          "canceled": true,
-          "bpmnProcessId": "process2",
-          "workflowVersion": 1
-        }
-      ]
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "bpmnProcessId": "process2",
+      "workflowVersion": 1
     }
   },
   {
@@ -39,15 +31,11 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "bpmnProcessId": "process3",
-          "workflowVersion": 1
-        }
-      ]
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "bpmnProcessId": "process3",
+      "workflowVersion": 1
     }
   },
   {
@@ -55,16 +43,12 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "activityId": "task2",
-          "bpmnProcessId": "process4",
-          "workflowVersion": 1
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "activityId": "task2",
+      "bpmnProcessId": "process4",
+      "workflowVersion": 1,
       "sorting": {
         "sortBy": "workflowName",
         "sortOrder": "asc"
@@ -76,15 +60,13 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "workflowIds": ["${workflowId}"],
-          "errorMessage": "Error 1"
-        }
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "workflowIds": [
+        "${workflowId}"
       ],
+      "errorMessage": "Error 1",
       "sorting": {
         "sortBy": "workflowVersion",
         "sortOrder": "asc"
@@ -96,19 +78,15 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "variable": {
-            "name": "var1",
-            "value": "\"value1\""
-          },
-          "bpmnProcessId": "process5",
-          "workflowVersion": 1
-        }
-      ],
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "variable": {
+        "name": "var1",
+        "value": "\"value1\""
+      },
+      "bpmnProcessId": "process5",
+      "workflowVersion": 1,
       "sorting": {
         "sortBy": "workflowVersion",
         "sortOrder": "asc"
@@ -120,16 +98,14 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "ids": ["${workflowInstanceIds}"],
-          "bpmnProcessId": "process6",
-          "workflowVersion": 1
-        }
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "ids": [
+        "${workflowInstanceIds}"
       ],
+      "bpmnProcessId": "process6",
+      "workflowVersion": 1,
       "sorting": {
         "sortBy": "id",
         "sortOrder": "desc"
@@ -141,16 +117,14 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "excludeIds": ["${workflowInstanceIds}"],
-          "bpmnProcessId": "process7",
-          "workflowVersion": 1
-        }
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "excludeIds": [
+        "${workflowInstanceIds}"
       ],
+      "bpmnProcessId": "process7",
+      "workflowVersion": 1,
       "sorting": {
         "sortBy": "id",
         "sortOrder": "asc"
@@ -162,14 +136,14 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "excludeIds": ["${workflowInstanceIds}"],
-          "workflowIds": ["${workflowId}"]
-        }
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "excludeIds": [
+        "${workflowInstanceIds}"
+      ],
+      "workflowIds": [
+        "${workflowId}"
       ],
       "sorting": {
         "sortBy": "id",
@@ -182,18 +156,16 @@
     "url": "/api/workflow-instances/statistics",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true,
-          "startDateBefore": "${startDateBefore}",
-          "startDateAfter": "${startDateAfter}",
-          "workflowIds": ["${workflowId}"]
-        }
+      "running": true,
+      "active": true,
+      "incidents": true,
+      "finished": true,
+      "completed": true,
+      "canceled": true,
+      "startDateBefore": "${startDateBefore}",
+      "startDateAfter": "${startDateAfter}",
+      "workflowIds": [
+        "${workflowId}"
       ],
       "sorting": {
         "sortBy": "workflowName",
@@ -201,5 +173,4 @@
       }
     }
   }
-
 ]

@@ -1,7 +1,7 @@
 # Query performance test
 
 Prerequisites:
-1. Elasticserch with dataset under test is running
+1. Elasticsearch with dataset under test is running
 2. Operate is running
 
 This test:

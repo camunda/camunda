@@ -1,56 +1,40 @@
 [
   {
-    "_comment": "The quantity of workflow instances returned by queries much be as big as possible, but less than 10000 instances. Otherwise -> validation error.",
     "title": "Resolve incidents on some complex query",
-    "url": "/api/workflow-instances/operation",
+    "url": "/api/workflow-instances/batch-operation",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "variable": {
-            "name": "var1",
-            "value": "\"value1\""
-          },
-          "workflowIds": ["${workflowIds}"]
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "variable": {
+          "name": "var1",
+          "value": "\"value1\""
         },
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "ids": ["${workflowInstanceIds}"],
-          "workflowIds": ["${workflowIds}"]
-        },
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "activityId": "task2",
-          "workflowIds": ["${workflowIds}"]
-        }
-      ],
+        "workflowIds": [
+          "${workflowIds}"
+        ]
+      },
       "operationType": "RESOLVE_INCIDENT"
     }
   },
   {
-    "_comment": "The quantity of workflow instances returned by queries much be as big as possible, but less than 10000 instances. Otherwise -> validation error.",
     "title": "Cancel all instances",
-    "url": "/api/workflow-instances/operation",
+    "url": "/api/workflow-instances/batch-operation",
     "method": "POST",
     "body": {
-      "queries": [
-        {
-          "running": true,
-          "active": true,
-          "incidents": true,
-          "finished": true,
-          "completed": true,
-          "canceled": true,
-          "workflowIds": ["${workflowIds}"]
-        }
-      ],
+      "query": {
+        "running": true,
+        "active": true,
+        "incidents": true,
+        "finished": true,
+        "completed": true,
+        "canceled": true,
+        "workflowIds": [
+          "${workflowIds}"
+        ]
+      },
       "operationType": "CANCEL_WORKFLOW_INSTANCE"
     }
   }
