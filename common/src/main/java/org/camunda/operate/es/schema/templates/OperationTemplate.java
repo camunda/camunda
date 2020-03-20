@@ -18,8 +18,6 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Wor
   public static final String SCOPE_KEY = "scopeKey";
   public static final String VARIABLE_NAME = "variableName";
   public static final String VARIABLE_VALUE = "variableValue";
-  public static final String START_DATE = "startDate";
-  public static final String END_DATE = "endDate";
   public static final String STATE = "state";
   public static final String ERROR_MSG = "errorMessage";
   public static final String LOCK_EXPIRATION_TIME = "lockExpirationTime";

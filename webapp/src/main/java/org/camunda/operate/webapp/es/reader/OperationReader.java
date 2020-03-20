@@ -41,7 +41,6 @@ import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -107,7 +106,6 @@ public class OperationReader extends AbstractReader {
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(OperationTemplate.WORKFLOW_INSTANCE_KEY, SortOrder.ASC)
-        .sort(OperationTemplate.START_DATE, SortOrder.DESC)
         .sort(OperationTemplate.ID, SortOrder.ASC));
 
     try {
@@ -140,7 +138,6 @@ public class OperationReader extends AbstractReader {
       .source(new SearchSourceBuilder()
         .query(query)
         .sort(OperationTemplate.INCIDENT_KEY, SortOrder.ASC)
-        .sort(OperationTemplate.START_DATE, SortOrder.DESC)
         .sort(OperationTemplate.ID, SortOrder.ASC));
     try {
       ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient, hits -> {
@@ -169,7 +166,6 @@ public class OperationReader extends AbstractReader {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
         .query(query)
-        .sort(OperationTemplate.START_DATE, SortOrder.DESC)
         .sort(OperationTemplate.ID, SortOrder.ASC));
     try {
       ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient, hits -> {
@@ -194,7 +190,6 @@ public class OperationReader extends AbstractReader {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ALL)
       .source(new SearchSourceBuilder()
         .query(query)
-        .sort(OperationTemplate.START_DATE, SortOrder.DESC)
         .sort(OperationTemplate.ID, SortOrder.ASC));
     try {
       return ElasticsearchUtil.scroll(searchRequest, OperationEntity.class, objectMapper, esClient);

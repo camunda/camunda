@@ -28,10 +28,6 @@
 				"type": "keyword",
 				"ignore_above": 8191
 			},
-			"endDate": {
-				"format": "date_time",
-				"type": "date"
-			},
 			"lockExpirationTime": {
 				"format": "date_time",
 				"type": "date"
@@ -65,10 +61,6 @@
 			},
 			"zeebeCommandKey": {
 				"type": "keyword"
-			},
-			"startDate": {
-				"format": "date_time",
-				"type": "date"
 			},
 			"username": {
 				"type": "keyword"

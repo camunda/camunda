@@ -177,7 +177,6 @@ public class DataGenerator {
   }
 
   private List<Long> startWorkflowInstances(int numberOfWorkflowInstances) {
-    List<Long> workflowInstanceKeys = new ArrayList<>();
     for (int i = 0; i < numberOfWorkflowInstances; i++) {
       String bpmnProcessId = getRandomBpmnProcessId();
       long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
