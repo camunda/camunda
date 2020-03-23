@@ -112,7 +112,7 @@ export default themed(
                             to="edit"
                             onClick={() => this.setAutorefresh(null)}
                           >
-                            <Button main>
+                            <Button main tabIndex="-1">
                               <Icon type="edit" />
                               {t('common.edit')}
                             </Button>

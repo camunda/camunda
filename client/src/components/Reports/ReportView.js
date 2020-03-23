@@ -57,7 +57,7 @@ export default class ReportView extends React.Component {
               {currentUserRole === 'editor' && (
                 <>
                   <Link className="tool-button edit-button" to="edit">
-                    <Button main>
+                    <Button main tabIndex="-1">
                       <Icon type="edit" />
                       {t('common.edit')}
                     </Button>

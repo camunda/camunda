@@ -106,7 +106,7 @@ export default withErrorHandling(
                   </>
                 )}
                 <Link className="tool-button edit-button" to="edit">
-                  <Button main disabled={isPublishing}>
+                  <Button main disabled={isPublishing} tabIndex="-1">
                     <Icon type="edit" />
                     {t('common.edit')}
                   </Button>

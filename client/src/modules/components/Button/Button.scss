@@ -20,6 +20,10 @@
       background-color: $grey-darken-13;
       color: $silver-darken-87;
 
+      &.focus-visible {
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5), #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      }
+
       &:hover {
         background-color: $grey-darken-23;
       }
@@ -170,6 +174,12 @@
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1);
     transition: background-color 0.1s, border-color 0.1s;
 
+    &.focus-visible {
+      outline: none;
+      box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.1), #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      transition: box-shadow 0.05s ease-out 0s;
+    }
+
     &:hover {
       background-color: $silver-darken-94;
     }
@@ -191,6 +201,11 @@
       border: 1px solid $blue-darken-62;
       background-color: $blue-base-65;
       color: $silver-base-97;
+
+      &.focus-visible {
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35), #2b7bff 0px 0px 0px 1px,
+          #8cb7ff 0px 0px 0px 4px;
+      }
 
       &:hover {
         border: 1px solid $blue-darken-55;
@@ -216,6 +231,11 @@
       background-color: $red-base-62;
       color: $silver-base-97;
 
+      &.focus-visible {
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.25), #2b7bff 0px 0px 0px 1px,
+          #8cb7ff 0px 0px 0px 4px;
+      }
+
       &:hover {
         border: 1px solid $red-darken-42;
         background-color: $red-darken-52;
@@ -238,13 +258,19 @@
   &.icon {
     width: 32px;
     height: 32px;
-    background-color: white;
+    background-color: transparent;
     color: $grey-darken-23;
     border: none;
     border-radius: 50%;
     padding: 0;
     min-width: 0;
     box-shadow: none;
+
+    &.focus-visible {
+      outline: none;
+      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      transition: box-shadow 0.05s ease-out 0s;
+    }
 
     &:hover {
       background-color: $silver-darken-94;
@@ -279,6 +305,13 @@
     transform-origin: 0 0;
     box-shadow: none;
     &.focus-visible {
+      box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      transition: box-shadow 0.05s ease-out 0s;
+    }
+
+    &.focus-visible {
+      outline: none;
+      border-radius: 3px;
       box-shadow: #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
       transition: box-shadow 0.05s ease-out 0s;
     }
