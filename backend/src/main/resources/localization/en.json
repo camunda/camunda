@@ -12,7 +12,7 @@
     "appName": "Optimize",
     "username": "Username",
     "password": "Password",
-    "btn": "Login",
+    "btn": "Log in",
     "error": "An error occurred. Could not log you in."
   },
   "footer": {

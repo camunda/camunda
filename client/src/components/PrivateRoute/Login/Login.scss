@@ -8,7 +8,7 @@
   bottom: 0;
   z-index: 3;
   background-color: white;
-  padding-top: 164px;
+  padding-top: 200px;
 
   .label {
     @include visually-hidden;
@@ -20,10 +20,11 @@
   }
 
   h1 {
+    color: $grey-base-40;
     font-size: 1.75em;
     font-weight: normal;
-    margin-bottom: 36px;
-    margin-top: 16px;
+    margin-bottom: 78px;
+    margin-top: 8px;
     text-align: center;
   }
 
