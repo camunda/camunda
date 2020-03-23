@@ -19,10 +19,12 @@ export default function DateFilterPreview({filter, filterType}) {
   if (['today', 'yesterday'].includes(dateType)) {
     previewText = highlight(t(`common.filter.dateModal.unit.${dateType}`));
   } else if (['this', 'last'].includes(dateType)) {
+    const translationType = unit === 'weeks' ? 'week' : 'all';
     previewText = (
       <>
-        {t(`common.filter.dateModal.preview.${dateType}`)}{' '}
-        {dateType === 'last' && t('common.filter.dateModal.preview.completed') + ' '}
+        {t(`common.filter.dateModal.preview.${dateType}.${translationType}`)}{' '}
+        {dateType === 'last' &&
+          t(`common.filter.dateModal.preview.completed.${translationType}`) + ' '}
         {highlight(t(`common.unit.${makeSingular(unit)}.label`))}
       </>
     );
@@ -32,7 +34,7 @@ export default function DateFilterPreview({filter, filterType}) {
     )}`;
     previewText = (
       <>
-        {t(`common.filter.dateModal.preview.last`)} {highlight(highlighted)}
+        {t(`common.filter.dateModal.preview.last.all`)} {highlight(highlighted)}
       </>
     );
   } else if (dateType === 'fixed') {

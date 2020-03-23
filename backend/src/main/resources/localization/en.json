@@ -657,9 +657,18 @@
         "to": "to",
         "invalidDate": "Please enter a valid date",
         "preview": {
-          "this": "in the current",
-          "last": "in the last",
-          "completed": "completed"
+          "this": {
+            "week": "in the current",
+            "all": "in the current"
+          },
+          "last": {
+            "week": "in the last",
+            "all": "in the last"
+          },
+          "completed": {
+            "week": "completed",
+            "all": "completed"
+          }
         },
         "unit": {
           "today": "Today",

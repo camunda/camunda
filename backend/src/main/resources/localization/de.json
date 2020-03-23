@@ -657,9 +657,18 @@
         "to": "bis",
         "invalidDate": "Bitte gültiges Datum eingeben",
         "preview": {
-          "this": "In dem aktuellen",
-          "last": "In den letzten",
-          "completed": "Abgeschlossen"
+          "this": {
+            "week": "In der aktuellen",
+            "all": "In dem aktuellen"
+          },
+          "last": {
+            "week": "In der letzten",
+            "all": "In den letzten"
+          },
+          "completed": {
+            "week": "abgeschlossenen",
+            "all": "abgeschlossenem"
+          }
         },
         "unit": {
           "today": "Heute",
