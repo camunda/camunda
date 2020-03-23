@@ -5,16 +5,18 @@
  */
 package org.camunda.optimize.service.importing;
 
-import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class TimestampBasedImportMediator<T extends TimestampBasedImportIndexHandler<?>, DTO>
   extends BackoffImportMediator<T> {
 
   protected ImportService<DTO> importService;
+
+  protected int countOfImportedEntitiesWithLastEntityTimestamp = 0;
 
   protected abstract OffsetDateTime getTimestamp(final DTO dto);
 
@@ -35,25 +37,27 @@ public abstract class TimestampBasedImportMediator<T extends TimestampBasedImpor
                                                        final List<DTO> entitiesNextPage,
                                                        final int maxPageSize,
                                                        final Runnable importCompleteCallback) {
-    boolean timestampNeedsToBeSet = !entitiesNextPage.isEmpty();
-
-    final OffsetDateTime timestamp = timestampNeedsToBeSet ?
-      getTimestamp(entitiesNextPage.get(entitiesNextPage.size() - 1)) : null;
-
-    final List<DTO> allEntities = ImmutableList.<DTO>builder()
-      .addAll(entitiesLastTimestamp)
-      .addAll(entitiesNextPage)
-      .build();
-
     importIndexHandler.updateLastImportExecutionTimestamp();
-    if (timestampNeedsToBeSet) {
+    if (!entitiesNextPage.isEmpty()) {
+      final List<DTO> allEntities = new ArrayList<>();
+      if (entitiesLastTimestamp.size() > countOfImportedEntitiesWithLastEntityTimestamp) {
+        allEntities.addAll(entitiesLastTimestamp);
+      }
+      allEntities.addAll(entitiesNextPage);
+
+      final OffsetDateTime currentPageLastEntityTimestamp = getTimestamp(entitiesNextPage.get(entitiesNextPage.size() - 1));
       importService.executeImport(allEntities, () -> {
-        importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        importIndexHandler.updateTimestampOfLastEntity(currentPageLastEntityTimestamp);
         importCompleteCallback.run();
       });
-      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
-    } else if (!entitiesLastTimestamp.isEmpty()) {
-      importService.executeImport(allEntities, importCompleteCallback);
+      countOfImportedEntitiesWithLastEntityTimestamp = (int) entitiesNextPage
+        .stream()
+        .filter(entity -> getTimestamp(entity).equals(currentPageLastEntityTimestamp))
+        .count();
+      importIndexHandler.updatePendingTimestampOfLastEntity(currentPageLastEntityTimestamp);
+    } else if (entitiesLastTimestamp.size() > countOfImportedEntitiesWithLastEntityTimestamp) {
+      countOfImportedEntitiesWithLastEntityTimestamp = entitiesLastTimestamp.size();
+      importService.executeImport(entitiesLastTimestamp, importCompleteCallback);
     } else {
       importCompleteCallback.run();
     }

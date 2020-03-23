@@ -165,9 +165,9 @@ public class IndexRolloverIT extends AbstractIT {
       .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
     assertThat(getAllStoredExternalEvents())
       .hasSize(NUMBER_OF_EVENTS_IN_BATCH * 2);
-    // Over the two imports, we expect 3 activities to be imported in the first and 6 in the second
+    // Over the two imports, we expect 3 activities to be imported in the first and 5 in the second
     assertThat(getAllStoredCamundaActivityEventsForDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
-      .hasSize(9);
+      .hasSize(8);
     assertThat(getAllStoredVariableUpdateInstanceDtos())
       .hasSize(6);
   }
@@ -242,9 +242,9 @@ public class IndexRolloverIT extends AbstractIT {
 
     // then there are 2 * EXPECTED_NUMBER_OF_EVENTS present (half in the old index and half in the new)
     assertThat(getAllStoredExternalEvents()).hasSize(NUMBER_OF_EVENTS_IN_BATCH * 2);
-    // Over the two imports, we expect 3 activities to be imported in the first and 6 in the second
+    // Over the two imports, we expect 3 activities to be imported in the first and 5 in the second
     assertThat(getAllStoredCamundaActivityEventsForDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey()))
-      .hasSize(9);
+      .hasSize(8);
   }
 
   @Test
