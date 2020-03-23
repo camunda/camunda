@@ -7,6 +7,8 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
 import java.io.IOException;
@@ -14,7 +16,6 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public final class GatewayCfgTest {
@@ -54,7 +55,7 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readDefaultConfig();
 
     // then
-    Assertions.assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
+    assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
   }
 
   @Test
@@ -63,7 +64,7 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readEmptyConfig();
 
     // then
-    Assertions.assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
+    assertThat(gatewayCfg).isEqualTo(DEFAULT_CFG);
   }
 
   @Test
@@ -72,7 +73,7 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readCustomConfig();
 
     // then
-    Assertions.assertThat(gatewayCfg).isEqualTo(CUSTOM_CFG);
+    assertThat(gatewayCfg).isEqualTo(CUSTOM_CFG);
   }
 
   @Test
@@ -133,7 +134,23 @@ public final class GatewayCfgTest {
     final GatewayCfg gatewayCfg = readCustomConfig();
 
     // then
-    Assertions.assertThat(gatewayCfg).isEqualTo(expected);
+    assertThat(gatewayCfg).isEqualTo(expected);
+  }
+
+  @Test
+  public void shoudldInitializeMonitoringCfgWhenInitIsCalled() {
+    // given
+    final GatewayCfg sutGatewayConfig = new GatewayCfg();
+
+    // when
+    sutGatewayConfig.init();
+
+    // then
+    final MonitoringCfg monitoringCfg = sutGatewayConfig.getMonitoring();
+
+    assertThat(monitoringCfg.getHost())
+        .describedAs("Default monitoring host")
+        .isEqualTo(ConfigurationDefaults.DEFAULT_HOST);
   }
 
   private void setEnv(final String key, final String value) {
