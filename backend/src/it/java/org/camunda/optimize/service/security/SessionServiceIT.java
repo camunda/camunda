@@ -26,13 +26,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 
 public class SessionServiceIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void verifyTerminatedSessionCleanupIsScheduledAfterStartup() {
@@ -215,7 +215,7 @@ public class SessionServiceIT extends AbstractIT {
 
     // when
     final OffsetDateTime dateTimeBeforeRefresh = LocalDateUtil.getCurrentDateTime();
-    LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
+    LocalDateUtil.setCurrentTime(dateTimeBeforeRefresh.plusMinutes(expiryMinutes * 2 / 3));
     testAuthenticationResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
@@ -229,8 +229,8 @@ public class SessionServiceIT extends AbstractIT {
     final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
     assertThat(newToken, is(not(equalTo(firstToken))));
     assertThat(
-      newAuthCookie.getExpiry().toInstant(),
-      is(greaterThan(dateTimeBeforeRefresh.plusMinutes(expiryMinutes).toInstant()))
+      newAuthCookie.getExpiry().toInstant().truncatedTo(ChronoUnit.SECONDS),
+      is(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes).toInstant().truncatedTo(ChronoUnit.SECONDS))
     );
 
   }

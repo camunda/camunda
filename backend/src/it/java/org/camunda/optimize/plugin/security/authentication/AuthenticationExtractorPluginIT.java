@@ -17,7 +17,9 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
+import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -199,6 +201,26 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     assertThat(definitions).hasSize(1);
+  }
+
+  @Test
+  public void cookieHasCorrectExpiryDate() {
+    // given
+    final String basePackage = "org.camunda.optimize.testplugin.security.authentication.util1";
+    addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
+    final int expiryTime = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+
+    // when
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now());
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    final NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
+    final Duration durationUntilExpiry = Duration.between(
+      now.toInstant().truncatedTo(ChronoUnit.SECONDS),
+      newCookie.getExpiry().toInstant()
+    );
+
+    // then
+    assertThat(durationUntilExpiry.toMinutes()).isEqualTo(expiryTime);
   }
 
   private void deployAndImportTestDefinition() {

@@ -66,7 +66,7 @@ public class AuthCookieService {
       configurationService.isHttpDisabled(),
       true
     );
-    
+
     String newCookieAsString = newCookie.toString();
     if (configurationService.getSameSiteCookieFlagEnabled()) {
       newCookieAsString = addSameSiteCookieFlag(newCookieAsString);
