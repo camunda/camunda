@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor {
 
+  public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
+
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
   private static final String LOG_MSG_WAIT_UNTIL_COMMITTED =
       "Finished taking snapshot, need to wait until last written event position {} is committed, current commit position is {}. After that snapshot can be marked as valid.";
@@ -41,13 +43,13 @@ public final class AsyncSnapshotDirector extends Actor {
   private final Duration snapshotRate;
   private final String processorName;
   private final StreamProcessor streamProcessor;
+  private final String actorName;
+
   private ActorCondition commitCondition;
   private Long lastWrittenEventPosition;
   private Snapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
-  private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
-  private final String actorName;
 
   public AsyncSnapshotDirector(
       final int nodeId,
@@ -71,11 +73,18 @@ public final class AsyncSnapshotDirector extends Actor {
   @Override
   protected void onActorStarting() {
     actor.setSchedulingHints(SchedulingHints.ioBound());
-    actor.runAtFixedRate(snapshotRate, prepareTakingSnapshot);
+    final var firstSnapshotTime =
+        RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
+    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
 
     lastWrittenEventPosition = null;
     commitCondition = actor.onCondition(getConditionNameForPosition(), this::onCommitCheck);
     logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
+  }
+
+  private void scheduleSnapshotOnRate() {
+    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
+    prepareTakingSnapshot();
   }
 
   @Override
