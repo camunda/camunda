@@ -12,6 +12,7 @@
     border-radius: 4px;
     flex-grow: 1;
     transition: none;
+    z-index: 3;
   }
 
   &.isDragging .grid-entry:not(.react-draggable-dragging):not(.resizing) {
