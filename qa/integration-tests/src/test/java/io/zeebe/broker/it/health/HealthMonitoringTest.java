@@ -7,13 +7,16 @@
  */
 package io.zeebe.broker.it.health;
 
+import static io.zeebe.broker.clustering.atomix.AtomixFactory.GROUP_NAME;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.util.LangUtil;
 import java.io.File;
 import java.io.IOException;
@@ -43,9 +46,9 @@ public class HealthMonitoringTest {
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
-  public void shouldReportFailureWhenLeaderTransitionFailed() {
+  public void shouldReportUnhealthyWhenLeaderTransitionFailed() {
     // given
-    final int partition = Protocol.START_PARTITION_ID;
+    final int partition = START_PARTITION_ID;
     final int leaderNodeId = clusteringRule.getLeaderForPartition(partition).getNodeId();
     final Broker leader = clusteringRule.getBroker(leaderNodeId);
     final Collection<Broker> followers = new ArrayList<>(clusteringRule.getBrokers());
@@ -66,6 +69,28 @@ public class HealthMonitoringTest {
 
     // then
     waitUntil(() -> followers.stream().anyMatch(follower -> !isBrokerHealthy(follower)));
+  }
+
+  @Test
+  public void shouldReportUnhealthyWhenRaftInactive() {
+    // given
+    final int partition = START_PARTITION_ID;
+    final int leaderNodeId = clusteringRule.getLeaderForPartition(partition).getNodeId();
+    final Broker leader = clusteringRule.getBroker(leaderNodeId);
+    assertThat(isBrokerHealthy(leader)).isTrue();
+
+    // when
+    final RaftPartition raftPartition =
+        (RaftPartition)
+            leader
+                .getAtomix()
+                .getPartitionService()
+                .getPartitionGroup(GROUP_NAME)
+                .getPartition(PartitionId.from(GROUP_NAME, START_PARTITION_ID));
+    raftPartition.getServer().stop();
+
+    // then
+    waitUntil(() -> !isBrokerHealthy(leader));
   }
 
   private void corruptAllSnapshots(final Broker leader) {
