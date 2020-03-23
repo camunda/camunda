@@ -104,7 +104,7 @@ github.com/stretchr/testify/suite
 # github.com/testcontainers/testcontainers-go v0.3.1
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
-# golang.org/x/net v0.0.0-20200319234117-63522dbf7eec
+# golang.org/x/net v0.0.0-20200320220750-118fecf932d8
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
