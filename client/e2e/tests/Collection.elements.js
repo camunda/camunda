@@ -28,7 +28,7 @@ export const remove = element => element.find('.DropdownOption').withText('Remov
 export const userTab = Selector('.Collection .header .navigation a').withText('Users');
 export const alertTab = Selector('.Collection .header .navigation a').withText('Alerts');
 export const sourcesTab = Selector('.Collection .header .navigation a').withText('Data Sources');
-export const addButton = Selector('.Collection .content .header .Button');
+export const addButton = Selector('.Collection .content .header .Button.primary');
 export const optionsButton = Selector('.Typeahead .optionsButton');
 export const typeaheadInput = Selector('.Typeahead input');
 export const typeaheadOption = text => Selector('.Typeahead .DropdownOption').withText(text);

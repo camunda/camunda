@@ -34,6 +34,7 @@ import {ReactComponent as closeLarge} from './close-large.svg';
 import {ReactComponent as checkLarge} from './check-large.svg';
 import {ReactComponent as collection} from './collection.svg';
 import {ReactComponent as search} from './search.svg';
+import {ReactComponent as searchReset} from './search-reset.svg';
 import {ReactComponent as clear} from './clear.svg';
 import {ReactComponent as publish} from './publish.svg';
 import {ReactComponent as cancel} from './cancel.svg';
@@ -80,6 +81,7 @@ const icons = {
   'close-large': closeLarge,
   collection,
   search,
+  'search-reset': searchReset,
   clear,
   publish,
   cancel,

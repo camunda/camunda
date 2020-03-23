@@ -56,29 +56,6 @@
     > .action:not(:empty) {
       margin-left: 20px;
     }
-
-    .searchContainer {
-      margin-left: auto;
-      position: relative;
-      height: 100%;
-
-      .searchIcon {
-        position: absolute;
-        left: 10px;
-        top: 0;
-        bottom: 0;
-        margin: auto;
-        color: #6a727e;
-
-        svg {
-          vertical-align: top;
-        }
-      }
-
-      .searchInput {
-        padding: 6px 35px;
-      }
-    }
   }
 
   ul {

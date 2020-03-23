@@ -59,7 +59,7 @@ it('should show an empty message if no entities exist', () => {
 
 it('should filter results based on search input', () => {
   const node = shallow(<EntityList {...props} />);
-  node.find('.searchInput').simulate('change', {target: {value: 'adashboard'}});
+  node.find('SearchField').simulate('change', 'adashboard');
 
   expect(node.find('ListItem').length).toBe(1);
 });
@@ -67,7 +67,7 @@ it('should filter results based on search input', () => {
 it('should show no result found text when no matching entities were found', () => {
   const node = shallow(<EntityList {...props} />);
 
-  node.find('.searchInput').simulate('change', {target: {value: 'not found entity'}});
+  node.find('SearchField').simulate('change', 'not found entity');
 
   expect(node.find('.empty')).toIncludeText('No results found');
 });

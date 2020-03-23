@@ -9,8 +9,9 @@ import React, {useState} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Input} from 'components';
+import {LoadingIndicator} from 'components';
 
+import SearchField from './SearchField';
 import ListItem from './ListItem';
 
 import './EntityList.scss';
@@ -37,18 +38,7 @@ export default function EntityList({name, children, action, isLoading, data, emp
     >
       <div className="header">
         <h1>{name}</h1>
-        <div className="searchContainer">
-          <Icon className="searchIcon" type="search" />
-          <Input
-            required
-            type="text"
-            className="searchInput"
-            placeholder={t('home.search.name')}
-            value={searchQuery}
-            onChange={({target: {value}}) => setSearchQuery(value)}
-            onClear={() => setSearchQuery('')}
-          />
-        </div>
+        <SearchField value={searchQuery} onChange={setSearchQuery} />
         <div className="action">{action}</div>
       </div>
       <div className="content">

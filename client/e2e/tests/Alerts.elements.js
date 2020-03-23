@@ -8,7 +8,7 @@ import {Selector} from 'testcafe';
 
 export const list = Selector('.AlertList .content');
 export const listItem = Selector('.ListItem');
-export const newAlertButton = Selector('.AlertList .header .Button');
+export const newAlertButton = Selector('.AlertList .header .Button.primary');
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const modalDeleteButton = Selector('.Modal .Modal__actions .warning');
 export const inputWithLabel = label =>

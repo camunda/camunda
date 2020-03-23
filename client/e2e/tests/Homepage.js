@@ -145,6 +145,7 @@ test('complex Homepage actions', async t => {
   await t.takeElementScreenshot(e.entityList, 'homepage/home.png');
 
   // search
+  await t.click(e.searchButton);
   await t.typeText(e.searchField, 'sales', {replace: true});
   await t.expect(e.collectionItem.visible).ok();
   await t.expect(e.dashboardItem.visible).ok();
