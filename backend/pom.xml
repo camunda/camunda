@@ -269,6 +269,10 @@
           <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
         </exclusion>
+        <exclusion>
+          <artifactId>junit</artifactId>
+          <groupId>junit</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
   </dependencies>
@@ -332,6 +336,7 @@
             </goals>
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <includeScope>runtime</includeScope>
             </configuration>
           </execution>
         </executions>
