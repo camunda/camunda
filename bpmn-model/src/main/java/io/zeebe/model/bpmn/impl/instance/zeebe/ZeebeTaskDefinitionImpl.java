@@ -28,7 +28,7 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
     implements ZeebeTaskDefinition {
 
   protected static Attribute<String> typeAttribute;
-  protected static Attribute<Integer> retriesAttribute;
+  protected static Attribute<String> retriesAttribute;
 
   public ZeebeTaskDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -45,12 +45,12 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
   }
 
   @Override
-  public Integer getRetries() {
+  public String getRetries() {
     return retriesAttribute.getValue(this);
   }
 
   @Override
-  public void setRetries(final int retries) {
+  public void setRetries(final String retries) {
     retriesAttribute.setValue(this, retries);
   }
 
@@ -70,7 +70,7 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
 
     retriesAttribute =
         typeBuilder
-            .integerAttribute(ZeebeConstants.ATTRIBUTE_RETRIES)
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_RETRIES)
             .defaultValue(ZeebeTaskDefinition.DEFAULT_RETRIES)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();

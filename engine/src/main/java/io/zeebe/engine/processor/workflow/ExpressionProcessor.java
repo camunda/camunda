@@ -59,6 +59,25 @@ public final class ExpressionProcessor {
   }
 
   /**
+   * Evaluates the given expression and returns the result as long. If the evaluation fails or the
+   * result is not a number then an incident is raised.
+   *
+   * @param expression the expression to evaluate
+   * @param context the element context to load the variables from
+   * @return the evaluation result as long, or {@link Optional#empty()} if an incident is raised
+   */
+  public Optional<Long> evaluateLongExpression(
+      final Expression expression, final BpmnStepContext<?> context) {
+
+    final var evaluationResult = evaluateExpression(expression, context.getKey());
+    return failureCheck(evaluationResult, ErrorType.EXTRACT_VALUE_ERROR, context)
+        .flatMap(
+            result -> typeCheck(result, ResultType.NUMBER, ErrorType.EXTRACT_VALUE_ERROR, context))
+        .map(EvaluationResult::getNumber)
+        .map(Number::longValue);
+  }
+
+  /**
    * Evaluates the given expression and returns the result as boolean. If the evaluation fails or
    * the result is not a boolean then an incident is raised.
    *

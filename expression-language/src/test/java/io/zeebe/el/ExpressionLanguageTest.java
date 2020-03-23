@@ -10,6 +10,7 @@ package io.zeebe.el;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.el.impl.StaticExpression;
 import java.util.Map;
 import org.junit.Test;
 
@@ -21,13 +22,37 @@ public class ExpressionLanguageTest {
       ExpressionLanguageFactory.createExpressionLanguage();
 
   @Test
-  public void shouldParseStaticValue() {
+  public void shouldParseStaticStringValue() {
     final var expression = expressionLanguage.parseExpression("x");
 
     assertThat(expression).isNotNull();
     assertThat(expression.isStatic()).isTrue();
     assertThat(expression.isValid()).isTrue();
     assertThat(expression.getExpression()).isEqualTo("x");
+    assertThat(expression.getFailureMessage()).isNull();
+  }
+
+  @Test
+  public void shouldParseStaticIntegerNumberValue() {
+    // when
+    final var expression = expressionLanguage.parseExpression("3");
+
+    // then
+    assertThat(expression.isStatic()).isTrue();
+    assertThat(expression.isValid()).isTrue();
+    assertThat(expression.getExpression()).isEqualTo("3");
+    assertThat(expression.getFailureMessage()).isNull();
+  }
+
+  @Test
+  public void shouldParseStaticDoubleNumberValue() {
+    // when
+    final var expression = expressionLanguage.parseExpression("3.141");
+
+    // then
+    assertThat(expression.isStatic()).isTrue();
+    assertThat(expression.isValid()).isTrue();
+    assertThat(expression.getExpression()).isEqualTo("3.141");
     assertThat(expression.getFailureMessage()).isNull();
   }
 
@@ -65,7 +90,7 @@ public class ExpressionLanguageTest {
   }
 
   @Test
-  public void shouldEvaluateStaticValue() {
+  public void shouldEvaluateStaticStringValue() {
     final var expression = expressionLanguage.parseExpression("x");
     final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
 
@@ -75,6 +100,48 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getString()).isEqualTo("x");
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
     assertThat(evaluationResult.getFailureMessage()).isNull();
+  }
+
+  @Test
+  public void shouldEvaluateStaticIntegerNumberValue() {
+    final var expression = expressionLanguage.parseExpression("3");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult).isNotNull();
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.NUMBER);
+    assertThat(evaluationResult.getNumber().longValue()).isEqualTo(3);
+    assertThat(evaluationResult.getExpression()).isEqualTo("3");
+    assertThat(evaluationResult.getFailureMessage()).isNull();
+  }
+
+  @Test
+  public void shouldParseDoubleNumbers() {
+    final var expression = expressionLanguage.parseExpression("3.141");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult).isNotNull();
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.NUMBER);
+    assertThat(evaluationResult.getNumber().doubleValue()).isEqualTo(3.141);
+    assertThat(evaluationResult.getExpression()).isEqualTo("3.141");
+    assertThat(evaluationResult.getFailureMessage()).isNull();
+    // given
+    final StaticExpression sutStaticExpression = new StaticExpression("3.141");
+  }
+
+  @Test
+  public void shouldParseStrings() {
+    // given
+    final StaticExpression sutStaticExpression = new StaticExpression("lorem ipsum");
+
+    // then
+    assertThat(sutStaticExpression.isValid()).isTrue();
+    assertThat(sutStaticExpression.getType()).isEqualTo(ResultType.STRING);
+    assertThat(sutStaticExpression.getString()).isEqualTo("lorem ipsum");
+
+    assertThat(sutStaticExpression.getBoolean()).isNull();
+    assertThat(sutStaticExpression.getNumber()).isNull();
   }
 
   @Test

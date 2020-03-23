@@ -14,7 +14,7 @@ import org.agrona.DirectBuffer;
 public class ExecutableServiceTask extends ExecutableActivity {
 
   private Expression type;
-  private int retries;
+  private Expression retries;
   private DirectBuffer encodedHeaders = JobRecord.NO_HEADERS;
 
   public ExecutableServiceTask(final String id) {
@@ -29,11 +29,11 @@ public class ExecutableServiceTask extends ExecutableActivity {
     this.type = type;
   }
 
-  public int getRetries() {
+  public Expression getRetries() {
     return retries;
   }
 
-  public void setRetries(final int retries) {
+  public void setRetries(final Expression retries) {
     this.retries = retries;
   }
 

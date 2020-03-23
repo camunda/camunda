@@ -19,13 +19,13 @@ import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 public interface ZeebeTaskDefinition extends BpmnModelElementInstance {
 
-  int DEFAULT_RETRIES = 3;
+  String DEFAULT_RETRIES = "3";
 
   String getType();
 
   void setType(String type);
 
-  Integer getRetries();
+  String getRetries();
 
-  void setRetries(int retries);
+  void setRetries(String retries);
 }

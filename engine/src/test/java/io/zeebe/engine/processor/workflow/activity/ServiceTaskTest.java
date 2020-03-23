@@ -52,7 +52,7 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeJobTypeExpression("\"test\"").zeebeTaskRetries(5)))
+        .withXmlResource(workflow(t -> t.zeebeJobTypeExpression("\"test\"")))
         .deploy();
 
     // when
@@ -65,6 +65,26 @@ public final class ServiceTaskTest {
             .getFirst();
 
     Assertions.assertThat(job.getValue()).hasType("test");
+  }
+
+  @Test
+  public void shouldCreateJobFromServiceTaskWithJobRetriesExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeJobRetriesExpression("5+3")))
+        .deploy();
+
+    // when
+    final long workflowInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATE)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(job.getValue()).hasRetries(8);
   }
 
   @Test
@@ -105,7 +125,7 @@ public final class ServiceTaskTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeTaskRetries(5)))
+        .withXmlResource(workflow(t -> t.zeebeJobType("test").zeebeTaskRetries("5")))
         .deploy();
 
     // when
