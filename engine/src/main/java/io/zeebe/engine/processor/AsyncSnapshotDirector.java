@@ -94,8 +94,11 @@ public final class AsyncSnapshotDirector extends Actor {
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
 
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     actor.call(
         () ->
             actor.runOnCompletion(
@@ -119,8 +122,8 @@ public final class AsyncSnapshotDirector extends Actor {
                                       } else {
                                         LOG.error(
                                             "Unexpected error on retrieving commit position", ex2);
-                                        future.completeExceptionally(errorOnRetrieveCommitPos);
                                         super.closeAsync();
+                                        future.completeExceptionally(errorOnRetrieveCommitPos);
                                       }
                                     });
 
