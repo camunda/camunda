@@ -24,7 +24,7 @@ import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
 
-import {formatLink, formatType, formatSubEntities, formatUserCount} from './formatters';
+import {formatLink, formatType, formatSubEntities} from './formatters';
 
 import './Collection.scss';
 
@@ -148,6 +148,7 @@ export default withErrorHandling(
                 }
                 empty={t('home.empty')}
                 isLoading={!entities}
+                columns={[t('common.name'), t('home.contents'), t('common.entity.modified')]}
                 data={
                   entities &&
                   entities.map(entity => {
@@ -191,8 +192,7 @@ export default withErrorHandling(
                       name,
                       meta: [
                         formatSubEntities(data.subEntityCounts),
-                        moment(lastModified).format('YYYY-MM-DD HH:mm'),
-                        formatUserCount(data.roleCounts)
+                        moment(lastModified).format('YYYY-MM-DD HH:mm')
                       ],
                       actions
                     };

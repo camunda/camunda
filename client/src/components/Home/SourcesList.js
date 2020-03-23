@@ -117,6 +117,7 @@ export default withErrorHandling(
             }
             empty={t('home.sources.notCreated')}
             isLoading={!sources}
+            columns={[t('home.sources.definitionName'), t('common.tenant.label-plural')]}
             data={
               sources &&
               sources.map(source => {

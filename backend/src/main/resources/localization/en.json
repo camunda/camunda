@@ -52,6 +52,8 @@
       }
     },
     "title": "Collections, Dashboards, and Reports",
+    "contents": "Contents",
+    "members": "Members",
     "search": {
       "name": "Filter for name..."
     },
@@ -77,6 +79,7 @@
     "roles": {
       "addUserTitle": "Add User or User Group",
       "userRole": "User role",
+      "role": "Role",
       "viewer": "Viewer",
       "viewer-description": "Read-only access to all objects",
       "editor": "Editor",
@@ -95,6 +98,7 @@
       "process": "Process",
       "notCreated": "There are no sources added yet",
       "add": "Add Source",
+      "definitionName": "Definition Name",
       "deleteWarning": "The '{name}' Data Source will be removed from the Collection.",
       "saveConflict": {
         "header": "These changes are incompatible with the Report(s):",
@@ -121,6 +125,7 @@
     "publish": "Publish",
     "publishStart": "Publishing Process. This may take some time.",
     "publishSuccess": "{name} has been published.",
+    "stateColumn": "State",
     "table": {
       "group": "Group",
       "mapping": "Mapped as…",
@@ -420,6 +425,7 @@
     "createNew": "Create New Alert",
     "newAlert": "New Alert",
     "edit": "Edit Alert",
+    "recipient": "Recipient",
     "description": "\"{name}\" has a value {aboveOrBelow} {thresholdValue}",
     "emailWarning": "The email notification service is not configured. Optimize won't be able to inform you about critical values. Please check out the <a href='{docsLink}'>Optimize documentation</a> on how to enable the notification service.",
     "form": {
@@ -515,6 +521,7 @@
     "change": "Change",
     "copyName": "Copy {name}",
     "copyLabel": "copy",
+    "description": "Description",
     "saving": "Saving...",
     "creating": "Creating...",
     "select": "Select...",

@@ -114,6 +114,7 @@ export default withErrorHandling(
             }
             empty={t('alert.notCreated')}
             isLoading={isLoading}
+            columns={[t('common.name'), t('alert.recipient'), t('common.description')]}
             data={
               !isLoading &&
               this.state.alerts.map(alert => {

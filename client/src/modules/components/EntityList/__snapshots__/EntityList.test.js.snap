@@ -8,19 +8,23 @@ exports[`should match snapshot 1`] = `
   <div
     className="header"
   >
-    <h1>
-      EntityList Name
-    </h1>
-    <SearchField
-      onChange={[Function]}
-      value=""
-    />
     <div
-      className="action"
+      className="titleBar"
     >
-      <button>
-        Click Me
-      </button>
+      <h1>
+        EntityList Name
+      </h1>
+      <SearchField
+        onChange={[Function]}
+        value=""
+      />
+      <div
+        className="action"
+      >
+        <button>
+          Click Me
+        </button>
+      </div>
     </div>
   </div>
   <div
@@ -90,6 +94,41 @@ exports[`should match snapshot 1`] = `
     <div>
       Some additional Content
     </div>
+  </div>
+</div>
+`;
+
+exports[`should show a column header if specified 1`] = `
+<div
+  className="columnHeaders"
+>
+  <div
+    className="name"
+    key="0"
+    title="Name"
+  >
+    Name
+  </div>
+  <div
+    className="meta"
+    key="1"
+    title="Meta 1"
+  >
+    Meta 1
+  </div>
+  <div
+    className="meta"
+    key="2"
+    title="Meta 2"
+  >
+    Meta 2
+  </div>
+  <div
+    className="meta"
+    key="3"
+    title="Meta 3"
+  >
+    Meta 3
   </div>
 </div>
 `;

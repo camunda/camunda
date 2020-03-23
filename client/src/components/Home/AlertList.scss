@@ -1,7 +1,7 @@
 .AlertList {
   height: 100%;
 
-  .meta ~ .meta {
+  .EntityList .meta ~ .meta {
     flex: 0 0 300px;
   }
 }

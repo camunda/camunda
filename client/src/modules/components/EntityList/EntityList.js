@@ -16,7 +16,16 @@ import ListItem from './ListItem';
 
 import './EntityList.scss';
 
-export default function EntityList({name, children, action, isLoading, data, empty, embedded}) {
+export default function EntityList({
+  name,
+  children,
+  action,
+  isLoading,
+  data,
+  empty,
+  embedded,
+  columns
+}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
 
@@ -37,9 +46,20 @@ export default function EntityList({name, children, action, isLoading, data, emp
       onScroll={evt => setScrolled(evt.target.scrollTop > 0)}
     >
       <div className="header">
-        <h1>{name}</h1>
-        <SearchField value={searchQuery} onChange={setSearchQuery} />
-        <div className="action">{action}</div>
+        <div className="titleBar">
+          <h1>{name}</h1>
+          <SearchField value={searchQuery} onChange={setSearchQuery} />
+          <div className="action">{action}</div>
+        </div>
+        {columns && hasResults && (
+          <div className="columnHeaders">
+            {columns.map((title, idx) => (
+              <div className={idx === 0 ? 'name' : 'meta'} key={idx} title={title}>
+                {title}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="content">
         {isLoading && <LoadingIndicator />}

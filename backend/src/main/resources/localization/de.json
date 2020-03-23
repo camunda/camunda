@@ -52,6 +52,8 @@
       }
     },
     "title": "Sammlungen, Dashboards, und Berichte",
+    "contents": "Inhalt",
+    "members": "Mitglieder",
     "search": {
       "name": "Nach Namen filtern ..."
     },
@@ -77,6 +79,7 @@
     "roles": {
       "addUserTitle": "Benutzer oder Benutzergruppe hinzufügen",
       "userRole": "Benutzer-Rolle",
+      "role": "Rolle",
       "viewer": "Betrachter",
       "viewer-description": "Nur lesender Zugriff auf alle Objekte",
       "editor": "Editor",
@@ -95,6 +98,7 @@
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
       "add": "Quelle hinzufügen",
+      "definitionName": "Definitionsname",
       "deleteWarning": "Die '{name}' Datenquelle wird von der Sammlung entfernt.",
       "saveConflict": {
         "header": "Die Änderungen sind nicht kompatibel mit diesen Berichten:",
@@ -121,6 +125,7 @@
     "publish": "Veröffentlichen",
     "publishStart": "Veröffentliche Prozess. Das kann eine Weile dauern.",
     "publishSuccess": "{name} wurde veröffentlicht.",
+    "stateColumn": "Status",
     "table": {
       "group": "Gruppe",
       "mapping": "Zugeordnet als…",
@@ -420,6 +425,7 @@
     "createNew": "Neuen Alarm erstellen",
     "newAlert": "Neuer Alarm",
     "edit": "Alarm bearbeiten",
+    "recipient": "Empfänger",
     "description": "\"{name}\" hat einen Wert {aboveOrBelow} {thresholdValue}",
     "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'>Optimize Dokumentation</a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
     "form": {
@@ -515,6 +521,7 @@
     "change": "Ändern",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
+    "description": "Beschreibung",
     "saving": "Speichern ... ",
     "creating": "Erstellen ...",
     "select": "Auswählen ...",

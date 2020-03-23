@@ -122,6 +122,7 @@ export default withErrorHandling(
                 <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
               </Dropdown>
             }
+            columns={[t('common.name'), t('common.entity.modified'), t('events.stateColumn')]}
             data={
               processes &&
               processes.map(process => {

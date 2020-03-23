@@ -79,3 +79,9 @@ it('should pass a hasWarning prop to all ListEntries if one of them has a warnin
 
   node.find('ListItem').forEach(node => expect(node.prop('hasWarning')).toBe(true));
 });
+
+it('should show a column header if specified', () => {
+  const node = shallow(<EntityList {...props} columns={['Name', 'Meta 1', 'Meta 2', 'Meta 3']} />);
+
+  expect(node.find('.columnHeaders')).toMatchSnapshot();
+});

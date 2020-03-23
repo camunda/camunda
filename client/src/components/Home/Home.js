@@ -92,6 +92,12 @@ export class Home extends React.Component {
             action={<CreateNewButton createCollection={this.startCreatingCollection} />}
             empty={t('home.empty')}
             isLoading={!entities}
+            columns={[
+              t('common.name'),
+              t('home.contents'),
+              t('common.entity.modified'),
+              t('home.members')
+            ]}
             data={
               entities &&
               entities.map(entity => {

@@ -82,6 +82,7 @@ export default withErrorHandling(
             }
             empty={t('common.notFound')}
             isLoading={!users}
+            columns={[t('common.name'), t('home.members'), t('home.roles.role')]}
             data={
               users &&
               users.map(user => {
