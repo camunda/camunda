@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 final class FileSnapshotConsumer implements SnapshotConsumer {
@@ -29,7 +28,12 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
 
   @Override
   public boolean consumeSnapshotChunk(final SnapshotChunk chunk) {
-    return writeChunkToDisk(chunk, storage);
+    try {
+      return writeChunkToDisk(chunk, storage);
+    } catch (final IOException e) {
+      logger.error("Failed to write snapshot chunk {} to disk", chunk, e);
+      return false;
+    }
   }
 
   @Override
@@ -48,12 +52,12 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
         FileUtil.deleteFolder(pendingDirectory);
       }
     } catch (final IOException e) {
-      logger.debug("Could not delete temporary snapshot directory {}", pendingDirectory, e);
+      logger.error("Could not delete temporary snapshot directory {}", pendingDirectory, e);
     }
   }
 
-  private boolean writeChunkToDisk(
-      final SnapshotChunk snapshotChunk, final SnapshotStorage storage) {
+  private boolean writeChunkToDisk(final SnapshotChunk snapshotChunk, final SnapshotStorage storage)
+      throws IOException {
     final String snapshotId = snapshotChunk.getSnapshotId();
     final String chunkName = snapshotChunk.getChunkName();
 
@@ -83,12 +87,12 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
     }
 
     final var tmpSnapshotDirectory = optionalPath.get();
-    IoUtil.ensureDirectoryExists(tmpSnapshotDirectory.toFile(), "Temporary snapshot directory");
+    FileUtil.ensureDirectoryExists(tmpSnapshotDirectory);
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
     if (Files.exists(snapshotFile)) {
       logger.debug("Received a snapshot chunk which already exist '{}'.", snapshotFile);
-      return false;
+      return true;
     }
 
     logger.debug("Consume snapshot chunk {} of snapshot {}", chunkName, snapshotId);
@@ -96,15 +100,9 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
   }
 
   private boolean writeReceivedSnapshotChunk(
-      final SnapshotChunk snapshotChunk, final Path snapshotFile) {
-    try {
-      Files.write(snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
-      logger.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
-      return true;
-    } catch (final IOException ioe) {
-      logger.error(
-          "Unexpected error occurred on writing snapshot chunk to '{}'.", snapshotFile, ioe);
-      return false;
-    }
+      final SnapshotChunk snapshotChunk, final Path snapshotFile) throws IOException {
+    Files.write(snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
+    logger.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
+    return true;
   }
 }
