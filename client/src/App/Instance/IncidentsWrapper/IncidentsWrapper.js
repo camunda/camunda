@@ -26,7 +26,8 @@ function IncidentsWrapper(props) {
     errorTypes,
     flowNodes,
     selectedFlowNodeInstanceIds,
-    onIncidentSelection
+    onIncidentSelection,
+    expandState
   } = props;
 
   const [isOpen, setIsOpen] = useState(false);
@@ -136,6 +137,7 @@ function IncidentsWrapper(props) {
         count={incidentsCount}
         onClick={handleToggle}
         isOpen={isOpen}
+        expandState={expandState}
       />
       <Styled.Transition
         in={isOpen}
@@ -184,7 +186,8 @@ IncidentsWrapper.propTypes = {
   selectedFlowNodeInstanceIds: PropTypes.array,
   onIncidentSelection: PropTypes.func.isRequired,
   flowNodes: PropTypes.object,
-  errorTypes: PropTypes.object
+  errorTypes: PropTypes.object,
+  expandState: PropTypes.string.isRequired
 };
 
 export default IncidentsWrapper;

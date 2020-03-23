@@ -5,6 +5,7 @@
  */
 
 import {createIncident, createInstance} from 'modules/testUtils';
+import {EXPAND_STATE} from 'modules/constants';
 
 const incidents = [
   createIncident({
@@ -49,7 +50,8 @@ const defaultProps = {
   onIncidentOperation: jest.fn(),
   onIncidentSelection: jest.fn(),
   errorTypes: new Map(Object.entries(errorTypes)),
-  flowNodes: new Map(Object.entries(flowNodes))
+  flowNodes: new Map(Object.entries(flowNodes)),
+  expandState: EXPAND_STATE.DEFAULT
 };
 
 const incidentResolvedProps = {
