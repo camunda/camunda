@@ -25,6 +25,8 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import org.agrona.CloseHelper;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,6 +69,12 @@ public final class StreamProcessorInconsistentPositionTest {
         new StreamProcessingComposite(testStreams, 1, DEFAULT_DB_FACTORY);
     secondStreamProcessorComposite =
         new StreamProcessingComposite(testStreams, 2, DEFAULT_DB_FACTORY);
+  }
+
+  @After
+  public void tearDown() {
+    // we expect that AsyncSnapshotDirector can't be closed without problems
+    CloseHelper.quietClose(() -> testStreams.closeProcessor(getLogName(1)));
   }
 
   @Test
