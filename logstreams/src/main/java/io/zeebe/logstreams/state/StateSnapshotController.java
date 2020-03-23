@@ -18,7 +18,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -47,17 +47,16 @@ public class StateSnapshotController implements SnapshotController {
   }
 
   @Override
-  public Snapshot takeSnapshot(final long lowerBoundSnapshotPosition) {
-    final var snapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
-    createSnapshot(snapshot.getPath());
-    return storage.commitSnapshot(snapshot).orElseThrow();
+  public Optional<Snapshot> takeSnapshot(final long lowerBoundSnapshotPosition) {
+    final var optionalSnapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
+    return optionalSnapshot.flatMap(this::createCommittedSnapshot);
   }
 
   @Override
-  public Snapshot takeTempSnapshot(final long lowerBoundSnapshotPosition) {
-    final var snapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
-    createSnapshot(snapshot.getPath());
-    return snapshot;
+  public Optional<Snapshot> takeTempSnapshot(final long lowerBoundSnapshotPosition) {
+    final var optionalSnapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
+    optionalSnapshot.ifPresent(this::createSnapshot);
+    return optionalSnapshot;
   }
 
   @Override
@@ -172,14 +171,34 @@ public class StateSnapshotController implements SnapshotController {
     return db != null;
   }
 
-  private void createSnapshot(final Path snapshotDir) {
+  private Optional<? extends Snapshot> createCommittedSnapshot(final Snapshot snapshot) {
+    if (!createSnapshot(snapshot)) {
+      return Optional.empty();
+    }
+
+    return storage.commitSnapshot(snapshot);
+  }
+
+  private boolean createSnapshot(final Snapshot snapshot) {
+    final var snapshotDir = snapshot.getPath();
     final var start = System.currentTimeMillis();
 
-    Objects.requireNonNull(db, "Cannot take snapshot of closed database");
-    LOG.debug("Take temporary snapshot and write into {}.", snapshotDir);
-    db.createSnapshot(snapshotDir.toFile());
+    if (db == null) {
+      LOG.error("Expected to take a snapshot, but no database was opened");
+      return false;
+    }
+
+    LOG.debug("Taking temporary snapshot into {}.", snapshotDir);
+    try {
+      db.createSnapshot(snapshotDir.toFile());
+    } catch (final Exception e) {
+      LOG.error("Failed to create snapshot of runtime database", e);
+      return false;
+    }
 
     final var elapsedSeconds = System.currentTimeMillis() - start;
     storage.getMetrics().observeSnapshotOperation(elapsedSeconds);
+
+    return true;
   }
 }

@@ -64,8 +64,8 @@ public final class AtomixSnapshotStorageTest {
     when(entrySupplier.getIndexedEntry(2)).thenReturn(Optional.of(newEntry(2)));
 
     // when
-    final var first = storage.getPendingSnapshotFor(1);
-    final var second = storage.getPendingSnapshotFor(2);
+    final var first = storage.getPendingSnapshotFor(1).orElseThrow();
+    final var second = storage.getPendingSnapshotFor(2).orElseThrow();
 
     // then
     assertThat(first.getPath()).doesNotExist();
@@ -85,7 +85,7 @@ public final class AtomixSnapshotStorageTest {
     final var snapshot = storage.getPendingSnapshotFor(1);
 
     // then
-    assertThat(snapshot).isNull();
+    assertThat(snapshot).isEmpty();
   }
 
   @Test
@@ -95,7 +95,7 @@ public final class AtomixSnapshotStorageTest {
     final var storage = newStorage();
 
     // when
-    final var directory = storage.getPendingDirectoryFor(id);
+    final var directory = storage.getPendingDirectoryFor(id).orElseThrow();
 
     // then
     assertThat(directory).doesNotExist();
@@ -104,7 +104,7 @@ public final class AtomixSnapshotStorageTest {
   }
 
   @Test
-  public void shouldReturnNullIfIdIsNotMetadata() {
+  public void shouldReturnEmptyIfIdIsNotMetadata() {
     // given
     final var id = "foo";
     final var storage = newStorage();
@@ -113,7 +113,7 @@ public final class AtomixSnapshotStorageTest {
     final var directory = storage.getPendingDirectoryFor(id);
 
     // then
-    assertThat(directory).isNull();
+    assertThat(directory).isEmpty();
   }
 
   @Test
@@ -168,7 +168,7 @@ public final class AtomixSnapshotStorageTest {
 
   private Snapshot newPendingSnapshot(final long position) {
     when(entrySupplier.getIndexedEntry(position)).thenReturn(Optional.of(newEntry(position)));
-    return snapshotStorage.getPendingSnapshotFor(position);
+    return snapshotStorage.getPendingSnapshotFor(position).orElseThrow();
   }
 
   private Snapshot newCommittedSnapshot(final long position) throws IOException {

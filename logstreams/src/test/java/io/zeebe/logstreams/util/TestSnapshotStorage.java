@@ -59,14 +59,15 @@ public final class TestSnapshotStorage implements SnapshotStorage {
   }
 
   @Override
-  public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
-    return new SnapshotImpl(
-        getPendingDirectoryFor(snapshotPosition + "_" + System.currentTimeMillis()));
+  public Optional<Snapshot> getPendingSnapshotFor(final long snapshotPosition) {
+    final var pendingDirectory =
+        getPendingDirectoryFor(snapshotPosition + "_" + System.currentTimeMillis());
+    return pendingDirectory.map(SnapshotImpl::new);
   }
 
   @Override
-  public Path getPendingDirectoryFor(final String id) {
-    return pendingDirectory.resolve(id);
+  public Optional<Path> getPendingDirectoryFor(final String id) {
+    return Optional.of(pendingDirectory.resolve(id));
   }
 
   @Override
@@ -163,15 +164,10 @@ public final class TestSnapshotStorage implements SnapshotStorage {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final SnapshotImpl snapshot = (SnapshotImpl) o;
-      return path.equals(snapshot.path);
+    public int compareTo(final Snapshot other) {
+      return Comparator.comparing(Snapshot::getCompactionBound)
+          .thenComparing(Snapshot::getPath)
+          .compare(this, other);
     }
 
     @Override
@@ -180,10 +176,15 @@ public final class TestSnapshotStorage implements SnapshotStorage {
     }
 
     @Override
-    public int compareTo(Snapshot other) {
-      return Comparator.comparing(Snapshot::getCompactionBound)
-          .thenComparing(Snapshot::getPath)
-          .compare(this, other);
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final SnapshotImpl snapshot = (SnapshotImpl) o;
+      return path.equals(snapshot.path);
     }
 
     @Override

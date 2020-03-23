@@ -9,6 +9,8 @@ package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
+import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;
@@ -52,35 +54,15 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
   }
 
   @Override
-  public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
+  public Optional<Snapshot> getPendingSnapshotFor(final long snapshotPosition) {
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
-
-    if (optionalIndexed.isPresent()) {
-      final var indexed = optionalIndexed.get();
-      final var pending =
-          store.newPendingSnapshot(
-              indexed.index(),
-              indexed.entry().term(),
-              WallClockTimestamp.from(System.currentTimeMillis()));
-      return new SnapshotImpl(indexed.index(), pending.getPath());
-    } else {
-      LOGGER.debug(
-          "No previous entry found for position {}, cannot take snapshot", snapshotPosition);
-    }
-
-    return null;
+    return optionalIndexed.map(this::getSnapshot);
   }
 
   @Override
-  public Path getPendingDirectoryFor(final String id) {
+  public Optional<Path> getPendingDirectoryFor(final String id) {
     final var optionalMeta = DbSnapshotMetadata.ofFileName(id);
-    if (optionalMeta.isPresent()) {
-      final var metadata = optionalMeta.get();
-      return getPendingDirectoryFor(
-          metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp());
-    }
-
-    return null;
+    return optionalMeta.map(this::getPendingDirectoryFor);
   }
 
   @Override
@@ -170,6 +152,10 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     }
   }
 
+  private Path getPendingDirectoryFor(final DbSnapshotMetadata metadata) {
+    return getPendingDirectoryFor(metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp());
+  }
+
   private Path getPendingDirectoryFor(
       final long index, final long term, final WallClockTimestamp timestamp) {
     return store.newPendingSnapshot(index, term, timestamp).getPath();
@@ -188,6 +174,15 @@ public final class AtomixSnapshotStorage implements SnapshotStorage, SnapshotLis
     }
 
     metrics.setSnapshotCount(snapshots.size());
+  }
+
+  private Snapshot getSnapshot(final Indexed<ZeebeEntry> indexed) {
+    final var pending =
+        store.newPendingSnapshot(
+            indexed.index(),
+            indexed.entry().term(),
+            WallClockTimestamp.from(System.currentTimeMillis()));
+    return new SnapshotImpl(indexed.index(), pending.getPath());
   }
 
   private void observeSnapshotSize(
