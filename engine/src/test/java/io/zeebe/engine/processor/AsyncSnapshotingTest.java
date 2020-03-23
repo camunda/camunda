@@ -15,6 +15,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.db.impl.DefaultColumnFamily;
@@ -252,6 +254,7 @@ public final class AsyncSnapshotingTest {
                 new RuntimeException("getLastWrittenPositionAsync fails")));
     setCommitPosition(commitPosition);
     clock.addTime(Duration.ofMinutes(1));
+    verify(mockStreamProcessor, timeout(5000).times(1)).getLastWrittenPositionAsync();
 
     // when
     when(mockStreamProcessor.getLastWrittenPositionAsync())
@@ -301,6 +304,7 @@ public final class AsyncSnapshotingTest {
         .thenReturn(CompletableActorFuture.completed(lastWrittenPosition));
     setCommitPosition(commitPosition);
     clock.addTime(Duration.ofMinutes(1));
+    verify(mockStreamProcessor, timeout(5000).times(1)).getLastProcessedPositionAsync();
 
     // when
     when(mockStreamProcessor.getLastProcessedPositionAsync())
@@ -351,8 +355,10 @@ public final class AsyncSnapshotingTest {
             CompletableActorFuture.completedExceptionally(
                 new RuntimeException("getCommitPositionAsync fails")));
     clock.addTime(Duration.ofMinutes(1));
+    verify(logStream, timeout(5000).times(1)).getCommitPositionAsync();
 
     // when
+
     setCommitPosition(100L);
     clock.addTime(Duration.ofMinutes(1));
 

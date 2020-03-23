@@ -47,6 +47,7 @@ import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
 import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitor;
@@ -57,6 +58,8 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -326,7 +329,7 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> basePartitionInstallation() {
-    final ActorFuture installFuture = new CompletableActorFuture();
+    final ActorFuture<Void> installFuture = new CompletableActorFuture<>();
     openLogStream()
         .onComplete(
             (log, error) -> {
@@ -356,7 +359,16 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> installStorageServices() {
-    snapshotStorage = createSnapshotStorage();
+    final var pendingDirectory =
+        atomixRaftPartition.dataDirectory().toPath().resolve("pushed-pending");
+    try {
+      FileUtil.ensureDirectoryExists(pendingDirectory);
+    } catch (final IOException e) {
+      LOG.error("Failed to created snapshot storage pending directory {}", pendingDirectory, e);
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+
+    snapshotStorage = createSnapshotStorage(pendingDirectory);
     snapshotController = createSnapshotController();
 
     final LogCompactor logCompactor = new AtomixLogCompactor(atomixRaftPartition.getServer());
@@ -377,13 +389,18 @@ public final class ZeebePartition extends Actor
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, snapshotStorage, stateReplication);
   }
 
-  private SnapshotStorage createSnapshotStorage() {
+  // sonar warns that we should use AtomixRecordEntrySupplierImpl in a try-with-resources, which is
+  // not applicable here; it is safe to ignore as we will close the object once we close the storage
+  @SuppressWarnings("squid:S2095")
+  private SnapshotStorage createSnapshotStorage(final Path pendingDirectory) {
     final var reader =
         new AtomixLogStorageReader(
             zeebeIndexMapping, atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS));
     final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
+
     return new AtomixSnapshotStorage(
         runtimeDirectory,
+        pendingDirectory,
         atomixRaftPartition.getServer().getSnapshotStore(),
         new AtomixRecordEntrySupplierImpl(reader),
         new SnapshotMetrics(partitionId));

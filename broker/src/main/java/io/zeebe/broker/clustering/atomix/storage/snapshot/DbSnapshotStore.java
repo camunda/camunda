@@ -60,7 +60,7 @@ public final class DbSnapshotStore implements SnapshotStore {
 
   /**
    * Returns the newest snapshot for the given index, meaning the snapshot with the given index with
-   * the highest position.
+   * the highest timestamp.
    *
    * @param index index of the snapshot
    * @return a snapshot, or null if there are no known snapshots for this index
@@ -68,7 +68,7 @@ public final class DbSnapshotStore implements SnapshotStore {
   @Override
   public Snapshot getSnapshot(final long index) {
     // it's possible (though unlikely) to have more than one snapshot per index, so we fallback to
-    // the one with the highest position
+    // the one with the highest timestamp
     final var indexBoundedSet =
         snapshots.subMap(lowerBoundId.setIndex(index), false, upperBoundId.setIndex(index), false);
     if (indexBoundedSet.isEmpty()) {
@@ -144,11 +144,12 @@ public final class DbSnapshotStore implements SnapshotStore {
 
     final DbSnapshot dbSnapshot = (DbSnapshot) snapshot;
     snapshots.headMap(dbSnapshot.getMetadata(), false).values().forEach(this::remove);
+  }
 
-    try {
-      cleanUpTemporarySnapshots(dbSnapshot.getMetadata());
-    } catch (final IOException e) {
-      LOGGER.error("Failed to remove orphaned temporary snapshot older than {}", dbSnapshot, e);
+  @Override
+  public void purgePendingSnapshots() throws IOException {
+    try (final var files = Files.list(pendingDirectory)) {
+      files.filter(Files::isDirectory).forEach(this::purgePendingSnapshot);
     }
   }
 
@@ -170,6 +171,15 @@ public final class DbSnapshotStore implements SnapshotStore {
   @Override
   public void removeListener(final SnapshotListener listener) {
     listeners.remove(listener);
+  }
+
+  private void purgePendingSnapshot(final Path pendingSnapshot) {
+    try {
+      FileUtil.deleteFolder(pendingSnapshot);
+      LOGGER.debug("Delete not completed (orphaned) snapshot {}", pendingSnapshot);
+    } catch (final IOException e) {
+      LOGGER.error("Failed to delete not completed (orphaned) snapshot {}", pendingSnapshot);
+    }
   }
 
   private DbSnapshot put(final DbSnapshot snapshot) {
@@ -226,33 +236,14 @@ public final class DbSnapshotStore implements SnapshotStore {
     LOGGER.trace("Snapshots count: {}", snapshots.size());
   }
 
-  private void cleanUpTemporarySnapshots(final DbSnapshotId cutoffId) throws IOException {
-    LOGGER.debug("Search for orphaned snapshots below oldest valid snapshot {}", cutoffId);
-
-    try (final var files = Files.newDirectoryStream(pendingDirectory)) {
-      for (final var file : files) {
-        final var name = file.getFileName().toString();
-        final var parts = name.split("-", 3);
-        final var index = Long.parseLong(parts[0]);
-        if (cutoffId.getIndex() > index) {
-          FileUtil.deleteFolder(file);
-          LOGGER.debug("Delete not completed (orphaned) snapshot {}", file);
-        }
-      }
-    }
-  }
-
   private Path buildPendingSnapshotDirectory(
       final long index, final long term, final WallClockTimestamp timestamp) {
-    final var name = String.format("%d-%d-%d", index, term, timestamp.unixTimestamp());
-    return pendingDirectory.resolve(name);
+    final var metadata = new DbSnapshotMetadata(index, term, timestamp);
+    return pendingDirectory.resolve(metadata.getFileName());
   }
 
   private Path buildSnapshotDirectory(final DbSnapshotMetadata metadata) {
-    return snapshotsDirectory.resolve(
-        String.format(
-            "%d-%d-%d",
-            metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp().unixTimestamp()));
+    return snapshotsDirectory.resolve(metadata.getFileName());
   }
 
   private static final class ReusableSnapshotId implements DbSnapshotId {

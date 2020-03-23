@@ -25,8 +25,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.agrona.IoUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,10 +46,12 @@ public final class AtomixSnapshotStorageTest {
   @Before
   public void setUp() throws Exception {
     final var snapshotsDirectory = temporaryFolder.newFolder("snapshots").toPath();
-    pendingDirectory = temporaryFolder.newFolder("pending").toPath();
+    final var raftPendingDirectory = temporaryFolder.getRoot().toPath().resolve("pending");
+    pendingDirectory = temporaryFolder.newFolder("pushed-pending").toPath();
     entrySupplier = mock(AtomixRecordEntrySupplier.class);
     store =
-        new DbSnapshotStore(snapshotsDirectory, pendingDirectory, new ConcurrentSkipListMap<>());
+        new DbSnapshotStore(
+            snapshotsDirectory, raftPendingDirectory, new ConcurrentSkipListMap<>());
   }
 
   @After
@@ -101,6 +105,46 @@ public final class AtomixSnapshotStorageTest {
     assertThat(directory).doesNotExist();
     assertThat(directory.getParent()).isEqualTo(pendingDirectory);
     assertThat(directory.getFileName().toString()).isEqualTo(id);
+  }
+
+  @Test
+  public void shouldDeleteOrphanedPendingSnapshotsOnNewSnapshot() {
+    // given
+    final var storage = newStorage();
+    final var toDelete = pendingDirectory.resolve("1-1-1");
+    final var snapshotDirectory = pendingDirectory.resolve("2-2-2");
+    final var toKeep = pendingDirectory.resolve("3-3-3");
+    IoUtil.ensureDirectoryExists(toDelete.toFile(), "to delete directory");
+    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "snapshot directory");
+    IoUtil.ensureDirectoryExists(toKeep.toFile(), "to keep directory");
+
+    // when
+    storage.commitSnapshot(snapshotDirectory);
+
+    // then
+    assertThat(toDelete).doesNotExist();
+    assertThat(toKeep).exists();
+  }
+
+  @Test
+  public void shouldDeleteOrphanedPendingSnapshotsEvenIfOneIsNotASnapshot() {
+    // given
+    final var storage = newStorage();
+    // given
+    final var orphanedSnapshots =
+        List.of(pendingDirectory.resolve("1-1-1"), pendingDirectory.resolve("2-2-2"));
+    final var snapshotDirectory = pendingDirectory.resolve("3-3-3");
+    final var evilFolder = pendingDirectory.resolve("not a snapshot");
+    orphanedSnapshots.forEach(p -> IoUtil.ensureDirectoryExists(p.toFile(), ""));
+    IoUtil.ensureDirectoryExists(evilFolder.toFile(), "not a snapshot folder");
+    IoUtil.ensureDirectoryExists(snapshotDirectory.toFile(), "to keep directory");
+
+    // when
+    storage.commitSnapshot(snapshotDirectory);
+
+    // then
+    orphanedSnapshots.forEach(s -> assertThat(s).doesNotExist());
+    assertThat(evilFolder).exists();
   }
 
   @Test
@@ -176,13 +220,14 @@ public final class AtomixSnapshotStorageTest {
     Files.createDirectories(snapshot.getPath());
     snapshotStorage.commitSnapshot(snapshot.getPath());
 
-    return snapshotStorage.getLatestSnapshot().get();
+    return snapshotStorage.getLatestSnapshot().orElseThrow();
   }
 
   private AtomixSnapshotStorage newStorage() {
     final var runtimeDirectory = temporaryFolder.getRoot().toPath().resolve("runtime");
     snapshotStorage =
-        new AtomixSnapshotStorage(runtimeDirectory, store, entrySupplier, new SnapshotMetrics(0));
+        new AtomixSnapshotStorage(
+            runtimeDirectory, pendingDirectory, store, entrySupplier, new SnapshotMetrics(0));
     return snapshotStorage;
   }
 

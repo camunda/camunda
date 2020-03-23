@@ -61,14 +61,17 @@ public final class AtomixLogDeletionServiceTest {
   private Compactor compactor;
 
   @Before
-  public void setUp() {
+  public void setUp() throws IOException {
+    final var runtimeDirectory = temporaryFolder.newFolder().toPath();
+    final var pendingDirectory = temporaryFolder.newFolder().toPath();
     storageReader =
         new AtomixLogStorageReader(
             ZeebeIndexAdapter.ofDensity(5),
             logStorageRule.getRaftLog().openReader(-1, Mode.COMMITS));
     snapshotStorage =
         new AtomixSnapshotStorage(
-            null,
+            runtimeDirectory,
+            pendingDirectory,
             logStorageRule.getSnapshotStore(),
             new AtomixRecordEntrySupplierImpl(storageReader),
             new SnapshotMetrics(PARTITION_ID));
