@@ -92,7 +92,7 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
     if (Files.exists(snapshotFile)) {
       logger.debug("Received a snapshot chunk which already exist '{}'.", snapshotFile);
-      return true;
+      return false;
     }
 
     logger.debug("Consume snapshot chunk {} of snapshot {}", chunkName, snapshotId);
