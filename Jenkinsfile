@@ -168,9 +168,7 @@ pipeline {
         }
         stage('Deploy - Docker Image') {
           when {
-            not {
-                expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
-            }
+            expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
           }
           environment {
             IMAGE_TAG = getImageTag()
@@ -220,9 +218,7 @@ pipeline {
     }
     stage ('Deploy to K8s') {
       when {
-        not {
-            expression { BRANCH_NAME ==~ /(.*-nodeploy)/ }
-        }
+        expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
       }
       steps {
         build job: '/deploy-branch-to-k8s',
