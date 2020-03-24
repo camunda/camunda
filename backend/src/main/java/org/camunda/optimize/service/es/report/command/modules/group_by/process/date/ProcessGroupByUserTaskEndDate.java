@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -18,28 +18,28 @@ import org.springframework.stereotype.Component;
 import java.time.format.DateTimeFormatter;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
 
 @Slf4j
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByUserTaskStartDate extends ProcessGroupByUserTaskDate {
+public class ProcessGroupByUserTaskEndDate extends ProcessGroupByUserTaskDate {
 
-  public ProcessGroupByUserTaskStartDate(final DateTimeFormatter dateTimeFormatter,
-                                         final OptimizeElasticsearchClient esClient,
-                                         final IntervalAggregationService intervalAggregationService,
-                                         final ConfigurationService configurationService) {
+  public ProcessGroupByUserTaskEndDate(final DateTimeFormatter dateTimeFormatter,
+                                       final OptimizeElasticsearchClient esClient,
+                                       final IntervalAggregationService intervalAggregationService,
+                                       final ConfigurationService configurationService) {
     super(dateTimeFormatter, esClient, intervalAggregationService, configurationService);
   }
 
   @Override
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(new StartDateGroupByDto());
+    reportData.setGroupBy(new EndDateGroupByDto());
   }
 
   @Override
   protected String getDateField() {
-    return USER_TASKS + "." + USER_TASK_START_DATE;
+    return USER_TASKS + "." + USER_TASK_END_DATE;
   }
 
 }
