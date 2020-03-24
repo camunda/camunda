@@ -14,7 +14,9 @@
         },
         "workflowIds": [
           "${workflowIds}"
-        ]
+        ],
+        "ids": ["${workflowInstanceIds}"],
+        "activityId": "task2"
       },
       "operationType": "RESOLVE_INCIDENT"
     }
