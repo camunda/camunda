@@ -5,7 +5,7 @@ boolean slaveDisconnected() {
 }
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
@@ -23,9 +23,9 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
   tolerations:
-    - key: "slaves"
+    - key: "agents-n1-standard-32-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
@@ -300,4 +300,4 @@ void runMaven(String cmd) {
   configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("mvn ${cmd} -s \$MAVEN_SETTINGS_XML -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
   }
-}
+}}

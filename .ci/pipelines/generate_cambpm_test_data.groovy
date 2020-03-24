@@ -5,7 +5,7 @@ boolean slaveDisconnected() {
 }
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves-ssd-stable" }
+def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
 
 def static NODE_POOL_SIMPLE_AGENT() { return "agents-n1-standard-32-netssd-preempt" }
 

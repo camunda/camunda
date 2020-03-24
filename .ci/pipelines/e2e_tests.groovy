@@ -5,7 +5,7 @@ boolean slaveDisconnected() {
 }
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves-ssd-stable" }
+def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
