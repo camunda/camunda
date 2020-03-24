@@ -2,7 +2,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-def static NODE_POOL() { return "slaves-stable" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 // We can't use maven-alpine because 'frontend-maven-plugin' is incompatible
 // Issue: https://github.com/eirslett/frontend-maven-plugin/issues/633
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-11" }

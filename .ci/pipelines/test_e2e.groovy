@@ -10,9 +10,9 @@ metadata:
     agent: operate-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-stable
   tolerations:
-    - key: "slaves"
+    - key: "agents-n1-standard-32-netssd-stable"
       operator: "Exists"
       effect: "NoSchedule"
   initContainers:
@@ -132,7 +132,7 @@ spec:
           memory: 2Gi
         requests:
           cpu: 1
-          memory: 2Gi            
+          memory: 2Gi
   volumes:
   - name: configdir
     emptyDir: {}
