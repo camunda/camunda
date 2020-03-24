@@ -7,6 +7,9 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.camunda.optimize.dto.optimize.ReportConstants.AVERAGE_AGGREGATION_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MAX_AGGREGATION_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MEDIAN_AGGREGATION_TYPE;
@@ -20,6 +23,10 @@ public enum AggregationType {
   ;
 
   private final String id;
+
+  public static List<AggregationType> getAggregationTypesAsList() {
+    return Arrays.asList(AggregationType.values());
+  }
 
   AggregationType(final String id) {
     this.id = id;

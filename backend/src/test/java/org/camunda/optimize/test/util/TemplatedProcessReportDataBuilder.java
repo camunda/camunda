@@ -317,6 +317,33 @@ public class TemplatedProcessReportDataBuilder {
         reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
+      case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+
+        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+        setUserTaskDurationTimeIfConfigured(reportData);
+        break;
+      case USER_TASK_DURATION_GROUP_BY_USER_TASK_START_DATE_BY_USER_TASK:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedBy(DistributedBy.USER_TASK)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+
+        reportData.getConfiguration().setUserTaskDurationTime(UserTaskDurationTime.IDLE);
+        setUserTaskDurationTimeIfConfigured(reportData);
+        break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK_BY_ASSIGNEE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
