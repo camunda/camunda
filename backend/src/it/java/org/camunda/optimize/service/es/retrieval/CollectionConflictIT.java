@@ -13,8 +13,6 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -45,15 +43,15 @@ public class CollectionConflictIT extends AbstractIT {
   public void getCollectionDeleteConflictsIfEntitiesAdded() {
     // given
     String collectionId = collectionClient.createNewCollection();
-    String firstDashboardId = createNewDashboardAndAddItToCollection(collectionId);
-    String secondDashboardId = createNewDashboardAndAddItToCollection(collectionId);
-    String reportId = createNewReportAndAddItToCollection(collectionId);
+    String firstDashboardId = dashboardClient.createEmptyDashboard(collectionId);
+    String secondDashboardId = dashboardClient.createEmptyDashboard(collectionId);
+    String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     String[] expectedConflictedItemIds = {firstDashboardId, secondDashboardId, reportId};
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    ConflictResponseDto conflictResponseDto = getDeleteCollectionConflicts(collectionId);
+    ConflictResponseDto conflictResponseDto = collectionClient.getDeleteCollectionConflicts(collectionId);
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
@@ -122,7 +120,7 @@ public class CollectionConflictIT extends AbstractIT {
 
     // when
     ConflictResponseDto conflictResponse =
-      getScopeDeletionConflicts(collectionId, scopeEntry.getId());
+      collectionClient.getScopeDeletionConflicts(collectionId, scopeEntry.getId());
 
     // then
     checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
@@ -143,7 +141,7 @@ public class CollectionConflictIT extends AbstractIT {
 
     // when
     ConflictResponseDto conflictResponse =
-      getScopeDeletionConflicts(collectionId, scopeEntry.getId());
+      collectionClient.getScopeDeletionConflicts(collectionId, scopeEntry.getId());
 
     // then
     checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
@@ -237,29 +235,4 @@ public class CollectionConflictIT extends AbstractIT {
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
   }
 
-  private ConflictResponseDto getScopeDeletionConflicts(final String collectionId, final String scopeEntryId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetScopeDeletionConflictsRequest(collectionId, scopeEntryId)
-      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private String createNewDashboardAndAddItToCollection(String collectionId) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    dashboardDefinitionDto.setCollectionId(collectionId);
-    return dashboardClient.createDashboard(dashboardDefinitionDto);
-  }
-
-  private String createNewReportAndAddItToCollection(String collectionId) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
-  }
-
-  private ConflictResponseDto getDeleteCollectionConflicts(String id) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCollectionDeleteConflictsRequest(id)
-      .execute(ConflictResponseDto.class, Response.Status.OK.getStatusCode());
-  }
 }

@@ -6,19 +6,11 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -57,10 +49,8 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     createReportForCollection(collectionId2, definitionType);
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = getReportsForCollectionRequest(collectionId1).executeAndReturnList(
-      AuthorizedReportDefinitionDto.class,
-      200
-    );
+
+    List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
     assertThat(reports.size(), is(expectedReportIds.size()));
@@ -74,10 +64,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     String collectionId1 = collectionClient.createNewCollection();
 
     // when
-    List<AuthorizedReportDefinitionDto> reports = getReportsForCollectionRequest(collectionId1).executeAndReturnList(
-      AuthorizedReportDefinitionDto.class,
-      200
-    );
+    List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
     assertThat(reports.size(), is(0));
@@ -86,7 +73,11 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   @Test
   public void getReportsForNonExistentCollection() {
     // when
-    String response = getReportsForCollectionRequest("someId").execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
+    String response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetReportsForCollectionRequest("someId")
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then
     assertTrue(response.contains("Collection does not exist!"));
@@ -107,8 +98,16 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     // when
     collectionClient.deleteCollection(collectionId);
 
-    Response report1Response = getReportByIdRequest(reportId1);
-    Response report2Response = getReportByIdRequest(reportId2);
+    Response report1Response = reportClient.getSingleProcessReportRawResponse(
+      reportId1,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
+    Response report2Response = reportClient.getSingleProcessReportRawResponse(
+      reportId2,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
 
     // then
     assertThat(report1Response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
@@ -118,77 +117,23 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   private String createReportForCollection(final String collectionId, final DefinitionType definitionType) {
     switch (definitionType) {
       case PROCESS:
-        SingleProcessReportDefinitionDto procReport = getProcessReportDefinitionDto(collectionId);
-        return createNewProcessReportAsUser(procReport);
+        SingleProcessReportDefinitionDto procReport = reportClient.createSingleProcessReportDefinitionDto(
+          collectionId,
+          DEFAULT_DEFINITION_KEY,
+          DEFAULT_TENANTS
+        );
+        return reportClient.createSingleProcessReport(procReport);
 
       case DECISION:
-        SingleDecisionReportDefinitionDto decReport = getDecisionReportDefinitionDto(collectionId);
-        return createNewDecisionReportAsUser(decReport);
+        SingleDecisionReportDefinitionDto decReport = reportClient.createSingleDecisionReportDefinitionDto(
+          collectionId,
+          DEFAULT_DEFINITION_KEY,
+          DEFAULT_TENANTS
+        );
+        return reportClient.createSingleDecisionReport(decReport);
 
       default:
         throw new OptimizeRuntimeException("Unknown resource type provided.");
     }
-  }
-
-  private OptimizeRequestExecutor getReportsForCollectionRequest(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportsForCollectionRequest(collectionId)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
-      .setProcessDefinitionVersion("someVersion")
-      .setTenantIds(DEFAULT_TENANTS)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setName("aProcessReport");
-    report.setCollectionId(collectionId);
-    return report;
-  }
-
-  private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDto(final String collectionId) {
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY)
-      .setDecisionDefinitionVersion("someVersion")
-      .setTenantIds(DEFAULT_TENANTS)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
-    report.setData(reportData);
-    report.setName("aDecisionReport");
-    report.setCollectionId(collectionId);
-    return report;
-  }
-
-  private String createNewDecisionReportAsUser(final SingleDecisionReportDefinitionDto decReport) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildCreateSingleDecisionReportRequest(decReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  private String createNewProcessReportAsUser(final SingleProcessReportDefinitionDto procReport) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .buildCreateSingleProcessReportRequest(procReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
-
-  public Response getReportByIdRequest(String reportId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportRequest(reportId)
-      .execute();
   }
 }

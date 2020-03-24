@@ -14,11 +14,9 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
@@ -503,10 +501,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     collectionClient.addScopeEntryToCollection(collectionId, entry);
 
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.getData().setProcessDefinitionKey(DEFAULT_DEFINITION_KEY);
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    String reportId = createNewSingleProcessReport(singleProcessReportDefinitionDto);
+    String reportId = reportClient.createAndStoreProcessReport(collectionId, DEFAULT_DEFINITION_KEY, Collections.singletonList(null));
 
     ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
@@ -562,14 +557,6 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     List<String> tenants = new ArrayList<>();
     tenants.add(null);
     return new CollectionScopeEntryDto(definitionType, definitionKey, tenants);
-  }
-
-  private String createNewSingleProcessReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   private void addTenantToElasticsearch(final String tenantId) {
