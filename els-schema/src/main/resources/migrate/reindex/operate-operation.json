@@ -5,7 +5,8 @@
 		]
 	},
 	"dest": {
-		"index": "operate-operation-${schema.version}_"
+		"index": "operate-operation-${schema.version}_",
+		"pipeline": "operate-operation"
 	},
 	"script": {
 		"lang": "painless",

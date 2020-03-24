@@ -183,7 +183,7 @@ public class ValidationTest {
          (long)config.getWorkflowInstanceCount() - config.getCountOfCancelOperation());
      // Incidents resolved or Workflow instances are canceled
      assertThat(incidentCount).isBetween(
-        (long)config.getIncidentCount() - maxNotRunning,
+        config.getIncidentCount() - maxNotRunning,
         (long) config.getIncidentCount()
      );
   }

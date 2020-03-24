@@ -1,0 +1,10 @@
+{
+  "description" : "operate operation pipeline",
+  "processors" : [
+    {
+      "remove": {
+    	"field": ["startDate","endDate"]
+  	   }
+    }
+  ]
+}
