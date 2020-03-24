@@ -46,13 +46,12 @@ public final class StateSnapshotControllerTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnTakeSnapshotIfClosed() {
+  public void shouldNotTakeSnapshotIfDbIsClosed() {
     // given
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
-    assertThatThrownBy(() -> snapshotController.takeSnapshot(1))
-        .isInstanceOf(NullPointerException.class);
+    assertThat(snapshotController.takeSnapshot(1)).isEmpty();
   }
 
   @Test
@@ -194,8 +193,8 @@ public final class StateSnapshotControllerTest {
 
     snapshotController.takeSnapshot(1L);
     snapshotController.takeSnapshot(3L);
-    final var lastValidSnapshot = snapshotController.takeSnapshot(5L);
-    final var lastTempSnapshot = snapshotController.takeTempSnapshot(6L);
+    final var lastValidSnapshot = snapshotController.takeSnapshot(5L).orElseThrow();
+    final var lastTempSnapshot = snapshotController.takeTempSnapshot(6L).orElseThrow();
 
     // when/then
     assertThat(snapshotController.getLastValidSnapshotDirectory().toPath())

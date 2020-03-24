@@ -34,12 +34,15 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
 
   @Override
   public boolean completeSnapshot(final String snapshotId) {
-    return storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotId)).isPresent();
+    return storage.getPendingDirectoryFor(snapshotId).flatMap(storage::commitSnapshot).isPresent();
   }
 
   @Override
   public void invalidateSnapshot(final String snapshotId) {
-    final var pendingDirectory = storage.getPendingDirectoryFor(snapshotId);
+    storage.getPendingDirectoryFor(snapshotId).ifPresent(this::deletePendingSnapshot);
+  }
+
+  private void deletePendingSnapshot(final Path pendingDirectory) {
     try {
       if (Files.exists(pendingDirectory)) {
         FileUtil.deleteFolder(pendingDirectory);
@@ -73,7 +76,13 @@ final class FileSnapshotConsumer implements SnapshotConsumer {
       return false;
     }
 
-    final var tmpSnapshotDirectory = storage.getPendingDirectoryFor(snapshotId);
+    final var optionalPath = storage.getPendingDirectoryFor(snapshotId);
+    if (optionalPath.isEmpty()) {
+      logger.warn("Failed to obtain pending snapshot directory for snapshot ID {}", snapshotId);
+      return false;
+    }
+
+    final var tmpSnapshotDirectory = optionalPath.get();
     IoUtil.ensureDirectoryExists(tmpSnapshotDirectory.toFile(), "Temporary snapshot directory");
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);

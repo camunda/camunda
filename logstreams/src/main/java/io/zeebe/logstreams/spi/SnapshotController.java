@@ -11,6 +11,8 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.state.Snapshot;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public interface SnapshotController extends AutoCloseable {
@@ -18,16 +20,21 @@ public interface SnapshotController extends AutoCloseable {
    * Takes a snapshot based on the given position and immediately commits it.
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
+   * @return a committed snapshot, or nothing if the operation failed
+   * @see io.zeebe.logstreams.state.SnapshotStorage#commitSnapshot(Path)
+   * @see io.zeebe.logstreams.state.SnapshotStorage#getPendingSnapshotFor(long)
    */
-  Snapshot takeSnapshot(long lowerBoundSnapshotPosition);
+  Optional<Snapshot> takeSnapshot(long lowerBoundSnapshotPosition);
 
   /**
    * Takes a snapshot based on the given position. The position is a last processed lower bound
    * event position.
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
+   * @return a pending snapshot, or nothing if the operation fails
+   * @see io.zeebe.logstreams.state.SnapshotStorage#getPendingSnapshotFor(long)
    */
-  Snapshot takeTempSnapshot(long lowerBoundSnapshotPosition);
+  Optional<Snapshot> takeTempSnapshot(long lowerBoundSnapshotPosition);
 
   /**
    * Commits the given temporary snapshot to the underlying storage.

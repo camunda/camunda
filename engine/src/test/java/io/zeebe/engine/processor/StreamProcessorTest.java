@@ -40,6 +40,7 @@ import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -366,7 +367,7 @@ public final class StreamProcessorTest {
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                  new TypedRecordProcessor<UnifiedRecordValue>() {
+                  new TypedRecordProcessor<>() {
                     @Override
                     public void processRecord(
                         final long position,
@@ -382,7 +383,7 @@ public final class StreamProcessorTest {
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-                  new TypedRecordProcessor<UnifiedRecordValue>() {
+                  new TypedRecordProcessor<>() {
                     @Override
                     public void processRecord(
                         final TypedRecord<UnifiedRecordValue> record,
@@ -425,7 +426,7 @@ public final class StreamProcessorTest {
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                  new TypedRecordProcessor<UnifiedRecordValue>() {
+                  new TypedRecordProcessor<>() {
                     @Override
                     public void processRecord(
                         final long position,
@@ -439,7 +440,7 @@ public final class StreamProcessorTest {
               .onEvent(
                   ValueType.WORKFLOW_INSTANCE,
                   WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-                  new TypedRecordProcessor<UnifiedRecordValue>() {
+                  new TypedRecordProcessor<>() {
                     @Override
                     public void processRecord(
                         final TypedRecord<UnifiedRecordValue> record,
@@ -544,42 +545,53 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldCreateSnapshotEvenWhenNoEventProcessed() throws Exception {
+  public void shouldCreateSnapshotOnCloseEvenIfNothingProcessedSinceLastSnapshot()
+      throws Exception {
     // given
-    final CountDownLatch recoveredLatch = new CountDownLatch(1);
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, context) ->
-            processors.onEvent(
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-                new TypedRecordProcessor<UnifiedRecordValue>() {
-                  @Override
-                  public void onRecovered(final ReadonlyProcessingContext context) {
-                    recoveredLatch.countDown();
-                  }
-                }));
+    final var recoveredLatch = new CountDownLatch(1);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) ->
+                processors.onEvent(
+                    ValueType.WORKFLOW_INSTANCE,
+                    WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                    new TypedRecordProcessor<UnifiedRecordValue>() {
+                      @Override
+                      public void onRecovered(final ReadonlyProcessingContext context) {
+                        recoveredLatch.countDown();
+                      }
+                    }));
+    final var stateSnapshotController = streamProcessorRule.getStateSnapshotController();
+    recoveredLatch.await(5, TimeUnit.SECONDS);
+    final var position =
+        streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    TestUtil.waitUntil(() -> streamProcessorRule.events().count() >= 1);
+    streamProcessorRule.getClock().addTime(SNAPSHOT_INTERVAL);
+    TestUtil.waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 1);
 
     // when
-    recoveredLatch.await();
-    final StateSnapshotController stateSnapshotController =
-        streamProcessorRule.getStateSnapshotController();
     streamProcessorRule.closeStreamProcessor();
 
     // then
-    final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
-
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-    inOrder.verify(stateSnapshotController, TIMEOUT).takeSnapshot(anyLong());
+    assertThat(streamProcessor.isClosed()).isTrue();
+    TestUtil.waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 2);
   }
 
   @Test
   public void shouldCreateSnapshotsEvenIfNoProcessorProcessEvent() {
     // given
-    streamProcessorRule.startTypedStreamProcessor((processors, context) -> processors);
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, context) ->
+            processors.onEvent(
+                ValueType.WORKFLOW_INSTANCE,
+                WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                new TypedRecordProcessor<UnifiedRecordValue>() {}));
+    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    TestUtil.waitUntil(() -> streamProcessorRule.events().count() >= 1);
 
     // when
-    final long position =
-        streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    streamProcessorRule.closeStreamProcessor();
+    streamProcessorRule.startTypedStreamProcessor((processors, context) -> processors);
     streamProcessorRule.getClock().addTime(SNAPSHOT_INTERVAL);
 
     // then
@@ -588,6 +600,24 @@ public final class StreamProcessorTest {
 
     waitUntil(() -> stateSnapshotController.getValidSnapshotsCount() == 1);
     assertThat(stateSnapshotController.getValidSnapshotsCount()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldNotCreateSnapshotIfNothingProcessedEver() {
+    // given
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor((processors, context) -> processors);
+    final var stateSnapshotController = streamProcessorRule.getStateSnapshotController();
+
+    // when
+    streamProcessorRule.getClock().addTime(SNAPSHOT_INTERVAL);
+    streamProcessorRule.closeStreamProcessor();
+
+    // then
+    assertThat(streamProcessor.isClosed()).isTrue();
+    assertThat(stateSnapshotController.getValidSnapshotsCount()).isEqualTo(0);
+    verify(stateSnapshotController, TIMEOUT.times(0)).takeSnapshot(anyLong());
+    verify(stateSnapshotController, TIMEOUT.times(0)).takeTempSnapshot(anyLong());
   }
 
   @Test
@@ -602,6 +632,9 @@ public final class StreamProcessorTest {
                 typedRecordProcessor));
 
     // when
+    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    TestUtil.waitUntil(
+        () -> streamProcessorRule.events().onlyWorkflowInstanceRecords().count() >= 1);
     streamProcessorRule.getClock().addTime(SNAPSHOT_INTERVAL);
 
     // then

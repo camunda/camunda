@@ -17,7 +17,6 @@ import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor {
@@ -82,11 +81,6 @@ public final class AsyncSnapshotDirector extends Actor {
     logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
   }
 
-  private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
-    prepareTakingSnapshot();
-  }
-
   @Override
   protected void onActorCloseRequested() {
     logStream.removeOnCommitPositionUpdatedCondition(commitCondition);
@@ -144,6 +138,11 @@ public final class AsyncSnapshotDirector extends Actor {
     return future;
   }
 
+  private void scheduleSnapshotOnRate() {
+    actor.runAtFixedRate(snapshotRate, this::prepareTakingSnapshot);
+    prepareTakingSnapshot();
+  }
+
   private String getConditionNameForPosition() {
     return getName() + "-wait-for-endPosition-committed";
   }
@@ -159,6 +158,13 @@ public final class AsyncSnapshotDirector extends Actor {
         futureLastProcessedPosition,
         (lastProcessedPosition, error) -> {
           if (error == null) {
+            if (lastProcessedPosition == StreamProcessor.UNSET_POSITION) {
+              LOG.debug(
+                  "We will skip taking this snapshot, because we haven't processed something yet.");
+              takingSnapshot = false;
+              return;
+            }
+
             this.lowerBoundSnapshotPosition = lastProcessedPosition;
             takeSnapshot();
           } else {
@@ -176,8 +182,18 @@ public final class AsyncSnapshotDirector extends Actor {
         .onComplete(
             (commitPosition, errorOnRetrievingCommitPosition) -> {
               if (errorOnRetrievingCommitPosition == null) {
-                pendingSnapshot =
-                    createSnapshot(() -> snapshotController.takeTempSnapshot(tempSnapshotPosition));
+                final var optionalPendingSnapshot =
+                    snapshotController.takeTempSnapshot(tempSnapshotPosition);
+                if (optionalPendingSnapshot.isEmpty()) {
+                  LOG.warn(
+                      "Failed to obtain a pending snapshot directory for position {}",
+                      tempSnapshotPosition);
+                  takingSnapshot = false;
+                  return;
+                }
+
+                LOG.debug("Created snapshot for {}", processorName);
+                pendingSnapshot = optionalPendingSnapshot.get();
 
                 final ActorFuture<Long> lastWrittenPosition =
                     streamProcessor.getLastWrittenPositionAsync();
@@ -202,12 +218,6 @@ public final class AsyncSnapshotDirector extends Actor {
                     errorOnRetrievingCommitPosition);
               }
             });
-  }
-
-  private Snapshot createSnapshot(final Supplier<Snapshot> snapshotCreation) {
-    final var snapshot = snapshotCreation.get();
-    LOG.debug("Created snapshot for {}", processorName);
-    return snapshot;
   }
 
   private void onCommitCheck() {
@@ -240,7 +250,8 @@ public final class AsyncSnapshotDirector extends Actor {
 
   void enforceSnapshotCreation(
       final long commitPosition, final long lastWrittenPosition, final long lastProcessedPosition) {
-    if (commitPosition >= lastWrittenPosition) {
+    if (lastProcessedPosition > StreamProcessor.UNSET_POSITION
+        && commitPosition >= lastWrittenPosition) {
       LOG.debug(LOG_MSG_ENFORCE_SNAPSHOT, lastProcessedPosition);
       try {
         snapshotController.takeSnapshot(lastProcessedPosition);

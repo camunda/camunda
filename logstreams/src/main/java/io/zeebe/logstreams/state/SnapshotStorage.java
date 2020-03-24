@@ -24,18 +24,19 @@ public interface SnapshotStorage extends AutoCloseable {
    * and therefore should be cached if it needs to be reused.
    *
    * @param snapshotPosition the position to use
-   * @return a pending snapshot
+   * @return a pending snapshot, or nothing if no snapshot metadata could be created from the
+   *     position
    */
-  Snapshot getPendingSnapshotFor(long snapshotPosition);
+  Optional<Snapshot> getPendingSnapshotFor(long snapshotPosition);
 
   /**
    * Returns an existing, temporary working directory for a snapshot with the given ID; primarily
    * used during replication of snapshots to preserver the snapshot ID.
    *
    * @param id the snapshot ID
-   * @return an existing path
+   * @return an existing path, or nothing if snapshot metadata cannot be extracted from the given ID
    */
-  Path getPendingDirectoryFor(String id);
+  Optional<Path> getPendingDirectoryFor(String id);
 
   /**
    * Commits to the snapshot to the underlying store, making it permanently accessible. This may

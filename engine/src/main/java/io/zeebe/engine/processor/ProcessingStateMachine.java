@@ -126,11 +126,11 @@ public final class ProcessingStateMachine {
   private LoggedEvent currentEvent;
   private TypedRecordProcessor<?> currentProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
-  private long writtenEventPosition = -1L;
-  private long lastSuccessfulProcessedEventPosition = -1L;
-  private long lastWrittenEventPosition = -1L;
+  private long writtenEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastSuccessfulProcessedEventPosition = StreamProcessor.UNSET_POSITION;
+  private long lastWrittenEventPosition = StreamProcessor.UNSET_POSITION;
   private boolean onErrorHandling;
-  private long errorRecordPosition = -1;
+  private long errorRecordPosition = StreamProcessor.UNSET_POSITION;
   private volatile boolean onErrorHandlingLoop;
   private int onErrorRetries;
 
