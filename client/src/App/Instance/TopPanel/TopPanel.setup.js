@@ -113,3 +113,5 @@ export const instanceWithIncident = {
     state: STATE.INCIDENT
   })
 };
+
+export const mockedExpandedPaneId = 'myExpandedPaneId';

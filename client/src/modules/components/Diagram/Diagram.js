@@ -52,7 +52,7 @@ class Diagram extends React.PureComponent {
       })
     ),
     metadata: PropTypes.object,
-    expandState: PropTypes.string
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)).isRequired
   };
 
   constructor(props) {
@@ -129,7 +129,9 @@ class Diagram extends React.PureComponent {
       isViewerLoaded: true
     });
 
-    this.handleZoomReset();
+    if (this.props.expandState !== EXPAND_STATE.COLLAPSED) {
+      this.handleZoomReset();
+    }
 
     // in case onDiagramLoaded callback function is provided
     // call it with flowNodesDetails

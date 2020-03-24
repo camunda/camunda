@@ -16,7 +16,7 @@ import * as Styled from './styled.js';
 class DiagramPanel extends React.Component {
   static propTypes = {
     dataManager: PropTypes.object,
-    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)).isRequired,
     noWorkflowSelected: PropTypes.bool.isRequired,
     noVersionSelected: PropTypes.bool.isRequired,
     selectableFlowNodes: PropTypes.array,
@@ -100,6 +100,7 @@ class DiagramPanel extends React.Component {
                   flowNodesStatistics={flowNodesStatistics}
                   selectedFlowNodeId={selectedFlowNodeId}
                   selectableFlowNodes={selectableFlowNodes}
+                  expandState={paneProps.expandState}
                 />
               )}
         </SplitPane.Pane.Body>

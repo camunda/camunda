@@ -15,10 +15,16 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import {
+  mockedModules,
+  mockedImportDefinitions
+} from '__mocks__/bpmn-js/lib/NavigatedViewer';
+
+import {
   mockProps,
   mockPropsNoWorkflowSelected,
   mockPropsNoVersionSelected,
-  mockPropsNoDefinitions
+  mockPropsNoDefinitions,
+  mockPropsCollapsedPanel
 } from './DiagramPanel.setup';
 
 import SplitPane from 'modules/components/SplitPane';
@@ -30,14 +36,6 @@ const DiagramPanelWrapped = DiagramPanel.WrappedComponent;
 
 jest.mock('modules/utils/bpmn');
 
-jest.mock(
-  'modules/components/Diagram',
-  () =>
-    function Diagram(props) {
-      return <div />;
-    }
-);
-
 describe('DiagramPanel', () => {
   let dataManager;
   let node;
@@ -47,7 +45,7 @@ describe('DiagramPanel', () => {
     dataManager = createMockDataManager();
   });
   describe('DiagramPanel', () => {
-    it('should render a spit pane', () => {
+    it('should render a split pane', () => {
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
@@ -130,6 +128,39 @@ describe('DiagramPanel', () => {
         );
 
         expect(node.find(Diagram)).not.toExist();
+      });
+
+      it('should render a navigated viewer', () => {
+        node = mount(
+          <ThemeProvider>
+            <CollapsablePanelProvider>
+              <DiagramPanelWrapped {...mockProps} {...{dataManager}} />
+            </CollapsablePanelProvider>
+          </ThemeProvider>
+        );
+
+        expect(mockedImportDefinitions).toHaveBeenCalled();
+        expect(mockedModules.canvas.zoom).toHaveBeenCalled();
+      });
+
+      it('should render a collapsed navigated viewer', () => {
+        node = mount(
+          <ThemeProvider>
+            <CollapsablePanelProvider>
+              <DiagramPanelWrapped
+                {...mockPropsCollapsedPanel}
+                {...{dataManager}}
+              />
+            </CollapsablePanelProvider>
+          </ThemeProvider>
+        );
+
+        expect(mockedImportDefinitions).toHaveBeenCalled();
+
+        // it should not interact with NavigatedViewer, when the panel is collapsed
+        expect(mockedModules.canvas.zoom).not.toHaveBeenCalled();
+        expect(mockedModules.canvas.resized).not.toHaveBeenCalled();
+        expect(mockedModules.zoomScroll.stepZoom).not.toHaveBeenCalled();
       });
     });
 

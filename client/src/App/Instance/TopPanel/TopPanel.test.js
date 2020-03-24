@@ -17,7 +17,16 @@ import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
 import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
-import {mockProps, instanceWithIncident} from './TopPanel.setup';
+import {
+  mockProps,
+  instanceWithIncident,
+  mockedExpandedPaneId
+} from './TopPanel.setup';
+
+import {
+  mockedModules,
+  mockedImportDefinitions
+} from '__mocks__/bpmn-js/lib/NavigatedViewer';
 
 import IncidentsWrapper from '../IncidentsWrapper';
 
@@ -49,7 +58,7 @@ const mountTopPanel = props => {
   return mount(
     <ThemeProvider>
       <DataManagerProvider>
-        <SplitPane>
+        <SplitPane expandedPaneId={mockedExpandedPaneId}>
           <TopPanel {...props} />
           <SplitPane.Pane />
         </SplitPane>
@@ -59,18 +68,23 @@ const mountTopPanel = props => {
 };
 
 describe('DiagramPanel', () => {
-  let node;
-  beforeEach(() => {
-    node = mountTopPanel(mockProps);
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should render spinner by default', () => {
+    // when
+    const node = mountTopPanel({...mockProps});
+
+    // then
     expect(node.find(SpinnerSkeleton)).toHaveLength(1);
     expect(node.find(Diagram)).not.toHaveLength(1);
     expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
   });
 
   it('should render diagram', () => {
+    // given
+    const node = mountTopPanel({...mockProps});
     const {props, subscriptions} = node
       .find(TopPanel.WrappedComponent)
       .instance();
@@ -86,15 +100,28 @@ describe('DiagramPanel', () => {
     // then
     expect(node.find(SpinnerSkeleton)).not.toHaveLength(1);
     expect(node.find(Diagram)).toHaveLength(1);
+
+    expect(mockedImportDefinitions).toHaveBeenCalled();
+
+    // it should apply zoom to the diagram
+    expect(mockedModules.canvas.zoom).toHaveBeenCalled();
+    expect(mockedModules.canvas.resized).toHaveBeenCalled();
   });
 
-  it('should render incidentsTable', () => {
-    node = mountTopPanel(instanceWithIncident);
+  it('should render hidden diagram', () => {
+    // given
+    localStorage.setItem(
+      'panelStates',
+      JSON.stringify({[mockedExpandedPaneId]: 'COLLAPSED'})
+    );
+
+    const node = mountTopPanel({...mockProps});
     const {props, subscriptions} = node
       .find(TopPanel.WrappedComponent)
       .instance();
 
     const {dataManager} = props;
+
     // when
     dataManager.publish({
       subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
@@ -102,6 +129,40 @@ describe('DiagramPanel', () => {
     });
 
     node.update();
+
+    // then
+    expect(node.find(SpinnerSkeleton)).not.toHaveLength(1);
+    expect(node.find(Diagram)).toHaveLength(1);
+
+    expect(mockedImportDefinitions).toHaveBeenCalled();
+
+    // it should not interact with NavigatedViewer, when the panel is collapsed
+    expect(mockedModules.canvas.zoom).not.toHaveBeenCalled();
+    expect(mockedModules.canvas.resized).not.toHaveBeenCalled();
+    expect(mockedModules.zoomScroll.stepZoom).not.toHaveBeenCalled();
+
+    localStorage.clear();
+  });
+
+  it('should render incidentsTable', () => {
+    // given
+    const node = mountTopPanel(instanceWithIncident);
+
+    const {props, subscriptions} = node
+      .find(TopPanel.WrappedComponent)
+      .instance();
+
+    const {dataManager} = props;
+
+    // when
+    dataManager.publish({
+      subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
+      state: LOADING_STATE.LOADED
+    });
+
+    node.update();
+
+    // then
     expect(node.find(IncidentsWrapper)).toHaveLength(1);
   });
 });
