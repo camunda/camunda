@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -507,6 +508,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
       .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
+    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
     assertThat(conflictResponseDto.getConflictedItems())
       .extracting(ConflictedItemDto::getId)
       .containsExactly(reportId);

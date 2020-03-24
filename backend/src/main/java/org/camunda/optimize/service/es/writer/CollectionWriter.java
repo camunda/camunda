@@ -477,7 +477,7 @@ public class CollectionWriter {
           collectionId
         );
         log.warn(message);
-        throw new OptimizeConflictException(message);
+        throw new OptimizeCollectionConflictException(message);
       }
     } catch (IOException e) {
       String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
@@ -599,7 +599,7 @@ public class CollectionWriter {
           "Cannot delete last [%s] of collection [%s].", RoleType.MANAGER, collectionId
         );
         log.warn(message);
-        throw new OptimizeConflictException(message);
+        throw new OptimizeCollectionConflictException(message);
       }
     } catch (IOException e) {
       String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);

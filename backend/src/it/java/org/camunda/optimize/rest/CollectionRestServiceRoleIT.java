@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -447,14 +448,13 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
       RoleType.EDITOR
     );
-    Response response = embeddedOptimizeExtension
+    ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute();
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.CONFLICT.getStatusCode()));
-    final ConflictResponseDto conflictResponseDto = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponseDto.getErrorCode(), is(OptimizeCollectionConflictException.ERROR_CODE));
     assertThat(conflictResponseDto.getErrorMessage(), is(notNullValue()));
 
     assertThat(collectionClient.getCollectionRoles(collectionId), is(expectedRoles));
@@ -490,14 +490,13 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
     // when
     final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.EDITOR);
-    Response response = embeddedOptimizeExtension
+    ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleEntryDto.getId(), updatedRoleDto)
-      .execute();
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.CONFLICT.getStatusCode()));
-    final ConflictResponseDto conflictResponseDto = response.readEntity(ConflictResponseDto.class);
+    assertThat(conflictResponseDto.getErrorCode(), is(OptimizeCollectionConflictException.ERROR_CODE));
     assertThat(conflictResponseDto.getErrorMessage(), is(notNullValue()));
 
     assertThat(collectionClient.getCollectionRoles(collectionId), is(expectedRoles));
@@ -550,13 +549,13 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     final CollectionRoleRestDto roleEntryDto = expectedRoles.get(0);
 
     // when
-    Response response = embeddedOptimizeExtension
+    ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteRoleToCollectionRequest(collectionId, roleEntryDto.getId())
-      .execute();
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.CONFLICT.getStatusCode()));
+    assertThat(conflictResponseDto.getErrorCode(), is(OptimizeCollectionConflictException.ERROR_CODE));
 
     final List<CollectionRoleRestDto> actualRoles = collectionClient.getCollectionRoles(collectionId);
     assertThat(actualRoles, is(expectedRoles));

@@ -10,7 +10,9 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryRestDto;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -125,13 +127,13 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
-    Response response = eventProcessClient
+    ConflictResponseDto conflictResponseDto = eventProcessClient
       .createCreateEventProcessMappingRequest(eventProcessMapping)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute();
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
+    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeConflictException.ERROR_CODE);
   }
 
   @Test
@@ -141,13 +143,13 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(eventSourceEntry, eventSourceEntry));
 
     // when
-    Response response = eventProcessClient
+    ConflictResponseDto conflictResponseDto = eventProcessClient
       .createCreateEventProcessMappingRequest(eventProcessMapping)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute();
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
+    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeConflictException.ERROR_CODE);
   }
 
   @Test
@@ -210,15 +212,15 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
 
     // when
     eventProcessMapping.getEventSources().add(camundaEventSourceEntry);
-    Response response = eventProcessClient
+    ConflictResponseDto conflictResponseDto = eventProcessClient
       .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
-      .execute();
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
     List<EventSourceEntryRestDto> eventSources = eventProcessClient.getEventProcessMapping(eventProcessMappingId)
       .getEventSources();
 
-    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
+    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeConflictException.ERROR_CODE);
     assertThat(eventSources)
       .usingElementComparatorIgnoringFields("id")
       .containsExactly(mapToRestDto(camundaEventSourceEntry));
@@ -236,13 +238,13 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
 
     // when
     eventProcessMapping.getEventSources().add(externalEventSourceEntry);
-    Response response = eventProcessClient
+    ConflictResponseDto conflictResponseDto = eventProcessClient
       .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute();
+      .execute(ConflictResponseDto.class, Response.Status.CONFLICT.getStatusCode());
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
+    assertThat(conflictResponseDto.getErrorCode()).isEqualTo(OptimizeConflictException.ERROR_CODE);
   }
 
   @Test

@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUp
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -80,6 +81,7 @@ public class CollectionConflictIT extends AbstractIT {
       deleteScopeFailsWithConflict(collectionId, scopeEntry.getId(), conflictScenario.getForceSetToFalse());
 
     // then
+    assertThat(conflictResponse.getErrorCode()).isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
     checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
     checkConflictedItems(conflictResponse, ConflictedItemType.ALERT, new String[]{alertId});
     checkConflictedItems(conflictResponse, ConflictedItemType.DASHBOARD, new String[]{dashboardId});
@@ -101,6 +103,7 @@ public class CollectionConflictIT extends AbstractIT {
       deleteScopeFailsWithConflict(collectionId, scopeEntry.getId(), false);
 
     // then
+    assertThat(conflictResponse.getErrorCode()).isEqualTo(OptimizeCollectionConflictException.ERROR_CODE);
     checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
     checkConflictedItems(conflictResponse, ConflictedItemType.COMBINED_REPORT, new String[]{combinedReportId});
   }

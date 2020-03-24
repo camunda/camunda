@@ -27,7 +27,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
@@ -177,7 +177,7 @@ public class CollectionScopeService {
     Set<ConflictedItemDto> conflictedItems =
       getConflictsForReports(userId, reportsAffectedByScopeDeletion);
     if (!conflictedItems.isEmpty()) {
-      throw new OptimizeConflictException(conflictedItems);
+      throw new OptimizeCollectionConflictException(conflictedItems);
     }
   }
 
@@ -285,7 +285,7 @@ public class CollectionScopeService {
         .map(this::reportToConflictedItem)
         .collect(Collectors.toSet());
     if (!conflictedItems.isEmpty()) {
-      throw new OptimizeConflictException(conflictedItems);
+      throw new OptimizeCollectionConflictException(conflictedItems);
     }
   }
 

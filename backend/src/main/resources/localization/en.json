@@ -822,6 +822,7 @@
   },
   "apiErrors": {
     "serverError": "An internal server error occurred.",
+    "conflict": "Could not apply the changes due to conflicts.",
     "reportConflict": "Could not apply the report changes due to conflicts.",
     "collectionConflict": "Could not apply the collection changes due to conflicts.",
     "sharingNotAllowed": "Could not share as this functionality is currently disabled.",

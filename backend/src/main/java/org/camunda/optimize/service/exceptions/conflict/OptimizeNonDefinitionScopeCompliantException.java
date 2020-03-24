@@ -11,6 +11,8 @@ import java.util.Set;
 
 public class OptimizeNonDefinitionScopeCompliantException extends OptimizeConflictException {
 
+  public static final String ERROR_CODE = "nonDefinitionScopeCompliantConflict";
+
   public OptimizeNonDefinitionScopeCompliantException(Set<ConflictedItemDto> conflictedItems) {
     super(
       "Could not apply action due to conflicts with the collection data source. The report definition is not defined " +
@@ -21,6 +23,6 @@ public class OptimizeNonDefinitionScopeCompliantException extends OptimizeConfli
 
   @Override
   public String getErrorCode() {
-    return "nonDefinitionScopeCompliantConflict";
+    return ERROR_CODE;
   }
 }

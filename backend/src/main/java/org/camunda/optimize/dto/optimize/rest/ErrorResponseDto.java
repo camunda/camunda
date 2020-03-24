@@ -6,8 +6,10 @@
 package org.camunda.optimize.dto.optimize.rest;
 
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 
 @Data
+@FieldNameConstants
 public class ErrorResponseDto {
   private String errorCode;
   private String errorMessage;

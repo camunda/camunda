@@ -11,6 +11,8 @@ import java.util.Set;
 
 public class OptimizeNonTenantScopeCompliantException extends OptimizeConflictException {
 
+  public static final String ERROR_CODE = "nonTenantScopeCompliantConflict";
+
   public OptimizeNonTenantScopeCompliantException(Set<ConflictedItemDto> conflictedItems) {
     super(
       "Could not apply action due to conflicts with the collection data source. The definition for the report is " +
@@ -22,6 +24,6 @@ public class OptimizeNonTenantScopeCompliantException extends OptimizeConflictEx
 
   @Override
   public String getErrorCode() {
-    return "nonTenantScopeCompliantConflict";
+    return ERROR_CODE;
   }
 }

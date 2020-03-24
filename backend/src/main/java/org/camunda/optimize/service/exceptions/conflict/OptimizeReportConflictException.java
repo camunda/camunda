@@ -10,6 +10,9 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import java.util.Set;
 
 public class OptimizeReportConflictException extends OptimizeConflictException {
+
+  public static final String ERROR_CODE = "reportConflict";
+
   public OptimizeReportConflictException(final String message) {
     super(message);
   }
@@ -20,6 +23,6 @@ public class OptimizeReportConflictException extends OptimizeConflictException {
 
   @Override
   public String getErrorCode() {
-    return "reportConflict";
+    return ERROR_CODE;
   }
 }

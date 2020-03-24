@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRest
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -75,8 +75,7 @@ public class CollectionService {
     collectionWriter.updateCollection(updateDto, collectionId);
   }
 
-  public void deleteCollection(final String userId, final String collectionId, final boolean force)
-    throws OptimizeConflictException {
+  public void deleteCollection(final String userId, final String collectionId, final boolean force) {
     final AuthorizedCollectionDefinitionDto collectionDefinition = authorizedCollectionService
       .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
@@ -84,7 +83,7 @@ public class CollectionService {
       final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDelete(userId, collectionId);
 
       if (!conflictedItems.isEmpty()) {
-        throw new OptimizeConflictException(conflictedItems);
+        throw new OptimizeCollectionConflictException(conflictedItems);
       }
     }
 

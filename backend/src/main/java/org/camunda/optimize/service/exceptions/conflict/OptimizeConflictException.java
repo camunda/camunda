@@ -11,6 +11,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Set;
 
 public class OptimizeConflictException extends OptimizeRuntimeException {
+  public static final String ERROR_CODE = "conflict";
+
   private Set<ConflictedItemDto> conflictedItems;
 
   public OptimizeConflictException(final String message) {
@@ -29,5 +31,10 @@ public class OptimizeConflictException extends OptimizeRuntimeException {
 
   public Set<ConflictedItemDto> getConflictedItems() {
     return conflictedItems;
+  }
+
+  @Override
+  public String getErrorCode() {
+    return ERROR_CODE;
   }
 }
