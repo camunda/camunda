@@ -43,6 +43,9 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    volumes:
+      # this prevents the default process deployments, as we generate or use a prepared dump anyway
+      - "./:/camunda/webapps/camunda-invoice"
     depends_on:
       - postgres
   postgres:
